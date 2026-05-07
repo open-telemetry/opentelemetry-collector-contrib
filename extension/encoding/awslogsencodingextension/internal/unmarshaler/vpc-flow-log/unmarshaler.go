@@ -28,10 +28,63 @@ import (
 )
 
 var (
-	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
-	defaultVPCFormat              = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
-	// Default TGW format is version 2 with resource-type field
-	defaultTGWFormat = []string{"version", "resource-type", "account-id", "tgw-id", "tgw-attachment-id", "tgw-src-vpc-id", "tgw-dst-vpc-id", "tgw-src-subnet-id", "tgw-dst-subnet-id", "tgw-src-eni", "tgw-dst-eni", "tgw-src-az-id", "tgw-dst-az-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "log-status"}
+	supportedVPCFlowLogFileFormat = []string{
+		constants.FileFormatPlainText,
+		constants.FileFormatParquet,
+	}
+
+	// defaultVPCFormat holds the default format for VPC flow logs, when
+	// sent to CloudWatch Logs. For logs sent to S3, the format is
+	// determined from the header line.
+	//
+	// Note: order is important.
+	defaultVPCFormat = []string{
+		"version",
+		"account-id",
+		"interface-id",
+		"srcaddr",
+		"dstaddr",
+		"srcport",
+		"dstport",
+		"protocol",
+		"packets",
+		"bytes",
+		"start",
+		"end",
+		"action",
+		"log-status",
+	}
+
+	// defaultTGWFormat holds the default format for Transit Gateway flow logs,
+	// when sent to CloudWatch Logs. For logs sent to S3, the format is determined
+	// from the header line.
+	//
+	// Note: order is important.
+	defaultTGWFormat = []string{
+		"version",
+		"resource-type",
+		"account-id",
+		"tgw-id",
+		"tgw-attachment-id",
+		"tgw-src-vpc-id",
+		"tgw-dst-vpc-id",
+		"tgw-src-subnet-id",
+		"tgw-dst-subnet-id",
+		"tgw-src-eni",
+		"tgw-dst-eni",
+		"tgw-src-az-id",
+		"tgw-dst-az-id",
+		"srcaddr",
+		"dstaddr",
+		"srcport",
+		"dstport",
+		"protocol",
+		"packets",
+		"bytes",
+		"start",
+		"end",
+		"log-status",
+	}
 )
 
 var _ unmarshaler.StreamingLogsUnmarshaler = (*VPCFlowLogUnmarshaler)(nil)
@@ -343,11 +396,6 @@ func (v *VPCFlowLogUnmarshaler) addToLogs(
 			continue
 		}
 
-		if strings.HasPrefix(field, "ecs-") {
-			v.logger.Warn("currently there is no support for ECS fields")
-			continue
-		}
-
 		found, err := v.handleField(field, value, resourceLogs, record, addr)
 		if err != nil {
 			return err
@@ -414,26 +462,36 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 	record plog.LogRecord,
 	addr *address,
 ) (bool, error) {
-	// convert string to number
-	getNumber := func(value string) (int64, error) {
+	if value == "-" {
+		return true, nil
+	}
+	// Integer fields: parse and call handleInt64Field
+	switch field {
+	case "version", "srcport", "dstport", "protocol", "packets", "bytes",
+		"tcp-flags", "traffic-path", "start", "end",
+		"packets-lost-no-route", "packets-lost-blackhole",
+		"packets-lost-mtu-exceeded", "packets-lost-ttl-expired":
 		n, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
-			return -1, fmt.Errorf("%q field in log file is not a number", field)
+			return false, fmt.Errorf("%q field in log file is not a number", field)
 		}
-		return n, nil
+		return v.handleInt64Field(field, n, resourceLogs, record, addr)
 	}
+	return v.handleStringField(field, value, resourceLogs, record, addr)
+}
 
-	// convert string to number and add the
-	// value to an attribute
-	addNumber := func(field, value, attrName string) error {
-		n, err := getNumber(value)
-		if err != nil {
-			return fmt.Errorf("%q field in log file is not a number", field)
-		}
-		record.Attributes().PutInt(attrName, n)
-		return nil
+// handleStringField applies a string value for the given field to resource/record/addr.
+// If the field is not recognized, it returns false.
+func (*VPCFlowLogUnmarshaler) handleStringField(
+	field string,
+	value string,
+	resourceLogs plog.ResourceLogs,
+	record plog.LogRecord,
+	addr *address,
+) (bool, error) {
+	if value == "-" {
+		return true, nil
 	}
-
 	switch field {
 	case "srcaddr":
 		// handled later
@@ -447,7 +505,6 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 	case "pkt-dstaddr":
 		// handled later
 		addr.pktDestination = value
-
 	case "account-id":
 		resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudAccountIDKey), value)
 	case "vpc-id":
@@ -459,8 +516,7 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 	case "az-id":
 		record.Attributes().PutStr("aws.az.id", value)
 	case "interface-id":
-		// TODO Replace with conventions variable once it becomes available
-		record.Attributes().PutStr("network.interface.name", value)
+		record.Attributes().PutStr(string(conventions.NetworkInterfaceNameKey), value)
 	case "tgw-id":
 		record.Attributes().PutStr("aws.tgw.id", value)
 	case "tgw-attachment-id":
@@ -485,24 +541,6 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 		record.Attributes().PutStr("aws.tgw.attachment.pair.id", value)
 	case "resource-type":
 		// Skip - used for detection only, already captured in encoding.format
-	case "srcport":
-		if err := addNumber(field, value, string(conventions.SourcePortKey)); err != nil {
-			return false, err
-		}
-	case "dstport":
-		if err := addNumber(field, value, string(conventions.DestinationPortKey)); err != nil {
-			return false, err
-		}
-	case "protocol":
-		n, err := getNumber(value)
-		if err != nil {
-			return false, err
-		}
-		protocolNumber := int(n)
-		if protocolNumber < 0 || protocolNumber >= len(protocolNames) {
-			return false, fmt.Errorf("protocol number %d does not have a protocol name", protocolNumber)
-		}
-		record.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), protocolNames[protocolNumber])
 	case "type":
 		record.Attributes().PutStr(string(conventions.NetworkTypeKey), strings.ToLower(value))
 	case "region":
@@ -516,54 +554,6 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 		default:
 			return true, fmt.Errorf("value %s not valid for field %s", value, field)
 		}
-	case "version":
-		if err := addNumber(field, value, "aws.vpc.flow.log.version"); err != nil {
-			return false, err
-		}
-	case "packets":
-		if err := addNumber(field, value, "aws.vpc.flow.packets"); err != nil {
-			return false, err
-		}
-	case "bytes":
-		if err := addNumber(field, value, "aws.vpc.flow.bytes"); err != nil {
-			return false, err
-		}
-	case "packets-lost-no-route":
-		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_no_route"); err != nil {
-			return false, err
-		}
-	case "packets-lost-blackhole":
-		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_blackhole"); err != nil {
-			return false, err
-		}
-	case "packets-lost-mtu-exceeded":
-		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_mtu_exceeded"); err != nil {
-			return false, err
-		}
-	case "packets-lost-ttl-expired":
-		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_ttl_expired"); err != nil {
-			return false, err
-		}
-	case "start":
-		unixSeconds, err := getNumber(value)
-		if err != nil {
-			return true, fmt.Errorf("value %s for field %s does not correspond to a valid timestamp", value, field)
-		}
-		if v.vpcFlowStartISO8601FormatEnabled {
-			// New behavior: ISO-8601 format (RFC3339Nano)
-			timestamp := time.Unix(unixSeconds, 0).UTC()
-			record.Attributes().PutStr("aws.vpc.flow.start", timestamp.Format(time.RFC3339Nano))
-		} else {
-			// Legacy behavior: Unix timestamp as integer
-			record.Attributes().PutInt("aws.vpc.flow.start", unixSeconds)
-		}
-	case "end":
-		unixSeconds, err := getNumber(value)
-		if err != nil {
-			return true, fmt.Errorf("value %s for field %s does not correspond to a valid timestamp", value, field)
-		}
-		timestamp := time.Unix(unixSeconds, 0)
-		record.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 	case "action":
 		record.Attributes().PutStr("aws.vpc.flow.action", value)
 	case "log-status":
@@ -605,7 +595,61 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 	default:
 		return false, nil
 	}
+	return true, nil
+}
 
+// handleInt64Field applies an int64 value for the given field to resource/record.
+// Returns (true, nil) when the field is recognized, (false, nil) when unknown, or (_, err) on error.
+func (v *VPCFlowLogUnmarshaler) handleInt64Field(
+	field string,
+	value int64,
+	_ plog.ResourceLogs,
+	record plog.LogRecord,
+	_ *address,
+) (bool, error) {
+	switch field {
+	case "version":
+		record.Attributes().PutInt("aws.vpc.flow.log.version", value)
+	case "srcport":
+		record.Attributes().PutInt(string(conventions.SourcePortKey), value)
+	case "dstport":
+		record.Attributes().PutInt(string(conventions.DestinationPortKey), value)
+	case "protocol":
+		protocolNumber := int(value)
+		if protocolNumber < 0 || protocolNumber >= len(protocolNames) {
+			return false, fmt.Errorf("protocol number %d does not have a protocol name", protocolNumber)
+		}
+		record.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), protocolNames[protocolNumber])
+	case "packets":
+		record.Attributes().PutInt("aws.vpc.flow.packets", value)
+	case "bytes":
+		record.Attributes().PutInt("aws.vpc.flow.bytes", value)
+	case "start":
+		if v.vpcFlowStartISO8601FormatEnabled {
+			// New behavior: ISO-8601 format (RFC3339Nano)
+			timestamp := time.Unix(value, 0).UTC()
+			record.Attributes().PutStr("aws.vpc.flow.start", timestamp.Format(time.RFC3339Nano))
+		} else {
+			// Legacy behavior: Unix timestamp as integer
+			record.Attributes().PutInt("aws.vpc.flow.start", value)
+		}
+	case "end":
+		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(value, 0)))
+	case "tcp-flags":
+		record.Attributes().PutStr("network.tcp.flags", strconv.FormatInt(value, 10))
+	case "traffic-path":
+		record.Attributes().PutStr("aws.vpc.flow.traffic_path", strconv.FormatInt(value, 10))
+	case "packets-lost-no-route":
+		record.Attributes().PutInt("aws.vpc.flow.packets_lost_no_route", value)
+	case "packets-lost-blackhole":
+		record.Attributes().PutInt("aws.vpc.flow.packets_lost_blackhole", value)
+	case "packets-lost-mtu-exceeded":
+		record.Attributes().PutInt("aws.vpc.flow.packets_lost_mtu_exceeded", value)
+	case "packets-lost-ttl-expired":
+		record.Attributes().PutInt("aws.vpc.flow.packets_lost_ttl_expired", value)
+	default:
+		return false, nil
+	}
 	return true, nil
 }
 
