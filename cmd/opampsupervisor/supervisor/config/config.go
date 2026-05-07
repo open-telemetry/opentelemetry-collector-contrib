@@ -94,6 +94,10 @@ func (s Supervisor) Validate() error {
 		return err
 	}
 
+	if err := s.Telemetry.Resource.Validate(); err != nil {
+		return fmt.Errorf("invalid telemetry::resource settings: %w", err)
+	}
+
 	return nil
 }
 
@@ -305,10 +309,12 @@ type Telemetry struct {
 	Metrics Metrics                        `mapstructure:"metrics"`
 	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
-	Resource map[string]*string `mapstructure:"resource"`
+	Resource otelconftelemetry.ResourceConfig `mapstructure:"resource"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
+
+type ResourceConfig = otelconftelemetry.ResourceConfig
 
 type HealthCheck struct {
 	confighttp.ServerConfig `mapstructure:",squash"`

@@ -21,6 +21,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.57.1-0.20260501001745-24aecacf1c04
+	go.opentelemetry.io/collector/confmap/xconfmap v0.151.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/pdata v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/service v0.151.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/contrib/bridges/otelzap v0.18.0
@@ -161,7 +162,6 @@ require (
 	go.opentelemetry.io/collector/config/configmiddleware v1.57.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.57.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.57.1-0.20260501001745-24aecacf1c04 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.151.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/connector v0.151.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/connector/connectortest v0.151.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.151.1-0.20260501001745-24aecacf1c04 // indirect
