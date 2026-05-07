@@ -120,4 +120,3 @@ func (e *Extensions) GetExtensions() map[component.ID]component.Component {
 	}
 	return out
 }
-

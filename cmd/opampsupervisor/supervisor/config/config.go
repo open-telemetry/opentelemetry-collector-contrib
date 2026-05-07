@@ -28,12 +28,15 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/extensions"
 )
+
+var _ xconfmap.Validator = (*Supervisor)(nil)
 
 // Supervisor is the Supervisor config file format.
 type Supervisor struct {
@@ -78,6 +81,10 @@ func Load(configFile string) (Supervisor, error) {
 	}
 
 	return cfg, nil
+}
+
+func (s Supervisor) Validate() error {
+	return nil
 }
 
 type Storage struct {

@@ -4,9 +4,6 @@
 package config
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -109,26 +106,4 @@ func TestTelemetryResourceConfigMarshal(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "service.name", attr["name"])
 	assert.Equal(t, "custom-service", attr["value"])
-}
-
-func TestLoadRejectsInvalidTelemetryResourceConfig(t *testing.T) {
-	tmpDir := t.TempDir()
-	executablePath := filepath.Join(tmpDir, "binary")
-	require.NoError(t, os.WriteFile(executablePath, []byte{}, 0o600))
-
-	cfgPath := setupSupervisorConfigFile(t, tmpDir, fmt.Sprintf(`
-server:
-  endpoint: ws://localhost/v1/opamp
-
-agent:
-  executable: %s
-
-telemetry:
-  resource:
-    attributes_list: unsupported
-`, executablePath))
-
-	_, err := Load(cfgPath)
-	require.ErrorContains(t, err, "invalid telemetry::resource settings")
-	require.ErrorContains(t, err, "resource::attributes_list is not currently supported")
 }

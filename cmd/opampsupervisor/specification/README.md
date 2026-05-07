@@ -302,14 +302,16 @@ This results in the following Collector process invocation:
 
 ### Supervisor Extensions
 
-Note: this capability is experimental and must be manually enabled via the
-`opampsupervisor.Extensions` feature gate (alpha, introduced in v0.151.0).
+**Note:** This functionality is in development and no extensions are currently supported.
+
+**Note:** This capability is experimental and must be manually enabled via the
+`opampsupervisor.Extensions` feature gate (alpha, introduced in v0.152.0).
 If `extensions` are configured but the gate is disabled, the Supervisor
 will not start and the error message names the gate to enable.
 
 These are instances of extensions specific to the Supervisor and are 
-distinct from extensions configured inside the managed Collector's
-configuration. Supervisor extensions are loaded and managed by the 
+distinct from any extensions configured to run inside the managed
+Collector configuration. Supervisor extensions are loaded and managed by the 
 Supervisor process itself.
 
 Supervisor extensions are configured under a top-level `extensions:` key
@@ -325,7 +327,7 @@ extensions:
     option_a: value
 ```
 
-Only extensions present in the Supervisor's factory allowlist are
+Only extensions bundled with the Supervisor binary are
 supported. The allowlist is intentionally narrow and extensions are
 added on a case-by-case basis as their functionality is integrated.
 Referencing an unknown extension type, or providing invalid configuration
