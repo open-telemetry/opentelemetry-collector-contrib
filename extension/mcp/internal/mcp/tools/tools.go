@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// tools package includes the list of tools available for the MCP extension. The contents of this
+// file originated in https://github.com/pavolloffay/opentelemetry-mcp-server/blob/main/internal/tools/tools.go
 package tools // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/mcp/internal/mcp/tools"
 
 import (
