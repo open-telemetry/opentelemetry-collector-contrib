@@ -56,11 +56,12 @@ const (
 
 // metricID represents the minimum attributes that uniquely identifies a metric in our tests.
 type metricID struct {
-	service        string
-	name           string
-	kind           string
-	statusCode     string
-	otelStatusCode string
+	service             string
+	name                string
+	kind                string
+	statusCode          string
+	collectorInstanceID string
+	otelStatusCode      string
 }
 
 type metricDataPoint interface {
@@ -373,6 +374,8 @@ func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[met
 			mID.kind = v.Str()
 		case statusCodeKey:
 			mID.statusCode = v.Str()
+		case collectorInstanceKey:
+			mID.collectorInstanceID = v.Str()
 		case otelStatusCodeKey:
 			mID.otelStatusCode = v.Str()
 		case metricAttrSamplingMethod:
@@ -2184,6 +2187,7 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 				statusCodeKey:                  "STATUS_CODE_UNSET",
 				instrumentationScopeNameKey:    "express",
 				instrumentationScopeVersionKey: "1.0.0",
+				collectorInstanceKey:           instanceID,
 			},
 		},
 		{
@@ -2196,10 +2200,11 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 			}(),
 			config: Config{EnableMetricsSamplingMethod: true},
 			want: map[string]string{
-				serviceNameKey: "test_service",
-				spanNameKey:    "test_span",
-				spanKindKey:    "SPAN_KIND_INTERNAL",
-				statusCodeKey:  "STATUS_CODE_UNSET",
+				serviceNameKey:       "test_service",
+				spanNameKey:          "test_span",
+				spanKindKey:          "SPAN_KIND_INTERNAL",
+				statusCodeKey:        "STATUS_CODE_UNSET",
+				collectorInstanceKey: instanceID,
 			},
 		},
 		{
@@ -2214,10 +2219,11 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 				EnableMetricsSamplingMethod: true,
 			},
 			want: map[string]string{
-				serviceNameKey: "test_service",
-				spanNameKey:    "test_span",
-				spanKindKey:    "SPAN_KIND_INTERNAL",
-				statusCodeKey:  "STATUS_CODE_UNSET",
+				serviceNameKey:       "test_service",
+				spanNameKey:          "test_span",
+				spanKindKey:          "SPAN_KIND_INTERNAL",
+				statusCodeKey:        "STATUS_CODE_UNSET",
+				collectorInstanceKey: instanceID,
 			},
 		},
 
@@ -2238,13 +2244,14 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 				spanKindKey:                 "SPAN_KIND_INTERNAL",
 				statusCodeKey:               "STATUS_CODE_UNSET",
 				instrumentationScopeNameKey: "express",
+				collectorInstanceKey:        instanceID,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &connectorImp{config: tt.config}
+			p := &connectorImp{config: tt.config, instanceID: instanceID}
 
 			span := ptrace.NewSpan()
 			span.SetName("test_span")
@@ -2524,6 +2531,7 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 				instrumentationScopeNameKey:    "express",
 				instrumentationScopeVersionKey: "1.0.0",
 			},
+			includeCollectorInstanceID: false,
 		},
 		{
 			name: "enable includeCollectorInstanceID feature-gate",
@@ -2553,11 +2561,11 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &connectorImp{config: tt.config, instanceID: instanceID}
-			if tt.includeCollectorInstanceID {
-				require.NoError(t, featuregate.GlobalRegistry().Set(includeCollectorInstanceID.ID(), true))
+			if !tt.includeCollectorInstanceID {
+				require.NoError(t, featuregate.GlobalRegistry().Set(includeCollectorInstanceID.ID(), false))
 			}
 			defer func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(includeCollectorInstanceID.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(includeCollectorInstanceID.ID(), true))
 			}()
 
 			span := ptrace.NewSpan()

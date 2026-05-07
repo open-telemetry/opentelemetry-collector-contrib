@@ -443,6 +443,19 @@ The index template must define dynamic templates whose names match the values se
 - **OTel**: Each metric is written under the `metrics` object; the bulk action maps full field names (e.g. `metrics.my_metric`) to one of the OTel template names above based on metric type (histogram, summary, gauge, or counter) and value type.
 - **ECS**: Each metric is written as a top-level field `metric.<name>`; the bulk action maps that field name to one of the ECS/APM template names (`histogram_metrics`, `summary_metrics`, or `double_metrics` for gauges and counters).
 
+### Bulk Response Filter Path
+
+The Elasticsearch bulk API accepts a [filter_path](https://www.elastic.co/docs/reference/elasticsearch/rest-apis/common-options#common-options-response-filtering) parameter.  This can be used to reduce the response returned by Elasticsearch.  The exporter uses a default `filter_path` that is set by the [go-docappender](https://github.com/elastic/go-docappender).  The default is currently `items.*._index,items.*.status,items.*.failure_store,items.*.error.type,items.*.error.reason` and is defined by the `DefaultFilterPath` in the [go-docappnder](https://github.com/elastic/go-docappender) package.
+
+If you want to change the `filter_path` you may do so by setting `bulk_response_filter_path` to the desired string in the configuration.
+
+
+> [!NOTE]
+> If `items.*._index.items` is not in the BulkResponseFilterPath than for any failed documents, the exporter will not be able to log the index to which the document was being written to.
+
+> [!NOTE]
+> If `items.*._index.items` is not in the BulkResponseFilterPath than the exporter will log rejection of duplicates to ".profiling-stackframes" which were previously suppressed.
+
 ## Exporting profiles
 
 Profiles support is currently in development, and should not be used in
