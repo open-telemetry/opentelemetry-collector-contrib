@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
@@ -19,10 +20,11 @@ import (
 
 // NewFactory creates a factory for the slowsql connector.
 func NewFactory() connector.Factory {
-	return connector.NewFactory(
+	return xconnector.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		connector.WithTracesToLogs(createTracesToLogsConnector, metadata.TracesToLogsStability),
+		xconnector.WithTracesToLogs(createTracesToLogsConnector, metadata.TracesToLogsStability),
+		xconnector.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
