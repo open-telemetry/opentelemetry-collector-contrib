@@ -32,17 +32,13 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	config := &Config{
+	return &Config{
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		ClientConfig:         configkafka.NewDefaultClientConfig(),
 		GroupMatch:           defaultGroupMatch,
 		TopicMatch:           defaultTopicMatch,
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
-	if config.ClusterAlias != "" {
-		config.ResourceAttributes.KafkaClusterAlias.Enabled = true
-	}
-	return config
 }
 
 func createMetricsReceiver(
@@ -52,6 +48,9 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	c := cfg.(*Config)
+	if c.ClusterAlias != "" {
+		c.ResourceAttributes.KafkaClusterAlias.Enabled = true
+	}
 	r, err := newMetricsReceiver(ctx, *c, params, nextConsumer)
 	if err != nil {
 		return nil, err

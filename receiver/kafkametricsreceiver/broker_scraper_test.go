@@ -110,11 +110,13 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	client := newMockClient()
 	client.Mock.On("Brokers").Return(testBrokers)
 	client.Mock.On("Closed").Return(false)
+	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc.ResourceAttributes.KafkaClusterAlias.Enabled = true
 	bs := brokerScraper{
 		client:   client,
 		settings: receivertest.NewNopSettings(metadata.Type),
 		config: Config{
-			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: mbc,
 			ClusterAlias:         testClusterAlias,
 		},
 		clusterAdmin: newMockClusterAdmin(),
@@ -124,9 +126,9 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	assert.NoError(t, err)
 	require.Equal(t, 1, md.ResourceMetrics().Len())
 	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
-	if val, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("kafka.cluster.alias"); ok {
-		require.Equal(t, testClusterAlias, val.Str())
-	}
+	val, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("kafka.cluster.alias")
+	require.True(t, ok)
+	require.Equal(t, testClusterAlias, val.Str())
 	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)

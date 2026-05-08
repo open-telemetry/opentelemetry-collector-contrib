@@ -115,9 +115,8 @@ func TestTopicScraper_scrapes(t *testing.T) {
 	assert.NoError(t, err)
 	require.Equal(t, 1, md.ResourceMetrics().Len())
 	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
-	if val, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("kafka.cluster.alias"); ok {
-		require.Equal(t, testClusterAlias, val.Str())
-	}
+	_, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("kafka.cluster.alias")
+	require.False(t, ok)
 	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
@@ -194,4 +193,32 @@ func TestTopicScraper_scrape_handlesPartialScrapeErrors(t *testing.T) {
 	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 	_, err := scraper.scrape(t.Context())
 	assert.Error(t, err)
+}
+
+func TestTopicScraper_scrape_withClusterAlias(t *testing.T) {
+	client := newMockClient()
+	var testOffset int64 = 5
+	client.offset = testOffset
+	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc.ResourceAttributes.KafkaClusterAlias.Enabled = true
+	config := createDefaultConfig().(*Config)
+	config.MetricsBuilderConfig = mbc
+	config.ClusterAlias = testClusterAlias
+	match := regexp.MustCompile(config.TopicMatch)
+	scraper := topicScraper{
+		client:       client,
+		clusterAdmin: newMockClusterAdmin(),
+		settings:     receivertest.NewNopSettings(metadata.Type),
+		config:       *config,
+		topicFilter:  match,
+	}
+	client.Mock.On("Closed").Return(false)
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+	md, err := scraper.scrape(t.Context())
+	assert.NoError(t, err)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
+	val, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("kafka.cluster.alias")
+	require.True(t, ok)
+	require.Equal(t, testClusterAlias, val.Str())
 }
