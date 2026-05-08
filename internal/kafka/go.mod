@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/config/configopaque v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/config/configtls v1.57.1-0.20260501001745-24aecacf1c04
+	go.opentelemetry.io/collector/extension v1.57.1-0.20260501001745-24aecacf1c04
 	go.uber.org/goleak v1.3.0
 	golang.org/x/oauth2 v0.36.0
 )
@@ -27,6 +28,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.151.1-0.20260501001745-24aecacf1c04 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.151.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/pdata v1.57.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
