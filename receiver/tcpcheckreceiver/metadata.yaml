@@ -1,5 +1,6 @@
 display_name: TCP Check Receiver
-type: tcpcheck
+type: tcp_check
+deprecated_type: tcpcheck
 reaggregation_enabled: true
 
 description: This receiver creates stats by connecting to a TCP server.

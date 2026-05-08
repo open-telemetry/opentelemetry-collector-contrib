@@ -333,8 +333,8 @@ components:
     - receiver/stef
     - receiver/syslog
     - receiver/systemd
+    - receiver/tcp_check
     - receiver/tcp_log
-    - receiver/tcpcheck
     - receiver/tls_check
     - receiver/udp_log
     - receiver/vcenter
