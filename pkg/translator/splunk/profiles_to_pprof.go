@@ -57,24 +57,12 @@ func ConvertPprofileToPprof(dict pprofile.ProfilesDictionary, scope pcommon.Inst
 	// be merged into a pprof profile.
 	var attrErr error
 
-	firstSample := true
 	// Convert profiles samples into pprof samples.
 	for _, s := range p.Samples().All() {
-		if s.Values().Len() == 0 {
-			continue
-		}
 		profileTime := p.Time().AsTime()
 		if p.Time().AsTime().UnixNano() == 0 {
 			profileTime = time.Now()
 		}
-		if firstSample {
-			for i := 0; i < s.Values().Len(); i++ {
-				dst.SampleType = append(dst.SampleType, &profile.ValueType{
-					Type: sampleType,
-				})
-			}
-		}
-		firstSample = false
 
 		pprofSample := profile.Sample{
 			Label: map[string][]string{
@@ -142,6 +130,17 @@ func ConvertPprofileToPprof(dict pprofile.ProfilesDictionary, scope pcommon.Inst
 		}
 
 		dst.Sample = append(dst.Sample, &pprofSample)
+		if s.Values().Len() > 0 {
+			for i := 0; i < s.Values().Len(); i++ {
+				dst.SampleType = append(dst.SampleType, &profile.ValueType{
+					Type: sampleType,
+				})
+			}
+		} else {
+			dst.SampleType = append(dst.SampleType, &profile.ValueType{
+				Type: sampleType,
+			})
+		}
 	}
 
 	var commentStrs []string
@@ -171,11 +170,93 @@ func ConvertPprofileToPprof(dict pprofile.ProfilesDictionary, scope pcommon.Inst
 		Unit: getStringFromIdx(dict, int(pt.UnitStrindex())),
 	}
 
-	if err := dst.CheckValid(); err != nil {
+	if err := checkValid(dst); err != nil {
 		return nil, err
 	}
 
 	return dst, nil
+}
+
+// checkValid tests whether the profile is valid. Checks include, but are
+// not limited to:
+//   - len(Profile.Sample[n].value) == len(Profile.value_unit)
+//   - Sample.id has a corresponding Profile.Location
+func checkValid(p *profile.Profile) error {
+	// Check that sample values are consistent
+	sampleLen := len(p.SampleType)
+	if sampleLen == 0 && len(p.Sample) != 0 {
+		return fmt.Errorf("missing sample type information")
+	}
+	for _, s := range p.Sample {
+		if s == nil {
+			return fmt.Errorf("profile has nil sample")
+		}
+		//if len(s.Value) != sampleLen {
+		//	return fmt.Errorf("mismatch: sample has %d values vs. %d types", len(s.Value), len(p.SampleType))
+		//}
+		for _, l := range s.Location {
+			if l == nil {
+				return fmt.Errorf("sample has nil location")
+			}
+		}
+	}
+
+	// Check that all mappings/locations/functions are in the tables
+	// Check that there are no duplicate ids
+	mappings := make(map[uint64]*profile.Mapping, len(p.Mapping))
+	for _, m := range p.Mapping {
+		if m == nil {
+			return fmt.Errorf("profile has nil mapping")
+		}
+		if m.ID == 0 {
+			return fmt.Errorf("found mapping with reserved ID=0")
+		}
+		if mappings[m.ID] != nil {
+			return fmt.Errorf("multiple mappings with same id: %d", m.ID)
+		}
+		mappings[m.ID] = m
+	}
+	functions := make(map[uint64]*profile.Function, len(p.Function))
+	for _, f := range p.Function {
+		if f == nil {
+			return fmt.Errorf("profile has nil function")
+		}
+		if f.ID == 0 {
+			return fmt.Errorf("found function with reserved ID=0")
+		}
+		if functions[f.ID] != nil {
+			return fmt.Errorf("multiple functions with same id: %d", f.ID)
+		}
+		functions[f.ID] = f
+	}
+	locations := make(map[uint64]*profile.Location, len(p.Location))
+	for _, l := range p.Location {
+		if l == nil {
+			return fmt.Errorf("profile has nil location")
+		}
+		if l.ID == 0 {
+			return fmt.Errorf("found location with reserved id=0")
+		}
+		if locations[l.ID] != nil {
+			return fmt.Errorf("multiple locations with same id: %d", l.ID)
+		}
+		locations[l.ID] = l
+		if m := l.Mapping; m != nil {
+			if m.ID == 0 || mappings[m.ID] != m {
+				return fmt.Errorf("inconsistent mapping %p: %d", m, m.ID)
+			}
+		}
+		for _, ln := range l.Line {
+			f := ln.Function
+			if f == nil {
+				return fmt.Errorf("location id: %d has a line with nil function", l.ID)
+			}
+			if f.ID == 0 || functions[f.ID] != f {
+				return fmt.Errorf("inconsistent function %p: %d", f, f.ID)
+			}
+		}
+	}
+	return nil
 }
 
 // allElementsSame checks if all elements in the provided slice are equal.
