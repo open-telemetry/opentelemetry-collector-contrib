@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
@@ -54,6 +55,9 @@ type Config struct {
 	// If > 0, periodically re-run detection for all configured detectors.
 	// When 0 (default), no periodic refresh occurs.
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
+	// Retry controls optional retry/backoff for all detectors on startup.
+	// Disabled by default; enable to wait for slow metadata endpoints.
+	Retry configretry.BackOffConfig `mapstructure:"retry"`
 }
 
 // DetectorConfig contains user-specified configurations unique to all individual detectors
