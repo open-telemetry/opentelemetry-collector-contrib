@@ -26,7 +26,7 @@ components:
     - connector/routing
     - connector/service_graph
     - connector/signal_to_metrics
-    - connector/slowsql
+    - connector/slow_sql
     - connector/span_metrics
     - connector/sum
     - exporter/alertmanager
@@ -238,11 +238,11 @@ components:
     - receiver/aerospike
     - receiver/apache
     - receiver/apachespark
+    - receiver/aws_lambda
     - receiver/awscloudwatch
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
-    - receiver/awslambda
     - receiver/awss3
     - receiver/awsxray
     - receiver/azure_blob
@@ -333,8 +333,8 @@ components:
     - receiver/stef
     - receiver/syslog
     - receiver/systemd
+    - receiver/tcp_check
     - receiver/tcp_log
-    - receiver/tcpcheck
     - receiver/tls_check
     - receiver/udp_log
     - receiver/vcenter
