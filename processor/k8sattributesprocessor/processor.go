@@ -44,6 +44,7 @@ type kubernetesprocessor struct {
 	podIgnore              kube.Excludes
 	waitForMetadata        bool
 	waitForMetadataTimeout time.Duration
+	watchSyncPeriod        time.Duration
 }
 
 func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, kubeClient kube.ClientProvider) error {
@@ -51,7 +52,7 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout)
+		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout, kp.watchSyncPeriod)
 		if err != nil {
 			return err
 		}
