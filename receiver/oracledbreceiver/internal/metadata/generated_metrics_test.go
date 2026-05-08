@@ -321,7 +321,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.data_dictionary.hit_ratio"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Data dictionary cache hit ratio from v$rowcache, expressed as a percentage.", mi.Description())
+					assert.Equal(t, "Data dictionary cache hit ratio from v$rowcache.", mi.Description())
 					assert.Equal(t, "%", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -765,7 +765,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.recycle_bin.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Total size of the recycle bin in bytes.", mi.Description())
+					assert.Equal(t, "Total size of the recycle bin.", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -834,7 +834,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.storage.usage"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Used database storage size in bytes from dba_data_files and dba_free_space.", mi.Description())
+					assert.Equal(t, "Used database storage size from dba_data_files and dba_free_space.", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -846,7 +846,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.storage.utilization"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Fraction of allocated database storage that is used, as a ratio between 0 and 1.", mi.Description())
+					assert.Equal(t, "Fraction of allocated database storage that is used.", mi.Description())
 					assert.Equal(t, "1", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

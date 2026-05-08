@@ -329,7 +329,7 @@ type metricOracledbDataDictionaryHitRatio struct {
 // init fills oracledb.data_dictionary.hit_ratio metric with initial data.
 func (m *metricOracledbDataDictionaryHitRatio) init() {
 	m.data.SetName("oracledb.data_dictionary.hit_ratio")
-	m.data.SetDescription("Data dictionary cache hit ratio from v$rowcache, expressed as a percentage.")
+	m.data.SetDescription("Data dictionary cache hit ratio from v$rowcache.")
 	m.data.SetUnit("%")
 	m.data.SetEmptyGauge()
 }
@@ -2027,7 +2027,7 @@ type metricOracledbRecycleBinLimit struct {
 // init fills oracledb.recycle_bin.limit metric with initial data.
 func (m *metricOracledbRecycleBinLimit) init() {
 	m.data.SetName("oracledb.recycle_bin.limit")
-	m.data.SetDescription("Total size of the recycle bin in bytes.")
+	m.data.SetDescription("Total size of the recycle bin.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
@@ -2219,7 +2219,7 @@ type metricOracledbStorageUsage struct {
 // init fills oracledb.storage.usage metric with initial data.
 func (m *metricOracledbStorageUsage) init() {
 	m.data.SetName("oracledb.storage.usage")
-	m.data.SetDescription("Used database storage size in bytes from dba_data_files and dba_free_space.")
+	m.data.SetDescription("Used database storage size from dba_data_files and dba_free_space.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
@@ -2269,7 +2269,7 @@ type metricOracledbStorageUtilization struct {
 // init fills oracledb.storage.utilization metric with initial data.
 func (m *metricOracledbStorageUtilization) init() {
 	m.data.SetName("oracledb.storage.utilization")
-	m.data.SetDescription("Fraction of allocated database storage that is used, as a ratio between 0 and 1.")
+	m.data.SetDescription("Fraction of allocated database storage that is used.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }

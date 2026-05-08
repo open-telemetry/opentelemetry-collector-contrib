@@ -17,8 +17,8 @@ issues: [47303]
 # Use pipe (|) for multiline entries.
 subtext: |
   Add 4 new opt-in metrics (disabled by default, stability: development):
-  oracledb.data_dictionary_hit_ratio, oracledb.recycle_bin_size,
-  oracledb.storage.allocated, and oracledb.storage.used_pct.
+  oracledb.data_dictionary.hit_ratio, oracledb.recycle_bin.limit,
+  oracledb.storage.usage, and oracledb.storage.utilization.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

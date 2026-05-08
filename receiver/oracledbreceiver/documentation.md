@@ -251,7 +251,7 @@ Number of times a consistent read was requested for a block from the buffer cach
 
 ### oracledb.data_dictionary.hit_ratio
 
-Data dictionary cache hit ratio from v$rowcache, expressed as a percentage.
+Data dictionary cache hit ratio from v$rowcache.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -387,7 +387,7 @@ Number of SELECT statements executed in parallel
 
 ### oracledb.recycle_bin.limit
 
-Total size of the recycle bin in bytes.
+Total size of the recycle bin.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -395,7 +395,7 @@ Total size of the recycle bin in bytes.
 
 ### oracledb.storage.usage
 
-Used database storage size in bytes from dba_data_files and dba_free_space.
+Used database storage size from dba_data_files and dba_free_space.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -403,7 +403,7 @@ Used database storage size in bytes from dba_data_files and dba_free_space.
 
 ### oracledb.storage.utilization
 
-Fraction of allocated database storage that is used, as a ratio between 0 and 1.
+Fraction of allocated database storage that is used.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
