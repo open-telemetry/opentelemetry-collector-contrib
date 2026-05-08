@@ -47,7 +47,6 @@ type WatchClient struct {
 	daemonsetInformer      cache.SharedInformer
 	jobInformer            cache.SharedInformer
 	replicasetInformer     cache.SharedInformer
-	replicasetRegex        *regexp.Regexp
 	cronJobRegex           *regexp.Regexp
 	deleteQueue            []deleteRequest
 	stopCh                 chan struct{}
@@ -93,17 +92,16 @@ type WatchClient struct {
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-// Extract replicaset name from the pod name. Pod name is created using
-// format: [deployment-name]-[Random-String-For-ReplicaSet]
-var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
-
 // Extract CronJob name from the Job name. Job name is created using
 // format: [cronjob-name]-[time-hash-int]
 var cronJobRegex = regexp.MustCompile(`^(.*)-\d+$`)
 
-// Extract Deployment name from the ReplicaSet name. Deployment name is created using
-// format: [deployment-name]-[hash]
-var deploymentHashSuffixPattern = regexp.MustCompile(`^[a-z0-9]{10}$`)
+// podTemplateHashLabel contains the label that K8s Deployment
+// controller adds to ReplicaSets to ensure that child ReplicaSets
+// do not overlap. ReplicaSet name is constructed as [deployment-name]-[podTemplateHash]
+// K8s doc ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#pod-template-hash-label
+// K8s code ref: https://github.com/kubernetes/kubernetes/blob/b31119d205a839aab40b2d819a58d4fabacd9b47/pkg/controller/deployment/sync.go#L207
+const podTemplateHashLabel = "pod-template-hash"
 
 var errCannotRetrieveImage = errors.New("cannot retrieve image name")
 
@@ -137,7 +135,6 @@ func New(
 		Filters:                filters,
 		Associations:           associations,
 		Exclude:                exclude,
-		replicasetRegex:        rRegex,
 		cronJobRegex:           cronJobRegex,
 		stopCh:                 make(chan struct{}),
 		telemetryBuilder:       telemetryBuilder,
@@ -209,7 +206,16 @@ func New(
 
 	c.namespaceInformer = informersFactory.newNamespaceInformer(c.mc)
 
-	if rules.DeploymentName || rules.DeploymentUID {
+	// Enable the ReplicaSet informer when any of the following applies:
+	//   1) DeploymentName is enabled and DeploymentNameFromReplicaSet flag is false
+	//   2) DeploymentUID is enabled
+	//   3) Deployment labels or annotations are configured for extraction — those fields live on the Deployment
+	//      resource, so we must associate Pods with Deployments through ReplicaSets first.
+	needReplicaSetInformer := (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) ||
+		c.Rules.DeploymentUID ||
+		c.extractDeploymentLabelsAnnotations()
+
+	if needReplicaSetInformer {
 		if informersFactory.newReplicaSetInformer == nil {
 			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer
 		}
@@ -250,9 +256,7 @@ func (c *WatchClient) Start() error {
 	synced := make([]cache.InformerSynced, 0)
 	// start the replicaSet informer first, as the replica sets need to be
 	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
-	// The replicaset informer is needed to get the deployment UID.
-	// It is also needed to get the deployment name if the feature gate is not enabled.
-	if c.Rules.DeploymentUID || (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) {
+	if c.replicasetInformer != nil {
 		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
@@ -931,11 +935,18 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				}
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
 					var deploymentName string
-					if c.Rules.DeploymentNameFromReplicaSet {
-						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name)
-					} else if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
+					// Attempt to use the ReplicaSet informer when it is running (e.g. DeploymentUID,
+					// deployment_name_from_replicaset: false, or from: deployment label/annotation extraction).
+					// Otherwise fall back to heuristics using the ReplicaSet name and pod-template-hash label.
+					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
 						deploymentName = replicaset.Deployment.Name
+						c.logger.Debug("Used ReplicaSet Informer to get deployment name", zap.String("replicaSetName", replicaset.Name), zap.String("deploymentName", replicaset.Deployment.Name))
+					} else {
+						// Will be blank if not a ReplicaSet managed by a Deployment
+						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name, pod.Labels[podTemplateHashLabel])
+						c.logger.Debug("used heuristics for deployment name", zap.String("replicaSetName", ref.Name), zap.String("deploymentName", deploymentName))
 					}
+
 					if deploymentName != "" {
 						if c.Rules.DeploymentName {
 							tags[string(conventions.K8SDeploymentNameKey)] = deploymentName
@@ -1147,7 +1158,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		}
 	}
 
-	if len(rules.Labels) > 0 || rules.ServiceName || rules.ServiceVersion {
+	if len(rules.Labels) > 0 || rules.ServiceName || rules.ServiceVersion || rules.DeploymentName {
 		transformedPod.Labels = maps.Clone(pod.Labels)
 	}
 
@@ -1990,24 +2001,11 @@ func automaticServiceInstanceID(pod *api_v1.Pod, containerName string) string {
 }
 
 // extractDeploymentNameFromReplicaSet attempts to extract deployment name from replicaset name
-// by trimming the pod template hash suffix. ReplicaSets created by Deployments follow the pattern:
-// <deployment-name>-<pod-template-hash> where pod-template-hash is a 10-character alphanumeric string.
-func extractDeploymentNameFromReplicaSet(replicasetName string) string {
-	if replicasetName == "" {
+func extractDeploymentNameFromReplicaSet(replicasetName, podTemplateHash string) string {
+	// TemplateHash Empty means it's not a ReplicaSet managed by a Deployment
+	if replicasetName == "" || podTemplateHash == "" || !strings.HasSuffix(replicasetName, "-"+podTemplateHash) {
 		return ""
 	}
-
-	parts := strings.Split(replicasetName, "-")
-	if len(parts) < 2 {
-		return ""
-	}
-
-	// Check if the last part is a valid 10-character alphanumeric hash using the pre-compiled regex.
-	lastPart := parts[len(parts)-1]
-	if deploymentHashSuffixPattern.MatchString(lastPart) {
-		// Return everything except the last part (the hash), joined back by hyphens.
-		return strings.Join(parts[:len(parts)-1], "-")
-	}
-
-	return ""
+	// Remove the pod template hash suffix and the hyphen
+	return replicasetName[:len(replicasetName)-len(podTemplateHash)-1]
 }
