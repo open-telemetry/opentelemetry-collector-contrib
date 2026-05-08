@@ -36,6 +36,7 @@ import (
 	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v3"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -1022,6 +1023,42 @@ func TestConsumeMetricsReroutesEndpointLocalFailure(t *testing.T) {
 			Value:      1,
 		},
 	}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestConsumeMetricsRecordsBackendRequestMetrics(t *testing.T) {
+	ts, tb, telemetry := getTelemetryAssetsWithReader(t)
+	cfg := endpoint2Config()
+	routeEndpoint := "endpoint-2"
+	backendEndpoint := "endpoint-2:4317"
+
+	sent := pmetric.NewMetrics()
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockMetricsExporter(func(_ context.Context, md pmetric.Metrics) error {
+			if endpoint == backendEndpoint {
+				md.CopyTo(sent)
+			}
+			return nil
+		}), nil
+	}
+
+	p, lb := newTestMetricsExporter(t, ts, tb, cfg, componentFactory)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	serviceForEndpoint2 := findRoutingIDForEndpoint(t, lb.ring, routeEndpoint)
+	require.NoError(t, p.ConsumeMetrics(t.Context(), metricsWithServiceDataPoints(serviceForEndpoint2, serviceForEndpoint2)))
+
+	assert.Equal(t, 2, sent.DataPointCount())
+	assertBackendRequestMetrics(
+		t,
+		telemetry,
+		backendRequestSignalMetrics,
+		backendEndpoint,
+		serializedMetricsSize(sent),
+		int64(sent.DataPointCount()),
+	)
 }
 
 func TestConsumeMetricsReroutePreservesPayloadAfterExporterMutation(t *testing.T) {
@@ -2346,6 +2383,20 @@ func metricsWithServiceNames(serviceNames ...string) pmetric.Metrics {
 	return metrics
 }
 
+func metricsWithServiceDataPoints(serviceNames ...string) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
+	metrics.ResourceMetrics().EnsureCapacity(len(serviceNames))
+	for i, serviceName := range serviceNames {
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr(serviceNameKey, serviceName)
+		sm := rm.ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName(fmt.Sprintf("metric-%d", i))
+		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(int64(i + 1))
+	}
+	return metrics
+}
+
 func simpleMetricsWithResource() pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(1)
@@ -2371,6 +2422,31 @@ func twoServicesWithSameMetricName() pmetric.Metrics {
 
 func appendSimpleMetricWithID(dest pmetric.ResourceMetrics, id string) {
 	dest.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(id)
+}
+
+func newTestMetricsExporter(
+	t *testing.T,
+	ts exporter.Settings,
+	tb *metadata.TelemetryBuilder,
+	cfg *Config,
+	componentFactory func(context.Context, string) (component.Component, error),
+) (*metricExporterImp, *loadBalancer) {
+	t.Helper()
+
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+	lb.addMissingExporters(t.Context(), cfg.Resolver.Static.Get().Hostnames)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return cfg.Resolver.Static.Get().Hostnames, nil
+		},
+	}
+
+	p, err := newMetricsExporter(ts, cfg)
+	require.NoError(t, err)
+	p.loadBalancer = lb
+	return p, lb
 }
 
 func TestConsumeMetricsReleasesStartedConsumesOnEarlyReturn(t *testing.T) {

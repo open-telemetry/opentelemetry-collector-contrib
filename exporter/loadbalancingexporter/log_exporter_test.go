@@ -984,6 +984,41 @@ func TestConsumeLogsIgnoreTraceIDWithoutCentralByteBatchingKeepsTraceSplit(t *te
 	assert.Equal(t, int64(3), records.Load())
 }
 
+func TestConsumeLogsRecordsBackendRequestMetrics(t *testing.T) {
+	ts, tb, telemetry := getTelemetryAssetsWithReader(t)
+	cfg := twoEndpointLogConfig()
+	endpoint := "endpoint-1:4317"
+
+	sent := plog.NewLogs()
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			if endpoint == "endpoint-1:4317" {
+				ld.CopyTo(sent)
+			}
+			return nil
+		}), nil
+	}
+
+	p, lb := newTestLogsExporter(t, ts, tb, cfg, componentFactory)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	traceIDForEndpoint1 := findTraceIDForEndpoint(t, lb.ring, endpoint)
+	require.NoError(t, p.ConsumeLogs(t.Context(), simpleLogWithID(traceIDForEndpoint1)))
+
+	assert.Equal(t, 1, sent.LogRecordCount())
+	assertBackendRequestMetrics(
+		t,
+		telemetry,
+		backendRequestSignalLogs,
+		endpoint,
+		serializedLogsSize(sent),
+		int64(sent.LogRecordCount()),
+	)
+}
+
 func TestGroupLogsByEndpointKeepsEmptyTraceLogsTogetherPerScope(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), nil, tb)

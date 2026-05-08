@@ -89,6 +89,33 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    loadbalancer_backend_request_bytes:
+      attributes: [signal, endpoint]
+      enabled: true
+      stability: development
+      description: Serialized OTLP bytes per backend request before transport compression.
+      unit: By
+      histogram:
+        value_type: int
+        bucket_boundaries: [1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216]
+    loadbalancer_backend_request_items:
+      attributes: [signal, endpoint]
+      enabled: true
+      stability: development
+      description: Log records or metric datapoints per backend request.
+      unit: "{items}"
+      histogram:
+        value_type: int
+        bucket_boundaries: [1, 10, 50, 100, 500, 1000, 5000, 10000, 50000]
+    loadbalancer_backend_request_total:
+      attributes: [signal, endpoint]
+      enabled: true
+      stability: development
+      description: Number of backend requests by signal and endpoint.
+      unit: "{requests}"
+      sum:
+        value_type: int
+        monotonic: true
     loadbalancer_backend_reroute_total:
       attributes: [signal, result, reason]
       enabled: true

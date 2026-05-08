@@ -266,6 +266,7 @@ func (e *metricExporterImp) consumeCentralQueueMetricItem(ctx context.Context, i
 	exp.forceStartConsume()
 	defer exp.doneConsume()
 
+	recordMetricBackendRequest(ctx, e.telemetry, exp.metricRequestAttr, md)
 	start := time.Now()
 	err = exp.ConsumeMetrics(ctx, md)
 	duration := time.Since(start)
@@ -485,6 +486,7 @@ func (e *metricExporterImp) consumeMetricsByExporterAttempt(
 			failedMetrics = pmetric.NewMetrics()
 			mds.CopyTo(failedMetrics)
 		}
+		recordMetricBackendRequest(ctx, e.telemetry, exp.metricRequestAttr, mds)
 		start := time.Now()
 		err := exp.ConsumeMetrics(ctx, mds)
 		duration := time.Since(start)
@@ -531,6 +533,7 @@ func (e *metricExporterImp) consumeBatch(ctx context.Context, we *wrappedExporte
 	}
 	defer we.doneConsume()
 
+	recordMetricBackendRequest(ctx, e.telemetry, we.metricRequestAttr, md)
 	start := time.Now()
 	err := we.ConsumeMetrics(ctx, md)
 	duration := time.Since(start)
@@ -619,6 +622,7 @@ func (e *metricExporterImp) rerouteDrainBatch(ctx context.Context, md pmetric.Me
 	var errs error
 	needsCleanup = false
 	for exp, mds := range metricsByExporter {
+		recordMetricBackendRequest(ctx, e.telemetry, exp.metricRequestAttr, mds)
 		start := time.Now()
 		err = exp.ConsumeMetrics(ctx, mds)
 		duration := time.Since(start)

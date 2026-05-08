@@ -29,6 +29,9 @@ type TelemetryBuilder struct {
 	LoadbalancerBackendLatency           metric.Int64Histogram
 	LoadbalancerBackendOutcome           metric.Int64Counter
 	LoadbalancerBackendQuarantineTotal   metric.Int64Counter
+	LoadbalancerBackendRequestBytes      metric.Int64Histogram
+	LoadbalancerBackendRequestItems      metric.Int64Histogram
+	LoadbalancerBackendRequestTotal      metric.Int64Counter
 	LoadbalancerBackendRerouteTotal      metric.Int64Counter
 	LoadbalancerBackendStaleTotal        metric.Int64Counter
 	LoadbalancerBackendState             metric.Int64Gauge
@@ -90,6 +93,26 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_loadbalancer_backend_quarantine_total",
 		metric.WithDescription("Number of times a backend endpoint was quarantined. [Development]"),
 		metric.WithUnit("{quarantines}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.LoadbalancerBackendRequestBytes, err = builder.meter.Int64Histogram(
+		"otelcol_loadbalancer_backend_request_bytes",
+		metric.WithDescription("Serialized OTLP bytes per backend request before transport compression. [Development]"),
+		metric.WithUnit("By"),
+		metric.WithExplicitBucketBoundaries([]float64{1024, 4096, 16384, 65536, 262144, 1.048576e+06, 4.194304e+06, 1.6777216e+07}...),
+	)
+	errs = errors.Join(errs, err)
+	builder.LoadbalancerBackendRequestItems, err = builder.meter.Int64Histogram(
+		"otelcol_loadbalancer_backend_request_items",
+		metric.WithDescription("Log records or metric datapoints per backend request. [Development]"),
+		metric.WithUnit("{items}"),
+		metric.WithExplicitBucketBoundaries([]float64{1, 10, 50, 100, 500, 1000, 5000, 10000, 50000}...),
+	)
+	errs = errors.Join(errs, err)
+	builder.LoadbalancerBackendRequestTotal, err = builder.meter.Int64Counter(
+		"otelcol_loadbalancer_backend_request_total",
+		metric.WithDescription("Number of backend requests by signal and endpoint. [Development]"),
+		metric.WithUnit("{requests}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.LoadbalancerBackendRerouteTotal, err = builder.meter.Int64Counter(

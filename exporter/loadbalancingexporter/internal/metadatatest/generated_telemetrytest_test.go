@@ -23,6 +23,9 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.LoadbalancerBackendLatency.Record(context.Background(), 1)
 	tb.LoadbalancerBackendOutcome.Add(context.Background(), 1)
 	tb.LoadbalancerBackendQuarantineTotal.Add(context.Background(), 1)
+	tb.LoadbalancerBackendRequestBytes.Record(context.Background(), 1)
+	tb.LoadbalancerBackendRequestItems.Record(context.Background(), 1)
+	tb.LoadbalancerBackendRequestTotal.Add(context.Background(), 1)
 	tb.LoadbalancerBackendRerouteTotal.Add(context.Background(), 1)
 	tb.LoadbalancerBackendStaleTotal.Add(context.Background(), 1)
 	tb.LoadbalancerBackendState.Record(context.Background(), 1)
@@ -40,6 +43,15 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualLoadbalancerBackendQuarantineTotal(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualLoadbalancerBackendRequestBytes(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualLoadbalancerBackendRequestItems(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualLoadbalancerBackendRequestTotal(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualLoadbalancerBackendRerouteTotal(t, testTel,

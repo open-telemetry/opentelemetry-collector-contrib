@@ -438,6 +438,7 @@ func (e *logExporterImp) consumeBatchWithDecision(ctx context.Context, le *wrapp
 	}
 	defer le.doneConsume()
 
+	recordLogBackendRequest(ctx, e.telemetry, le.logRequestAttr, ld)
 	start := time.Now()
 	err := le.ConsumeLogs(ctx, ld)
 	duration := time.Since(start)
