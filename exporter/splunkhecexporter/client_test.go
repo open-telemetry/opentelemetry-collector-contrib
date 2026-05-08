@@ -6,6 +6,7 @@ package splunkhecexporter
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -21,6 +22,7 @@ import (
 	"time"
 
 	"github.com/goccy/go-json"
+	"github.com/signalfx/pprof/profile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -32,11 +34,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 var requestTimeRegex = regexp.MustCompile(`time":(\d+)`)
@@ -48,10 +52,14 @@ func (t testRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func newTestClient(respCode int, respBody string) (*http.Client, *[]http.Header) {
-	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody})
+	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody}, func(_ []byte) {})
 }
 
-func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Client, *[]http.Header) {
+func newTestClientWithBodyReader(respCode int, respBody string, bodyReader func([]byte)) (*http.Client, *[]http.Header) {
+	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody}, bodyReader)
+}
+
+func newTestClientWithPresetResponses(codes []int, bodies []string, bodyReader func([]byte)) (*http.Client, *[]http.Header) {
 	index := 0
 	var headers []http.Header
 
@@ -62,6 +70,9 @@ func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Clien
 			index++
 
 			headers = append(headers, req.Header)
+
+			b, _ := io.ReadAll(req.Body)
+			bodyReader(b)
 
 			return &http.Response{
 				StatusCode: code,
@@ -1709,7 +1720,7 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	logs := createLogData(2, 1, 1)
 
 	// The first record is to be sent successfully, the second one should not
-	httpClient, _ := newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
+	httpClient, _ := newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"}, func(_ []byte) {})
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
 
 	err := c.pushLogData(t.Context(), logs)
@@ -1755,6 +1766,59 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 
 	assert.Equal(t, 20, profilingCount)
 	assert.Equal(t, 10, nonProfilingCount)
+}
+
+func TestProfileData(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+
+	// A 350-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
+	config.MaxContentLengthLogs, config.DisableCompression = 350, true
+
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+
+	done := make(chan bool)
+
+	httpClient, headers := newTestClientWithBodyReader(200, "OK", func(bChan []byte) {
+		var hecEvent translator.Event
+		err := json.Unmarshal(bChan, &hecEvent)
+		require.NoError(t, err)
+		decoded, err := base64.StdEncoding.DecodeString(hecEvent.Event.(string))
+		require.NoError(t, err)
+		gr, err := gzip.NewReader(bytes.NewBuffer(decoded))
+		require.NoError(t, err)
+		defer gr.Close()
+		raw, _ := io.ReadAll(gr)
+		pprofProfile, err := profile.ParseData(raw)
+		require.NoError(t, err)
+
+		require.Equal(t, []int64{42}, pprofProfile.Sample[0].Value)
+		close(done)
+	})
+
+	profiles := pprofile.NewProfiles()
+	profiles.Dictionary().StackTable().AppendEmpty()
+	profiles.Dictionary().StringTable().Append("foo")
+	p := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	s := p.Samples().AppendEmpty()
+	s.Values().Append(42)
+
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	err := c.pushProfilesData(t.Context(), profiles)
+	require.NoError(t, err)
+
+	<-done
+
+	foundHeader := false
+	for _, h := range *headers {
+		if v := h.Get(libraryHeaderName); v != "" {
+			foundHeader = true
+			require.Equal(t, "otel.profiling", v)
+		}
+	}
+
+	require.True(t, foundHeader)
 }
 
 // 10 resources, 10 records, 1Kb max HEC batch: 17 HEC batches
@@ -2126,7 +2190,7 @@ func TestPushLogsPartialSuccess(t *testing.T) {
 	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), cfg)
 
 	// The first request succeeds, the second fails.
-	httpClient, _ := newTestClientWithPresetResponses([]int{200, 503}, []string{"OK", "NOK"})
+	httpClient, _ := newTestClientWithPresetResponses([]int{200, 503}, []string{"OK", "NOK"}, func(_ []byte) {})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(cfg, component.NewDefaultBuildInfo()), zap.NewNop()}
 
@@ -2147,7 +2211,7 @@ func TestPushLogsPartialSuccess(t *testing.T) {
 func TestPushLogsRetryableFailureMultipleResources(t *testing.T) {
 	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
 
-	httpClient, _ := newTestClientWithPresetResponses([]int{503}, []string{"NOK"})
+	httpClient, _ := newTestClientWithPresetResponses([]int{503}, []string{"NOK"}, func(_ []byte) {})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo()), zap.NewNop()}
 
