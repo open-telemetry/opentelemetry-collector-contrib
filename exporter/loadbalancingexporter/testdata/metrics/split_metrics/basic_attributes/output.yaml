@@ -1,4 +1,4 @@
-res1scope1dp1:
+resource_key=res1|scope_key=scope1|aaa=dp1|:
   resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:
@@ -27,7 +27,7 @@ res1scope1dp1:
                       - key: aaa
                         value:
                           stringValue: dp1
-res1scope1dp2:
+resource_key=res1|scope_key=scope1|aaa=dp2|:
   resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:

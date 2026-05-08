@@ -68,6 +68,21 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
 		metadata.WithResource(rb.Emit()),
 	))
+
+	for i := range s.SystemContainers {
+		cs := &s.SystemContainers[i]
+		rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
+		rb.SetK8sNodeName(s.NodeName)
+		rb.SetK8sNodeSystemContainerName(cs.Name)
+
+		addCPUMetrics(a.mbs.NodeMetricsBuilder, metadata.SystemContainerCPUMetrics, cs.CPU, currentTime, resources{}, 0)
+		addMemoryMetrics(a.mbs.NodeMetricsBuilder, metadata.SystemContainerMemoryMetrics, cs.Memory, currentTime, resources{}, 0)
+
+		a.m = append(a.m, a.mbs.NodeMetricsBuilder.Emit(
+			metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(cs.StartTime.Time)),
+			metadata.WithResource(rb.Emit()),
+		))
+	}
 }
 
 func (a *metricDataAccumulator) podStats(s *stats.PodStats) {

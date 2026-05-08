@@ -106,6 +106,24 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 			expectedErr:        "log line has more fields than the ones expected",
 			featureGateEnabled: false,
 		},
+		{
+			name:                 "Valid Transit Gateway (TGW) flow log",
+			logInputReader:       readAndCompressLogFile(t, dir, "valid_tgw_flow_log.log"),
+			logsExpectedFilename: "valid_tgw_flow_log_expected.yaml",
+			featureGateEnabled:   false,
+		},
+		{
+			name:                 "Valid Transit Gateway (TGW) flow log from CloudWatch",
+			logInputReader:       readLogFile(t, dir, "valid_tgw_flow_cw.json"),
+			logsExpectedFilename: "valid_tgw_flow_cw_expected.yaml",
+			featureGateEnabled:   false,
+		},
+		{
+			name:                 "Valid VPC flow log from S3 with ECS fields",
+			logInputReader:       readAndCompressLogFile(t, dir, "valid_vpc_flow_log_ecs.log"),
+			logsExpectedFilename: "valid_vpc_flow_log_ecs_expected.yaml",
+			featureGateEnabled:   false,
+		},
 	}
 
 	for _, test := range tests {

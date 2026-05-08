@@ -51,6 +51,10 @@ func TestLoadConfig(t *testing.T) {
 			id:                    component.NewIDWithName(metadata.Type, "invalid_ratio_type"),
 			unmarshalErrorMessage: "decoding failed due to the following error(s):\n\n'gomemlimit.ratio' expected type 'float64', got unconvertible type 'string'",
 		},
+		{
+			id:                   component.NewIDWithName(metadata.Type, "invalid_refresh_interval"),
+			validateErrorMessage: "refresh_interval: requires non negative value",
+		},
 	}
 
 	for _, tt := range tests {

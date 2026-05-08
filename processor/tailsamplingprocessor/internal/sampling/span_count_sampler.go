@@ -45,6 +45,9 @@ func (c *spanCount) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *sa
 	}
 }
 
-func (*spanCount) IsStateful() bool {
-	return false
+// IsStateful determines if an evaluator can be used for ingest time decisions.
+// In the case of a span count evaluator that is only possible if no max span
+// count is set as a trace can always receive more spans and become NotSampled.
+func (c *spanCount) IsStateful() bool {
+	return c.maxSpans > 0
 }

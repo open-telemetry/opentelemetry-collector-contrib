@@ -4,12 +4,14 @@
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/proto"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -53,7 +55,7 @@ func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 			return createDBErr
 		}
 
-		if createTableErr := createLogsTable(ctx, e.cfg, e.db); createTableErr != nil {
+		if createTableErr := createLogsTable(ctx, e.cfg, e.db, e.logger); createTableErr != nil {
 			return createTableErr
 		}
 	}
@@ -63,7 +65,9 @@ func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 		e.logger.Error("schema detection failed", zap.Error(err))
 	}
 
-	e.renderInsertLogsSQL()
+	if err := e.renderInsertLogsSQL(); err != nil {
+		return fmt.Errorf("render logs insert sql: %w", err)
+	}
 
 	return nil
 }
@@ -192,7 +196,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func (e *logsExporter) renderInsertLogsSQL() {
+func (e *logsExporter) renderInsertLogsSQL() error {
 	var featureColumnNames strings.Builder
 	var featureColumnPositions strings.Builder
 
@@ -203,20 +207,59 @@ func (e *logsExporter) renderInsertLogsSQL() {
 		featureColumnPositions.WriteString(", ?")
 	}
 
-	e.insertSQL = fmt.Sprintf(sqltemplates.LogsInsert, e.cfg.database(), e.cfg.LogsTableName, featureColumnNames.String(), featureColumnPositions.String())
+	data := sqltemplates.InsertData{
+		Database:               e.cfg.database(),
+		TableName:              e.cfg.LogsTableName,
+		FeatureColumnNames:     featureColumnNames.String(),
+		FeatureColumnPositions: featureColumnPositions.String(),
+	}
+
+	var buf bytes.Buffer
+	if err := sqltemplates.LogsInsertTmpl.Execute(&buf, data); err != nil {
+		return fmt.Errorf("execute logs insert template: %w", err)
+	}
+
+	e.insertSQL = buf.String()
+	return nil
 }
 
-func renderCreateLogsTableSQL(cfg *Config) string {
-	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "TimestampTime")
-	return fmt.Sprintf(sqltemplates.LogsCreateTable,
-		cfg.database(), cfg.LogsTableName, cfg.clusterString(),
-		cfg.tableEngineString(),
-		ttlExpr,
-	)
+// versionFullTextSearch is the minimum ClickHouse version that supports TYPE text() indexes.
+var versionFullTextSearch = proto.Version{Major: 26, Minor: 2}
+
+func renderCreateLogsTableSQL(cfg *Config, hasFullTextSearch bool) (string, error) {
+	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
+	data := sqltemplates.CreateTableData{
+		Database:          cfg.database(),
+		TableName:         cfg.LogsTableName,
+		ClusterString:     cfg.clusterString(),
+		Engine:            cfg.tableEngineString(),
+		TTL:               ttlExpr,
+		HasFullTextSearch: hasFullTextSearch,
+	}
+
+	var buf bytes.Buffer
+	if err := sqltemplates.LogsCreateTableTmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("execute logs create table template: %w", err)
+	}
+
+	return buf.String(), nil
 }
 
-func createLogsTable(ctx context.Context, cfg *Config, db driver.Conn) error {
-	if err := db.Exec(ctx, renderCreateLogsTableSQL(cfg)); err != nil {
+func createLogsTable(ctx context.Context, cfg *Config, db driver.Conn, logger *zap.Logger) error {
+	hasFullTextSearch := false
+	sv, err := db.ServerVersion()
+	if err != nil {
+		logger.Warn("failed to get ClickHouse server version, falling back to bloom filter indexes", zap.Error(err))
+	} else {
+		hasFullTextSearch = proto.CheckMinVersion(versionFullTextSearch, sv.Version)
+	}
+
+	sql, err := renderCreateLogsTableSQL(cfg, hasFullTextSearch)
+	if err != nil {
+		return fmt.Errorf("render create logs table sql: %w", err)
+	}
+
+	if err := db.Exec(ctx, sql); err != nil {
 		return fmt.Errorf("exec create logs table sql: %w", err)
 	}
 

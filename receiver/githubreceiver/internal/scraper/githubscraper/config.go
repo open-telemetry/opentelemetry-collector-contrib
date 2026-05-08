@@ -7,10 +7,19 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 )
+
+// RetryConfig defines retry behavior for transient GitHub API errors.
+type RetryConfig struct {
+	configretry.BackOffConfig `mapstructure:",squash"`
+	// MaxRetries is the maximum number of retry attempts per request.
+	// Set to 0 to rely solely on MaxElapsedTime / context cancellation.
+	MaxRetries int `mapstructure:"max_retries"`
+}
 
 // Config relating to GitHub Metric Scraper.
 type Config struct {
@@ -29,6 +38,8 @@ type Config struct {
 	MergedPRLookbackDays int `mapstructure:"merged_pr_lookback_days"`
 	// SearchQuery is the query to use when defining a custom search for repository data
 	SearchQuery string `mapstructure:"search_query"`
+	// RetryConfig defines retry behavior for transient GitHub API errors.
+	RetryConfig RetryConfig `mapstructure:"retry_on_failure"`
 }
 
 // Validate validates the configuration
@@ -38,6 +49,12 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.MergedPRLookbackDays < 0 {
 		return errors.New("merged_pr_lookback_days must be non-negative")
+	}
+	if cfg.RetryConfig.MaxRetries < 0 {
+		return errors.New("max_retries must be non-negative")
+	}
+	if err := cfg.RetryConfig.Validate(); err != nil {
+		return err
 	}
 	return nil
 }
