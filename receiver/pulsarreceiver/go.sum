@@ -12,8 +12,8 @@ github.com/RoaringBitmap/roaring/v2 v2.8.0 h1:y1rdtixfXvaITKzkfiKvScI0hlBJHe9sfz
 github.com/RoaringBitmap/roaring/v2 v2.8.0/go.mod h1:FiJcsfkGje/nZBZgCu0ZxCPOKD/hVXDS2dXi7/eUFE0=
 github.com/apache/pulsar-client-go v0.19.0 h1:NHqYXgIUAEpuyBSVAUmYgcM6VFHFygsthxa9a0CrCvg=
 github.com/apache/pulsar-client-go v0.19.0/go.mod h1:/Zf8Q8bSSc6ndEJ8V1muIHf6ZWsMrHoQU+98Ww9pOeI=
-github.com/apache/thrift v0.22.0 h1:r7mTJdj51TMDe6RtcmNdQxgn9XcyfGDOzegMDRg47uc=
-github.com/apache/thrift v0.22.0/go.mod h1:1e7J/O1Ae6ZQMTYdy9xa3w9k+XHWPfRvdPyJeynQ+/g=
+github.com/apache/thrift v0.23.1-0.20260429145742-d2acd3c49e58 h1:rDLE+tSW60VzRD7v5I+DU22Mjhmm+mfLc5Xl5dHkx6w=
+github.com/apache/thrift v0.23.1-0.20260429145742-d2acd3c49e58/go.mod h1:zPt6WxgvTOM6hF92y8C+MkEM5LMxZuk4JcQOiU4Esvs=
 github.com/ardielle/ardielle-go v1.5.2 h1:TilHTpHIQJ27R1Tl/iITBzMwiUGSlVfiVhwDNGM3Zj4=
 github.com/ardielle/ardielle-go v1.5.2/go.mod h1:I4hy1n795cUhaVt/ojz83SNVCYIGsAFAONtv2Dr7HUI=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
