@@ -1,0 +1,8 @@
+change_type: enhancement
+component: exporter/loadbalancing
+note: Preserve central queue byte batches for random-routed logs and add backend request size telemetry.
+issues: [58]
+subtext: |-
+  Adds backend request bytes, item count, and request count metrics so operators
+  can measure outbound request amplification directly.
+change_logs: [user]
