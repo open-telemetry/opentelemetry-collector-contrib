@@ -115,6 +115,7 @@ func Test_newGetter(t *testing.T) {
 		val         value
 		ctx         any
 		want        any
+		deepEqual   bool
 		wantLiteral bool
 	}{
 		{
@@ -705,6 +706,34 @@ func Test_newGetter(t *testing.T) {
 				"byteAttr":   []byte{1, 2, 3, 4, 5, 6, 7, 8},
 			},
 		},
+		{
+			name: "lambda",
+			val: value{
+				Lambda: &lambdaExpr{
+					Params: []lambdaParamDecl{"value"},
+					Arrow:  "=>",
+					Body: lambdaBody{
+						Value: &value{
+							Literal: &mathExprLiteral{
+								LambdaParamPath: &lambdaParamPath{
+									Name: "value",
+								},
+							},
+						},
+					},
+				},
+			},
+			wantLiteral: true,
+			deepEqual:   true,
+			want: &LambdaExpression[any]{
+				paramNames: []string{"value"},
+				body: &lambdaBindingGetter[any]{
+					paramPath: &lambdaParamPath{
+						Name: "value",
+					},
+				},
+			},
+		},
 	}
 
 	functions := CreateFactoryMap(
@@ -729,7 +758,7 @@ func Test_newGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader, err := p.newGetter(tt.val)
+			reader, err := p.newParseContext().newGetter(tt.val)
 			require.NoError(t, err)
 
 			tCtx := tt.want
@@ -750,12 +779,17 @@ func Test_newGetter(t *testing.T) {
 				val, err = reader.Get(t.Context(), tCtx)
 				require.NoError(t, err)
 			}
-			assert.Truef(t, valueComparator.Equal(tt.want, val), "expected: %v, got: %v", tt.want, val)
+
+			if tt.deepEqual {
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.Truef(t, valueComparator.Equal(tt.want, val), "expected: %v, got: %v", tt.want, val)
+			}
 		})
 	}
 
 	t.Run("empty value", func(t *testing.T) {
-		_, err := p.newGetter(value{})
+		_, err := p.newParseContext().newGetter(value{})
 		assert.Error(t, err)
 	})
 }
@@ -913,7 +947,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader, err := p.newGetter(tt.val)
+			reader, err := p.newParseContext().newGetter(tt.val)
 			require.NoError(t, err)
 			_, err = reader.Get(t.Context(), nil)
 			assert.Equal(t, tt.err, err)
@@ -3364,6 +3398,63 @@ func Test_newStandardPSliceGetter(t *testing.T) {
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, s, val)
+		})
+	}
+}
+
+func Test_newLambdaBindingGetter(t *testing.T) {
+	tests := []struct {
+		name         string
+		paramPath    *lambdaParamPath
+		formalsStack []map[string]struct{}
+		want         Getter[any]
+		wantErr      string
+	}{
+		{
+			name:      "valid",
+			paramPath: &lambdaParamPath{Name: "value"},
+			formalsStack: []map[string]struct{}{
+				{"value": {}},
+			},
+			want: &lambdaBindingGetter[any]{paramPath: &lambdaParamPath{Name: "value"}},
+		},
+		{
+			name:      "lambda formal outside lambda scope",
+			paramPath: &lambdaParamPath{Name: "value"},
+			wantErr:   "lambda parameter $value is only valid inside a lambda body",
+		},
+		{
+			name:      "unknown lambda formal",
+			paramPath: &lambdaParamPath{Name: "foo"},
+			formalsStack: []map[string]struct{}{
+				{"bar": {}},
+			},
+			wantErr: "lambda parameter $foo is not declared in this lambda",
+		},
+	}
+
+	p, _ := NewParser[any](
+		map[string]Factory[any]{},
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pc := p.newParseContext()
+			if len(tt.formalsStack) > 0 {
+				for _, stack := range tt.formalsStack {
+					pc.lambdaScopes.push(stack)
+				}
+			}
+			res, err := pc.newLambdaBindingGetter(tt.paramPath)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, res)
 		})
 	}
 }

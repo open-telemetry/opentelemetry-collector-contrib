@@ -337,6 +337,7 @@ func newGrammarContextInferrerVisitor() priorityContextInferrerHints {
 }
 
 func (*priorityContextInferrerHints) visitMathExprLiteral(*mathExprLiteral) {}
+func (*priorityContextInferrerHints) visitLambdaBody(*lambdaBody)           {}
 
 func (v *priorityContextInferrerHints) visitEditor(e *editor) {
 	v.functions[e.Function] = struct{}{}

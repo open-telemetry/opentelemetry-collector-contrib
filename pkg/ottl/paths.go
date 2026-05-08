@@ -12,6 +12,7 @@ func (*grammarPathVisitor) visitEditor(*editor)                   {}
 func (*grammarPathVisitor) visitConverter(*converter)             {}
 func (*grammarPathVisitor) visitValue(*value)                     {}
 func (*grammarPathVisitor) visitMathExprLiteral(*mathExprLiteral) {}
+func (*grammarPathVisitor) visitLambdaBody(*lambdaBody)           {}
 
 func (v *grammarPathVisitor) visitPath(value *path) {
 	v.paths = append(v.paths, *value)
