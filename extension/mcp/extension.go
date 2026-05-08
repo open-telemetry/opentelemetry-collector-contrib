@@ -10,10 +10,13 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/mark3labs/mcp-go/server"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/mcp/internal/mcp/tools"
 )
 
 var _ extension.Extension = (*mcpExtension)(nil)
@@ -33,11 +36,29 @@ func newExtension(cfg *Config, telemetry component.TelemetrySettings) *mcpExtens
 	return jrse
 }
 
-func (*mcpExtension) handleRequest(_ http.ResponseWriter, _ *http.Request) {}
-
 func (mcpe *mcpExtension) Start(ctx context.Context, host component.Host) error {
 	var err error
-	mcpe.server, err = mcpe.cfg.ToServer(ctx, host.GetExtensions(), mcpe.settings, http.HandlerFunc(mcpe.handleRequest))
+
+	// Create a new MCP server
+	s := server.NewMCPServer(
+		"otel-mcp-server",
+		"0.0.1",
+		server.WithToolCapabilities(true),
+		server.WithRecovery(),
+	)
+
+	// Get all tools from the tools package
+	allTools, err := tools.GetAllTools()
+	if err != nil {
+		return err
+	}
+
+	// Register all tools with the server
+	for _, tool := range allTools { //nolint:gocritic
+		s.AddTool(tool.Tool, tool.Handler)
+	}
+
+	mcpe.server, err = mcpe.cfg.ToServer(ctx, host.GetExtensions(), mcpe.settings, server.NewStreamableHTTPServer(s))
 	if err != nil {
 		return err
 	}

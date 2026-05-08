@@ -21,3 +21,17 @@ extensions:
     endpoint: 0.0.0.0:8080
 ```
 
+## Available Tools
+
+### Schema & Documentation
+
+| Tool | Description |
+|------|-------------|
+| `opentelemetry-collector-get-versions` | Get all supported OpenTelemetry collector versions |
+| `opentelemetry-collector-components` | List all components of a given kind (receiver, exporter, processor, connector, extension) for a version |
+| `opentelemetry-collector-readme` | Get the README for a specific component |
+| `opentelemetry-collector-changelog` | Get the changelog for a collector version |
+| `opentelemetry-collector-component-schema` | Get the configuration schema for a specific component |
+| `opentelemetry-collector-component-schema-validation` | Validate a component configuration JSON against its schema |
+| `opentelemetry-collector-component-deprecated-fields` | List deprecated configuration fields for one or more components |
+| `opentelemetry-collector-rag` | Answer questions about the collector using documentation search |
