@@ -34,13 +34,14 @@ type logExporterImp struct {
 	centralQueue *centralQueue
 	centralCodec *queuePayloadCodec
 
-	logger        *zap.Logger
-	started       atomic.Bool
-	telemetry     *metadata.TelemetryBuilder
-	ignoreTraceID bool
-	randomTraceID func() pcommon.TraceID
-	centralCancel context.CancelFunc
-	centralWG     sync.WaitGroup
+	logger                   *zap.Logger
+	started                  atomic.Bool
+	telemetry                *metadata.TelemetryBuilder
+	ignoreTraceID            bool
+	randomTraceID            func() pcommon.TraceID
+	centralQueueByteBatching bool
+	centralCancel            context.CancelFunc
+	centralWG                sync.WaitGroup
 }
 
 // Create new logs exporter
@@ -63,11 +64,12 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 	}
 
 	logExporter := &logExporterImp{
-		loadBalancer:  lb,
-		telemetry:     telemetry,
-		logger:        params.Logger,
-		ignoreTraceID: cfg.(*Config).LogRouting.IgnoreTraceID,
-		randomTraceID: random,
+		loadBalancer:             lb,
+		telemetry:                telemetry,
+		logger:                   params.Logger,
+		ignoreTraceID:            cfg.(*Config).LogRouting.IgnoreTraceID,
+		randomTraceID:            random,
+		centralQueueByteBatching: cfg.(*Config).centralQueueByteBatchingEnabled(),
 	}
 	if cfg.(*Config).CentralQueue.Enabled {
 		centralCfg := cfg.(*Config).CentralQueue
@@ -160,6 +162,10 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		return e.consumeLogsCentralQueue(ctx, ld)
 	}
 	if e.batcher == nil {
+		if e.ignoreTraceID && e.centralQueueByteBatching {
+			return e.consumeLog(ctx, ld)
+		}
+
 		var errs error
 		batches := batchpersignal.SplitLogs(ld)
 		for _, batch := range batches {
