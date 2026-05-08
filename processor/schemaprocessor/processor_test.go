@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap/zaptest"
@@ -349,6 +350,83 @@ func TestFailedCounters(t *testing.T) {
 
 		metadatatest.AssertEqualProcessorSchemaTracesFailed(t, testTel,
 			[]metricdata.DataPoint[int64]{{Value: 1}},
+			metricdatatest.IgnoreTimestamp())
+		require.NoError(t, testTel.Shutdown(t.Context()))
+	})
+}
+
+func TestTranslatedCounter(t *testing.T) {
+	t.Parallel()
+
+	transformations := `
+  1.9.0:
+    all:
+      changes:
+        - rename_attributes:
+            attribute_map:
+              service_version: service.version
+  1.8.0:`
+
+	t.Run("records from and to schema URLs", func(t *testing.T) {
+		testTel := componenttest.NewTelemetry()
+		set := metadatatest.NewSettings(testTel)
+		set.Logger = zaptest.NewLogger(t)
+		cfg := &Config{
+			Targets: []string{"http://opentelemetry.io/schemas/1.9.0"},
+		}
+		proc, err := newSchemaProcessor(t.Context(), cfg, set)
+		require.NoError(t, err)
+		proc.manager.AddProvider(&dummySchemaProvider{transformations: transformations})
+
+		in := plog.NewLogs()
+		rl := in.ResourceLogs().AppendEmpty()
+		rl.SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
+		rl.Resource().Attributes().PutStr("service_version", "v1.0")
+
+		_, err = proc.processLogs(t.Context(), in)
+		require.NoError(t, err)
+
+		metadatatest.AssertEqualProcessorSchemaTranslated(t, testTel,
+			[]metricdata.DataPoint[int64]{{
+				Value: 1,
+				Attributes: attribute.NewSet(
+					attribute.String("from_schema_url", "http://opentelemetry.io/schemas/1.8.0"),
+					attribute.String("to_schema_url", "http://opentelemetry.io/schemas/1.9.0"),
+				),
+			}},
+			metricdatatest.IgnoreTimestamp())
+		require.NoError(t, testTel.Shutdown(t.Context()))
+	})
+
+	t.Run("includes migration_from_schema_url when migration is active", func(t *testing.T) {
+		testTel := componenttest.NewTelemetry()
+		set := metadatatest.NewSettings(testTel)
+		set.Logger = zaptest.NewLogger(t)
+		cfg := &Config{
+			Targets:   []string{"http://opentelemetry.io/schemas/1.9.0"},
+			Migration: []MigrationEntry{{Target: "http://opentelemetry.io/schemas/1.9.0", From: "http://opentelemetry.io/schemas/1.8.0"}},
+		}
+		proc, err := newSchemaProcessor(t.Context(), cfg, set)
+		require.NoError(t, err)
+		proc.manager.AddProvider(&dummySchemaProvider{transformations: transformations})
+
+		in := plog.NewLogs()
+		rl := in.ResourceLogs().AppendEmpty()
+		rl.SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
+		rl.Resource().Attributes().PutStr("service_version", "v1.0")
+
+		_, err = proc.processLogs(t.Context(), in)
+		require.NoError(t, err)
+
+		metadatatest.AssertEqualProcessorSchemaTranslated(t, testTel,
+			[]metricdata.DataPoint[int64]{{
+				Value: 1,
+				Attributes: attribute.NewSet(
+					attribute.String("from_schema_url", "http://opentelemetry.io/schemas/1.8.0"),
+					attribute.String("to_schema_url", "http://opentelemetry.io/schemas/1.9.0"),
+					attribute.String("migration_from_schema_url", "http://opentelemetry.io/schemas/1.8.0"),
+				),
+			}},
 			metricdatatest.IgnoreTimestamp())
 		require.NoError(t, testTel.Shutdown(t.Context()))
 	})

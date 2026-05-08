@@ -32,6 +32,9 @@ type Translation interface {
 	// updates.
 	SupportedVersion(v *Version) bool
 
+	// TargetSchemaURL returns the target schema URL for this translation.
+	TargetSchemaURL() string
+
 	// ApplyAllResourceChanges will modify the resource part of the incoming signals
 	// This applies to all telemetry types and should be applied there
 	ApplyAllResourceChanges(in alias.Resource, inSchemaURL string) error
@@ -148,6 +151,10 @@ func (t *translator) Swap(i, j int) {
 	a, b := t.revisions[i].Version(), t.revisions[j].Version()
 	t.indexes[*a], t.indexes[*b] = j, i
 	t.revisions[i], t.revisions[j] = t.revisions[j], t.revisions[i]
+}
+
+func (t *translator) TargetSchemaURL() string {
+	return t.targetSchemaURL
 }
 
 func (t *translator) SupportedVersion(v *Version) bool {
