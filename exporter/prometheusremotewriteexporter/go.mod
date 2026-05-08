@@ -13,7 +13,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.151.0
 	github.com/prometheus/client_golang/exp v0.0.0-20260325093428-d8591d0db856
 	github.com/prometheus/otlptranslator v1.0.0
-	github.com/prometheus/prometheus v0.311.2-0.20260409145810-72293ff1d2e0
+	github.com/prometheus/prometheus v0.311.4-0.20260507094802-91c184a899b8
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/wal v1.2.1
 	go.opentelemetry.io/collector/component v1.57.1-0.20260501001745-24aecacf1c04
@@ -145,7 +145,7 @@ require (
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/api v0.272.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260311181403-84a4fc48630c // indirect
-	google.golang.org/grpc v1.80.0 // indirect
+	google.golang.org/grpc v1.81.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apimachinery v0.35.3 // indirect

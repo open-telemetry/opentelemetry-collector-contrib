@@ -1,0 +1,5 @@
+change_type: deprecation
+component: connector/otlp_json
+note: Rename component type from `otlpjson` to `otlp_json` to follow snake_case naming convention. The old name is kept as a deprecated alias.
+issues: [48019]
+change_logs: [user]

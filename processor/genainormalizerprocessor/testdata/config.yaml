@@ -1,0 +1,48 @@
+# Full config exercising all three source types and all per-source fields.
+genainormalizer:
+  sources:
+    openinference:
+      remove_originals: true
+      overwrite: false
+      custom_mappings:
+        my_vendor.model: gen_ai.request.model
+    openllmetry:
+      remove_originals: true
+    custom:
+      custom_mappings:
+        other_vendor.tokens: gen_ai.usage.input_tokens
+
+# Sources omitted entirely: validation error (at least one source required).
+genainormalizer/empty:
+
+# Sources explicitly provided with only openinference: defaults are replaced.
+genainormalizer/openinference_only:
+  sources:
+    openinference: {}
+
+# Sources explicitly provided with only openllmetry: defaults are replaced.
+genainormalizer/openllmetry_only:
+  sources:
+    openllmetry:
+      remove_originals: true
+
+# Sources explicitly provided with only a custom source: defaults are replaced.
+genainormalizer/custom_only:
+  sources:
+    custom:
+      custom_mappings:
+        my_vendor.model: gen_ai.request.model
+
+# Explicit empty sources map: validation error.
+genainormalizer/empty_sources:
+  sources: {}
+
+# Custom source without custom_mappings: validation error.
+genainormalizer/custom_missing_mappings:
+  sources:
+    custom: {}
+
+# Unknown source name: validation error.
+genainormalizer/unknown_source:
+  sources:
+    foobar: {}
