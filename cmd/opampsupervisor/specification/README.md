@@ -661,7 +661,6 @@ This configuration and the upgrade behavior is only used when the `accepts_packa
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `agent.package.agent_binary` | string | `"otelcol-contrib"` (Linux/macOS), `"otelcol-contrib.exe"` (Windows) | Name of the collector binary as it appears in the archive the supervisor downloads. Required when using archive format. |
-| `agent.package.archive` | string | `"tar.gz"` | Format of the archive downloaded by the supervisor. Supported formats: `tar.gz`, `""` (empty for no archive formatting). |
 | `agent.package.verifier.type` | string | `"cosign"` | Specifies which verification type should be used. Specific verifier configuration options are defined below. |
 
 The Supervisor configuration allows for other verification mechanisms to be added in the future. The list of
