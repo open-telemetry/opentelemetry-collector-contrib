@@ -340,7 +340,7 @@ components:
     - receiver/vcenter
     - receiver/vcr
     - receiver/wavefront
-    - receiver/webhookevent
+    - receiver/webhook_event
     - receiver/windows_event_log
     - receiver/windowsperfcounters
     - receiver/windowsservice

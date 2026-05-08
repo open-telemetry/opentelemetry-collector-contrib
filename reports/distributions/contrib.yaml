@@ -232,7 +232,7 @@ components:
         - udp_log
         - vcenter
         - wavefront
-        - webhookevent
+        - webhook_event
         - windows_event_log
         - windowsperfcounters
         - windowsservice

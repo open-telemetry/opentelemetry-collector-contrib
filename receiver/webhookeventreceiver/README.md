@@ -21,6 +21,9 @@ to allow the ingestion of generic events as logs into the opentelemetry collecto
 
 ## Configuration
 
+> **Note:** This receiver was renamed from `webhookevent` to `webhook_event` to match the snake_case naming convention.
+> The deprecated component type `webhookevent` is still accepted as an alias and will log a deprecation warning.
+
 The following settings are required:
 
 * `endpoint` (no default): The endpoint where you may point your webhook to emit events to
@@ -85,7 +88,7 @@ This settings works when JSON objects have newlines in the middle of a string or
 
 ```yaml
 receivers:
-    webhookevent:
+    webhook_event:
         endpoint: localhost:8088
         read_timeout: "500ms"
         path: "eventsource/receiver"
