@@ -25,6 +25,13 @@ type statusReporter struct {
 }
 
 func (r *statusReporter) OnBrokerConnect(_ kgo.BrokerMetadata, _ time.Duration, _ net.Conn, err error) {
+
+	// include any network failures
+	var opErr *net.OpError
+	if errors.As(err, &opErr) {
+		componentstatus.ReportStatus(r.host, componentstatus.NewRecoverableErrorEvent(err))
+	}
+
 	if errors.Is(err, kerr.SaslAuthenticationFailed) ||
 		errors.Is(err, kerr.ClusterAuthorizationFailed) ||
 		errors.Is(err, kerr.UnsupportedVersion) ||
@@ -32,11 +39,6 @@ func (r *statusReporter) OnBrokerConnect(_ kgo.BrokerMetadata, _ time.Duration, 
 		componentstatus.ReportStatus(r.host, componentstatus.NewRecoverableErrorEvent(err))
 	}
 
-	// also include any network failures
-	var opErr *net.OpError
-	if errors.As(err, &opErr) {
-		componentstatus.ReportStatus(r.host, componentstatus.NewRecoverableErrorEvent(err))
-	}
 }
 
 func NewStatusReporter(host component.Host) *statusReporter {
