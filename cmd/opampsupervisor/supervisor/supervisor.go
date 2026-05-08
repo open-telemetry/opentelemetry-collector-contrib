@@ -2012,11 +2012,7 @@ func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStat
 			s.telemetrySettings.Logger.Error("Could not save last working remote config", zap.Error(err))
 		}
 	}
-	if err := s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
-		LastRemoteConfigHash: configHash,
-		Status:               status,
-		ErrorMessage:         errorMessage,
-	}); err != nil {
+	if err := s.opampClient.SetRemoteConfigStatus(rcs); err != nil {
 		s.telemetrySettings.Logger.Error("Could not report OpAMP remote config status", zap.Error(err))
 	}
 }
