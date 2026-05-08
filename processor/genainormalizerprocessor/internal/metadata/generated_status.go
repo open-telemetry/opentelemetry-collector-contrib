@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("genainormalizer")
+	Type      = component.MustNewType("gen_ai_normalizer")
 	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor"
 )
 
