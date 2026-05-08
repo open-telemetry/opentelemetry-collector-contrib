@@ -20,6 +20,11 @@ SELECT TOP(@top)
         ) / 2
       ) + 1) AS statement_text,
   r.blocking_session_id,
+  CASE
+    WHEN r.blocking_session_id > 0 AND r.wait_time > 0
+      THEN CONVERT(NVARCHAR, TODATETIMEOFFSET(DATEADD(MILLISECOND, -r.wait_time, GETDATE()), DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126)
+    ELSE ''
+  END AS blocking_start_time,
   ISNULL(r.wait_type, '') AS wait_type,
   r.wait_time,
   r.wait_resource,

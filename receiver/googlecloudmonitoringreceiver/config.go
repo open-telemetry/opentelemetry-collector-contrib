@@ -20,7 +20,10 @@ const (
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
-	ProjectID   string         `mapstructure:"project_id"`
+	ProjectID string `mapstructure:"project_id"`
+	// Overrides the default monitoring.googleapis.com:443 endpoint.
+	// Use this when targeting non-standard universe domains.
+	Endpoint    string         `mapstructure:"endpoint"`
 	MetricsList []MetricConfig `mapstructure:"metrics_list"`
 }
 

@@ -13,6 +13,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -47,7 +48,7 @@ func init() {
 	)
 	includeCollectorInstanceID = featuregate.GlobalRegistry().MustRegister(
 		includeCollectorInstanceIDFeatureGateID,
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, connector add collector.instance.id to default dimensions."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40400"),
 	)
@@ -72,10 +73,11 @@ func init() {
 
 // NewFactory creates a factory for the spanmetrics connector.
 func NewFactory() connector.Factory {
-	return connector.NewFactory(
+	return xconnector.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		connector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability),
+		xconnector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability),
+		xconnector.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
