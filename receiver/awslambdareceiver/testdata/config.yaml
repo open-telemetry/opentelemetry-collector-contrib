@@ -1,19 +1,19 @@
-awslambda/aws_logs_encoding:
+aws_lambda/aws_logs_encoding:
   s3:
     encoding: aws_logs_encoding
   cloudwatch:
     encoding: aws_logs_encoding
 
-awslambda/json_log_encoding:
+aws_lambda/json_log_encoding:
   s3:
     encoding: json_log_encoding
 
-awslambda/empty_encoding:
+aws_lambda/empty_encoding:
 
-awslambda/with_failure_arn:
+aws_lambda/with_failure_arn:
   failure_bucket_arn: arn:aws:s3:::example
 
-awslambda/s3_multi_encoding:
+aws_lambda/s3_multi_encoding:
   s3:
     encodings:
       - name: vpcflow

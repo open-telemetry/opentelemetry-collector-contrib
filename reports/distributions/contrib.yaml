@@ -137,11 +137,11 @@ components:
         - aerospike
         - apache
         - apachespark
+        - aws_lambda
         - awscloudwatch
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
-        - awslambda
         - awss3
         - awsxray
         - azure_blob

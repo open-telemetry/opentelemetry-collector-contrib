@@ -238,11 +238,11 @@ components:
     - receiver/aerospike
     - receiver/apache
     - receiver/apachespark
+    - receiver/aws_lambda
     - receiver/awscloudwatch
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
-    - receiver/awslambda
     - receiver/awss3
     - receiver/awsxray
     - receiver/azure_blob
