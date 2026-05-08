@@ -179,7 +179,7 @@ func TestKafkaExporter_ComponentStatus(t *testing.T) {
 		messenger, err := exp.newMessenger(reporter)
 		require.NoError(t, err)
 		exp.messenger = messenger
-		exp.producer = kafkaclient.NewFranzSyncProducer(client, config.IncludeMetadataKeys, config.RecordHeaders, config.Producer.MaxMessageBytes, reporter)
+		exp.producer = kafkaclient.NewFranzSyncProducer(client, config.IncludeMetadataKeys, config.RecordHeaders, config.Producer.MaxMessageBytes, reporter, nil)
 		t.Cleanup(func() { assert.NoError(t, exp.Close(t.Context())) })
 
 		err = exp.exportData(t.Context(), testdata.GenerateLogs(1))
@@ -1386,9 +1386,9 @@ func configureExporter[T any](tb testing.TB,
 	require.NoError(tb, err, "failed to create messenger for metrics")
 
 	exp.messenger = messenger
-	exp.producer = kafkaclient.NewFranzSyncProducer(client, cfg.IncludeMetadataKeys, cfg.RecordHeaders, cfg.Producer.MaxMessageBytes, host)
+	exp.producer = kafkaclient.NewFranzSyncProducer(client, cfg.IncludeMetadataKeys, cfg.RecordHeaders, cfg.Producer.MaxMessageBytes, host, nil)
 
-	tb.Cleanup(func() { assert.NoError(tb, exp.Close(tb.Context())) })
+	tb.Cleanup(func() { client.Close() })
 	return cluster
 }
 

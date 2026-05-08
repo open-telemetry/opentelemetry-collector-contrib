@@ -51,28 +51,50 @@ func recordUserSize(r *kgo.Record) int {
 	return s
 }
 
+// RecordHeader includes key-value pairs to be added as headers to Kafka records.
+type RecordHeader struct {
+	Name  string              `mapstructure:"name"`
+	Value configopaque.String `mapstructure:"value"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
 // FranzSyncProducer is a wrapper around the franz-go client that implements
 // the Producer interface. Allowing us to use the franz-go client while
 // maintaining compatibility with the existing Kafka exporter code.
 type FranzSyncProducer struct {
 	client          *kgo.Client
+	clientCancel    context.CancelFunc
 	metadataKeys    []string
-	recordHeaders   configopaque.MapList
+	recordHeaders   []kgo.RecordHeader
 	maxMessageBytes int
 	host            component.Host
 }
 
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
+// clientCancel must cancel the context passed to kgo.WithContext when the client was created;
+// it is called by Close to unblock any in-flight ProduceSync calls.
 func NewFranzSyncProducer(client *kgo.Client,
 	metadataKeys []string,
-	recordHeaders configopaque.MapList,
+	recordHeaders []RecordHeader,
 	maxMessageBytes int,
 	host component.Host,
+	clientCancel context.CancelFunc,
 ) *FranzSyncProducer {
+	headers := make([]kgo.RecordHeader, 0, len(recordHeaders))
+	for _, pair := range recordHeaders {
+		headers = append(headers, kgo.RecordHeader{
+			Key:   pair.Name,
+			Value: []byte(pair.Value),
+		})
+	}
+
 	return &FranzSyncProducer{
 		client:          client,
+		clientCancel:    clientCancel,
 		metadataKeys:    metadataKeys,
-		recordHeaders:   recordHeaders,
+		recordHeaders:   headers,
 		maxMessageBytes: maxMessageBytes,
 		host:            host,
 	}
@@ -80,8 +102,7 @@ func NewFranzSyncProducer(client *kgo.Client,
 
 // ExportData sends a batch of messages to Kafka
 func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error {
-	messages := makeFranzMessages(msgs, p.recordHeaders)
-	setMessageHeaders(ctx, messages, p.metadataKeys)
+	messages := makeFranzMessages(msgs, p.recordHeaders, metadataToHeaders(ctx, p.metadataKeys))
 	result := p.client.ProduceSync(ctx, messages...)
 	var errs []error
 	for _, r := range result {
@@ -108,30 +129,41 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error
 	return errors.Join(errs...)
 }
 
-// Close shuts down the producer and flushes any remaining messages.
-func (p *FranzSyncProducer) Close() error {
-	p.client.Close()
-	return nil
+// Close shuts down the producer, unblocking any in-flight ExportData call.
+func (p *FranzSyncProducer) Close(ctx context.Context) error {
+	if p.clientCancel != nil {
+		p.clientCancel()
+	}
+	done := make(chan struct{})
+	go func() {
+		p.client.Close()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
-func makeFranzMessages(messages Messages, recordHeaders configopaque.MapList) []*kgo.Record {
+func makeFranzMessages(messages Messages, recordHeaders, metadataHeaders []kgo.RecordHeader) []*kgo.Record {
+	var headers []kgo.RecordHeader
+	if n := len(recordHeaders) + len(metadataHeaders); n > 0 {
+		headers = make([]kgo.RecordHeader, 0, n)
+		headers = append(headers, recordHeaders...)
+		headers = append(headers, metadataHeaders...)
+	}
+
 	msgs := make([]*kgo.Record, 0, messages.Count)
 	for _, msg := range messages.TopicMessages {
-		for _, message := range msg.Messages {
-			record := &kgo.Record{Topic: msg.Topic}
-			if message.Key != nil {
-				record.Key = message.Key
-			}
-			if message.Value != nil {
-				record.Value = message.Value
-			}
-			for _, pair := range recordHeaders {
-				record.Headers = append(record.Headers, kgo.RecordHeader{
-					Key:   pair.Name,
-					Value: []byte(string(pair.Value)),
-				})
-			}
-			msgs = append(msgs, record)
+		for _, m := range msg.Messages {
+			msgs = append(msgs, &kgo.Record{
+				Topic:   msg.Topic,
+				Key:     m.Key,
+				Value:   m.Value,
+				Headers: headers,
+			})
 		}
 	}
 	return msgs

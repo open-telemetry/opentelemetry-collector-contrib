@@ -36,7 +36,7 @@ type producer interface {
 	// ExportData sends a batch of messages to Kafka
 	ExportData(ctx context.Context, messages kafkaclient.Messages) error
 	// Close shuts down the producer
-	Close() error
+	Close(ctx context.Context) error
 }
 
 type messenger[T any] interface {
@@ -94,6 +94,7 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		return fmt.Errorf("failed to configure record partitioner: %w", err)
 	}
 
+	clientCtx, clientCancel := context.WithCancel(context.Background())
 	producer, err := kafka.NewFranzSyncProducer(
 		ctx,
 		host,
@@ -101,10 +102,12 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		e.cfg.Producer,
 		e.cfg.TimeoutSettings.Timeout,
 		e.logger,
+		kgo.WithContext(clientCtx),
 		kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
 		partitionerOpt,
 	)
 	if err != nil {
+		clientCancel()
 		return err
 	}
 	e.producer = kafkaclient.NewFranzSyncProducer(producer,
@@ -112,20 +115,21 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		e.cfg.RecordHeaders,
 		e.cfg.Producer.MaxMessageBytes,
 		e.host,
+		clientCancel,
 	)
 	return nil
 }
 
-func (e *kafkaExporter[T]) Close(context.Context) (err error) {
-	if e.producer == nil {
-		return nil
-	}
-	err = e.producer.Close()
-	e.producer = nil
+func (e *kafkaExporter[T]) Close(ctx context.Context) (err error) {
 	if e.tb != nil {
 		e.tb.Shutdown()
 		e.tb = nil
 	}
+	if e.producer == nil {
+		return nil
+	}
+	err = e.producer.Close(ctx)
+	e.producer = nil
 	return err
 }
 
@@ -156,16 +160,7 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		})
 	}
 	err := e.producer.ExportData(ctx, m)
-	if err == nil {
-		if e.logger.Core().Enabled(zap.DebugLevel) {
-			for _, mi := range m.TopicMessages {
-				e.logger.Debug("kafka records exported",
-					zap.Int("records", len(mi.Messages)),
-					zap.String("topic", mi.Topic),
-				)
-			}
-		}
-	} else {
+	if err != nil {
 		for _, mi := range m.TopicMessages {
 			e.logger.Error("kafka records export failed",
 				zap.Int("records", len(mi.Messages)),
@@ -180,8 +175,17 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 				zap.Int("max_message_bytes", msgTooLarge.MaxMessageBytes),
 			)
 		}
+		return err
 	}
-	return err
+	if e.logger.Core().Enabled(zap.DebugLevel) {
+		for _, mi := range m.TopicMessages {
+			e.logger.Debug("kafka records exported",
+				zap.Int("records", len(mi.Messages)),
+				zap.String("topic", mi.Topic),
+			)
+		}
+	}
+	return nil
 }
 
 func newTracesExporter(config Config, set exporter.Settings) *kafkaExporter[ptrace.Traces] {

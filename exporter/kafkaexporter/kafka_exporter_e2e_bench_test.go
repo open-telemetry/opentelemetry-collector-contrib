@@ -50,7 +50,7 @@ func configureExporterBench[T any](
 	messenger, err := exp.newMessenger(componenttest.NewNopHost())
 	require.NoError(b, err)
 	exp.messenger = messenger
-	exp.producer = kafkaclient.NewFranzSyncProducer(client, cfg.IncludeMetadataKeys, cfg.RecordHeaders, cfg.Producer.MaxMessageBytes, exp.host)
+	exp.producer = kafkaclient.NewFranzSyncProducer(client, cfg.IncludeMetadataKeys, cfg.RecordHeaders, cfg.Producer.MaxMessageBytes, exp.host, nil)
 
 	b.Cleanup(func() { exp.Close(b.Context()) })
 }
