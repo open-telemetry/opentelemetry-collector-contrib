@@ -474,6 +474,7 @@ func (e *metricExporterImp) consumeMetricsByExporterAttempt(
 
 	needsCleanup = false
 	var errs error
+	failed := pmetric.NewMetrics()
 	for exp, mds := range metricsByExporter {
 		var preservedMetrics pmetric.Metrics
 		preservedMetricsValid := false
@@ -506,10 +507,34 @@ func (e *metricExporterImp) consumeMetricsByExporterAttempt(
 			failedMetrics := metricFailureSubset(mds, preservedMetrics, preservedMetricsValid)
 			err = wrapDirectMetricsRerouteError(err, failedMetrics)
 		}
+		appendMetricErrorData(failed, err)
 		errs = multierr.Append(errs, err)
 	}
 
+	if failed.ResourceMetrics().Len() > 0 {
+		return consumererror.NewMetrics(errs, failed)
+	}
 	return errs
+}
+
+func appendMetricErrorData(dest pmetric.Metrics, err error) {
+	if err == nil {
+		return
+	}
+	if unwrapper, ok := err.(interface{ Unwrap() []error }); ok {
+		for _, wrappedErr := range unwrapper.Unwrap() {
+			appendMetricErrorData(dest, wrappedErr)
+		}
+		return
+	}
+	var metricsErr consumererror.Metrics
+	if errors.As(err, &metricsErr) {
+		metrics.Merge(dest, metricsErr.Data())
+		return
+	}
+	if unwrapper, ok := err.(interface{ Unwrap() error }); ok {
+		appendMetricErrorData(dest, unwrapper.Unwrap())
+	}
 }
 
 func metricFailureSubset(md, preserved pmetric.Metrics, preservedValid bool) pmetric.Metrics {

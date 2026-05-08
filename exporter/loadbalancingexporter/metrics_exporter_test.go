@@ -382,6 +382,47 @@ func TestMetricsCentralQueueRetriesOnlyFailedEndpointItem(t *testing.T) {
 	require.NotZero(t, remaining.nextAttemptUnixNano)
 }
 
+func TestConsumeMetricsByExporterAggregatesFailedEndpointSubsets(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	failedEndpoint1 := "endpoint-1:4317"
+	failedEndpoint2 := "endpoint-2:4317"
+	successEndpoint := "endpoint-3:4317"
+	lb := &loadBalancer{
+		ring:           newHashRing([]string{failedEndpoint1, failedEndpoint2, successEndpoint}),
+		exporters:      map[string]*wrappedExporter{},
+		endpointHealth: newEndpointHealthManager(endpointHealthSettings{}),
+	}
+	for _, endpoint := range []string{failedEndpoint1, failedEndpoint2, successEndpoint} {
+		lb.exporters[endpoint] = newWrappedExporter(newMockMetricsExporter(func(context.Context, pmetric.Metrics) error {
+			if endpoint == successEndpoint {
+				return nil
+			}
+			return status.Error(codes.Unavailable, "backend unavailable")
+		}), endpoint)
+	}
+
+	routeFailed1 := findRoutingIDForEndpoint(t, lb.ring, failedEndpoint1)
+	routeFailed2 := findRoutingIDForEndpoint(t, lb.ring, failedEndpoint2)
+	routeSuccess := findRoutingIDForEndpoint(t, lb.ring, successEndpoint)
+	p := &metricExporterImp{
+		loadBalancer: lb,
+		logger:       ts.Logger,
+		telemetry:    tb,
+	}
+
+	err := p.consumeMetricsByExporter(t.Context(), map[string]pmetric.Metrics{
+		routeFailed1: metricsWithServiceDataPoints(routeFailed1),
+		routeFailed2: metricsWithServiceDataPoints(routeFailed2),
+		routeSuccess: metricsWithServiceDataPoints(routeSuccess),
+	})
+	require.Error(t, err)
+
+	var metricsErr consumererror.Metrics
+	require.ErrorAs(t, err, &metricsErr)
+	require.ElementsMatch(t, []string{routeFailed1, routeFailed2}, serviceNamesFromMetrics(metricsErr.Data()))
+}
+
 func TestMetricsCentralQueueDoesNotDirectReroute(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := endpoint2Config()
@@ -2470,6 +2511,17 @@ func metricsWithServiceNames(serviceNames ...string) pmetric.Metrics {
 		appendSimpleMetricWithID(rm, signal1Name)
 	}
 	return metrics
+}
+
+func serviceNamesFromMetrics(md pmetric.Metrics) []string {
+	serviceNames := make([]string, 0, md.ResourceMetrics().Len())
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		serviceName, ok := md.ResourceMetrics().At(i).Resource().Attributes().Get(serviceNameKey)
+		if ok {
+			serviceNames = append(serviceNames, serviceName.Str())
+		}
+	}
+	return serviceNames
 }
 
 func metricsWithServiceDataPoints(serviceNames ...string) pmetric.Metrics {
