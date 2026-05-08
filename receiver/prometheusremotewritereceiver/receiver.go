@@ -288,11 +288,15 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.
 // from the LRU cache when available. Never returns cached objects to avoid shared
 // mutation across concurrent requests.
 func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMetrics pmetric.Metrics, reqRM map[uint64]pmetric.ResourceMetrics) (pmetric.ResourceMetrics, uint64) {
-	// Build a temporary resource with the parsed job/instance attributes so we can
-	// use identity.OfResource for a consistent, attribute-based hash.
-	tempRes := pcommon.NewResource()
-	parseJobAndInstance(tempRes.Attributes(), ls.Get("job"), ls.Get("instance"))
-	hashedLabels := identity.OfResource(tempRes).Hash().Sum64()
+	// Hash job+instance directly to avoid allocating a temporary pcommon.Resource
+	// on every call (which happens once per time series).
+	job := ls.Get("job")
+	instance := ls.Get("instance")
+	h := identity.Resource{}.Hash()
+	h.Write([]byte(job))
+	h.Write(sep)
+	h.Write([]byte(instance))
+	hashedLabels := h.Sum64()
 
 	if rm, ok := reqRM[hashedLabels]; ok {
 		return rm, hashedLabels
