@@ -758,6 +758,11 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 			queryPlanHash = q.digest
 		}
 
+		queryPlanHash := ""
+		if queryPlan != "" {
+			queryPlanHash = q.digest
+		}
+
 		m.lb.RecordDbServerTopQueryEvent(
 			context.Background(),
 			now,
