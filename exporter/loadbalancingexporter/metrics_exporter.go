@@ -478,13 +478,13 @@ func (e *metricExporterImp) consumeMetricsByExporterAttempt(
 	needsCleanup = false
 	var errs error
 	for exp, mds := range metricsByExporter {
+		failedMetrics := pmetric.NewMetrics()
+		mds.CopyTo(failedMetrics)
+
 		var retryMetrics pmetric.Metrics
-		var failedMetrics pmetric.Metrics
 		if directRerouteAttemptAllowed(e.loadBalancer, rerouteAttempt) {
 			retryMetrics = pmetric.NewMetrics()
 			mds.CopyTo(retryMetrics)
-			failedMetrics = pmetric.NewMetrics()
-			mds.CopyTo(failedMetrics)
 		}
 		recordMetricBackendRequest(ctx, e.telemetry, exp.metricRequestAttr, mds)
 		start := time.Now()
@@ -503,6 +503,8 @@ func (e *metricExporterImp) consumeMetricsByExporterAttempt(
 				e.loadBalancer.recordBackendReroute(ctx, "metrics", decision.reason, rerouteErr)
 				err = wrapDirectMetricsRerouteError(rerouteErr, failedMetrics)
 			}
+		} else if err != nil {
+			err = wrapDirectMetricsRerouteError(err, failedMetrics)
 		}
 		errs = multierr.Append(errs, err)
 	}

@@ -1019,6 +1019,136 @@ func TestConsumeLogsRecordsBackendRequestMetrics(t *testing.T) {
 	)
 }
 
+func TestConsumeLogsCentralByteBatchReroutesWholeMergedBatch(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := twoEndpointLogConfig()
+	cfg.LogRouting.IgnoreTraceID = true
+	enableCentralQueueByteBatchingForTest(cfg)
+	enableEndpointHealth(cfg)
+
+	calls := map[string]int{}
+	records := map[string]int{}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			calls[endpoint]++
+			records[endpoint] += ld.LogRecordCount()
+			if endpoint == "endpoint-1:4317" {
+				return status.Error(codes.Unavailable, "backend unavailable")
+			}
+			return nil
+		}), nil
+	}
+
+	p, lb := newTestLogsExporter(t, ts, tb, cfg, componentFactory)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+	traceIDForEndpoint1 := findTraceIDForEndpoint(t, lb.ring, "endpoint-1:4317")
+	p.randomTraceID = func() pcommon.TraceID {
+		return traceIDForEndpoint1
+	}
+
+	input := logsWithTraceIDs([16]byte{1}, [16]byte{2}, [16]byte{3}, [16]byte{4})
+	require.NoError(t, p.ConsumeLogs(t.Context(), input))
+
+	assert.Equal(t, 1, calls["endpoint-1:4317"])
+	assert.Equal(t, 1, calls["endpoint-2:4317"])
+	assert.Equal(t, 4, records["endpoint-1:4317"])
+	assert.Equal(t, 4, records["endpoint-2:4317"])
+}
+
+func TestConsumeLogsCentralByteBatchHighCardinalityTraceIDsUseOneBackendRequest(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := twoEndpointLogConfig()
+	cfg.LogRouting.IgnoreTraceID = true
+	enableCentralQueueByteBatchingForTest(cfg)
+
+	var calls atomic.Int64
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			assert.Equal(t, "endpoint-2:4317", endpoint)
+			assert.Equal(t, 64, ld.LogRecordCount())
+			calls.Add(1)
+			return nil
+		}), nil
+	}
+
+	p, lb := newTestLogsExporter(t, ts, tb, cfg, componentFactory)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+	traceIDForEndpoint2 := findTraceIDForEndpoint(t, lb.ring, "endpoint-2:4317")
+	p.randomTraceID = func() pcommon.TraceID {
+		return traceIDForEndpoint2
+	}
+
+	ids := make([]pcommon.TraceID, 64)
+	for i := range ids {
+		ids[i][15] = byte(i + 1)
+	}
+	require.NoError(t, p.ConsumeLogs(t.Context(), logsWithTraceIDs(ids...)))
+
+	assert.Equal(t, int64(1), calls.Load())
+}
+
+func BenchmarkConsumeLogsRandomRoutingRequestAmplification(b *testing.B) {
+	ids := make([]pcommon.TraceID, 256)
+	for i := range ids {
+		ids[i][15] = byte(i + 1)
+	}
+	input := logsWithTraceIDs(ids...)
+	serializedBytes := serializedLogsSize(input)
+
+	for _, tc := range []struct {
+		name              string
+		centralByteBatch  bool
+		expectedSendCount int64
+	}{
+		{name: "legacy_split", centralByteBatch: false, expectedSendCount: 256},
+		{name: "central_byte_batch", centralByteBatch: true, expectedSendCount: 1},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			ts, tb := getTelemetryAssets(b)
+			cfg := twoEndpointLogConfig()
+			cfg.LogRouting.IgnoreTraceID = true
+			if tc.centralByteBatch {
+				enableCentralQueueByteBatchingForTest(cfg)
+			}
+
+			var sendCount atomic.Int64
+			componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+				return newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+					sendCount.Add(1)
+					return nil
+				}), nil
+			}
+
+			p, lb := newTestLogsExporter(b, ts, tb, cfg, componentFactory)
+			require.NoError(b, p.Start(b.Context(), componenttest.NewNopHost()))
+			b.Cleanup(func() {
+				require.NoError(b, p.Shutdown(context.WithoutCancel(b.Context())))
+			})
+			traceIDForEndpoint1 := findTraceIDForEndpoint(b, lb.ring, "endpoint-1:4317")
+			p.randomTraceID = func() pcommon.TraceID {
+				return traceIDForEndpoint1
+			}
+
+			b.SetBytes(serializedBytes)
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				require.NoError(b, p.ConsumeLogs(b.Context(), input))
+			}
+			b.StopTimer()
+
+			requestsPerInput := float64(sendCount.Load()) / float64(b.N)
+			b.ReportMetric(requestsPerInput, "backend_requests/input")
+			require.Equal(b, float64(tc.expectedSendCount), requestsPerInput)
+		})
+	}
+}
+
 func TestGroupLogsByEndpointKeepsEmptyTraceLogsTogetherPerScope(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), nil, tb)
@@ -1453,7 +1583,7 @@ func simpleLogWithID(id pcommon.TraceID) plog.Logs {
 	return logs
 }
 
-func findTraceIDForEndpoint(t *testing.T, ring *hashRing, endpoint string) pcommon.TraceID {
+func findTraceIDForEndpoint(t testing.TB, ring *hashRing, endpoint string) pcommon.TraceID {
 	t.Helper()
 
 	for i := range 4096 {

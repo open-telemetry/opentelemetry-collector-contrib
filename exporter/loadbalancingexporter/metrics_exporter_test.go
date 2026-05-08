@@ -1061,6 +1061,95 @@ func TestConsumeMetricsRecordsBackendRequestMetrics(t *testing.T) {
 	)
 }
 
+func TestConsumeMetricsCentralByteBatchPartialFailureReturnsOnlyFailedEndpointSubset(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := serviceBasedRoutingConfig()
+	enableCentralQueueByteBatchingForTest(cfg)
+
+	ring := newHashRing([]string{"endpoint-1", "endpoint-2"})
+	serviceForEndpoint1 := findRoutingIDForEndpoint(t, ring, "endpoint-1")
+	serviceForEndpoint2 := findRoutingIDForEndpoint(t, ring, "endpoint-2")
+
+	var endpoint1Records int
+	var endpoint2Records int
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockMetricsExporter(func(_ context.Context, md pmetric.Metrics) error {
+			switch endpoint {
+			case "endpoint-1:4317":
+				endpoint1Records += md.DataPointCount()
+				return status.Error(codes.Unavailable, "backend unavailable")
+			case "endpoint-2:4317":
+				endpoint2Records += md.DataPointCount()
+			}
+			return nil
+		}), nil
+	}
+
+	p, _ := newTestMetricsExporter(t, ts, tb, cfg, componentFactory)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	input := metricsWithServiceDataPoints(serviceForEndpoint1, serviceForEndpoint2, serviceForEndpoint2)
+	err := p.ConsumeMetrics(t.Context(), input)
+	require.Error(t, err)
+
+	assert.Equal(t, 1, endpoint1Records)
+	assert.Equal(t, 2, endpoint2Records)
+
+	var metricsErr consumererror.Metrics
+	require.ErrorAs(t, err, &metricsErr)
+	require.NoError(t, pmetrictest.CompareMetrics(
+		metricsWithServiceDataPoints(serviceForEndpoint1),
+		metricsErr.Data(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	))
+}
+
+func BenchmarkConsumeMetricsRouteAwareMergedInput(b *testing.B) {
+	ring := newHashRing([]string{"endpoint-1", "endpoint-2"})
+	serviceForEndpoint1 := findRoutingIDForEndpoint(b, ring, "endpoint-1")
+	serviceForEndpoint2 := findRoutingIDForEndpoint(b, ring, "endpoint-2")
+	input := metricsWithServiceDataPoints(
+		serviceForEndpoint1, serviceForEndpoint1, serviceForEndpoint1, serviceForEndpoint1,
+		serviceForEndpoint2, serviceForEndpoint2, serviceForEndpoint2, serviceForEndpoint2,
+	)
+	serializedBytes := serializedMetricsSize(input)
+
+	ts, tb := getTelemetryAssets(b)
+	cfg := serviceBasedRoutingConfig()
+	enableCentralQueueByteBatchingForTest(cfg)
+
+	var sendCount atomic.Int64
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
+			sendCount.Add(1)
+			return nil
+		}), nil
+	}
+
+	p, _ := newTestMetricsExporter(b, ts, tb, cfg, componentFactory)
+	require.NoError(b, p.Start(b.Context(), componenttest.NewNopHost()))
+	b.Cleanup(func() {
+		require.NoError(b, p.Shutdown(context.WithoutCancel(b.Context())))
+	})
+
+	b.SetBytes(serializedBytes)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		require.NoError(b, p.ConsumeMetrics(b.Context(), input))
+	}
+	b.StopTimer()
+
+	requestsPerInput := float64(sendCount.Load()) / float64(b.N)
+	b.ReportMetric(requestsPerInput, "backend_requests/input")
+	require.Equal(b, float64(2), requestsPerInput)
+}
+
 func TestConsumeMetricsReroutePreservesPayloadAfterExporterMutation(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := endpoint2Config()
@@ -2425,7 +2514,7 @@ func appendSimpleMetricWithID(dest pmetric.ResourceMetrics, id string) {
 }
 
 func newTestMetricsExporter(
-	t *testing.T,
+	t testing.TB,
 	ts exporter.Settings,
 	tb *metadata.TelemetryBuilder,
 	cfg *Config,
@@ -2435,7 +2524,7 @@ func newTestMetricsExporter(
 
 	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
 	require.NoError(t, err)
-	lb.addMissingExporters(t.Context(), cfg.Resolver.Static.Get().Hostnames)
+	lb.addMissingExporters(context.Background(), cfg.Resolver.Static.Get().Hostnames)
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {

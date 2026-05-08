@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func findRoutingIDForEndpoint(t *testing.T, ring *hashRing, endpoint string) string {
+func findRoutingIDForEndpoint(t testing.TB, ring *hashRing, endpoint string) string {
 	t.Helper()
 
 	for i := range 4096 {

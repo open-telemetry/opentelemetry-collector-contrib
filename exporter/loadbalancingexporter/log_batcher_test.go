@@ -1149,7 +1149,7 @@ func TestLogBatcherFlushesRemovedBackendToOldExporter(t *testing.T) {
 }
 
 func newTestLogsExporter(
-	t *testing.T,
+	t testing.TB,
 	ts exporter.Settings,
 	tb *metadata.TelemetryBuilder,
 	cfg *Config,
@@ -1159,7 +1159,7 @@ func newTestLogsExporter(
 
 	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
 	require.NoError(t, err)
-	lb.addMissingExporters(t.Context(), cfg.Resolver.Static.Get().Hostnames)
+	lb.addMissingExporters(context.Background(), cfg.Resolver.Static.Get().Hostnames)
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
