@@ -57,6 +57,49 @@ Number of times a backend endpoint was quarantined.
 | endpoint | The endpoint of the backend | Any Str | - |
 | reason | Low-cardinality endpoint health reason | Any Str | - |
 
+### otelcol_loadbalancer_backend_request_bytes
+
+Serialized OTLP bytes per backend request before transport compression.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Histogram | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| signal | Telemetry signal for backend request metrics | Str: ``logs``, ``metrics`` | - |
+
+### otelcol_loadbalancer_backend_request_items
+
+Log records or metric datapoints per backend request.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {items} | Histogram | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| signal | Telemetry signal for backend request metrics | Str: ``logs``, ``metrics`` | - |
+
+### otelcol_loadbalancer_backend_request_total
+
+Number of backend requests by signal and endpoint.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {requests} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| signal | Telemetry signal for backend request metrics | Str: ``logs``, ``metrics`` | - |
+| endpoint | The endpoint of the backend | Any Str | - |
+
 ### otelcol_loadbalancer_backend_reroute_total
 
 Number of endpoint-failure reroute attempts.

@@ -257,7 +257,7 @@ func TestLogsCentralQueueShutdownCancelsBeforeWaiting(t *testing.T) {
 	require.NoError(t, p.Shutdown(shutdownCtx))
 }
 
-func TestLogsCentralQueueShutdownTimeoutSkipsLoadBalancerShutdown(t *testing.T) {
+func TestLogsCentralQueueShutdownTimeoutStillRunsTeardown(t *testing.T) {
 	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
 	t.Cleanup(func() { require.NoError(t, codec.Close()) })
 	var resolverShutdown atomic.Bool
@@ -282,7 +282,7 @@ func TestLogsCentralQueueShutdownTimeoutSkipsLoadBalancerShutdown(t *testing.T) 
 	shutdownCtx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
 	defer cancel()
 	require.Error(t, p.Shutdown(shutdownCtx))
-	require.False(t, resolverShutdown.Load())
+	require.True(t, resolverShutdown.Load())
 }
 
 func TestLogsCentralQueueDropsPermanentExportError(t *testing.T) {
@@ -917,6 +917,238 @@ func TestConsumeLogsIgnoreTraceIDUsesRandomRoutingKey(t *testing.T) {
 	assert.Equal(t, 1, calls["endpoint-2:4317"])
 }
 
+func TestConsumeLogsIgnoreTraceIDCentralByteBatchDoesNotSplitByTraceID(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := twoEndpointLogConfig()
+	cfg.LogRouting.IgnoreTraceID = true
+	enableCentralQueueByteBatchingForTest(cfg)
+
+	var calls atomic.Int64
+	var records atomic.Int64
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			assert.Equal(t, "endpoint-2:4317", endpoint)
+			calls.Add(1)
+			records.Add(int64(ld.LogRecordCount()))
+			return nil
+		}), nil
+	}
+
+	p, lb := newTestLogsExporter(t, ts, tb, cfg, componentFactory)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+	traceIDForEndpoint2 := findTraceIDForEndpoint(t, lb.ring, "endpoint-2:4317")
+	p.randomTraceID = func() pcommon.TraceID {
+		return traceIDForEndpoint2
+	}
+
+	input := logsWithTraceIDs([16]byte{1}, [16]byte{2}, [16]byte{3})
+	require.NoError(t, p.ConsumeLogs(t.Context(), input))
+
+	assert.Equal(t, int64(1), calls.Load())
+	assert.Equal(t, int64(3), records.Load())
+}
+
+func TestConsumeLogsIgnoreTraceIDWithoutCentralByteBatchingKeepsTraceSplit(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := twoEndpointLogConfig()
+	cfg.LogRouting.IgnoreTraceID = true
+
+	var calls atomic.Int64
+	var records atomic.Int64
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			assert.Equal(t, "endpoint-2:4317", endpoint)
+			calls.Add(1)
+			records.Add(int64(ld.LogRecordCount()))
+			return nil
+		}), nil
+	}
+
+	p, lb := newTestLogsExporter(t, ts, tb, cfg, componentFactory)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+	traceIDForEndpoint2 := findTraceIDForEndpoint(t, lb.ring, "endpoint-2:4317")
+	p.randomTraceID = func() pcommon.TraceID {
+		return traceIDForEndpoint2
+	}
+
+	input := logsWithTraceIDs([16]byte{1}, [16]byte{2}, [16]byte{3})
+	require.NoError(t, p.ConsumeLogs(t.Context(), input))
+
+	assert.Equal(t, int64(3), calls.Load())
+	assert.Equal(t, int64(3), records.Load())
+}
+
+func TestConsumeLogsRecordsBackendRequestMetrics(t *testing.T) {
+	ts, tb, telemetry := getTelemetryAssetsWithReader(t)
+	cfg := twoEndpointLogConfig()
+	endpoint := "endpoint-1:4317"
+
+	sent := plog.NewLogs()
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			if endpoint == "endpoint-1:4317" {
+				ld.CopyTo(sent)
+			}
+			return nil
+		}), nil
+	}
+
+	p, lb := newTestLogsExporter(t, ts, tb, cfg, componentFactory)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	traceIDForEndpoint1 := findTraceIDForEndpoint(t, lb.ring, endpoint)
+	require.NoError(t, p.ConsumeLogs(t.Context(), simpleLogWithID(traceIDForEndpoint1)))
+
+	assert.Equal(t, 1, sent.LogRecordCount())
+	assertBackendRequestMetrics(
+		t,
+		telemetry,
+		backendRequestSignalLogs,
+		endpoint,
+		serializedLogsSize(sent),
+		int64(sent.LogRecordCount()),
+	)
+}
+
+func TestConsumeLogsCentralByteBatchReroutesWholeMergedBatch(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := twoEndpointLogConfig()
+	cfg.LogRouting.IgnoreTraceID = true
+	enableCentralQueueByteBatchingForTest(cfg)
+	enableEndpointHealth(cfg)
+
+	calls := map[string]int{}
+	records := map[string]int{}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			calls[endpoint]++
+			records[endpoint] += ld.LogRecordCount()
+			if endpoint == "endpoint-1:4317" {
+				return status.Error(codes.Unavailable, "backend unavailable")
+			}
+			return nil
+		}), nil
+	}
+
+	p, lb := newTestLogsExporter(t, ts, tb, cfg, componentFactory)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+	traceIDForEndpoint1 := findTraceIDForEndpoint(t, lb.ring, "endpoint-1:4317")
+	p.randomTraceID = func() pcommon.TraceID {
+		return traceIDForEndpoint1
+	}
+
+	input := logsWithTraceIDs([16]byte{1}, [16]byte{2}, [16]byte{3}, [16]byte{4})
+	require.NoError(t, p.ConsumeLogs(t.Context(), input))
+
+	assert.Equal(t, 1, calls["endpoint-1:4317"])
+	assert.Equal(t, 1, calls["endpoint-2:4317"])
+	assert.Equal(t, 4, records["endpoint-1:4317"])
+	assert.Equal(t, 4, records["endpoint-2:4317"])
+}
+
+func TestConsumeLogsCentralByteBatchHighCardinalityTraceIDsUseOneBackendRequest(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := twoEndpointLogConfig()
+	cfg.LogRouting.IgnoreTraceID = true
+	enableCentralQueueByteBatchingForTest(cfg)
+
+	var calls atomic.Int64
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			assert.Equal(t, "endpoint-2:4317", endpoint)
+			assert.Equal(t, 64, ld.LogRecordCount())
+			calls.Add(1)
+			return nil
+		}), nil
+	}
+
+	p, lb := newTestLogsExporter(t, ts, tb, cfg, componentFactory)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+	traceIDForEndpoint2 := findTraceIDForEndpoint(t, lb.ring, "endpoint-2:4317")
+	p.randomTraceID = func() pcommon.TraceID {
+		return traceIDForEndpoint2
+	}
+
+	ids := make([]pcommon.TraceID, 64)
+	for i := range ids {
+		ids[i][15] = byte(i + 1)
+	}
+	require.NoError(t, p.ConsumeLogs(t.Context(), logsWithTraceIDs(ids...)))
+
+	assert.Equal(t, int64(1), calls.Load())
+}
+
+func BenchmarkConsumeLogsRandomRoutingRequestAmplification(b *testing.B) {
+	ids := make([]pcommon.TraceID, 256)
+	for i := range ids {
+		ids[i][15] = byte(i + 1)
+	}
+	input := logsWithTraceIDs(ids...)
+	serializedBytes := serializedLogsSize(input)
+
+	for _, tc := range []struct {
+		name              string
+		centralByteBatch  bool
+		expectedSendCount int64
+	}{
+		{name: "legacy_split", centralByteBatch: false, expectedSendCount: 256},
+		{name: "central_byte_batch", centralByteBatch: true, expectedSendCount: 1},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			ts, tb := getTelemetryAssets(b)
+			cfg := twoEndpointLogConfig()
+			cfg.LogRouting.IgnoreTraceID = true
+			if tc.centralByteBatch {
+				enableCentralQueueByteBatchingForTest(cfg)
+			}
+
+			var sendCount atomic.Int64
+			componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+				return newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+					sendCount.Add(1)
+					return nil
+				}), nil
+			}
+
+			p, lb := newTestLogsExporter(b, ts, tb, cfg, componentFactory)
+			require.NoError(b, p.Start(b.Context(), componenttest.NewNopHost()))
+			b.Cleanup(func() {
+				require.NoError(b, p.Shutdown(context.WithoutCancel(b.Context())))
+			})
+			traceIDForEndpoint1 := findTraceIDForEndpoint(b, lb.ring, "endpoint-1:4317")
+			p.randomTraceID = func() pcommon.TraceID {
+				return traceIDForEndpoint1
+			}
+
+			b.SetBytes(serializedBytes)
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				require.NoError(b, p.ConsumeLogs(b.Context(), input))
+			}
+			b.StopTimer()
+
+			requestsPerInput := float64(sendCount.Load()) / float64(b.N)
+			b.ReportMetric(requestsPerInput, "backend_requests/input")
+			require.Equal(b, float64(tc.expectedSendCount), requestsPerInput)
+		})
+	}
+}
+
 func TestGroupLogsByEndpointKeepsEmptyTraceLogsTogetherPerScope(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), nil, tb)
@@ -1327,6 +1559,21 @@ func twoEndpointLogConfig() *Config {
 	}
 }
 
+func enableCentralQueueByteBatchingForTest(cfg *Config) {
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.Sizer = exporterhelper.RequestSizerTypeBytes
+	queueCfg.QueueSize = 1 << 20
+	queueCfg.NumConsumers = 4
+	queueCfg.Batch = configoptional.Some(exporterhelper.BatchConfig{
+		Sizer:        exporterhelper.RequestSizerTypeBytes,
+		MinSize:      256,
+		MaxSize:      1 << 20,
+		FlushTimeout: time.Second,
+	})
+	cfg.QueueSettings.Enabled = true
+	cfg.QueueSettings.QueueConfig = configoptional.Some(queueCfg)
+}
+
 func simpleLogWithID(id pcommon.TraceID) plog.Logs {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
@@ -1336,8 +1583,8 @@ func simpleLogWithID(id pcommon.TraceID) plog.Logs {
 	return logs
 }
 
-func findTraceIDForEndpoint(t *testing.T, ring *hashRing, endpoint string) pcommon.TraceID {
-	t.Helper()
+func findTraceIDForEndpoint(tb testing.TB, ring *hashRing, endpoint string) pcommon.TraceID {
+	tb.Helper()
 
 	for i := range 4096 {
 		var traceID pcommon.TraceID
@@ -1347,7 +1594,7 @@ func findTraceIDForEndpoint(t *testing.T, ring *hashRing, endpoint string) pcomm
 		}
 	}
 
-	require.FailNow(t, "failed to find trace id for endpoint", "endpoint=%s", endpoint)
+	require.FailNow(tb, "failed to find trace id for endpoint", "endpoint=%s", endpoint)
 	return pcommon.TraceID{}
 }
 

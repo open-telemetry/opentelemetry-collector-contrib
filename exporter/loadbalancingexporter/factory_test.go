@@ -264,6 +264,32 @@ func TestWrappedExporterHasEndpointAttribute(t *testing.T) {
 	successValue, found = wrappedExp.failureAttr.Value("success")
 	require.True(t, found, "failure attr should have success field")
 	assert.False(t, successValue.AsBool())
+
+	endpointValue, found = wrappedExp.logRequestAttr.Value("endpoint")
+	require.True(t, found, "log request attr should have endpoint")
+	assert.Equal(t, testEndpoint, endpointValue.AsString())
+	signalValue, found := wrappedExp.logRequestAttr.Value("signal")
+	require.True(t, found, "log request attr should have signal field")
+	assert.Equal(t, backendRequestSignalLogs, signalValue.AsString())
+
+	endpointValue, found = wrappedExp.metricRequestAttr.Value("endpoint")
+	require.True(t, found, "metric request attr should have endpoint")
+	assert.Equal(t, testEndpoint, endpointValue.AsString())
+	signalValue, found = wrappedExp.metricRequestAttr.Value("signal")
+	require.True(t, found, "metric request attr should have signal field")
+	assert.Equal(t, backendRequestSignalMetrics, signalValue.AsString())
+
+	signalValue, found = wrappedExp.logSignalAttr.Value("signal")
+	require.True(t, found, "log signal attr should have signal field")
+	assert.Equal(t, backendRequestSignalLogs, signalValue.AsString())
+	_, found = wrappedExp.logSignalAttr.Value("endpoint")
+	assert.False(t, found, "log signal attr should not have endpoint")
+
+	signalValue, found = wrappedExp.metricSignalAttr.Value("signal")
+	require.True(t, found, "metric signal attr should have signal field")
+	assert.Equal(t, backendRequestSignalMetrics, signalValue.AsString())
+	_, found = wrappedExp.metricSignalAttr.Value("endpoint")
+	assert.False(t, found, "metric signal attr should not have endpoint")
 }
 
 func TestWrappedExporterNormalizesEndpointAttributeWithoutPort(t *testing.T) {

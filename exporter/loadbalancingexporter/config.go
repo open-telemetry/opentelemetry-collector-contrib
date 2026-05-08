@@ -266,6 +266,22 @@ func (q QueueSettings) Validate() error {
 	return nil
 }
 
+func (cfg *Config) centralQueueByteBatchingEnabled() bool {
+	if cfg == nil || !cfg.QueueSettings.QueueConfig.HasValue() {
+		return false
+	}
+
+	queueCfg := cfg.QueueSettings.QueueConfig.Get()
+	if queueCfg == nil || !cfg.QueueSettings.Enabled || !queueCfg.Batch.HasValue() {
+		return false
+	}
+
+	batchCfg := queueCfg.Batch.Get()
+	return batchCfg != nil &&
+		queueCfg.Sizer == exporterhelper.RequestSizerTypeBytes &&
+		batchCfg.Sizer == exporterhelper.RequestSizerTypeBytes
+}
+
 func (cfg *Config) Validate() error {
 	if err := cfg.QueueSettings.Validate(); err != nil {
 		return err

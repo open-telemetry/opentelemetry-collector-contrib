@@ -36,6 +36,7 @@ import (
 	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v3"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -244,7 +245,7 @@ func TestMetricsCentralQueueDropsPermanentExportError(t *testing.T) {
 	require.NoError(t, waitErr)
 }
 
-func TestMetricsCentralQueueShutdownTimeoutSkipsLoadBalancerShutdown(t *testing.T) {
+func TestMetricsCentralQueueShutdownTimeoutStillRunsTeardown(t *testing.T) {
 	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
 	t.Cleanup(func() { require.NoError(t, codec.Close()) })
 	var resolverShutdown atomic.Bool
@@ -269,7 +270,7 @@ func TestMetricsCentralQueueShutdownTimeoutSkipsLoadBalancerShutdown(t *testing.
 	shutdownCtx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
 	defer cancel()
 	require.Error(t, p.Shutdown(shutdownCtx))
-	require.False(t, resolverShutdown.Load())
+	require.True(t, resolverShutdown.Load())
 }
 
 func TestMetricsCentralQueueFirstRetryUsesInitialDelay(t *testing.T) {
@@ -379,6 +380,47 @@ func TestMetricsCentralQueueRetriesOnlyFailedEndpointItem(t *testing.T) {
 	require.Equal(t, []byte(failedRoute), remaining.routingKey)
 	require.Equal(t, 11, remaining.attempt)
 	require.NotZero(t, remaining.nextAttemptUnixNano)
+}
+
+func TestConsumeMetricsByExporterAggregatesFailedEndpointSubsets(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	failedEndpoint1 := "endpoint-1:4317"
+	failedEndpoint2 := "endpoint-2:4317"
+	successEndpoint := "endpoint-3:4317"
+	lb := &loadBalancer{
+		ring:           newHashRing([]string{failedEndpoint1, failedEndpoint2, successEndpoint}),
+		exporters:      map[string]*wrappedExporter{},
+		endpointHealth: newEndpointHealthManager(endpointHealthSettings{}),
+	}
+	for _, endpoint := range []string{failedEndpoint1, failedEndpoint2, successEndpoint} {
+		lb.exporters[endpoint] = newWrappedExporter(newMockMetricsExporter(func(context.Context, pmetric.Metrics) error {
+			if endpoint == successEndpoint {
+				return nil
+			}
+			return status.Error(codes.Unavailable, "backend unavailable")
+		}), endpoint)
+	}
+
+	routeFailed1 := findRoutingIDForEndpoint(t, lb.ring, failedEndpoint1)
+	routeFailed2 := findRoutingIDForEndpoint(t, lb.ring, failedEndpoint2)
+	routeSuccess := findRoutingIDForEndpoint(t, lb.ring, successEndpoint)
+	p := &metricExporterImp{
+		loadBalancer: lb,
+		logger:       ts.Logger,
+		telemetry:    tb,
+	}
+
+	err := p.consumeMetricsByExporter(t.Context(), map[string]pmetric.Metrics{
+		routeFailed1: metricsWithServiceDataPoints(routeFailed1),
+		routeFailed2: metricsWithServiceDataPoints(routeFailed2),
+		routeSuccess: metricsWithServiceDataPoints(routeSuccess),
+	})
+	require.Error(t, err)
+
+	var metricsErr consumererror.Metrics
+	require.ErrorAs(t, err, &metricsErr)
+	require.ElementsMatch(t, []string{routeFailed1, routeFailed2}, serviceNamesFromMetrics(metricsErr.Data()))
 }
 
 func TestMetricsCentralQueueDoesNotDirectReroute(t *testing.T) {
@@ -1024,6 +1066,131 @@ func TestConsumeMetricsReroutesEndpointLocalFailure(t *testing.T) {
 	}, metricdatatest.IgnoreTimestamp())
 }
 
+func TestConsumeMetricsRecordsBackendRequestMetrics(t *testing.T) {
+	ts, tb, telemetry := getTelemetryAssetsWithReader(t)
+	cfg := endpoint2Config()
+	routeEndpoint := "endpoint-2"
+	backendEndpoint := "endpoint-2:4317"
+
+	sent := pmetric.NewMetrics()
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockMetricsExporter(func(_ context.Context, md pmetric.Metrics) error {
+			if endpoint == backendEndpoint {
+				md.CopyTo(sent)
+			}
+			return nil
+		}), nil
+	}
+
+	p, lb := newTestMetricsExporter(t, ts, tb, cfg, componentFactory)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	serviceForEndpoint2 := findRoutingIDForEndpoint(t, lb.ring, routeEndpoint)
+	require.NoError(t, p.ConsumeMetrics(t.Context(), metricsWithServiceDataPoints(serviceForEndpoint2, serviceForEndpoint2)))
+
+	assert.Equal(t, 2, sent.DataPointCount())
+	assertBackendRequestMetrics(
+		t,
+		telemetry,
+		backendRequestSignalMetrics,
+		backendEndpoint,
+		serializedMetricsSize(sent),
+		int64(sent.DataPointCount()),
+	)
+}
+
+func TestConsumeMetricsCentralByteBatchPartialFailureReturnsOnlyFailedEndpointSubset(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := serviceBasedRoutingConfig()
+	enableCentralQueueByteBatchingForTest(cfg)
+
+	ring := newHashRing([]string{"endpoint-1", "endpoint-2"})
+	serviceForEndpoint1 := findRoutingIDForEndpoint(t, ring, "endpoint-1")
+	serviceForEndpoint2 := findRoutingIDForEndpoint(t, ring, "endpoint-2")
+
+	var endpoint1Records int
+	var endpoint2Records int
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockMetricsExporter(func(_ context.Context, md pmetric.Metrics) error {
+			switch endpoint {
+			case "endpoint-1:4317":
+				endpoint1Records += md.DataPointCount()
+				return status.Error(codes.Unavailable, "backend unavailable")
+			case "endpoint-2:4317":
+				endpoint2Records += md.DataPointCount()
+			}
+			return nil
+		}), nil
+	}
+
+	p, _ := newTestMetricsExporter(t, ts, tb, cfg, componentFactory)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	input := metricsWithServiceDataPoints(serviceForEndpoint1, serviceForEndpoint2, serviceForEndpoint2)
+	err := p.ConsumeMetrics(t.Context(), input)
+	require.Error(t, err)
+
+	assert.Equal(t, 1, endpoint1Records)
+	assert.Equal(t, 2, endpoint2Records)
+
+	var metricsErr consumererror.Metrics
+	require.ErrorAs(t, err, &metricsErr)
+	require.NoError(t, pmetrictest.CompareMetrics(
+		metricsWithServiceDataPoints(serviceForEndpoint1),
+		metricsErr.Data(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	))
+}
+
+func BenchmarkConsumeMetricsRouteAwareMergedInput(b *testing.B) {
+	ring := newHashRing([]string{"endpoint-1", "endpoint-2"})
+	serviceForEndpoint1 := findRoutingIDForEndpoint(b, ring, "endpoint-1")
+	serviceForEndpoint2 := findRoutingIDForEndpoint(b, ring, "endpoint-2")
+	input := metricsWithServiceDataPoints(
+		serviceForEndpoint1, serviceForEndpoint1, serviceForEndpoint1, serviceForEndpoint1,
+		serviceForEndpoint2, serviceForEndpoint2, serviceForEndpoint2, serviceForEndpoint2,
+	)
+	serializedBytes := serializedMetricsSize(input)
+
+	ts, tb := getTelemetryAssets(b)
+	cfg := serviceBasedRoutingConfig()
+	enableCentralQueueByteBatchingForTest(cfg)
+
+	var sendCount atomic.Int64
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
+			sendCount.Add(1)
+			return nil
+		}), nil
+	}
+
+	p, _ := newTestMetricsExporter(b, ts, tb, cfg, componentFactory)
+	require.NoError(b, p.Start(b.Context(), componenttest.NewNopHost()))
+	b.Cleanup(func() {
+		require.NoError(b, p.Shutdown(context.WithoutCancel(b.Context())))
+	})
+
+	b.SetBytes(serializedBytes)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		require.NoError(b, p.ConsumeMetrics(b.Context(), input))
+	}
+	b.StopTimer()
+
+	requestsPerInput := float64(sendCount.Load()) / float64(b.N)
+	b.ReportMetric(requestsPerInput, "backend_requests/input")
+	require.Equal(b, float64(2), requestsPerInput)
+}
+
 func TestConsumeMetricsReroutePreservesPayloadAfterExporterMutation(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := endpoint2Config()
@@ -1031,7 +1198,7 @@ func TestConsumeMetricsReroutePreservesPayloadAfterExporterMutation(t *testing.T
 
 	var rerouted pmetric.Metrics
 	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
-		return newMockMetricsExporter(func(_ context.Context, md pmetric.Metrics) error {
+		return newMutatingMockMetricsExporter(func(_ context.Context, md pmetric.Metrics) error {
 			if endpoint == "endpoint-1:4317" {
 				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("mutated")
 				return status.Error(codes.Unavailable, "backend unavailable")
@@ -1108,13 +1275,54 @@ func TestConsumeMetricsRerouteFailureReturnsConsumerErrorMetrics(t *testing.T) {
 	))
 }
 
+func TestWrapDirectMetricsRerouteErrorPreservesExistingConsumerErrorMetrics(t *testing.T) {
+	rerouteFailed := singleDataPointMetric("reroute-failed")
+	outerFailed := singleDataPointMetric("outer-failed")
+	err := wrapDirectMetricsRerouteError(
+		consumererror.NewMetrics(errors.New("reroute failed"), rerouteFailed),
+		outerFailed,
+	)
+
+	var metricsErr consumererror.Metrics
+	require.ErrorAs(t, err, &metricsErr)
+
+	require.NoError(t, pmetrictest.CompareMetrics(
+		rerouteFailed,
+		metricsErr.Data(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	))
+}
+
+func TestWrapDirectMetricsRerouteErrorFallsBackWhenConsumerErrorMetricsEmpty(t *testing.T) {
+	outerFailed := singleDataPointMetric("outer-failed")
+	err := wrapDirectMetricsRerouteError(
+		consumererror.NewMetrics(errors.New("reroute failed"), pmetric.NewMetrics()),
+		outerFailed,
+	)
+
+	var metricsErr consumererror.Metrics
+	require.ErrorAs(t, err, &metricsErr)
+
+	require.NoError(t, pmetrictest.CompareMetrics(
+		outerFailed,
+		metricsErr.Data(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	))
+}
+
 func TestConsumeMetricsRerouteFailurePreservesConsumerErrorMetricsAfterExporterMutation(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := endpoint2Config()
 	enableEndpointHealth(cfg)
 
 	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
-		return newMockMetricsExporter(func(_ context.Context, md pmetric.Metrics) error {
+		return newMutatingMockMetricsExporter(func(_ context.Context, md pmetric.Metrics) error {
 			md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("mutated")
 			if endpoint == "endpoint-1:4317" {
 				return status.Error(codes.Unavailable, "backend unavailable")
@@ -2346,6 +2554,31 @@ func metricsWithServiceNames(serviceNames ...string) pmetric.Metrics {
 	return metrics
 }
 
+func serviceNamesFromMetrics(md pmetric.Metrics) []string {
+	serviceNames := make([]string, 0, md.ResourceMetrics().Len())
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		serviceName, ok := md.ResourceMetrics().At(i).Resource().Attributes().Get(serviceNameKey)
+		if ok {
+			serviceNames = append(serviceNames, serviceName.Str())
+		}
+	}
+	return serviceNames
+}
+
+func metricsWithServiceDataPoints(serviceNames ...string) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
+	metrics.ResourceMetrics().EnsureCapacity(len(serviceNames))
+	for i, serviceName := range serviceNames {
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr(serviceNameKey, serviceName)
+		sm := rm.ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName(fmt.Sprintf("metric-%d", i))
+		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(int64(i + 1))
+	}
+	return metrics
+}
+
 func simpleMetricsWithResource() pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(1)
@@ -2371,6 +2604,31 @@ func twoServicesWithSameMetricName() pmetric.Metrics {
 
 func appendSimpleMetricWithID(dest pmetric.ResourceMetrics, id string) {
 	dest.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(id)
+}
+
+func newTestMetricsExporter(
+	tb testing.TB,
+	ts exporter.Settings,
+	telemetryBuilder *metadata.TelemetryBuilder,
+	cfg *Config,
+	componentFactory func(context.Context, string) (component.Component, error),
+) (*metricExporterImp, *loadBalancer) {
+	tb.Helper()
+
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, telemetryBuilder)
+	require.NoError(tb, err)
+	lb.addMissingExporters(tb.Context(), cfg.Resolver.Static.Get().Hostnames)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return cfg.Resolver.Static.Get().Hostnames, nil
+		},
+	}
+
+	p, err := newMetricsExporter(ts, cfg)
+	require.NoError(tb, err)
+	p.loadBalancer = lb
+	return p, lb
 }
 
 func TestConsumeMetricsReleasesStartedConsumesOnEarlyReturn(t *testing.T) {
@@ -2415,6 +2673,7 @@ type mockMetricsExporter struct {
 	component.Component
 	ConsumeMetricsFn func(ctx context.Context, td pmetric.Metrics) error
 	consumeErr       error
+	capabilities     consumer.Capabilities
 }
 
 func newMockMetricsExporter(consumeMetricsFn func(ctx context.Context, td pmetric.Metrics) error) exporter.Metrics {
@@ -2428,8 +2687,16 @@ func newNopMockMetricsExporter() exporter.Metrics {
 	return &mockMetricsExporter{Component: mockComponent{}}
 }
 
-func (*mockMetricsExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+func newMutatingMockMetricsExporter(consumeMetricsFn func(ctx context.Context, td pmetric.Metrics) error) exporter.Metrics {
+	return &mockMetricsExporter{
+		Component:        mockComponent{},
+		ConsumeMetricsFn: consumeMetricsFn,
+		capabilities:     consumer.Capabilities{MutatesData: true},
+	}
+}
+
+func (e *mockMetricsExporter) Capabilities() consumer.Capabilities {
+	return e.capabilities
 }
 
 func (e *mockMetricsExporter) Shutdown(context.Context) error {

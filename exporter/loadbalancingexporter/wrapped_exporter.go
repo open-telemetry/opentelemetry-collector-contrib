@@ -30,20 +30,28 @@ type wrappedExporter struct {
 	endpoint  string
 
 	// we store the attributes here for both cases, to avoid new allocations on the hot path
-	endpointAttr attribute.Set
-	successAttr  attribute.Set
-	failureAttr  attribute.Set
+	endpointAttr      attribute.Set
+	successAttr       attribute.Set
+	failureAttr       attribute.Set
+	logRequestAttr    attribute.Set
+	metricRequestAttr attribute.Set
+	logSignalAttr     attribute.Set
+	metricSignalAttr  attribute.Set
 }
 
 func newWrappedExporter(exp component.Component, identifier string) *wrappedExporter {
 	endpoint := endpointWithPort(identifier)
 	ea := attribute.String("endpoint", endpoint)
 	return &wrappedExporter{
-		Component:    exp,
-		endpoint:     endpoint,
-		endpointAttr: attribute.NewSet(ea),
-		successAttr:  attribute.NewSet(ea, attribute.Bool("success", true)),
-		failureAttr:  attribute.NewSet(ea, attribute.Bool("success", false)),
+		Component:         exp,
+		endpoint:          endpoint,
+		endpointAttr:      attribute.NewSet(ea),
+		successAttr:       attribute.NewSet(ea, attribute.Bool("success", true)),
+		failureAttr:       attribute.NewSet(ea, attribute.Bool("success", false)),
+		logRequestAttr:    backendRequestAttributeSet(backendRequestSignalLogs, endpoint),
+		metricRequestAttr: backendRequestAttributeSet(backendRequestSignalMetrics, endpoint),
+		logSignalAttr:     backendRequestSignalAttributeSet(backendRequestSignalLogs),
+		metricSignalAttr:  backendRequestSignalAttributeSet(backendRequestSignalMetrics),
 	}
 }
 
@@ -101,6 +109,11 @@ func (we *wrappedExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 		return fmt.Errorf("unable to export metrics, unexpected exporter type: expected exporter.Metrics but got %T", we.Component)
 	}
 	return me.ConsumeMetrics(ctx, md)
+}
+
+func (we *wrappedExporter) metricsMutatesData() bool {
+	me, ok := we.Component.(exporter.Metrics)
+	return ok && me.Capabilities().MutatesData
 }
 
 func (we *wrappedExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {

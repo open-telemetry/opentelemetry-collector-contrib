@@ -160,9 +160,6 @@ func (e *metricExporterImp) Shutdown(ctx context.Context) error {
 		waitErr := waitForInflight(waitCtx, &e.centralWG)
 		cancel()
 		err = errors.Join(err, waitErr)
-		if waitErr != nil {
-			return err
-		}
 		err = errors.Join(err, e.centralCodec.Close())
 	}
 	err = errors.Join(err, e.loadBalancer.Shutdown(ctx))
@@ -266,6 +263,7 @@ func (e *metricExporterImp) consumeCentralQueueMetricItem(ctx context.Context, i
 	exp.forceStartConsume()
 	defer exp.doneConsume()
 
+	recordMetricBackendRequest(ctx, e.telemetry, exp.metricSignalAttr, exp.metricRequestAttr, md)
 	start := time.Now()
 	err = exp.ConsumeMetrics(ctx, md)
 	duration := time.Since(start)
@@ -476,15 +474,17 @@ func (e *metricExporterImp) consumeMetricsByExporterAttempt(
 
 	needsCleanup = false
 	var errs error
+	failed := pmetric.NewMetrics()
 	for exp, mds := range metricsByExporter {
-		var retryMetrics pmetric.Metrics
-		var failedMetrics pmetric.Metrics
-		if directRerouteAttemptAllowed(e.loadBalancer, rerouteAttempt) {
-			retryMetrics = pmetric.NewMetrics()
-			mds.CopyTo(retryMetrics)
-			failedMetrics = pmetric.NewMetrics()
-			mds.CopyTo(failedMetrics)
+		var preservedMetrics pmetric.Metrics
+		preservedMetricsValid := false
+		if exp.metricsMutatesData() {
+			preservedMetrics = pmetric.NewMetrics()
+			mds.CopyTo(preservedMetrics)
+			preservedMetricsValid = true
 		}
+
+		recordMetricBackendRequest(ctx, e.telemetry, exp.metricSignalAttr, exp.metricRequestAttr, mds)
 		start := time.Now()
 		err := exp.ConsumeMetrics(ctx, mds)
 		duration := time.Since(start)
@@ -492,6 +492,8 @@ func (e *metricExporterImp) consumeMetricsByExporterAttempt(
 		exp.doneConsume()
 		decision := e.recordBackendResult(ctx, exp, duration, err, true)
 		if err != nil && shouldRerouteDirectFailure(e.loadBalancer, exp.endpoint, decision, rerouteAttempt) {
+			retryMetrics := metricFailureSubset(mds, preservedMetrics, preservedMetricsValid)
+			failedMetrics := metricFailureSubset(mds, preservedMetrics, preservedMetricsValid)
 			rerouted, splitErr := e.splitMetricsByRouting(retryMetrics)
 			if splitErr != nil {
 				e.loadBalancer.recordBackendReroute(ctx, "metrics", decision.reason, splitErr)
@@ -501,11 +503,48 @@ func (e *metricExporterImp) consumeMetricsByExporterAttempt(
 				e.loadBalancer.recordBackendReroute(ctx, "metrics", decision.reason, rerouteErr)
 				err = wrapDirectMetricsRerouteError(rerouteErr, failedMetrics)
 			}
+		} else if err != nil {
+			failedMetrics := metricFailureSubset(mds, preservedMetrics, preservedMetricsValid)
+			err = wrapDirectMetricsRerouteError(err, failedMetrics)
 		}
+		appendMetricErrorData(failed, err)
 		errs = multierr.Append(errs, err)
 	}
 
+	if failed.DataPointCount() > 0 {
+		return consumererror.NewMetrics(errs, failed)
+	}
 	return errs
+}
+
+func appendMetricErrorData(dest pmetric.Metrics, err error) {
+	if err == nil {
+		return
+	}
+	if unwrapper, ok := err.(interface{ Unwrap() []error }); ok {
+		for _, wrappedErr := range unwrapper.Unwrap() {
+			appendMetricErrorData(dest, wrappedErr)
+		}
+		return
+	}
+	var metricsErr consumererror.Metrics
+	if errors.As(err, &metricsErr) {
+		metrics.Merge(dest, metricsErr.Data())
+		return
+	}
+	if unwrapper, ok := err.(interface{ Unwrap() error }); ok {
+		appendMetricErrorData(dest, unwrapper.Unwrap())
+	}
+}
+
+func metricFailureSubset(md, preserved pmetric.Metrics, preservedValid bool) pmetric.Metrics {
+	failedMetrics := pmetric.NewMetrics()
+	if preservedValid {
+		preserved.CopyTo(failedMetrics)
+	} else {
+		md.CopyTo(failedMetrics)
+	}
+	return failedMetrics
 }
 
 func (e *metricExporterImp) consumeBatch(ctx context.Context, we *wrappedExporter, md pmetric.Metrics, reason string) error {
@@ -531,6 +570,7 @@ func (e *metricExporterImp) consumeBatch(ctx context.Context, we *wrappedExporte
 	}
 	defer we.doneConsume()
 
+	recordMetricBackendRequest(ctx, e.telemetry, we.metricSignalAttr, we.metricRequestAttr, md)
 	start := time.Now()
 	err := we.ConsumeMetrics(ctx, md)
 	duration := time.Since(start)
@@ -619,6 +659,7 @@ func (e *metricExporterImp) rerouteDrainBatch(ctx context.Context, md pmetric.Me
 	var errs error
 	needsCleanup = false
 	for exp, mds := range metricsByExporter {
+		recordMetricBackendRequest(ctx, e.telemetry, exp.metricSignalAttr, exp.metricRequestAttr, mds)
 		start := time.Now()
 		err = exp.ConsumeMetrics(ctx, mds)
 		duration := time.Since(start)
@@ -696,6 +737,14 @@ func wrapDirectMetricsRerouteError(err error, md pmetric.Metrics) error {
 	}
 	var metricsErr consumererror.Metrics
 	if errors.As(err, &metricsErr) {
+		failed := pmetric.NewMetrics()
+		appendMetricErrorData(failed, err)
+		// A non-empty consumererror.Metrics payload is the authoritative failed subset.
+		// Fall back to this batch only when the nested retryable error has no payload.
+		if failed.DataPointCount() == 0 {
+			metrics.Merge(failed, md)
+			return consumererror.NewMetrics(err, failed)
+		}
 		return err
 	}
 	return consumererror.NewMetrics(err, md)
