@@ -433,6 +433,8 @@ jobs:
           - os: linux
             arch: arm
             arm: 7
+          - os: aix
+            arch: ppc64
         exclude:
           - os: darwin
             arch: 386
