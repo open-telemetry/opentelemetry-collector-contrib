@@ -2359,6 +2359,7 @@ service:
             output_paths:
                 - stdout
         resource:
+            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
             service.name: otelcol
 `
 
@@ -2401,6 +2402,7 @@ service:
                         otlp:
                             endpoint: http://localhost:4318
         resource:
+            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
             service.name: otelcol
 `
 
@@ -2624,6 +2626,7 @@ service:
             output_paths:
                 - stdout
         resource:
+            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
             service.name: otelcol
 `
 
