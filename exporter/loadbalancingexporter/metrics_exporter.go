@@ -160,9 +160,6 @@ func (e *metricExporterImp) Shutdown(ctx context.Context) error {
 		waitErr := waitForInflight(waitCtx, &e.centralWG)
 		cancel()
 		err = errors.Join(err, waitErr)
-		if waitErr != nil {
-			return err
-		}
 		err = errors.Join(err, e.centralCodec.Close())
 	}
 	err = errors.Join(err, e.loadBalancer.Shutdown(ctx))

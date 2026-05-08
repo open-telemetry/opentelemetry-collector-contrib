@@ -245,7 +245,7 @@ func TestMetricsCentralQueueDropsPermanentExportError(t *testing.T) {
 	require.NoError(t, waitErr)
 }
 
-func TestMetricsCentralQueueShutdownTimeoutSkipsLoadBalancerShutdown(t *testing.T) {
+func TestMetricsCentralQueueShutdownTimeoutStillRunsTeardown(t *testing.T) {
 	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
 	t.Cleanup(func() { require.NoError(t, codec.Close()) })
 	var resolverShutdown atomic.Bool
@@ -270,7 +270,7 @@ func TestMetricsCentralQueueShutdownTimeoutSkipsLoadBalancerShutdown(t *testing.
 	shutdownCtx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
 	defer cancel()
 	require.Error(t, p.Shutdown(shutdownCtx))
-	require.False(t, resolverShutdown.Load())
+	require.True(t, resolverShutdown.Load())
 }
 
 func TestMetricsCentralQueueFirstRetryUsesInitialDelay(t *testing.T) {
