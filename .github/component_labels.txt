@@ -232,7 +232,7 @@ receiver/awscloudwatchreceiver receiver/awscloudwatch
 receiver/awscontainerinsightreceiver receiver/awscontainerinsight
 receiver/awsecscontainermetricsreceiver receiver/awsecscontainermetrics
 receiver/awsfirehosereceiver receiver/awsfirehose
-receiver/awslambdareceiver receiver/awslambda
+receiver/aws_lambda receiver/aws_lambda
 receiver/awss3receiver receiver/awss3
 receiver/awsxrayreceiver receiver/awsxray
 receiver/azureblobreceiver receiver/azureblob
