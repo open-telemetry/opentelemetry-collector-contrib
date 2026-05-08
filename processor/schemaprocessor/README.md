@@ -19,6 +19,8 @@ required to export as the target semantic convention version.
 Furthermore, it is also possible for organisations and vendors to publish their own semantic conventions and be used by this processor,
 be sure to follow [schema overview](https://opentelemetry.io/docs/specs/otel/schemas/) for all the details.
 
+For a practical guide on how to use the processor, including migration workflows and monitoring, see the [Operators Guide](./GUIDE.md).
+
 ## Configuration
 
 | Field | Type | Required | Description |
