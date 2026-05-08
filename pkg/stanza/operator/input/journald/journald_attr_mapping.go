@@ -45,7 +45,7 @@ var attributeMapping = map[string]string{
 	"CODE_LINE":         "code.line.number",
 	"TID":               "thread.id",
 	"SYSLOG_FACILITY":   "syslog.facility.code",
-	"SYSLOG_IDENTIFIER": "syslog.msgid",
+	"SYSLOG_IDENTIFIER": "syslog.msg.id",
 	"SYSLOG_PID":        "syslog.pid",
 }
 
