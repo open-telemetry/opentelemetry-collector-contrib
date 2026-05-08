@@ -299,3 +299,9 @@ func TestDetectorCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, config.VultrConfig)
 	assert.NotNil(t, config.AlibabaECSConfig)
 }
+
+func TestDefaultConfig_RetryDisabled(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	assert.False(t, cfg.Retry.Enabled, "retry must be disabled by default")
+}
