@@ -37,6 +37,9 @@ type WindowsLogConfig struct {
 	// DiscoverDomainControllers controls whether to attempt auto-discovery of domain controllers for joined machines with remote credentials
 	DiscoverDomainControllers bool `mapstructure:"discover_domain_controllers"`
 
+	// Telemetry controls which internal receiver metrics are emitted.
+	Telemetry TelemetryConfig `mapstructure:"telemetry"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

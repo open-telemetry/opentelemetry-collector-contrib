@@ -75,6 +75,12 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 	}
 	input.startRemoteSession = input.defaultStartRemoteSession
 
+	if c.Telemetry != nil {
+		input.telemetry = c.Telemetry
+	} else {
+		input.telemetry = noopWindowsInputTelemetry{}
+	}
+
 	if c.SuppressRenderingInfo {
 		input.processEvent = input.processEventWithoutRenderingInfo
 	} else {
