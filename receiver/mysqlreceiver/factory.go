@@ -121,8 +121,6 @@ func createLogsReceiver(
 	}
 
 	if cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled {
-		// query sample collection does not need cache, but we do not want to make it
-		// nil, so create one size 1 cache as a placeholder.
 		ns := newMySQLScraper(params, cfg, newCache[int64](1), sharedPlanCache)
 		s, err := scraper.NewLogs(
 			ns.scrapeQuerySampleFunc,
