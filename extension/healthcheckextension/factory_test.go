@@ -106,4 +106,5 @@ func TestFactory_CreateV2Extension(t *testing.T) {
 	ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
 	require.IsType(t, &healthcheck.HealthCheckExtension{}, ext)
+	require.NoError(t, ext.Shutdown(t.Context()))
 }
