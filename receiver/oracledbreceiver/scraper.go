@@ -746,6 +746,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	const finalBlockingSession = "FINAL_BLOCKING_SESSION"
 	const blockingSessionStatus = "BLOCKING_SESSION_STATUS"
 	const secondsInWait = "SECONDS_IN_WAIT"
+	const blockingStartTime = "BLOCKING_START_TIME"
 	const lockType = "LOCK_TYPE"
 	const blockedObject = "BLOCKED_OBJECT"
 
@@ -807,7 +808,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			clientPort, row[hostName], clientPort, queryPlanHashVal, row[sqlID], row[sqlChildNumber], row[childAddress], row[sid], row[serialNumber], row[process],
 			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], objID, row[objectName], row[objectType],
 			row[osUser], queryDuration,
-			row[blockingSession], row[finalBlockingSession], row[blockingSessionStatus], secondsInWaitVal,
+			row[blockingSession], row[finalBlockingSession], row[blockingSessionStatus], row[blockingStartTime], secondsInWaitVal,
 			row[lockType], row[blockedObject])
 	}
 
@@ -841,6 +842,7 @@ func sanitizeQuerySampleOptionalAttributes(logs plog.Logs) {
 					attrs.Remove("oracledb.blocker.session.id")
 					attrs.Remove("oracledb.blocker.root_session.id")
 					attrs.Remove("oracledb.blocker.session_relationship.state")
+					attrs.Remove("oracledb.blocking.start_time")
 					attrs.Remove("oracledb.lock.type")
 					attrs.Remove("oracledb.blocked_object")
 				}

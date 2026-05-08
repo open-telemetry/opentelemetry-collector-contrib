@@ -435,6 +435,7 @@ sample query
 | oracledb.blocker.session.id | The session ID (SID) of the immediate blocker of this session. Empty string when the session is not blocked. | Any Str | - |
 | oracledb.blocker.root_session.id | The session ID (SID) of the root/head blocker at the top of the blocking chain. Empty string when there is no blocking. | Any Str | - |
 | oracledb.blocker.session_relationship.state | The status of the blocking session relationship (e.g. VALID, NOT IN WAIT, GLOBAL, NO HOLDER, UNKNOWN). | Any Str | - |
+| oracledb.blocking.start_time | Estimated UTC timestamp of when the blocking wait began, derived from SYSDATE - SECONDS_IN_WAIT. RFC3339 format. | Any Str | - |
 | oracledb.wait.duration | The number of seconds this session has been waiting for the current wait event. | Any Int | - |
 | oracledb.lock.type | The type of enqueue lock the session is waiting on, extracted from the wait event (e.g., TX for row lock, TM for table lock). Empty when not waiting on a lock. | Any Str | - |
 | oracledb.blocked_object | The owner and name of the database object the session is waiting to lock (e.g., SCHEMA.TABLE_NAME). Empty when no object lock wait is active. | Any Str | - |

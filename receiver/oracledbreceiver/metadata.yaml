@@ -69,6 +69,9 @@ attributes:
   oracledb.blocker.session_relationship.state:
     description: The status of the blocking session relationship (e.g. VALID, NOT IN WAIT, GLOBAL, NO HOLDER, UNKNOWN).
     type: string
+  oracledb.blocking.start_time:
+    description: Estimated UTC timestamp of when the blocking wait began, derived from SYSDATE - SECONDS_IN_WAIT. RFC3339 format.
+    type: string
   oracledb.buffer_gets:
     description: Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta).
     type: int
@@ -240,6 +243,7 @@ events:
       - oracledb.blocker.session.id
       - oracledb.blocker.root_session.id
       - oracledb.blocker.session_relationship.state
+      - oracledb.blocking.start_time
       - oracledb.wait.duration
       - oracledb.lock.type
       - oracledb.blocked_object

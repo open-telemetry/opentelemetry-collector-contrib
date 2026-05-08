@@ -103,6 +103,9 @@ resourceLogs:
               - key: oracledb.blocker.session_relationship.state
                 value:
                   stringValue: VALID
+              - key: oracledb.blocking.start_time
+                value:
+                  stringValue: "2026-05-06T10:00:00Z"
               - key: oracledb.wait.duration
                 value:
                   intValue: "15"

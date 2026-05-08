@@ -323,14 +323,14 @@ var samplesQueryResponses = map[string][]metricRow{
 		"SQL_CHILD_NUMBER": "0", "SID": "675", "SERIAL#": "51295", "SQL_FULLTEXT": "test_query", "OSUSER": "test-user", "PROCESS": "1115", "PROCEDURE_TYPE": "PROCEDURE_TYPE-A", "PROCEDURE_ID": "12345",
 		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "4199919568", "DURATION_SEC": "1", "SERVICE_NAME": "",
 		"BLOCKING_SESSION": "", "FINAL_BLOCKING_SESSION": "", "BLOCKING_SESSION_STATUS": "", "SECONDS_IN_WAIT": "0",
-		"LOCK_TYPE": "", "BLOCKED_OBJECT": "",
+		"BLOCKING_START_TIME": "", "LOCK_TYPE": "", "BLOCKED_OBJECT": "",
 	}},
 	"invalidQuery": {{
 		"MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y",
 		"SQL_CHILD_NUMBER": "0", "S.SID": "675", "SERIAL#": "51295", "SQL_FULLTEXT": "test_query", "OSUSER": "test-user", "PROCESS": "1115",
 		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "4199919568", "DURATION_SEC": "",
 		"BLOCKING_SESSION": "", "FINAL_BLOCKING_SESSION": "", "BLOCKING_SESSION_STATUS": "", "SECONDS_IN_WAIT": "0",
-		"LOCK_TYPE": "", "BLOCKED_OBJECT": "",
+		"BLOCKING_START_TIME": "", "LOCK_TYPE": "", "BLOCKED_OBJECT": "",
 	}},
 	"blockedQuery": {{
 		// Blocked session waiting on SID 100
@@ -338,7 +338,7 @@ var samplesQueryResponses = map[string][]metricRow{
 		"SQL_CHILD_NUMBER": "0", "SID": "200", "SERIAL#": "12345", "SQL_FULLTEXT": "UPDATE orders SET status = 1 WHERE id = 42", "OSUSER": "oracle", "PROCESS": "9876", "PROCEDURE_TYPE": "", "PROCEDURE_ID": "",
 		"PORT": "54441", "PROGRAM": "JDBC Thin Client", "MODULE": "app", "STATUS": "ACTIVE", "STATE": "WAITING", "PLAN_HASH_VALUE": "1234567890", "DURATION_SEC": "15", "SERVICE_NAME": "ORCL",
 		"BLOCKING_SESSION": "100", "FINAL_BLOCKING_SESSION": "100", "BLOCKING_SESSION_STATUS": "VALID", "SECONDS_IN_WAIT": "15",
-		"LOCK_TYPE": "TX", "BLOCKED_OBJECT": "APP_USER.ORDERS",
+		"BLOCKING_START_TIME": "2026-05-06T10:00:00Z", "LOCK_TYPE": "TX", "BLOCKED_OBJECT": "APP_USER.ORDERS",
 	}},
 	"idleBlockerQuery": {{
 		// Idle session (blocker) that is holding a lock — no longer ACTIVE but appearing in BLOCKING_SESSION subquery
@@ -346,7 +346,7 @@ var samplesQueryResponses = map[string][]metricRow{
 		"SQL_CHILD_NUMBER": "0", "SID": "100", "SERIAL#": "5678", "SQL_FULLTEXT": "UPDATE orders SET status = 2 WHERE id = 42", "OSUSER": "dba", "PROCESS": "1234", "PROCEDURE_TYPE": "", "PROCEDURE_ID": "",
 		"PORT": "54442", "PROGRAM": "SQL*Plus", "MODULE": "", "STATUS": "INACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "9876543210", "DURATION_SEC": "120", "SERVICE_NAME": "ORCL",
 		"BLOCKING_SESSION": "", "FINAL_BLOCKING_SESSION": "", "BLOCKING_SESSION_STATUS": "", "SECONDS_IN_WAIT": "0",
-		"LOCK_TYPE": "", "BLOCKED_OBJECT": "",
+		"BLOCKING_START_TIME": "", "LOCK_TYPE": "", "BLOCKED_OBJECT": "",
 	}},
 }
 
@@ -498,6 +498,7 @@ func TestSanitizeQuerySampleOptionalAttributes(t *testing.T) {
 			attrs.PutStr("oracledb.blocker.session.id", tc.blockingSID)
 			attrs.PutStr("oracledb.blocker.root_session.id", "42")
 			attrs.PutStr("oracledb.blocker.session_relationship.state", "VALID")
+			attrs.PutStr("oracledb.blocking.start_time", "2026-05-06T10:00:00Z")
 			attrs.PutInt("oracledb.wait.duration", 10)
 			attrs.PutStr("oracledb.lock.type", "TX")
 			attrs.PutStr("oracledb.blocked_object", "APP_USER.ORDERS")
@@ -508,6 +509,9 @@ func TestSanitizeQuerySampleOptionalAttributes(t *testing.T) {
 
 			_, hasBlockerState := lr.Attributes().Get("oracledb.blocker.session_relationship.state")
 			assert.Equal(t, tc.expectBlockingAttrPresent, hasBlockerState, "oracledb.blocker.session_relationship.state presence mismatch")
+
+			_, hasBlockingStartTime := lr.Attributes().Get("oracledb.blocking.start_time")
+			assert.Equal(t, tc.expectBlockingAttrPresent, hasBlockingStartTime, "oracledb.blocking.start_time presence mismatch")
 
 			_, hasLockType := lr.Attributes().Get("oracledb.lock.type")
 			assert.Equal(t, tc.expectBlockingAttrPresent, hasLockType, "oracledb.lock.type presence mismatch")
