@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"time"
 
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -16,13 +18,29 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
-// isNonRecoverableKafkaError reports broker-side conditions that are not fixed
-// by retrying. Requires changing credentials, ACLs, or broker/client settings.
-// Implemented as fixed comparisons (no slice) to avoid per-error allocation on hot paths.
-func isNonRecoverableKafkaError(err error) bool {
-	return errors.Is(err, kerr.SaslAuthenticationFailed) ||
+var _ kgo.HookBrokerConnect = (*statusReporter)(nil)
+
+type statusReporter struct {
+	host component.Host
+}
+
+func (r *statusReporter) OnBrokerConnect(_ kgo.BrokerMetadata, _ time.Duration, _ net.Conn, err error) {
+	if errors.Is(err, kerr.SaslAuthenticationFailed) ||
 		errors.Is(err, kerr.ClusterAuthorizationFailed) ||
-		errors.Is(err, kerr.UnsupportedVersion)
+		errors.Is(err, kerr.UnsupportedVersion) ||
+		errors.Is(err, kerr.UnknownServerError) {
+		componentstatus.ReportStatus(r.host, componentstatus.NewRecoverableErrorEvent(err))
+	}
+
+	// also include any network failures
+	var opErr *net.OpError
+	if errors.As(err, &opErr) {
+		componentstatus.ReportStatus(r.host, componentstatus.NewRecoverableErrorEvent(err))
+	}
+}
+
+func NewStatusReporter(host component.Host) *statusReporter {
+	return &statusReporter{host: host}
 }
 
 // MessageTooLargeError wraps a MessageTooLarge Kafka error with the actual
@@ -119,9 +137,6 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error
 		}
 		kgoErr := &kerr.Error{}
 		if errors.As(r.Err, &kgoErr) && !kgoErr.Retriable {
-			if isNonRecoverableKafkaError(r.Err) {
-				componentstatus.ReportStatus(p.host, componentstatus.NewRecoverableErrorEvent(err))
-			}
 			err = consumererror.NewPermanent(err)
 		}
 		errs = append(errs, err)

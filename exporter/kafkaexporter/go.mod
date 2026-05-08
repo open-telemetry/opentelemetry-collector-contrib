@@ -20,7 +20,7 @@ require (
 	github.com/twmb/franz-go/pkg/kmsg v1.13.1
 	go.opentelemetry.io/collector/client v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/component v1.57.1-0.20260501001745-24aecacf1c04
-	go.opentelemetry.io/collector/component/componentstatus v0.151.0
+	go.opentelemetry.io/collector/component/componentstatus v0.151.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/component/componenttest v0.151.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/config/configopaque v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/config/configoptional v1.57.1-0.20260501001745-24aecacf1c04
