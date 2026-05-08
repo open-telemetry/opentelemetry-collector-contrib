@@ -697,6 +697,7 @@ This provides real-time visibility into active queries, helping users monitor da
 | mysql.threads.processlist_state | An action, event, or state that indicates what the thread is doing. | Any Str | - |
 | db.query.text | The SQL statement text for the event. | Any Str | - |
 | mysql.events_statements_current.digest | The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no. | Any Str | - |
+| mysql.query_plan | The query plan for the statement, if available. | Any Str | - |
 | mysql.query_plan.hash | This attribute is set to the same value as mysql.events_statements_summary_by_digest.digest (query digest) by design. | Any Str | - |
 | mysql.event_id | The thread associated with the event and the thread current event number when the event starts. | Any Int | - |
 | mysql.wait_type | The name of the instrument that produced the event. | Any Str | - |
