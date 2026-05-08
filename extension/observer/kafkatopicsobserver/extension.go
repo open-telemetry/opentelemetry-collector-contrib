@@ -8,14 +8,15 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/IBM/sarama"
+	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/endpointswatcher"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 var (
@@ -28,32 +29,18 @@ type kafkaTopicsObserver struct {
 	logger *zap.Logger
 	config *Config
 
-	adminClient      sarama.ClusterAdmin
-	cancelKafkaAdmin func()
+	client *kadm.Client
 }
 
-func newObserver(
-	logger *zap.Logger,
-	config *Config,
-	newAdminClusterClient func(context.Context, configkafka.ClientConfig) (sarama.ClusterAdmin, error),
-) (extension.Extension, error) {
+func newObserver(logger *zap.Logger, config *Config) (extension.Extension, error) {
 	topicRegexp, err := regexp.Compile(config.TopicRegex)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic regex: %w", err)
 	}
 
-	kCtx, cancel := context.WithCancel(context.Background())
-	adminClient, err := newAdminClusterClient(kCtx, config.ClientConfig)
-	if err != nil {
-		cancel()
-		return nil, fmt.Errorf("could not create kafka cluster admin: %w", err)
-	}
-
 	o := &kafkaTopicsObserver{
-		logger:           logger,
-		config:           config,
-		cancelKafkaAdmin: cancel,
-		adminClient:      adminClient,
+		logger: logger,
+		config: config,
 	}
 	o.EndpointsWatcher = endpointswatcher.New(
 		&kafkaTopicsEndpointsLister{o: o, topicRegexp: topicRegexp},
@@ -63,18 +50,25 @@ func newObserver(
 	return o, nil
 }
 
-func (*kafkaTopicsObserver) Start(context.Context, component.Host) error {
+func (k *kafkaTopicsObserver) Start(ctx context.Context, host component.Host) error {
+	client, _, err := kafka.NewFranzClusterAdminClient(
+		ctx, host, k.config.ClientConfig, k.logger,
+		// Set metadata min age below the sync interval
+		// so each sync sees a fresh topic list.
+		kgo.MetadataMinAge(k.config.TopicsSyncInterval/2),
+	)
+	if err != nil {
+		return fmt.Errorf("could not create kafka cluster admin client: %w", err)
+	}
+	k.client = client
 	return nil
 }
 
 func (k *kafkaTopicsObserver) Shutdown(context.Context) error {
 	k.StopListAndWatch()
-	k.cancelKafkaAdmin()
-	err := k.adminClient.Close()
-	if err != nil {
-		return fmt.Errorf("failed to close kafka cluster admin client: %w", err)
+	if k.client != nil {
+		k.client.Close()
 	}
-	k.logger.Info("kafka cluster admin client closed")
 	return nil
 }
 
@@ -87,7 +81,7 @@ type kafkaTopicsEndpointsLister struct {
 }
 
 func (k *kafkaTopicsEndpointsLister) ListEndpoints() []observer.Endpoint {
-	topics, err := k.listMatchingTopics()
+	topics, err := k.listMatchingTopics(context.Background())
 	if err != nil {
 		k.o.logger.Error("failed to list topics, using cached list", zap.Error(err))
 		// Use the previously cached list of topics.
@@ -112,18 +106,15 @@ func (k *kafkaTopicsEndpointsLister) ListEndpoints() []observer.Endpoint {
 	return endpoints
 }
 
-func (k *kafkaTopicsEndpointsLister) listMatchingTopics() ([]string, error) {
-	// Collect all available topics
-	topics, err := k.o.adminClient.ListTopics()
+func (k *kafkaTopicsEndpointsLister) listMatchingTopics(ctx context.Context) ([]string, error) {
+	td, err := k.o.client.ListTopics(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	// Filter topics
 	var matchingTopics []string
-	for topic := range topics {
-		if k.topicRegexp.MatchString(topic) {
-			matchingTopics = append(matchingTopics, topic)
+	for name := range td {
+		if k.topicRegexp.MatchString(name) {
+			matchingTopics = append(matchingTopics, name)
 		}
 	}
 	return matchingTopics, nil

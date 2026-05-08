@@ -26,55 +26,55 @@ func Test_newSharedInformer(t *testing.T) {
 	require.NoError(t, err)
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)
-	informer := newSharedInformer(client.K8s, "testns", labelSelector, fieldSelector)
+	informer := newSharedInformer(client.K8s, "testns", labelSelector, fieldSelector, 0)
 	assert.NotNil(t, informer)
 }
 
 func Test_newSharedNamespaceInformer(t *testing.T) {
 	mc := newTestMetadataClient()
-	informer := newNamespaceSharedInformer(mc)
+	informer := newNamespaceSharedInformer(mc, 0)
 	assert.NotNil(t, informer)
 }
 
 func Test_newSharedDeploymentInformer(t *testing.T) {
 	mc := newTestMetadataClient()
-	informer := newDeploymentSharedInformer(mc, "ns")
+	informer := newDeploymentSharedInformer(mc, "ns", 0)
 	assert.NotNil(t, informer)
 }
 
 func Test_newSharedStatefulSetInformer(t *testing.T) {
 	mc := newTestMetadataClient()
-	informer := newStatefulSetSharedInformer(mc, "ns")
+	informer := newStatefulSetSharedInformer(mc, "ns", 0)
 	assert.NotNil(t, informer)
 }
 
 func Test_newSharedDaemonSetInformer(t *testing.T) {
 	mc := newTestMetadataClient()
-	informer := newDaemonSetSharedInformer(mc, "ns")
+	informer := newDaemonSetSharedInformer(mc, "ns", 0)
 	assert.NotNil(t, informer)
 }
 
 func Test_newSharedJobInformer(t *testing.T) {
 	mc := newTestMetadataClient()
-	informer := newJobSharedInformer(mc, "ns")
+	informer := newJobSharedInformer(mc, "ns", 0)
 	assert.NotNil(t, informer)
 }
 
 func Test_newKubeSystemSharedInformer(t *testing.T) {
 	mc := newTestMetadataClient()
-	informer := newKubeSystemSharedInformer(mc)
+	informer := newKubeSystemSharedInformer(mc, 0)
 	assert.NotNil(t, informer)
 }
 
 func Test_newSharedNodeInformer(t *testing.T) {
 	mc := newTestMetadataClient()
-	informer := newNodeSharedInformer(mc, "")
+	informer := newNodeSharedInformer(mc, "", 0)
 	assert.NotNil(t, informer)
 }
 
 func Test_newSharedNodeInformerWithName(t *testing.T) {
 	mc := newTestMetadataClient()
-	informer := newNodeSharedInformer(mc, "test-node")
+	informer := newNodeSharedInformer(mc, "test-node", 0)
 	assert.NotNil(t, informer)
 }
 
@@ -154,7 +154,7 @@ func Test_metadataWatchFunc(t *testing.T) {
 
 func Test_newReplicaSetsharedInformer(t *testing.T) {
 	mc := newTestMetadataClient()
-	informer := newReplicaSetSharedInformer(mc, "test-ns")
+	informer := newReplicaSetSharedInformer(mc, "test-ns", 0)
 	if informer == nil {
 		t.Fatalf("Expected informer to be non-nil, but got nil. Check logs for details.")
 	}
