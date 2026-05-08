@@ -737,7 +737,10 @@ func wrapDirectMetricsRerouteError(err error, md pmetric.Metrics) error {
 	}
 	var metricsErr consumererror.Metrics
 	if errors.As(err, &metricsErr) {
-		return err
+		failed := pmetric.NewMetrics()
+		appendMetricErrorData(failed, err)
+		metrics.Merge(failed, md)
+		return consumererror.NewMetrics(err, failed)
 	}
 	return consumererror.NewMetrics(err, md)
 }

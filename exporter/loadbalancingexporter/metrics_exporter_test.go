@@ -1275,6 +1275,30 @@ func TestConsumeMetricsRerouteFailureReturnsConsumerErrorMetrics(t *testing.T) {
 	))
 }
 
+func TestWrapDirectMetricsRerouteErrorMergesExistingConsumerErrorMetrics(t *testing.T) {
+	rerouteFailed := singleDataPointMetric("reroute-failed")
+	outerFailed := singleDataPointMetric("outer-failed")
+	err := wrapDirectMetricsRerouteError(
+		consumererror.NewMetrics(errors.New("reroute failed"), rerouteFailed),
+		outerFailed,
+	)
+
+	var metricsErr consumererror.Metrics
+	require.ErrorAs(t, err, &metricsErr)
+
+	expected := pmetric.NewMetrics()
+	metrics.Merge(expected, rerouteFailed)
+	metrics.Merge(expected, outerFailed)
+	require.NoError(t, pmetrictest.CompareMetrics(
+		expected,
+		metricsErr.Data(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	))
+}
+
 func TestConsumeMetricsRerouteFailurePreservesConsumerErrorMetricsAfterExporterMutation(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := endpoint2Config()
