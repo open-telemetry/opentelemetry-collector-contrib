@@ -14,67 +14,58 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
-// CloudWatchStream defines a single routing rule for CloudWatch Logs
-// subscription-filter events. It maps a logGroup and/or logStream pattern to
-// an inner encoding extension.
+// Payload modes for CloudWatchStream.Payload. See README for semantics.
+const (
+	PayloadMessage  = "message"
+	PayloadEnvelope = "envelope"
+)
+
+// CloudWatchStream maps a logGroup and/or logStream pattern (or a known
+// service name) to an inner encoding extension.
 type CloudWatchStream struct {
-	// Name identifies the route. Required. It is used as the deduplication key, in
-	// log and error messages, and as the lookup key into the default-pattern
-	// map. For known names (vpcflow, cloudtrail, lambda, waf, rds, eks,
-	// apigateway) the corresponding default log_group_pattern or
-	// log_stream_pattern is applied at Start time when the user supplies no
-	// explicit pattern. User-supplied patterns always win; defaults never
-	// overwrite them.
-	Name string `mapstructure:"name"`
-
-	// Encoding is the component ID of an inner encoding extension that
-	// implements encoding.LogsUnmarshalerExtension. Required.
-	Encoding component.ID `mapstructure:"encoding"`
-
-	// LogGroupPattern is matched against the subscription event's logGroup.
-	LogGroupPattern string `mapstructure:"log_group_pattern"`
-
-	// LogStreamPattern is matched against the subscription event's logStream.
-	LogStreamPattern string `mapstructure:"log_stream_pattern"`
+	Name             string       `mapstructure:"name"`
+	Encoding         component.ID `mapstructure:"encoding"`
+	LogGroupPattern  string       `mapstructure:"log_group_pattern"`
+	LogStreamPattern string       `mapstructure:"log_stream_pattern"`
+	Payload          string       `mapstructure:"payload"`
 }
 
-// defaultCWPatterns maps known stream names to default log_group / log_stream
-// patterns based on AWS conventions. When a user writes a stream with only a
-// known name and no explicit patterns, the corresponding default is applied
-// at Start time.
 var defaultCWPatterns = map[string]CloudWatchStream{
-	"vpcflow":    {Name: "vpcflow", LogStreamPattern: "eni-*"},
-	"cloudtrail": {Name: "cloudtrail", LogStreamPattern: "*_CloudTrail_*"},
-	"lambda":     {Name: "lambda", LogGroupPattern: "/aws/lambda/*"},
-	"waf":        {Name: "waf", LogGroupPattern: "aws-waf-logs-*"},
-	"rds":        {Name: "rds", LogGroupPattern: "/aws/rds/instance/*/*"},
-	"eks":        {Name: "eks", LogGroupPattern: "/aws/eks/*"},
-	"apigateway": {Name: "apigateway", LogGroupPattern: "API-Gateway-Execution-Logs_*"},
+	"vpcflow":    {Name: "vpcflow", LogStreamPattern: "eni-*", Payload: PayloadEnvelope},
+	"cloudtrail": {Name: "cloudtrail", LogStreamPattern: "*_CloudTrail_*", Payload: PayloadEnvelope},
+	"lambda":     {Name: "lambda", LogGroupPattern: "/aws/lambda/*", Payload: PayloadMessage},
+	"waf":        {Name: "waf", LogGroupPattern: "aws-waf-logs-*", Payload: PayloadMessage},
+	"rds":        {Name: "rds", LogGroupPattern: "/aws/rds/instance/*/*", Payload: PayloadMessage},
+	"eks":        {Name: "eks", LogGroupPattern: "/aws/eks/*", Payload: PayloadMessage},
+	"apigateway": {Name: "apigateway", LogGroupPattern: "API-Gateway-Execution-Logs_*", Payload: PayloadMessage},
 }
 
-// withDefaults returns a copy of the stream with default patterns applied if
-// the user supplied no patterns and the name is in the defaults map.
-// User-supplied patterns are never overwritten.
+// withDefaults fills in unset fields from defaultCWPatterns. User-supplied
+// values are never overwritten.
 func (r CloudWatchStream) withDefaults() CloudWatchStream {
-	if r.LogGroupPattern != "" || r.LogStreamPattern != "" {
+	d, ok := defaultCWPatterns[r.Name]
+	if !ok {
 		return r
 	}
-	if d, ok := defaultCWPatterns[r.Name]; ok {
+	if r.LogGroupPattern == "" && r.LogStreamPattern == "" {
 		r.LogGroupPattern = d.LogGroupPattern
 		r.LogStreamPattern = d.LogStreamPattern
+	}
+	if r.Payload == "" {
+		r.Payload = d.Payload
 	}
 	return r
 }
 
 // ValidateStreams reports configuration errors in a list of CloudWatch streams:
 // missing name, missing encoding, missing pattern when the name has no
-// defaults, and duplicate names.
+// defaults, invalid payload mode, and duplicate names.
 func ValidateStreams(streams []CloudWatchStream) error {
 	var errs []error
 	seenNames := make(map[string]int, len(streams))
 
 	for i, r := range streams {
-		// Name is required: it identifies the route in logs / errors and
+		// Name is required: it identifies the stream in logs / errors and
 		// is the deduplication key.
 		if r.Name == "" {
 			errs = append(errs, fmt.Errorf("cloudwatch.streams[%d]: 'name' is required", i))
@@ -86,7 +77,7 @@ func ValidateStreams(streams []CloudWatchStream) error {
 		}
 
 		// When the user supplied no patterns, the name must be a known
-		// default; otherwise the route has no way to match anything.
+		// default; otherwise the stream has no way to match anything.
 		hasPattern := r.LogGroupPattern != "" || r.LogStreamPattern != ""
 		if !hasPattern && r.Name != "" {
 			if _, ok := defaultCWPatterns[r.Name]; !ok {
@@ -95,6 +86,16 @@ func ValidateStreams(streams []CloudWatchStream) error {
 					i, r.Name,
 				))
 			}
+		}
+
+		// Payload, if set, must be a known mode.
+		switch r.Payload {
+		case "", PayloadMessage, PayloadEnvelope:
+		default:
+			errs = append(errs, fmt.Errorf(
+				"cloudwatch.streams[%d]: invalid 'payload' value %q; expected %q or %q",
+				i, r.Payload, PayloadMessage, PayloadEnvelope,
+			))
 		}
 
 		// Duplicate name.

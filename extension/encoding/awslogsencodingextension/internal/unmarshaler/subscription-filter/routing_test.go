@@ -87,6 +87,25 @@ func TestValidateStreams(t *testing.T) {
 			},
 			wantErr: `duplicate name "vpcflow"`,
 		},
+		{
+			name: "invalid payload",
+			routes: []CloudWatchStream{
+				{Name: "vpcflow", Encoding: encA, Payload: "raw"},
+			},
+			wantErr: `invalid 'payload' value "raw"`,
+		},
+		{
+			name: "valid: explicit message payload",
+			routes: []CloudWatchStream{
+				{Name: "vpcflow", Encoding: encA, Payload: PayloadMessage},
+			},
+		},
+		{
+			name: "valid: explicit envelope payload",
+			routes: []CloudWatchStream{
+				{Name: "lambda", Encoding: encA, Payload: PayloadEnvelope},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -114,17 +133,27 @@ func TestWithDefaults(t *testing.T) {
 		want CloudWatchStream
 	}{
 		{
-			name: "known name no patterns -> default applied",
+			name: "known name no patterns no payload -> pattern and payload defaulted",
 			in:   CloudWatchStream{Name: "vpcflow", Encoding: encID},
-			want: CloudWatchStream{Name: "vpcflow", Encoding: encID, LogStreamPattern: "eni-*"},
+			want: CloudWatchStream{Name: "vpcflow", Encoding: encID, LogStreamPattern: "eni-*", Payload: PayloadEnvelope},
 		},
 		{
-			name: "known name with explicit pattern -> default skipped",
+			name: "known name with explicit pattern -> pattern kept, payload defaulted",
 			in:   CloudWatchStream{Name: "vpcflow", LogGroupPattern: "/custom/*", Encoding: encID},
-			want: CloudWatchStream{Name: "vpcflow", LogGroupPattern: "/custom/*", Encoding: encID},
+			want: CloudWatchStream{Name: "vpcflow", LogGroupPattern: "/custom/*", Encoding: encID, Payload: PayloadEnvelope},
 		},
 		{
-			name: "unknown name -> route returned unchanged",
+			name: "known name with explicit payload -> pattern defaulted, payload kept",
+			in:   CloudWatchStream{Name: "lambda", Encoding: encID, Payload: PayloadEnvelope},
+			want: CloudWatchStream{Name: "lambda", Encoding: encID, LogGroupPattern: "/aws/lambda/*", Payload: PayloadEnvelope},
+		},
+		{
+			name: "known name with explicit pattern and payload -> nothing changed",
+			in:   CloudWatchStream{Name: "lambda", LogGroupPattern: "/custom/*", Encoding: encID, Payload: PayloadEnvelope},
+			want: CloudWatchStream{Name: "lambda", LogGroupPattern: "/custom/*", Encoding: encID, Payload: PayloadEnvelope},
+		},
+		{
+			name: "unknown name -> stream returned unchanged",
 			in:   CloudWatchStream{Name: "weird", Encoding: encID},
 			want: CloudWatchStream{Name: "weird", Encoding: encID},
 		},
@@ -215,8 +244,8 @@ func TestSortStreamsAppliesDefaults(t *testing.T) {
 
 	encID := mustNewID(t, "fake/a")
 	in := []CloudWatchStream{
-		{Name: "lambda", Encoding: encID},  // expands to LogGroupPattern: /aws/lambda/*
-		{Name: "vpcflow", Encoding: encID}, // expands to LogStreamPattern: eni-*
+		{Name: "lambda", Encoding: encID},  // expands to LogGroupPattern: /aws/lambda/*, payload: message
+		{Name: "vpcflow", Encoding: encID}, // expands to LogStreamPattern: eni-*, payload: envelope
 	}
 	got := sortStreams(in)
 
@@ -224,7 +253,9 @@ func TestSortStreamsAppliesDefaults(t *testing.T) {
 	// Sort places log_group entries before log_stream-only entries.
 	require.Len(t, got, 2)
 	assert.Equal(t, "/aws/lambda/*", got[0].LogGroupPattern)
+	assert.Equal(t, PayloadMessage, got[0].Payload)
 	assert.Equal(t, "eni-*", got[1].LogStreamPattern)
+	assert.Equal(t, PayloadEnvelope, got[1].Payload)
 }
 
 func TestSortStreamsEmpty(t *testing.T) {
