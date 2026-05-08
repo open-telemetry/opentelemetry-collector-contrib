@@ -107,6 +107,11 @@ func (we *wrappedExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 	return me.ConsumeMetrics(ctx, md)
 }
 
+func (we *wrappedExporter) metricsMutatesData() bool {
+	me, ok := we.Component.(exporter.Metrics)
+	return ok && me.Capabilities().MutatesData
+}
+
 func (we *wrappedExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	le, ok := we.Component.(exporter.Logs)
 	if !ok {

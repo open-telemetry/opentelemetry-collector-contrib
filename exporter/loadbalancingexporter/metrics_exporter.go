@@ -478,14 +478,14 @@ func (e *metricExporterImp) consumeMetricsByExporterAttempt(
 	needsCleanup = false
 	var errs error
 	for exp, mds := range metricsByExporter {
-		failedMetrics := pmetric.NewMetrics()
-		mds.CopyTo(failedMetrics)
-
-		var retryMetrics pmetric.Metrics
-		if directRerouteAttemptAllowed(e.loadBalancer, rerouteAttempt) {
-			retryMetrics = pmetric.NewMetrics()
-			mds.CopyTo(retryMetrics)
+		var preservedMetrics pmetric.Metrics
+		preservedMetricsValid := false
+		if exp.metricsMutatesData() {
+			preservedMetrics = pmetric.NewMetrics()
+			mds.CopyTo(preservedMetrics)
+			preservedMetricsValid = true
 		}
+
 		recordMetricBackendRequest(ctx, e.telemetry, exp.metricRequestAttr, mds)
 		start := time.Now()
 		err := exp.ConsumeMetrics(ctx, mds)
@@ -494,6 +494,8 @@ func (e *metricExporterImp) consumeMetricsByExporterAttempt(
 		exp.doneConsume()
 		decision := e.recordBackendResult(ctx, exp, duration, err, true)
 		if err != nil && shouldRerouteDirectFailure(e.loadBalancer, exp.endpoint, decision, rerouteAttempt) {
+			retryMetrics := metricFailureSubset(mds, preservedMetrics, preservedMetricsValid)
+			failedMetrics := metricFailureSubset(mds, preservedMetrics, preservedMetricsValid)
 			rerouted, splitErr := e.splitMetricsByRouting(retryMetrics)
 			if splitErr != nil {
 				e.loadBalancer.recordBackendReroute(ctx, "metrics", decision.reason, splitErr)
@@ -504,12 +506,23 @@ func (e *metricExporterImp) consumeMetricsByExporterAttempt(
 				err = wrapDirectMetricsRerouteError(rerouteErr, failedMetrics)
 			}
 		} else if err != nil {
+			failedMetrics := metricFailureSubset(mds, preservedMetrics, preservedMetricsValid)
 			err = wrapDirectMetricsRerouteError(err, failedMetrics)
 		}
 		errs = multierr.Append(errs, err)
 	}
 
 	return errs
+}
+
+func metricFailureSubset(md, preserved pmetric.Metrics, preservedValid bool) pmetric.Metrics {
+	failedMetrics := pmetric.NewMetrics()
+	if preservedValid {
+		preserved.CopyTo(failedMetrics)
+	} else {
+		md.CopyTo(failedMetrics)
+	}
+	return failedMetrics
 }
 
 func (e *metricExporterImp) consumeBatch(ctx context.Context, we *wrappedExporter, md pmetric.Metrics, reason string) error {

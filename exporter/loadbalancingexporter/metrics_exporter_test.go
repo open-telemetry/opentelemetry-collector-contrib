@@ -1157,7 +1157,7 @@ func TestConsumeMetricsReroutePreservesPayloadAfterExporterMutation(t *testing.T
 
 	var rerouted pmetric.Metrics
 	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
-		return newMockMetricsExporter(func(_ context.Context, md pmetric.Metrics) error {
+		return newMutatingMockMetricsExporter(func(_ context.Context, md pmetric.Metrics) error {
 			if endpoint == "endpoint-1:4317" {
 				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("mutated")
 				return status.Error(codes.Unavailable, "backend unavailable")
@@ -1240,7 +1240,7 @@ func TestConsumeMetricsRerouteFailurePreservesConsumerErrorMetricsAfterExporterM
 	enableEndpointHealth(cfg)
 
 	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
-		return newMockMetricsExporter(func(_ context.Context, md pmetric.Metrics) error {
+		return newMutatingMockMetricsExporter(func(_ context.Context, md pmetric.Metrics) error {
 			md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("mutated")
 			if endpoint == "endpoint-1:4317" {
 				return status.Error(codes.Unavailable, "backend unavailable")
@@ -2580,6 +2580,7 @@ type mockMetricsExporter struct {
 	component.Component
 	ConsumeMetricsFn func(ctx context.Context, td pmetric.Metrics) error
 	consumeErr       error
+	capabilities     consumer.Capabilities
 }
 
 func newMockMetricsExporter(consumeMetricsFn func(ctx context.Context, td pmetric.Metrics) error) exporter.Metrics {
@@ -2593,8 +2594,16 @@ func newNopMockMetricsExporter() exporter.Metrics {
 	return &mockMetricsExporter{Component: mockComponent{}}
 }
 
-func (*mockMetricsExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+func newMutatingMockMetricsExporter(consumeMetricsFn func(ctx context.Context, td pmetric.Metrics) error) exporter.Metrics {
+	return &mockMetricsExporter{
+		Component:        mockComponent{},
+		ConsumeMetricsFn: consumeMetricsFn,
+		capabilities:     consumer.Capabilities{MutatesData: true},
+	}
+}
+
+func (e *mockMetricsExporter) Capabilities() consumer.Capabilities {
+	return e.capabilities
 }
 
 func (e *mockMetricsExporter) Shutdown(context.Context) error {
