@@ -511,7 +511,7 @@ func (e *metricExporterImp) consumeMetricsByExporterAttempt(
 		errs = multierr.Append(errs, err)
 	}
 
-	if failed.ResourceMetrics().Len() > 0 {
+	if failed.DataPointCount() > 0 {
 		return consumererror.NewMetrics(errs, failed)
 	}
 	return errs
@@ -739,8 +739,13 @@ func wrapDirectMetricsRerouteError(err error, md pmetric.Metrics) error {
 	if errors.As(err, &metricsErr) {
 		failed := pmetric.NewMetrics()
 		appendMetricErrorData(failed, err)
-		metrics.Merge(failed, md)
-		return consumererror.NewMetrics(err, failed)
+		// A non-empty consumererror.Metrics payload is the authoritative failed subset.
+		// Fall back to this batch only when the nested retryable error has no payload.
+		if failed.DataPointCount() == 0 {
+			metrics.Merge(failed, md)
+			return consumererror.NewMetrics(err, failed)
+		}
+		return err
 	}
 	return consumererror.NewMetrics(err, md)
 }

@@ -1275,7 +1275,7 @@ func TestConsumeMetricsRerouteFailureReturnsConsumerErrorMetrics(t *testing.T) {
 	))
 }
 
-func TestWrapDirectMetricsRerouteErrorMergesExistingConsumerErrorMetrics(t *testing.T) {
+func TestWrapDirectMetricsRerouteErrorPreservesExistingConsumerErrorMetrics(t *testing.T) {
 	rerouteFailed := singleDataPointMetric("reroute-failed")
 	outerFailed := singleDataPointMetric("outer-failed")
 	err := wrapDirectMetricsRerouteError(
@@ -1286,11 +1286,28 @@ func TestWrapDirectMetricsRerouteErrorMergesExistingConsumerErrorMetrics(t *test
 	var metricsErr consumererror.Metrics
 	require.ErrorAs(t, err, &metricsErr)
 
-	expected := pmetric.NewMetrics()
-	metrics.Merge(expected, rerouteFailed)
-	metrics.Merge(expected, outerFailed)
 	require.NoError(t, pmetrictest.CompareMetrics(
-		expected,
+		rerouteFailed,
+		metricsErr.Data(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	))
+}
+
+func TestWrapDirectMetricsRerouteErrorFallsBackWhenConsumerErrorMetricsEmpty(t *testing.T) {
+	outerFailed := singleDataPointMetric("outer-failed")
+	err := wrapDirectMetricsRerouteError(
+		consumererror.NewMetrics(errors.New("reroute failed"), pmetric.NewMetrics()),
+		outerFailed,
+	)
+
+	var metricsErr consumererror.Metrics
+	require.ErrorAs(t, err, &metricsErr)
+
+	require.NoError(t, pmetrictest.CompareMetrics(
+		outerFailed,
 		metricsErr.Data(),
 		pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreScopeMetricsOrder(),
