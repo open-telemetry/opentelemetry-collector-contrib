@@ -221,6 +221,7 @@ processor/cumulativetodeltaprocessor
 processor/deltatorateprocessor
 processor/drainprocessor
 processor/filterprocessor
+processor/genainormalizerprocessor
 processor/geoipprocessor
 processor/groupbyattrsprocessor
 processor/groupbytraceprocessor

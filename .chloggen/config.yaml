@@ -21,12 +21,12 @@ components:
     - connector/failover
     - connector/grafanacloud
     - connector/metricsaslogs
-    - connector/otlpjson
+    - connector/otlp_json
     - connector/round_robin
     - connector/routing
     - connector/service_graph
     - connector/signal_to_metrics
-    - connector/slowsql
+    - connector/slow_sql
     - connector/span_metrics
     - connector/sum
     - exporter/alertmanager
@@ -196,6 +196,7 @@ components:
     - processor/drain
     - processor/dynatracedetector
     - processor/filter
+    - processor/genainormalizer
     - processor/geoip
     - processor/groupbyattrs
     - processor/groupbytrace
@@ -267,10 +268,10 @@ components:
     - receiver/fluent_forward
     - receiver/github
     - receiver/gitlab
+    - receiver/google_cloud_spanner
     - receiver/googlecloudmonitoring
     - receiver/googlecloudpubsub
     - receiver/googlecloudpubsubpush
-    - receiver/googlecloudspanner
     - receiver/haproxy
     - receiver/host_metrics
     - receiver/http_check
@@ -285,7 +286,7 @@ components:
     - receiver/k8s_events
     - receiver/k8s_objects
     - receiver/kafka
-    - receiver/kafkametrics
+    - receiver/kafka_metrics
     - receiver/kubelet_stats
     - receiver/libhoney
     - receiver/loki
