@@ -2514,17 +2514,17 @@ func appendSimpleMetricWithID(dest pmetric.ResourceMetrics, id string) {
 }
 
 func newTestMetricsExporter(
-	t testing.TB,
+	tb testing.TB,
 	ts exporter.Settings,
-	tb *metadata.TelemetryBuilder,
+	telemetryBuilder *metadata.TelemetryBuilder,
 	cfg *Config,
 	componentFactory func(context.Context, string) (component.Component, error),
 ) (*metricExporterImp, *loadBalancer) {
-	t.Helper()
+	tb.Helper()
 
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
-	require.NoError(t, err)
-	lb.addMissingExporters(context.Background(), cfg.Resolver.Static.Get().Hostnames)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, telemetryBuilder)
+	require.NoError(tb, err)
+	lb.addMissingExporters(tb.Context(), cfg.Resolver.Static.Get().Hostnames)
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(_ context.Context) ([]string, error) {
@@ -2533,7 +2533,7 @@ func newTestMetricsExporter(
 	}
 
 	p, err := newMetricsExporter(ts, cfg)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	p.loadBalancer = lb
 	return p, lb
 }

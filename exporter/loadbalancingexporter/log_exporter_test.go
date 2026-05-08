@@ -1583,8 +1583,8 @@ func simpleLogWithID(id pcommon.TraceID) plog.Logs {
 	return logs
 }
 
-func findTraceIDForEndpoint(t testing.TB, ring *hashRing, endpoint string) pcommon.TraceID {
-	t.Helper()
+func findTraceIDForEndpoint(tb testing.TB, ring *hashRing, endpoint string) pcommon.TraceID {
+	tb.Helper()
 
 	for i := range 4096 {
 		var traceID pcommon.TraceID
@@ -1594,7 +1594,7 @@ func findTraceIDForEndpoint(t testing.TB, ring *hashRing, endpoint string) pcomm
 		}
 	}
 
-	require.FailNow(t, "failed to find trace id for endpoint", "endpoint=%s", endpoint)
+	require.FailNow(tb, "failed to find trace id for endpoint", "endpoint=%s", endpoint)
 	return pcommon.TraceID{}
 }
 

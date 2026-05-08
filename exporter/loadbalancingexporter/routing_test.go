@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func findRoutingIDForEndpoint(t testing.TB, ring *hashRing, endpoint string) string {
-	t.Helper()
+func findRoutingIDForEndpoint(tb testing.TB, ring *hashRing, endpoint string) string {
+	tb.Helper()
 
 	for i := range 4096 {
 		routingID := fmt.Sprintf("routing-id-%d", i)
@@ -21,6 +21,6 @@ func findRoutingIDForEndpoint(t testing.TB, ring *hashRing, endpoint string) str
 		}
 	}
 
-	require.FailNow(t, "failed to find routing id for endpoint", "endpoint=%s", endpoint)
+	require.FailNow(tb, "failed to find routing id for endpoint", "endpoint=%s", endpoint)
 	return ""
 }
