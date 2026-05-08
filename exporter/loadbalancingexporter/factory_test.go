@@ -278,6 +278,18 @@ func TestWrappedExporterHasEndpointAttribute(t *testing.T) {
 	signalValue, found = wrappedExp.metricRequestAttr.Value("signal")
 	require.True(t, found, "metric request attr should have signal field")
 	assert.Equal(t, backendRequestSignalMetrics, signalValue.AsString())
+
+	signalValue, found = wrappedExp.logSignalAttr.Value("signal")
+	require.True(t, found, "log signal attr should have signal field")
+	assert.Equal(t, backendRequestSignalLogs, signalValue.AsString())
+	_, found = wrappedExp.logSignalAttr.Value("endpoint")
+	assert.False(t, found, "log signal attr should not have endpoint")
+
+	signalValue, found = wrappedExp.metricSignalAttr.Value("signal")
+	require.True(t, found, "metric signal attr should have signal field")
+	assert.Equal(t, backendRequestSignalMetrics, signalValue.AsString())
+	_, found = wrappedExp.metricSignalAttr.Value("endpoint")
+	assert.False(t, found, "metric signal attr should not have endpoint")
 }
 
 func TestWrappedExporterNormalizesEndpointAttributeWithoutPort(t *testing.T) {

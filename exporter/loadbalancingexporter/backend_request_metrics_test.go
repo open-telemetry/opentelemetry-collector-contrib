@@ -26,18 +26,19 @@ func assertBackendRequestMetrics(t *testing.T, telemetry *componenttest.Telemetr
 	require.Positive(t, bytes)
 	require.Positive(t, items)
 
-	attrs := attribute.NewSet(attribute.String("endpoint", endpoint), attribute.String("signal", signal))
+	signalAttrs := attribute.NewSet(attribute.String("signal", signal))
+	endpointAttrs := attribute.NewSet(attribute.String("endpoint", endpoint), attribute.String("signal", signal))
 	metadatatest.AssertEqualLoadbalancerBackendRequestTotal(t, telemetry, []metricdata.DataPoint[int64]{
 		{
-			Attributes: attrs,
+			Attributes: endpointAttrs,
 			Value:      1,
 		},
 	}, metricdatatest.IgnoreTimestamp())
 	metadatatest.AssertEqualLoadbalancerBackendRequestBytes(t, telemetry, []metricdata.HistogramDataPoint[int64]{
-		backendRequestHistogramPoint(attrs, bytes, backendRequestBytesBounds),
+		backendRequestHistogramPoint(signalAttrs, bytes, backendRequestBytesBounds),
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	metadatatest.AssertEqualLoadbalancerBackendRequestItems(t, telemetry, []metricdata.HistogramDataPoint[int64]{
-		backendRequestHistogramPoint(attrs, items, backendRequestItemsBounds),
+		backendRequestHistogramPoint(signalAttrs, items, backendRequestItemsBounds),
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 

@@ -35,6 +35,8 @@ type wrappedExporter struct {
 	failureAttr       attribute.Set
 	logRequestAttr    attribute.Set
 	metricRequestAttr attribute.Set
+	logSignalAttr     attribute.Set
+	metricSignalAttr  attribute.Set
 }
 
 func newWrappedExporter(exp component.Component, identifier string) *wrappedExporter {
@@ -48,6 +50,8 @@ func newWrappedExporter(exp component.Component, identifier string) *wrappedExpo
 		failureAttr:       attribute.NewSet(ea, attribute.Bool("success", false)),
 		logRequestAttr:    backendRequestAttributeSet(backendRequestSignalLogs, endpoint),
 		metricRequestAttr: backendRequestAttributeSet(backendRequestSignalMetrics, endpoint),
+		logSignalAttr:     backendRequestSignalAttributeSet(backendRequestSignalLogs),
+		metricSignalAttr:  backendRequestSignalAttributeSet(backendRequestSignalMetrics),
 	}
 }
 

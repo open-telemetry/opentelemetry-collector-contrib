@@ -23,30 +23,34 @@ func backendRequestAttributeSet(signal, endpoint string) attribute.Set {
 	return attribute.NewSet(attribute.String("endpoint", endpoint), attribute.String("signal", signal))
 }
 
+func backendRequestSignalAttributeSet(signal string) attribute.Set {
+	return attribute.NewSet(attribute.String("signal", signal))
+}
+
 func backendRequestMetricOptions(attrs attribute.Set) metric.MeasurementOption {
 	return metric.WithAttributeSet(attrs)
 }
 
-func recordLogBackendRequest(ctx context.Context, tb *metadata.TelemetryBuilder, attrs attribute.Set, ld plog.Logs) {
+func recordLogBackendRequest(ctx context.Context, tb *metadata.TelemetryBuilder, signalAttrs, endpointAttrs attribute.Set, ld plog.Logs) {
 	if tb == nil {
 		return
 	}
 
-	opts := backendRequestMetricOptions(attrs)
-	tb.LoadbalancerBackendRequestBytes.Record(ctx, serializedLogsSize(ld), opts)
-	tb.LoadbalancerBackendRequestItems.Record(ctx, int64(ld.LogRecordCount()), opts)
-	tb.LoadbalancerBackendRequestTotal.Add(ctx, 1, opts)
+	signalOpts := backendRequestMetricOptions(signalAttrs)
+	tb.LoadbalancerBackendRequestBytes.Record(ctx, serializedLogsSize(ld), signalOpts)
+	tb.LoadbalancerBackendRequestItems.Record(ctx, int64(ld.LogRecordCount()), signalOpts)
+	tb.LoadbalancerBackendRequestTotal.Add(ctx, 1, backendRequestMetricOptions(endpointAttrs))
 }
 
-func recordMetricBackendRequest(ctx context.Context, tb *metadata.TelemetryBuilder, attrs attribute.Set, md pmetric.Metrics) {
+func recordMetricBackendRequest(ctx context.Context, tb *metadata.TelemetryBuilder, signalAttrs, endpointAttrs attribute.Set, md pmetric.Metrics) {
 	if tb == nil {
 		return
 	}
 
-	opts := backendRequestMetricOptions(attrs)
-	tb.LoadbalancerBackendRequestBytes.Record(ctx, serializedMetricsSize(md), opts)
-	tb.LoadbalancerBackendRequestItems.Record(ctx, int64(md.DataPointCount()), opts)
-	tb.LoadbalancerBackendRequestTotal.Add(ctx, 1, opts)
+	signalOpts := backendRequestMetricOptions(signalAttrs)
+	tb.LoadbalancerBackendRequestBytes.Record(ctx, serializedMetricsSize(md), signalOpts)
+	tb.LoadbalancerBackendRequestItems.Record(ctx, int64(md.DataPointCount()), signalOpts)
+	tb.LoadbalancerBackendRequestTotal.Add(ctx, 1, backendRequestMetricOptions(endpointAttrs))
 }
 
 func serializedLogsSize(ld plog.Logs) int64 {

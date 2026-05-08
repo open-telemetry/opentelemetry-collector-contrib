@@ -97,7 +97,7 @@ telemetry:
         value_type: int
         monotonic: true
     loadbalancer_backend_request_bytes:
-      attributes: [backend_request_signal, endpoint]
+      attributes: [backend_request_signal]
       enabled: true
       stability: development
       description: Serialized OTLP bytes per backend request before transport compression.
@@ -106,7 +106,7 @@ telemetry:
         value_type: int
         bucket_boundaries: [1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216]
     loadbalancer_backend_request_items:
-      attributes: [backend_request_signal, endpoint]
+      attributes: [backend_request_signal]
       enabled: true
       stability: development
       description: Log records or metric datapoints per backend request.

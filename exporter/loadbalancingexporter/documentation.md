@@ -70,7 +70,6 @@ Serialized OTLP bytes per backend request before transport compression.
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
 | signal | Telemetry signal for backend request metrics | Str: ``logs``, ``metrics`` | - |
-| endpoint | The endpoint of the backend | Any Str | - |
 
 ### otelcol_loadbalancer_backend_request_items
 
@@ -85,7 +84,6 @@ Log records or metric datapoints per backend request.
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
 | signal | Telemetry signal for backend request metrics | Str: ``logs``, ``metrics`` | - |
-| endpoint | The endpoint of the backend | Any Str | - |
 
 ### otelcol_loadbalancer_backend_request_total
 
