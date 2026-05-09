@@ -63,8 +63,9 @@ func TestCentralQueueLeaseReservesCompressedBytesUntilDoneOrRequeue(t *testing.T
 	require.Equal(t, 1, q.len())
 	require.EqualValues(t, 10, q.compressedBytes())
 
-	retryLease, err := q.lease(t.Context())
+	retryLease, err := q.tryLease(time.Now().Add(centralQueueInitialRetryDelay))
 	require.NoError(t, err)
+	require.NotNil(t, retryLease)
 	retryLease.done()
 	require.Zero(t, q.compressedBytes())
 }
@@ -143,7 +144,6 @@ func TestCentralQueueRequeuesWholeCoalescedWindow(t *testing.T) {
 		targetCompressedBytes:        20,
 	})
 	now := time.Unix(10, 0)
-	nextAttempt := now.Add(time.Second)
 	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindMetrics, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
 	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindMetrics, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
 
@@ -151,7 +151,7 @@ func TestCentralQueueRequeuesWholeCoalescedWindow(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, lease)
 	require.Len(t, lease.window.items, 2)
-	require.NoError(t, lease.requeue(nextAttempt))
+	require.NoError(t, lease.requeue(now))
 	require.Equal(t, 2, q.len())
 	require.EqualValues(t, 20, q.compressedBytes())
 
@@ -159,11 +159,39 @@ func TestCentralQueueRequeuesWholeCoalescedWindow(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, lease)
 
-	lease, err = q.tryLease(nextAttempt)
+	lease, err = q.tryLease(now.Add(centralQueueInitialRetryDelay))
 	require.NoError(t, err)
 	require.NotNil(t, lease)
 	require.Len(t, lease.window.items, 2)
 	require.Equal(t, 1, lease.window.maxAttempt)
+}
+
+func TestCentralQueueRequeueUsesPerItemRetryDelay(t *testing.T) {
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 100,
+		maxUncompressedBatchBytes:    100,
+		targetCompressedBytes:        20,
+	})
+	now := time.Unix(10, 0)
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindMetrics, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 20, count: 1, attempt: 3}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindMetrics, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
+
+	lease, err := q.tryLease(now)
+	require.NoError(t, err)
+	require.NotNil(t, lease)
+	require.Len(t, lease.window.items, 2)
+	require.Equal(t, 3, lease.window.maxAttempt)
+
+	require.NoError(t, lease.requeue(now))
+
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	require.Len(t, q.items, 2)
+	require.Equal(t, 4, q.items[0].attempt)
+	require.Equal(t, now.Add(centralQueueRetryDelay(3)).UnixNano(), q.items[0].nextAttemptUnixNano)
+	require.Equal(t, 1, q.items[1].attempt)
+	require.Equal(t, now.Add(centralQueueRetryDelay(0)).UnixNano(), q.items[1].nextAttemptUnixNano)
 }
 
 func TestCentralQueueSnapshotReportsOldestQueuedItemAge(t *testing.T) {
@@ -200,11 +228,11 @@ func TestCentralQueueSnapshotReportsOldestQueuedItemAge(t *testing.T) {
 	secondLease.done()
 	require.EqualValues(t, 300, snapshotAt(base.Add(300*time.Millisecond)).oldestItemAgeMillis)
 
-	retryLease, err := q.tryLease(base.Add(time.Second))
+	retryLease, err := q.tryLease(base.Add(time.Second + centralQueueInitialRetryDelay))
 	require.NoError(t, err)
 	require.NotNil(t, retryLease)
 	retryLease.done()
-	require.Zero(t, snapshotAt(base.Add(time.Second)).oldestItemAgeMillis)
+	require.Zero(t, snapshotAt(base.Add(time.Second+centralQueueInitialRetryDelay)).oldestItemAgeMillis)
 }
 
 func TestCentralQueueTelemetryOldestItemAgeAdvancesWithoutQueueMutation(t *testing.T) {
@@ -303,6 +331,7 @@ func TestCentralQueueRetriesDoNotGrowOldestEnqueuedHeap(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, lease)
 		require.NoError(t, lease.requeue(now))
+		now = now.Add(centralQueueMaxRetryDelay)
 	}
 
 	q.mu.Lock()

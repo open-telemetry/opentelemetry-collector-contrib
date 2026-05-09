@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: exporter/loadbalancing
+note: Retry coalesced central queue payloads using each payload's own retry attempt.
+issues: [60]
+subtext: |-
+  Prevents fresh payloads coalesced with an older retrying payload from inheriting
+  the older payload's backoff delay.
+change_logs: [user]

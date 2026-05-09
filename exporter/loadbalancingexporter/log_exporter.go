@@ -255,8 +255,7 @@ func (e *logExporterImp) runCentralQueue(ctx context.Context) {
 			lease.done()
 			continue
 		}
-		nextAttempt := time.Now().Add(lease.retryDelay())
-		if requeueErr := lease.requeue(nextAttempt); requeueErr != nil {
+		if requeueErr := lease.requeue(time.Now()); requeueErr != nil {
 			e.logger.Warn("failed to requeue central log queue item", zap.Error(requeueErr), zap.Error(err))
 		}
 	}

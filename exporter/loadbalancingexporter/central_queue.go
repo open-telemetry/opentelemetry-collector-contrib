@@ -260,7 +260,7 @@ func (l *centralQueueLease) done() {
 	})
 }
 
-func (l *centralQueueLease) requeue(nextAttempt time.Time) error {
+func (l *centralQueueLease) requeue(now time.Time) error {
 	var err error
 	l.once.Do(func() {
 		l.queue.settings.telemetry.recordRetry(context.Background())
@@ -272,6 +272,7 @@ func (l *centralQueueLease) requeue(nextAttempt time.Time) error {
 			err = errCentralQueueStopped
 		} else {
 			for _, item := range l.window.items {
+				nextAttempt := now.Add(centralQueueRetryDelay(item.attempt))
 				item.attempt++
 				item.nextAttemptUnixNano = nextAttempt.UnixNano()
 				l.queue.items = append(l.queue.items, item)
@@ -283,10 +284,6 @@ func (l *centralQueueLease) requeue(nextAttempt time.Time) error {
 		l.queue.settings.telemetry.record(context.Background(), snapshot)
 	})
 	return err
-}
-
-func (l *centralQueueLease) retryDelay() time.Duration {
-	return centralQueueRetryDelay(l.window.maxAttempt)
 }
 
 func (q *centralQueue) stop() {
