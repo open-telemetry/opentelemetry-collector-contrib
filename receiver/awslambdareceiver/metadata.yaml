@@ -1,5 +1,5 @@
 display_name: AWS Lambda Receiver
-type: awslambda
+type: aws_lambda
 
 status:
   class: receiver
