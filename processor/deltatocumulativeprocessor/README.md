@@ -36,6 +36,11 @@ processors:
         # when set, accumulated stream state survives collector restarts.
         [ storage: <component.ID> ]
 
+        # write every update to storage immediately instead of batching.
+        # requires storage to be set. provides stronger durability at the
+        # cost of higher I/O.
+        [ write_through: <bool> | default = false ]
+
 ```
 
 There is no further configuration required. All delta samples are converted to cumulative.
@@ -46,8 +51,12 @@ By default, all accumulated state is held in memory and lost on restart.
 Setting `storage` to a [storage extension](https://opentelemetry.io/docs/collector/configuration/#storage-extension) ID
 enables the processor to persist stream state across collector restarts.
 
-State is loaded from storage on first access and periodically flushed in the
-background (write-back), keeping I/O overhead low.
+Two persistence modes are available:
+
+| Mode | Config | Behavior |
+|------|--------|----------|
+| **Write-back** (default) | `storage: <id>` | State is loaded from storage on first access and periodically flushed in the background. Low I/O overhead. |
+| **Write-through** | `storage: <id>` + `write_through: true` | Every update is written to storage immediately. Stronger durability guarantees at the cost of higher I/O. |
 
 #### Example: write-back with Redis storage
 
@@ -62,6 +71,25 @@ processors:
 
 service:
     extensions: [redis_storage]
+    pipelines:
+        metrics:
+            processors: [deltatocumulative]
+```
+
+#### Example: write-through with file storage
+
+``` yaml
+extensions:
+    file_storage:
+        directory: /var/lib/otelcol/delta_state
+
+processors:
+    deltatocumulative:
+        storage: file_storage
+        write_through: true
+
+service:
+    extensions: [file_storage]
     pipelines:
         metrics:
             processors: [deltatocumulative]
