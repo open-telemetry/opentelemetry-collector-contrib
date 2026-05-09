@@ -272,6 +272,7 @@ func (*deltaToCumulativeProcessor) Capabilities() consumer.Capabilities {
 type Storage[K comparable, V any] interface {
 	LoadOrStore(key K, value V) (actual V, loaded bool)
 	LoadAndDelete(key K) (value V, loaded bool)
+	Store(key K, value V) // Persist after mutation. No-op for in-memory and write-back maps.
 }
 
 // persistedStorage adapts a [maps.Persisted] to the [Storage] interface by
