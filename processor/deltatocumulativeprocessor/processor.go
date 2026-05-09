@@ -290,6 +290,30 @@ func (ps *persistedStorage[K, V]) LoadAndDelete(key K) (V, bool) {
 	return ps.m.LoadAndDelete(ps.ctx, key)
 }
 
+// Store is a no-op for write-back mode. Dirty tracking in LoadOrStore
+// already ensures changed values are flushed.
+func (*persistedStorage[K, V]) Store(_ K, _ V) {}
+
+// writeThroughStorage adapts a [maps.WriteThrough] to the [Storage] interface
+// by capturing a context.Context. Unlike [persistedStorage], every Store call
+// writes directly to the backing storage.
+type writeThroughStorage[K comparable, V any] struct {
+	ctx context.Context
+	m   *maps.WriteThrough[K, V]
+}
+
+func (ws *writeThroughStorage[K, V]) LoadOrStore(key K, value V) (V, bool) {
+	return ws.m.LoadOrStore(ws.ctx, key, value)
+}
+
+func (ws *writeThroughStorage[K, V]) LoadAndDelete(key K) (V, bool) {
+	return ws.m.LoadAndDelete(ws.ctx, key)
+}
+
+func (ws *writeThroughStorage[K, V]) Store(key K, value V) {
+	_ = ws.m.Store(ws.ctx, key, value)
+}
+
 // state keeps a cumulative value, aggregated over time, per stream
 type state struct {
 	ctx   maps.Context
@@ -343,6 +367,29 @@ func newPersistedState(client storage.Client, maxStreams int64, maxStale time.Du
 			flushErr := errors.Join(numsR.Err, histR.Err, expoR.Err)
 			indexErr := persistStaleIndex(ctx, client, numsR.Keys, histR.Keys, expoR.Keys)
 			return errors.Join(flushErr, indexErr)
+		},
+	}
+}
+
+func newWriteThroughState(client storage.Client, maxStreams int64, maxStale time.Duration, done <-chan struct{}) state {
+	limit := maps.Limit(maxStreams)
+	storageCtx := context.Background()
+
+	nums := maps.NewWriteThrough(client, "nums", limit, streamHashKey, marshalNumberDP, unmarshalNumberDP)
+	hist := maps.NewWriteThrough(client, "hist", limit, streamHashKey, marshalHistogramDP, unmarshalHistogramDP)
+	expo := maps.NewWriteThrough(client, "expo", limit, streamHashKey, marshalExpoDP, unmarshalExpoDP)
+
+	scheduleOrphanCleanup(storageCtx, client, done, maxStale, nums, hist, expo)
+
+	return state{
+		ctx:  limit,
+		nums: &writeThroughStorage[identity.Stream, *mutex[pmetric.NumberDataPoint]]{ctx: storageCtx, m: nums},
+		hist: &writeThroughStorage[identity.Stream, *mutex[pmetric.HistogramDataPoint]]{ctx: storageCtx, m: hist},
+		expo: &writeThroughStorage[identity.Stream, *mutex[pmetric.ExponentialHistogramDataPoint]]{ctx: storageCtx, m: expo},
+		flush: func(ctx context.Context) error {
+			// Write-through: values are already persisted via Store.
+			// Only persist the stale index for orphan cleanup.
+			return persistStaleIndex(ctx, client, nums.Keys(), hist.Keys(), expo.Keys())
 		},
 	}
 }
