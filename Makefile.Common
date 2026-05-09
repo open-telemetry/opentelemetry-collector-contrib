@@ -272,8 +272,8 @@ lint: checklicense misspell
 
 # jq filter: Build OSV lookup map {id: {withdrawn, summary, pkg}}
 _GOVUL_MAP = reduce (.[] | select(.osv)) as $$osv ({}; . + {($$osv.osv.id): {summary: $$osv.osv.summary, withdrawn: $$osv.osv.withdrawn, pkg: ($$osv.osv.affected[0].package.name // "")}}) as $$osv_data
-# jq filter: Check if vulnerability should be skipped (withdrawn or golang+IGNORE_GOLANG_VULNS)
-_GOVUL_SKIP = ($$osv_data[.finding.osv].withdrawn | . != null and . != "") or ("$(IGNORE_GOLANG_VULNS)" == "1" and ($$osv_data[.finding.osv].pkg | test("^(stdlib|golang\\.org|google\\.golang\\.org)")))
+# jq filter: Check if vulnerability should be skipped (withdrawn, golang+IGNORE_GOLANG_VULNS, or has no position/symbol in trace)
+_GOVUL_SKIP = ($$osv_data[.finding.osv].withdrawn | . != null and . != "") or ("$(IGNORE_GOLANG_VULNS)" == "1" and ($$osv_data[.finding.osv].pkg | test("^(stdlib|golang\\.org|google\\.golang\\.org)"))) or (.finding.trace | length == 0 or (all(.position == null and .symbol == null)))
 .PHONY: govulncheck
 govulncheck:
 	@set -e; \
@@ -292,8 +292,8 @@ govulncheck:
 	echo "Vulnerabilities need attention: $$UNIGNORED"; \
 	echo ""; \
 	echo "Vulnerability Summary:"; \
-	echo "ID/LINK    SUMMARY"; \
-	$(GOJQ) -r -s '$(_GOVUL_MAP) | [.[] | select(.finding != null and ($(_GOVUL_SKIP) | not)) | ["https://pkg.go.dev/vuln/" + .finding.osv, $$osv_data[.finding.osv].summary]] | unique_by(.[0]) | .[] | @tsv' govulncheck-output.json; \
+	echo "ID/LINK    SUMMARY    POSITION"; \
+	$(GOJQ) -r -s '$(_GOVUL_MAP) | [.[] | select(.finding != null and ($(_GOVUL_SKIP) | not)) | ["https://pkg.go.dev/vuln/" + .finding.osv, $$osv_data[.finding.osv].summary, (.finding.trace | map(select(.position != null or .symbol != null) | (.position // .symbol | tostring)) | join("; "))] ] | unique_by(.[0]) | .[] | @tsv' govulncheck-output.json; \
 	rm -f govulncheck-output.json; \
 	exit 1
 
