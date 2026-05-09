@@ -32,9 +32,79 @@ processors:
         # will be dropped
         [ max_streams: <int> | default = 9223372036854775807 (max int) ]
 
+        # optional: reference to a storage extension for persistent state.
+        # when set, accumulated stream state survives collector restarts.
+        [ storage: <component.ID> ]
+
+        # write every update to storage immediately instead of batching.
+        # requires storage to be set. provides stronger durability at the
+        # cost of higher I/O.
+        [ write_through: <bool> | default = false ]
+
 ```
 
 There is no further configuration required. All delta samples are converted to cumulative.
+
+### Persistent storage
+
+By default, all accumulated state is held in memory and lost on restart.
+Setting `storage` to a [storage extension](https://opentelemetry.io/docs/collector/configuration/#storage-extension) ID
+enables the processor to persist stream state across collector restarts.
+
+Two persistence modes are available:
+
+| Mode | Config | Behavior |
+|------|--------|----------|
+| **Write-back** (default) | `storage: <id>` | State is loaded from storage on first access and periodically flushed in the background. Low I/O overhead. |
+| **Write-through** | `storage: <id>` + `write_through: true` | Every update is written to storage immediately. Stronger durability guarantees at the cost of higher I/O. |
+
+#### Example: write-back with Redis storage
+
+``` yaml
+extensions:
+    redis_storage:
+        endpoint: localhost:6379
+
+processors:
+    deltatocumulative:
+        storage: redis_storage
+
+service:
+    extensions: [redis_storage]
+    pipelines:
+        metrics:
+            processors: [deltatocumulative]
+```
+
+#### Example: write-through with file storage
+
+``` yaml
+extensions:
+    file_storage:
+        directory: /var/lib/otelcol/delta_state
+
+processors:
+    deltatocumulative:
+        storage: file_storage
+        write_through: true
+
+service:
+    extensions: [file_storage]
+    pipelines:
+        metrics:
+            processors: [deltatocumulative]
+```
+
+## Warnings
+
+### Statefulness
+
+This processor **accumulates state** in memory (or in a configured storage extension). 
+The amount of state scales linearly with the number of unique metric streams.
+
+When no `storage` extension is configured, all state is lost on collector restart, which
+causes a gap in cumulative series until the next delta sample arrives.
+Configuring persistent storage eliminates this gap at the cost of I/O overhead.
 
 ## Troubleshooting
 
