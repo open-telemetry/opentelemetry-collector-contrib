@@ -535,4 +535,6 @@ The following metrics are recorded by this exporter:
   * `otelcol_loadbalancer_central_queue_window_uncompressed_bytes` reports decoded OTLP bytes in each merged request window.
   * `otelcol_loadbalancer_central_queue_window_items` reports log records or metric datapoints in each merged request window.
   * `otelcol_loadbalancer_central_queue_window_payloads` reports how many compressed queue payloads were merged into each request window.
+  * `otelcol_loadbalancer_central_queue_window_flush_total` counts request windows by flush reason: `target_reached`, `hard_cap`, `max_delay_low_traffic`, or `shutdown`.
+  * `otelcol_loadbalancer_central_queue_window_underfilled_total` counts request windows that were sent below the configured compressed byte target, split by flush reason.
   * `otelcol_loadbalancer_central_queue_decode_failures` counts log records or metric datapoints dropped because a queued compressed payload could not be decoded.

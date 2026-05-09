@@ -37,9 +37,11 @@ func TestCentralQueueTelemetryRecordsInstruments(t *testing.T) {
 		compressedBytes:   32,
 		uncompressedBytes: 128,
 		count:             11,
-	})
+		flushReason:       centralQueueFlushReasonMaxDelayLowTraffic,
+	}, 64)
 
 	attrs := attribute.NewSet(attribute.String("signal", string(signalKindLogs)))
+	flushAttrs := attribute.NewSet(attribute.String("signal", string(signalKindLogs)), attribute.String("reason", string(centralQueueFlushReasonMaxDelayLowTraffic)))
 	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_compressed_bytes", "By", attrs, 50)
 	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_compressed_capacity", "By", attrs, 100)
 	requireCentralQueueFloatGauge(t, reader, "otelcol_loadbalancer_central_queue_saturation", "1", attrs, 0.5)
@@ -53,6 +55,8 @@ func TestCentralQueueTelemetryRecordsInstruments(t *testing.T) {
 	requireCentralQueueIntHistogram(t, reader, "otelcol_loadbalancer_central_queue_window_uncompressed_bytes", "By", attrs, 128)
 	requireCentralQueueIntHistogram(t, reader, "otelcol_loadbalancer_central_queue_window_items", "{items}", attrs, 11)
 	requireCentralQueueIntHistogram(t, reader, "otelcol_loadbalancer_central_queue_window_payloads", "{payloads}", attrs, 2)
+	requireCentralQueueIntSum(t, reader, "otelcol_loadbalancer_central_queue_window_flush_total", "{windows}", flushAttrs, 1)
+	requireCentralQueueIntSum(t, reader, "otelcol_loadbalancer_central_queue_window_underfilled_total", "{windows}", flushAttrs, 1)
 }
 
 func TestCentralQueueTelemetryOldestItemAgeReportsMultipleSignals(t *testing.T) {

@@ -933,3 +933,31 @@ func (lb *loadBalancer) exporterAndEndpoint(identifier []byte) (*wrappedExporter
 
 	return exp, endpointWithPort(endpoint), nil
 }
+
+func (lb *loadBalancer) randomExporterAndEndpoint() (*wrappedExporter, string, error) {
+	lb.refreshExpiredEndpointHealth(context.Background())
+
+	lb.updateLock.RLock()
+	defer lb.updateLock.RUnlock()
+
+	if lb.ring == nil || len(lb.ring.items) == 0 {
+		return nil, "", errExporterIsStopping
+	}
+	var missingExporterErr error
+	start := rand.IntN(len(lb.ring.items))
+	for offset := range len(lb.ring.items) {
+		endpoint := endpointWithPort(lb.ring.items[(start+offset)%len(lb.ring.items)].endpoint)
+		exp, found := lb.exporters[endpoint]
+		if !found {
+			missingExporterErr = fmt.Errorf("couldn't find the exporter for the endpoint %q", endpoint)
+			continue
+		}
+		if !exp.isStopping() {
+			return exp, endpoint, nil
+		}
+	}
+	if missingExporterErr != nil {
+		return nil, "", missingExporterErr
+	}
+	return nil, "", errExporterIsStopping
+}

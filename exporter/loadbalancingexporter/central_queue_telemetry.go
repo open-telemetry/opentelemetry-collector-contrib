@@ -16,6 +16,7 @@ import (
 )
 
 type centralQueueTelemetry struct {
+	signal               signalKind
 	signalAttrs          metric.MeasurementOption
 	compressedBytes      metric.Int64Gauge
 	compressedCapacity   metric.Int64Gauge
@@ -26,13 +27,16 @@ type centralQueueTelemetry struct {
 	decodeFailures       metric.Int64Counter
 	inflightUncompressed metric.Int64Gauge
 	windowCompressed     metric.Int64Histogram
+	windowFlush          metric.Int64Counter
 	windowUncompressed   metric.Int64Histogram
 	windowItems          metric.Int64Histogram
 	windowPayloads       metric.Int64Histogram
+	windowUnderfilled    metric.Int64Counter
 	oldestItemAge        metric.Int64ObservableGauge
 	oldestItemAgeReg     metric.Registration
 	oldestItemAgeMu      sync.RWMutex
 	oldestItemAgeMillis  func() int64
+	flushReasonAttrs     map[centralQueueFlushReason]metric.MeasurementOption
 }
 
 type centralQueueSnapshot struct {
@@ -46,8 +50,16 @@ type centralQueueSnapshot struct {
 func newCentralQueueTelemetry(settings component.TelemetrySettings, signal signalKind) (*centralQueueTelemetry, error) {
 	meter := metadata.Meter(settings)
 	var err, errs error
+	signalAttr := attribute.String("signal", string(signal))
 	t := &centralQueueTelemetry{
-		signalAttrs: metric.WithAttributeSet(attribute.NewSet(attribute.String("signal", string(signal)))),
+		signal:      signal,
+		signalAttrs: metric.WithAttributeSet(attribute.NewSet(signalAttr)),
+		flushReasonAttrs: map[centralQueueFlushReason]metric.MeasurementOption{
+			centralQueueFlushReasonTargetReached:      metric.WithAttributeSet(attribute.NewSet(signalAttr, attribute.String("reason", string(centralQueueFlushReasonTargetReached)))),
+			centralQueueFlushReasonHardCap:            metric.WithAttributeSet(attribute.NewSet(signalAttr, attribute.String("reason", string(centralQueueFlushReasonHardCap)))),
+			centralQueueFlushReasonMaxDelayLowTraffic: metric.WithAttributeSet(attribute.NewSet(signalAttr, attribute.String("reason", string(centralQueueFlushReasonMaxDelayLowTraffic)))),
+			centralQueueFlushReasonShutdown:           metric.WithAttributeSet(attribute.NewSet(signalAttr, attribute.String("reason", string(centralQueueFlushReasonShutdown)))),
+		},
 	}
 	t.compressedBytes, err = meter.Int64Gauge(
 		"otelcol_loadbalancer_central_queue_compressed_bytes",
@@ -104,6 +116,12 @@ func newCentralQueueTelemetry(settings component.TelemetrySettings, signal signa
 		metric.WithExplicitBucketBoundaries(1024, 4096, 16384, 65536, 262144, 1048576, 4194304),
 	)
 	errs = errors.Join(errs, err)
+	t.windowFlush, err = meter.Int64Counter(
+		"otelcol_loadbalancer_central_queue_window_flush_total",
+		metric.WithDescription("Central load-balancing queue windows flushed by bounded reason."),
+		metric.WithUnit("{windows}"),
+	)
+	errs = errors.Join(errs, err)
 	t.windowUncompressed, err = meter.Int64Histogram(
 		"otelcol_loadbalancer_central_queue_window_uncompressed_bytes",
 		metric.WithDescription("Estimated uncompressed OTLP bytes in each central load-balancing queue window before decode and send."),
@@ -123,6 +141,12 @@ func newCentralQueueTelemetry(settings component.TelemetrySettings, signal signa
 		metric.WithDescription("Compressed queue payloads merged into each central load-balancing queue window."),
 		metric.WithUnit("{payloads}"),
 		metric.WithExplicitBucketBoundaries(1, 2, 4, 8, 16, 32, 64, 128),
+	)
+	errs = errors.Join(errs, err)
+	t.windowUnderfilled, err = meter.Int64Counter(
+		"otelcol_loadbalancer_central_queue_window_underfilled_total",
+		metric.WithDescription("Central load-balancing queue windows sent below target compressed bytes by bounded reason."),
+		metric.WithUnit("{windows}"),
 	)
 	errs = errors.Join(errs, err)
 	t.oldestItemAge, err = meter.Int64ObservableGauge(
@@ -180,7 +204,7 @@ func (t *centralQueueTelemetry) recordDecodeFailure(ctx context.Context, dropped
 	t.decodeFailures.Add(ctx, droppedItems, t.signalAttrs)
 }
 
-func (t *centralQueueTelemetry) recordWindow(ctx context.Context, window centralQueueWindow) {
+func (t *centralQueueTelemetry) recordWindow(ctx context.Context, window centralQueueWindow, targetCompressedBytes int64) {
 	if t == nil {
 		return
 	}
@@ -188,6 +212,18 @@ func (t *centralQueueTelemetry) recordWindow(ctx context.Context, window central
 	t.windowUncompressed.Record(ctx, int64(window.uncompressedBytes), t.signalAttrs)
 	t.windowItems.Record(ctx, int64(window.count), t.signalAttrs)
 	t.windowPayloads.Record(ctx, int64(len(window.items)), t.signalAttrs)
+	reasonAttrs := t.flushAttrs(window.flushReason)
+	t.windowFlush.Add(ctx, 1, reasonAttrs)
+	if int64(window.compressedBytes) < targetCompressedBytes {
+		t.windowUnderfilled.Add(ctx, 1, reasonAttrs)
+	}
+}
+
+func (t *centralQueueTelemetry) flushAttrs(reason centralQueueFlushReason) metric.MeasurementOption {
+	if attrs, ok := t.flushReasonAttrs[reason]; ok {
+		return attrs
+	}
+	return metric.WithAttributeSet(attribute.NewSet(attribute.String("signal", string(t.signal)), attribute.String("reason", string(reason))))
 }
 
 func (t *centralQueueTelemetry) observeOldestItemAge(oldestItemAgeMillis func() int64) {

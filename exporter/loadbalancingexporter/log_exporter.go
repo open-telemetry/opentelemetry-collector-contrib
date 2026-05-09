@@ -185,7 +185,7 @@ func (e *logExporterImp) consumeLogsCentralQueue(_ context.Context, ld plog.Logs
 	for routingKey, logs := range batches {
 		queueRoutingKey := routingKey[:]
 		if e.ignoreTraceID {
-			queueRoutingKey = centralQueueLaneRoutingKey(signalKindLogs, queueRoutingKey, e.centralQueueLaneCount)
+			queueRoutingKey = centralQueueRandomLogsRoutingKey()
 		}
 		item, err := newCentralQueueLogsItem(queueRoutingKey, logs, e.centralCodec, now)
 		if err != nil {
@@ -306,7 +306,13 @@ func (e *logExporterImp) consumeCentralQueueLogWindow(ctx context.Context, windo
 	if !decodedAny {
 		return nil
 	}
-	le, _, err := e.loadBalancer.exporterAndEndpoint(window.routingKey)
+	var le *wrappedExporter
+	var err error
+	if e.ignoreTraceID {
+		le, _, err = e.loadBalancer.randomExporterAndEndpoint()
+	} else {
+		le, _, err = e.loadBalancer.exporterAndEndpoint(window.routingKey)
+	}
 	if err != nil {
 		return err
 	}

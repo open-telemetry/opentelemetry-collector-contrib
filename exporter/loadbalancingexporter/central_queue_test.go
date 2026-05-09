@@ -90,6 +90,7 @@ func TestCentralQueueLeaseCoalescesReadyItemsByRoutingKey(t *testing.T) {
 	require.Len(t, lease.window.items, 2)
 	require.Equal(t, 20, lease.window.compressedBytes)
 	require.Equal(t, 40, lease.window.uncompressedBytes)
+	require.Equal(t, centralQueueFlushReasonTargetReached, lease.window.flushReason)
 	require.Equal(t, 1, q.len())
 	require.EqualValues(t, 30, q.compressedBytes())
 
@@ -113,6 +114,26 @@ func TestCentralQueueLeaseDoesNotCoalesceDifferentRoutingKeys(t *testing.T) {
 	require.NotNil(t, lease)
 	require.Equal(t, []byte("lane-a"), lease.window.routingKey)
 	require.Len(t, lease.window.items, 1)
+	require.Equal(t, centralQueueFlushReasonMaxDelayLowTraffic, lease.window.flushReason)
+}
+
+func TestCentralQueueLeaseMarksHardCapFlush(t *testing.T) {
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 100,
+		maxUncompressedBatchBytes:    30,
+		targetCompressedBytes:        100,
+		maxBatchDelay:                time.Second,
+	})
+	now := time.Unix(10, 0)
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
+
+	lease, err := q.tryLease(now)
+	require.NoError(t, err)
+	require.NotNil(t, lease)
+	require.Len(t, lease.window.items, 1)
+	require.Equal(t, centralQueueFlushReasonHardCap, lease.window.flushReason)
 }
 
 func TestCentralQueueLeaseWaitsForSmallWindowMaxDelay(t *testing.T) {
@@ -134,6 +155,7 @@ func TestCentralQueueLeaseWaitsForSmallWindowMaxDelay(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, lease)
 	require.Len(t, lease.window.items, 1)
+	require.Equal(t, centralQueueFlushReasonMaxDelayLowTraffic, lease.window.flushReason)
 }
 
 func TestCentralQueueRequeuesWholeCoalescedWindow(t *testing.T) {
@@ -382,12 +404,14 @@ func TestCentralQueueStopAllowsDrainingExistingItems(t *testing.T) {
 		maxCompressedBytes:           100,
 		maxInflightUncompressedBytes: 100,
 		maxUncompressedBatchBytes:    100,
+		targetCompressedBytes:        100,
 	})
 	require.NoError(t, q.enqueue(centralQueueItem{signal: signalKindLogs, compressedBytes: 10, uncompressedBytes: 10, count: 1}))
 	q.stop()
 
 	lease, err := q.lease(t.Context())
 	require.NoError(t, err)
+	require.Equal(t, centralQueueFlushReasonShutdown, lease.window.flushReason)
 	lease.done()
 
 	_, err = q.lease(t.Context())

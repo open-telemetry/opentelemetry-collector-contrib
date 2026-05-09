@@ -211,10 +211,11 @@ func TestConsumeLogsCentralQueueEnqueuesCompressedByRoutingKey(t *testing.T) {
 	require.NoError(t, plogtest.CompareLogs(logs, decoded))
 }
 
-func TestConsumeLogsCentralQueueCoalescesRandomRoutingByLane(t *testing.T) {
+func TestConsumeLogsCentralQueueCoalescesRandomRoutingBeforeLaneSelection(t *testing.T) {
 	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
 	t.Cleanup(func() { require.NoError(t, codec.Close()) })
-	var next byte
+	traceIDs := distinctCentralQueueLaneTraceIDs(t, 2, 64)
+	var next atomic.Int64
 	p := &logExporterImp{
 		centralQueue: newCentralQueue(centralQueueSettings{
 			maxCompressedBytes:           1 << 20,
@@ -224,10 +225,10 @@ func TestConsumeLogsCentralQueueCoalescesRandomRoutingByLane(t *testing.T) {
 		}),
 		centralCodec:          codec,
 		ignoreTraceID:         true,
-		centralQueueLaneCount: 1,
+		centralQueueLaneCount: 64,
 		randomTraceID: func() pcommon.TraceID {
-			next++
-			return pcommon.TraceID{next}
+			index := int(next.Add(1)-1) % len(traceIDs)
+			return traceIDs[index]
 		},
 	}
 	p.started.Store(true)
@@ -242,6 +243,7 @@ func TestConsumeLogsCentralQueueCoalescesRandomRoutingByLane(t *testing.T) {
 	require.NoError(t, err)
 	defer lease.done()
 	require.Len(t, lease.window.items, 2)
+	require.Equal(t, centralQueueRandomLogsRoutingKey(), lease.window.routingKey)
 
 	merged := plog.NewLogs()
 	for _, item := range lease.window.items {
@@ -1672,6 +1674,24 @@ func findTraceIDForEndpoint(tb testing.TB, ring *hashRing, endpoint string) pcom
 
 	require.FailNow(tb, "failed to find trace id for endpoint", "endpoint=%s", endpoint)
 	return pcommon.TraceID{}
+}
+
+func distinctCentralQueueLaneTraceIDs(t *testing.T, count, laneCount int) []pcommon.TraceID {
+	t.Helper()
+	traceIDs := make([]pcommon.TraceID, 0, count)
+	seen := make(map[string]struct{}, count)
+	for i := 1; len(traceIDs) < count && i < 10_000; i++ {
+		var traceID pcommon.TraceID
+		copy(traceID[:], strconv.Itoa(i))
+		laneKey := string(centralQueueLaneRoutingKey(signalKindLogs, traceID[:], laneCount))
+		if _, ok := seen[laneKey]; ok {
+			continue
+		}
+		seen[laneKey] = struct{}{}
+		traceIDs = append(traceIDs, traceID)
+	}
+	require.Len(t, traceIDs, count)
+	return traceIDs
 }
 
 func sharedResourceScopeLog(body string) plog.Logs {

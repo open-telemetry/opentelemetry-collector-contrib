@@ -1,0 +1,10 @@
+change_type: enhancement
+component: exporter/loadbalancing
+note: Coalesce randomly routed log payloads into larger central queue request windows.
+issues: [63]
+subtext: |-
+  Uses a shared queue routing key for random log routing and selects the backend
+  when the coalesced central queue window is sent. Adds flush-reason telemetry
+  so operators can tell whether request windows are target-sized, delay-flushed,
+  hard-capped, or draining on shutdown.
+change_logs: [user]

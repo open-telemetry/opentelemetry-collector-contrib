@@ -173,6 +173,21 @@ func TestWithDNSResolverNoEndpoints(t *testing.T) {
 	assert.Empty(t, e)
 }
 
+func TestRandomExporterAndEndpointUsesEligibleRing(t *testing.T) {
+	lb := &loadBalancer{
+		ring:           newHashRing([]string{"eligible:4317"}),
+		endpointHealth: newEndpointHealthManager(endpointHealthSettings{}),
+		exporters: map[string]*wrappedExporter{
+			"stale:4317": newWrappedExporter(mockComponent{}, "stale:4317"),
+		},
+	}
+
+	_, endpoint, err := lb.randomExporterAndEndpoint()
+
+	require.ErrorContains(t, err, "eligible:4317")
+	require.Empty(t, endpoint)
+}
+
 func TestMultipleResolvers(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := &Config{

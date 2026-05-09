@@ -57,7 +57,17 @@ type centralQueueWindow struct {
 	count             int
 	oldestEnqueuedAt  int64
 	maxAttempt        int
+	flushReason       centralQueueFlushReason
 }
+
+type centralQueueFlushReason string
+
+const (
+	centralQueueFlushReasonTargetReached      centralQueueFlushReason = "target_reached"
+	centralQueueFlushReasonHardCap            centralQueueFlushReason = "hard_cap"
+	centralQueueFlushReasonMaxDelayLowTraffic centralQueueFlushReason = "max_delay_low_traffic"
+	centralQueueFlushReasonShutdown           centralQueueFlushReason = "shutdown"
+)
 
 type centralQueueWindowCandidate struct {
 	window  centralQueueWindow
@@ -162,7 +172,7 @@ func (q *centralQueue) tryLease(now time.Time) (*centralQueueLease, error) {
 		q.currentInflightBytes += int64(candidate.window.uncompressedBytes)
 		snapshot := q.snapshotLocked()
 		q.settings.telemetry.record(context.Background(), snapshot)
-		q.settings.telemetry.recordWindow(context.Background(), candidate.window)
+		q.settings.telemetry.recordWindow(context.Background(), candidate.window, q.settings.targetCompressedBytes)
 		lease := &centralQueueLease{
 			queue:  q,
 			window: candidate.window,
@@ -209,6 +219,7 @@ func (q *centralQueue) buildWindowCandidateLocked(routingKey []byte, now time.Ti
 			candidate.window.oldestEnqueuedAt = item.enqueuedAtUnixNano
 		}
 		if int64(candidate.window.compressedBytes) >= q.settings.targetCompressedBytes {
+			candidate.window.flushReason = centralQueueFlushReasonTargetReached
 			return candidate, true
 		}
 	}
@@ -216,11 +227,21 @@ func (q *centralQueue) buildWindowCandidateLocked(routingKey []byte, now time.Ti
 	if len(candidate.window.items) == 0 {
 		return centralQueueWindowCandidate{}, false
 	}
-	if q.stopped || blockedByHardLimit || q.settings.maxBatchDelay <= 0 {
+	if q.stopped {
+		candidate.window.flushReason = centralQueueFlushReasonShutdown
+		return candidate, true
+	}
+	if blockedByHardLimit {
+		candidate.window.flushReason = centralQueueFlushReasonHardCap
+		return candidate, true
+	}
+	if q.settings.maxBatchDelay <= 0 {
+		candidate.window.flushReason = centralQueueFlushReasonMaxDelayLowTraffic
 		return candidate, true
 	}
 	oldest := time.Unix(0, candidate.window.oldestEnqueuedAt)
 	if !oldest.IsZero() && now.Sub(oldest) >= q.settings.maxBatchDelay {
+		candidate.window.flushReason = centralQueueFlushReasonMaxDelayLowTraffic
 		return candidate, true
 	}
 	return centralQueueWindowCandidate{}, false
@@ -429,4 +450,8 @@ func centralQueueLaneRoutingKey(signal signalKind, routingKey []byte, laneCount 
 	laneRoutingKey[len(signal)] = 0
 	binary.BigEndian.PutUint32(laneRoutingKey[len(signal)+1:], lane)
 	return laneRoutingKey
+}
+
+func centralQueueRandomLogsRoutingKey() []byte {
+	return []byte("logs\x00random")
 }
