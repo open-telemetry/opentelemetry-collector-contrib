@@ -55,7 +55,9 @@ func NewFactory() connector.Factory {
 	return xconnector.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		xconnector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability))
+		xconnector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability),
+		xconnector.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 func createDefaultConfig() component.Config {
