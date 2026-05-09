@@ -98,6 +98,58 @@ func TestCentralQueueLeaseCoalescesReadyItemsByRoutingKey(t *testing.T) {
 	require.EqualValues(t, 10, q.compressedBytes())
 }
 
+func TestCentralQueueLeasePrefersTargetWindowOverOlderUnderfilledWindow(t *testing.T) {
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 100,
+		maxUncompressedBatchBytes:    100,
+		targetCompressedBytes:        20,
+		maxBatchDelay:                250 * time.Millisecond,
+	})
+	now := time.Unix(10, 0)
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("older"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("target"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now.Add(10*time.Millisecond)))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("target"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now.Add(20*time.Millisecond)))
+
+	lease, err := q.tryLease(now.Add(250 * time.Millisecond))
+	require.NoError(t, err)
+	require.NotNil(t, lease)
+	require.Equal(t, []byte("target"), lease.window.routingKey)
+	require.Len(t, lease.window.items, 2)
+	require.Equal(t, centralQueueFlushReasonTargetReached, lease.window.flushReason)
+	require.Equal(t, 1, q.len())
+
+	lease.done()
+	require.EqualValues(t, 10, q.compressedBytes())
+}
+
+func TestCentralQueueLeaseDoesNotLeaseUnderfilledWindowWhenTargetWindowIsInflightBlocked(t *testing.T) {
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 50,
+		maxUncompressedBatchBytes:    100,
+		targetCompressedBytes:        20,
+		maxBatchDelay:                250 * time.Millisecond,
+	})
+	now := time.Unix(10, 0)
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("inflight"), compressedBytes: 20, uncompressedBytes: 30, count: 1}, now))
+	inflightLease, err := q.tryLease(now)
+	require.NoError(t, err)
+	require.NotNil(t, inflightLease)
+
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("older"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("target"), compressedBytes: 10, uncompressedBytes: 15, count: 1}, now.Add(10*time.Millisecond)))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("target"), compressedBytes: 10, uncompressedBytes: 15, count: 1}, now.Add(20*time.Millisecond)))
+
+	lease, err := q.tryLease(now.Add(250 * time.Millisecond))
+	require.ErrorIs(t, err, errCentralQueueInflightFull)
+	require.Nil(t, lease)
+	require.Equal(t, 3, q.len())
+	require.EqualValues(t, 30, q.inflightUncompressedBytes())
+
+	inflightLease.done()
+}
+
 func TestCentralQueueLeaseDoesNotCoalesceDifferentRoutingKeys(t *testing.T) {
 	q := newCentralQueue(centralQueueSettings{
 		maxCompressedBytes:           100,

@@ -26,6 +26,8 @@ type centralQueueTelemetry struct {
 	retries              metric.Int64Counter
 	decodeFailures       metric.Int64Counter
 	inflightUncompressed metric.Int64Gauge
+	configuredConsumers  metric.Int64Gauge
+	activeConsumers      metric.Int64Gauge
 	windowCompressed     metric.Int64Histogram
 	windowFlush          metric.Int64Counter
 	windowUncompressed   metric.Int64Histogram
@@ -107,6 +109,18 @@ func newCentralQueueTelemetry(settings component.TelemetrySettings, signal signa
 		"otelcol_loadbalancer_central_queue_inflight_uncompressed_bytes",
 		metric.WithDescription("Uncompressed bytes currently leased from the central load-balancing queue."),
 		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	t.configuredConsumers, err = meter.Int64Gauge(
+		"otelcol_loadbalancer_central_queue_configured_consumers",
+		metric.WithDescription("Configured central queue drain workers for the signal exporter."),
+		metric.WithUnit("{workers}"),
+	)
+	errs = errors.Join(errs, err)
+	t.activeConsumers, err = meter.Int64Gauge(
+		"otelcol_loadbalancer_central_queue_active_consumers",
+		metric.WithDescription("Central queue drain workers currently processing or sending a leased window."),
+		metric.WithUnit("{workers}"),
 	)
 	errs = errors.Join(errs, err)
 	t.windowCompressed, err = meter.Int64Histogram(
@@ -202,6 +216,20 @@ func (t *centralQueueTelemetry) recordDecodeFailure(ctx context.Context, dropped
 		return
 	}
 	t.decodeFailures.Add(ctx, droppedItems, t.signalAttrs)
+}
+
+func (t *centralQueueTelemetry) recordConfiguredConsumers(ctx context.Context, consumers int64) {
+	if t == nil {
+		return
+	}
+	t.configuredConsumers.Record(ctx, consumers, t.signalAttrs)
+}
+
+func (t *centralQueueTelemetry) recordActiveConsumers(ctx context.Context, consumers int64) {
+	if t == nil {
+		return
+	}
+	t.activeConsumers.Record(ctx, consumers, t.signalAttrs)
 }
 
 func (t *centralQueueTelemetry) recordWindow(ctx context.Context, window centralQueueWindow, targetCompressedBytes int64) {

@@ -568,6 +568,73 @@ func TestLogsCentralQueueDoesNotDrainSynchronously(t *testing.T) {
 	}
 }
 
+func TestLogsCentralQueueConsumersSendWindowsConcurrently(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := endpoint2Config()
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+	started := make(chan struct{}, 2)
+	release := make(chan struct{})
+	var releaseOnce sync.Once
+	t.Cleanup(func() { releaseOnce.Do(func() { close(release) }) })
+	var calls atomic.Int64
+
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(context.Context, plog.Logs) error {
+			if endpoint == "endpoint-1:4317" {
+				calls.Add(1)
+				started <- struct{}{}
+				<-release
+			}
+			return nil
+		}), nil
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+	lb.endpointHealth.reconcile([]string{"endpoint-1:4317", "endpoint-2:4317"})
+	lb.ring = newHashRing([]string{"endpoint-1:4317", "endpoint-2:4317"})
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1:4317", "endpoint-2:4317"})
+	route := findRoutingIDForEndpoint(t, lb.ring, "endpoint-1:4317")
+
+	p := &logExporterImp{
+		centralQueue: newCentralQueue(centralQueueSettings{
+			maxCompressedBytes:           1024 * 1024,
+			maxInflightUncompressedBytes: 1024 * 1024,
+			maxUncompressedBatchBytes:    1024 * 1024,
+			targetCompressedBytes:        1,
+			maxBatchDelay:                time.Second,
+		}),
+		centralCodec:             codec,
+		loadBalancer:             lb,
+		logger:                   ts.Logger,
+		telemetry:                tb,
+		centralQueueNumConsumers: 2,
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	p.startCentralQueueConsumers(ctx)
+	t.Cleanup(func() {
+		releaseOnce.Do(func() { close(release) })
+		p.centralQueue.stop()
+		cancel()
+		waitCtx, waitCancel := context.WithTimeout(context.Background(), time.Second)
+		defer waitCancel()
+		require.NoError(t, waitForInflight(waitCtx, &p.centralWG))
+	})
+
+	first, err := newCentralQueueLogsItem([]byte(route), simpleLogs(), codec, time.Now())
+	require.NoError(t, err)
+	second, err := newCentralQueueLogsItem([]byte(route), simpleLogs(), codec, time.Now())
+	require.NoError(t, err)
+	require.NoError(t, p.centralQueue.enqueue(first))
+	require.NoError(t, p.centralQueue.enqueue(second))
+
+	require.Eventually(t, func() bool { return len(started) == 2 }, time.Second, 10*time.Millisecond)
+	require.Equal(t, int64(2), calls.Load())
+	releaseOnce.Do(func() { close(release) })
+}
+
 func TestConsumeLogsEmitsOnlyParentExporterMetrics(t *testing.T) {
 	ctx := t.Context()
 	shutdownCtx := context.Background() //nolint:usetesting // Context must outlive test for cleanup

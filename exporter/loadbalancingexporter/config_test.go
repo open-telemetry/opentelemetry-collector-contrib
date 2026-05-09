@@ -141,6 +141,7 @@ func TestCentralQueueDefaultDisabled(t *testing.T) {
 	require.Equal(t, int64(256<<10), cfg.CentralQueue.TargetCompressedBytes)
 	require.Equal(t, 250*time.Millisecond, cfg.CentralQueue.MaxBatchDelay)
 	require.Equal(t, 64, cfg.CentralQueue.LaneCount)
+	require.Equal(t, 20, cfg.CentralQueue.NumConsumers)
 	require.NoError(t, cfg.Validate())
 }
 
@@ -202,6 +203,11 @@ func TestCentralQueueValidation(t *testing.T) {
 			name:        "missing lane count",
 			mutate:      func(c *CentralQueueConfig) { c.LaneCount = 0 },
 			expectedErr: "central_queue.lane_count",
+		},
+		{
+			name:        "missing num consumers",
+			mutate:      func(c *CentralQueueConfig) { c.NumConsumers = 0 },
+			expectedErr: "central_queue.num_consumers",
 		},
 	}
 
