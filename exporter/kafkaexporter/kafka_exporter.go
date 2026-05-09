@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
@@ -50,6 +51,11 @@ type messenger[T any] interface {
 
 	// getTopic returns the topic name for the given context and data.
 	getTopic(context.Context, T) string
+
+	// splitData splits data into sub-chunks such that each chunk marshals to
+	// at most maxBytes.  If an atomic item (span, log record, etc.) still
+	// exceeds maxBytes it is returned as-is.
+	splitData(data T, maxBytes int) ([]T, error)
 }
 
 type kafkaExporter[T any] struct {
@@ -131,6 +137,7 @@ func (e *kafkaExporter[T]) Close(ctx context.Context) (err error) {
 
 func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 	var m kafkaclient.Messages
+	maxBytes := e.cfg.Producer.MaxMessageBytes
 	for key, data := range e.messenger.partitionData(data) {
 		topic := e.messenger.getTopic(ctx, data)
 		partitionMessages, err := e.messenger.marshalData(data)
@@ -141,6 +148,14 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 				zap.Error(err),
 			)
 			return consumererror.NewPermanent(err)
+		}
+		// If any message exceeds the limit, split the pdata into smaller
+		// chunks and re-marshal each one.
+		if anyMessageExceedsLimit(partitionMessages, maxBytes) {
+			partitionMessages, err = e.splitAndMarshal(topic, data, maxBytes)
+			if err != nil {
+				return err
+			}
 		}
 		for i := range partitionMessages {
 			// Marshalers may set the Key, so don't override
@@ -184,6 +199,37 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 	return nil
 }
 
+// splitAndMarshal splits oversized data into sub-chunks and marshals each one.
+func (e *kafkaExporter[T]) splitAndMarshal(topic string, data T, maxBytes int) ([]marshaler.Message, error) {
+	subChunks, err := e.messenger.splitData(data, maxBytes)
+	if err != nil {
+		return nil, consumererror.NewPermanent(fmt.Errorf("error splitting oversized message for topic %q: %w", topic, err))
+	}
+	var msgs []marshaler.Message
+	for _, sub := range subChunks {
+		subMsgs, marshalErr := e.messenger.marshalData(sub)
+		if marshalErr != nil {
+			marshalErr = fmt.Errorf("error exporting to topic %q: %w", topic, marshalErr)
+			e.logger.Error("kafka records marshal data failed after split",
+				zap.String("topic", topic),
+				zap.Error(marshalErr),
+			)
+			return nil, consumererror.NewPermanent(marshalErr)
+		}
+		msgs = append(msgs, subMsgs...)
+	}
+	return msgs, nil
+}
+
+func anyMessageExceedsLimit(msgs []marshaler.Message, maxBytes int) bool {
+	for _, msg := range msgs {
+		if len(msg.Value) > maxBytes {
+			return true
+		}
+	}
+	return false
+}
+
 func newTracesExporter(config Config, set exporter.Settings) *kafkaExporter[ptrace.Traces] {
 	// Jaeger encodings do their own partitioning, so disable trace ID
 	// partitioning when they are configured.
@@ -210,6 +256,10 @@ type kafkaTracesMessenger struct {
 
 func (e *kafkaTracesMessenger) marshalData(td ptrace.Traces) ([]marshaler.Message, error) {
 	return e.marshaler.MarshalTraces(td)
+}
+
+func (e *kafkaTracesMessenger) splitData(td ptrace.Traces, maxBytes int) ([]ptrace.Traces, error) {
+	return splitter.SplitTraces(td, e.marshaler, maxBytes)
 }
 
 func (e *kafkaTracesMessenger) getTopic(ctx context.Context, td ptrace.Traces) string {
@@ -269,6 +319,10 @@ type kafkaLogsMessenger struct {
 
 func (e *kafkaLogsMessenger) marshalData(ld plog.Logs) ([]marshaler.Message, error) {
 	return e.marshaler.MarshalLogs(ld)
+}
+
+func (e *kafkaLogsMessenger) splitData(ld plog.Logs, maxBytes int) ([]plog.Logs, error) {
+	return splitter.SplitLogs(ld, e.marshaler, maxBytes)
 }
 
 func (e *kafkaLogsMessenger) getTopic(ctx context.Context, ld plog.Logs) string {
@@ -337,6 +391,10 @@ func (e *kafkaMetricsMessenger) marshalData(md pmetric.Metrics) ([]marshaler.Mes
 	return e.marshaler.MarshalMetrics(md)
 }
 
+func (e *kafkaMetricsMessenger) splitData(md pmetric.Metrics, maxBytes int) ([]pmetric.Metrics, error) {
+	return splitter.SplitMetrics(md, e.marshaler, maxBytes)
+}
+
 func (e *kafkaMetricsMessenger) getTopic(ctx context.Context, md pmetric.Metrics) string {
 	return getTopic[pmetric.ResourceMetrics](ctx, e.config.Metrics, e.config.TopicFromAttribute, md.ResourceMetrics())
 }
@@ -388,6 +446,10 @@ type kafkaProfilesMessenger struct {
 
 func (e *kafkaProfilesMessenger) marshalData(ld pprofile.Profiles) ([]marshaler.Message, error) {
 	return e.marshaler.MarshalProfiles(ld)
+}
+
+func (e *kafkaProfilesMessenger) splitData(pd pprofile.Profiles, maxBytes int) ([]pprofile.Profiles, error) {
+	return splitter.SplitProfiles(pd, e.marshaler, maxBytes)
 }
 
 func (e *kafkaProfilesMessenger) getTopic(ctx context.Context, ld pprofile.Profiles) string {

@@ -6,6 +6,7 @@ package kafkaexporter
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -508,8 +509,9 @@ func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
 		assert.ElementsMatch(t, expectedHeaders, record.Headers, "message headers mismatch")
 	})
 
-	// Produce message that exceeds MaxMessageBytes to trigger a permanent non-retriable error.
-	t.Run("WithNonRetriableError", func(t *testing.T) {
+	// A batch that exceeds MaxMessageBytes should be automatically split and
+	// delivered as multiple smaller messages without error.
+	t.Run("LargePayloadIsAutoSplit", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		config.Producer.MaxMessageBytes = 512
 		exp, fakeCluster := newKgoMockLogsExporter(t, *config,
@@ -517,10 +519,36 @@ func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
 		)
 		defer fakeCluster.Close()
 
-		// ensure we have a big payload to trigger the error
+		// 20 resource logs totalling well above 512 bytes.
 		logs := testdata.GenerateLogs(20)
 
 		err := exp.exportData(t.Context(), logs)
+		require.NoError(t, err, "large payload should be split and delivered")
+
+		records := fetchKgoRecords(t, fakeCluster.ListenAddrs(), config.Logs.Topic, 20)
+		assert.Greater(t, len(records), 1, "expected multiple records after auto-split")
+	})
+
+	// A single log record whose serialized size exceeds MaxMessageBytes cannot
+	// be split further; the broker rejects it with a permanent MessageTooLarge error.
+	// Note: franz-go enforces a minimum of 512 bytes for ProducerBatchMaxBytes.
+	t.Run("UnsplittablePayload", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.Producer.MaxMessageBytes = 512
+		exp, fakeCluster := newKgoMockLogsExporter(t, *config,
+			componenttest.NewNopHost(), config.Logs.Topic,
+		)
+		defer fakeCluster.Close()
+
+		// A single log record with a large body: ~750 bytes serialized > 512 limit.
+		// It has only 1 resource → 1 scope → 1 record, so the splitter cannot
+		// divide it further and returns it as-is.
+		logs := plog.NewLogs()
+		lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		lr.Body().SetStr(strings.Repeat("x", 700))
+
+		err := exp.exportData(t.Context(), logs)
+		require.Error(t, err)
 		require.ErrorAs(t, err, &kerr.MessageTooLarge, "expected MessageTooLarge error")
 		assert.True(t, consumererror.IsPermanent(err), "expected permanent error")
 	})
