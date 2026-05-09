@@ -148,8 +148,9 @@ func (q *centralQueue) tryLease(now time.Time) (*centralQueueLease, error) {
 	}
 
 	nowUnixNano := now.UnixNano()
-	readyInflightBlocked := false
 	evaluatedRoutingKeys := make(map[string]struct{})
+	var fallbackCandidates []centralQueueWindowCandidate
+	targetInflightBlocked := false
 	for _, item := range q.items {
 		if item.nextAttemptUnixNano > nowUnixNano {
 			continue
@@ -163,24 +164,27 @@ func (q *centralQueue) tryLease(now time.Time) (*centralQueueLease, error) {
 		if !ok {
 			continue
 		}
-		if q.currentInflightBytes+int64(candidate.window.uncompressedBytes) > q.settings.maxInflightUncompressedBytes {
+		if candidate.window.flushReason != centralQueueFlushReasonTargetReached {
+			fallbackCandidates = append(fallbackCandidates, candidate)
+			continue
+		}
+		if q.windowInflightBlockedLocked(candidate.window) {
+			targetInflightBlocked = true
+			continue
+		}
+		return q.leaseWindowCandidateLocked(candidate), nil
+	}
+	if targetInflightBlocked {
+		return nil, errCentralQueueInflightFull
+	}
+	readyInflightBlocked := false
+	for i := range fallbackCandidates {
+		candidate := &fallbackCandidates[i]
+		if q.windowInflightBlockedLocked(candidate.window) {
 			readyInflightBlocked = true
 			continue
 		}
-
-		q.removeWindowLocked(candidate.indexes)
-		q.currentInflightBytes += int64(candidate.window.uncompressedBytes)
-		snapshot := q.snapshotLocked()
-		q.settings.telemetry.record(context.Background(), snapshot)
-		q.settings.telemetry.recordWindow(context.Background(), candidate.window, q.settings.targetCompressedBytes)
-		lease := &centralQueueLease{
-			queue:  q,
-			window: candidate.window,
-		}
-		if len(candidate.window.items) > 0 {
-			lease.item = candidate.window.items[0]
-		}
-		return lease, nil
+		return q.leaseWindowCandidateLocked(*candidate), nil
 	}
 	if readyInflightBlocked {
 		return nil, errCentralQueueInflightFull
@@ -250,6 +254,27 @@ func (q *centralQueue) buildWindowCandidateLocked(routingKey []byte, now time.Ti
 func (q *centralQueue) windowWouldExceedLimit(window centralQueueWindow, item centralQueueItem) bool {
 	return q.settings.maxUncompressedBatchBytes > 0 &&
 		window.uncompressedBytes+item.uncompressedBytes > q.settings.maxUncompressedBatchBytes
+}
+
+func (q *centralQueue) windowInflightBlockedLocked(window centralQueueWindow) bool {
+	return q.settings.maxInflightUncompressedBytes > 0 &&
+		q.currentInflightBytes+int64(window.uncompressedBytes) > q.settings.maxInflightUncompressedBytes
+}
+
+func (q *centralQueue) leaseWindowCandidateLocked(candidate centralQueueWindowCandidate) *centralQueueLease {
+	q.removeWindowLocked(candidate.indexes)
+	q.currentInflightBytes += int64(candidate.window.uncompressedBytes)
+	snapshot := q.snapshotLocked()
+	q.settings.telemetry.record(context.Background(), snapshot)
+	q.settings.telemetry.recordWindow(context.Background(), candidate.window, q.settings.targetCompressedBytes)
+	lease := &centralQueueLease{
+		queue:  q,
+		window: candidate.window,
+	}
+	if len(candidate.window.items) > 0 {
+		lease.item = candidate.window.items[0]
+	}
+	return lease
 }
 
 func (q *centralQueue) removeItemLocked(index int) {

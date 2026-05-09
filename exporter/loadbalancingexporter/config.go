@@ -235,6 +235,9 @@ const (
 	defaultCentralQueueTargetCompressedBytes     = int64(256 << 10)
 	defaultCentralQueueMaxBatchDelay             = 250 * time.Millisecond
 	defaultCentralQueueLaneCount                 = 64
+	// Keep default drain parallelism high enough for hot LB pods while avoiding
+	// the goroutine and in-flight memory footprint of larger tuned deployments.
+	defaultCentralQueueNumConsumers = 20
 )
 
 type CentralQueueConfig struct {
@@ -246,6 +249,7 @@ type CentralQueueConfig struct {
 	TargetCompressedBytes        int64                   `mapstructure:"target_compressed_bytes"`
 	MaxBatchDelay                time.Duration           `mapstructure:"max_batch_delay"`
 	LaneCount                    int                     `mapstructure:"lane_count"`
+	NumConsumers                 int                     `mapstructure:"num_consumers"`
 }
 
 func (q QueueSettings) Validate() error {
@@ -348,6 +352,9 @@ func (c CentralQueueConfig) Validate() error {
 	}
 	if c.LaneCount <= 0 {
 		return errors.New("central_queue.lane_count must be greater than 0 when central_queue.enabled=true")
+	}
+	if c.NumConsumers <= 0 {
+		return errors.New("central_queue.num_consumers must be greater than 0 when central_queue.enabled=true")
 	}
 	return nil
 }

@@ -41,6 +41,8 @@ type logExporterImp struct {
 	randomTraceID            func() pcommon.TraceID
 	centralQueueByteBatching bool
 	centralQueueLaneCount    int
+	centralQueueNumConsumers int
+	centralActiveConsumers   atomic.Int64
 	centralCancel            context.CancelFunc
 	centralWG                sync.WaitGroup
 }
@@ -72,6 +74,7 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 		randomTraceID:            random,
 		centralQueueByteBatching: cfg.(*Config).centralQueueByteBatchingEnabled(),
 		centralQueueLaneCount:    cfg.(*Config).CentralQueue.LaneCount,
+		centralQueueNumConsumers: cfg.(*Config).CentralQueue.NumConsumers,
 	}
 	if cfg.(*Config).CentralQueue.Enabled {
 		centralCfg := cfg.(*Config).CentralQueue
@@ -126,10 +129,22 @@ func (e *logExporterImp) Start(ctx context.Context, host component.Host) error {
 	if e.centralQueue != nil {
 		dispatchCtx, cancel := context.WithCancel(context.Background())
 		e.centralCancel = cancel
-		e.centralWG.Add(1)
-		go e.runCentralQueue(dispatchCtx)
+		e.startCentralQueueConsumers(dispatchCtx)
 	}
 	return nil
+}
+
+func (e *logExporterImp) startCentralQueueConsumers(ctx context.Context) {
+	consumers := e.centralQueueNumConsumers
+	if consumers <= 0 {
+		consumers = defaultCentralQueueNumConsumers
+	}
+	e.centralQueue.settings.telemetry.recordConfiguredConsumers(ctx, int64(consumers))
+	e.centralQueue.settings.telemetry.recordActiveConsumers(ctx, e.centralActiveConsumers.Load())
+	for i := 0; i < consumers; i++ {
+		e.centralWG.Add(1)
+		go e.runCentralQueue(ctx)
+	}
 }
 
 func (e *logExporterImp) Shutdown(ctx context.Context) error {
@@ -241,7 +256,7 @@ func (e *logExporterImp) runCentralQueue(ctx context.Context) {
 			continue
 		}
 
-		err = e.consumeCentralQueueLogWindow(ctx, lease.window)
+		err = e.consumeActiveCentralQueueLogWindow(ctx, lease.window)
 		if err == nil {
 			lease.done()
 			continue
@@ -259,6 +274,16 @@ func (e *logExporterImp) runCentralQueue(ctx context.Context) {
 			e.logger.Warn("failed to requeue central log queue item", zap.Error(requeueErr), zap.Error(err))
 		}
 	}
+}
+
+func (e *logExporterImp) consumeActiveCentralQueueLogWindow(ctx context.Context, window centralQueueWindow) error {
+	active := e.centralActiveConsumers.Add(1)
+	e.centralQueue.settings.telemetry.recordActiveConsumers(ctx, active)
+	defer func() {
+		active := e.centralActiveConsumers.Add(-1)
+		e.centralQueue.settings.telemetry.recordActiveConsumers(ctx, active)
+	}()
+	return e.consumeCentralQueueLogWindow(ctx, window)
 }
 
 func (e *logExporterImp) consumeCentralQueueLogItem(ctx context.Context, item centralQueueItem) error {

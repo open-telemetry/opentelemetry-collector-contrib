@@ -28,6 +28,11 @@ $defs:
         type: integer
         minimum: 1
         description: Number of backend lanes used to coalesce routing keys before late endpoint selection.
+      num_consumers:
+        type: integer
+        minimum: 1
+        default: 20
+        description: Number of parallel workers draining central queue request windows per signal exporter.
       payload_compression:
         type: string
         enum:

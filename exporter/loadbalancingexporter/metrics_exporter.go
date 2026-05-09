@@ -40,12 +40,14 @@ type metricExporterImp struct {
 	centralCodec *queuePayloadCodec
 	routingKey   routingKey
 
-	logger                *zap.Logger
-	started               atomic.Bool
-	telemetry             *metadata.TelemetryBuilder
-	centralQueueLaneCount int
-	centralCancel         context.CancelFunc
-	centralWG             sync.WaitGroup
+	logger                   *zap.Logger
+	started                  atomic.Bool
+	telemetry                *metadata.TelemetryBuilder
+	centralQueueLaneCount    int
+	centralQueueNumConsumers int
+	centralActiveConsumers   atomic.Int64
+	centralCancel            context.CancelFunc
+	centralWG                sync.WaitGroup
 }
 
 func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metricExporterImp, error) {
@@ -67,11 +69,12 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 	}
 
 	metricExporter := metricExporterImp{
-		loadBalancer:          lb,
-		routingKey:            svcRouting,
-		telemetry:             telemetry,
-		logger:                params.Logger,
-		centralQueueLaneCount: cfg.(*Config).CentralQueue.LaneCount,
+		loadBalancer:             lb,
+		routingKey:               svcRouting,
+		telemetry:                telemetry,
+		logger:                   params.Logger,
+		centralQueueLaneCount:    cfg.(*Config).CentralQueue.LaneCount,
+		centralQueueNumConsumers: cfg.(*Config).CentralQueue.NumConsumers,
 	}
 	if cfg.(*Config).CentralQueue.Enabled {
 		centralCfg := cfg.(*Config).CentralQueue
@@ -141,10 +144,22 @@ func (e *metricExporterImp) Start(ctx context.Context, host component.Host) erro
 	if e.centralQueue != nil {
 		dispatchCtx, cancel := context.WithCancel(context.Background())
 		e.centralCancel = cancel
-		e.centralWG.Add(1)
-		go e.runCentralQueue(dispatchCtx)
+		e.startCentralQueueConsumers(dispatchCtx)
 	}
 	return nil
+}
+
+func (e *metricExporterImp) startCentralQueueConsumers(ctx context.Context) {
+	consumers := e.centralQueueNumConsumers
+	if consumers <= 0 {
+		consumers = defaultCentralQueueNumConsumers
+	}
+	e.centralQueue.settings.telemetry.recordConfiguredConsumers(ctx, int64(consumers))
+	e.centralQueue.settings.telemetry.recordActiveConsumers(ctx, e.centralActiveConsumers.Load())
+	for i := 0; i < consumers; i++ {
+		e.centralWG.Add(1)
+		go e.runCentralQueue(ctx)
+	}
 }
 
 func (e *metricExporterImp) Shutdown(ctx context.Context) error {
@@ -230,7 +245,7 @@ func (e *metricExporterImp) runCentralQueue(ctx context.Context) {
 			continue
 		}
 
-		err = e.consumeCentralQueueMetricWindow(ctx, lease.window)
+		err = e.consumeActiveCentralQueueMetricWindow(ctx, lease.window)
 		if err == nil {
 			lease.done()
 			continue
@@ -248,6 +263,16 @@ func (e *metricExporterImp) runCentralQueue(ctx context.Context) {
 			e.logger.Warn("failed to requeue central metric queue item", zap.Error(requeueErr), zap.Error(err))
 		}
 	}
+}
+
+func (e *metricExporterImp) consumeActiveCentralQueueMetricWindow(ctx context.Context, window centralQueueWindow) error {
+	active := e.centralActiveConsumers.Add(1)
+	e.centralQueue.settings.telemetry.recordActiveConsumers(ctx, active)
+	defer func() {
+		active := e.centralActiveConsumers.Add(-1)
+		e.centralQueue.settings.telemetry.recordActiveConsumers(ctx, active)
+	}()
+	return e.consumeCentralQueueMetricWindow(ctx, window)
 }
 
 func (e *metricExporterImp) consumeCentralQueueMetricItem(ctx context.Context, item centralQueueItem) error {

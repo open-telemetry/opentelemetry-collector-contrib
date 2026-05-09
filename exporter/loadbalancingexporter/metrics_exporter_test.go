@@ -538,6 +538,74 @@ func TestMetricsCentralQueueDoesNotDirectReroute(t *testing.T) {
 	assert.Zero(t, calls["endpoint-2:4317"])
 }
 
+func TestMetricsCentralQueueConsumersSendWindowsConcurrently(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := endpoint2Config()
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+	started := make(chan struct{}, 2)
+	release := make(chan struct{})
+	var releaseOnce sync.Once
+	t.Cleanup(func() { releaseOnce.Do(func() { close(release) }) })
+	var calls atomic.Int64
+
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockMetricsExporter(func(context.Context, pmetric.Metrics) error {
+			if endpoint == "endpoint-1:4317" {
+				calls.Add(1)
+				started <- struct{}{}
+				<-release
+			}
+			return nil
+		}), nil
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+	lb.endpointHealth.reconcile([]string{"endpoint-1:4317", "endpoint-2:4317"})
+	lb.ring = newHashRing([]string{"endpoint-1:4317", "endpoint-2:4317"})
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1:4317", "endpoint-2:4317"})
+	route := findRoutingIDForEndpoint(t, lb.ring, "endpoint-1:4317")
+
+	p := &metricExporterImp{
+		centralQueue: newCentralQueue(centralQueueSettings{
+			maxCompressedBytes:           1024 * 1024,
+			maxInflightUncompressedBytes: 1024 * 1024,
+			maxUncompressedBatchBytes:    1024 * 1024,
+			targetCompressedBytes:        1,
+			maxBatchDelay:                time.Second,
+		}),
+		centralCodec:             codec,
+		loadBalancer:             lb,
+		logger:                   ts.Logger,
+		telemetry:                tb,
+		centralQueueNumConsumers: 2,
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	p.startCentralQueueConsumers(ctx)
+	cleanupCtx := context.WithoutCancel(t.Context())
+	t.Cleanup(func() {
+		releaseOnce.Do(func() { close(release) })
+		p.centralQueue.stop()
+		cancel()
+		waitCtx, waitCancel := context.WithTimeout(cleanupCtx, time.Second)
+		defer waitCancel()
+		require.NoError(t, waitForInflight(waitCtx, &p.centralWG))
+	})
+
+	first, err := newCentralQueueMetricsItem([]byte(route), metricsWithServiceNames(route), codec, time.Now())
+	require.NoError(t, err)
+	second, err := newCentralQueueMetricsItem([]byte(route), metricsWithServiceNames(route), codec, time.Now())
+	require.NoError(t, err)
+	require.NoError(t, p.centralQueue.enqueue(first))
+	require.NoError(t, p.centralQueue.enqueue(second))
+
+	require.Eventually(t, func() bool { return len(started) == 2 }, time.Second, 10*time.Millisecond)
+	require.Equal(t, int64(2), calls.Load())
+	releaseOnce.Do(func() { close(release) })
+}
+
 // loadMetricsMap will parse the given yaml file into a map[string]pmetric.Metrics
 func loadMetricsMap(t *testing.T, path string) map[string]pmetric.Metrics {
 	b, err := os.ReadFile(path)

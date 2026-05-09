@@ -1,0 +1,9 @@
+change_type: enhancement
+component: exporter/loadbalancing
+note: Add configurable parallel consumers for the compressed central queue.
+issues: [64]
+subtext: |-
+  Adds `central_queue.num_consumers` and active/configured consumer metrics so
+  load-balanced logs and metrics can keep target-sized request windows while
+  sending multiple central queue windows concurrently.
+change_logs: [user]
