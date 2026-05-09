@@ -137,6 +137,7 @@ func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmet
 					err = p.aggr.Numbers(last, dp)
 					last.CopyTo(dp)
 				})
+				p.last.nums.Store(id, last)
 			case pmetric.HistogramDataPoint:
 				last, loaded := p.last.hist.LoadOrStore(id, zero.hist)
 				if maps.Exceeded(last, loaded) {
@@ -157,6 +158,7 @@ func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmet
 					err = p.aggr.Histograms(last, dp)
 					last.CopyTo(dp)
 				})
+				p.last.hist.Store(id, last)
 			case pmetric.ExponentialHistogramDataPoint:
 				last, loaded := p.last.expo.LoadOrStore(id, zero.expo)
 				if maps.Exceeded(last, loaded) {
@@ -177,6 +179,7 @@ func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmet
 					err = p.aggr.Exponential(last, dp)
 					last.CopyTo(dp)
 				})
+				p.last.expo.Store(id, last)
 			}
 
 			if err != nil {
@@ -209,7 +212,12 @@ func (p *deltaToCumulativeProcessor) Start(ctx context.Context, host component.H
 		if err != nil {
 			return fmt.Errorf("getting storage client: %w", err)
 		}
-		p.last = newPersistedState(client, int64(p.cfg.MaxStreams), p.cfg.MaxStale, p.bgDone)
+		switch {
+		case p.cfg.WriteThrough:
+			p.last = newWriteThroughState(client, int64(p.cfg.MaxStreams), p.cfg.MaxStale, p.bgDone)
+		default:
+			p.last = newPersistedState(client, int64(p.cfg.MaxStreams), p.cfg.MaxStale, p.bgDone)
+		}
 	}
 
 	go func() {

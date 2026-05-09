@@ -65,3 +65,17 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestConfig_WriteThroughRequiresStorage(t *testing.T) {
+	cfg := &Config{
+		MaxStale:     5 * time.Minute,
+		MaxStreams:   1000,
+		WriteThrough: true,
+		StorageID:    nil, // no storage configured
+	}
+	assert.Error(t, cfg.Validate())
+
+	storageID := component.MustNewID("file_storage")
+	cfg.StorageID = &storageID
+	assert.NoError(t, cfg.Validate())
+}

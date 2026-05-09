@@ -5,6 +5,7 @@ package deltatocumulativeprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -21,7 +22,8 @@ type Config struct {
 	MaxStale   time.Duration `mapstructure:"max_stale"`
 	MaxStreams int           `mapstructure:"max_streams"`
 
-	StorageID *component.ID `mapstructure:"storage"`
+	StorageID    *component.ID `mapstructure:"storage"`
+	WriteThrough bool          `mapstructure:"write_through"`
 }
 
 func (c *Config) Validate() error {
@@ -30,6 +32,9 @@ func (c *Config) Validate() error {
 	}
 	if c.MaxStreams < 0 {
 		return fmt.Errorf("max_streams must be a positive number (got %d)", c.MaxStreams)
+	}
+	if c.WriteThrough && c.StorageID == nil {
+		return errors.New("write_through requires storage to be configured")
 	}
 	return nil
 }
