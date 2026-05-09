@@ -204,6 +204,41 @@ func TestConsumeMetricsCentralQueueEnqueuesCompressedByRoutingKey(t *testing.T) 
 	require.Equal(t, md.DataPointCount(), decoded.DataPointCount())
 }
 
+func TestConsumeMetricsCentralQueueCoalescesByLane(t *testing.T) {
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+	p := &metricExporterImp{
+		centralQueue: newCentralQueue(centralQueueSettings{
+			maxCompressedBytes:           1 << 20,
+			maxInflightUncompressedBytes: 1 << 20,
+			maxUncompressedBatchBytes:    1 << 20,
+			targetCompressedBytes:        1 << 20,
+		}),
+		centralCodec:          codec,
+		routingKey:            svcRouting,
+		centralQueueLaneCount: 1,
+	}
+	p.started.Store(true)
+
+	md := metricsWithServiceNames("service-a", "service-b")
+	require.NoError(t, p.ConsumeMetrics(t.Context(), md))
+	require.Equal(t, 2, p.centralQueue.len())
+
+	lease, err := p.centralQueue.lease(t.Context())
+	require.NoError(t, err)
+	defer lease.done()
+	require.Equal(t, centralQueueLaneRoutingKey(signalKindMetrics, []byte("service-a"), 1), lease.window.routingKey)
+	require.Len(t, lease.window.items, 2)
+
+	merged := pmetric.NewMetrics()
+	for _, item := range lease.window.items {
+		decoded, decodeErr := decodeCentralQueueMetricsItem(item, codec)
+		require.NoError(t, decodeErr)
+		mergeMetricChunksByMove(merged, decoded)
+	}
+	require.ElementsMatch(t, []string{"service-a", "service-b"}, serviceNamesFromMetrics(merged))
+}
+
 func TestMetricsCentralQueueDropsPermanentExportError(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
@@ -243,6 +278,41 @@ func TestMetricsCentralQueueDropsPermanentExportError(t *testing.T) {
 	cancel()
 	waitErr := waitForInflight(t.Context(), &p.centralWG)
 	require.NoError(t, waitErr)
+}
+
+func TestMetricsCentralQueueWindowSkipsInvalidPayload(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+
+	endpoint := "endpoint-1:4317"
+	var gotServiceNames []string
+	p := &metricExporterImp{
+		centralCodec: codec,
+		loadBalancer: &loadBalancer{
+			ring: newHashRing([]string{endpoint}),
+			exporters: map[string]*wrappedExporter{endpoint: newWrappedExporter(newMockMetricsExporter(func(_ context.Context, md pmetric.Metrics) error {
+				gotServiceNames = serviceNamesFromMetrics(md)
+				return nil
+			}), endpoint)},
+			endpointHealth: newEndpointHealthManager(endpointHealthSettings{}),
+		},
+		telemetry: tb,
+		logger:    ts.Logger,
+	}
+
+	valid, err := newCentralQueueMetricsItem([]byte("lane-a"), metricsWithServiceNames("valid"), codec, time.Now())
+	require.NoError(t, err)
+	invalid := valid
+	invalid.payload = []byte("not-valid-zstd")
+	invalid.compressedBytes = len(invalid.payload)
+
+	err = p.consumeCentralQueueMetricWindow(t.Context(), centralQueueWindow{
+		routingKey: []byte("lane-a"),
+		items:      []centralQueueItem{invalid, valid},
+	})
+	require.NoError(t, err)
+	require.Equal(t, []string{"valid"}, gotServiceNames)
 }
 
 func TestMetricsCentralQueueShutdownTimeoutStillRunsTeardown(t *testing.T) {

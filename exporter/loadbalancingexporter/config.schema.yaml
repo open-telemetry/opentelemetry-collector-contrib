@@ -16,6 +16,18 @@ $defs:
         type: integer
         minimum: 1
         description: Must be greater than 0 when central_queue.enabled is true.
+      target_compressed_bytes:
+        type: integer
+        minimum: 1
+        description: Soft target for compressed bytes merged into one backend request.
+      max_batch_delay:
+        type: string
+        format: duration
+        description: Maximum time to wait for a small central queue lane window to reach target_compressed_bytes.
+      lane_count:
+        type: integer
+        minimum: 1
+        description: Number of backend lanes used to coalesce routing keys before late endpoint selection.
       payload_compression:
         type: string
         enum:

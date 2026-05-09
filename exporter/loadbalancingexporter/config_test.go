@@ -138,6 +138,9 @@ func TestCentralQueueDefaultDisabled(t *testing.T) {
 	require.Equal(t, QueuePayloadCompressionZstd, cfg.CentralQueue.PayloadCompression)
 	require.Equal(t, 16<<20, cfg.CentralQueue.MaxUncompressedBatchBytes)
 	require.Equal(t, int64(512<<20), cfg.CentralQueue.MaxInflightUncompressedBytes)
+	require.Equal(t, int64(256<<10), cfg.CentralQueue.TargetCompressedBytes)
+	require.Equal(t, 250*time.Millisecond, cfg.CentralQueue.MaxBatchDelay)
+	require.Equal(t, 64, cfg.CentralQueue.LaneCount)
 	require.NoError(t, cfg.Validate())
 }
 
@@ -184,6 +187,21 @@ func TestCentralQueueValidation(t *testing.T) {
 				c.MaxInflightUncompressedBytes = 1024
 			},
 			expectedErr: "central_queue.max_uncompressed_batch_bytes",
+		},
+		{
+			name:        "missing target compressed bytes",
+			mutate:      func(c *CentralQueueConfig) { c.TargetCompressedBytes = 0 },
+			expectedErr: "central_queue.target_compressed_bytes",
+		},
+		{
+			name:        "missing max batch delay",
+			mutate:      func(c *CentralQueueConfig) { c.MaxBatchDelay = 0 },
+			expectedErr: "central_queue.max_batch_delay",
+		},
+		{
+			name:        "missing lane count",
+			mutate:      func(c *CentralQueueConfig) { c.LaneCount = 0 },
+			expectedErr: "central_queue.lane_count",
 		},
 	}
 

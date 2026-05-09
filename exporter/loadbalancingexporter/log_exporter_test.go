@@ -211,6 +211,47 @@ func TestConsumeLogsCentralQueueEnqueuesCompressedByRoutingKey(t *testing.T) {
 	require.NoError(t, plogtest.CompareLogs(logs, decoded))
 }
 
+func TestConsumeLogsCentralQueueCoalescesRandomRoutingByLane(t *testing.T) {
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+	var next byte
+	p := &logExporterImp{
+		centralQueue: newCentralQueue(centralQueueSettings{
+			maxCompressedBytes:           1 << 20,
+			maxInflightUncompressedBytes: 1 << 20,
+			maxUncompressedBatchBytes:    1 << 20,
+			targetCompressedBytes:        1 << 20,
+		}),
+		centralCodec:          codec,
+		ignoreTraceID:         true,
+		centralQueueLaneCount: 1,
+		randomTraceID: func() pcommon.TraceID {
+			next++
+			return pcommon.TraceID{next}
+		},
+	}
+	p.started.Store(true)
+
+	first := simpleLogWithID(pcommon.TraceID{1})
+	second := simpleLogWithID(pcommon.TraceID{2})
+	require.NoError(t, p.ConsumeLogs(t.Context(), first))
+	require.NoError(t, p.ConsumeLogs(t.Context(), second))
+	require.Equal(t, 2, p.centralQueue.len())
+
+	lease, err := p.centralQueue.lease(t.Context())
+	require.NoError(t, err)
+	defer lease.done()
+	require.Len(t, lease.window.items, 2)
+
+	merged := plog.NewLogs()
+	for _, item := range lease.window.items {
+		decoded, decodeErr := decodeCentralQueueLogsItem(item, codec)
+		require.NoError(t, decodeErr)
+		mergeLogChunksByMove(merged, decoded)
+	}
+	require.Equal(t, first.LogRecordCount()+second.LogRecordCount(), merged.LogRecordCount())
+}
+
 func TestLogsCentralQueueShutdownCancelsBeforeWaiting(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
@@ -324,6 +365,41 @@ func TestLogsCentralQueueDropsPermanentExportError(t *testing.T) {
 	cancel()
 	waitErr := waitForInflight(t.Context(), &p.centralWG)
 	require.NoError(t, waitErr)
+}
+
+func TestLogsCentralQueueWindowSkipsInvalidPayload(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+
+	endpoint := "endpoint-1:4317"
+	var gotCount int
+	p := &logExporterImp{
+		centralCodec: codec,
+		loadBalancer: &loadBalancer{
+			ring: newHashRing([]string{endpoint}),
+			exporters: map[string]*wrappedExporter{endpoint: newWrappedExporter(newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+				gotCount = ld.LogRecordCount()
+				return nil
+			}), endpoint)},
+			endpointHealth: newEndpointHealthManager(endpointHealthSettings{}),
+		},
+		telemetry: tb,
+		logger:    ts.Logger,
+	}
+
+	valid, err := newCentralQueueLogsItem([]byte("lane-a"), simpleLogs(), codec, time.Now())
+	require.NoError(t, err)
+	invalid := valid
+	invalid.payload = []byte("not-valid-zstd")
+	invalid.compressedBytes = len(invalid.payload)
+
+	err = p.consumeCentralQueueLogWindow(t.Context(), centralQueueWindow{
+		routingKey: []byte("lane-a"),
+		items:      []centralQueueItem{invalid, valid},
+	})
+	require.NoError(t, err)
+	require.Equal(t, valid.count, gotCount)
 }
 
 func TestLogsCentralQueueFirstRetryUsesInitialDelay(t *testing.T) {

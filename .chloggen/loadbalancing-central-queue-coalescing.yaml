@@ -1,0 +1,9 @@
+change_type: enhancement
+component: exporter/loadbalancing
+note: Coalesce compressed central queue payloads by backend lane before dispatch.
+issues: [59]
+subtext: |-
+  Adds central queue request-window telemetry and size/delay knobs so operators
+  can verify backend request sizes while queue capacity remains compressed-byte
+  based.
+change_logs: [user]

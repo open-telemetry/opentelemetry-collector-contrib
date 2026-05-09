@@ -232,6 +232,9 @@ const (
 const (
 	defaultCentralQueueMaxUncompressedBatchBytes = 16 << 20
 	defaultCentralQueueMaxInflightBytes          = int64(512 << 20)
+	defaultCentralQueueTargetCompressedBytes     = int64(256 << 10)
+	defaultCentralQueueMaxBatchDelay             = 250 * time.Millisecond
+	defaultCentralQueueLaneCount                 = 64
 )
 
 type CentralQueueConfig struct {
@@ -240,6 +243,9 @@ type CentralQueueConfig struct {
 	PayloadCompression           QueuePayloadCompression `mapstructure:"payload_compression"`
 	MaxUncompressedBatchBytes    int                     `mapstructure:"max_uncompressed_batch_bytes"`
 	MaxInflightUncompressedBytes int64                   `mapstructure:"max_inflight_uncompressed_bytes"`
+	TargetCompressedBytes        int64                   `mapstructure:"target_compressed_bytes"`
+	MaxBatchDelay                time.Duration           `mapstructure:"max_batch_delay"`
+	LaneCount                    int                     `mapstructure:"lane_count"`
 }
 
 func (q QueueSettings) Validate() error {
@@ -333,6 +339,15 @@ func (c CentralQueueConfig) Validate() error {
 	}
 	if int64(c.MaxUncompressedBatchBytes) > c.MaxInflightUncompressedBytes {
 		return errors.New("central_queue.max_uncompressed_batch_bytes must be less than or equal to central_queue.max_inflight_uncompressed_bytes")
+	}
+	if c.TargetCompressedBytes <= 0 {
+		return errors.New("central_queue.target_compressed_bytes must be greater than 0 when central_queue.enabled=true")
+	}
+	if c.MaxBatchDelay <= 0 {
+		return errors.New("central_queue.max_batch_delay must be greater than 0 when central_queue.enabled=true")
+	}
+	if c.LaneCount <= 0 {
+		return errors.New("central_queue.lane_count must be greater than 0 when central_queue.enabled=true")
 	}
 	return nil
 }

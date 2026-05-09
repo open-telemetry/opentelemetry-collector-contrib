@@ -31,6 +31,13 @@ func TestCentralQueueTelemetryRecordsInstruments(t *testing.T) {
 	})
 	telemetry.recordRejected(t.Context(), 7)
 	telemetry.recordRetry(t.Context())
+	telemetry.recordDecodeFailure(t.Context(), 5)
+	telemetry.recordWindow(t.Context(), centralQueueWindow{
+		items:             []centralQueueItem{{}, {}},
+		compressedBytes:   32,
+		uncompressedBytes: 128,
+		count:             11,
+	})
 
 	attrs := attribute.NewSet(attribute.String("signal", string(signalKindLogs)))
 	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_compressed_bytes", "By", attrs, 50)
@@ -41,6 +48,11 @@ func TestCentralQueueTelemetryRecordsInstruments(t *testing.T) {
 	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_oldest_item_age", "ms", attrs, 125)
 	requireCentralQueueIntSum(t, reader, "otelcol_loadbalancer_central_queue_rejected_compressed_bytes", "By", attrs, 7)
 	requireCentralQueueIntSum(t, reader, "otelcol_loadbalancer_central_queue_retries", "{retries}", attrs, 1)
+	requireCentralQueueIntSum(t, reader, "otelcol_loadbalancer_central_queue_decode_failures", "{items}", attrs, 5)
+	requireCentralQueueIntHistogram(t, reader, "otelcol_loadbalancer_central_queue_window_compressed_bytes", "By", attrs, 32)
+	requireCentralQueueIntHistogram(t, reader, "otelcol_loadbalancer_central_queue_window_uncompressed_bytes", "By", attrs, 128)
+	requireCentralQueueIntHistogram(t, reader, "otelcol_loadbalancer_central_queue_window_items", "{items}", attrs, 11)
+	requireCentralQueueIntHistogram(t, reader, "otelcol_loadbalancer_central_queue_window_payloads", "{payloads}", attrs, 2)
 }
 
 func TestCentralQueueTelemetryOldestItemAgeReportsMultipleSignals(t *testing.T) {
@@ -109,4 +121,17 @@ func requireCentralQueueIntSum(t *testing.T, reader *componenttest.Telemetry, na
 	require.Len(t, sum.DataPoints, 1)
 	require.Equal(t, attrs, sum.DataPoints[0].Attributes)
 	require.Equal(t, value, sum.DataPoints[0].Value)
+}
+
+func requireCentralQueueIntHistogram(t *testing.T, reader *componenttest.Telemetry, name, unit string, attrs attribute.Set, value int64) {
+	t.Helper()
+	metric, err := reader.GetMetric(name)
+	require.NoError(t, err)
+	require.Equal(t, unit, metric.Unit)
+	histogram, ok := metric.Data.(metricdata.Histogram[int64])
+	require.True(t, ok)
+	require.Len(t, histogram.DataPoints, 1)
+	require.Equal(t, attrs, histogram.DataPoints[0].Attributes)
+	require.Equal(t, value, histogram.DataPoints[0].Sum)
+	require.EqualValues(t, 1, histogram.DataPoints[0].Count)
 }

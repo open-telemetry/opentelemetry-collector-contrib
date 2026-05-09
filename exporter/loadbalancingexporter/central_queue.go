@@ -4,8 +4,11 @@
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
+	"bytes"
 	"container/heap"
 	"context"
+	"encoding/binary"
+	"hash/crc32"
 	"sync"
 	"time"
 )
@@ -20,6 +23,8 @@ type centralQueueSettings struct {
 	maxCompressedBytes           int64
 	maxInflightUncompressedBytes int64
 	maxUncompressedBatchBytes    int
+	targetCompressedBytes        int64
+	maxBatchDelay                time.Duration
 	telemetry                    *centralQueueTelemetry
 }
 
@@ -38,12 +43,31 @@ type centralQueue struct {
 }
 
 type centralQueueLease struct {
-	queue *centralQueue
-	item  centralQueueItem
-	once  sync.Once
+	queue  *centralQueue
+	window centralQueueWindow
+	item   centralQueueItem
+	once   sync.Once
+}
+
+type centralQueueWindow struct {
+	routingKey        []byte
+	items             []centralQueueItem
+	compressedBytes   int
+	uncompressedBytes int
+	count             int
+	oldestEnqueuedAt  int64
+	maxAttempt        int
+}
+
+type centralQueueWindowCandidate struct {
+	window  centralQueueWindow
+	indexes []int
 }
 
 func newCentralQueue(settings centralQueueSettings) *centralQueue {
+	if settings.targetCompressedBytes <= 0 {
+		settings.targetCompressedBytes = 1
+	}
 	q := &centralQueue{settings: settings}
 	q.settings.telemetry.observeOldestItemAge(q.oldestItemAgeMillis)
 	return q
@@ -115,20 +139,38 @@ func (q *centralQueue) tryLease(now time.Time) (*centralQueueLease, error) {
 
 	nowUnixNano := now.UnixNano()
 	readyInflightBlocked := false
-	for i, item := range q.items {
+	evaluatedRoutingKeys := make(map[string]struct{})
+	for _, item := range q.items {
 		if item.nextAttemptUnixNano > nowUnixNano {
 			continue
 		}
-		if q.currentInflightBytes+int64(item.uncompressedBytes) > q.settings.maxInflightUncompressedBytes {
+		routingKey := string(item.routingKey)
+		if _, ok := evaluatedRoutingKeys[routingKey]; ok {
+			continue
+		}
+		evaluatedRoutingKeys[routingKey] = struct{}{}
+		candidate, ok := q.buildWindowCandidateLocked(item.routingKey, now)
+		if !ok {
+			continue
+		}
+		if q.currentInflightBytes+int64(candidate.window.uncompressedBytes) > q.settings.maxInflightUncompressedBytes {
 			readyInflightBlocked = true
 			continue
 		}
 
-		q.removeItemLocked(i)
-		q.currentInflightBytes += int64(item.uncompressedBytes)
+		q.removeWindowLocked(candidate.indexes)
+		q.currentInflightBytes += int64(candidate.window.uncompressedBytes)
 		snapshot := q.snapshotLocked()
 		q.settings.telemetry.record(context.Background(), snapshot)
-		return &centralQueueLease{queue: q, item: item}, nil
+		q.settings.telemetry.recordWindow(context.Background(), candidate.window)
+		lease := &centralQueueLease{
+			queue:  q,
+			window: candidate.window,
+		}
+		if len(candidate.window.items) > 0 {
+			lease.item = candidate.window.items[0]
+		}
+		return lease, nil
 	}
 	if readyInflightBlocked {
 		return nil, errCentralQueueInflightFull
@@ -136,10 +178,69 @@ func (q *centralQueue) tryLease(now time.Time) (*centralQueueLease, error) {
 	return nil, nil
 }
 
+func (q *centralQueue) buildWindowCandidateLocked(routingKey []byte, now time.Time) (centralQueueWindowCandidate, bool) {
+	nowUnixNano := now.UnixNano()
+	candidate := centralQueueWindowCandidate{
+		window: centralQueueWindow{
+			routingKey: append([]byte(nil), routingKey...),
+			items:      make([]centralQueueItem, 0, 1),
+		},
+		indexes: make([]int, 0, 1),
+	}
+
+	blockedByHardLimit := false
+	for i, item := range q.items {
+		if !bytes.Equal(item.routingKey, routingKey) || item.nextAttemptUnixNano > nowUnixNano {
+			continue
+		}
+		if len(candidate.window.items) > 0 && q.windowWouldExceedLimit(candidate.window, item) {
+			blockedByHardLimit = true
+			break
+		}
+		candidate.window.items = append(candidate.window.items, item)
+		candidate.indexes = append(candidate.indexes, i)
+		candidate.window.compressedBytes += item.compressedBytes
+		candidate.window.uncompressedBytes += item.uncompressedBytes
+		candidate.window.count += item.count
+		if item.attempt > candidate.window.maxAttempt {
+			candidate.window.maxAttempt = item.attempt
+		}
+		if candidate.window.oldestEnqueuedAt == 0 || item.enqueuedAtUnixNano < candidate.window.oldestEnqueuedAt {
+			candidate.window.oldestEnqueuedAt = item.enqueuedAtUnixNano
+		}
+		if int64(candidate.window.compressedBytes) >= q.settings.targetCompressedBytes {
+			return candidate, true
+		}
+	}
+
+	if len(candidate.window.items) == 0 {
+		return centralQueueWindowCandidate{}, false
+	}
+	if q.stopped || blockedByHardLimit || q.settings.maxBatchDelay <= 0 {
+		return candidate, true
+	}
+	oldest := time.Unix(0, candidate.window.oldestEnqueuedAt)
+	if !oldest.IsZero() && now.Sub(oldest) >= q.settings.maxBatchDelay {
+		return candidate, true
+	}
+	return centralQueueWindowCandidate{}, false
+}
+
+func (q *centralQueue) windowWouldExceedLimit(window centralQueueWindow, item centralQueueItem) bool {
+	return q.settings.maxUncompressedBatchBytes > 0 &&
+		window.uncompressedBytes+item.uncompressedBytes > q.settings.maxUncompressedBatchBytes
+}
+
 func (q *centralQueue) removeItemLocked(index int) {
 	removed := q.items[index]
 	q.items = removeCentralQueueItem(q.items, index)
 	q.untrackOldestEnqueuedAtLocked(removed)
+}
+
+func (q *centralQueue) removeWindowLocked(indexes []int) {
+	for i := len(indexes) - 1; i >= 0; i-- {
+		q.removeItemLocked(indexes[i])
+	}
 }
 
 func removeCentralQueueItem(items []centralQueueItem, index int) []centralQueueItem {
@@ -151,8 +252,8 @@ func removeCentralQueueItem(items []centralQueueItem, index int) []centralQueueI
 func (l *centralQueueLease) done() {
 	l.once.Do(func() {
 		l.queue.mu.Lock()
-		l.queue.currentInflightBytes -= int64(l.item.uncompressedBytes)
-		l.queue.currentCompressedBytes -= int64(l.item.compressedBytes)
+		l.queue.currentInflightBytes -= int64(l.window.uncompressedBytes)
+		l.queue.currentCompressedBytes -= int64(l.window.compressedBytes)
 		snapshot := l.queue.snapshotLocked()
 		l.queue.mu.Unlock()
 		l.queue.settings.telemetry.record(context.Background(), snapshot)
@@ -162,24 +263,30 @@ func (l *centralQueueLease) done() {
 func (l *centralQueueLease) requeue(nextAttempt time.Time) error {
 	var err error
 	l.once.Do(func() {
-		item := l.item
-		item.nextAttemptUnixNano = nextAttempt.UnixNano()
 		l.queue.settings.telemetry.recordRetry(context.Background())
 
 		l.queue.mu.Lock()
-		l.queue.currentInflightBytes -= int64(item.uncompressedBytes)
+		l.queue.currentInflightBytes -= int64(l.window.uncompressedBytes)
 		if l.queue.stopped {
-			l.queue.currentCompressedBytes -= int64(item.compressedBytes)
+			l.queue.currentCompressedBytes -= int64(l.window.compressedBytes)
 			err = errCentralQueueStopped
 		} else {
-			l.queue.items = append(l.queue.items, item)
-			l.queue.trackOldestEnqueuedAtLocked(item)
+			for _, item := range l.window.items {
+				item.attempt++
+				item.nextAttemptUnixNano = nextAttempt.UnixNano()
+				l.queue.items = append(l.queue.items, item)
+				l.queue.trackOldestEnqueuedAtLocked(item)
+			}
 		}
 		snapshot := l.queue.snapshotLocked()
 		l.queue.mu.Unlock()
 		l.queue.settings.telemetry.record(context.Background(), snapshot)
 	})
 	return err
+}
+
+func (l *centralQueueLease) retryDelay() time.Duration {
+	return centralQueueRetryDelay(l.window.maxAttempt)
 }
 
 func (q *centralQueue) stop() {
@@ -309,4 +416,20 @@ func centralQueueRetryDelay(attempt int) time.Duration {
 	shift := min(attempt, 6)
 	delay := centralQueueInitialRetryDelay * time.Duration(1<<shift)
 	return min(delay, centralQueueMaxRetryDelay)
+}
+
+func centralQueueLaneRoutingKey(signal signalKind, routingKey []byte, laneCount int) []byte {
+	if laneCount <= 0 {
+		return append([]byte(nil), routingKey...)
+	}
+	hashInput := make([]byte, len(routingKey)+len(signal)+1)
+	copy(hashInput, string(signal))
+	hashInput[len(signal)] = 0
+	copy(hashInput[len(signal)+1:], routingKey)
+	lane := crc32.ChecksumIEEE(hashInput) % uint32(laneCount)
+	laneRoutingKey := make([]byte, len(signal)+1+4)
+	copy(laneRoutingKey, string(signal))
+	laneRoutingKey[len(signal)] = 0
+	binary.BigEndian.PutUint32(laneRoutingKey[len(signal)+1:], lane)
+	return laneRoutingKey
 }

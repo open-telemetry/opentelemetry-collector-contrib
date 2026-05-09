@@ -58,6 +58,9 @@ func createDefaultConfig() component.Config {
 			PayloadCompression:           QueuePayloadCompressionZstd,
 			MaxUncompressedBatchBytes:    defaultCentralQueueMaxUncompressedBatchBytes,
 			MaxInflightUncompressedBytes: defaultCentralQueueMaxInflightBytes,
+			TargetCompressedBytes:        defaultCentralQueueTargetCompressedBytes,
+			MaxBatchDelay:                defaultCentralQueueMaxBatchDelay,
+			LaneCount:                    defaultCentralQueueLaneCount,
 		},
 		LogBatcher: LogBatcherConfig{
 			Enabled:            false,

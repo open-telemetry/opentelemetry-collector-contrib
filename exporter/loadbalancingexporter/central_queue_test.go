@@ -69,6 +69,103 @@ func TestCentralQueueLeaseReservesCompressedBytesUntilDoneOrRequeue(t *testing.T
 	require.Zero(t, q.compressedBytes())
 }
 
+func TestCentralQueueLeaseCoalescesReadyItemsByRoutingKey(t *testing.T) {
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 100,
+		maxUncompressedBatchBytes:    100,
+		targetCompressedBytes:        20,
+		maxBatchDelay:                time.Second,
+	})
+	now := time.Unix(10, 0)
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindMetrics, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindMetrics, routingKey: []byte("lane-b"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindMetrics, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
+
+	lease, err := q.tryLease(now)
+	require.NoError(t, err)
+	require.NotNil(t, lease)
+	require.Equal(t, []byte("lane-a"), lease.window.routingKey)
+	require.Len(t, lease.window.items, 2)
+	require.Equal(t, 20, lease.window.compressedBytes)
+	require.Equal(t, 40, lease.window.uncompressedBytes)
+	require.Equal(t, 1, q.len())
+	require.EqualValues(t, 30, q.compressedBytes())
+
+	lease.done()
+	require.EqualValues(t, 10, q.compressedBytes())
+}
+
+func TestCentralQueueLeaseDoesNotCoalesceDifferentRoutingKeys(t *testing.T) {
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 100,
+		maxUncompressedBatchBytes:    100,
+		targetCompressedBytes:        100,
+	})
+	now := time.Unix(10, 0)
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("lane-b"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
+
+	lease, err := q.tryLease(now)
+	require.NoError(t, err)
+	require.NotNil(t, lease)
+	require.Equal(t, []byte("lane-a"), lease.window.routingKey)
+	require.Len(t, lease.window.items, 1)
+}
+
+func TestCentralQueueLeaseWaitsForSmallWindowMaxDelay(t *testing.T) {
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 100,
+		maxUncompressedBatchBytes:    100,
+		targetCompressedBytes:        100,
+		maxBatchDelay:                250 * time.Millisecond,
+	})
+	now := time.Unix(10, 0)
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
+
+	lease, err := q.tryLease(now.Add(100 * time.Millisecond))
+	require.NoError(t, err)
+	require.Nil(t, lease)
+
+	lease, err = q.tryLease(now.Add(250 * time.Millisecond))
+	require.NoError(t, err)
+	require.NotNil(t, lease)
+	require.Len(t, lease.window.items, 1)
+}
+
+func TestCentralQueueRequeuesWholeCoalescedWindow(t *testing.T) {
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 100,
+		maxUncompressedBatchBytes:    100,
+		targetCompressedBytes:        20,
+	})
+	now := time.Unix(10, 0)
+	nextAttempt := now.Add(time.Second)
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindMetrics, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindMetrics, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
+
+	lease, err := q.tryLease(now)
+	require.NoError(t, err)
+	require.NotNil(t, lease)
+	require.Len(t, lease.window.items, 2)
+	require.NoError(t, lease.requeue(nextAttempt))
+	require.Equal(t, 2, q.len())
+	require.EqualValues(t, 20, q.compressedBytes())
+
+	lease, err = q.tryLease(now)
+	require.NoError(t, err)
+	require.Nil(t, lease)
+
+	lease, err = q.tryLease(nextAttempt)
+	require.NoError(t, err)
+	require.NotNil(t, lease)
+	require.Len(t, lease.window.items, 2)
+	require.Equal(t, 1, lease.window.maxAttempt)
+}
+
 func TestCentralQueueSnapshotReportsOldestQueuedItemAge(t *testing.T) {
 	q := newCentralQueue(centralQueueSettings{
 		maxCompressedBytes:           100,

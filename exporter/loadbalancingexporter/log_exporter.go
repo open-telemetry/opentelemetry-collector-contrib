@@ -40,6 +40,7 @@ type logExporterImp struct {
 	ignoreTraceID            bool
 	randomTraceID            func() pcommon.TraceID
 	centralQueueByteBatching bool
+	centralQueueLaneCount    int
 	centralCancel            context.CancelFunc
 	centralWG                sync.WaitGroup
 }
@@ -70,6 +71,7 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 		ignoreTraceID:            cfg.(*Config).LogRouting.IgnoreTraceID,
 		randomTraceID:            random,
 		centralQueueByteBatching: cfg.(*Config).centralQueueByteBatchingEnabled(),
+		centralQueueLaneCount:    cfg.(*Config).CentralQueue.LaneCount,
 	}
 	if cfg.(*Config).CentralQueue.Enabled {
 		centralCfg := cfg.(*Config).CentralQueue
@@ -81,6 +83,8 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 			maxCompressedBytes:           centralCfg.MaxCompressedBytes,
 			maxInflightUncompressedBytes: centralCfg.MaxInflightUncompressedBytes,
 			maxUncompressedBatchBytes:    centralCfg.MaxUncompressedBatchBytes,
+			targetCompressedBytes:        centralCfg.TargetCompressedBytes,
+			maxBatchDelay:                centralCfg.MaxBatchDelay,
 			telemetry:                    centralTelemetry,
 		})
 		logExporter.centralCodec = newQueuePayloadCodec(centralCfg.PayloadCompression)
@@ -179,7 +183,11 @@ func (e *logExporterImp) consumeLogsCentralQueue(_ context.Context, ld plog.Logs
 	var errs error
 	now := time.Now()
 	for routingKey, logs := range batches {
-		item, err := newCentralQueueLogsItem(routingKey[:], logs, e.centralCodec, now)
+		queueRoutingKey := routingKey[:]
+		if e.ignoreTraceID {
+			queueRoutingKey = centralQueueLaneRoutingKey(signalKindLogs, queueRoutingKey, e.centralQueueLaneCount)
+		}
+		item, err := newCentralQueueLogsItem(queueRoutingKey, logs, e.centralCodec, now)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -233,7 +241,7 @@ func (e *logExporterImp) runCentralQueue(ctx context.Context) {
 			continue
 		}
 
-		err = e.consumeCentralQueueLogItem(ctx, lease.item)
+		err = e.consumeCentralQueueLogWindow(ctx, lease.window)
 		if err == nil {
 			lease.done()
 			continue
@@ -247,10 +255,7 @@ func (e *logExporterImp) runCentralQueue(ctx context.Context) {
 			lease.done()
 			continue
 		}
-		item := lease.item
-		nextAttempt := time.Now().Add(centralQueueRetryDelay(item.attempt))
-		item.attempt++
-		lease.item = item
+		nextAttempt := time.Now().Add(lease.retryDelay())
 		if requeueErr := lease.requeue(nextAttempt); requeueErr != nil {
 			e.logger.Warn("failed to requeue central log queue item", zap.Error(requeueErr), zap.Error(err))
 		}
@@ -258,12 +263,51 @@ func (e *logExporterImp) runCentralQueue(ctx context.Context) {
 }
 
 func (e *logExporterImp) consumeCentralQueueLogItem(ctx context.Context, item centralQueueItem) error {
-	ld, err := decodeCentralQueueLogsItem(item, e.centralCodec)
-	if err != nil {
-		e.logger.Warn("dropping invalid central log queue payload", zap.Error(err))
+	return e.consumeCentralQueueLogWindow(ctx, centralQueueWindow{
+		routingKey:        item.routingKey,
+		items:             []centralQueueItem{item},
+		compressedBytes:   item.compressedBytes,
+		uncompressedBytes: item.uncompressedBytes,
+		count:             item.count,
+	})
+}
+
+func (e *logExporterImp) consumeCentralQueueLogWindow(ctx context.Context, window centralQueueWindow) error {
+	ld := plog.NewLogs()
+	decodedAny := false
+	corruptPayloads := 0
+	droppedItems := 0
+	var firstDecodeErr error
+	for _, item := range window.items {
+		itemLogs, err := decodeCentralQueueLogsItem(item, e.centralCodec)
+		if err != nil {
+			corruptPayloads++
+			droppedItems += item.count
+			if firstDecodeErr == nil {
+				firstDecodeErr = err
+			}
+			continue
+		}
+		mergeLogChunksByMove(ld, itemLogs)
+		decodedAny = true
+	}
+	if corruptPayloads > 0 {
+		e.logger.Error(
+			"dropping invalid central log queue payloads",
+			zap.Int("dropped_items", droppedItems),
+			zap.Int("corrupt_payloads", corruptPayloads),
+			zap.Int("window_items", window.count),
+			zap.Int("window_payloads", len(window.items)),
+			zap.Error(firstDecodeErr),
+		)
+		if e.centralQueue != nil {
+			e.centralQueue.settings.telemetry.recordDecodeFailure(ctx, int64(droppedItems))
+		}
+	}
+	if !decodedAny {
 		return nil
 	}
-	le, _, err := e.loadBalancer.exporterAndEndpoint(item.routingKey)
+	le, _, err := e.loadBalancer.exporterAndEndpoint(window.routingKey)
 	if err != nil {
 		return err
 	}

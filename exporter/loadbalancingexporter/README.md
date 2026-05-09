@@ -156,6 +156,10 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `payload_compression` controls queued payload compression. Supported values: `snappy`, `zstd`. Default: `zstd`.
   * `max_uncompressed_batch_bytes` rejects any queued item whose uncompressed OTLP payload is larger than this guardrail. Default: `16777216` (`16 MiB`).
   * `max_inflight_uncompressed_bytes` limits concurrently decompressed bytes while dispatching queue items. Default: `536870912` (`512 MiB`).
+  * `target_compressed_bytes` is the soft compressed-size target for one backend request assembled from queued payloads. Default: `262144` (`256 KiB`).
+  * `max_batch_delay` bounds how long a small backend lane can wait for more queued payloads before dispatch. Default: `250ms`.
+  * `lane_count` controls how many backend lanes routing keys are coalesced into before a backend endpoint is selected. Default: `64`.
+  * Queued payloads stay compressed until dispatch. Central queue capacity is enforced on compressed bytes; request windows are decoded only after a lane is leased, merged, and ready to send.
   * Central queue mode is incompatible with `sending_queue.enabled=true`, `protocol.otlp.sending_queue`, `log_batcher.enabled=true`, and `metric_batcher.enabled=true`. Child OTLP exporter queues are disabled while central queue mode is active.
 
 Simple example
@@ -197,6 +201,9 @@ exporters:
       payload_compression: zstd
       max_uncompressed_batch_bytes: 16777216
       max_inflight_uncompressed_bytes: 536870912
+      target_compressed_bytes: 262144
+      max_batch_delay: 250ms
+      lane_count: 64
     log_routing:
       ignore_trace_id: true
     routing_key: "service"
@@ -523,3 +530,9 @@ The following metrics are recorded by this exporter:
   * `otelcol_loadbalancer_metric_batch_pending_oldest_datapoint_age_max` reports the maximum pending oldest-datapoint age across all backend endpoints.
   * `otelcol_loadbalancer_metric_batch_flush_oldest_datapoint_age` records the age of the oldest metric datapoint in each flushed batch.
 * When central queue mode is active, `otelcol_loadbalancer_central_queue_oldest_item_age` reports the age in milliseconds of the oldest item waiting in the central queue.
+* Central queue window metrics show whether request coalescing is addressing small backend requests:
+  * `otelcol_loadbalancer_central_queue_window_compressed_bytes` reports compressed bytes leased into each request window.
+  * `otelcol_loadbalancer_central_queue_window_uncompressed_bytes` reports decoded OTLP bytes in each merged request window.
+  * `otelcol_loadbalancer_central_queue_window_items` reports log records or metric datapoints in each merged request window.
+  * `otelcol_loadbalancer_central_queue_window_payloads` reports how many compressed queue payloads were merged into each request window.
+  * `otelcol_loadbalancer_central_queue_decode_failures` counts log records or metric datapoints dropped because a queued compressed payload could not be decoded.
