@@ -87,8 +87,11 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if index == len(pages) {
 			mp.wg.Done()
 		}
-		rw.WriteHeader(http.StatusNotFound)
-		return
+		if len(pages) == 0 {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		index = len(pages) - 1
 	}
 	switch {
 	case pages[index].useProtoBuf:
@@ -315,6 +318,24 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, target *testDa
 	return out
 }
 
+func isValidScrape(rm pmetric.ResourceMetrics, normalizedNames bool) bool {
+	allMetrics := getMetrics(rm)
+	if expectedScrapeMetricCount <= len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedScrapeMetricCount ||
+		expectedExtraScrapeMetricCount <= len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedExtraScrapeMetricCount {
+		if isFirstFailedScrape(allMetrics, normalizedNames) {
+			return false
+		}
+		for _, m := range allMetrics {
+			if m.Name() == "up" {
+				if m.Gauge().DataPoints().At(0).DoubleValue() == 1 {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 func isScrapeConfigResource(rms pmetric.ResourceMetrics, target *testData) bool {
 	targetJobName, ok := target.attributes.Get("service.name")
 	if !ok {
@@ -422,16 +443,12 @@ func countScrapeMetrics(metrics []pmetric.Metric, normalizedNames bool) int {
 	return n
 }
 
-func isDefaultMetrics(m pmetric.Metric, normalizedNames bool) bool {
+func isDefaultMetrics(m pmetric.Metric, _ bool) bool {
 	switch m.Name() {
 	case "up", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
 		return true
-
-	// if normalizedNames is true, we expect unit `_seconds` to be trimmed.
-	case "scrape_duration_seconds":
-		return !normalizedNames
-	case "scrape_duration":
-		return normalizedNames
+	case "scrape_duration_seconds", "scrape_duration":
+		return true
 	default:
 	}
 	return false
@@ -863,10 +880,21 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 		for _, target := range targets[:len(mp.endpoints)] {
 			scrapes := pResults[getTargetName(target)]
 
-			// There may be an additional scrape entry between when the mock server provided
-			// all responses and when we capture the metrics.  It will be ignored later.
-			if len(scrapes) < getTargetExpectedScrapes(target) {
-				return false
+			expected := getTargetExpectedScrapes(target)
+			if !target.validateScrapes {
+				validCount := 0
+				for _, s := range scrapes {
+					if isValidScrape(s, target.normalizedName) {
+						validCount++
+					}
+				}
+				if validCount < expected {
+					return false
+				}
+			} else {
+				if len(scrapes) < expected {
+					return false
+				}
 			}
 		}
 		return true
