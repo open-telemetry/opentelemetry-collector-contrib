@@ -145,7 +145,7 @@ func TestReaggregateGauge_IntValues(t *testing.T) {
 	dp2 := dps.AppendEmpty()
 	dp2.Attributes().PutStr("method", "GET")
 	dp2.SetIntValue(20)
-	dp2.SetTimestamp(200) // latest wins
+	dp2.SetTimestamp(200)      // latest wins
 	dp2.SetStartTimestamp(150) // > 0, so it should be copied
 
 	reaggregateNumberDataPoints(dps, pmetric.MetricTypeGauge, false)
@@ -297,7 +297,7 @@ func TestReaggregate_MergesExemplars(t *testing.T) {
 
 	require.Equal(t, 1, dps.Len())
 	assert.Equal(t, int64(30), dps.At(0).IntValue())
-	
+
 	// Both exemplars should be preserved in the merged data point.
 	require.Equal(t, 2, dps.At(0).Exemplars().Len())
 	assert.Equal(t, 1.0, dps.At(0).Exemplars().At(0).DoubleValue())
@@ -349,12 +349,12 @@ func TestReaggregate_SingleWriterInvariant(t *testing.T) {
 	dps := pmetric.NewNumberDataPointSlice()
 
 	// Create 5 data points, 3 of which collide.
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		dp := dps.AppendEmpty()
 		dp.Attributes().PutStr("method", "GET")
 		dp.SetIntValue(int64(i + 1))
 	}
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		dp := dps.AppendEmpty()
 		dp.Attributes().PutStr("method", "POST")
 		dp.SetIntValue(int64(i + 10))
@@ -421,7 +421,7 @@ func TestAddNumberValue_EmptyType(t *testing.T) {
 func BenchmarkReaggregateNumberDataPoints_NoCollision(b *testing.B) {
 	// Benchmark the fast path: no collisions, early exit.
 	dps := pmetric.NewNumberDataPointSlice()
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		dp := dps.AppendEmpty()
 		dp.Attributes().PutInt("id", int64(i))
 		dp.SetIntValue(int64(i))
@@ -439,7 +439,7 @@ func BenchmarkReaggregateNumberDataPoints_AllCollide(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		dps := pmetric.NewNumberDataPointSlice()
-		for j := 0; j < 100; j++ {
+		for j := range 100 {
 			dp := dps.AppendEmpty()
 			dp.Attributes().PutStr("method", "GET")
 			dp.SetIntValue(int64(j))

@@ -419,7 +419,7 @@ func newCardinalityProcessor(ctx context.Context, cfg *Config, set processor.Set
 
 	p := &cardinalityProcessor{
 		config:                      cfg,
-		logger:                      set.TelemetrySettings.Logger,
+		logger:                      set.Logger,
 		next:                        next,
 		protectedLabels:             protected,
 		seed:                        maphash.MakeSeed(),
@@ -516,7 +516,7 @@ func (p *cardinalityProcessor) getShard(metricName string) *trackerShard {
 // batch before passing it to this processor, ensuring that modifications to
 // attributes do not race with other pipeline components that may be consuming
 // the same in-memory batch concurrently.
-func (p *cardinalityProcessor) Capabilities() consumer.Capabilities {
+func (*cardinalityProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
@@ -767,7 +767,8 @@ func (p *cardinalityProcessor) rotate() {
 		topBuf = make([]offenderEntry, 0, topN)
 	}
 
-	for _, shard := range p.shards {
+	for i := range p.shards {
+		shard := p.shards[i]
 		// Snapshot tracker references under a shard read lock — no sketch
 		// allocations inside the lock.
 		shard.mu.RLock()
@@ -982,7 +983,7 @@ func (p *cardinalityProcessor) Shutdown(_ context.Context) error {
 //  6. Guard against uint64 underflow: if curr ≤ prev (possible due to HLL
 //     probabilistic variance near sketch boundaries), return false.
 //  7. Return true only if (curr − prev) > MaxCardinalityDeltaPerEpoch.
-func (p *cardinalityProcessor) shouldDrop(metricName string, attrKey string, attrVal string) bool {
+func (p *cardinalityProcessor) shouldDrop(metricName, attrKey, attrVal string) bool {
 	key := trackerKey{metricName: metricName, attrKey: attrKey}
 
 	// Hash the attribute value to a uint64 before acquiring any lock.

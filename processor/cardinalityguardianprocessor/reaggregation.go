@@ -1,7 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-
 package cardinalityguardianprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cardinalityguardianprocessor"
 
 import (
@@ -38,7 +37,7 @@ func reaggregateNumberDataPoints(dps pmetric.NumberDataPointSlice, metricType pm
 	seen := make(map[uint64]int, n) // hash -> first index
 	hasCollisions := false
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		h := hashAttributes(dps.At(i).Attributes())
 		infos[i] = dpInfo{hash: h, index: i}
 		if _, exists := seen[h]; exists {
@@ -63,7 +62,7 @@ func reaggregateNumberDataPoints(dps pmetric.NumberDataPointSlice, metricType pm
 	// Reset seen to track group leaders.
 	seen = make(map[uint64]int, n)
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		h := infos[i].hash
 		leaderIdx, exists := seen[h]
 		if !exists {

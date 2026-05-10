@@ -4,7 +4,6 @@
 package cardinalityguardianprocessor
 
 import (
-	"context"
 	"fmt"
 	"sort"
 	"sync"
@@ -24,8 +23,6 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-
-
 func TestCardinalityProcessor_ConsumeMetrics(t *testing.T) {
 	cfg := &Config{
 		MaxCardinalityDeltaPerEpoch: 100,
@@ -38,7 +35,7 @@ func TestCardinalityProcessor_ConsumeMetrics(t *testing.T) {
 	// Create the mock OTel settings (which includes the mock MeterProvider and Logger)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	md := pmetric.NewMetrics()
@@ -54,7 +51,7 @@ func TestCardinalityProcessor_ConsumeMetrics(t *testing.T) {
 	attrs.PutStr("user_id", "user_123")     // To be intercepted
 	attrs.PutStr("temp_label", "delete_me") // To be intercepted
 
-	err = proc.ConsumeMetrics(context.Background(), md)
+	err = proc.ConsumeMetrics(t.Context(), md)
 	assert.NoError(t, err)
 
 	require.GreaterOrEqual(t, len(next.AllMetrics()), 1, "sink should have received at least one metrics batch")
@@ -89,12 +86,12 @@ func TestCardinalityProcessor_HighCardinalityLimit(t *testing.T) {
 	next := new(consumertest.MetricsSink)
 	// Create the mock OTel settings (which includes the mock MeterProvider and Logger)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	p, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	p, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
-	err = p.Start(context.Background(), nil)
+	err = p.Start(t.Context(), nil)
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() { _ = p.Shutdown(t.Context()) }()
 
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
@@ -103,14 +100,14 @@ func TestCardinalityProcessor_HighCardinalityLimit(t *testing.T) {
 	m.SetName("http.requests")
 	gauge := m.SetEmptyGauge()
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		dp := gauge.DataPoints().AppendEmpty()
 		dp.SetIntValue(1)
 		dp.Attributes().PutStr("user_id", fmt.Sprintf("user-%d", i))
 		dp.Attributes().PutStr("region", "us-east")
 	}
 
-	err = p.ConsumeMetrics(context.Background(), md)
+	err = p.ConsumeMetrics(t.Context(), md)
 	require.NoError(t, err)
 
 	require.GreaterOrEqual(t, len(next.AllMetrics()), 1, "sink should have received at least one metrics batch")
@@ -176,7 +173,7 @@ func TestShardDistribution(t *testing.T) {
 	// Create the mock OTel settings (which includes the mock MeterProvider and Logger)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, new(consumertest.MetricsSink))
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, new(consumertest.MetricsSink))
 	require.NoError(t, err)
 
 	// Type-assert to the concrete type so we can access getShard directly.
@@ -186,7 +183,7 @@ func TestShardDistribution(t *testing.T) {
 	const totalMetrics = 10_000
 	hitCount := make([]int, numShards)
 
-	for i := 0; i < totalMetrics; i++ {
+	for i := range totalMetrics {
 		shard := p.getShard(fmt.Sprintf("metric_%d", i))
 
 		// Identify which shard index was returned by comparing pointers.
@@ -211,17 +208,17 @@ func TestShardDistribution(t *testing.T) {
 			"%d shard(s) were empty", emptyShards)
 
 	// Log distribution stats for manual inspection.
-	min, max := hitCount[0], hitCount[0]
+	minHits, maxHits := hitCount[0], hitCount[0]
 	for _, c := range hitCount {
-		if c < min {
-			min = c
+		if c < minHits {
+			minHits = c
 		}
-		if c > max {
-			max = c
+		if c > maxHits {
+			maxHits = c
 		}
 	}
 	t.Logf("Shard distribution across %d metrics: min=%d, max=%d, expected≈%d",
-		totalMetrics, min, max, totalMetrics/numShards)
+		totalMetrics, minHits, maxHits, totalMetrics/numShards)
 }
 
 // TestConcurrency_Sharded verifies that 100 goroutines can call shouldDrop
@@ -236,7 +233,7 @@ func TestConcurrency_Sharded(t *testing.T) {
 	// Create the mock OTel settings (which includes the mock MeterProvider and Logger)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, new(consumertest.MetricsSink))
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, new(consumertest.MetricsSink))
 	require.NoError(t, err)
 
 	p := proc.(*cardinalityProcessor)
@@ -249,11 +246,11 @@ func TestConcurrency_Sharded(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(goroutines)
 
-	for id := 0; id < goroutines; id++ {
-		id := id // capture loop variable
+	for id := range goroutines {
+		// capture loop variable
 		go func() {
 			defer wg.Done()
-			for i := 0; i < iterations; i++ {
+			for i := range iterations {
 				// Each goroutine produces a unique value space to exercise
 				// concurrent tracker creation and the double-check lock path.
 				val := fmt.Sprintf("value_%d_%d", id, i)
@@ -288,7 +285,7 @@ func BenchmarkShouldDrop_HighThroughput(b *testing.B) {
 
 	// Create the mock OTel settings (which includes the mock MeterProvider and Logger)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, new(consumertest.MetricsSink))
+	proc, err := newCardinalityProcessor(b.Context(), cfg, set, new(consumertest.MetricsSink))
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -330,7 +327,7 @@ func BenchmarkConsumeMetrics_Passthrough(b *testing.B) {
 	}
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(b.Context(), cfg, set, next)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -342,7 +339,7 @@ func BenchmarkConsumeMetrics_Passthrough(b *testing.B) {
 	m := sm.Metrics().AppendEmpty()
 	m.SetName("http.server.duration")
 	m.SetEmptyGauge()
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		dp := m.Gauge().DataPoints().AppendEmpty()
 		dp.SetIntValue(int64(i))
 		dp.Attributes().PutStr("region", "us-east-1")
@@ -354,7 +351,7 @@ func BenchmarkConsumeMetrics_Passthrough(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		next.Reset()
-		if err := proc.ConsumeMetrics(context.Background(), md); err != nil {
+		if err := proc.ConsumeMetrics(b.Context(), md); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -370,7 +367,7 @@ func BenchmarkConsumeMetrics_HighCardinality(b *testing.B) {
 	}
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(b.Context(), cfg, set, next)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -386,13 +383,13 @@ func BenchmarkConsumeMetrics_HighCardinality(b *testing.B) {
 		m := sm.Metrics().AppendEmpty()
 		m.SetName("bench.high_card")
 		m.SetEmptyGauge()
-		for j := 0; j < 10; j++ {
+		for j := range 10 {
 			dp := m.Gauge().DataPoints().AppendEmpty()
 			dp.SetIntValue(1)
 			dp.Attributes().PutStr("request_id", fmt.Sprintf("req-%d-%d", i, j))
 		}
 		next.Reset()
-		if err := proc.ConsumeMetrics(context.Background(), md); err != nil {
+		if err := proc.ConsumeMetrics(b.Context(), md); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -408,7 +405,7 @@ func BenchmarkConsumeMetrics_MixedMetricTypes(b *testing.B) {
 	}
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(b.Context(), cfg, set, next)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -452,7 +449,7 @@ func BenchmarkConsumeMetrics_MixedMetricTypes(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		next.Reset()
-		if err := proc.ConsumeMetrics(context.Background(), md); err != nil {
+		if err := proc.ConsumeMetrics(b.Context(), md); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -468,7 +465,7 @@ func BenchmarkConsumeMetrics_LargeBatch(b *testing.B) {
 	}
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(b.Context(), cfg, set, next)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -478,11 +475,11 @@ func BenchmarkConsumeMetrics_LargeBatch(b *testing.B) {
 	rm := md.ResourceMetrics().AppendEmpty()
 	sm := rm.ScopeMetrics().AppendEmpty()
 
-	for m := 0; m < 10; m++ {
+	for m := range 10 {
 		met := sm.Metrics().AppendEmpty()
 		met.SetName(fmt.Sprintf("bench.batch.metric_%d", m))
 		met.SetEmptyGauge()
-		for d := 0; d < 100; d++ {
+		for d := range 100 {
 			dp := met.Gauge().DataPoints().AppendEmpty()
 			dp.SetIntValue(int64(d))
 			dp.Attributes().PutStr("region", "us-east-1")
@@ -494,7 +491,7 @@ func BenchmarkConsumeMetrics_LargeBatch(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		next.Reset()
-		if err := proc.ConsumeMetrics(context.Background(), md); err != nil {
+		if err := proc.ConsumeMetrics(b.Context(), md); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -509,11 +506,11 @@ func TestCardinalityProcessor_TagOnlyMode(t *testing.T) {
 
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	// Fire 100 metrics with unique user_ids
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		md := pmetric.NewMetrics()
 		rm := md.ResourceMetrics().AppendEmpty()
 		sm := rm.ScopeMetrics().AppendEmpty()
@@ -524,7 +521,7 @@ func TestCardinalityProcessor_TagOnlyMode(t *testing.T) {
 
 		dp.Attributes().PutStr("user_id", fmt.Sprintf("user_%d", i))
 
-		err = proc.ConsumeMetrics(context.Background(), md)
+		err = proc.ConsumeMetrics(t.Context(), md)
 		require.NoError(t, err)
 	}
 
@@ -551,7 +548,7 @@ func TestCardinalityProcessor_TagOnlyMode(t *testing.T) {
 
 	// Assertions
 	assert.Equal(t, 0, droppedCount, "0 attributes should be dropped in TagOnly mode")
-	assert.Greater(t, taggedCount, 0, "Some attributes should have been tagged for routing")
+	assert.Positive(t, taggedCount, "Some attributes should have been tagged for routing")
 	assert.Less(t, taggedCount, 100, "Not all attributes should be tagged (first 50 are allowed)")
 
 	t.Logf("SUCCESS: Kept all 100 user_ids. Tagged %d user_ids for cold storage.", taggedCount)
@@ -574,7 +571,7 @@ func TestEnforcementResolvesIdentityCollisions(t *testing.T) {
 
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	// Send 3 data points for the same metric with different user_ids.
@@ -594,7 +591,7 @@ func TestEnforcementResolvesIdentityCollisions(t *testing.T) {
 		dp.Attributes().PutStr("user_id", fmt.Sprintf("user_%d", i))
 	}
 
-	err = proc.ConsumeMetrics(context.Background(), md)
+	err = proc.ConsumeMetrics(t.Context(), md)
 	require.NoError(t, err)
 
 	outMetrics := next.AllMetrics()
@@ -660,7 +657,7 @@ func TestInternalTelemetry(t *testing.T) {
 	reader := sdkmetric.NewManualReader()
 	sdkProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
 	defer func() {
-		if err := sdkProvider.Shutdown(context.Background()); err != nil {
+		if err := sdkProvider.Shutdown(t.Context()); err != nil {
 			t.Errorf("sdk provider shutdown: %v", err)
 		}
 	}()
@@ -668,10 +665,10 @@ func TestInternalTelemetry(t *testing.T) {
 	// Replace the nop MeterProvider with the real SDK provider so the
 	// processor registers its instruments against our ManualReader.
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	set.TelemetrySettings.MeterProvider = sdkProvider
+	set.MeterProvider = sdkProvider
 
 	next := new(consumertest.MetricsSink)
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	// --- Phase 1: create exactly 5 trackers, 0 drops --------------------------
@@ -687,12 +684,12 @@ func TestInternalTelemetry(t *testing.T) {
 	m1.SetName("telemetry_test_metric")
 	m1.SetEmptyGauge()
 
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		dp := m1.Gauge().DataPoints().AppendEmpty()
 		dp.Attributes().PutStr(fmt.Sprintf("key_%d", i), "v0")
 	}
 
-	err = proc.ConsumeMetrics(context.Background(), batch1)
+	err = proc.ConsumeMetrics(t.Context(), batch1)
 	require.NoError(t, err)
 
 	// --- Phase 2: exceed the limit on key_0, triggering exactly 1 drop --------
@@ -713,12 +710,12 @@ func TestInternalTelemetry(t *testing.T) {
 		dp.Attributes().PutStr("key_0", fmt.Sprintf("v%d", i))
 	}
 
-	err = proc.ConsumeMetrics(context.Background(), batch2)
+	err = proc.ConsumeMetrics(t.Context(), batch2)
 	require.NoError(t, err)
 
 	// --- Collect: snapshot all SDK metrics at this exact instant ---------------
 	var collected metricdata.ResourceMetrics
-	err = reader.Collect(context.Background(), &collected)
+	err = reader.Collect(t.Context(), &collected)
 	require.NoError(t, err)
 
 	// --- Assert: otelcol_processor_cardinality_trackers.active = 5 ---------------------------------
@@ -808,7 +805,7 @@ func TestCardinalityProcessor_AlternateMetricTypes(t *testing.T) {
 
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	md := pmetric.NewMetrics()
@@ -836,7 +833,7 @@ func TestCardinalityProcessor_AlternateMetricTypes(t *testing.T) {
 	sdp := mSum.Summary().DataPoints().AppendEmpty()
 	sdp.Attributes().PutStr("user_id", "u3")
 
-	err = proc.ConsumeMetrics(context.Background(), md)
+	err = proc.ConsumeMetrics(t.Context(), md)
 	require.NoError(t, err)
 
 	require.Len(t, next.AllMetrics(), 1)
@@ -852,7 +849,7 @@ func TestCardinalityProcessor_EpochRotation(t *testing.T) {
 
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	p := proc.(*cardinalityProcessor)
@@ -898,16 +895,16 @@ func TestTopOffenders(t *testing.T) {
 	reader := sdkmetric.NewManualReader()
 	sdkProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
 	defer func() {
-		if err := sdkProvider.Shutdown(context.Background()); err != nil {
+		if err := sdkProvider.Shutdown(t.Context()); err != nil {
 			t.Errorf("sdk provider shutdown: %v", err)
 		}
 	}()
 
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	set.TelemetrySettings.MeterProvider = sdkProvider
+	set.MeterProvider = sdkProvider
 
 	next := new(consumertest.MetricsSink)
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	p := proc.(*cardinalityProcessor)
@@ -921,7 +918,7 @@ func TestTopOffenders(t *testing.T) {
 	valueCounts := []int{20, 15, 10, 5, 1}
 	for keyIdx, count := range valueCounts {
 		key := fmt.Sprintf("key_%d", keyIdx)
-		for v := 0; v < count; v++ {
+		for v := range count {
 			p.shouldDrop("offender_metric", key, fmt.Sprintf("val_%d", v))
 		}
 	}
@@ -931,7 +928,7 @@ func TestTopOffenders(t *testing.T) {
 
 	// Collect the telemetry.
 	var collected metricdata.ResourceMetrics
-	err = reader.Collect(context.Background(), &collected)
+	err = reader.Collect(t.Context(), &collected)
 	require.NoError(t, err)
 
 	// Find the otelcol_processor_cardinality_top.offenders gauge.
@@ -1061,29 +1058,29 @@ func TestTopOffenders_Disabled(t *testing.T) {
 	reader := sdkmetric.NewManualReader()
 	sdkProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
 	defer func() {
-		if err := sdkProvider.Shutdown(context.Background()); err != nil {
+		if err := sdkProvider.Shutdown(t.Context()); err != nil {
 			t.Errorf("sdk provider shutdown: %v", err)
 		}
 	}()
 
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	set.TelemetrySettings.MeterProvider = sdkProvider
+	set.MeterProvider = sdkProvider
 
 	next := new(consumertest.MetricsSink)
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	p := proc.(*cardinalityProcessor)
 
 	// Add some data.
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		p.shouldDrop("metric_a", "label_a", fmt.Sprintf("val_%d", i))
 	}
 
 	p.rotate()
 
 	var collected metricdata.ResourceMetrics
-	err = reader.Collect(context.Background(), &collected)
+	err = reader.Collect(t.Context(), &collected)
 	require.NoError(t, err)
 
 	// otelcol_processor_cardinality_top.offenders should either not be present at all (OTel SDK
@@ -1118,41 +1115,41 @@ func TestTopOffenders_EvictionAndReplacement(t *testing.T) {
 	reader := sdkmetric.NewManualReader()
 	sdkProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
 	defer func() {
-		if err := sdkProvider.Shutdown(context.Background()); err != nil {
+		if err := sdkProvider.Shutdown(t.Context()); err != nil {
 			t.Errorf("sdk provider shutdown: %v", err)
 		}
 	}()
 
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	set.TelemetrySettings.MeterProvider = sdkProvider
+	set.MeterProvider = sdkProvider
 
 	next := new(consumertest.MetricsSink)
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	p := proc.(*cardinalityProcessor)
 
 	// key_small: 5 unique values (will be evicted)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		p.shouldDrop("m", "key_small", fmt.Sprintf("v%d", i))
 	}
 	// key_medium: 50 unique values
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		p.shouldDrop("m", "key_medium", fmt.Sprintf("v%d", i))
 	}
 	// key_large: 200 unique values (should evict key_small)
-	for i := 0; i < 200; i++ {
+	for i := range 200 {
 		p.shouldDrop("m", "key_large", fmt.Sprintf("v%d", i))
 	}
 	// key_tiny: 2 unique values (should be rejected — smaller than both survivors)
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		p.shouldDrop("m", "key_tiny", fmt.Sprintf("v%d", i))
 	}
 
 	p.rotate()
 
 	var collected metricdata.ResourceMetrics
-	err = reader.Collect(context.Background(), &collected)
+	err = reader.Collect(t.Context(), &collected)
 	require.NoError(t, err)
 
 	topMetric := findMetricByName(t, collected, "otelcol_processor_cardinality_top.offenders")
@@ -1186,12 +1183,12 @@ func TestMaxTrackerCount_Disabled(t *testing.T) {
 
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	next := new(consumertest.MetricsSink)
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	p := proc.(*cardinalityProcessor)
 
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		p.shouldDrop(fmt.Sprintf("metric_%d", i), "lbl", "val_1")
 	}
 
@@ -1209,13 +1206,13 @@ func TestMaxTrackerCount_Rejection(t *testing.T) {
 
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	next := new(consumertest.MetricsSink)
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	p := proc.(*cardinalityProcessor)
 
 	// Attempt to create 100 unique trackers
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		// shouldDrop returns true when limit exceeded, but we just verify the count
 		p.shouldDrop(fmt.Sprintf("metric_%d", i), "lbl", "val_1")
 	}
@@ -1235,13 +1232,13 @@ func TestMaxTrackerCount_EvictionFreesSlots(t *testing.T) {
 
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	next := new(consumertest.MetricsSink)
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	p := proc.(*cardinalityProcessor)
 
 	// Fill to capacity
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		p.shouldDrop(fmt.Sprintf("metric_%d", i), "lbl", "val_1")
 	}
 
@@ -1285,14 +1282,14 @@ func TestMetricOverrides_SpecificLimit(t *testing.T) {
 
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	next := new(consumertest.MetricsSink)
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	p := proc.(*cardinalityProcessor)
 
 	// Send 100 unique values to the overridden metric — none should be dropped
 	// because 100 < 5000
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		dropped := p.shouldDrop("http.server.request.duration", "route", fmt.Sprintf("/api/v1/resource/%d", i))
 		require.False(t, dropped, "should not drop within override limit")
 	}
@@ -1311,19 +1308,19 @@ func TestMetricOverrides_FallbackToGlobal(t *testing.T) {
 
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	next := new(consumertest.MetricsSink)
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	p := proc.(*cardinalityProcessor)
 
 	// Send 20 unique values to a metric NOT in overrides — should drop after 5
 	var dropCount int
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		if p.shouldDrop("db.query.duration", "table_name", fmt.Sprintf("table_%d", i)) {
 			dropCount++
 		}
 	}
-	require.Greater(t, dropCount, 0, "unspecified metric should enforce global limit")
+	require.Positive(t, dropCount, "unspecified metric should enforce global limit")
 }
 
 // TestMetricOverrides_Validation verifies that invalid override values
@@ -1353,7 +1350,7 @@ func TestDropLogSampling_LimitEnforced(t *testing.T) {
 	core, logs := observer.New(zap.WarnLevel)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	next := new(consumertest.MetricsSink)
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	p := proc.(*cardinalityProcessor)
@@ -1361,7 +1358,7 @@ func TestDropLogSampling_LimitEnforced(t *testing.T) {
 
 	// Send 50 unique attribute values through handleAttributes
 	// After 5 unique values, shouldDrop returns true and drops start logging
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		attrs := pmetric.NewMetrics().ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
 		attrs.PutStr("label_key", fmt.Sprintf("value_%d", i))
 		p.handleAttributes("test.metric", attrs)
@@ -1384,13 +1381,13 @@ func TestDropLogSampling_Disabled(t *testing.T) {
 	core, logs := observer.New(zap.WarnLevel)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	next := new(consumertest.MetricsSink)
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	p := proc.(*cardinalityProcessor)
 	p.logger = zap.New(core)
 
-	for i := 0; i < 30; i++ {
+	for i := range 30 {
 		attrs := pmetric.NewMetrics().ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
 		attrs.PutStr("label_key", fmt.Sprintf("value_%d", i))
 		p.handleAttributes("test.metric", attrs)
@@ -1412,14 +1409,14 @@ func TestDropLogSampling_ResetOnRotate(t *testing.T) {
 	core, logs := observer.New(zap.WarnLevel)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	next := new(consumertest.MetricsSink)
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	p := proc.(*cardinalityProcessor)
 	p.logger = zap.New(core)
 
 	// Fill epoch 1 — only 2 logs emitted
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		attrs := pmetric.NewMetrics().ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
 		attrs.PutStr("label_key", fmt.Sprintf("value_%d", i))
 		p.handleAttributes("test.metric", attrs)
@@ -1431,7 +1428,7 @@ func TestDropLogSampling_ResetOnRotate(t *testing.T) {
 
 	// Fill epoch 2 — must re-send baseline (0-19) plus new values (20-39)
 	// so the HLL accurately calculates the delta growth over the baseline.
-	for i := 0; i < 40; i++ {
+	for i := range 40 {
 		attrs := pmetric.NewMetrics().ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
 		attrs.PutStr("label_key", fmt.Sprintf("value_%d", i))
 		p.handleAttributes("test.metric", attrs)
@@ -1453,7 +1450,7 @@ func TestOverflowAttributeMode(t *testing.T) {
 
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	md := pmetric.NewMetrics()
@@ -1470,7 +1467,7 @@ func TestOverflowAttributeMode(t *testing.T) {
 		dp.Attributes().PutStr("user_id", fmt.Sprintf("user_%d", i))
 	}
 
-	err = proc.ConsumeMetrics(context.Background(), md)
+	err = proc.ConsumeMetrics(t.Context(), md)
 	require.NoError(t, err)
 
 	outMetrics := next.AllMetrics()
@@ -1513,7 +1510,7 @@ func TestCumulativeSumFallsBackToTagOnly(t *testing.T) {
 
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	md := pmetric.NewMetrics()
@@ -1531,7 +1528,7 @@ func TestCumulativeSumFallsBackToTagOnly(t *testing.T) {
 		dp.Attributes().PutStr("user_id", fmt.Sprintf("user_%d", i))
 	}
 
-	err = proc.ConsumeMetrics(context.Background(), md)
+	err = proc.ConsumeMetrics(t.Context(), md)
 	require.NoError(t, err)
 
 	outMetrics := next.AllMetrics()
@@ -1551,7 +1548,7 @@ func TestCumulativeSumFallsBackToTagOnly(t *testing.T) {
 		}
 	}
 
-	assert.Greater(t, taggedCount, 0,
+	assert.Positive(t, taggedCount,
 		"cumulative sums should get otel.metric.overflow tag via fallback")
 
 	t.Logf("SUCCESS: Cumulative Sum fell back to tag_only. %d/%d tagged.", taggedCount, outDpList.Len())
@@ -1568,7 +1565,7 @@ func TestUnsupportedMetricTypesFallBackToTagOnly(t *testing.T) {
 
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	md := pmetric.NewMetrics()
@@ -1602,7 +1599,7 @@ func TestUnsupportedMetricTypesFallBackToTagOnly(t *testing.T) {
 		dp.Attributes().PutStr("user_id", fmt.Sprintf("summ_user_%d", i))
 	}
 
-	err = proc.ConsumeMetrics(context.Background(), md)
+	err = proc.ConsumeMetrics(t.Context(), md)
 	require.NoError(t, err)
 
 	outMetrics := next.AllMetrics()
@@ -1612,27 +1609,33 @@ func TestUnsupportedMetricTypesFallBackToTagOnly(t *testing.T) {
 	require.Equal(t, 3, metrics.Len())
 
 	// Helper to check tags manually since we can't easily use interfaces for concrete types.
-	
+
 	histDps := metrics.At(0).Histogram().DataPoints()
 	histTagged := 0
 	for i := 0; i < histDps.Len(); i++ {
-		if _, hasTag := histDps.At(i).Attributes().Get("otel.metric.overflow"); hasTag { histTagged++ }
+		if _, hasTag := histDps.At(i).Attributes().Get("otel.metric.overflow"); hasTag {
+			histTagged++
+		}
 	}
-	assert.Greater(t, histTagged, 0)
+	assert.Positive(t, histTagged)
 
 	expDps := metrics.At(1).ExponentialHistogram().DataPoints()
 	expTagged := 0
 	for i := 0; i < expDps.Len(); i++ {
-		if _, hasTag := expDps.At(i).Attributes().Get("otel.metric.overflow"); hasTag { expTagged++ }
+		if _, hasTag := expDps.At(i).Attributes().Get("otel.metric.overflow"); hasTag {
+			expTagged++
+		}
 	}
-	assert.Greater(t, expTagged, 0)
+	assert.Positive(t, expTagged)
 
 	summDps := metrics.At(2).Summary().DataPoints()
 	summTagged := 0
 	for i := 0; i < summDps.Len(); i++ {
-		if _, hasTag := summDps.At(i).Attributes().Get("otel.metric.overflow"); hasTag { summTagged++ }
+		if _, hasTag := summDps.At(i).Attributes().Get("otel.metric.overflow"); hasTag {
+			summTagged++
+		}
 	}
-	assert.Greater(t, summTagged, 0)
+	assert.Positive(t, summTagged)
 }
 
 // TestProcessHistogramTypes verifies that Histogram, ExponentialHistogram,
@@ -1646,7 +1649,7 @@ func TestProcessHistogramTypes(t *testing.T) {
 
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
-	proc, err := newCardinalityProcessor(context.Background(), cfg, set, next)
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, next)
 	require.NoError(t, err)
 
 	md := pmetric.NewMetrics()
@@ -1677,7 +1680,7 @@ func TestProcessHistogramTypes(t *testing.T) {
 		dp.Attributes().PutStr("user_id", fmt.Sprintf("summ_user_%d", i))
 	}
 
-	err = proc.ConsumeMetrics(context.Background(), md)
+	err = proc.ConsumeMetrics(t.Context(), md)
 	require.NoError(t, err)
 
 	outMetrics := next.AllMetrics()

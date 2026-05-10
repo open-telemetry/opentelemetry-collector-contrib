@@ -94,7 +94,7 @@ type Config struct {
 	// "strip_and_reaggregate" when TagOnly is false.
 	EnforcementMode EnforcementMode `mapstructure:"enforcement_mode"`
 
-	// EstimatedCostPerMetricMonth configures the theoretical cost per active time-series. This is 
+	// EstimatedCostPerMetricMonth configures the theoretical cost per active time-series. This is
 	// used solely to populate the "otelcol_processor_cardinality_estimated_savings_dollars_total" OTel counter
 	// emitted by this processor. It allows platform owners to quantify FinOps ROI directly in the processor's
 	// cardinality-enforcement logic.
