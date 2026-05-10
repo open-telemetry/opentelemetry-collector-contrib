@@ -87,7 +87,7 @@ func TestCentralQueueLeaseReservesCompressedBytesUntilDoneOrRequeue(t *testing.T
 	require.Equal(t, 1, q.len())
 	require.EqualValues(t, 10, q.compressedBytes())
 
-	retryLease, err := q.tryLease(time.Now().Add(centralQueueInitialRetryDelay))
+	retryLease, err := q.tryLease(time.Now().Add(centralQueueRetryDelayUpperBound(0)))
 	require.NoError(t, err)
 	require.NotNil(t, retryLease)
 	retryLease.done()
@@ -120,6 +120,197 @@ func TestCentralQueueLeaseCoalescesReadyItemsByRoutingKey(t *testing.T) {
 
 	lease.done()
 	require.EqualValues(t, 10, q.compressedBytes())
+}
+
+func TestCentralQueueReadyWindowsGiveEachReadyLaneATurnBeforeHotLaneRepeats(t *testing.T) {
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 100,
+		maxUncompressedBatchBytes:    100,
+		targetCompressedBytes:        20,
+		maxBatchDelay:                time.Second,
+		maxReadyWindows:              2,
+	})
+	now := time.Unix(10, 0)
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindMetrics, routingKey: []byte("hot"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindMetrics, routingKey: []byte("hot"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindMetrics, routingKey: []byte("hot"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindMetrics, routingKey: []byte("hot"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindMetrics, routingKey: []byte("cold"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindMetrics, routingKey: []byte("cold"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+
+	first, err := q.tryLease(now)
+	require.NoError(t, err)
+	require.NotNil(t, first)
+	require.Equal(t, []byte("hot"), first.window.routingKey)
+	require.Equal(t, centralQueueFlushReasonTargetReached, first.window.flushReason)
+
+	second, err := q.tryLease(now)
+	require.NoError(t, err)
+	require.NotNil(t, second)
+	require.Equal(t, []byte("cold"), second.window.routingKey)
+	require.Equal(t, centralQueueFlushReasonTargetReached, second.window.flushReason)
+
+	first.done()
+	second.done()
+}
+
+func TestCentralQueueReadyWindowsHandleInterleavedLaneItems(t *testing.T) {
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 100,
+		maxUncompressedBatchBytes:    100,
+		targetCompressedBytes:        20,
+		maxBatchDelay:                time.Second,
+		maxReadyWindows:              2,
+	})
+	now := time.Unix(10, 0)
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("lane-b"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("lane-b"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+
+	first, err := q.tryLease(now)
+	require.NoError(t, err)
+	require.NotNil(t, first)
+	require.Equal(t, []byte("lane-a"), first.window.routingKey)
+	require.Len(t, first.window.items, 2)
+
+	second, err := q.tryLease(now)
+	require.NoError(t, err)
+	require.NotNil(t, second)
+	require.Equal(t, []byte("lane-b"), second.window.routingKey)
+	require.Len(t, second.window.items, 2)
+
+	first.done()
+	second.done()
+	require.Zero(t, q.len())
+	require.Zero(t, q.compressedBytes())
+}
+
+func TestCentralQueueReadyWindowsRecollectFallbackAfterTargetRemoval(t *testing.T) {
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 100,
+		maxUncompressedBatchBytes:    100,
+		targetCompressedBytes:        20,
+		maxBatchDelay:                250 * time.Millisecond,
+		maxReadyWindows:              2,
+	})
+	now := time.Unix(10, 0)
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("target"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("target"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("fallback"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+
+	lease, err := q.tryLease(now.Add(250 * time.Millisecond))
+	require.NoError(t, err)
+	require.NotNil(t, lease)
+	require.Equal(t, []byte("target"), lease.window.routingKey)
+	require.Len(t, lease.window.items, 2)
+	require.Equal(t, centralQueueFlushReasonTargetReached, lease.window.flushReason)
+
+	fallbackLease, err := q.tryLease(now.Add(250 * time.Millisecond))
+	require.NoError(t, err)
+	require.NotNil(t, fallbackLease)
+	require.Equal(t, []byte("fallback"), fallbackLease.window.routingKey)
+	require.Len(t, fallbackLease.window.items, 1)
+	require.Equal(t, centralQueueFlushReasonMaxDelayLowTraffic, fallbackLease.window.flushReason)
+
+	lease.done()
+	fallbackLease.done()
+	require.Zero(t, q.len())
+	require.Zero(t, q.compressedBytes())
+}
+
+func TestCentralQueueReadyWindowsDoNotLetHotTargetLaneStarveFallbackLane(t *testing.T) {
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 100,
+		maxUncompressedBatchBytes:    100,
+		targetCompressedBytes:        20,
+		maxBatchDelay:                250 * time.Millisecond,
+		maxReadyWindows:              2,
+	})
+	now := time.Unix(10, 0)
+	for range 4 {
+		require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("hot"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+	}
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("fallback"), compressedBytes: 10, uncompressedBytes: 10, count: 1}, now))
+
+	first, err := q.tryLease(now.Add(250 * time.Millisecond))
+	require.NoError(t, err)
+	require.NotNil(t, first)
+	require.Equal(t, []byte("hot"), first.window.routingKey)
+	require.Equal(t, centralQueueFlushReasonTargetReached, first.window.flushReason)
+
+	second, err := q.tryLease(now.Add(250 * time.Millisecond))
+	require.NoError(t, err)
+	require.NotNil(t, second)
+	require.Equal(t, []byte("fallback"), second.window.routingKey)
+	require.Equal(t, centralQueueFlushReasonMaxDelayLowTraffic, second.window.flushReason)
+
+	first.done()
+	second.done()
+}
+
+func TestCentralQueueReadyWindowsBuildTargetSizedWindowsBeforeConsumersLease(t *testing.T) {
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 100,
+		maxUncompressedBatchBytes:    100,
+		targetCompressedBytes:        20,
+		maxBatchDelay:                time.Second,
+		maxReadyWindows:              4,
+	})
+	now := time.Unix(10, 0)
+	for range 8 {
+		require.NoError(t, q.enqueueAt(centralQueueItem{
+			signal:            signalKindLogs,
+			routingKey:        []byte("lane-a"),
+			compressedBytes:   10,
+			uncompressedBytes: 10,
+			count:             1,
+		}, now))
+	}
+
+	for range 4 {
+		lease, err := q.tryLease(now)
+		require.NoError(t, err)
+		require.NotNil(t, lease)
+		require.Equal(t, []byte("lane-a"), lease.window.routingKey)
+		require.Len(t, lease.window.items, 2)
+		require.Equal(t, 20, lease.window.compressedBytes)
+		require.Equal(t, centralQueueFlushReasonTargetReached, lease.window.flushReason)
+		lease.done()
+	}
+	require.Zero(t, q.len())
+	require.Zero(t, q.compressedBytes())
+}
+
+func TestCentralQueueReadyWindowsReserveInflightBudgetUntilLeasedWindowDone(t *testing.T) {
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 100,
+		maxUncompressedBatchBytes:    100,
+		targetCompressedBytes:        20,
+		maxBatchDelay:                time.Second,
+		maxReadyWindows:              2,
+	})
+	now := time.Unix(10, 0)
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("lane-a"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("lane-b"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
+	require.NoError(t, q.enqueueAt(centralQueueItem{signal: signalKindLogs, routingKey: []byte("lane-b"), compressedBytes: 10, uncompressedBytes: 20, count: 1}, now))
+
+	lease, err := q.tryLease(now)
+	require.NoError(t, err)
+	require.NotNil(t, lease)
+	require.EqualValues(t, 80, q.inflightUncompressedBytes())
+	requireCentralQueueReadyWindows(t, q, 1)
+
+	lease.done()
+	require.EqualValues(t, 40, q.inflightUncompressedBytes())
+	requireCentralQueueReadyWindows(t, q, 1)
 }
 
 func TestCentralQueueLeasePrefersTargetWindowOverOlderUnderfilledWindow(t *testing.T) {
@@ -257,7 +448,7 @@ func TestCentralQueueRequeuesWholeCoalescedWindow(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, lease)
 
-	lease, err = q.tryLease(now.Add(centralQueueInitialRetryDelay))
+	lease, err = q.tryLease(now.Add(centralQueueRetryDelayUpperBound(0)))
 	require.NoError(t, err)
 	require.NotNil(t, lease)
 	require.Len(t, lease.window.items, 2)
@@ -287,9 +478,9 @@ func TestCentralQueueRequeueUsesPerItemRetryDelay(t *testing.T) {
 	defer q.mu.Unlock()
 	require.Len(t, q.items, 2)
 	require.Equal(t, 4, q.items[0].attempt)
-	require.Equal(t, now.Add(centralQueueRetryDelay(3)).UnixNano(), q.items[0].nextAttemptUnixNano)
+	requireNextAttemptWithinRetryDelay(t, now, 3, q.items[0].nextAttemptUnixNano)
 	require.Equal(t, 1, q.items[1].attempt)
-	require.Equal(t, now.Add(centralQueueRetryDelay(0)).UnixNano(), q.items[1].nextAttemptUnixNano)
+	requireNextAttemptWithinRetryDelay(t, now, 0, q.items[1].nextAttemptUnixNano)
 }
 
 func TestCentralQueueSnapshotReportsOldestQueuedItemAge(t *testing.T) {
@@ -326,11 +517,12 @@ func TestCentralQueueSnapshotReportsOldestQueuedItemAge(t *testing.T) {
 	secondLease.done()
 	require.EqualValues(t, 300, snapshotAt(base.Add(300*time.Millisecond)).oldestItemAgeMillis)
 
-	retryLease, err := q.tryLease(base.Add(time.Second + centralQueueInitialRetryDelay))
+	retryReadyAt := base.Add(time.Second + centralQueueRetryDelayUpperBound(0))
+	retryLease, err := q.tryLease(retryReadyAt)
 	require.NoError(t, err)
 	require.NotNil(t, retryLease)
 	retryLease.done()
-	require.Zero(t, snapshotAt(base.Add(time.Second+centralQueueInitialRetryDelay)).oldestItemAgeMillis)
+	require.Zero(t, snapshotAt(retryReadyAt).oldestItemAgeMillis)
 }
 
 func TestCentralQueueTelemetryOldestItemAgeAdvancesWithoutQueueMutation(t *testing.T) {
@@ -429,7 +621,7 @@ func TestCentralQueueRetriesDoNotGrowOldestEnqueuedHeap(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, lease)
 		require.NoError(t, lease.requeue(now))
-		now = now.Add(centralQueueMaxRetryDelay)
+		now = now.Add(centralQueueMaxRetryDelay + centralQueueMaxRetryJitter)
 	}
 
 	q.mu.Lock()
@@ -509,5 +701,26 @@ func requireCentralQueueFirstRetryDelay(t *testing.T, q *centralQueue) {
 	}, time.Second, time.Millisecond)
 
 	retryAfterEnqueue := time.Unix(0, item.nextAttemptUnixNano).Sub(time.Unix(0, item.enqueuedAtUnixNano))
-	require.LessOrEqual(t, retryAfterEnqueue, centralQueueInitialRetryDelay+50*time.Millisecond)
+	require.GreaterOrEqual(t, retryAfterEnqueue, centralQueueRetryDelay(0))
+	require.LessOrEqual(t, retryAfterEnqueue, centralQueueRetryDelayUpperBound(0)+50*time.Millisecond)
+}
+
+func requireNextAttemptWithinRetryDelay(t *testing.T, now time.Time, attempt int, nextAttemptUnixNano int64) {
+	t.Helper()
+	nextAttempt := time.Unix(0, nextAttemptUnixNano)
+	require.GreaterOrEqual(t, nextAttempt.Sub(now), centralQueueRetryDelay(attempt))
+	require.LessOrEqual(t, nextAttempt.Sub(now), centralQueueRetryDelayUpperBound(attempt))
+}
+
+func centralQueueRetryDelayUpperBound(attempt int) time.Duration {
+	delay := centralQueueRetryDelay(attempt)
+	return delay + centralQueueRetryJitterLimit(delay)
+}
+
+func requireCentralQueueReadyWindows(t *testing.T, q *centralQueue, expected int) {
+	t.Helper()
+
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	require.Len(t, q.ready, expected)
 }

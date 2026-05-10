@@ -88,6 +88,7 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 			maxUncompressedBatchBytes:    centralCfg.MaxUncompressedBatchBytes,
 			targetCompressedBytes:        centralCfg.TargetCompressedBytes,
 			maxBatchDelay:                centralCfg.MaxBatchDelay,
+			maxReadyWindows:              centralQueueReadyWindowLimit(centralCfg.NumConsumers),
 			telemetry:                    centralTelemetry,
 		})
 		metricExporter.centralCodec = newQueuePayloadCodec(centralCfg.PayloadCompression)

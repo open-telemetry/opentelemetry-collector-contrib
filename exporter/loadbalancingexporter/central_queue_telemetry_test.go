@@ -21,6 +21,14 @@ func TestCentralQueueTelemetryRecordsInstruments(t *testing.T) {
 	telemetry, err := newCentralQueueTelemetry(reader.NewTelemetrySettings(), signalKindLogs)
 	require.NoError(t, err)
 	telemetry.observeOldestItemAge(func() int64 { return 125 })
+	telemetry.observeSchedulerState(func() centralQueueSchedulerSnapshot {
+		return centralQueueSchedulerSnapshot{
+			readyWindows:      2,
+			readyWindowLimit:  4,
+			readyUncompressed: 48,
+			state:             centralQueueSchedulerStateWaiting,
+		}
+	})
 
 	telemetry.record(t.Context(), centralQueueSnapshot{
 		compressedBytes:      50,
@@ -49,6 +57,10 @@ func TestCentralQueueTelemetryRecordsInstruments(t *testing.T) {
 	requireCentralQueueFloatGauge(t, reader, "otelcol_loadbalancer_central_queue_saturation", "1", attrs, 0.5)
 	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_items", "{items}", attrs, 3)
 	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_inflight_uncompressed_bytes", "By", attrs, 80)
+	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_ready_windows", "{windows}", attrs, 2)
+	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_ready_window_limit", "{windows}", attrs, 4)
+	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_ready_uncompressed_bytes", "By", attrs, 48)
+	requireCentralQueueSchedulerState(t, reader, centralQueueSchedulerStateWaiting)
 	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_configured_consumers", "{workers}", attrs, 20)
 	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_active_consumers", "{workers}", attrs, 3)
 	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_oldest_item_age", "ms", attrs, 125)
@@ -83,6 +95,25 @@ func TestCentralQueueTelemetryOldestItemAgeReportsMultipleSignals(t *testing.T) 
 	require.Len(t, gauge.DataPoints, 2)
 	requireCentralQueueIntGaugeDatapoint(t, gauge.DataPoints, attribute.NewSet(attribute.String("signal", string(signalKindLogs))), 125)
 	requireCentralQueueIntGaugeDatapoint(t, gauge.DataPoints, attribute.NewSet(attribute.String("signal", string(signalKindMetrics))), 250)
+}
+
+func requireCentralQueueSchedulerState(t *testing.T, reader *componenttest.Telemetry, activeState centralQueueSchedulerState) {
+	t.Helper()
+	metric, err := reader.GetMetric("otelcol_loadbalancer_central_queue_scheduler_state")
+	require.NoError(t, err)
+	require.Equal(t, "1", metric.Unit)
+	gauge, ok := metric.Data.(metricdata.Gauge[int64])
+	require.True(t, ok)
+	require.Len(t, gauge.DataPoints, len(centralQueueSchedulerStates))
+	for _, datapoint := range gauge.DataPoints {
+		value, ok := datapoint.Attributes.Value("state")
+		require.True(t, ok)
+		if value.AsString() == string(activeState) {
+			require.EqualValues(t, 1, datapoint.Value)
+			continue
+		}
+		require.Zero(t, datapoint.Value)
+	}
 }
 
 func requireCentralQueueIntGauge(t *testing.T, reader *componenttest.Telemetry, name, unit string, attrs attribute.Set, value int64) {

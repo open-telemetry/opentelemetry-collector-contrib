@@ -160,7 +160,8 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `max_batch_delay` bounds how long a small backend lane can wait for more queued payloads before dispatch. Default: `250ms`.
   * `lane_count` controls how many backend lanes routing keys are coalesced into before a backend endpoint is selected. Default: `64`.
   * `num_consumers` sets the number of parallel central queue drain workers per signal exporter. Default: `20`.
-  * Queued payloads stay compressed until dispatch. Central queue capacity is enforced on compressed bytes; request windows are decoded only after a lane is leased, merged, and ready to send.
+  * Queued payloads stay compressed until dispatch. Central queue capacity is enforced on compressed bytes; request windows are decoded only after a ready lane window is leased.
+  * The scheduler keeps a bounded set of ready request windows, limited by `num_consumers`. Ready windows reserve uncompressed in-flight budget before a worker leases them, so parallel consumers do not shrink request windows beyond `target_compressed_bytes` unless a bounded flush reason applies.
   * Central queue mode is incompatible with `sending_queue.enabled=true`, `protocol.otlp.sending_queue`, `log_batcher.enabled=true`, and `metric_batcher.enabled=true`. Child OTLP exporter queues are disabled while central queue mode is active.
 
 Simple example
@@ -534,6 +535,11 @@ The following metrics are recorded by this exporter:
 * Central queue worker metrics show whether each LB pod is draining queue windows in parallel:
   * `otelcol_loadbalancer_central_queue_configured_consumers` reports configured drain workers per signal exporter.
   * `otelcol_loadbalancer_central_queue_active_consumers` reports drain workers currently processing or sending a leased queue window.
+* Central queue scheduler metrics show the bounded ready-window state:
+  * `otelcol_loadbalancer_central_queue_ready_windows` reports request windows ready to be leased by drain workers.
+  * `otelcol_loadbalancer_central_queue_ready_window_limit` reports the ready-window bound, which follows `central_queue.num_consumers`.
+  * `otelcol_loadbalancer_central_queue_ready_uncompressed_bytes` reports uncompressed bytes reserved by ready windows.
+  * `otelcol_loadbalancer_central_queue_scheduler_state` reports the latest scheduler state as a gauge with `state` labels. The active state is `1`; other states are `0`. States are `ready`, `queue_empty`, `waiting`, `inflight_uncompressed_bytes`, `ready_window_limit`, and `stopped`.
 * Central queue window metrics show whether request coalescing is addressing small backend requests:
   * `otelcol_loadbalancer_central_queue_window_compressed_bytes` reports compressed bytes leased into each request window.
   * `otelcol_loadbalancer_central_queue_window_uncompressed_bytes` reports decoded OTLP bytes in each merged request window.

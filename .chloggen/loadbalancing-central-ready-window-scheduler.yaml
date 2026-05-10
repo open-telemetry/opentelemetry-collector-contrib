@@ -1,0 +1,11 @@
+change_type: enhancement
+component: exporter/loadbalancing
+note: Add bounded ready-window scheduling metrics for the compressed central queue.
+issues: [65]
+subtext: |-
+  The compressed central queue now builds bounded ready request windows before
+  drain workers lease them, so parallel consumers preserve target-sized
+  windows while the ready backlog remains capped by `central_queue.num_consumers`.
+  New ready-window and scheduler-state gauges expose whether dispatch is limited
+  by waiting traffic, ready-window capacity, or in-flight uncompressed bytes.
+change_logs: [user]

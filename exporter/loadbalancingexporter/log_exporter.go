@@ -88,6 +88,7 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 			maxUncompressedBatchBytes:    centralCfg.MaxUncompressedBatchBytes,
 			targetCompressedBytes:        centralCfg.TargetCompressedBytes,
 			maxBatchDelay:                centralCfg.MaxBatchDelay,
+			maxReadyWindows:              centralQueueReadyWindowLimit(centralCfg.NumConsumers),
 			telemetry:                    centralTelemetry,
 		})
 		logExporter.centralCodec = newQueuePayloadCodec(centralCfg.PayloadCompression)

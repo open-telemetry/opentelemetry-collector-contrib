@@ -38,7 +38,15 @@ type centralQueueTelemetry struct {
 	oldestItemAgeReg     metric.Registration
 	oldestItemAgeMu      sync.RWMutex
 	oldestItemAgeMillis  func() int64
+	readyWindows         metric.Int64ObservableGauge
+	readyWindowLimit     metric.Int64ObservableGauge
+	readyUncompressed    metric.Int64ObservableGauge
+	schedulerState       metric.Int64ObservableGauge
+	schedulerStateReg    metric.Registration
+	schedulerStateMu     sync.RWMutex
+	schedulerSnapshot    func() centralQueueSchedulerSnapshot
 	flushReasonAttrs     map[centralQueueFlushReason]metric.MeasurementOption
+	schedulerStateAttrs  map[centralQueueSchedulerState]metric.MeasurementOption
 }
 
 type centralQueueSnapshot struct {
@@ -47,6 +55,33 @@ type centralQueueSnapshot struct {
 	items                int64
 	inflightUncompressed int64
 	oldestItemAgeMillis  int64
+}
+
+type centralQueueSchedulerSnapshot struct {
+	readyWindows      int64
+	readyWindowLimit  int64
+	readyUncompressed int64
+	state             centralQueueSchedulerState
+}
+
+type centralQueueSchedulerState string
+
+const (
+	centralQueueSchedulerStateReady            centralQueueSchedulerState = "ready"
+	centralQueueSchedulerStateQueueEmpty       centralQueueSchedulerState = "queue_empty"
+	centralQueueSchedulerStateWaiting          centralQueueSchedulerState = "waiting"
+	centralQueueSchedulerStateInflightBytes    centralQueueSchedulerState = "inflight_uncompressed_bytes"
+	centralQueueSchedulerStateReadyWindowLimit centralQueueSchedulerState = "ready_window_limit"
+	centralQueueSchedulerStateStopped          centralQueueSchedulerState = "stopped"
+)
+
+var centralQueueSchedulerStates = []centralQueueSchedulerState{
+	centralQueueSchedulerStateReady,
+	centralQueueSchedulerStateQueueEmpty,
+	centralQueueSchedulerStateWaiting,
+	centralQueueSchedulerStateInflightBytes,
+	centralQueueSchedulerStateReadyWindowLimit,
+	centralQueueSchedulerStateStopped,
 }
 
 func newCentralQueueTelemetry(settings component.TelemetrySettings, signal signalKind) (*centralQueueTelemetry, error) {
@@ -62,6 +97,10 @@ func newCentralQueueTelemetry(settings component.TelemetrySettings, signal signa
 			centralQueueFlushReasonMaxDelayLowTraffic: metric.WithAttributeSet(attribute.NewSet(signalAttr, attribute.String("reason", string(centralQueueFlushReasonMaxDelayLowTraffic)))),
 			centralQueueFlushReasonShutdown:           metric.WithAttributeSet(attribute.NewSet(signalAttr, attribute.String("reason", string(centralQueueFlushReasonShutdown)))),
 		},
+		schedulerStateAttrs: make(map[centralQueueSchedulerState]metric.MeasurementOption, len(centralQueueSchedulerStates)),
+	}
+	for _, state := range centralQueueSchedulerStates {
+		t.schedulerStateAttrs[state] = metric.WithAttributeSet(attribute.NewSet(signalAttr, attribute.String("state", string(state))))
 	}
 	t.compressedBytes, err = meter.Int64Gauge(
 		"otelcol_loadbalancer_central_queue_compressed_bytes",
@@ -107,7 +146,7 @@ func newCentralQueueTelemetry(settings component.TelemetrySettings, signal signa
 	errs = errors.Join(errs, err)
 	t.inflightUncompressed, err = meter.Int64Gauge(
 		"otelcol_loadbalancer_central_queue_inflight_uncompressed_bytes",
-		metric.WithDescription("Uncompressed bytes currently leased from the central load-balancing queue."),
+		metric.WithDescription("Uncompressed bytes currently reserved by ready or leased central load-balancing queue windows."),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
@@ -179,6 +218,57 @@ func newCentralQueueTelemetry(settings component.TelemetrySettings, signal signa
 			}
 			return nil
 		}, t.oldestItemAge)
+		errs = errors.Join(errs, err)
+	}
+	t.readyWindows, err = meter.Int64ObservableGauge(
+		"otelcol_loadbalancer_central_queue_ready_windows",
+		metric.WithDescription("Central load-balancing request windows ready to be leased by drain workers."),
+		metric.WithUnit("{windows}"),
+	)
+	errs = errors.Join(errs, err)
+	schedulerErrs := err
+	t.readyWindowLimit, err = meter.Int64ObservableGauge(
+		"otelcol_loadbalancer_central_queue_ready_window_limit",
+		metric.WithDescription("Configured maximum central load-balancing request windows that may wait ready before workers lease them."),
+		metric.WithUnit("{windows}"),
+	)
+	errs = errors.Join(errs, err)
+	schedulerErrs = errors.Join(schedulerErrs, err)
+	t.readyUncompressed, err = meter.Int64ObservableGauge(
+		"otelcol_loadbalancer_central_queue_ready_uncompressed_bytes",
+		metric.WithDescription("Uncompressed bytes reserved by central load-balancing request windows waiting ready before workers lease them."),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	schedulerErrs = errors.Join(schedulerErrs, err)
+	t.schedulerState, err = meter.Int64ObservableGauge(
+		"otelcol_loadbalancer_central_queue_scheduler_state",
+		metric.WithDescription("Latest central load-balancing queue scheduler state. The active state is reported as 1 and other states as 0."),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	schedulerErrs = errors.Join(schedulerErrs, err)
+	if schedulerErrs == nil {
+		t.schedulerStateReg, err = meter.RegisterCallback(func(_ context.Context, observer metric.Observer) error {
+			t.schedulerStateMu.RLock()
+			schedulerSnapshot := t.schedulerSnapshot
+			t.schedulerStateMu.RUnlock()
+			if schedulerSnapshot == nil {
+				return nil
+			}
+			snapshot := schedulerSnapshot()
+			observer.ObserveInt64(t.readyWindows, snapshot.readyWindows, t.signalAttrs)
+			observer.ObserveInt64(t.readyWindowLimit, snapshot.readyWindowLimit, t.signalAttrs)
+			observer.ObserveInt64(t.readyUncompressed, snapshot.readyUncompressed, t.signalAttrs)
+			for _, state := range centralQueueSchedulerStates {
+				value := int64(0)
+				if snapshot.state == state {
+					value = 1
+				}
+				observer.ObserveInt64(t.schedulerState, value, t.schedulerStateAttrs[state])
+			}
+			return nil
+		}, t.readyWindows, t.readyWindowLimit, t.readyUncompressed, t.schedulerState)
 		errs = errors.Join(errs, err)
 	}
 	return t, errs
@@ -272,6 +362,29 @@ func (t *centralQueueTelemetry) stopObservingOldestItemAge() {
 	t.oldestItemAgeReg = nil
 	t.oldestItemAgeMillis = nil
 	t.oldestItemAgeMu.Unlock()
+	if registration != nil {
+		_ = registration.Unregister()
+	}
+}
+
+func (t *centralQueueTelemetry) observeSchedulerState(schedulerSnapshot func() centralQueueSchedulerSnapshot) {
+	if t == nil {
+		return
+	}
+	t.schedulerStateMu.Lock()
+	defer t.schedulerStateMu.Unlock()
+	t.schedulerSnapshot = schedulerSnapshot
+}
+
+func (t *centralQueueTelemetry) stopObservingSchedulerState() {
+	if t == nil {
+		return
+	}
+	t.schedulerStateMu.Lock()
+	registration := t.schedulerStateReg
+	t.schedulerStateReg = nil
+	t.schedulerSnapshot = nil
+	t.schedulerStateMu.Unlock()
 	if registration != nil {
 		_ = registration.Unregister()
 	}
