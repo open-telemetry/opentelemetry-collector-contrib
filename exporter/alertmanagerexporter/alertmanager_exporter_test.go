@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter/internal/metadata"
@@ -62,6 +63,31 @@ func createTracesAndSpan() (ptrace.Traces, ptrace.Span) {
 	return traces, span
 }
 
+func createLogsAndRecord() (plog.Logs, plog.LogRecord) {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	attrs := rl.Resource().Attributes()
+	attrs.Clear()
+	attrs.EnsureCapacity(2)
+	attrs.PutStr("service.name", "unittest-resource")
+	attrs.PutStr("attr1", "unittest-foo")
+
+	records := rl.ScopeLogs().AppendEmpty().LogRecords()
+	records.EnsureCapacity(1)
+	record := records.AppendEmpty()
+	record.SetTraceID(pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}))
+	record.SetSpanID(pcommon.SpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 3}))
+	record.Body().SetStr("unittest-body")
+	attrs = record.Attributes()
+	attrs.Clear()
+	attrs.EnsureCapacity(3)
+	attrs.PutStr("attr1", "unittest-bar")
+	attrs.PutInt("attr2", 41)
+	attrs.PutDouble("attr3", 4.14)
+
+	return logs, record
+}
+
 func TestAlertManagerExporterExtractEvents(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -101,6 +127,40 @@ func TestAlertManagerExporterExtractEvents(t *testing.T) {
 			// test - events
 			got := am.extractEvents(traces)
 			assert.Len(t, got, tt.events)
+		})
+	}
+}
+
+func TestAlertManagerExporterExtractLogs(t *testing.T) {
+	tests := []struct {
+		name    string
+		records int
+	}{
+		{"TestAlertManagerExporterExtractLogs0", 0},
+		{"TestAlertManagerExporterExtractLogs1", 1},
+		{"TestAlertManagerExporterExtractLogs5", 5},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			set := exportertest.NewNopSettings(metadata.Type)
+			am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+			require.NotNil(t, am)
+
+			logs := plog.NewLogs()
+			rl := logs.ResourceLogs().AppendEmpty()
+			lrs := rl.ScopeLogs().AppendEmpty().LogRecords()
+			for i := 0; i < tt.records; i++ {
+				record := lrs.AppendEmpty()
+				record.Body().SetStr(fmt.Sprintf("unittest-log-%d", i))
+				attrs := record.Attributes()
+				attrs.PutStr("attr1", fmt.Sprintf("unittest-baz-%d", i))
+			}
+
+			got := am.extractLogs(logs)
+			assert.Len(t, got, tt.records)
 		})
 	}
 }
@@ -192,6 +252,43 @@ func TestAlertManagerExporterSeverity(t *testing.T) {
 	assert.Equal(t, ls, alerts[1].Labels)
 }
 
+func TestAlertManagerExporterLogSeverity(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.SeverityAttribute = "foo"
+	cfg.EventLabels = []string{}
+	set := exportertest.NewNopSettings(metadata.Type)
+	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NotNil(t, am)
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	lrs := rl.ScopeLogs().AppendEmpty().LogRecords()
+
+	record := lrs.AppendEmpty()
+	record.Body().SetStr("unittest-log")
+	record.Attributes().PutStr("foo", "debug")
+
+	record = lrs.AppendEmpty()
+	record.Body().SetStr("unittest-log")
+	record.SetSeverityText("warn")
+
+	record = lrs.AppendEmpty()
+	record.Body().SetStr("unittest-log")
+
+	got := am.extractLogs(logs)
+	alerts := am.convertLogRecordsToAlertPayload(got)
+
+	ls := model.LabelSet{"event_name": "log_record", "severity": "debug"}
+	assert.Equal(t, ls, alerts[0].Labels)
+
+	ls = model.LabelSet{"event_name": "log_record", "severity": "warn"}
+	assert.Equal(t, ls, alerts[1].Labels)
+
+	ls = model.LabelSet{"event_name": "log_record", "severity": "info"}
+	assert.Equal(t, ls, alerts[2].Labels)
+}
+
 func TestAlertManagerExporterNoDefaultSeverity(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -261,6 +358,43 @@ func TestAlertManagerExporterAlertPayload(t *testing.T) {
 	expect := model.Alert{
 		Labels:       model.LabelSet{"severity": "info", "event_name": "unittest-event"},
 		Annotations:  model.LabelSet{"SpanID": "00000002", "TraceID": "0000000000000002", "attr1": "unittest-baz", "attr2": "42", "attr3": "5.14"},
+		GeneratorURL: "opentelemetry-collector",
+	}
+	assert.Equal(t, expect.Labels, got[0].Labels)
+	assert.Equal(t, expect.Annotations, got[0].Annotations)
+	assert.Equal(t, expect.GeneratorURL, got[0].GeneratorURL)
+}
+
+func TestAlertManagerExporterLogPayload(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	set := exportertest.NewNopSettings(metadata.Type)
+	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	cfg.EventLabels = []string{}
+
+	require.NotNil(t, am)
+
+	_, record := createLogsAndRecord()
+
+	record.Body().SetStr("unittest-body")
+	record.Attributes().PutStr("attr1", "unittest-baz")
+	record.Attributes().PutInt("attr2", 42)
+	record.Attributes().PutDouble("attr3", 5.14)
+
+	var records []*alertmanagerLogRecord
+	records = append(records, &alertmanagerLogRecord{
+		logRecord: record,
+		severity:  am.defaultSeverity,
+		traceID:   "0000000000000002",
+		spanID:    "00000002",
+		name:      "log_record",
+	})
+
+	got := am.convertLogRecordsToAlertPayload(records)
+
+	expect := model.Alert{
+		Labels:       model.LabelSet{"severity": "info", "event_name": "log_record"},
+		Annotations:  model.LabelSet{"SpanID": "00000002", "TraceID": "0000000000000002", "body": "unittest-body", "attr1": "unittest-baz", "attr2": "42", "attr3": "5.14"},
 		GeneratorURL: "opentelemetry-collector",
 	}
 	assert.Equal(t, expect.Labels, got[0].Labels)
