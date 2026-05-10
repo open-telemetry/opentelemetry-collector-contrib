@@ -80,6 +80,15 @@ func extractGrokPatterns[K any](target, pattern ottl.StringGetter[K], nco ottl.O
 		return nil, errors.New("at least 1 named capture group must be supplied in the given regex")
 	}
 
+	var prefilter func(string) bool
+	if compiled {
+		var defs []string
+		if !patternDefinitions.IsEmpty() {
+			defs = patternDefinitions.Get()
+		}
+		prefilter = newGrokLiteralPrefilter(literalPattern, defs...)
+	}
+
 	return func(ctx context.Context, tCtx K) (any, error) {
 		if !compiled {
 			patternVal, err := pattern.Get(ctx, tCtx)
@@ -101,25 +110,36 @@ func extractGrokPatterns[K any](target, pattern ottl.StringGetter[K], nco ottl.O
 			return nil, err
 		}
 
+		if prefilter != nil && !prefilter(val) {
+			return pcommon.NewMap(), nil
+		}
+
 		matches, err := g.ParseTypedString(val)
 		if err != nil {
 			return nil, err
 		}
 
 		result := pcommon.NewMap()
+		result.EnsureCapacity(len(matches))
 		for k, v := range matches {
-			switch val := v.(type) {
-			case bool:
-				result.PutBool(k, val)
-			case float64:
-				result.PutDouble(k, val)
-			case int:
-				result.PutInt(k, int64(val))
-			case string:
-				result.PutStr(k, val)
-			}
+			putGrokValue(result, k, v)
 		}
 
 		return result, err
 	}, nil
+}
+
+func putGrokValue(result pcommon.Map, key string, value any) {
+	switch val := value.(type) {
+	case bool:
+		result.PutBool(key, val)
+	case float64:
+		result.PutDouble(key, val)
+	case int:
+		result.PutInt(key, int64(val))
+	case int64:
+		result.PutInt(key, val)
+	case string:
+		result.PutStr(key, val)
+	}
 }

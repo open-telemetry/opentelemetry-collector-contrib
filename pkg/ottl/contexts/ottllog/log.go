@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -42,10 +43,12 @@ var (
 
 // TransformContext represents a log and its associated hierarchy.
 type TransformContext struct {
-	resourceLogs plog.ResourceLogs
-	scopeLogs    plog.ScopeLogs
-	logRecord    plog.LogRecord
-	cache        pcommon.Map
+	resourceLogs          plog.ResourceLogs
+	scopeLogs             plog.ScopeLogs
+	logRecord             plog.LogRecord
+	cache                 pcommon.Map
+	cachedBodyString      string
+	cachedBodyStringValid bool
 }
 
 type logRecord plog.LogRecord
@@ -81,6 +84,34 @@ func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) er
 // TransformContextOption represents an option for configuring a TransformContext.
 type TransformContextOption func(*TransformContext)
 
+// NewTransformContext creates a value TransformContext for backward compatibility.
+func NewTransformContext(
+	logRecord plog.LogRecord,
+	instrumentationScope pcommon.InstrumentationScope,
+	resource pcommon.Resource,
+	scopeLogs plog.ScopeLogs,
+	resourceLogs plog.ResourceLogs,
+	options ...TransformContextOption,
+) TransformContext {
+	if !reflect.ValueOf(instrumentationScope).IsZero() {
+		instrumentationScope.CopyTo(scopeLogs.Scope())
+	}
+	if !reflect.ValueOf(resource).IsZero() {
+		resource.CopyTo(resourceLogs.Resource())
+	}
+
+	tc := TransformContext{
+		resourceLogs: resourceLogs,
+		scopeLogs:    scopeLogs,
+		logRecord:    logRecord,
+		cache:        pcommon.NewMap(),
+	}
+	for _, opt := range options {
+		opt(&tc)
+	}
+	return tc
+}
+
 // NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
 func NewTransformContextPtr(resourceLogs plog.ResourceLogs, scopeLogs plog.ScopeLogs, logRecord plog.LogRecord, options ...TransformContextOption) *TransformContext {
@@ -101,12 +132,41 @@ func (tCtx *TransformContext) Close() {
 	tCtx.scopeLogs = plog.ScopeLogs{}
 	tCtx.logRecord = plog.LogRecord{}
 	tCtx.cache.Clear()
+	tCtx.cachedBodyString = ""
+	tCtx.cachedBodyStringValid = false
 	tcPool.Put(tCtx)
 }
 
 // GetLogRecord returns the log record from the TransformContext.
 func (tCtx *TransformContext) GetLogRecord() plog.LogRecord {
 	return tCtx.logRecord
+}
+
+// GetCache returns the cache from the TransformContext.
+func (tCtx *TransformContext) GetCache() pcommon.Map {
+	return tCtx.cache
+}
+
+// CacheBodyStringIfNeeded stores a serialized body string for composite log bodies.
+func (tCtx *TransformContext) CacheBodyStringIfNeeded() {
+	ctxlog.CacheBodyStringIfNeeded(tCtx)
+}
+
+// GetCachedBodyString returns the cached string representation of a composite log body.
+func (tCtx *TransformContext) GetCachedBodyString() (string, bool) {
+	return tCtx.cachedBodyString, tCtx.cachedBodyStringValid
+}
+
+// SetCachedBodyString caches the string representation of a composite log body.
+func (tCtx *TransformContext) SetCachedBodyString(bodyString string) {
+	tCtx.cachedBodyString = bodyString
+	tCtx.cachedBodyStringValid = true
+}
+
+// InvalidateCachedBodyString clears the cached string representation of a composite log body.
+func (tCtx *TransformContext) InvalidateCachedBodyString() {
+	tCtx.cachedBodyString = ""
+	tCtx.cachedBodyStringValid = false
 }
 
 // GetInstrumentationScope returns the instrumentation scope from the TransformContext.

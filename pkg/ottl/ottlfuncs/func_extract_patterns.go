@@ -32,9 +32,27 @@ func createExtractPatternsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arg
 }
 
 func extractPatterns[K any](target, pattern ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+	var prefilter func(string) bool
+	var literalSubexpNames []string
+	var literalNamedCaptureGroups int
+	if literalPattern, isLiteral := ottl.GetLiteralValue(pattern); isLiteral {
+		prefilter = newRegexLiteralPrefilter(literalPattern)
+	}
+
 	compiledPattern, err := newDynamicRegex("ExtractPatterns", pattern)
 	if err != nil {
 		return nil, err
+	}
+	if compiledPattern.value != nil {
+		literalSubexpNames = compiledPattern.value.SubexpNames()
+		for _, groupName := range literalSubexpNames {
+			if groupName != "" {
+				literalNamedCaptureGroups++
+			}
+		}
+		if literalNamedCaptureGroups == 0 {
+			return nil, errors.New("at least 1 named capture group must be supplied in the given regex")
+		}
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
@@ -43,10 +61,14 @@ func extractPatterns[K any](target, pattern ottl.StringGetter[K]) (ottl.ExprFunc
 			return nil, err
 		}
 
-		namedCaptureGroups := 0
-		for _, groupName := range cp.SubexpNames() {
-			if groupName != "" {
-				namedCaptureGroups++
+		subexpNames := literalSubexpNames
+		namedCaptureGroups := literalNamedCaptureGroups
+		if subexpNames == nil {
+			subexpNames = cp.SubexpNames()
+			for _, groupName := range subexpNames {
+				if groupName != "" {
+					namedCaptureGroups++
+				}
 			}
 		}
 
@@ -59,13 +81,18 @@ func extractPatterns[K any](target, pattern ottl.StringGetter[K]) (ottl.ExprFunc
 			return nil, err
 		}
 
+		if prefilter != nil && !prefilter(val) {
+			return pcommon.NewMap(), nil
+		}
+
 		matches := cp.FindStringSubmatch(val)
 		if matches == nil {
 			return pcommon.NewMap(), nil
 		}
 
 		result := pcommon.NewMap()
-		for i, subexp := range cp.SubexpNames() {
+		result.EnsureCapacity(namedCaptureGroups)
+		for i, subexp := range subexpNames {
 			if i == 0 {
 				// Skip whole match
 				continue

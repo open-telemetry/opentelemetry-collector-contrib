@@ -709,11 +709,22 @@ type StringLikeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (*string, error)
 }
 
+type customStringLikeGetter[K any] interface {
+	GetStringLike(ctx context.Context, tCtx K) (*string, bool, error)
+}
+
 // newStandardStringLikeGetter creates a new StandardStringLikeGetter from a Getter[K],
 // also checking if the Getter is a literalGetter.
 func newStandardStringLikeGetter[K any](getter Getter[K]) (StringLikeGetter[K], error) {
-	g := StandardStringLikeGetter[K]{
+	standard := StandardStringLikeGetter[K]{
 		Getter: getter.Get,
+	}
+	var g StringLikeGetter[K] = standard
+	if custom, ok := getter.(customStringLikeGetter[K]); ok {
+		g = standardStringLikeGetterWithCustom[K]{
+			custom:   custom,
+			standard: standard,
+		}
 	}
 	if isLiteralGetter(getter) {
 		val, err := g.Get(context.Background(), *new(K))
@@ -723,6 +734,18 @@ func newStandardStringLikeGetter[K any](getter Getter[K]) (StringLikeGetter[K], 
 		return newLiteral[K, *string](val), nil
 	}
 	return g, nil
+}
+
+type standardStringLikeGetterWithCustom[K any] struct {
+	custom   customStringLikeGetter[K]
+	standard StandardStringLikeGetter[K]
+}
+
+func (g standardStringLikeGetterWithCustom[K]) Get(ctx context.Context, tCtx K) (*string, error) {
+	if val, handled, err := g.custom.GetStringLike(ctx, tCtx); handled || err != nil {
+		return val, err
+	}
+	return g.standard.Get(ctx, tCtx)
 }
 
 // StandardStringLikeGetter is a basic implementation of StringLikeGetter

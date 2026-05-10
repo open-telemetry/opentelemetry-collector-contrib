@@ -25,6 +25,44 @@ import (
 
 var spanID2 = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
 
+func TestNewTransformContextInitializesValue(t *testing.T) {
+	rs := ptrace.NewResourceSpans()
+	rs.Resource().Attributes().PutStr("resource", "value")
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Scope().SetName("scope")
+	span := ss.Spans().AppendEmpty()
+	span.SetName("span")
+	spanEvent := span.Events().AppendEmpty()
+	spanEvent.SetName("event")
+
+	ctx := NewTransformContext(
+		spanEvent,
+		span,
+		ss.Scope(),
+		rs.Resource(),
+		ss,
+		rs,
+		WithEventIndex(3),
+		func(tCtx *TransformContext) {
+			tCtx.cache.PutStr("option", "applied")
+		},
+	)
+
+	require.Equal(t, spanEvent, ctx.GetSpanEvent())
+	require.Equal(t, span, ctx.GetSpan())
+	require.Equal(t, ss.Scope(), ctx.GetInstrumentationScope())
+	require.Equal(t, rs.Resource(), ctx.GetResource())
+	gotIndex, err := ctx.GetEventIndex()
+	require.NoError(t, err)
+	require.Equal(t, int64(3), gotIndex)
+	got, ok := ctx.cache.Get("option")
+	require.True(t, ok)
+	require.Equal(t, "applied", got.Str())
+
+	emptyCtx := NewTransformContext(spanEvent, span, ss.Scope(), rs.Resource(), ss, rs)
+	require.Equal(t, 0, emptyCtx.cache.Len())
+}
+
 func Test_newPathGetSetter(t *testing.T) {
 	_, _, _, refSpanEvent := createTelemetry()
 

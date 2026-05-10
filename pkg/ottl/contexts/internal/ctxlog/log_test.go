@@ -5,6 +5,7 @@ package ctxlog_test
 
 import (
 	"encoding/hex"
+	"math"
 	"testing"
 	"time"
 
@@ -376,6 +377,279 @@ func TestPathGetSetter(t *testing.T) {
 	}
 }
 
+func TestPathGetSetterBodyStringUsesCachedCompositeBody(t *testing.T) {
+	tests := []struct {
+		name     string
+		bodyType string
+		expected string
+	}{
+		{
+			name:     "map",
+			bodyType: "map",
+			expected: "{\"key\":\"val\"}",
+		},
+		{
+			name:     "slice",
+			bodyType: "slice",
+			expected: "[\"body\"]",
+		},
+	}
+
+	path := &pathtest.Path[*testContext]{
+		N: "body",
+		NextPath: &pathtest.Path[*testContext]{
+			N: "string",
+		},
+	}
+
+	accessor, err := ctxlog.PathGetSetter(path)
+	require.NoError(t, err)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			log := createTelemetry(tt.bodyType)
+			tCtx := newTestContext(log)
+			ctxlog.CacheBodyStringIfNeeded(tCtx)
+
+			got, err := accessor.Get(t.Context(), tCtx)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func TestPathGetSetterBodyStringFallsBackWithoutCache(t *testing.T) {
+	path := &pathtest.Path[*testContext]{
+		N: "body",
+		NextPath: &pathtest.Path[*testContext]{
+			N: "string",
+		},
+	}
+
+	accessor, err := ctxlog.PathGetSetter(path)
+	require.NoError(t, err)
+
+	log := createTelemetry("map")
+	tCtx := newTestContext(log)
+	got, err := accessor.Get(t.Context(), tCtx)
+	require.NoError(t, err)
+	assert.Equal(t, "{\"key\":\"val\"}", got)
+	bodyString, ok := tCtx.GetCachedBodyString()
+	require.True(t, ok)
+	assert.Equal(t, "{\"key\":\"val\"}", bodyString)
+}
+
+func TestPathGetSetterBodyStringIgnoresUserCacheKey(t *testing.T) {
+	path := &pathtest.Path[*testContext]{
+		N: "body",
+		NextPath: &pathtest.Path[*testContext]{
+			N: "string",
+		},
+	}
+
+	accessor, err := ctxlog.PathGetSetter(path)
+	require.NoError(t, err)
+
+	log := createTelemetry("map")
+	tCtx := newTestContext(log)
+	tCtx.GetCache().PutStr("_internal.body_string", "spoofed")
+
+	got, err := accessor.Get(t.Context(), tCtx)
+	require.NoError(t, err)
+	assert.Equal(t, "{\"key\":\"val\"}", got)
+	val, ok := tCtx.GetCache().Get("_internal.body_string")
+	require.True(t, ok)
+	assert.Equal(t, "spoofed", val.Str())
+}
+
+func TestPathGetSetterBodySetInvalidatesCachedCompositeBodyString(t *testing.T) {
+	bodyPath := &pathtest.Path[*testContext]{N: "body"}
+	bodyAccessor, err := ctxlog.PathGetSetter(bodyPath)
+	require.NoError(t, err)
+
+	stringPath := &pathtest.Path[*testContext]{
+		N: "body",
+		NextPath: &pathtest.Path[*testContext]{
+			N: "string",
+		},
+	}
+	stringAccessor, err := ctxlog.PathGetSetter(stringPath)
+	require.NoError(t, err)
+
+	log := createTelemetry("map")
+	tCtx := newTestContext(log)
+	ctxlog.CacheBodyStringIfNeeded(tCtx)
+
+	err = bodyAccessor.Set(t.Context(), tCtx, "updated")
+	require.NoError(t, err)
+
+	_, ok := tCtx.GetCachedBodyString()
+	assert.False(t, ok)
+
+	got, err := stringAccessor.Get(t.Context(), tCtx)
+	require.NoError(t, err)
+	assert.Equal(t, "updated", got)
+}
+
+func TestPathGetSetterBodyGetInvalidatesCachedCompositeBodyString(t *testing.T) {
+	bodyPath := &pathtest.Path[*testContext]{N: "body"}
+	bodyAccessor, err := ctxlog.PathGetSetter(bodyPath)
+	require.NoError(t, err)
+
+	stringPath := &pathtest.Path[*testContext]{
+		N: "body",
+		NextPath: &pathtest.Path[*testContext]{
+			N: "string",
+		},
+	}
+	stringAccessor, err := ctxlog.PathGetSetter(stringPath)
+	require.NoError(t, err)
+
+	log := createTelemetry("map")
+	tCtx := newTestContext(log)
+
+	got, err := stringAccessor.Get(t.Context(), tCtx)
+	require.NoError(t, err)
+	require.Equal(t, `{"key":"val"}`, got)
+
+	body, err := bodyAccessor.Get(t.Context(), tCtx)
+	require.NoError(t, err)
+	body.(pcommon.Map).PutStr("key", "updated")
+
+	got, err = stringAccessor.Get(t.Context(), tCtx)
+	require.NoError(t, err)
+	assert.Equal(t, `{"key":"updated"}`, got)
+}
+
+func TestPathGetSetterBodyKeySetInvalidatesCachedCompositeBodyString(t *testing.T) {
+	keyPath := &pathtest.Path[*testContext]{
+		N: "body",
+		KeySlice: []ottl.Key[*testContext]{
+			&pathtest.Key[*testContext]{
+				S: ottltest.Strp("key"),
+			},
+		},
+	}
+	keyAccessor, err := ctxlog.PathGetSetter(keyPath)
+	require.NoError(t, err)
+
+	stringPath := &pathtest.Path[*testContext]{
+		N: "body",
+		NextPath: &pathtest.Path[*testContext]{
+			N: "string",
+		},
+	}
+	stringAccessor, err := ctxlog.PathGetSetter(stringPath)
+	require.NoError(t, err)
+
+	log := createTelemetry("map")
+	tCtx := newTestContext(log)
+	ctxlog.CacheBodyStringIfNeeded(tCtx)
+
+	err = keyAccessor.Set(t.Context(), tCtx, "updated")
+	require.NoError(t, err)
+
+	_, ok := tCtx.GetCachedBodyString()
+	assert.False(t, ok)
+
+	got, err := stringAccessor.Get(t.Context(), tCtx)
+	require.NoError(t, err)
+	assert.Equal(t, `{"key":"updated"}`, got)
+}
+
+func TestPathGetSetterBodyKeySetInvalidatesCachedCompositeBodyStringOnError(t *testing.T) {
+	keyPath := &pathtest.Path[*testContext]{
+		N: "body",
+		KeySlice: []ottl.Key[*testContext]{
+			&pathtest.Key[*testContext]{
+				I: ottltest.Intp(99),
+			},
+		},
+	}
+	keyAccessor, err := ctxlog.PathGetSetter(keyPath)
+	require.NoError(t, err)
+
+	log := createTelemetry("slice")
+	tCtx := newTestContext(log)
+	ctxlog.CacheBodyStringIfNeeded(tCtx)
+
+	err = keyAccessor.Set(t.Context(), tCtx, "updated")
+	require.Error(t, err)
+
+	_, ok := tCtx.GetCachedBodyString()
+	assert.False(t, ok)
+}
+
+func TestPathGetSetterBodyStringCacheMatchesPdataForInvalidCompositeFloat(t *testing.T) {
+	stringPath := &pathtest.Path[*testContext]{
+		N: "body",
+		NextPath: &pathtest.Path[*testContext]{
+			N: "string",
+		},
+	}
+	stringAccessor, err := ctxlog.PathGetSetter(stringPath)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name string
+		body func(pcommon.Value)
+	}{
+		{
+			name: "map_nan",
+			body: func(v pcommon.Value) {
+				v.SetEmptyMap().PutDouble("bad", math.NaN())
+			},
+		},
+		{
+			name: "map_inf",
+			body: func(v pcommon.Value) {
+				v.SetEmptyMap().PutDouble("bad", math.Inf(1))
+			},
+		},
+		{
+			name: "slice_negative_inf",
+			body: func(v pcommon.Value) {
+				v.SetEmptySlice().AppendEmpty().SetDouble(math.Inf(-1))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			log := plog.NewLogRecord()
+			tt.body(log.Body())
+			tCtx := newTestContext(log)
+			ctxlog.CacheBodyStringIfNeeded(tCtx)
+
+			got, err := stringAccessor.Get(t.Context(), tCtx)
+			require.NoError(t, err)
+			assert.Equal(t, log.Body().AsString(), got)
+		})
+	}
+}
+
+func TestPathGetSetterBodyIndexIgnoresCachedCompositeBody(t *testing.T) {
+	path := &pathtest.Path[*testContext]{
+		N: "body",
+		KeySlice: []ottl.Key[*testContext]{
+			&pathtest.Key[*testContext]{
+				S: ottltest.Strp("key"),
+			},
+		},
+	}
+
+	accessor, err := ctxlog.PathGetSetter(path)
+	require.NoError(t, err)
+
+	log := createTelemetry("map")
+	tCtx := newTestContext(log)
+	ctxlog.CacheBodyStringIfNeeded(tCtx)
+
+	got, err := accessor.Get(t.Context(), tCtx)
+	require.NoError(t, err)
+	assert.Equal(t, "val", got)
+}
+
 func createTelemetry(bodyType string) plog.LogRecord {
 	log := plog.NewLogRecord()
 	log.SetTimestamp(pcommon.NewTimestampFromTime(time1))
@@ -439,13 +713,37 @@ func createTelemetry(bodyType string) plog.LogRecord {
 }
 
 type testContext struct {
-	log plog.LogRecord
+	log                   plog.LogRecord
+	cache                 pcommon.Map
+	cachedBodyString      string
+	cachedBodyStringValid bool
 }
 
 func (l *testContext) GetLogRecord() plog.LogRecord {
 	return l.log
 }
 
+func (l *testContext) GetCache() pcommon.Map {
+	return l.cache
+}
+
+func (l *testContext) GetCachedBodyString() (string, bool) {
+	return l.cachedBodyString, l.cachedBodyStringValid
+}
+
+func (l *testContext) SetCachedBodyString(bodyString string) {
+	l.cachedBodyString = bodyString
+	l.cachedBodyStringValid = true
+}
+
+func (l *testContext) InvalidateCachedBodyString() {
+	l.cachedBodyString = ""
+	l.cachedBodyStringValid = false
+}
+
 func newTestContext(log plog.LogRecord) *testContext {
-	return &testContext{log: log}
+	return &testContext{
+		log:   log,
+		cache: pcommon.NewMap(),
+	}
 }

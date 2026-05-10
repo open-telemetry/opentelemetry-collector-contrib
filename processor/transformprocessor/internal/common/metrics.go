@@ -36,22 +36,31 @@ func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
 			smetrics := rmetrics.ScopeMetrics().At(j)
 			metrics := smetrics.Metrics()
+			iteration := ottlmetric.NewMetricIteration()
 			for k := 0; k < metrics.Len(); k++ {
-				tCtx := ottlmetric.NewTransformContextPtr(rmetrics, smetrics, metrics.At(k))
+				tCtx := ottlmetric.NewTransformContextPtr(
+					rmetrics,
+					smetrics,
+					metrics.At(k),
+					ottlmetric.WithMetricIteration(iteration, k),
+				)
 				condition, err := m.Eval(ctx, tCtx)
 				if err != nil {
 					tCtx.Close()
+					iteration.Close()
 					return err
 				}
 				if condition {
 					err = m.Execute(ctx, tCtx)
 					if err != nil {
 						tCtx.Close()
+						iteration.Close()
 						return err
 					}
 				}
 				tCtx.Close()
 			}
+			iteration.Close()
 		}
 	}
 	return nil

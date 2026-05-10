@@ -45,6 +45,51 @@ type TransformContext struct {
 	scopeMetrics    pmetric.ScopeMetrics
 	metric          pmetric.Metric
 	cache           pcommon.Map
+	iteration       *MetricIteration
+	metricIndex     int
+}
+
+// MetricIteration identifies one pass over a metric slice.
+type MetricIteration struct {
+	mu       sync.Mutex
+	cleanups []func()
+	closed   bool
+}
+
+// NewMetricIteration creates a marker shared by all metric contexts in one metric-slice pass.
+func NewMetricIteration() *MetricIteration {
+	return &MetricIteration{}
+}
+
+// RegisterCleanup registers cleanup to run when the metric-slice pass finishes.
+func (m *MetricIteration) RegisterCleanup(cleanup func()) {
+	if m == nil || cleanup == nil {
+		return
+	}
+	m.mu.Lock()
+	if m.closed {
+		m.mu.Unlock()
+		cleanup()
+		return
+	}
+	m.cleanups = append(m.cleanups, cleanup)
+	m.mu.Unlock()
+}
+
+// Close runs cleanup for the metric-slice pass.
+func (m *MetricIteration) Close() {
+	if m == nil {
+		return
+	}
+	m.mu.Lock()
+	cleanups := m.cleanups
+	m.cleanups = nil
+	m.closed = true
+	m.mu.Unlock()
+
+	for _, cleanup := range cleanups {
+		cleanup()
+	}
 }
 
 // MarshalLogObject serializes the metric into a zapcore.ObjectEncoder for logging.
@@ -60,6 +105,29 @@ func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) er
 // TransformContextOption represents an option for configuring a TransformContext.
 type TransformContextOption func(*TransformContext)
 
+// NewTransformContext creates a value TransformContext for backward compatibility.
+func NewTransformContext(
+	metric pmetric.Metric,
+	_ pmetric.MetricSlice,
+	_ pcommon.InstrumentationScope,
+	_ pcommon.Resource,
+	scopeMetrics pmetric.ScopeMetrics,
+	resourceMetrics pmetric.ResourceMetrics,
+	options ...TransformContextOption,
+) TransformContext {
+	tc := TransformContext{
+		resourceMetrics: resourceMetrics,
+		scopeMetrics:    scopeMetrics,
+		metric:          metric,
+		cache:           pcommon.NewMap(),
+		metricIndex:     -1,
+	}
+	for _, opt := range options {
+		opt(&tc)
+	}
+	return tc
+}
+
 // NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
 func NewTransformContextPtr(resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric, options ...TransformContextOption) *TransformContext {
@@ -67,6 +135,9 @@ func NewTransformContextPtr(resourceMetrics pmetric.ResourceMetrics, scopeMetric
 	tCtx.resourceMetrics = resourceMetrics
 	tCtx.scopeMetrics = scopeMetrics
 	tCtx.metric = metric
+	tCtx.cache.Clear()
+	tCtx.iteration = nil
+	tCtx.metricIndex = -1
 	for _, opt := range options {
 		opt(tCtx)
 	}
@@ -80,7 +151,28 @@ func (tCtx *TransformContext) Close() {
 	tCtx.scopeMetrics = pmetric.ScopeMetrics{}
 	tCtx.metric = pmetric.NewMetric()
 	tCtx.cache.Clear()
+	tCtx.iteration = nil
+	tCtx.metricIndex = -1
 	tcPool.Put(tCtx)
+}
+
+// WithMetricIteration sets the current metric index for a metric-slice pass.
+func WithMetricIteration(iteration *MetricIteration, metricIndex int) TransformContextOption {
+	return func(tCtx *TransformContext) {
+		if iteration == nil || metricIndex < 0 {
+			return
+		}
+		tCtx.iteration = iteration
+		tCtx.metricIndex = metricIndex
+	}
+}
+
+// GetMetricIteration returns the metric-slice pass and current metric index when available.
+func (tCtx *TransformContext) GetMetricIteration() (*MetricIteration, int, bool) {
+	if tCtx.iteration == nil {
+		return nil, 0, false
+	}
+	return tCtx.iteration, tCtx.metricIndex, true
 }
 
 // GetMetric returns the metric from the TransformContext.

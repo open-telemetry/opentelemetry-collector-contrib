@@ -55,6 +55,27 @@ func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) er
 // TransformContextOption represents an option for configuring a TransformContext.
 type TransformContextOption func(*TransformContext)
 
+// NewTransformContext creates a value TransformContext for backward compatibility.
+func NewTransformContext(
+	span ptrace.Span,
+	_ pcommon.InstrumentationScope,
+	_ pcommon.Resource,
+	scopeSpans ptrace.ScopeSpans,
+	resourceSpans ptrace.ResourceSpans,
+	options ...TransformContextOption,
+) TransformContext {
+	tc := TransformContext{
+		resourceSpans: resourceSpans,
+		scopeSpans:    scopeSpans,
+		span:          span,
+		cache:         pcommon.NewMap(),
+	}
+	for _, opt := range options {
+		opt(&tc)
+	}
+	return tc
+}
+
 // NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
 func NewTransformContextPtr(resourceSpans ptrace.ResourceSpans, scopeSpans ptrace.ScopeSpans, span ptrace.Span, options ...TransformContextOption) *TransformContext {

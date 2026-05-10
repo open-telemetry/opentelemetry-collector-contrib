@@ -178,15 +178,32 @@ func accessSeverityText[K Context]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessBody[K Context]() ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return ottlcommon.GetValue(tCtx.GetLogRecord().Body()), nil
-		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
-			return ctxutil.SetValue(tCtx.GetLogRecord().Body(), val)
-		},
+type bodyGetSetter[K Context] struct{}
+
+func (bodyGetSetter[K]) Get(_ context.Context, tCtx K) (any, error) {
+	val := ottlcommon.GetValue(tCtx.GetLogRecord().Body())
+	invalidateCachedBodyStringIfMutable(tCtx, val)
+	return val, nil
+}
+
+func (bodyGetSetter[K]) Set(_ context.Context, tCtx K, val any) error {
+	if err := ctxutil.SetValue(tCtx.GetLogRecord().Body(), val); err != nil {
+		return err
 	}
+	invalidateCachedBodyString(tCtx)
+	return nil
+}
+
+func (bodyGetSetter[K]) GetStringLike(_ context.Context, tCtx K) (*string, bool, error) {
+	if bodyString, ok := getOrCacheCompositeBodyString(tCtx); ok {
+		return &bodyString, true, nil
+	}
+
+	return nil, false, nil
+}
+
+func accessBody[K Context]() bodyGetSetter[K] {
+	return bodyGetSetter[K]{}
 }
 
 func accessBodyKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K] {
@@ -195,9 +212,17 @@ func accessBodyKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K] {
 			body := tCtx.GetLogRecord().Body()
 			switch body.Type() {
 			case pcommon.ValueTypeMap:
-				return ctxutil.GetMapValue[K](ctx, tCtx, tCtx.GetLogRecord().Body().Map(), key)
+				val, err := ctxutil.GetMapValue[K](ctx, tCtx, tCtx.GetLogRecord().Body().Map(), key)
+				if err == nil {
+					invalidateCachedBodyStringIfMutable(tCtx, val)
+				}
+				return val, err
 			case pcommon.ValueTypeSlice:
-				return ctxutil.GetSliceValue[K](ctx, tCtx, tCtx.GetLogRecord().Body().Slice(), key)
+				val, err := ctxutil.GetSliceValue[K](ctx, tCtx, tCtx.GetLogRecord().Body().Slice(), key)
+				if err == nil {
+					invalidateCachedBodyStringIfMutable(tCtx, val)
+				}
+				return val, err
 			default:
 				return nil, fmt.Errorf("log bodies of type %s cannot be indexed", body.Type().String())
 			}
@@ -206,12 +231,21 @@ func accessBodyKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K] {
 			body := tCtx.GetLogRecord().Body()
 			switch body.Type() {
 			case pcommon.ValueTypeMap:
-				return ctxutil.SetMapValue[K](ctx, tCtx, tCtx.GetLogRecord().Body().Map(), key, val)
+				err := ctxutil.SetMapValue[K](ctx, tCtx, tCtx.GetLogRecord().Body().Map(), key, val)
+				invalidateCachedBodyString(tCtx)
+				if err != nil {
+					return err
+				}
 			case pcommon.ValueTypeSlice:
-				return ctxutil.SetSliceValue[K](ctx, tCtx, tCtx.GetLogRecord().Body().Slice(), key, val)
+				err := ctxutil.SetSliceValue[K](ctx, tCtx, tCtx.GetLogRecord().Body().Slice(), key, val)
+				invalidateCachedBodyString(tCtx)
+				if err != nil {
+					return err
+				}
 			default:
 				return fmt.Errorf("log bodies of type %s cannot be indexed", body.Type().String())
 			}
+			return nil
 		},
 	}
 }
@@ -219,6 +253,9 @@ func accessBodyKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K] {
 func accessStringBody[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
+			if bodyString, ok := getOrCacheCompositeBodyString(tCtx); ok {
+				return bodyString, nil
+			}
 			return tCtx.GetLogRecord().Body().AsString(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
@@ -227,8 +264,33 @@ func accessStringBody[K Context]() ottl.StandardGetSetter[K] {
 				return err
 			}
 			tCtx.GetLogRecord().Body().SetStr(str)
+			invalidateCachedBodyString(tCtx)
 			return nil
 		},
+	}
+}
+
+func getOrCacheCompositeBodyString[K Context](tCtx K) (string, bool) {
+	body := tCtx.GetLogRecord().Body()
+	if !bodySupportsCachedString(body) {
+		return "", false
+	}
+
+	if bodyString, ok := getCachedBodyString(tCtx); ok {
+		return bodyString, true
+	}
+
+	bodyString := bodyAsStringOptimized(body)
+	if !cacheBodyString(tCtx, bodyString) {
+		return "", false
+	}
+	return bodyString, true
+}
+
+func invalidateCachedBodyStringIfMutable[K any](tCtx K, val any) {
+	switch val.(type) {
+	case pcommon.Map, pcommon.Slice:
+		invalidateCachedBodyString(tCtx)
 	}
 }
 

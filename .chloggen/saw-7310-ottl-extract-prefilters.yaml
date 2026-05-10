@@ -1,0 +1,6 @@
+change_type: enhancement
+component: pkg/ottl
+note: Improve performance of extract pattern functions by using literal prefilters.
+issues: [50]
+subtext:
+change_logs: [user]

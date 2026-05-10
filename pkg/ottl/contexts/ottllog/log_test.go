@@ -798,6 +798,69 @@ func Test_InvalidBodyIndexing(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestNewTransformContextDoesNotEagerlyCacheCompositeBodyString(t *testing.T) {
+	tests := []struct {
+		name     string
+		bodyType string
+	}{
+		{
+			name:     "map body",
+			bodyType: "map",
+		},
+		{
+			name:     "slice body",
+			bodyType: "slice",
+		},
+		{
+			name:     "scalar body",
+			bodyType: "int",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name+"/ptr", func(t *testing.T) {
+			rLogs, sLogs, log := createTelemetry(tt.bodyType)
+			tCtx := NewTransformContextPtr(rLogs, sLogs, log)
+			defer tCtx.Close()
+
+			_, ok := tCtx.GetCachedBodyString()
+			require.False(t, ok)
+		})
+
+		t.Run(tt.name+"/value", func(t *testing.T) {
+			rLogs, sLogs, log := createTelemetry(tt.bodyType)
+			tCtx := NewTransformContext(log, sLogs.Scope(), rLogs.Resource(), sLogs, rLogs)
+
+			_, ok := tCtx.GetCachedBodyString()
+			require.False(t, ok)
+		})
+	}
+}
+
+func TestNewTransformContextUsesLegacyScopeAndResource(t *testing.T) {
+	log := plog.NewLogRecord()
+
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("legacy-scope")
+	scope.SetVersion("legacy-version")
+	scope.Attributes().PutStr("scope-key", "scope-value")
+
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr("resource-key", "resource-value")
+
+	tCtx := NewTransformContext(log, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
+
+	assert.Equal(t, "legacy-scope", tCtx.GetInstrumentationScope().Name())
+	assert.Equal(t, "legacy-version", tCtx.GetInstrumentationScope().Version())
+	scopeValue, ok := tCtx.GetInstrumentationScope().Attributes().Get("scope-key")
+	require.True(t, ok)
+	assert.Equal(t, "scope-value", scopeValue.Str())
+
+	resourceValue, ok := tCtx.GetResource().Attributes().Get("resource-key")
+	require.True(t, ok)
+	assert.Equal(t, "resource-value", resourceValue.Str())
+}
+
 func Test_ParseEnum(t *testing.T) {
 	tests := []struct {
 		name string

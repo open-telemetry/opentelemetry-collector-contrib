@@ -87,6 +87,17 @@ func Test_extractGrokPatterns_patterns(t *testing.T) {
 			definitions: nil,
 		},
 		{
+			name:              "grok - long capture keeps int64 timestamp",
+			targetString:      `1686838825123 INFO`,
+			pattern:           `%{POSINT:timestamp:long} %{WORD:level}`,
+			namedCapturesOnly: true,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutInt("timestamp", 1686838825123)
+				expectedMap.PutStr("level", "INFO")
+			},
+			definitions: nil,
+		},
+		{
 			name:              "grok - custom patterns",
 			targetString:      `2024-06-18 12:34:56 otel`,
 			pattern:           `%{MYPATTERN}`,
@@ -134,6 +145,17 @@ func Test_extractGrokPatterns_patterns(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_putGrokValueKeepsInt64Captures(t *testing.T) {
+	result := pcommon.NewMap()
+
+	putGrokValue(result, "timestamp", int64(1778281254690))
+
+	got, ok := result.Get("timestamp")
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeInt, got.Type())
+	assert.Equal(t, int64(1778281254690), got.Int())
 }
 
 func Test_extractGrokPatterns_validation(t *testing.T) {
@@ -265,6 +287,181 @@ func Test_extractGrokPatterns_bad_input(t *testing.T) {
 			result, err := exprFunc(nil, nil)
 			assert.Error(t, err)
 			assert.Nil(t, result)
+		})
+	}
+}
+
+func Test_newGrokLiteralPrefilter(t *testing.T) {
+	tests := []struct {
+		name      string
+		pattern   string
+		wantNil   bool
+		match     string
+		mismatch  string
+		mismatch2 string
+	}{
+		{
+			name:     "required literals around grok placeholders",
+			pattern:  `HealthProducer - sending health message: %{word:status}`,
+			match:    `INFO HealthProducer - sending health message: green`,
+			mismatch: `INFO unrelated message`,
+		},
+		{
+			name:      "keeps literals around nested alternation",
+			pattern:   `prefix (foo|bar) required suffix %{word:value}`,
+			match:     `prefix foo required suffix ok`,
+			mismatch:  `prefix foo missing suffix ok`,
+			mismatch2: `required suffix only`,
+		},
+		{
+			name:     "keeps literals inside mandatory groups",
+			pattern:  `prefix (?:required marker) suffix %{word:value}`,
+			match:    `prefix required marker suffix ok`,
+			mismatch: `prefix other marker suffix ok`,
+		},
+		{
+			name:     "does not require literals inside optional groups",
+			pattern:  `prefix (?:optional marker)? suffix %{word:value}`,
+			match:    `prefix suffix ok`,
+			mismatch: `prefix optional marker ok`,
+		},
+		{
+			name:    "skips unsafe top-level alternation",
+			pattern: `foo|bar`,
+			wantNil: true,
+		},
+		{
+			name:    "skips case-insensitive patterns",
+			pattern: `(?i)health.*check`,
+			wantNil: true,
+		},
+		{
+			name:    "skips scoped case-insensitive patterns",
+			pattern: `(?i:health).*check`,
+			wantNil: true,
+		},
+		{
+			name:    "skips scoped mixed-flag case-insensitive patterns",
+			pattern: `(?mi:health).*check`,
+			wantNil: true,
+		},
+		{
+			name:    "skips fallback combined case-insensitive patterns",
+			pattern: `(?im)health(?<=done)%{WORD:value}`,
+			wantNil: true,
+		},
+		{
+			name:    "skips fallback enabled case-insensitive reset patterns",
+			pattern: `(?i-m)health(?<=done)%{WORD:value}`,
+			wantNil: true,
+		},
+		{
+			name:     "skips fallback brace quantifier bytes",
+			pattern:  `foo{1,2}bar(?<=done)%{WORD:value}`,
+			match:    `foobar done ok`,
+			mismatch: `foo done ok`,
+		},
+		{
+			name:     "treats zero minimum fallback brace quantifier as optional",
+			pattern:  `foo{0,2}bar(?<=done)%{WORD:value}`,
+			match:    `fobar done ok`,
+			mismatch: `f done ok`,
+		},
+		{
+			name:    "skips literals inside character classes in lookaheads",
+			pattern: `(?=[^)]foo)%{GREEDYDATA:value}`,
+			wantNil: true,
+		},
+		{
+			name:     "keeps escaped punctuation literals",
+			pattern:  `\\[tenantId: %{notSpace:tenant_id}\\] completed`,
+			match:    `[tenantId: tenant-a] completed`,
+			mismatch: `[tenantId: tenant-a] started`,
+		},
+		{
+			name:     "keeps utf8 required literals",
+			pattern:  `你好 %{word:value}(?= 完成)`,
+			match:    `INFO 你好 green 完成`,
+			mismatch: `INFO hello green done`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prefilter := newGrokLiteralPrefilter(tt.pattern)
+			if tt.wantNil {
+				require.Nil(t, prefilter)
+				return
+			}
+			require.NotNil(t, prefilter)
+			require.True(t, prefilter(tt.match))
+			require.False(t, prefilter(tt.mismatch))
+			if tt.mismatch2 != "" {
+				require.False(t, prefilter(tt.mismatch2))
+			}
+		})
+	}
+}
+
+func Test_newGrokLiteralPrefilterUsesPatternDefinitions(t *testing.T) {
+	prefilter := newGrokLiteralPrefilter(
+		`%{LOGLINE}`,
+		`LOGLINE=%{DATESTAMP:timestamp} fixed marker %{WORD:value}`,
+	)
+
+	require.NotNil(t, prefilter)
+	require.True(t, prefilter(`2024-06-18 12:34:56 fixed marker ok`))
+	require.False(t, prefilter(`2024-06-18 12:34:56 other marker ok`))
+}
+
+func Test_extractRequiredGrokLiteralsFallbackKeepsMandatoryNonCapturingGroup(t *testing.T) {
+	literals := extractRequiredGrokLiterals(`(?:required marker)(?= suffix)`)
+
+	require.Contains(t, literals, "required marker")
+}
+
+func Test_extractRequiredGrokLiteralsFallbackSkipsOptionalNonCapturingGroup(t *testing.T) {
+	literals := extractRequiredGrokLiterals(`(?:optional marker)?(?= suffix)`)
+
+	require.NotContains(t, literals, "optional marker")
+}
+
+func Test_extractRequiredGrokLiteralsFallbackSkipsOptionalQuantifiedByte(t *testing.T) {
+	tests := []struct {
+		name    string
+		pattern string
+		input   string
+	}{
+		{
+			name:    "question mark",
+			pattern: `foo?bar(?<=unsupported)`,
+			input:   "fobar unsupported",
+		},
+		{
+			name:    "asterisk",
+			pattern: `foo*bar(?<=unsupported)`,
+			input:   "fbar unsupported",
+		},
+		{
+			name:    "plus",
+			pattern: `foo+bar(?<=unsupported)`,
+			input:   "foobar unsupported",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			literals := extractRequiredGrokLiterals(tt.pattern)
+			require.Contains(t, literals, "bar")
+			if tt.name == "plus" {
+				require.Contains(t, literals, "foo")
+			} else {
+				require.NotContains(t, literals, "foo")
+			}
+
+			prefilter := newGrokLiteralPrefilter(tt.pattern)
+			require.NotNil(t, prefilter)
+			require.True(t, prefilter(tt.input))
 		})
 	}
 }

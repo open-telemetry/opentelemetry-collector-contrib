@@ -18,6 +18,34 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
+func TestNewTransformContextInitializesValue(t *testing.T) {
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("scope")
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr("resource", "value")
+	schemaURLItem := pmetric.NewResourceMetrics()
+
+	ctx := NewTransformContext(
+		scope,
+		resource,
+		schemaURLItem,
+		func(tCtx *TransformContext) {
+			tCtx.cache.PutStr("option", "applied")
+		},
+	)
+
+	require.Equal(t, scope, ctx.GetInstrumentationScope())
+	require.Equal(t, resource, ctx.GetResource())
+	require.Equal(t, schemaURLItem, ctx.GetScopeSchemaURLItem())
+	require.Equal(t, schemaURLItem, ctx.GetResourceSchemaURLItem())
+	got, ok := ctx.cache.Get("option")
+	require.True(t, ok)
+	require.Equal(t, "applied", got.Str())
+
+	emptyCtx := NewTransformContext(scope, resource, schemaURLItem)
+	require.Equal(t, 0, emptyCtx.cache.Len())
+}
+
 func Test_newPathGetSetter(t *testing.T) {
 	refIS, _ := createTelemetry()
 

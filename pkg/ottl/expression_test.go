@@ -2684,6 +2684,21 @@ func (g mockedGetter[K]) Get(_ context.Context, _ K) (any, error) {
 	return g.value, nil
 }
 
+type mockedCustomStringLikeGetter[K any] struct {
+	fallbackValue any
+	customValue   *string
+	handled       bool
+	err           error
+}
+
+func (g mockedCustomStringLikeGetter[K]) Get(_ context.Context, _ K) (any, error) {
+	return g.fallbackValue, nil
+}
+
+func (g mockedCustomStringLikeGetter[K]) GetStringLike(_ context.Context, _ K) (*string, bool, error) {
+	return g.customValue, g.handled, g.err
+}
+
 func Test_newStandardStringGetter(t *testing.T) {
 	type args[K any] struct {
 		getter Getter[K]
@@ -2744,6 +2759,7 @@ func Test_newStandardStringLikeGetter(t *testing.T) {
 	type testCase[K any] struct {
 		name            string
 		args            args[K]
+		wantValue       string
 		wantLiteralTrue bool
 		wantErr         bool
 	}
@@ -2754,6 +2770,7 @@ func Test_newStandardStringLikeGetter(t *testing.T) {
 			args: args[any]{
 				getter: &mockedGetter[any]{value: "foo"},
 			},
+			wantValue:       "foo",
 			wantLiteralTrue: false,
 		},
 		{
@@ -2768,7 +2785,30 @@ func Test_newStandardStringLikeGetter(t *testing.T) {
 			args: args[any]{
 				getter: newLiteral[any, any]("foo"),
 			},
+			wantValue:       "foo",
 			wantLiteralTrue: true,
+		},
+		{
+			name: "getter implements custom string-like path",
+			args: args[any]{
+				getter: mockedCustomStringLikeGetter[any]{
+					fallbackValue: "foo",
+					customValue:   ptr("bar"),
+					handled:       true,
+				},
+			},
+			wantValue:       "bar",
+			wantLiteralTrue: false,
+		},
+		{
+			name: "getter custom string-like path falls back to standard conversion",
+			args: args[any]{
+				getter: mockedCustomStringLikeGetter[any]{
+					fallbackValue: "foo",
+				},
+			},
+			wantValue:       "foo",
+			wantLiteralTrue: false,
 		},
 	}
 
@@ -2784,9 +2824,13 @@ func Test_newStandardStringLikeGetter(t *testing.T) {
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
-			assert.Equal(t, "foo", *val)
+			assert.Equal(t, tt.wantValue, *val)
 		})
 	}
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }
 
 func Test_newStandardIntGetter(t *testing.T) {

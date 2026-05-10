@@ -6,9 +6,9 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	ottlregexp "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/regexp"
 )
 
 const invalidRegexErrMsg = "the regex pattern supplied to %s '%q' is not a valid pattern: %w"
@@ -16,7 +16,7 @@ const invalidRegexErrMsg = "the regex pattern supplied to %s '%q' is not a valid
 type dynamicRegex[K any] struct {
 	funcName string
 	getter   ottl.StringGetter[K]
-	value    *regexp.Regexp
+	value    ottlregexp.Matcher
 }
 
 // newDynamicRegex creates a new dynamicRegex instance that handles both literal and dynamic regex patterns.
@@ -24,7 +24,7 @@ type dynamicRegex[K any] struct {
 // If the pattern is dynamic, it defers compilation until runtime.
 func newDynamicRegex[K any](funcName string, getter ottl.StringGetter[K]) (*dynamicRegex[K], error) {
 	if pattern, isLiteral := ottl.GetLiteralValue(getter); isLiteral {
-		r, err := regexp.Compile(pattern)
+		r, err := ottlregexp.Compile(pattern)
 		if err != nil {
 			return nil, fmt.Errorf(invalidRegexErrMsg, funcName, pattern, err)
 		}
@@ -39,7 +39,7 @@ func newDynamicRegex[K any](funcName string, getter ottl.StringGetter[K]) (*dyna
 
 // compile returns a compiled regex pattern. If the pattern was pre-compiled (literal), it returns the cached version.
 // Otherwise, it retrieves the pattern value at runtime and compiles it.
-func (l *dynamicRegex[K]) compile(ctx context.Context, tCtx K) (*regexp.Regexp, error) {
+func (l *dynamicRegex[K]) compile(ctx context.Context, tCtx K) (ottlregexp.Matcher, error) {
 	if l.value != nil {
 		return l.value, nil
 	}
@@ -47,5 +47,5 @@ func (l *dynamicRegex[K]) compile(ctx context.Context, tCtx K) (*regexp.Regexp, 
 	if err != nil {
 		return nil, fmt.Errorf(invalidRegexErrMsg, l.funcName, pattern, err)
 	}
-	return regexp.Compile(pattern)
+	return ottlregexp.Compile(pattern)
 }

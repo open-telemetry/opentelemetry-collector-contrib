@@ -5,7 +5,9 @@ package metrics
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"maps"
 	"testing"
 	"time"
 
@@ -397,6 +399,56 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 			assert.Equal(t, exTd, td)
 		})
 	}
+}
+
+func Test_ProcessMetrics_MetricContextPropagatesMetricIteration(t *testing.T) {
+	td := constructMetrics()
+	var seenIndexes []int
+	var seenIterations []*ottlmetric.MetricIteration
+	metricFunctions := maps.Clone(DefaultMetricFunctions)
+	metricFunctions["MetricIterationIndex"] = newMetricIterationIndexFactory(&seenIndexes, &seenIterations)
+
+	processor, err := NewProcessor(
+		[]common.ContextStatements{{Context: "metric", Statements: []string{`set(metadata["iteration_index"], MetricIterationIndex())`}}},
+		ottl.IgnoreError,
+		componenttest.NewNopTelemetrySettings(),
+		metricFunctions,
+		DefaultDataPointFunctions,
+	)
+	require.NoError(t, err)
+
+	_, err = processor.ProcessMetrics(t.Context(), td)
+	require.NoError(t, err)
+
+	require.Equal(t, []int{0, 1, 2, 3, 4}, seenIndexes)
+	require.Len(t, seenIterations, len(seenIndexes))
+	require.NotNil(t, seenIterations[0])
+	for _, iteration := range seenIterations[1:] {
+		require.Same(t, seenIterations[0], iteration)
+	}
+
+	metrics := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		val, ok := metrics.At(i).Metadata().Get("iteration_index")
+		require.True(t, ok)
+		require.Equal(t, int64(i), val.Int())
+	}
+}
+
+type metricIterationIndexArguments struct{}
+
+func newMetricIterationIndexFactory(seenIndexes *[]int, seenIterations *[]*ottlmetric.MetricIteration) ottl.Factory[*ottlmetric.TransformContext] {
+	return ottl.NewFactory("MetricIterationIndex", &metricIterationIndexArguments{}, func(ottl.FunctionContext, ottl.Arguments) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
+		return func(_ context.Context, tCtx *ottlmetric.TransformContext) (any, error) {
+			iteration, index, ok := tCtx.GetMetricIteration()
+			if !ok {
+				return nil, errors.New("missing metric iteration")
+			}
+			*seenIndexes = append(*seenIndexes, index)
+			*seenIterations = append(*seenIterations, iteration)
+			return int64(index), nil
+		}, nil
+	})
 }
 
 func Test_ProcessMetrics_InferredMetricContext(t *testing.T) {
