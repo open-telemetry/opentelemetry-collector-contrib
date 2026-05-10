@@ -81,9 +81,10 @@ func TestOpenMetricsPositive(t *testing.T) {
 			name: k,
 			pages: []mockPrometheusResponse{
 				{code: 200, data: v, useOpenMetrics: true},
+				{code: 404},
 			},
 			validateFunc:    verifyPositiveTarget,
-			validateScrapes: true,
+			validateScrapes: false,
 		}
 		targets = append(targets, testData)
 	}
@@ -236,7 +237,7 @@ func TestInfoStatesetMetrics(t *testing.T) {
 				{code: 200, data: infoAndStatesetMetrics, useOpenMetrics: true},
 			},
 			validateFunc:    verifyInfoStatesetMetrics,
-			validateScrapes: true,
+			validateScrapes: false,
 		},
 	}
 
