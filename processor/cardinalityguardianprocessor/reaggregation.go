@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+
 package cardinalityguardianprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cardinalityguardianprocessor"
 
 import (
@@ -18,7 +19,8 @@ import (
 //   - Delta Sum: values are summed together into a single data point.
 //
 // The function operates in-place on the data point slice and returns early with
-// no allocations when no identity collisions exist (the common case).
+// no allocations when no identity collisions exist (the common case when no
+// attributes were stripped, or stripping didn't cause collisions).
 func reaggregateNumberDataPoints(dps pmetric.NumberDataPointSlice, metricType pmetric.MetricType, isDelta bool) {
 	n := dps.Len()
 	if n <= 1 {
@@ -26,6 +28,8 @@ func reaggregateNumberDataPoints(dps pmetric.NumberDataPointSlice, metricType pm
 	}
 
 	// Phase 1: Compute identity hashes and detect collisions.
+	// We hash the attributes of each data point to determine identity.
+	// If all hashes are unique, we return early with zero data mutation.
 	type dpInfo struct {
 		hash  uint64
 		index int
@@ -48,8 +52,15 @@ func reaggregateNumberDataPoints(dps pmetric.NumberDataPointSlice, metricType pm
 		return
 	}
 
-	// Phase 2: Merge colliding data points into the group leader.
+	// Phase 2: Merge colliding data points.
+	// For each group of data points with the same identity hash, merge them
+	// according to the metric type. The "winner" (first occurrence) is kept
+	// and updated; all other members of the group are marked for removal.
+
+	// Track which indices to remove (merged into their group leader).
 	remove := make(map[int]bool)
+
+	// Reset seen to track group leaders.
 	seen = make(map[uint64]int, n)
 
 	for i := 0; i < n; i++ {
@@ -60,6 +71,7 @@ func reaggregateNumberDataPoints(dps pmetric.NumberDataPointSlice, metricType pm
 			continue
 		}
 
+		// Merge data point i into the leader.
 		leader := dps.At(leaderIdx)
 		current := dps.At(i)
 
@@ -67,6 +79,7 @@ func reaggregateNumberDataPoints(dps pmetric.NumberDataPointSlice, metricType pm
 		case metricType == pmetric.MetricTypeGauge:
 			// Gauge: last-value-wins by timestamp.
 			if current.Timestamp() > leader.Timestamp() {
+				// Replace leader's value and timestamp with current's.
 				copyNumberValue(current, leader)
 				leader.SetTimestamp(current.Timestamp())
 				if current.StartTimestamp() > 0 {
@@ -78,12 +91,15 @@ func reaggregateNumberDataPoints(dps pmetric.NumberDataPointSlice, metricType pm
 		case metricType == pmetric.MetricTypeSum && isDelta:
 			// Delta Sum: add values together.
 			addNumberValue(current, leader)
+			// Use the later end timestamp.
 			if current.Timestamp() > leader.Timestamp() {
 				leader.SetTimestamp(current.Timestamp())
 			}
+			// Use the earlier start timestamp.
 			if current.StartTimestamp() < leader.StartTimestamp() {
 				leader.SetStartTimestamp(current.StartTimestamp())
 			}
+			// Combine exemplars from both data points.
 			current.Exemplars().MoveAndAppendTo(leader.Exemplars())
 		}
 
@@ -91,6 +107,8 @@ func reaggregateNumberDataPoints(dps pmetric.NumberDataPointSlice, metricType pm
 	}
 
 	// Phase 3: Remove merged data points by compacting the slice.
+	// RemoveIf iterates in order and removes entries for which the callback
+	// returns true. We track the original index via a counter.
 	idx := 0
 	dps.RemoveIf(func(_ pmetric.NumberDataPoint) bool {
 		shouldRemove := remove[idx]
@@ -99,15 +117,20 @@ func reaggregateNumberDataPoints(dps pmetric.NumberDataPointSlice, metricType pm
 	})
 }
 
-// hashAttributes produces a deterministic, order-independent hash of a
-// pcommon.Map's key-value pairs. A null byte separator is used to prevent
-// collisions between keys and values (e.g. "a"+"b" vs "ab"+"").
+// hashAttributes produces a deterministic hash of a pcommon.Map's key-value
+// pairs. The hash is order-independent: we XOR individual key-value hashes
+// to ensure that {a=1, b=2} and {b=2, a=1} produce the same identity.
+//
+// This is used to detect data points that share the same attribute identity
+// after attribute stripping.
 func hashAttributes(attrs pcommon.Map) uint64 {
 	if attrs.Len() == 0 {
 		return 0
 	}
 	var combined uint64
 	attrs.Range(func(k string, v pcommon.Value) bool {
+		// Hash key and value together as a single unit, then XOR.
+		// Using a null byte separator ensures "a"+"b" != "ab"+""
 		pairHash := xxhash.Sum64String(k + "\x00" + v.AsString())
 		combined ^= pairHash
 		return true
@@ -115,7 +138,8 @@ func hashAttributes(attrs pcommon.Map) uint64 {
 	return combined
 }
 
-// copyNumberValue copies the numeric value from src to dst.
+// copyNumberValue copies the numeric value from src to dst, handling both
+// int and double value types.
 func copyNumberValue(src, dst pmetric.NumberDataPoint) {
 	switch src.ValueType() {
 	case pmetric.NumberDataPointValueTypeInt:
@@ -125,7 +149,8 @@ func copyNumberValue(src, dst pmetric.NumberDataPoint) {
 	}
 }
 
-// addNumberValue adds the numeric value of src into dst. Mixed types are promoted to double.
+// addNumberValue adds the numeric value of src into dst, handling both int
+// and double value types. Mixed types are promoted to double.
 func addNumberValue(src, dst pmetric.NumberDataPoint) {
 	switch {
 	case src.ValueType() == pmetric.NumberDataPointValueTypeInt &&
@@ -135,6 +160,7 @@ func addNumberValue(src, dst pmetric.NumberDataPoint) {
 		dst.ValueType() == pmetric.NumberDataPointValueTypeDouble:
 		dst.SetDoubleValue(dst.DoubleValue() + src.DoubleValue())
 	default:
+		// Mixed types: promote to double.
 		srcVal := numberDataPointToDouble(src)
 		dstVal := numberDataPointToDouble(dst)
 		dst.SetDoubleValue(dstVal + srcVal)
