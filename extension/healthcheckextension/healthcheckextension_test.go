@@ -243,18 +243,15 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Use context.Background() instead of t.Context() because createExtension starts
-			// a background goroutine that needs to stay alive for the duration of the test.
-			// t.Context() may be cancelled immediately causing the goroutine to exit prematurely.
-			//nolint:usetesting
-			hcExt, err := createExtension(context.Background(), extensiontest.NewNopSettings(extensiontest.NopType), tt.config)
+			hcExt, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), tt.config)
 			require.NoError(t, err)
 			require.NotNil(t, hcExt)
 
-			//nolint:usetesting
-			require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
-			//nolint:usetesting
-			t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(context.Background())) })
+			require.NoError(t, hcExt.Start(t.Context(), componenttest.NewNopHost()))
+			t.Cleanup(func() {
+				// cleanup functions run after test context is cancelled
+				require.NoError(t, hcExt.Shutdown(context.WithoutCancel(t.Context())))
+			})
 
 			// Give a chance for the server goroutine to run.
 			runtime.Gosched()
@@ -309,14 +306,9 @@ func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 		},
 	}
 
-	// Use context.Background() instead of t.Context() because createExtension starts
-	// a background goroutine that needs to stay alive for the duration of the test.
-	// t.Context() may be cancelled immediately causing the goroutine to exit prematurely.
-	//nolint:usetesting
-	hcExt, err := createExtension(context.Background(), extensiontest.NewNopSettings(extensiontest.NopType), config)
+	hcExt, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), config)
 	require.NoError(t, err)
 	require.NotNil(t, hcExt)
 
-	//nolint:usetesting
-	require.NoError(t, hcExt.Shutdown(context.Background()))
+	require.NoError(t, hcExt.Shutdown(t.Context()))
 }
