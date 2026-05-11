@@ -1,4 +1,0 @@
-change_type: new_component
-component: processor/cardinality_guardian
-note: Add cardinalityguardianprocessor.
-issues: [47368]
