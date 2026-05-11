@@ -284,8 +284,7 @@ func WithMetricParser(functions map[string]ottl.Factory[*ottlmetric.TransformCon
 		if err != nil {
 			return err
 		}
-		converter := createMetricConditionsConverter()
-		return ottl.WithParserCollectionContext(ottlmetric.ContextName, &metricParser, ottl.WithConditionConverter(converter))(&mpc.ParserCollection)
+		return ottl.WithParserCollectionContext(ottlmetric.ContextName, &metricParser, ottl.WithConditionConverter(convertMetricConditions))(&mpc.ParserCollection)
 	}
 }
 
@@ -295,8 +294,7 @@ func WithDataPointParser(functions map[string]ottl.Factory[*ottldatapoint.Transf
 		if err != nil {
 			return err
 		}
-		converter := createDataPointConditionsConverter()
-		return ottl.WithParserCollectionContext(ottldatapoint.ContextName, &dataPointParser, ottl.WithConditionConverter(converter))(&mpc.ParserCollection)
+		return ottl.WithParserCollectionContext(ottldatapoint.ContextName, &dataPointParser, ottl.WithConditionConverter(convertDataPointConditions))(&mpc.ParserCollection)
 	}
 }
 
@@ -338,38 +336,34 @@ func NewMetricParserCollection(settings component.TelemetrySettings, options ...
 	return mpc, nil
 }
 
-func createMetricConditionsConverter() ottl.ParsedConditionsConverter[*ottlmetric.TransformContext, parsedMetricConditions] {
-	return func(pc *ottl.ParserCollection[parsedMetricConditions], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottlmetric.TransformContext]) (parsedMetricConditions, error) {
-		contextConditions, err := toContextConditions(conditions)
-		if err != nil {
-			return parsedMetricConditions{}, err
-		}
-
-		errorMode := getErrorMode(pc, contextConditions)
-		return parsedMetricConditions{
-			metricConditions:  parsedConditions,
-			telemetrySettings: pc.Settings,
-			errorMode:         errorMode,
-			action:            contextConditions.Action,
-		}, nil
+func convertMetricConditions(pc *ottl.ParserCollection[parsedMetricConditions], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottlmetric.TransformContext]) (parsedMetricConditions, error) {
+	contextConditions, err := toContextConditions(conditions)
+	if err != nil {
+		return parsedMetricConditions{}, err
 	}
+
+	errorMode := getErrorMode(pc, contextConditions)
+	return parsedMetricConditions{
+		metricConditions:  parsedConditions,
+		telemetrySettings: pc.Settings,
+		errorMode:         errorMode,
+		action:            contextConditions.Action,
+	}, nil
 }
 
-func createDataPointConditionsConverter() ottl.ParsedConditionsConverter[*ottldatapoint.TransformContext, parsedMetricConditions] {
-	return func(pc *ottl.ParserCollection[parsedMetricConditions], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottldatapoint.TransformContext]) (parsedMetricConditions, error) {
-		contextConditions, err := toContextConditions(conditions)
-		if err != nil {
-			return parsedMetricConditions{}, err
-		}
-
-		errorMode := getErrorMode(pc, contextConditions)
-		return parsedMetricConditions{
-			dataPointConditions: parsedConditions,
-			telemetrySettings:   pc.Settings,
-			errorMode:           errorMode,
-			action:              contextConditions.Action,
-		}, nil
+func convertDataPointConditions(pc *ottl.ParserCollection[parsedMetricConditions], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottldatapoint.TransformContext]) (parsedMetricConditions, error) {
+	contextConditions, err := toContextConditions(conditions)
+	if err != nil {
+		return parsedMetricConditions{}, err
 	}
+
+	errorMode := getErrorMode(pc, contextConditions)
+	return parsedMetricConditions{
+		dataPointConditions: parsedConditions,
+		telemetrySettings:   pc.Settings,
+		errorMode:           errorMode,
+		action:              contextConditions.Action,
+	}, nil
 }
 
 func (mpc *MetricParserCollection) ParseContextConditions(contextConditions ContextConditions) (MetricsConsumer, error) {

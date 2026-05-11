@@ -161,8 +161,7 @@ func WithLogParser(functions map[string]ottl.Factory[*ottllog.TransformContext])
 		if err != nil {
 			return err
 		}
-		converter := createLogConditionsConverter()
-		return ottl.WithParserCollectionContext(ottllog.ContextName, &logParser, ottl.WithConditionConverter(converter))(&lpc.ParserCollection)
+		return ottl.WithParserCollectionContext(ottllog.ContextName, &logParser, ottl.WithConditionConverter(convertLogConditions))(&lpc.ParserCollection)
 	}
 }
 
@@ -204,21 +203,19 @@ func NewLogParserCollection(settings component.TelemetrySettings, options ...Log
 	return lpc, nil
 }
 
-func createLogConditionsConverter() ottl.ParsedConditionsConverter[*ottllog.TransformContext, parsedLogConditions] {
-	return func(pc *ottl.ParserCollection[parsedLogConditions], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottllog.TransformContext]) (parsedLogConditions, error) {
-		contextConditions, err := toContextConditions(conditions)
-		if err != nil {
-			return parsedLogConditions{}, err
-		}
-
-		errorMode := getErrorMode(pc, contextConditions)
-		return parsedLogConditions{
-			logConditions:     parsedConditions,
-			telemetrySettings: pc.Settings,
-			errorMode:         errorMode,
-			action:            contextConditions.Action,
-		}, nil
+func convertLogConditions(pc *ottl.ParserCollection[parsedLogConditions], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottllog.TransformContext]) (parsedLogConditions, error) {
+	contextConditions, err := toContextConditions(conditions)
+	if err != nil {
+		return parsedLogConditions{}, err
 	}
+
+	errorMode := getErrorMode(pc, contextConditions)
+	return parsedLogConditions{
+		logConditions:     parsedConditions,
+		telemetrySettings: pc.Settings,
+		errorMode:         errorMode,
+		action:            contextConditions.Action,
+	}, nil
 }
 
 // ParseContextConditions parses the given ContextConditions and returns a LogsConsumer.

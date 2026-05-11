@@ -161,8 +161,7 @@ func WithProfileParser(functions map[string]ottl.Factory[*ottlprofile.TransformC
 		if err != nil {
 			return err
 		}
-		converter := createProfileConditionsConverter()
-		return ottl.WithParserCollectionContext(ottlprofile.ContextName, &profileParser, ottl.WithConditionConverter(converter))(&ppc.ParserCollection)
+		return ottl.WithParserCollectionContext(ottlprofile.ContextName, &profileParser, ottl.WithConditionConverter(convertProfileConditions))(&ppc.ParserCollection)
 	}
 }
 
@@ -204,21 +203,19 @@ func NewProfileParserCollection(settings component.TelemetrySettings, options ..
 	return ppc, nil
 }
 
-func createProfileConditionsConverter() ottl.ParsedConditionsConverter[*ottlprofile.TransformContext, parsedProfileConditions] {
-	return func(pc *ottl.ParserCollection[parsedProfileConditions], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottlprofile.TransformContext]) (parsedProfileConditions, error) {
-		contextConditions, err := toContextConditions(conditions)
-		if err != nil {
-			return parsedProfileConditions{}, err
-		}
-
-		errorMode := getErrorMode(pc, contextConditions)
-		return parsedProfileConditions{
-			profileConditions: parsedConditions,
-			telemetrySettings: pc.Settings,
-			errorMode:         errorMode,
-			action:            contextConditions.Action,
-		}, nil
+func convertProfileConditions(pc *ottl.ParserCollection[parsedProfileConditions], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottlprofile.TransformContext]) (parsedProfileConditions, error) {
+	contextConditions, err := toContextConditions(conditions)
+	if err != nil {
+		return parsedProfileConditions{}, err
 	}
+
+	errorMode := getErrorMode(pc, contextConditions)
+	return parsedProfileConditions{
+		profileConditions: parsedConditions,
+		telemetrySettings: pc.Settings,
+		errorMode:         errorMode,
+		action:            contextConditions.Action,
+	}, nil
 }
 
 func (ppc *ProfileParserCollection) ParseContextConditions(contextConditions ContextConditions) (ProfilesConsumer, error) {
