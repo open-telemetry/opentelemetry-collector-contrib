@@ -23,7 +23,7 @@ import (
 const (
 	schemeName = "s3"
 	// Pattern for an AWS S3 virtual-hosted-style uri
-	s3AWSPattern = `^s3:\/\/([a-z0-9\.\-]{3,63})\.s3\.([a-z0-9\-]+)\.amazonaws\.com\/.`
+	s3AWSPattern = `^s3:\/\/([a-z0-9\.\-]{3,63})\.s3(?:-fips)?(?:\.dualstack)?\.([a-z0-9\-]+)\.(api\.amazonwebservices\.com\.cn|api\.amazonwebservices\.eu|api\.cloud-aws\.adc-e\.uk|api\.aws\.hci\.ic\.gov|amazonaws\.com\.cn|cloud\.adc-e\.uk|api\.aws\.scloud|api\.aws\.ic\.gov|csp\.hci\.ic\.gov|sc2s\.sgov\.gov|amazonaws\.com|amazonaws\.eu|c2s\.ic\.gov|api\.aws)\/.`
 )
 
 var s3AWSRegexp = regexp.MustCompile(s3AWSPattern)
