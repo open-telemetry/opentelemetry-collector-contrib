@@ -15,7 +15,7 @@
 
 ## Summary
 
-This package provides a `ConfigMapProvider` implementation for S3 (`s3provider`) that allows the Collector to load configuration by fetching config objects from Amazon S3 or any S3-compatible storage service.
+This package provides a `ConfigMapProvider` implementation for Amazon S3 (`s3provider`) that allows the Collector to load configuration by fetching config objects from Amazon S3 or any Amazon S3-compatible storage service.
 
 ## How it works
 
