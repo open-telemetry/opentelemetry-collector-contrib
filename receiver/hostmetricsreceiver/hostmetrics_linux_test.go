@@ -33,6 +33,7 @@ func TestLoadConfigRootPath(t *testing.T) {
 	expectedConfig.RootPath = "testdata"
 	f := cpuscraper.NewFactory()
 	cpuScraperCfg := f.CreateDefaultConfig()
+	cpuScraperCfg.(*cpuscraper.Config).SetRootPath(expectedConfig.RootPath)
 	expectedConfig.Scrapers = map[component.Type]component.Config{f.Type(): cpuScraperCfg}
 	assert.Equal(t, expectedConfig, cfg)
 	expectedEnvMap := common.EnvMap{
