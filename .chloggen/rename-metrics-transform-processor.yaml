@@ -1,6 +1,0 @@
-change_type: deprecation
-component: processor/metrics_transform
-note: Rename processor type from `metricstransform` to `metrics_transform`
-issues: [45339]
-subtext:
-change_logs: [user]

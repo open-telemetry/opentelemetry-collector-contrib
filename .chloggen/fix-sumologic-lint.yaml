@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: extension/sumologic
-note: Fix variable shadowing and formatting issues in tests.
-issues: [46602]
-sub_components: []

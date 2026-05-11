@@ -1,5 +1,0 @@
-change_type: deprecation
-component: connector/round_robin
-note: Rename component type from `roundrobin` to `round_robin` to follow snake_case naming convention. The old name is kept as a deprecated alias.
-issues: [48021]
-change_logs: [user]
