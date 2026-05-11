@@ -171,6 +171,18 @@ behaviours, which may be configured through the following settings:
 - `mapping`:
   - `mode` (DEPRECATED): The mapping mode if supplied via config file is ignored. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead. If not specified via these methods, the default mapping mode is `otel`.
   - `allowed_modes` (defaults to all mapping modes): A list of allowed mapping modes.
+  - `require_data_stream` (optional): Overrides whether `require_data_stream` is added to logs, metrics, and traces bulk action metadata. When unset, the exporter preserves the default behaviour: `otel` and `ecs` mapping modes set `require_data_stream: true`, while `none`, `raw`, and `bodymap` do not. Set this to `false` when using ECS/OTel mapping modes with plain indices on backends that reject `require_data_stream`, including AWS Elasticsearch 7.10.2 OSS. This setting does not change the transport format and does not select the mapping mode; use the `elastic.mapping.mode` scope attribute or `X-Elastic-Mapping-Mode` for that. Profiles keep their existing data-stream behaviour.
+
+Example for targeting a plain index with a backend that rejects `require_data_stream`:
+
+```yaml
+exporters:
+  elasticsearch:
+    endpoints: [https://elasticsearch:9200]
+    logs_index: sawmills_qa
+    mapping:
+      require_data_stream: false
+```
 
 The mapping mode can be controlled via the client metadata key `X-Elastic-Mapping-Mode`,
 e.g. via HTTP headers, gRPC metadata.

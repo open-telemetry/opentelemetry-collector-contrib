@@ -548,7 +548,7 @@ func (b *bulkIndexers) start(
 	}
 
 	for _, mode := range allowedMappingModes {
-		requireDataStream := mode == MappingOTel || mode == MappingECS
+		requireDataStream := requireDataStreamForSignalMappingMode(cfg, mode)
 		modeSpecificErrorHintFunc := func(index, errorType string) string {
 			return getErrorHint(mode, index, errorType)
 		}
@@ -572,6 +572,13 @@ func (b *bulkIndexers) start(
 	profilingExecutables := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
 	b.profilingExecutables = &wgTrackingBulkIndexer{bulkIndexer: profilingExecutables, wg: &b.wg}
 	return nil
+}
+
+func requireDataStreamForSignalMappingMode(cfg *Config, mode MappingMode) bool {
+	if cfg.Mapping.RequireDataStream != nil {
+		return *cfg.Mapping.RequireDataStream
+	}
+	return mode == MappingOTel || mode == MappingECS
 }
 
 func (b *bulkIndexers) shutdown(ctx context.Context) error {

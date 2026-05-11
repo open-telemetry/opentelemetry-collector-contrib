@@ -336,6 +336,65 @@ func TestExporterLogs(t *testing.T) {
 		assert.JSONEq(t, `{"create":{"_index":"logs-generic-default","require_data_stream":true}}`, string(docs[0].Action))
 	})
 
+	t.Run("publish with mapping require_data_stream override", func(t *testing.T) {
+		boolPtr := func(v bool) *bool {
+			return &v
+		}
+
+		tests := []struct {
+			name                     string
+			mappingMode              string
+			requireDataStream        *bool
+			wantRequireDataStreamSet bool
+		}{
+			{
+				name:                     "ecs default",
+				mappingMode:              "ecs",
+				wantRequireDataStreamSet: true,
+			},
+			{
+				name:              "ecs explicit false",
+				mappingMode:       "ecs",
+				requireDataStream: boolPtr(false),
+			},
+			{
+				name:              "otel explicit false",
+				mappingMode:       "otel",
+				requireDataStream: boolPtr(false),
+			},
+			{
+				name:                     "none explicit true",
+				mappingMode:              "none",
+				requireDataStream:        boolPtr(true),
+				wantRequireDataStreamSet: true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.RequireDataStream = tt.requireDataStream
+				})
+				logs := plog.NewLogs()
+				logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("hello world")
+				ctx := client.NewContext(
+					t.Context(),
+					client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {tt.mappingMode}})},
+				)
+				mustSendLogsWithCtx(ctx, t, exporter, logs)
+
+				docs := rec.WaitItems(1)
+				assert.Equal(t, tt.wantRequireDataStreamSet, gjson.GetBytes(docs[0].Action, "create.require_data_stream").Exists())
+			})
+		}
+	})
+
 	t.Run("publish with elasticsearch.index", func(t *testing.T) {
 		rec := newBulkRecorder()
 		index := "someindex"
