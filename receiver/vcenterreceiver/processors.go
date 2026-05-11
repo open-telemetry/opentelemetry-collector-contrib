@@ -65,7 +65,7 @@ func (v *vcenterMetricScraper) processDatastores(
 	dc *mo.Datacenter,
 	dcStats *datacenterStats,
 ) {
-	for _, ds := range v.scrapeData.datastores {
+	for _, ds := range v.scrapeData.datastoresByID {
 		v.buildDatastoreMetrics(ts, dc, ds)
 		dcStats.DatastoreCount++
 		dcStats.DiskCapacity += ds.Summary.Capacity
@@ -210,6 +210,17 @@ func (v *vcenterMetricScraper) buildHostMetrics(
 		}
 	}
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+
+	for dsID, dsPerfMetrics := range v.scrapeData.hostDatastorePerfMetricsByRefID[hs.Reference().Value] {
+		ds := v.scrapeData.datastoresByID[dsID]
+		if ds == nil {
+			v.logger.Info("unknown datastore of ID " + dsID)
+			continue
+		}
+		rb := v.createHostDatastoreResourceBuilder(dc, cr, hs, ds)
+		v.recordHostDatastorePerformanceMetrics(dsPerfMetrics, dsID)
+		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
 
 	return vmRefToComputeRef, nil
 }
