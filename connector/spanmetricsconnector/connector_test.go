@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc/metadata"
 
+	spanmetricsmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 )
@@ -868,9 +869,9 @@ func TestConsumeMetricsErrors(t *testing.T) {
 
 func TestConsumeTraces(t *testing.T) {
 	// enable it
-	require.NoError(t, featuregate.GlobalRegistry().Set(excludeResourceMetrics.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.ID(), false))
 	}()
 
 	t.Parallel()
@@ -1014,9 +1015,9 @@ func TestConsumeTraces(t *testing.T) {
 			// Override the default no-op consumer with metrics sink for testing.
 			p.metricsConsumer = mcon
 			if tc.statusCodeFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(useOtelStatusCodeAttribute.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.SpanmetricsStatusCodeConventionUseOtelPrefixFeatureGate.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(useOtelStatusCodeAttribute.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.SpanmetricsStatusCodeConventionUseOtelPrefixFeatureGate.ID(), false))
 				}()
 			}
 
@@ -1214,10 +1215,10 @@ func TestAddResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Save and restore the feature gate state
-			previousValue := excludeResourceMetrics.IsEnabled()
-			require.NoError(t, featuregate.GlobalRegistry().Set(excludeResourceMetrics.ID(), tt.featureGateEnabled))
+			previousValue := spanmetricsmetadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.ID(), tt.featureGateEnabled))
 			defer func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(excludeResourceMetrics.ID(), previousValue))
+				require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.ID(), previousValue))
 			}()
 
 			// Create a custom config with AddResourceAttributes
@@ -1302,11 +1303,11 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 		featureGateEnabled bool
 	}{
 		{
-			dsc:                fmt.Sprintf("%s enabled", legacyMetricNamesFeatureGateID),
+			dsc:                fmt.Sprintf("%s enabled", spanmetricsmetadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.ID()),
 			featureGateEnabled: true,
 		},
 		{
-			dsc:                fmt.Sprintf("%s disabled", legacyMetricNamesFeatureGateID),
+			dsc:                fmt.Sprintf("%s disabled", spanmetricsmetadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.ID()),
 			featureGateEnabled: false,
 		},
 	}
@@ -1315,10 +1316,10 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.dsc, func(t *testing.T) {
 			// Set feature gate value
-			previousValue := legacyMetricNamesFeatureGate.IsEnabled()
-			require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), tc.featureGateEnabled))
+			previousValue := spanmetricsmetadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.ID(), tc.featureGateEnabled))
 			defer func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), previousValue))
+				require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.ID(), previousValue))
 			}()
 
 			p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false, excludeDimensions...)
@@ -1910,9 +1911,9 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 
 func TestTimestampsForUninterruptedStream(t *testing.T) {
 	// enable it
-	require.NoError(t, featuregate.GlobalRegistry().Set(excludeResourceMetrics.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.ID(), false))
 	}()
 
 	tests := []struct {
@@ -2562,10 +2563,10 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &connectorImp{config: tt.config, instanceID: instanceID}
 			if !tt.includeCollectorInstanceID {
-				require.NoError(t, featuregate.GlobalRegistry().Set(includeCollectorInstanceID.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsIncludeCollectorInstanceIDFeatureGate.ID(), false))
 			}
 			defer func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(includeCollectorInstanceID.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsIncludeCollectorInstanceIDFeatureGate.ID(), true))
 			}()
 
 			span := ptrace.NewSpan()
