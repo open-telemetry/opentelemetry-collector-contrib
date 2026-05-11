@@ -99,6 +99,9 @@ properties:
     description: If > 0, periodically re-run detection for all configured detectors. When 0 (default), no periodic refresh occurs.
     type: string
     format: duration
+  retry:
+    description: Retry controls optional retry/backoff for all detectors on startup. Disabled by default; enable to wait for slow metadata endpoints.
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
 allOf:
   - $ref: detector_config
   - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
