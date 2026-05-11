@@ -89,25 +89,51 @@ extensions:
 
 ## Routing CloudWatch subscription-filter events to other encodings
 
-When `format: cloudwatch` is set, the extension can route incoming CloudWatch
-Logs subscription-filter events to **different inner encoding extensions** based
-on the event's `logGroup` and/or `logStream`. This lets a single Lambda or
-Firehose receiver subscribed to multiple log groups dispatch each group's events
-to the appropriate decoder, instead of running a separate receiver per group.
+When `format: cloudwatch` is set, the extension can route incoming events to
+different inner encoding extensions based on the event's `logGroup` and/or
+`logStream`. A single Lambda or Firehose receiver subscribed to multiple log
+groups can dispatch each group's events to the appropriate decoder, instead of
+running a separate receiver per group.
 
-Routing is configured via the nested `cloudwatch.streams` list. Each entry
-is an object with:
+Routing decisions are made **per envelope**, which means CloudWatch payloads
+that aggregate multiple envelopes from different log groups (common with
+Firehose) are dispatched correctly:
+each envelope is matched independently against the routing table.
 
-| Field                | Description                                                                                                                       |
-|----------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| `name`               | Required. Identifies the route for diagnostics and is the lookup key for default patterns.                                        |
-| `encoding`           | Required. The component ID of an inner extension that implements `encoding.LogsUnmarshalerExtension`.                             |
-| `log_group_pattern`  | Optional. Pattern matched against the event's `logGroup`.                                                                         |
-| `log_stream_pattern` | Optional. Pattern matched against the event's `logStream`.                                                                        |
+Routing is configured via the nested `cloudwatch.streams` list. Each entry is
+an object with:
 
-A route must set at least one of `log_group_pattern` / `log_stream_pattern`,
+| Field                | Description                                                                                                                         |
+|----------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `name`               | Required. Identifies the stream for diagnostics and is the lookup key for default patterns and payload mode.                        |
+| `encoding`           | Required. The component ID of an inner encoding extension that implements `plog.Unmarshaler`.                                       |
+| `log_group_pattern`  | Optional. Pattern matched against the event's `logGroup`.                                                                           |
+| `log_stream_pattern` | Optional. Pattern matched against the event's `logStream`.                                                                          |
+| `payload`            | Optional. `message` (default for most names) or `envelope` (default for `vpcflow` and `cloudtrail`). See [Payload modes](#payload-modes). |
+
+A stream must set at least one of `log_group_pattern` / `log_stream_pattern`,
 **or** use a `name` that has a built-in default (see table below). Explicit
-patterns always take precedence over defaults.
+values always take precedence over defaults.
+
+### Payload modes
+
+The `payload` field controls what the inner encoding receives when this stream
+matches.
+
+- **`message`** — for each `logEvent` in the matched envelope, the inner
+  encoding receives only the `event.message` bytes. The subscription-filter
+  unmarshaler attaches `cloud.provider`, `cloud.account.id`, `cloud.region`,
+  `aws.log.group.names`, and `aws.log.stream.names` to the inner's output and
+  back-fills any log record whose timestamp is unset, using the CloudWatch
+  event timestamp. Use this when the inner encoding expects a single record
+  per call (e.g. line-delimited JSON formats like WAF).
+- **`envelope`** — the inner encoding receives the entire CloudWatch
+  subscription envelope's raw bytes once. The inner is responsible for parsing
+  the envelope, iterating events, and attaching its own resource attributes;
+  the unmarshaler does not enrich or back-fill in this mode. Use this when
+  the inner encoding has its own CloudWatch-envelope-aware code path
+  (`cloudtrail` and `vpcflow` do via their internal `fromCloudWatch`
+  handlers).
 
 ### Pattern syntax
 
@@ -119,36 +145,45 @@ may be:
 - an affix wildcard within a single segment: `foo*`, `*foo`, or `*foo*`
 
 Mid-segment globs such as `foo*bar` are not supported. The bare pattern `*`
-acts as a catch-all.
+acts as a catch-all. The target may have extra trailing segments beyond the
+pattern's length — patterns are prefix-style, so `/aws/eks/*` matches both
+`/aws/eks/my-cluster` and `/aws/eks/my-cluster/audit`.
 
-### Default patterns
+### Default patterns and payload modes
 
-For known names the corresponding default pattern is applied at start time
-when the user supplied none:
+For known names the corresponding defaults are applied at start time when the
+user did not supply them:
 
-| `name`       | Default field        | Default pattern                  |
-|--------------|----------------------|----------------------------------|
-| `vpcflow`    | `log_stream_pattern` | `eni-*`                          |
-| `cloudtrail` | `log_stream_pattern` | `*_CloudTrail_*`                 |
-| `lambda`     | `log_group_pattern`  | `/aws/lambda/*`                  |
-| `waf`        | `log_group_pattern`  | `aws-waf-logs-*`                 |
-| `rds`        | `log_group_pattern`  | `/aws/rds/instance/*/*`          |
-| `eks`        | `log_group_pattern`  | `/aws/eks/*`                     |
-| `apigateway` | `log_group_pattern`  | `API-Gateway-Execution-Logs_*`   |
+| `name`       | Default field        | Default pattern                  | Default `payload` |
+|--------------|----------------------|----------------------------------|-------------------|
+| `vpcflow`    | `log_stream_pattern` | `eni-*`                          | `envelope`        |
+| `cloudtrail` | `log_stream_pattern` | `*_CloudTrail_*`                 | `envelope`        |
+| `lambda`     | `log_group_pattern`  | `/aws/lambda/*`                  | `message`         |
+| `waf`        | `log_group_pattern`  | `aws-waf-logs-*`                 | `message`         |
+| `rds`        | `log_group_pattern`  | `/aws/rds/instance/*/*`          | `message`         |
+| `eks`        | `log_group_pattern`  | `/aws/eks/*`                     | `message`         |
+| `apigateway` | `log_group_pattern`  | `API-Gateway-Execution-Logs_*`   | `message`         |
+
+`vpcflow` and `cloudtrail` default to `envelope` because the built-in
+encoders for those formats have CloudWatch-envelope-aware code paths. The
+rest default to `message` because their typical inner encoders expect a
+single record per call.
 
 ### Evaluation order
 
-Routes are sorted at start time; declaration order in YAML does not matter.
-The router evaluates routes in this order:
+Streams are sorted at start time; declaration order in YAML does not matter.
+The unmarshaler evaluates streams in this order:
 
 1. Catch-all entries (`*`) are evaluated last.
-2. Routes with a `log_group_pattern` are evaluated before routes that use only
-   `log_stream_pattern`.
+2. Streams with a `log_group_pattern` are evaluated before streams that use
+   only `log_stream_pattern`.
 3. Within each group, more-specific patterns (more literal segments, fewer
    wildcards) come before less-specific ones.
 
-The first matching route wins. If no route matches, the extension returns an
-error.
+The first matching stream wins. If no stream matches an envelope, the event
+falls back to the default subscription-filter behavior: each `event.message`
+is emitted as a log record body with CloudWatch resource attributes attached,
+exactly as if no routing were configured.
 
 ### Example: routing to built-in formats
 
@@ -170,11 +205,11 @@ extensions:
     cloudwatch:
       streams:
         - name: vpcflow
-          encoding: awslogs_encoding/vpcflow      # default log_stream_pattern: "eni-*"
+          encoding: awslogs_encoding/vpcflow      # defaults: log_stream_pattern "eni-*", payload envelope
         - name: cloudtrail
-          encoding: awslogs_encoding/cloudtrail   # default log_stream_pattern: "*_CloudTrail_*"
+          encoding: awslogs_encoding/cloudtrail   # defaults: log_stream_pattern "*_CloudTrail_*", payload envelope
         - name: lambda
-          encoding: awslogs_encoding/cw_default   # default log_group_pattern: "/aws/lambda/*"
+          encoding: awslogs_encoding/cw_default   # defaults: log_group_pattern "/aws/lambda/*", payload message
         - name: catchall
           log_group_pattern: "*"
           encoding: awslogs_encoding/cw_default
@@ -185,20 +220,9 @@ receivers:
       encoding: awslogs_encoding/cw_router
 ```
 
-### Inner encoding contract
-
-When a route matches, the router hands the **decompressed CloudWatch
-subscription envelope bytes** to the matched inner encoding's `UnmarshalLogs`.
-The inner is responsible for parsing the envelope and producing log records.
-
-The built-in `cloudwatch`, `cloudtrail`, and `vpcflow` formats all accept
-CloudWatch subscription envelopes as input, so they can be wired in directly.
-Any third-party encoding extension that accepts the same envelope format works
-the same way.
-
-The router uses [`tidwall/gjson`](https://github.com/tidwall/gjson) to peek
-`logGroup` and `logStream` from the envelope without fully parsing it. The
-inner encoding parses the envelope itself.
+Extensions referenced from `cloudwatch.streams` are declared as dependencies
+via [`extensioncapabilities.Dependent`](https://pkg.go.dev/go.opentelemetry.io/collector/extension/extensioncapabilities#Dependent),
+so the collector starts them before this extension.
 
 ## Log Format Identification
 
