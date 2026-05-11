@@ -304,6 +304,15 @@ func TestConfig(t *testing.T) {
 			expected:   defaultRawCfg,
 		},
 		{
+			id:         component.NewIDWithName(metadata.Type, "require_data_stream_false"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"http://localhost:9200"}
+				requireDataStream := false
+				cfg.Mapping.RequireDataStream = &requireDataStream
+			}),
+		},
+		{
 			id:         component.NewIDWithName(metadata.Type, "cloudid"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {

@@ -83,6 +83,10 @@ elasticsearch/raw:
   endpoints: [http://localhost:9200]
   mapping:
     mode: raw
+elasticsearch/require_data_stream_false:
+  endpoints: [http://localhost:9200]
+  mapping:
+    require_data_stream: false
 elasticsearch/cloudid:
   cloudid: foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY=
 elasticsearch/confighttp_endpoint:

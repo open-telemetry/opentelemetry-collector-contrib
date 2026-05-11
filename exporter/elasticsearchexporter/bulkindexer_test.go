@@ -390,6 +390,68 @@ func TestNewBulkIndexer(t *testing.T) {
 	t.Cleanup(func() { bi.Close(t.Context()) })
 }
 
+func TestRequireDataStreamForSignalMappingMode(t *testing.T) {
+	boolPtr := func(v bool) *bool {
+		return &v
+	}
+
+	tests := []struct {
+		name string
+		cfg  func(*Config)
+		want map[MappingMode]bool
+	}{
+		{
+			name: "default",
+			want: map[MappingMode]bool{
+				MappingNone:    false,
+				MappingECS:     true,
+				MappingOTel:    true,
+				MappingRaw:     false,
+				MappingBodyMap: false,
+			},
+		},
+		{
+			name: "explicit false",
+			cfg: func(cfg *Config) {
+				cfg.Mapping.RequireDataStream = boolPtr(false)
+			},
+			want: map[MappingMode]bool{
+				MappingNone:    false,
+				MappingECS:     false,
+				MappingOTel:    false,
+				MappingRaw:     false,
+				MappingBodyMap: false,
+			},
+		},
+		{
+			name: "explicit true",
+			cfg: func(cfg *Config) {
+				cfg.Mapping.RequireDataStream = boolPtr(true)
+			},
+			want: map[MappingMode]bool{
+				MappingNone:    true,
+				MappingECS:     true,
+				MappingOTel:    true,
+				MappingRaw:     true,
+				MappingBodyMap: true,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			if tt.cfg != nil {
+				tt.cfg(cfg)
+			}
+
+			for mode, want := range tt.want {
+				assert.Equal(t, want, requireDataStreamForSignalMappingMode(cfg, mode), mode.String())
+			}
+		})
+	}
+}
+
 func TestGetErrorHint(t *testing.T) {
 	tests := []struct {
 		name      string

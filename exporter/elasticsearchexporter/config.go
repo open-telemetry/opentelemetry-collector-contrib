@@ -272,6 +272,11 @@ type MappingsSettings struct {
 	// If unspecified, all mapping modes are allowed.
 	AllowedModes []string `mapstructure:"allowed_modes"`
 
+	// RequireDataStream overrides whether the exporter adds require_data_stream
+	// to bulk action metadata. If unset, the exporter keeps its mapping-mode
+	// default: true for otel/ecs, false for none/raw/bodymap.
+	RequireDataStream *bool `mapstructure:"require_data_stream"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
