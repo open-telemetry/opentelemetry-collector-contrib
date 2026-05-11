@@ -24,7 +24,7 @@ func NewFactory() extension.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelBeta,
+		metadata.ExtensionStability,
 	)
 }
 
@@ -36,5 +36,6 @@ func createDefaultConfig() component.Config {
 }
 
 func createExtension(_ context.Context, settings extension.Settings, cfg component.Config) (extension.Extension, error) {
+	settings.Logger.Warn("kafkatopicsobserver is deprecated; use kafkareceiver with topic regex support instead")
 	return newObserver(settings.Logger, cfg.(*Config))
 }
