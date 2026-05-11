@@ -401,10 +401,15 @@ func (v *VPCFlowLogUnmarshaler) addToLogs(
 // a Size() int64 method or io.Seeker. If neither is available, the full payload
 // is read into a buffer first.
 func openParquetFile(reader io.Reader) (*parquet.File, error) {
+	// readerAtSizer is for readers that implement io.ReaderAt and have a
+	// Size() method, such as bytes.Reader.
 	type readerAtSizer interface {
 		io.ReaderAt
 		Size() int64
 	}
+	// readerAtSeeker is for readers that implement io.ReaderAt and io.Seeker,
+	// such as os.File. We can determine the size by seeking to the end, then
+	// reset to the start for reading.
 	type readerAtSeeker interface {
 		io.ReaderAt
 		io.Seeker
