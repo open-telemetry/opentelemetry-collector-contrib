@@ -10,37 +10,27 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// Message represents a Kafka message.
-//
-// Note that the topic and message headers are set by the Kafka exporter
-// code, and not by the marshaler.
-type Message struct {
-	// Key is an optional message key.
-	//
-	// Marshalers may set this, but it is generally expected that the
-	// Kafka producer will set this based partition_* configuration.
-	Key []byte
-
-	// Value is the message payload.
-	Value []byte
-}
-
-// TracesMarshaler marshals a ptrace.Traces into one or more Messages.
+// TracesMarshaler marshals a ptrace.Traces into zero or more messages,
+// invoking yield once per message with its key and value. Marshalers may
+// pass a nil key; the exporter will set it based on partition configuration.
 type TracesMarshaler interface {
-	MarshalTraces(traces ptrace.Traces) ([]Message, error)
+	MarshalTraces(traces ptrace.Traces, yield func(key, value []byte)) error
 }
 
-// MetricsMarshaler marshals a pmetric.Metrics into one or more Messages.
+// MetricsMarshaler marshals a pmetric.Metrics into zero or more messages,
+// invoking yield once per message with its key and value.
 type MetricsMarshaler interface {
-	MarshalMetrics(metrics pmetric.Metrics) ([]Message, error)
+	MarshalMetrics(metrics pmetric.Metrics, yield func(key, value []byte)) error
 }
 
-// LogsMarshaler marshals a plog.Logs into one or more Messages.
+// LogsMarshaler marshals a plog.Logs into zero or more messages,
+// invoking yield once per message with its key and value.
 type LogsMarshaler interface {
-	MarshalLogs(logs plog.Logs) ([]Message, error)
+	MarshalLogs(logs plog.Logs, yield func(key, value []byte)) error
 }
 
-// ProfilesMarshaler marshals a pprofile.Profiles into one or more Messages.
+// ProfilesMarshaler marshals a pprofile.Profiles into zero or more messages,
+// invoking yield once per message with its key and value.
 type ProfilesMarshaler interface {
-	MarshalProfiles(profiles pprofile.Profiles) ([]Message, error)
+	MarshalProfiles(profiles pprofile.Profiles, yield func(key, value []byte)) error
 }
