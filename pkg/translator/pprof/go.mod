@@ -8,7 +8,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/zeebo/xxh3 v1.1.0
 	go.opentelemetry.io/collector/pdata v1.58.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.151.1-0.20260511090956-a434cb0a4028
+	go.opentelemetry.io/collector/pdata/pprofile v0.152.0
 	go.opentelemetry.io/otel v1.43.0
 )
 

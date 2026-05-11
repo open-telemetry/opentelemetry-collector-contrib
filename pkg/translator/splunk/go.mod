@@ -34,19 +34,19 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.58.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.58.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.58.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.151.1-0.20260511090956-a434cb0a4028 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.152.0 // indirect
 	go.opentelemetry.io/collector/consumer v1.58.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.151.1-0.20260511090956-a434cb0a4028 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.152.0 // indirect
 	go.opentelemetry.io/collector/exporter v1.58.0 // indirect
-	go.opentelemetry.io/collector/exporter/exporterhelper v0.151.1-0.20260511090956-a434cb0a4028 // indirect
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.152.0 // indirect
 	go.opentelemetry.io/collector/extension v1.58.0 // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.151.1-0.20260511090956-a434cb0a4028 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.152.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.58.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.151.1-0.20260511090956-a434cb0a4028 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.151.1-0.20260511090956-a434cb0a4028 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.151.1-0.20260511090956-a434cb0a4028 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.152.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.152.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.152.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.58.0 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.151.1-0.20260511090956-a434cb0a4028 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.152.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
