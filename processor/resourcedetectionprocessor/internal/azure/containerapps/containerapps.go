@@ -28,13 +28,13 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	rb *metadata.ResourceBuilder
+	resourceAttributes metadata.ResourceAttributesConfig
 }
 
 // NewDetector creates a new Azure Container Apps detector.
 func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	return &Detector{rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
+	return &Detector{resourceAttributes: cfg.ResourceAttributes}, nil
 }
 
 // Detect returns Azure Container Apps resource attributes when the
@@ -46,12 +46,13 @@ func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 		return pcommon.NewResource(), "", nil
 	}
 
-	d.rb.SetCloudProvider(conventions.CloudProviderAzure.Value.AsString())
-	d.rb.SetCloudPlatform(conventions.CloudPlatformAzureContainerApps.Value.AsString())
-	d.rb.SetServiceName(appName)
+	rb := metadata.NewResourceBuilder(d.resourceAttributes)
+	rb.SetCloudProvider(conventions.CloudProviderAzure.Value.AsString())
+	rb.SetCloudPlatform(conventions.CloudPlatformAzureContainerApps.Value.AsString())
+	rb.SetServiceName(appName)
 	if replicaName := os.Getenv(containerAppReplicaNameEnvVar); replicaName != "" {
-		d.rb.SetServiceInstanceID(replicaName)
+		rb.SetServiceInstanceID(replicaName)
 	}
 
-	return d.rb.Emit(), conventions.SchemaURL, nil
+	return rb.Emit(), conventions.SchemaURL, nil
 }

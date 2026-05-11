@@ -35,6 +35,8 @@ func TestDetector_Detect_ContainerApp(t *testing.T) {
 }
 
 func TestDetector_Detect_NotContainerApp(t *testing.T) {
+	t.Setenv("CONTAINER_APP_NAME", "")
+	t.Setenv("CONTAINER_APP_REPLICA_NAME", "")
 	containerAppDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
 	res, schemaURL, err := containerAppDetector.Detect(t.Context())
