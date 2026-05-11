@@ -131,18 +131,9 @@ func s3URISplit(uri string) (bucket, region, key, endpoint string, err error) {
 		return "", "", "", "", fmt.Errorf("uri scheme must be %q, got %q", schemeName, u.Scheme)
 	}
 
-	if strings.Contains(u.Host, "amazonaws.com") {
-		// AWS virtual-hosted-style: s3://bucket.s3.region.amazonaws.com/key
-		if !s3AWSRegexp.MatchString(uri) {
-			return "", "", "", "", fmt.Errorf("s3 uri does not match the AWS format: %q", s3AWSPattern)
-		}
-		captureGroups := s3AWSRegexp.FindStringSubmatch(uri)
-		bucket, region = captureGroups[1], captureGroups[2]
+	if matches := s3AWSRegexp.FindStringSubmatch(uri); matches != nil {
+		bucket, region = matches[1], matches[2]
 		key = strings.TrimPrefix(u.Path, "/")
-		if bucket == "" || region == "" || key == "" {
-			// This error should never happen because of the regexp pattern
-			return "", "", "", "", errors.New("invalid s3-uri with empty fields")
-		}
 		return bucket, region, key, "", nil
 	}
 
