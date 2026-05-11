@@ -9,6 +9,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [VinozzZ, codeboten]
+    emeritus: [TylerHelmuth, fchikwekwe]
 
 tests:
   expect_consumer_error: true
