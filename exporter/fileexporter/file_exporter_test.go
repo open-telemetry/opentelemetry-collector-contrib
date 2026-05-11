@@ -1001,8 +1001,8 @@ func TestFileAppendLogsExporter(t *testing.T) {
 			}()
 
 			batches := []plog.Logs{testdata.GenerateLogsTwoLogRecordsSameResource(), testdata.GenerateLogsOneLogRecord()}
-			for i := 0; i < len(batches); i++ {
-				assert.NoError(t, fe.consumeLogs(t.Context(), batches[i]))
+			for i, batch := range batches {
+				assert.NoError(t, fe.consumeLogs(t.Context(), batch))
 				time.Sleep(2 * time.Second)
 
 				fi, err := os.Open(fe.writer.path)

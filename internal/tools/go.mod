@@ -97,7 +97,7 @@ require (
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/firefart/nonamedreturns v1.0.6 // indirect
-	github.com/fsnotify/fsnotify v1.9.0 // indirect
+	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/ghostiam/protogetter v0.3.17 // indirect
 	github.com/go-critic/go-critic v0.14.2 // indirect
@@ -279,14 +279,15 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.30.0 // indirect
 	go.opentelemetry.io/build-tools/issuegenerator v0.30.0 // indirect
 	go.opentelemetry.io/build-tools/multimod v0.30.0 // indirect
-	go.opentelemetry.io/collector/cmd/builder v0.151.1-0.20260501001745-24aecacf1c04 // indirect
-	go.opentelemetry.io/collector/cmd/mdatagen v0.151.1-0.20260501001745-24aecacf1c04 // indirect
-	go.opentelemetry.io/collector/component v1.57.1-0.20260501001745-24aecacf1c04 // indirect
-	go.opentelemetry.io/collector/confmap v1.57.1-0.20260501001745-24aecacf1c04 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.57.1-0.20260501001745-24aecacf1c04 // indirect
-	go.opentelemetry.io/collector/featuregate v1.57.1-0.20260501001745-24aecacf1c04 // indirect
-	go.opentelemetry.io/collector/filter v0.151.1-0.20260501001745-24aecacf1c04 // indirect
-	go.opentelemetry.io/collector/pdata v1.57.1-0.20260501001745-24aecacf1c04 // indirect
+	go.opentelemetry.io/collector/cmd/builder v0.151.1-0.20260511090956-a434cb0a4028 // indirect
+	go.opentelemetry.io/collector/cmd/mdatagen v0.151.1-0.20260511090956-a434cb0a4028 // indirect
+	go.opentelemetry.io/collector/component v1.57.1-0.20260511090956-a434cb0a4028 // indirect
+	go.opentelemetry.io/collector/confmap v1.57.1-0.20260511090956-a434cb0a4028 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.57.1-0.20260511090956-a434cb0a4028 // indirect
+	go.opentelemetry.io/collector/featuregate v1.57.1-0.20260511090956-a434cb0a4028 // indirect
+	go.opentelemetry.io/collector/filter v0.151.1-0.20260511090956-a434cb0a4028 // indirect
+	go.opentelemetry.io/collector/internal/schemagen v0.0.0-20260508160712-91b32efbbda0 // indirect
+	go.opentelemetry.io/collector/pdata v1.57.1-0.20260511090956-a434cb0a4028 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
