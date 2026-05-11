@@ -42,6 +42,22 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol.k8s.pod.association
+
+Number of pod associations' evaluations
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {resources} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| status | The status of the pod association operation | Str: ``success``, ``error`` | - |
+| pod_identifier | The source(s) used to identify the pod, formatted as 'from/name' (e.g., 'connection', 'resource_attribute/k8s.pod.ip'). Does not contain actual identifier values to avoid high cardinality. | Any Str | - |
+| otelcol.signal | The signal type the telemetry metric is associated with | Str: ``metrics``, ``traces``, ``logs``, ``profiles`` | - |
+
 ### otelcol.k8s.watcher.job.added
 
 Number of job add events received

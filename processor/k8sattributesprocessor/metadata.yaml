@@ -199,7 +199,7 @@ attributes:
       - logs
       - profiles
   pod_identifier:
-    description: The pod identifier value(s) used for the association attempt
+    description: The source(s) used to identify the pod, formatted as 'from/name' (e.g., 'connection', 'resource_attribute/k8s.pod.ip'). Does not contain actual identifier values to avoid high cardinality.
     type: string
   status:
     description: The status of the pod association operation
@@ -210,16 +210,9 @@ attributes:
 
 telemetry:
   metrics:
-    # The metric is not in use currently.
-    # It can be used once pod_identifier attribute is properly calculated
-    # ensuring that it doesn't cause high cardinality issues.
-    # If each unique value of pod_identifier creates a new metric time series,
-    # memory grows proportionally to the number of distinct pods seen over the collector's lifetime
-    # impacting the component's performance.
-    # See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47669
     k8s.pod.association:
       prefix: otelcol.
-      enabled: false
+      enabled: true
       description: Number of pod associations' evaluations
       stability: development
       unit: "{resources}"
