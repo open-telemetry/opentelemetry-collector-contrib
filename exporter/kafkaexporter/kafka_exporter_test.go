@@ -16,7 +16,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -125,41 +124,6 @@ func TestTracesPusher_ctx_Kgo(t *testing.T) {
 		}, record.Headers, "message headers mismatch")
 		assert.Nil(t, record.Key, "expected nil key for this test case")
 	})
-}
-
-func TestKafkaExporter_ComponentStatus(t *testing.T) {
-	statusChan := make(chan *componentstatus.Event, 1)
-	reporter := &kafkaTestStatusReporter{statusChan: statusChan}
-
-	t.Run("when status is OK", func(t *testing.T) {
-		config := createDefaultConfig().(*Config)
-		exp, fakeCluster := newKgoMockLogsExporter(t, *config, reporter, config.Logs.Topic)
-		t.Cleanup(func() { fakeCluster.Close() })
-
-		logs := testdata.GenerateLogs(1)
-		require.NoError(t, exp.exportData(t.Context(), logs))
-
-		select {
-		case event := <-statusChan:
-			assert.NoError(t, event.Err())
-			assert.Equal(t, componentstatus.StatusOK, event.Status())
-		default:
-			require.Fail(t, "successful export should report StatusOK")
-		}
-	})
-
-}
-
-type kafkaTestStatusReporter struct {
-	statusChan chan *componentstatus.Event
-}
-
-func (k *kafkaTestStatusReporter) Report(event *componentstatus.Event) {
-	k.statusChan <- event
-}
-
-func (*kafkaTestStatusReporter) GetExtensions() map[component.ID]component.Component {
-	return make(map[component.ID]component.Component)
 }
 
 func TestTracesPusher_conf_err(t *testing.T) {

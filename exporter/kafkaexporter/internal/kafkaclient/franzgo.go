@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kerr"
@@ -18,31 +19,45 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
-var _ kgo.HookBrokerConnect = (*statusReporter)(nil)
+var (
+	_ kgo.HookBrokerConnect    = (*statusReporter)(nil)
+	_ kgo.HookBrokerDisconnect = (*statusReporter)(nil)
+)
 
 type statusReporter struct {
-	host component.Host
+	host        component.Host
+	connections int
+	mu          sync.Mutex
 }
 
-func (r *statusReporter) OnBrokerConnect(_ kgo.BrokerMetadata, _ time.Duration, _ net.Conn, err error) {
-
-	// include any network failures
-	var opErr *net.OpError
-	if errors.As(err, &opErr) {
-		componentstatus.ReportStatus(r.host, componentstatus.NewRecoverableErrorEvent(err))
+func (s *statusReporter) OnBrokerConnect(_ kgo.BrokerMetadata, _ time.Duration, _ net.Conn, err error) {
+	var openConnections int
+	s.mu.Lock()
+	if err == nil {
+		s.connections++
+		s.mu.Unlock()
+		componentstatus.ReportStatus(s.host, componentstatus.NewEvent(componentstatus.StatusOK))
+		return
 	}
+	openConnections = s.connections
+	s.mu.Unlock()
 
-	if errors.Is(err, kerr.SaslAuthenticationFailed) ||
-		errors.Is(err, kerr.ClusterAuthorizationFailed) ||
-		errors.Is(err, kerr.UnsupportedVersion) ||
-		errors.Is(err, kerr.UnknownServerError) {
-		componentstatus.ReportStatus(r.host, componentstatus.NewRecoverableErrorEvent(err))
+	// only report recoverable errors if none of the brokers are connected
+	if openConnections <= 0 {
+		componentstatus.ReportStatus(s.host, componentstatus.NewRecoverableErrorEvent(err))
 	}
+}
 
+func (s *statusReporter) OnBrokerDisconnect(_ kgo.BrokerMetadata, _ net.Conn) {
+	s.mu.Lock()
+	if s.connections > 0 {
+		s.connections--
+	}
+	s.mu.Unlock()
 }
 
 func NewStatusReporter(host component.Host) *statusReporter {
-	return &statusReporter{host: host}
+	return &statusReporter{host: host, connections: 0}
 }
 
 // MessageTooLargeError wraps a MessageTooLarge Kafka error with the actual
@@ -127,7 +142,6 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error
 	var errs []error
 	for _, r := range result {
 		if r.Err == nil {
-			componentstatus.ReportStatus(p.host, componentstatus.NewEvent(componentstatus.StatusOK))
 			continue
 		}
 		var err error
