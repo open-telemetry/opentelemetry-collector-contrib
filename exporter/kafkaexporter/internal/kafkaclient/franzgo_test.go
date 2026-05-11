@@ -39,9 +39,9 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 
 	// Create a message larger than maxMessageBytes to trigger MessageTooLarge.
 	largeValue := []byte(strings.Repeat("x", maxMessageBytes*2))
-	msgs := []Message{{Topic: topic, Value: largeValue}}
+	records := []*kgo.Record{{Topic: topic, Value: largeValue}}
 
-	err = producer.ExportData(t.Context(), msgs)
+	err = producer.ExportData(t.Context(), records)
 	require.Error(t, err)
 
 	// Verify the error is permanent and wraps MessageTooLarge.
@@ -59,42 +59,43 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 	assert.Contains(t, err.Error(), "exceeds max")
 }
 
-func TestMakeFranzMessages_RecordHeaders(t *testing.T) {
-	recordHeaders := []RecordHeader{
-		{Name: "static-key-ONLY", Value: configopaque.String("static-value")},
-		{Name: "shared-key", Value: configopaque.String("static-value-override")},
-	}
+func TestExportData_AttachesHeaders(t *testing.T) {
+	const topic = "test-topic"
+	cluster, err := kfake.NewCluster(kfake.SeedTopics(1, topic))
+	require.NoError(t, err)
+	t.Cleanup(cluster.Close)
 
-	md := client.NewMetadata(map[string][]string{
+	kgoClient, err := kgo.NewClient(kgo.SeedBrokers(cluster.ListenAddrs()...))
+	require.NoError(t, err)
+	t.Cleanup(kgoClient.Close)
+
+	ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{
 		"dynamic-key-ONLY": {"dynamic-value"},
 		"shared-key":       {"dynamic-value-wins"},
-	})
-	ctx := client.NewContext(t.Context(), client.Info{Metadata: md})
+	})})
 
-	msgs := []Message{{Topic: "test-topic", Value: []byte("test-payload")}}
+	producer := NewFranzSyncProducer(kgoClient,
+		[]string{"dynamic-key-ONLY", "shared-key"},
+		[]RecordHeader{
+			{Name: "static-key-ONLY", Value: configopaque.String("static-value")},
+			{Name: "shared-key", Value: configopaque.String("static-value-override")},
+		},
+		1024*1024, nil,
+	)
 
-	// NewFranzSyncProducer will convert recordHeaders to kgo.RecordHeader and store them in the producer struct.
-	producer := NewFranzSyncProducer(nil, nil, recordHeaders, 0, nil)
-	metadataHeaders := metadataToHeaders(ctx, []string{"dynamic-key-ONLY", "shared-key"})
+	records := []*kgo.Record{{Topic: topic, Value: []byte("test-payload")}}
+	require.NoError(t, producer.ExportData(ctx, records))
 
-	records := makeFranzMessages(msgs, producer.recordHeaders, metadataHeaders)
-
-	require.Len(t, records, 1, "expected exactly 1 record")
-	record := records[0]
-
-	assert.Equal(t, "test-topic", record.Topic)
-	assert.Equal(t, []byte("test-payload"), record.Value)
-
-	require.Len(t, record.Headers, 4, "expected exactly 4 headers on the record")
-
-	headerMap := make(map[string]string)
-	for _, h := range record.Headers {
-		headerMap[h.Key] = string(h.Value)
+	require.Len(t, records[0].Headers, 4)
+	got := make(map[string]string, len(records[0].Headers))
+	for _, h := range records[0].Headers {
+		got[h.Key] = string(h.Value)
 	}
-
-	assert.Equal(t, "static-value", headerMap["static-key-ONLY"], "static headers unique key failed")
-	assert.Equal(t, "dynamic-value", headerMap["dynamic-key-ONLY"], "dynamic headers unique key failed")
-	assert.Equal(t, "dynamic-value-wins", headerMap["shared-key"], "Precedence for common key failed")
+	assert.Equal(t, map[string]string{
+		"static-key-ONLY":  "static-value",
+		"dynamic-key-ONLY": "dynamic-value",
+		"shared-key":       "dynamic-value-wins",
+	}, got)
 }
 
 func TestClose_UnblocksInFlightExportData(t *testing.T) {
@@ -114,10 +115,10 @@ func TestClose_UnblocksInFlightExportData(t *testing.T) {
 
 	producer := NewFranzSyncProducer(kgoClient, nil, nil, 1024*1024, clientCancel)
 
-	msgs := []Message{{Topic: "otlp_logs", Value: []byte("test")}}
+	records := []*kgo.Record{{Topic: "otlp_logs", Value: []byte("test")}}
 
 	exportDone := make(chan error, 1)
-	go func() { exportDone <- producer.ExportData(t.Context(), msgs) }()
+	go func() { exportDone <- producer.ExportData(t.Context(), records) }()
 
 	// Close must return and unblock ExportData within the deadline.
 	closeCtx, closeCancel := context.WithTimeout(t.Context(), 2*time.Second)
