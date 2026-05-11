@@ -272,7 +272,6 @@ func TestStart_NoRoutes(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, e.Start(t.Context(), componenttest.NewNopHost()))
-	assert.Nil(t, e.router, "router should remain nil when no routes are configured")
 }
 
 func TestStart_RoutesWithValidHost(t *testing.T) {
@@ -301,7 +300,6 @@ func TestStart_RoutesWithValidHost(t *testing.T) {
 		},
 	}
 	require.NoError(t, e.Start(t.Context(), host))
-	assert.NotNil(t, e.router, "router should be built when routes are configured")
 }
 
 func TestStart_RoutesWithMissingInner(t *testing.T) {
@@ -325,7 +323,6 @@ func TestStart_RoutesWithMissingInner(t *testing.T) {
 	err = e.Start(t.Context(), componenttest.NewNopHost())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")
-	assert.Nil(t, e.router)
 }
 
 func TestStart_RoutesWithSelfReference(t *testing.T) {
@@ -358,7 +355,6 @@ func TestStart_RoutesWithSelfReference(t *testing.T) {
 	err = e.Start(t.Context(), host)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "refers back to this extension")
-	assert.Nil(t, e.router)
 }
 
 // recordingInner records the bytes of every UnmarshalLogs call so tests can
@@ -371,7 +367,9 @@ type recordingInner struct {
 
 func (r *recordingInner) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	r.received = append(r.received, buf)
-	return plog.NewLogs(), nil
+	logs := plog.NewLogs()
+	logs.ResourceLogs().AppendEmpty()
+	return logs, nil
 }
 
 func (*recordingInner) NewLogsDecoder(_ io.Reader, _ ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
@@ -413,7 +411,6 @@ func startRoutedExtension(t *testing.T) (*encodingExtension, *recordingInner, *r
 		},
 	}
 	require.NoError(t, e.Start(t.Context(), host))
-	require.NotNil(t, e.router)
 
 	return e, cloudtrailInner, lambdaInner
 }

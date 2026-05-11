@@ -10,8 +10,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 // Payload modes for CloudWatchStream.Payload. See README for semantics.
@@ -188,102 +187,56 @@ func compareStreams(a, b CloudWatchStream, splitCache map[string][]string) int {
 	return comparePatternSpecificity(splitCache[patA], splitCache[patB])
 }
 
-// resolvedStream is a CloudWatchStream with patterns pre-split for fast matching
-// and the inner extension already resolved to a typed
-// LogsUnmarshalerExtension.
-type resolvedStream struct {
-	name           string
-	inner          encoding.LogsUnmarshalerExtension
-	logGroupParts  []string // nil if log_group_pattern is empty after defaults
-	logStreamParts []string // nil if log_stream_pattern is empty after defaults
-}
-
-// Router dispatches CloudWatch subscription-filter events to inner encoding
-// extensions based on logGroup / logStream pattern matching.
-type Router struct {
-	streams []resolvedStream
-}
-
-// NewRouter constructs a Router from validated routes. It applies defaults,
-// sorts routes by precedence, and resolves each stream's component.ID against
-// host.GetExtensions(), failing fast if any ID is missing, points at a
-// component that does not implement encoding.LogsUnmarshalerExtension, or
-// refers back to selfID (cycle).
-//
-// selfID is the component.ID of the extension that owns this router.
-func NewRouter(
+// resolveStreams applies defaults, sorts by precedence, and resolves each
+// stream's component.ID against host.GetExtensions().
+func resolveStreams(
 	streams []CloudWatchStream,
 	host component.Host,
 	selfID component.ID,
-) (*Router, error) {
+) ([]route, error) {
+	if len(streams) == 0 {
+		return nil, nil
+	}
 	sorted := sortStreams(streams)
 	extensions := host.GetExtensions()
 
-	resolved := make([]resolvedStream, 0, len(sorted))
-	for _, r := range sorted {
-		if r.Encoding == selfID {
-			return nil, fmt.Errorf(
+	var errs []error
+	routes := make([]route, 0, len(sorted))
+	for _, s := range sorted {
+		if s.Encoding == selfID {
+			errs = append(errs, fmt.Errorf(
 				"cloudwatch.streams[name=%q]: encoding %q refers back to this extension (cycle)",
-				r.Name, r.Encoding,
-			)
+				s.Name, s.Encoding,
+			))
+			continue
 		}
-
-		ext, ok := extensions[r.Encoding]
+		ext, ok := extensions[s.Encoding]
 		if !ok {
-			return nil, fmt.Errorf(
+			errs = append(errs, fmt.Errorf(
 				"cloudwatch.streams[name=%q]: encoding extension %q not found",
-				r.Name, r.Encoding,
-			)
+				s.Name, s.Encoding,
+			))
+			continue
 		}
-
-		inner, ok := ext.(encoding.LogsUnmarshalerExtension)
+		inner, ok := ext.(plog.Unmarshaler)
 		if !ok {
-			return nil, fmt.Errorf(
-				"cloudwatch.streams[name=%q]: extension %q does not implement encoding.LogsUnmarshalerExtension",
-				r.Name, r.Encoding,
-			)
+			errs = append(errs, fmt.Errorf(
+				"cloudwatch.streams[name=%q]: extension %q does not implement plog.Unmarshaler",
+				s.Name, s.Encoding,
+			))
+			continue
 		}
-
-		rr := resolvedStream{name: r.Name, inner: inner}
-		if r.LogGroupPattern != "" {
-			rr.logGroupParts = strings.Split(r.LogGroupPattern, "/")
+		r := route{name: s.Name, inner: inner, payload: s.Payload}
+		if s.LogGroupPattern != "" {
+			r.logGroupParts = strings.Split(s.LogGroupPattern, "/")
 		}
-		if r.LogStreamPattern != "" {
-			rr.logStreamParts = strings.Split(r.LogStreamPattern, "/")
+		if s.LogStreamPattern != "" {
+			r.logStreamParts = strings.Split(s.LogStreamPattern, "/")
 		}
-		resolved = append(resolved, rr)
+		routes = append(routes, r)
 	}
-
-	return &Router{streams: resolved}, nil
-}
-
-// Match returns the inner encoding extension that should handle a CloudWatch
-// subscription-filter event with the given logGroup and logStream values. It
-// iterates routes in precedence order; the first route with a matching
-// pattern wins. Within a single route, log_group_pattern is checked before
-// log_stream_pattern.
-//
-// The route's name is returned alongside the inner extension for logging /
-// observability. If no route matches, an error is returned.
-func (r *Router) Match(logGroup, logStream string) (encoding.LogsUnmarshalerExtension, string, error) {
-	var groupParts, streamParts []string
-	for _, rr := range r.streams {
-		if rr.logGroupParts != nil {
-			if groupParts == nil {
-				groupParts = strings.Split(logGroup, "/")
-			}
-			if matchPrefixWithWildcard(groupParts, rr.logGroupParts) {
-				return rr.inner, rr.name, nil
-			}
-		}
-		if rr.logStreamParts != nil {
-			if streamParts == nil {
-				streamParts = strings.Split(logStream, "/")
-			}
-			if matchPrefixWithWildcard(streamParts, rr.logStreamParts) {
-				return rr.inner, rr.name, nil
-			}
-		}
+	if len(errs) > 0 {
+		return nil, errors.Join(errs...)
 	}
-	return nil, "", fmt.Errorf("no route matches logGroup=%q logStream=%q", logGroup, logStream)
+	return routes, nil
 }
