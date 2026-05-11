@@ -95,7 +95,7 @@ func (p *blobEventHandler) processBlob(ctx context.Context, containerName, blobN
 	}
 
 	if err := p.blobClient.deleteBlob(ctx, containerName, blobName); err != nil {
-		p.logger.Error("failed to delete blob", zap.Error(err))
+		p.logger.Error("failed to delete blob", zap.String("container", containerName), zap.String("blob", blobName), zap.Error(err))
 	}
 }
 
