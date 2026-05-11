@@ -213,7 +213,7 @@ func TestNormalizeAttributes(t *testing.T) {
 		{
 			name:           "string target routed through transformValue",
 			lookup:         map[string]string{"src.op": "gen_ai.operation.name"},
-			transformValue: openinference.TransformValue,
+			transformValue: openinference.Transformer{},
 			setup: func(attrs pcommon.Map) {
 				attrs.PutStr("src.op", "LLM")
 			},

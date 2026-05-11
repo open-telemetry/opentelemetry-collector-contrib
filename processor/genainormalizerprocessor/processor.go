@@ -14,9 +14,13 @@ import (
 )
 
 // valueTransformer applies optional value-level normalization once an
-// attribute has been renamed to its target key. Sources that do not need
-// value-level normalization may leave this nil.
-type valueTransformer func(targetKey, value string) string
+// attribute has been renamed to its target key. Each built-in source exposes
+// a type that implements this interface; the compiler enforces the signature
+// per source package. Sources that do not need value-level normalization may
+// leave this nil on the sourceNormalizer.
+type valueTransformer interface {
+	TransformValue(targetKey, value string) string
+}
 
 // sourceNormalizer holds per-source state used during normalization.
 type sourceNormalizer struct {
@@ -27,8 +31,9 @@ type sourceNormalizer struct {
 }
 
 // newSourceNormalizer wires up a sourceNormalizer from a validated Source
-// config. Returns a zero-valued normalizer for unknown source names; Config
-// validation rejects those at startup.
+// config. If the source name is not recognized, the returned normalizer has a
+// nil lookup table and acts as a no-op; Config validation rejects unknown
+// source names at startup, so that branch is unreachable in practice.
 func newSourceNormalizer(src Source) sourceNormalizer {
 	sn := sourceNormalizer{
 		removeOriginals: src.RemoveOriginals,
@@ -36,7 +41,7 @@ func newSourceNormalizer(src Source) sourceNormalizer {
 	}
 	if src.Name == SourceOpenInference {
 		sn.lookupTable = openinference.LookupTable
-		sn.transformValue = openinference.TransformValue
+		sn.transformValue = openinference.Transformer{}
 	}
 	return sn
 }
@@ -144,5 +149,5 @@ func (sn *sourceNormalizer) applyValueTransform(targetKey, value string) string 
 	if sn.transformValue == nil {
 		return value
 	}
-	return sn.transformValue(targetKey, value)
+	return sn.transformValue.TransformValue(targetKey, value)
 }
