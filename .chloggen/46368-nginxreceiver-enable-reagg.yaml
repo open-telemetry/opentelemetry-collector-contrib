@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/nginx
+
+note: "Enable re-aggregation feature for the nginx receiver by classifying the `state` attribute with `requirement_level: recommended` and setting `reaggregation_enabled: true`."
+
+issues: [46368]
+
+subtext:
+
+change_logs: []
