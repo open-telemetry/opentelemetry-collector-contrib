@@ -9,12 +9,10 @@ package otelsemconv // import "github.com/open-telemetry/opentelemetry-collector
 
 import conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
-// SchemaURL is stamped onto ScopeSpans.schema_url when a mapping fires and
-// the scope has no existing schema_url.
+// SchemaURL is the OTel semconv schema URL for the targeted version.
 const SchemaURL = conventions.SchemaURL
 
-// GenAI attribute keys used by the mapping tables and value-transform
-// dispatch. Kept as plain strings so they can be used directly as pdata keys.
+// GenAI attribute keys as plain strings for use as pdata keys.
 var (
 	GenAIOperationName     = string(conventions.GenAIOperationNameKey)
 	GenAIUsageInputTokens  = string(conventions.GenAIUsageInputTokensKey)

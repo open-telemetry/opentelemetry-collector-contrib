@@ -13,11 +13,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
 )
 
-// valueTransformer applies optional value-level normalization once an
-// attribute has been renamed to its target key. Each built-in source exposes
-// a type that implements this interface; the compiler enforces the signature
-// per source package. Sources that do not need value-level normalization may
-// leave this nil on the sourceNormalizer.
+// valueTransformer applies value-level normalization after an attribute is
+// renamed. Sources that do not need value normalization may leave this nil.
 type valueTransformer interface {
 	TransformValue(targetKey, value string) string
 }
@@ -31,9 +28,8 @@ type sourceNormalizer struct {
 }
 
 // newSourceNormalizer wires up a sourceNormalizer from a validated Source
-// config. If the source name is not recognized, the returned normalizer has a
-// nil lookup table and acts as a no-op; Config validation rejects unknown
-// source names at startup, so that branch is unreachable in practice.
+// config. Unknown source names produce a no-op normalizer; Config validation
+// rejects them upstream.
 func newSourceNormalizer(src Source) sourceNormalizer {
 	sn := sourceNormalizer{
 		removeOriginals: src.RemoveOriginals,
@@ -75,10 +71,6 @@ func (p *genaiNormalizerProcessor) processTraces(_ context.Context, td ptrace.Tr
 					scopeWrote = p.sources[s].normalizeAttributes(attrs) || scopeWrote
 				}
 			}
-			// Only stamp the schema_url when the scope does not already
-			// declare one. Overriding an existing schema_url is unsafe because
-			// non-GenAI attributes on the scope may still follow the original
-			// semantic conventions. Existing schema_url is preserved.
 			if scopeWrote && ss.SchemaUrl() == "" {
 				ss.SetSchemaUrl(otelsemconv.SchemaURL)
 			}

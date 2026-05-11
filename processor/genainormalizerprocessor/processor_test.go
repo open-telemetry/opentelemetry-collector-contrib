@@ -370,8 +370,6 @@ func TestProcessTraces_DoesNotModifyResourceSchemaURL(t *testing.T) {
 }
 
 func TestProcessTraces_IgnoresSpanEvents(t *testing.T) {
-	// Span events are intentionally untouched in this PR; signal-scoped
-	// configuration will be revisited before event/log/metric support lands.
 	p := &genaiNormalizerProcessor{
 		sources: []sourceNormalizer{
 			newNormalizer(map[string]string{"src.model": "dst.model"}, true, false),
@@ -434,9 +432,7 @@ func TestCreateTracesProcessor_RejectsInvalidConfig(t *testing.T) {
 }
 
 // TestNormalize_OpenInferenceEndToEnd exercises the real OpenInference
-// mapping table through createTracesProcessor. Machinery behavior is covered
-// by TestNormalizeAttributes with fixture tables; this test locks in the
-// data-table contract.
+// mapping table end-to-end through createTracesProcessor.
 func TestNormalize_OpenInferenceEndToEnd(t *testing.T) {
 	cfg := &Config{
 		Sources: []Source{{Name: SourceOpenInference, RemoveOriginals: true}},

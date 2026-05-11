@@ -37,8 +37,7 @@ func TransformValue(targetKey, value string) string {
 }
 
 // Transformer adapts the package-level TransformValue function to the
-// processor's valueTransformer interface. Carrying the function on a named
-// type lets the compiler enforce the signature contract per source package.
+// processor's valueTransformer interface.
 type Transformer struct{}
 
 // TransformValue implements the processor's valueTransformer interface.
