@@ -1,7 +1,7 @@
 change_type: bug_fix
 component: exporter/elasticsearch
 note: Allow overriding Elasticsearch bulk action require_data_stream metadata.
-issues: []
+issues: [7506]
 subtext: |-
   Adds mapping::require_data_stream so Sawmills can use ECS or OTel mapping
   with plain indices on Elasticsearch-compatible backends that reject the
