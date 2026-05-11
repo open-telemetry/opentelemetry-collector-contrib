@@ -4,7 +4,11 @@ type: kafkatopics_observer
 status:
   class: extension
   stability:
-    alpha: [extension]
+    deprecated: [extension]
+  deprecation:
+    extension:
+      migration: "Use the `kafkareceiver` with topic regex support instead. This component will be removed in a future release."
+      date: "2026-05-07"
   codeowners:
     active: [MovieStoreGuy]
   distributions: [contrib]
