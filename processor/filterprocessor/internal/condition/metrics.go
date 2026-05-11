@@ -284,7 +284,7 @@ func WithMetricParser(functions map[string]ottl.Factory[*ottlmetric.TransformCon
 		if err != nil {
 			return err
 		}
-		converter := createMetricConditionsConverter(mpc.action)
+		converter := createMetricConditionsConverter()
 		return ottl.WithParserCollectionContext(ottlmetric.ContextName, &metricParser, ottl.WithConditionConverter(converter))(&mpc.ParserCollection)
 	}
 }
@@ -295,7 +295,7 @@ func WithDataPointParser(functions map[string]ottl.Factory[*ottldatapoint.Transf
 		if err != nil {
 			return err
 		}
-		converter := createDataPointConditionsConverter(mpc.action)
+		converter := createDataPointConditionsConverter()
 		return ottl.WithParserCollectionContext(ottldatapoint.ContextName, &dataPointParser, ottl.WithConditionConverter(converter))(&mpc.ParserCollection)
 	}
 }
@@ -315,7 +315,7 @@ func WithMetricAction(action Action) MetricParserCollectionOption {
 
 func WithMetricCommonParsers(functions map[string]ottl.Factory[*ottlresource.TransformContext]) MetricParserCollectionOption {
 	return func(mpc *MetricParserCollection) error {
-		return withCommonParsers(functions, newMetricConditionsFromResource, newMetricConditionsFromScope, mpc.action)(&mpc.ParserCollection)
+		return withCommonParsers(functions, newMetricConditionsFromResource, newMetricConditionsFromScope)(&mpc.ParserCollection)
 	}
 }
 
@@ -338,7 +338,7 @@ func NewMetricParserCollection(settings component.TelemetrySettings, options ...
 	return mpc, nil
 }
 
-func createMetricConditionsConverter(defaultAction Action) ottl.ParsedConditionsConverter[*ottlmetric.TransformContext, parsedMetricConditions] {
+func createMetricConditionsConverter() ottl.ParsedConditionsConverter[*ottlmetric.TransformContext, parsedMetricConditions] {
 	return func(pc *ottl.ParserCollection[parsedMetricConditions], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottlmetric.TransformContext]) (parsedMetricConditions, error) {
 		contextConditions, err := toContextConditions(conditions)
 		if err != nil {
@@ -346,17 +346,16 @@ func createMetricConditionsConverter(defaultAction Action) ottl.ParsedConditions
 		}
 
 		errorMode := getErrorMode(pc, contextConditions)
-		action := getAction(defaultAction, contextConditions)
 		return parsedMetricConditions{
 			metricConditions:  parsedConditions,
 			telemetrySettings: pc.Settings,
 			errorMode:         errorMode,
-			action:            action,
+			action:            contextConditions.Action,
 		}, nil
 	}
 }
 
-func createDataPointConditionsConverter(defaultAction Action) ottl.ParsedConditionsConverter[*ottldatapoint.TransformContext, parsedMetricConditions] {
+func createDataPointConditionsConverter() ottl.ParsedConditionsConverter[*ottldatapoint.TransformContext, parsedMetricConditions] {
 	return func(pc *ottl.ParserCollection[parsedMetricConditions], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottldatapoint.TransformContext]) (parsedMetricConditions, error) {
 		contextConditions, err := toContextConditions(conditions)
 		if err != nil {
@@ -364,18 +363,21 @@ func createDataPointConditionsConverter(defaultAction Action) ottl.ParsedConditi
 		}
 
 		errorMode := getErrorMode(pc, contextConditions)
-		action := getAction(defaultAction, contextConditions)
 		return parsedMetricConditions{
 			dataPointConditions: parsedConditions,
 			telemetrySettings:   pc.Settings,
 			errorMode:           errorMode,
-			action:              action,
+			action:              contextConditions.Action,
 		}, nil
 	}
 }
 
 func (mpc *MetricParserCollection) ParseContextConditions(contextConditions ContextConditions) (MetricsConsumer, error) {
 	pc := &mpc.ParserCollection
+
+	if contextConditions.Action == "" {
+		contextConditions.Action = mpc.action
+	}
 
 	if contextConditions.Context != "" {
 		mc, err := pc.ParseConditionsWithContext(string(contextConditions.Context), contextConditions, true)
@@ -417,7 +419,7 @@ func (mpc *MetricParserCollection) ParseContextConditions(contextConditions Cont
 		dataPointConditions: dConditions,
 		telemetrySettings:   pc.Settings,
 		errorMode:           getErrorMode[parsedMetricConditions](pc, &contextConditions),
-		action:              getAction(mpc.action, &contextConditions),
+		action:              contextConditions.Action,
 	}
 
 	return newMetricsConsumer(&aggregatedConditions), nil

@@ -161,7 +161,7 @@ func WithProfileParser(functions map[string]ottl.Factory[*ottlprofile.TransformC
 		if err != nil {
 			return err
 		}
-		converter := createProfileConditionsConverter(ppc.action)
+		converter := createProfileConditionsConverter()
 		return ottl.WithParserCollectionContext(ottlprofile.ContextName, &profileParser, ottl.WithConditionConverter(converter))(&ppc.ParserCollection)
 	}
 }
@@ -181,7 +181,7 @@ func WithProfileAction(action Action) ProfileParserCollectionOption {
 
 func WithProfileCommonParsers(functions map[string]ottl.Factory[*ottlresource.TransformContext]) ProfileParserCollectionOption {
 	return func(ppc *ProfileParserCollection) error {
-		return withCommonParsers(functions, newProfileConditionsFromResource, newProfileConditionsFromScope, ppc.action)(&ppc.ParserCollection)
+		return withCommonParsers(functions, newProfileConditionsFromResource, newProfileConditionsFromScope)(&ppc.ParserCollection)
 	}
 }
 
@@ -204,7 +204,7 @@ func NewProfileParserCollection(settings component.TelemetrySettings, options ..
 	return ppc, nil
 }
 
-func createProfileConditionsConverter(defaultAction Action) ottl.ParsedConditionsConverter[*ottlprofile.TransformContext, parsedProfileConditions] {
+func createProfileConditionsConverter() ottl.ParsedConditionsConverter[*ottlprofile.TransformContext, parsedProfileConditions] {
 	return func(pc *ottl.ParserCollection[parsedProfileConditions], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottlprofile.TransformContext]) (parsedProfileConditions, error) {
 		contextConditions, err := toContextConditions(conditions)
 		if err != nil {
@@ -212,18 +212,21 @@ func createProfileConditionsConverter(defaultAction Action) ottl.ParsedCondition
 		}
 
 		errorMode := getErrorMode(pc, contextConditions)
-		action := getAction(defaultAction, contextConditions)
 		return parsedProfileConditions{
 			profileConditions: parsedConditions,
 			telemetrySettings: pc.Settings,
 			errorMode:         errorMode,
-			action:            action,
+			action:            contextConditions.Action,
 		}, nil
 	}
 }
 
 func (ppc *ProfileParserCollection) ParseContextConditions(contextConditions ContextConditions) (ProfilesConsumer, error) {
 	pc := &ppc.ParserCollection
+
+	if contextConditions.Action == "" {
+		contextConditions.Action = ppc.action
+	}
 
 	if contextConditions.Context != "" {
 		pConditions, err := pc.ParseConditionsWithContext(string(contextConditions.Context), contextConditions, true)
@@ -260,7 +263,7 @@ func (ppc *ProfileParserCollection) ParseContextConditions(contextConditions Con
 		profileConditions:  pConditions,
 		telemetrySettings:  pc.Settings,
 		errorMode:          getErrorMode[parsedProfileConditions](pc, &contextConditions),
-		action:             getAction(ppc.action, &contextConditions),
+		action:             contextConditions.Action,
 	}
 
 	return newProfilesConsumer(&aggregatedConditions), nil

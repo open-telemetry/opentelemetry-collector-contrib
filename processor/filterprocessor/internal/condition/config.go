@@ -86,10 +86,3 @@ func getErrorMode[T any](pc *ottl.ParserCollection[T], contextConditions *Contex
 	}
 	return errorMode
 }
-
-func getAction(defaultAction Action, contextConditions *ContextConditions) Action {
-	if contextConditions.Action != "" {
-		return contextConditions.Action
-	}
-	return defaultAction
-}
