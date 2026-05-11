@@ -41,7 +41,7 @@ type ClientConfig struct {
 	// ResolveCanonicalBootstrapServersOnly is ignored, and exists for
 	// backwards compatibility in config parsing.
 	//
-	// Deprecated [v0.152.0]: this field is a no-op since the migration to franz-go,
+	// Deprecated [v0.153.0]: this field is a no-op since the migration to franz-go,
 	// which has no direct equivalent to the associated Sarama config. This config
 	// will be removed in a future release.
 	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
@@ -418,7 +418,11 @@ type SASLConfig struct {
 	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER,
 	// SCRAM-SHA-256 or SCRAM-SHA-512).
 	Mechanism string `mapstructure:"mechanism"`
-	// SASL Protocol Version to be used, possible values are: (0, 1). Defaults to 0.
+	// Version is ignored, and exists for backwards compatibility in config parsing.
+	//
+	// Deprecated [v0.153.0]: this field is a no-op since the migration to franz-go,
+	// which negotiates the SASL handshake version automatically. This config will be
+	// removed in a future release.
 	Version int `mapstructure:"version"`
 	// AWSMSK holds configuration specific to AWS MSK.
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
