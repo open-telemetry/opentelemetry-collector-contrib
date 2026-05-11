@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 
 import (
 	"context"
@@ -13,27 +13,28 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
 
-type ParseLEEFArguments[K any] struct {
-	Target ottl.StringGetter[K]
+type parseLEEFArguments struct {
+	Target ottl.StringGetter[*ottllog.TransformContext]
 }
 
-func NewParseLEEFFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ParseLEEF", &ParseLEEFArguments[K]{}, createParseLEEFFunction[K])
+func newParseLEEFFactory() ottl.Factory[*ottllog.TransformContext] {
+	return ottl.NewFactory("parse_leef", &parseLEEFArguments{}, createParseLEEFFunction)
 }
 
-func createParseLEEFFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ParseLEEFArguments[K])
+func createParseLEEFFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottllog.TransformContext], error) {
+	args, ok := oArgs.(*parseLEEFArguments)
 	if !ok {
-		return nil, errors.New("ParseLEEFFactory args must be of type *ParseLEEFArguments[K]")
+		return nil, errors.New("parseLEEFFactory args must be of type *parseLEEFArguments")
 	}
 
 	return parseLEEF(args.Target), nil
 }
 
-func parseLEEF[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
-	return func(ctx context.Context, tCtx K) (any, error) {
+func parseLEEF(target ottl.StringGetter[*ottllog.TransformContext]) ottl.ExprFunc[*ottllog.TransformContext] {
+	return func(ctx context.Context, tCtx *ottllog.TransformContext) (any, error) {
 		source, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
@@ -48,17 +49,13 @@ func parseLEEF[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 }
 
 func parseLEEFMessage(message string) (pcommon.Map, error) {
-	// Handle optional syslog header by finding "LEEF:" in the message
-	// The syslog header (if present) precedes the LEEF header and is separated by a space
 	leefStart := strings.Index(message, "LEEF:")
 	if leefStart == -1 {
 		return pcommon.Map{}, errors.New("invalid LEEF message: 'LEEF:' not found")
 	}
 
-	// Extract just the LEEF portion (skip syslog header if present)
 	leefMessage := message[leefStart:]
 
-	// Find the first pipe to get the version field
 	firstPipe := strings.Index(leefMessage, "|")
 	if firstPipe == -1 {
 		return pcommon.Map{}, errors.New("invalid LEEF message: missing pipe delimiter in header")
@@ -70,7 +67,6 @@ func parseLEEFMessage(message string) (pcommon.Map, error) {
 		return pcommon.Map{}, err
 	}
 
-	// Parse the rest based on version
 	remainder := leefMessage[firstPipe+1:]
 
 	var header leefHeader
@@ -91,7 +87,6 @@ func parseLEEFMessage(message string) (pcommon.Map, error) {
 
 	header.version = version
 
-	// Parse attributes if present
 	var parsedAttrs map[string]any
 	if attributes != "" {
 		parsedAttrs = parseLEEFAttributes(attributes, header.delimiter)
@@ -123,8 +118,6 @@ func parseLEEFVersion(field string) (string, error) {
 }
 
 func parseLEEF1Header(remainder string) (leefHeader, string, error) {
-	// LEEF 1.0: Vendor|Product|Version|EventID|attributes
-	// Attributes are tab-delimited
 	parts := strings.SplitN(remainder, "|", 5)
 	if len(parts) < 4 {
 		return leefHeader{}, "", fmt.Errorf("invalid LEEF 1.0 header: expected at least 4 fields (vendor, product, version, eventID), got %d", len(parts))
@@ -135,7 +128,7 @@ func parseLEEF1Header(remainder string) (leefHeader, string, error) {
 		productName:    parts[1],
 		productVersion: parts[2],
 		eventID:        parts[3],
-		delimiter:      "\t", // LEEF 1.0 uses tab as default delimiter
+		delimiter:      "\t",
 	}
 
 	var attributes string
@@ -147,8 +140,6 @@ func parseLEEF1Header(remainder string) (leefHeader, string, error) {
 }
 
 func parseLEEF2Header(remainder string) (leefHeader, string, error) {
-	// LEEF 2.0: Vendor|Product|Version|EventID|Delimiter|attributes
-	// or: Vendor|Product|Version|EventID||attributes (empty delimiter means tab)
 	parts := strings.SplitN(remainder, "|", 6)
 	if len(parts) < 5 {
 		return leefHeader{}, "", fmt.Errorf("invalid LEEF 2.0 header: expected at least 5 fields (vendor, product, version, eventID, delimiter), got %d", len(parts))
@@ -177,12 +168,10 @@ func parseLEEF2Header(remainder string) (leefHeader, string, error) {
 }
 
 func parseDelimiter(spec string) (string, error) {
-	// Empty delimiter defaults to tab
 	if spec == "" {
 		return "\t", nil
 	}
 
-	// Hex-encoded delimiter (e.g., "0x09" for tab, "0x5e" for caret)
 	if strings.HasPrefix(spec, "0x") || strings.HasPrefix(spec, "0X") {
 		hexStr := spec[2:]
 		if hexStr == "" {
@@ -198,12 +187,10 @@ func parseDelimiter(spec string) (string, error) {
 		return string(decoded), nil
 	}
 
-	// Single character delimiter
 	if len(spec) == 1 {
 		return spec, nil
 	}
 
-	// For backwards compatibility, allow multi-character delimiters
 	return spec, nil
 }
 
@@ -214,17 +201,14 @@ func parseLEEFAttributes(attributes, delimiter string) map[string]any {
 
 	result := make(map[string]any)
 
-	// Split by delimiter to get key=value pairs
 	for pair := range strings.SplitSeq(attributes, delimiter) {
 		pair = strings.TrimSpace(pair)
 		if pair == "" {
 			continue
 		}
 
-		// Split on first '=' to get key and value
 		eqIndex := strings.Index(pair, "=")
 		if eqIndex == -1 {
-			// Key without value - skip or treat as empty value
 			continue
 		}
 
