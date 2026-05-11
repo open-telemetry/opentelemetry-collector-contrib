@@ -41,7 +41,7 @@ type provider struct {
 //
 // This Provider supports the "s3" scheme with two URI formats:
 //
-// AWS virtual-hosted-style (standard AWS S3):
+// AWS virtual-hosted-style (standard Amazon S3):
 //
 //	s3://[BUCKET].s3.[REGION].amazonaws.com/[KEY]
 //	s3://doc-example-bucket.s3.us-west-2.amazonaws.com/config.yaml
