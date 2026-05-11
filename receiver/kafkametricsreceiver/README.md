@@ -38,11 +38,6 @@ Feature gates can be enabled using the `--feature-gates` flag:
 
 ## Getting Started
 
-> [!NOTE]
-> You can opt out of using the [`franz-go`](https://github.com/twmb/franz-go) client by disabling the feature gate
-> `receiver.kafkametricsreceiver.UseFranzGo` when you run the OpenTelemetry Collector. See the following page
-> for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
-
 Required settings (no defaults):
 
 - `scrapers`: any combination of the following scrapers can be enabled.

@@ -39,8 +39,6 @@ func franzConsumerTestConfig(t *testing.T) Config {
 func TestConsumerScraperFranz_CreateStartScrapeShutdown(t *testing.T) {
 	// Feature gate not required when calling createConsumerScraperFranz directly,
 	// but enabling keeps parity with receiver selection tests later.
-	setFranzGo(t, true)
-
 	cfg := franzConsumerTestConfig(t)
 
 	var s scraper.Metrics
@@ -63,7 +61,6 @@ func TestConsumerScraperFranz_CreateStartScrapeShutdown(t *testing.T) {
 }
 
 func TestConsumerScraperFranz_InvalidTopicRegex(t *testing.T) {
-	setFranzGo(t, true)
 	cfg := franzConsumerTestConfig(t)
 	cfg.TopicMatch = "[" // invalid regex
 
@@ -73,7 +70,6 @@ func TestConsumerScraperFranz_InvalidTopicRegex(t *testing.T) {
 }
 
 func TestConsumerScraperFranz_InvalidGroupRegex(t *testing.T) {
-	setFranzGo(t, true)
 	cfg := franzConsumerTestConfig(t)
 	cfg.GroupMatch = "[" // invalid regex
 
@@ -83,8 +79,6 @@ func TestConsumerScraperFranz_InvalidGroupRegex(t *testing.T) {
 }
 
 func TestConsumerScraperFranz_ShutdownWithoutStart_OK(t *testing.T) {
-	setFranzGo(t, true)
-
 	cfg := franzConsumerTestConfig(t)
 
 	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
@@ -96,8 +90,6 @@ func TestConsumerScraperFranz_ShutdownWithoutStart_OK(t *testing.T) {
 }
 
 func TestConsumerScraperFranz_EmptyClusterAlias(t *testing.T) {
-	setFranzGo(t, true)
-
 	cfg := franzConsumerTestConfig(t)
 	cfg.ClusterAlias = ""
 
@@ -120,8 +112,6 @@ func TestConsumerScraperFranz_EmptyClusterAlias(t *testing.T) {
 }
 
 func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
-	setFranzGo(t, true)
-
 	const (
 		topic     = "topic-a"
 		group     = "test-group"
@@ -227,8 +217,6 @@ func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
 }
 
 func TestConsumerScraperFranz_ScrapeUnreachable(t *testing.T) {
-	setFranzGo(t, true)
-
 	cluster, clientCfg := kafkatest.NewCluster(t, kfake.SeedTopics(1, "topic-a"))
 	cfg := Config{
 		ClientConfig:         clientCfg,
@@ -252,8 +240,6 @@ func TestConsumerScraperFranz_ScrapeUnreachable(t *testing.T) {
 
 // (Optional) If you want a direct filter parity check like the Sarama unit did:
 func TestConsumerScraperFranz_FilterCompilesLikeSarama(t *testing.T) {
-	setFranzGo(t, true)
-
 	// Just prove that a typical defaultGroupMatch compiles and can be set.
 	// (Your Sarama tests reference defaultGroupMatch; here we mimic that behavior.)
 	r := regexp.MustCompile(defaultGroupMatch)
