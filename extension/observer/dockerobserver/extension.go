@@ -135,7 +135,58 @@ func (d *dockerObserver) containerEndpoints(c *ctypes.InspectResponse) []observe
 		endpoints = append(endpoints, *endpoint)
 	}
 
+	if d.config.IncludeAllContainers {
+		if endpoint := d.endpointForContainer(c); endpoint != nil {
+			endpoints = append(endpoints, *endpoint)
+		}
+	}
+
 	return endpoints
+}
+
+// endpointForContainer creates a port-less observer.Endpoint for the container itself.
+// It is emitted when IncludeAllContainers is enabled so that receiver_creator rules
+// matching `type == "container"` can attach receivers to every running container,
+// including those that expose no ports.
+func (d *dockerObserver) endpointForContainer(c *ctypes.InspectResponse) *observer.Endpoint {
+	imageRef, err := dcommon.ParseImageName(c.Config.Image)
+	if err != nil {
+		d.logger.Error("could not parse container image name", zap.Error(err))
+	}
+
+	details := &observer.Container{
+		Name:        strings.TrimPrefix(c.Name, "/"),
+		Image:       imageRef.Repository,
+		Tag:         imageRef.Tag,
+		Command:     strings.Join(c.Config.Cmd, " "),
+		ContainerID: c.ID,
+		Transport:   observer.ProtocolUnknown,
+		Labels:      c.Config.Labels,
+		Host:        d.containerHost(c),
+	}
+
+	return &observer.Endpoint{
+		ID:      observer.EndpointID(c.ID),
+		Target:  details.Host,
+		Details: details,
+	}
+}
+
+// containerHost resolves a host string for a container without considering port bindings.
+func (d *dockerObserver) containerHost(c *ctypes.InspectResponse) string {
+	if d.config.UseHostnameIfPresent && c.Config.Hostname != "" {
+		return c.Config.Hostname
+	}
+	for _, n := range c.NetworkSettings.Networks {
+		if n.IPAddress.IsValid() {
+			return n.IPAddress.String()
+		}
+		break
+	}
+	if d.config.UseHostBindings {
+		return "127.0.0.1"
+	}
+	return ""
 }
 
 // endpointForPort creates an observer.Endpoint for a given port that is exposed in a Docker container.
