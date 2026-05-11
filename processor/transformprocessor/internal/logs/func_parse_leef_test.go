@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottlfuncs
+package logs
 
 import (
 	"context"
@@ -12,18 +12,19 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
 
 func Test_parseLEEF(t *testing.T) {
 	tests := []struct {
 		name     string
-		target   ottl.StringGetter[any]
+		target   ottl.StringGetter[*ottllog.TransformContext]
 		expected map[string]any
 	}{
 		{
 			name: "LEEF 1.0 simple",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:1.0|Microsoft|MSExchange|4.0 SP1|15345|src=10.50.1.1\tdst=2.10.20.20\tsev=5", nil
 				},
 			},
@@ -42,8 +43,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "LEEF 1.0 with many attributes",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:1.0|QRadar|QRM|1.0|NEW_PORT_DISCOVERED|src=7.5.6.6\tdst=172.50.123.1\tsev=5\tcat=anomaly\tsrcPort=3881\tdstPort=21\tusrName=joe.black", nil
 				},
 			},
@@ -66,8 +67,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "LEEF 1.0 header only no attributes",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:1.0|Vendor|Product|1.0|EventID|", nil
 				},
 			},
@@ -82,8 +83,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "LEEF 1.0 no trailing pipe",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:1.0|Vendor|Product|1.0|EventID", nil
 				},
 			},
@@ -98,8 +99,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "LEEF 2.0 with caret delimiter",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:2.0|Lancope|StealthWatch|1.0|41|^|src=10.0.1.8^dst=10.0.0.5^sev=5", nil
 				},
 			},
@@ -118,8 +119,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "LEEF 2.0 with hex tab delimiter",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:2.0|Vendor|Product|1.0|100|0x09|key1=val1\tkey2=val2", nil
 				},
 			},
@@ -137,8 +138,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "LEEF 2.0 with hex caret delimiter",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:2.0|Vendor|Product|1.0|100|0x5e|key1=val1^key2=val2", nil
 				},
 			},
@@ -156,8 +157,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "LEEF 2.0 with empty delimiter defaults to tab",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:2.0|Vendor|Product|1.0|100||key1=val1\tkey2=val2", nil
 				},
 			},
@@ -175,8 +176,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "LEEF 2.0 header only",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:2.0|Vendor|Product|1.0|EventID|^|", nil
 				},
 			},
@@ -191,8 +192,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "LEEF 2.0 no trailing pipe after delimiter",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:2.0|Vendor|Product|1.0|EventID|^", nil
 				},
 			},
@@ -207,8 +208,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "attribute value with spaces",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:1.0|Vendor|Product|1.0|Event|msg=This is a message with spaces\tsrc=1.2.3.4", nil
 				},
 			},
@@ -226,8 +227,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "attribute value with equals sign",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:1.0|Vendor|Product|1.0|Event|url=http://example.com?foo=bar\tsrc=1.2.3.4", nil
 				},
 			},
@@ -245,8 +246,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "attribute with empty value",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:1.0|Vendor|Product|1.0|Event|key1=\tkey2=value2", nil
 				},
 			},
@@ -264,8 +265,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "LEEF 2.0 uppercase hex",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:2.0|Vendor|Product|1.0|100|0X5E|key1=val1^key2=val2", nil
 				},
 			},
@@ -283,8 +284,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "header fields with special characters",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:1.0|Vendor-Name_123|Product.Name|1.0-beta|Event_ID_123|key=value", nil
 				},
 			},
@@ -301,8 +302,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "real world QRadar example",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:2.0|IBM|QRadar|7.3.2|Authentication|^|src=192.168.1.100^dst=10.0.0.1^usrName=admin^cat=auth^sev=3^devTime=Jan 15 2024 10:30:45^devTimeFormat=MMM dd yyyy HH:mm:ss", nil
 				},
 			},
@@ -325,8 +326,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "network security event",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:1.0|Cisco|ASA|9.8|FirewallDeny|src=10.1.1.1\tdst=192.168.1.1\tsrcPort=12345\tdstPort=443\tproto=TCP\tsev=7", nil
 				},
 			},
@@ -348,8 +349,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "duplicate delimiter in attributes section",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:2.0|Vendor|Product|1.0|Event|^|key1=val1^^key2=val2", nil
 				},
 			},
@@ -367,8 +368,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "trailing delimiter in attributes",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:1.0|Vendor|Product|1.0|Event|key1=val1\tkey2=val2\t", nil
 				},
 			},
@@ -386,8 +387,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "leading delimiter in attributes",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:1.0|Vendor|Product|1.0|Event|\tkey1=val1\tkey2=val2", nil
 				},
 			},
@@ -405,8 +406,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "IBM Guardium login failure event with syslog header",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					// Full sample from https://www.ibm.com/docs/en/dsm?topic=guardium-sample-event-messages
 					// Includes syslog header (RFC 3164 format)
 					// Note: LEEF 1.0 uses tab delimiter for attributes per spec at
@@ -447,8 +448,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "IBM Guardium unauthorized access event with syslog header",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					// Full sample from https://www.ibm.com/docs/en/dsm?topic=guardium-sample-event-messages
 					// Includes syslog header (RFC 3164 format)
 					// Note: LEEF 1.0 uses tab delimiter for attributes per spec at
@@ -489,8 +490,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "syslog header RFC 5424 format",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					// RFC 5424 syslog format with structured data
 					return "<113>1 2019-01-18T11:07:53.520+07:00 hostname LEEF:2.0|Lancope|StealthWatch|1.0|41|^|src=10.0.1.8^dst=10.0.0.5^sev=5", nil
 				},
@@ -510,8 +511,8 @@ func Test_parseLEEF(t *testing.T) {
 		},
 		{
 			name: "syslog header simple",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "<13>Jan 18 11:07:53 192.168.1.1 LEEF:1.0|Microsoft|MSExchange|4.0 SP1|15345|src=192.0.2.0\tdst=172.50.123.1", nil
 				},
 			},
@@ -564,13 +565,13 @@ func Test_parseLEEF(t *testing.T) {
 func Test_parseLEEF_error(t *testing.T) {
 	tests := []struct {
 		name          string
-		target        ottl.StringGetter[any]
+		target        ottl.StringGetter[*ottllog.TransformContext]
 		expectedError string
 	}{
 		{
 			name: "empty input",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "", nil
 				},
 			},
@@ -578,8 +579,8 @@ func Test_parseLEEF_error(t *testing.T) {
 		},
 		{
 			name: "not a LEEF message",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "CEF:0|Vendor|Product|1.0|100|Event Name|5|src=1.2.3.4", nil
 				},
 			},
@@ -587,8 +588,8 @@ func Test_parseLEEF_error(t *testing.T) {
 		},
 		{
 			name: "unsupported LEEF version",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:3.0|Vendor|Product|1.0|EventID|key=value", nil
 				},
 			},
@@ -596,8 +597,8 @@ func Test_parseLEEF_error(t *testing.T) {
 		},
 		{
 			name: "invalid LEEF version format",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:abc|Vendor|Product|1.0|EventID|key=value", nil
 				},
 			},
@@ -605,8 +606,8 @@ func Test_parseLEEF_error(t *testing.T) {
 		},
 		{
 			name: "missing pipes in header",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:1.0|OnlyVendor", nil
 				},
 			},
@@ -614,8 +615,8 @@ func Test_parseLEEF_error(t *testing.T) {
 		},
 		{
 			name: "LEEF 1.0 too few header fields",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:1.0|Vendor|Product", nil
 				},
 			},
@@ -623,8 +624,8 @@ func Test_parseLEEF_error(t *testing.T) {
 		},
 		{
 			name: "LEEF 2.0 too few header fields",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:2.0|Vendor|Product|1.0", nil
 				},
 			},
@@ -632,8 +633,8 @@ func Test_parseLEEF_error(t *testing.T) {
 		},
 		{
 			name: "no pipe delimiter at all",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:1.0", nil
 				},
 			},
@@ -641,8 +642,8 @@ func Test_parseLEEF_error(t *testing.T) {
 		},
 		{
 			name: "invalid hex delimiter - odd length",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:2.0|Vendor|Product|1.0|EventID|0x9|key=value", nil
 				},
 			},
@@ -650,8 +651,8 @@ func Test_parseLEEF_error(t *testing.T) {
 		},
 		{
 			name: "invalid hex delimiter - not hex",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:2.0|Vendor|Product|1.0|EventID|0xGG|key=value", nil
 				},
 			},
@@ -659,8 +660,8 @@ func Test_parseLEEF_error(t *testing.T) {
 		},
 		{
 			name: "invalid hex delimiter - too many bytes",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:2.0|Vendor|Product|1.0|EventID|0x0909|key=value", nil
 				},
 			},
@@ -668,8 +669,8 @@ func Test_parseLEEF_error(t *testing.T) {
 		},
 		{
 			name: "invalid hex delimiter - empty hex",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "LEEF:2.0|Vendor|Product|1.0|EventID|0x|key=value", nil
 				},
 			},
@@ -677,8 +678,8 @@ func Test_parseLEEF_error(t *testing.T) {
 		},
 		{
 			name: "plain text not LEEF",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "This is just plain text log message", nil
 				},
 			},
@@ -697,8 +698,8 @@ func Test_parseLEEF_error(t *testing.T) {
 }
 
 func Test_parseLEEF_target_error(t *testing.T) {
-	target := ottl.StandardStringGetter[any]{
-		Getter: func(context.Context, any) (any, error) {
+	target := ottl.StandardStringGetter[*ottllog.TransformContext]{
+		Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 			return nil, assert.AnError
 		},
 	}
@@ -708,12 +709,12 @@ func Test_parseLEEF_target_error(t *testing.T) {
 }
 
 func Test_createParseLEEFFunction(t *testing.T) {
-	factory := NewParseLEEFFactory[any]()
-	assert.Equal(t, "ParseLEEF", factory.Name())
+	factory := newParseLEEFFactory()
+	assert.Equal(t, "parse_leef", factory.Name())
 
-	args := &ParseLEEFArguments[any]{
-		Target: ottl.StandardStringGetter[any]{
-			Getter: func(context.Context, any) (any, error) {
+	args := &parseLEEFArguments{
+		Target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+			Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 				return "LEEF:1.0|Vendor|Product|1.0|Event|key=value", nil
 			},
 		},
@@ -728,11 +729,11 @@ func Test_createParseLEEFFunction(t *testing.T) {
 }
 
 func Test_createParseLEEFFunction_wrongArgs(t *testing.T) {
-	factory := NewParseLEEFFactory[any]()
+	factory := newParseLEEFFactory()
 
 	_, err := factory.CreateFunction(ottl.FunctionContext{}, nil)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "ParseLEEFFactory args must be of type *ParseLEEFArguments[K]")
+	assert.Contains(t, err.Error(), "parseLEEFFactory args must be of type *parseLEEFArguments")
 }
 
 func Test_parseDelimiter(t *testing.T) {
