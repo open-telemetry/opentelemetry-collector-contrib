@@ -4,6 +4,7 @@
 package k8seventsreceiver
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -12,10 +13,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
@@ -450,4 +454,130 @@ func TestStartWatchersMultipleNamespaces(t *testing.T) {
 	// Should have at least 1 watcher started
 	assert.GreaterOrEqual(t, watcherCount, 1)
 	require.NoError(t, r.Shutdown(t.Context()))
+}
+
+// TestExcludeNamespacesResolution verifies that exclude_namespaces filters out
+// matching namespaces at startup so that only the survivors are watched.
+func TestExcludeNamespacesResolution(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name              string
+		clusterNamespaces []string
+		exclude           []filter.Config
+		want              []string
+	}{
+		{
+			name:              "regex matches subset",
+			clusterNamespaces: []string{"default", "kube-system", "kube-public", "app"},
+			exclude:           []filter.Config{{Regex: "kube-.*"}},
+			want:              []string{"default", "app"},
+		},
+		{
+			name:              "multiple regexes",
+			clusterNamespaces: []string{"default", "kube-system", "istio-system", "app"},
+			exclude:           []filter.Config{{Regex: "kube-.*"}, {Regex: "istio-system"}},
+			want:              []string{"default", "app"},
+		},
+		{
+			name:              "no match keeps all",
+			clusterNamespaces: []string{"default", "app"},
+			exclude:           []filter.Config{{Regex: "no-such-namespace"}},
+			want:              []string{"default", "app"},
+		},
+		{
+			name:              "all excluded leaves empty list",
+			clusterNamespaces: []string{"kube-system", "kube-public"},
+			exclude:           []filter.Config{{Regex: "kube-.*"}},
+			want:              []string{},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			fakeClient := newFakeDynamicClientWithNamespaces(t, tc.clusterNamespaces...)
+
+			rCfg := createDefaultConfig().(*Config)
+			rCfg.ExcludeNamespaces = tc.exclude
+			rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
+				return fake.NewClientset(), nil
+			}
+			rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+				return fakeClient, nil
+			}
+
+			r, err := newReceiver(
+				receivertest.NewNopSettings(metadata.Type),
+				rCfg,
+				consumertest.NewNop(),
+			)
+			require.NoError(t, err)
+
+			require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+			recv := r.(*k8seventsReceiver)
+			assert.ElementsMatch(t, tc.want, recv.namespacesToWatch)
+			require.NoError(t, r.Shutdown(t.Context()))
+		})
+	}
+}
+
+// TestExcludeNamespacesInvalidRegexSkipped verifies that an entry with an
+// uncompilable regex is logged and skipped rather than failing startup.
+func TestExcludeNamespacesInvalidRegexSkipped(t *testing.T) {
+	t.Parallel()
+
+	fakeClient := newFakeDynamicClientWithNamespaces(t, "default", "kube-system")
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.ExcludeNamespaces = []filter.Config{
+		{Regex: "[invalid"}, // bad regex
+		{Regex: "kube-.*"},
+	}
+	rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
+		return fake.NewClientset(), nil
+	}
+	rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+		return fakeClient, nil
+	}
+
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	recv := r.(*k8seventsReceiver)
+	assert.ElementsMatch(t, []string{"default"}, recv.namespacesToWatch)
+	require.NoError(t, r.Shutdown(t.Context()))
+}
+
+// newFakeDynamicClientWithNamespaces returns a fake dynamic client pre-loaded
+// with the given namespace names so that List(namespacesGVR) returns them.
+func newFakeDynamicClientWithNamespaces(t *testing.T, names ...string) *dynamicfake.FakeDynamicClient {
+	t.Helper()
+
+	gvrToListKind := map[schema.GroupVersionResource]string{
+		{Group: "", Version: "v1", Resource: "namespaces"}: "NamespaceList",
+		{Group: "", Version: "v1", Resource: "events"}:     "EventList",
+	}
+	fc := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), gvrToListKind)
+
+	nsResource := fc.Resource(schema.GroupVersionResource{Version: "v1", Resource: "namespaces"})
+	for i, name := range names {
+		ns := &unstructured.Unstructured{
+			Object: map[string]any{
+				"apiVersion": "v1",
+				"kind":       "Namespace",
+				"metadata": map[string]any{
+					"name": name,
+				},
+			},
+		}
+		ns.SetResourceVersion(strconv.Itoa(i + 1))
+		_, err := nsResource.Create(t.Context(), ns, v1.CreateOptions{})
+		require.NoError(t, err)
+	}
+	return fc
 }

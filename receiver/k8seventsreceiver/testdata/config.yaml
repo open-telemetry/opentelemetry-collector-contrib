@@ -1,3 +1,7 @@
 k8s_events:
 k8s_events/all_settings:
   namespaces: [ default, my_namespace ]
+k8s_events/exclude_namespaces:
+  exclude_namespaces:
+    - regexp: kube-.*
+    - regexp: istio-system

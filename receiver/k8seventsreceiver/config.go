@@ -4,7 +4,10 @@
 package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver"
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"
 
@@ -17,6 +20,12 @@ type Config struct {
 
 	// List of ‘namespaces’ to collect events from.
 	Namespaces []string `mapstructure:"namespaces"`
+
+	// ExcludeNamespaces lists namespaces whose events should be skipped.
+	// Each entry is a filter.Config matched against the namespace name; the
+	// receiver lists the cluster's namespaces at startup, drops the ones that
+	// match, and watches only the survivors. Cannot be combined with Namespaces.
+	ExcludeNamespaces []filter.Config `mapstructure:"exclude_namespaces"`
 
 	// Storage is the ID of the storage extension to use for resource version persistence.
 	// When set, the receiver will persist the latest resource version and resume from it on restart,
@@ -31,7 +40,13 @@ type Config struct {
 }
 
 func (cfg *Config) Validate() error {
-	return cfg.APIConfig.Validate()
+	if err := cfg.APIConfig.Validate(); err != nil {
+		return err
+	}
+	if len(cfg.Namespaces) != 0 && len(cfg.ExcludeNamespaces) != 0 {
+		return errors.New("namespaces and exclude_namespaces cannot both be set at the same time")
+	}
+	return nil
 }
 
 func (cfg *Config) getK8sClient() (k8s.Interface, error) {
