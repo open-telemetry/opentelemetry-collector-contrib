@@ -17,8 +17,6 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
 )
 
 func TestExportData_MessageTooLarge(t *testing.T) {
@@ -41,15 +39,7 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 
 	// Create a message larger than maxMessageBytes to trigger MessageTooLarge.
 	largeValue := []byte(strings.Repeat("x", maxMessageBytes*2))
-	msgs := Messages{
-		Count: 1,
-		TopicMessages: []TopicMessages{{
-			Topic: topic,
-			Messages: []marshaler.Message{{
-				Value: largeValue,
-			}},
-		}},
-	}
+	msgs := []Message{{Topic: topic, Value: largeValue}}
 
 	err = producer.ExportData(t.Context(), msgs)
 	require.Error(t, err)
@@ -81,15 +71,7 @@ func TestMakeFranzMessages_RecordHeaders(t *testing.T) {
 	})
 	ctx := client.NewContext(t.Context(), client.Info{Metadata: md})
 
-	msgs := Messages{
-		Count: 1,
-		TopicMessages: []TopicMessages{{
-			Topic: "test-topic",
-			Messages: []marshaler.Message{{
-				Value: []byte("test-payload"),
-			}},
-		}},
-	}
+	msgs := []Message{{Topic: "test-topic", Value: []byte("test-payload")}}
 
 	// NewFranzSyncProducer will convert recordHeaders to kgo.RecordHeader and store them in the producer struct.
 	producer := NewFranzSyncProducer(nil, nil, recordHeaders, 0, nil)
@@ -132,13 +114,7 @@ func TestClose_UnblocksInFlightExportData(t *testing.T) {
 
 	producer := NewFranzSyncProducer(kgoClient, nil, nil, 1024*1024, clientCancel)
 
-	msgs := Messages{
-		Count: 1,
-		TopicMessages: []TopicMessages{{
-			Topic:    "otlp_logs",
-			Messages: []marshaler.Message{{Value: []byte("test")}},
-		}},
-	}
+	msgs := []Message{{Topic: "otlp_logs", Value: []byte("test")}}
 
 	exportDone := make(chan error, 1)
 	go func() { exportDone <- producer.ExportData(t.Context(), msgs) }()
