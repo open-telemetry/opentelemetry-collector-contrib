@@ -44,7 +44,7 @@ For Amazon S3-compatible services such as MinIO or DigitalOcean Spaces:
 s3://[ENDPOINT_HOST]/[BUCKET]/[KEY]?region=[REGION]
 ```
 
-- `ENDPOINT_HOST` — the hostname (and optional port) of the S3-compatible service
+- `ENDPOINT_HOST` — the hostname (and optional port) of the Amazon S3-compatible service
 - `region` — optional query parameter, depends on the provider
 
 Examples:
