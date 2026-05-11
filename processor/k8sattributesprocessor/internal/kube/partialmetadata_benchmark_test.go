@@ -17,7 +17,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/metadata"
 	ktesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -83,15 +85,17 @@ func Benchmark_RS_ResourceSweep_InProcess(b *testing.B) {
 
 				fc := typedClientWithList(list)
 				factory := InformersFactoryList{
-					newInformer:           NewFakeInformer,
-					newNamespaceInformer:  NewNoOpInformer,
-					newReplicaSetInformer: newReplicaSetSharedInformer,
+					newInformer:          NewFakeInformer,
+					newNamespaceInformer: NewNoOpInformer,
+					newReplicaSetInformer: func(client metadata.Interface, namespace string) cache.SharedInformer {
+						return newReplicaSetSharedInformer(client, namespace, 0)
+					},
 				}
 				newClientSet := func(_ k8sconfig.APIConfig) (k8sconfig.ClientBundle, error) {
 					return k8sconfig.ClientBundle{K8s: fc}, nil
 				}
 
-				c, err := New(set, k8sconfig.APIConfig{}, rules, filters, nil, Excludes{}, newClientSet, factory, false, 0)
+				c, err := New(set, k8sconfig.APIConfig{}, rules, filters, nil, Excludes{}, newClientSet, factory, false, 0, 0)
 				if err != nil {
 					b.Fatalf("New: %v", err)
 				}

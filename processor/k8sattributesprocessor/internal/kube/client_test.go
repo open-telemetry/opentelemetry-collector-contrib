@@ -154,11 +154,11 @@ func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 }
 
 func TestDefaultClientset(t *testing.T) {
-	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, InformersFactoryList{}, false, 10*time.Second)
+	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, InformersFactoryList{}, false, 10*time.Second, 0)
 	require.EqualError(t, err, "invalid authType for kubernetes: ")
 	assert.Nil(t, c)
 
-	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{}, false, 10*time.Second)
+	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{}, false, 10*time.Second, 0)
 	assert.NoError(t, err)
 	assert.NotNil(t, c)
 }
@@ -169,7 +169,7 @@ func TestBadFilters(t *testing.T) {
 		newNamespaceInformer:  NewFakeNamespaceInformer,
 		newReplicaSetInformer: NewFakeReplicaSetInformer,
 	}
-	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{Fields: []FieldFilter{{Op: selection.Exists}}}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second)
+	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{Fields: []FieldFilter{{Op: selection.Exists}}}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second, 0)
 	assert.Error(t, err)
 	assert.Nil(t, c)
 }
@@ -209,7 +209,7 @@ func TestConstructorErrors(t *testing.T) {
 			newInformer:          NewFakeInformer,
 			newNamespaceInformer: NewFakeNamespaceInformer,
 		}
-		c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, factory, false, 10*time.Second)
+		c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, factory, false, 10*time.Second, 0)
 		assert.Nil(t, c)
 		require.EqualError(t, err, "error creating k8s client")
 		assert.Equal(t, apiCfg, gotAPIConfig)
@@ -1347,6 +1347,23 @@ func TestRemoveUnnecessaryPodData_ClonesLabelsAndAnnotations(t *testing.T) {
 	assert.Equal(t, "value", transformed.Annotations["anno"])
 }
 
+func TestRemoveUnnecessaryPodData_PreservesPodTemplateHashForDeploymentHeuristic(t *testing.T) {
+	rules := ExtractionRules{DeploymentName: true}
+	pod := &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Labels: map[string]string{
+				"pod-template-hash": "7b9f4c8d5e",
+			},
+		},
+	}
+
+	transformed := removeUnnecessaryPodData(pod, rules)
+
+	require.NotNil(t, transformed.Labels)
+	assert.Equal(t, "7b9f4c8d5e", transformed.Labels["pod-template-hash"])
+	assert.Len(t, transformed.Labels, 1)
+}
+
 func TestNamespaceExtractionRules(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
@@ -1928,6 +1945,9 @@ func TestDeploymentNameFromReplicaSet(t *testing.T) {
 			Name:      "auth-service-abc12-xyz3",
 			UID:       "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 			Namespace: "ns1",
+			Labels: map[string]string{
+				"pod-template-hash": "66f5996c7c",
+			},
 			OwnerReferences: []meta_v1.OwnerReference{
 				{
 					APIVersion: "apps/v1",
@@ -3624,7 +3644,7 @@ func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *o
 		newReplicaSetInformer: NewFakeReplicaSetInformer,
 	}
 
-	c, err := New(set, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, factory, false, 10*time.Second)
+	c, err := New(set, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, factory, false, 10*time.Second, 0)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
 }
@@ -3672,7 +3692,7 @@ func TestWaitForMetadata(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{newInformer: tc.informerProvider}, true, 1*time.Second)
+			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{newInformer: tc.informerProvider}, true, 1*time.Second, 0)
 			require.NoError(t, err)
 
 			err = c.Start()
@@ -4081,70 +4101,88 @@ func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
 
 func TestExtractDeploymentNameFromReplicaSet(t *testing.T) {
 	tests := []struct {
-		name           string
-		replicaSetName string
-		expected       string
+		name            string
+		replicaSetName  string
+		expected        string
+		podTemplateHash string
 	}{
 		{
-			name:           "valid replicaset name with pod template hash",
-			replicaSetName: "my-deployment-7b9f4c8d5e",
-			expected:       "my-deployment",
+			name:            "valid replicaset name with pod template hash",
+			replicaSetName:  "my-deployment-7b9f4c8d5e",
+			expected:        "my-deployment",
+			podTemplateHash: "7b9f4c8d5e",
 		},
 		{
-			name:           "complex deployment name with dashes",
-			replicaSetName: "my-complex-deployment-name-7b9f4c8d5e",
-			expected:       "my-complex-deployment-name",
+			name:            "complex deployment name with dashes",
+			replicaSetName:  "my-complex-deployment-name-7b9f4c8d5e",
+			expected:        "my-complex-deployment-name",
+			podTemplateHash: "7b9f4c8d5e",
 		},
 		{
-			name:           "single word deployment",
-			replicaSetName: "nginx-7b9f4c8d5e",
-			expected:       "nginx",
+			name:            "single word deployment",
+			replicaSetName:  "nginx-7b9f4c8d5e",
+			expected:        "nginx",
+			podTemplateHash: "7b9f4c8d5e",
 		},
 		{
-			name:           "replicaset name without valid pod template hash",
-			replicaSetName: "my-deployment-invalidhash",
-			expected:       "",
+			name:            "replicaset name without valid pod template hash",
+			replicaSetName:  "my-deployment-invalidhash",
+			expected:        "",
+			podTemplateHash: "7b9f4c8d5e",
 		},
 		{
-			name:           "replicaset name with short hash",
-			replicaSetName: "my-deployment-7b9f4c",
-			expected:       "",
+			name:            "replicaset name with short hash",
+			replicaSetName:  "my-deployment-7b9f4c",
+			expected:        "",
+			podTemplateHash: "7b9f4c8d5e",
 		},
 		{
-			name:           "replicaset name with long hash",
-			replicaSetName: "my-deployment-7b9f4c8d5e123",
-			expected:       "",
+			name:            "replicaset name with long hash",
+			replicaSetName:  "my-deployment-7b9f4c8d5e123",
+			expected:        "",
+			podTemplateHash: "7b9f4c8d5e",
 		},
 		{
-			name:           "replicaset name with uppercase in hash",
-			replicaSetName: "my-deployment-7B9F4C8D5E",
-			expected:       "",
+			name:            "replicaset name with uppercase in hash",
+			replicaSetName:  "my-deployment-7B9F4C8D5E",
+			expected:        "",
+			podTemplateHash: "7b9f4c8d5e",
 		},
 		{
-			name:           "replicaset name with special characters in hash",
-			replicaSetName: "my-deployment-7b9f4c8d5_",
-			expected:       "",
+			name:            "replicaset name with special characters in hash",
+			replicaSetName:  "my-deployment-7b9f4c8d5_",
+			expected:        "",
+			podTemplateHash: "7b9f4c8d5e",
 		},
 		{
-			name:           "empty replicaset name",
-			replicaSetName: "",
-			expected:       "",
+			name:            "empty replicaset name",
+			replicaSetName:  "",
+			expected:        "",
+			podTemplateHash: "",
 		},
 		{
-			name:           "replicaset name without dashes",
-			replicaSetName: "deployment7b9f4c8d5e",
-			expected:       "",
+			name:            "replicaset name without dashes",
+			replicaSetName:  "deployment7b9f4c8d5e",
+			expected:        "",
+			podTemplateHash: "7b9f4c8d5e",
 		},
 		{
-			name:           "replicaset name with only hash part",
-			replicaSetName: "7b9f4c8d5e",
-			expected:       "",
+			name:            "replicaset name with only hash part",
+			replicaSetName:  "7b9f4c8d5e",
+			expected:        "",
+			podTemplateHash: "7b9f4c8d5e",
+		},
+		{
+			name:            "valid rs name but empty pod template hash",
+			replicaSetName:  "my-deployment-7b9f4c8d5e",
+			expected:        "",
+			podTemplateHash: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := extractDeploymentNameFromReplicaSet(tt.replicaSetName)
+			result := extractDeploymentNameFromReplicaSet(tt.replicaSetName, tt.podTemplateHash)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -4188,8 +4226,8 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 			expectRun: true,
 		},
 		{
-			name:      "start informer if deployment name is requested",
-			rules:     ExtractionRules{DeploymentName: true},
+			name:      "start informer if deployment name is requested without heuristic",
+			rules:     ExtractionRules{DeploymentName: true, DeploymentNameFromReplicaSet: false},
 			expectRun: true,
 		},
 		{
@@ -4207,6 +4245,15 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 			rules:     ExtractionRules{DeploymentName: true, DeploymentUID: true, DeploymentNameFromReplicaSet: true},
 			expectRun: true,
 		},
+		{
+			name: "start informer if deployment labels are extracted",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{Name: "l1", Key: "app", From: MetadataFromDeployment},
+				},
+			},
+			expectRun: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -4217,7 +4264,7 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 				newReplicaSetInformer: newTrackableInformer,
 			}
 
-			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, tt.rules, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second)
+			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, tt.rules, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second, 0)
 			require.NoError(t, err)
 			wc := c.(*WatchClient)
 
@@ -4228,8 +4275,13 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 			// Allow time for the informer goroutine to start
 			time.Sleep(100 * time.Millisecond)
 
-			informer := wc.replicasetInformer.(*trackableInformer)
-			assert.Equal(t, tt.expectRun, informer.hasRun())
+			if tt.expectRun {
+				require.NotNil(t, wc.replicasetInformer)
+				informer := wc.replicasetInformer.(*trackableInformer)
+				assert.True(t, informer.hasRun())
+			} else {
+				assert.Nil(t, wc.replicasetInformer)
+			}
 		})
 	}
 }
@@ -4257,7 +4309,7 @@ func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
 			name:                                "flag enabled - replicaset not in cache",
 			deploymentNameFromReplicaSetEnabled: true,
 			replicaSetInCache:                   false,
-			deploymentInRS:                      false,
+			deploymentInRS:                      true,
 			replicaSetName:                      "my-deployment-7b9f4c8d5e",
 			expectedDeploymentName:              "my-deployment",
 		},
@@ -4267,15 +4319,15 @@ func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
 			replicaSetInCache:                   true,
 			deploymentInRS:                      false,
 			replicaSetName:                      "my-deployment-7b9f4c8d5e",
-			expectedDeploymentName:              "my-deployment",
+			expectedDeploymentName:              "",
 		},
 		{
-			name:                                "flag enabled - replicaset in cache with deployment (should prefer existing)",
+			name:                                "flag enabled - replicaset in cache with deployment (should prefer informer)",
 			deploymentNameFromReplicaSetEnabled: true,
 			replicaSetInCache:                   true,
 			deploymentInRS:                      true,
 			replicaSetName:                      "my-deployment-7b9f4c8d5e",
-			expectedDeploymentName:              "my-deployment",
+			expectedDeploymentName:              "real-deployment-name",
 		},
 		{
 			name:                                "flag enabled - invalid replicaset name",
@@ -4338,6 +4390,12 @@ func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
 					PodIP: "1.2.3.4",
 				},
 			}
+			if tt.deploymentInRS {
+				// Pod template hash only exists if the pod is managed by a deployment
+				pod.Labels = map[string]string{
+					"pod-template-hash": "7b9f4c8d5e",
+				}
+			}
 
 			// Extract attributes
 			attributes := c.extractPodAttributes(pod)
@@ -4349,64 +4407,8 @@ func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
 				assert.Equal(t, tt.expectedDeploymentName, deploymentName)
 			} else {
 				_, exists := attributes["k8s.deployment.name"]
-				assert.False(t, exists, "Expected no deployment name to be extracted")
+				assert.False(t, exists, "Expected no deployment name to be extracted, got: %s", attributes["k8s.deployment.name"])
 			}
-		})
-	}
-}
-
-func TestDeploymentHashSuffixPattern(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected bool
-	}{
-		{
-			name:     "valid pod template hash",
-			input:    "7b9f4c8d5e",
-			expected: true,
-		},
-		{
-			name:     "valid all digits",
-			input:    "1234567890",
-			expected: true,
-		},
-		{
-			name:     "valid all letters",
-			input:    "abcdefghij",
-			expected: true,
-		},
-		{
-			name:     "too short",
-			input:    "7b9f4c8d5",
-			expected: false,
-		},
-		{
-			name:     "too long",
-			input:    "7b9f4c8d5e1",
-			expected: false,
-		},
-		{
-			name:     "contains uppercase",
-			input:    "7B9F4C8D5E",
-			expected: false,
-		},
-		{
-			name:     "contains special character",
-			input:    "7b9f4c8d5-",
-			expected: false,
-		},
-		{
-			name:     "empty string",
-			input:    "",
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := deploymentHashSuffixPattern.MatchString(tt.input)
-			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
@@ -4651,7 +4653,8 @@ func TestCreateRestConfigFailure(t *testing.T) {
 
 	// Set a rule to enable deployment monitoring
 	rules := ExtractionRules{
-		DeploymentName: true, // This ensures that the replicasetInformer is created
+		DeploymentName:               true,
+		DeploymentNameFromReplicaSet: false,
 	}
 
 	c, err := New(
@@ -4665,6 +4668,7 @@ func TestCreateRestConfigFailure(t *testing.T) {
 		factory,
 		false,
 		10*time.Second,
+		0,
 	)
 
 	// Assert that the client is nil and an error is returned
@@ -4692,6 +4696,7 @@ func TestMetadataNewForConfigFailure(t *testing.T) {
 		factory,
 		false,
 		10*time.Second,
+		0,
 	)
 	assert.Nil(t, c)
 	assert.Error(t, err)
