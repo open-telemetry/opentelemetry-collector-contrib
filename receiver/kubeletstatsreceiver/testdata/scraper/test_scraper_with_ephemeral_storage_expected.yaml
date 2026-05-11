@@ -1700,7 +1700,9 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
           - description: Ephemeral storage used by the container.
-            gauge:
+            name: k8s.container.ephemeral_storage.usage
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "28672"
                   attributes:
@@ -1716,7 +1718,6 @@ resourceMetrics:
                         stringValue: rootfs
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.container.ephemeral_storage.usage
             unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
@@ -1828,7 +1829,9 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
           - description: Ephemeral storage used by the container.
-            gauge:
+            name: k8s.container.ephemeral_storage.usage
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "28672"
                   attributes:
@@ -1844,7 +1847,6 @@ resourceMetrics:
                         stringValue: rootfs
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.container.ephemeral_storage.usage
             unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
@@ -1956,7 +1958,9 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
           - description: Ephemeral storage used by the container.
-            gauge:
+            name: k8s.container.ephemeral_storage.usage
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "36864"
                   attributes:
@@ -1972,7 +1976,6 @@ resourceMetrics:
                         stringValue: rootfs
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.container.ephemeral_storage.usage
             unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
@@ -2084,7 +2087,9 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
           - description: Ephemeral storage used by the container.
-            gauge:
+            name: k8s.container.ephemeral_storage.usage
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "73728"
                   attributes:
@@ -2100,7 +2105,6 @@ resourceMetrics:
                         stringValue: rootfs
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.container.ephemeral_storage.usage
             unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
@@ -2212,7 +2216,9 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
           - description: Ephemeral storage used by the container.
-            gauge:
+            name: k8s.container.ephemeral_storage.usage
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "65536"
                   attributes:
@@ -2228,7 +2234,6 @@ resourceMetrics:
                         stringValue: rootfs
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.container.ephemeral_storage.usage
             unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
@@ -2340,7 +2345,9 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
           - description: Ephemeral storage used by the container.
-            gauge:
+            name: k8s.container.ephemeral_storage.usage
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "28672"
                   attributes:
@@ -2356,7 +2363,6 @@ resourceMetrics:
                         stringValue: rootfs
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.container.ephemeral_storage.usage
             unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
@@ -2468,7 +2474,9 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
           - description: Ephemeral storage used by the container.
-            gauge:
+            name: k8s.container.ephemeral_storage.usage
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "36864"
                   attributes:
@@ -2484,7 +2492,6 @@ resourceMetrics:
                         stringValue: rootfs
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.container.ephemeral_storage.usage
             unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
@@ -2596,7 +2603,9 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
           - description: Ephemeral storage used by the container.
-            gauge:
+            name: k8s.container.ephemeral_storage.usage
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "98304"
                   attributes:
@@ -2612,7 +2621,6 @@ resourceMetrics:
                         stringValue: rootfs
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.container.ephemeral_storage.usage
             unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
@@ -2724,7 +2732,9 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
           - description: Ephemeral storage used by the container.
-            gauge:
+            name: k8s.container.ephemeral_storage.usage
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "24576"
                   attributes:
@@ -2740,7 +2750,6 @@ resourceMetrics:
                         stringValue: rootfs
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.container.ephemeral_storage.usage
             unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver

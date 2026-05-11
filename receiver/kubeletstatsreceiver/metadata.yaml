@@ -235,8 +235,10 @@ metrics:
     description: "Ephemeral storage used by the container."
     unit: By
     stability: development
-    gauge:
+    sum:
       value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
     attributes: [fs.type]
   k8s.container.memory.node.utilization:
     enabled: false
