@@ -3,11 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.25.0
 
 require (
-	github.com/IBM/sarama v1.48.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.151.0
 	github.com/stretchr/testify v1.11.1
+	github.com/twmb/franz-go v1.21.1
+	github.com/twmb/franz-go/pkg/kadm v1.18.0
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260421215025-4e7a1e1569ac
 	go.opentelemetry.io/collector/component v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/component/componenttest v0.151.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/confmap v1.57.1-0.20260501001745-24aecacf1c04
@@ -19,6 +21,7 @@ require (
 )
 
 require (
+	github.com/IBM/sarama v1.48.0 // indirect
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.4 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.29.16 // indirect
@@ -64,9 +67,6 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
-	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/twmb/franz-go v1.21.1 // indirect
-	github.com/twmb/franz-go/pkg/kadm v1.18.0 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.13.1 // indirect
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0 // indirect
 	github.com/twmb/franz-go/plugin/kzap v1.1.2 // indirect

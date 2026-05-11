@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkam
 go 1.25.0
 
 require (
-	github.com/IBM/sarama v1.48.0
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.151.0
@@ -21,6 +20,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/receiver v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/receiver/receivertest v0.151.1-0.20260501001745-24aecacf1c04
+	go.opentelemetry.io/collector/receiver/xreceiver v0.151.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/scraper v0.151.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.151.1-0.20260501001745-24aecacf1c04
 	go.uber.org/goleak v1.3.0
@@ -29,6 +29,7 @@ require (
 )
 
 require (
+	github.com/IBM/sarama v1.48.0 // indirect
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.4 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.29.16 // indirect
@@ -74,7 +75,6 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
-	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.13.1 // indirect
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0 // indirect
 	github.com/twmb/franz-go/plugin/kzap v1.1.2 // indirect
@@ -93,7 +93,6 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.57.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.151.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.151.1-0.20260501001745-24aecacf1c04 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.151.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.43.0 // indirect

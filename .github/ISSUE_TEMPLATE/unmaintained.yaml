@@ -204,6 +204,7 @@ body:
       - processor/deltatorate
       - processor/drain
       - processor/filter
+      - processor/genainormalizer
       - processor/geoip
       - processor/groupbyattrs
       - processor/groupbytrace

@@ -48,7 +48,7 @@ func init() {
 	)
 	includeCollectorInstanceID = featuregate.GlobalRegistry().MustRegister(
 		includeCollectorInstanceIDFeatureGateID,
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, connector add collector.instance.id to default dimensions."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40400"),
 	)
