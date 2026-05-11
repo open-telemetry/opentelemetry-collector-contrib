@@ -1,0 +1,196 @@
+name: SAW-7500 hardening
+
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: Harness phase to run
+        required: true
+        default: green
+        type: choice
+        options:
+          - green
+          - both
+          - red
+      payload_sizes_csv:
+        description: Comma-separated uncompressed log body sizes
+        required: true
+        default: "262144,1048576"
+      target_compressed_bytes:
+        description: LB target compressed batch size
+        required: true
+        default: "262144"
+      load_duration_seconds:
+        description: Load duration
+        required: true
+        default: "300"
+  schedule:
+    - cron: "17 8 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: read-all
+
+jobs:
+  harness:
+    if: github.repository == 'Sawmills/opentelemetry-collector-contrib'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      ARTIFACT_ROOT: /tmp/saw7500-artifacts
+      HARNESS_PHASE: ${{ github.event.inputs.phase || 'green' }}
+      PAYLOAD_SIZES_CSV: ${{ github.event.inputs.payload_sizes_csv || '262144,1048576' }}
+      TARGET_COMPRESSED_BYTES: ${{ github.event.inputs.target_compressed_bytes || '262144' }}
+      LOAD_DURATION_SECONDS: ${{ github.event.inputs.load_duration_seconds || '300' }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+
+      - name: Install kind
+        run: go install sigs.k8s.io/kind@v0.30.0
+
+      - name: Verify harness helpers
+        run: |
+          (cd test/saw7500/fakebackend && go test ./...)
+          python3 test/saw7500/analyze_test.py
+          python3 test/saw7500/test_analyze.py
+          python3 test/saw7500/test_sweep.py
+          bash -n test/saw7500/run.sh test/saw7500/sweep.sh
+
+      - name: Build collector image
+        run: |
+          make docker-otelcontribcol
+          docker tag otelcontribcol otelcontribcol-dev:saw-7500
+
+      - name: Run SAW-7500 harness
+        run: |
+          status=0
+          ran=0
+          IFS=',' read -r -a payload_sizes <<< "${PAYLOAD_SIZES_CSV}"
+          for raw_payload_size in "${payload_sizes[@]}"; do
+            payload_size="$(printf '%s' "${raw_payload_size}" | tr -d '[:space:]')"
+            if [ -z "${payload_size}" ]; then
+              continue
+            fi
+            ran=1
+            echo "::group::SAW-7500 payload_size_bytes=${payload_size}"
+            if ! test/saw7500/run.sh \
+              --phase "${HARNESS_PHASE}" \
+              --green-image otelcontribcol-dev:saw-7500 \
+              --artifacts "${ARTIFACT_ROOT}/payload-${payload_size}" \
+              --payload-profile repeated \
+              --payload-size-bytes "${payload_size}" \
+              --target-compressed-bytes "${TARGET_COMPRESSED_BYTES}" \
+              --load-duration-seconds "${LOAD_DURATION_SECONDS}" \
+              --warmup-seconds 60 \
+              --settle-seconds 90 \
+              --load-rate 50 \
+              --load-workers 4 \
+              --batch-size 10; then
+              status=1
+            fi
+            echo "::endgroup::"
+          done
+          if [ "${ran}" -eq 0 ]; then
+            echo "No payload sizes configured in PAYLOAD_SIZES_CSV"
+            exit 1
+          fi
+          exit "${status}"
+
+      - name: Upload SAW-7500 artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: saw7500-artifacts-${{ github.run_id }}
+          path: ${{ env.ARTIFACT_ROOT }}
+          if-no-files-found: warn
+
+      - name: Notify Slack on failure
+        if: failure() || cancelled()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: C0B34NH76AY
+          WORKFLOW_NAME: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          HARNESS_PHASE: ${{ env.HARNESS_PHASE }}
+          ARTIFACT_NAME: saw7500-artifacts-${{ github.run_id }}
+          ARTIFACT_ROOT: ${{ env.ARTIFACT_ROOT }}
+        run: |
+          if [ -z "${SLACK_BOT_TOKEN}" ]; then
+            echo "SLACK_BOT_TOKEN is not set; skipping Slack notification"
+            exit 0
+          fi
+          python3 - <<'PY' > /tmp/saw7500-slack.json
+          import json
+          import os
+
+          from pathlib import Path
+
+          def load_failed_summary(root):
+              summaries = sorted(Path(root).glob("**/summary.json"))
+              for path in summaries:
+                  summary = json.loads(path.read_text(encoding="utf-8"))
+                  if not summary.get("passed"):
+                      return path, summary
+              return None, None
+
+          def failing_gates(summary):
+              expect = summary.get("expect", "unknown")
+              checks = summary.get("green_checks") if expect == "green" else summary.get("red_required")
+              if not checks:
+                  checks = summary.get("red_signatures", {})
+              failing = [name for name, passed in checks.items() if not passed]
+              return ", ".join(failing[:6]) if failing else "summary unavailable"
+
+          summary_path, summary = load_failed_summary(os.environ["ARTIFACT_ROOT"])
+          failed_phase = os.environ["HARNESS_PHASE"]
+          failed_gates = "summary unavailable"
+          reproduce = "test/saw7500/run.sh using the workflow inputs"
+          if summary is not None:
+              failed_phase = str(summary.get("expect", failed_phase))
+              failed_gates = failing_gates(summary)
+              render_vars = summary_path.parent / "rendered" / "render-vars.txt"
+              if render_vars.exists():
+                  values = {}
+                  for line in render_vars.read_text(encoding="utf-8").splitlines():
+                      if "=" in line:
+                          key, value = line.split("=", 1)
+                          values[key] = value
+                  reproduce = (
+                      "test/saw7500/run.sh "
+                      f"--phase {failed_phase} "
+                      f"--payload-profile {values.get('payload_profile', 'repeated')} "
+                      f"--payload-size-bytes {values.get('payload_size_bytes', '<size>')} "
+                      f"--target-compressed-bytes {values.get('target_compressed_bytes', '<target>')} "
+                      f"--load-duration-seconds {values.get('load_duration_seconds', '<seconds>')}"
+                  )
+
+          text = (
+              f"{os.environ['WORKFLOW_NAME']} failed for {os.environ['BRANCH_NAME']} "
+              f"({os.environ['COMMIT_SHA'][:12]}), phase={failed_phase}. "
+              f"Failing gates: {failed_gates}. "
+              f"Run/artifacts: {os.environ['RUN_URL']} ({os.environ['ARTIFACT_NAME']}). "
+              f"Reproduce: {reproduce}"
+          )
+          print(json.dumps({"channel": os.environ["SLACK_CHANNEL_ID"], "text": text}))
+          PY
+          response="$(curl -fsS \
+            -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            --data @/tmp/saw7500-slack.json \
+            https://slack.com/api/chat.postMessage)"
+          python3 - "${response}" <<'PY'
+          import json
+          import sys
+
+          response = json.loads(sys.argv[1])
+          if not response.get("ok"):
+              raise SystemExit("Slack notification failed: " + response.get("error", "unknown error"))
+          PY

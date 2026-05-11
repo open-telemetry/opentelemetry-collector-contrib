@@ -83,6 +83,7 @@ class AnalyzeTest(unittest.TestCase):
             queue_budget_bytes=100.0,
             latency_timeout_ms=5000.0,
             green_p95_ms=2000.0,
+            green_max_over_2s_count=0.0,
             require_red_liveness_restart=require_red_liveness_restart,
             strict_red=strict_red,
         )

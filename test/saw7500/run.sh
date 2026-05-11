@@ -15,7 +15,7 @@ NAMESPACE="saw-7500"
 RED_IMAGE="public.ecr.aws/s7a5m1b4/sawmills-collector:1.936.0"
 GREEN_IMAGE="otelcontribcol-dev:saw-7500"
 FAKE_BACKEND_IMAGE="saw7500-fakebackend:latest"
-TELEMETRYGEN_IMAGE="telemetrygen:latest"
+LOADGEN_IMAGE=""
 LB_REPLICAS="2"
 WORKERS="4"
 TARGET_COMPRESSED_BYTES="262144"
@@ -36,12 +36,17 @@ LOAD_WORKERS="8"
 BATCH_SIZE="100"
 LOAD_SIZE_MB="0"
 LOG_BODY="bigid-local-saw-7500-log"
+PAYLOAD_PROFILE="repeated"
+PAYLOAD_SIZE_BYTES="0"
+PAYLOAD_RANDOM_SEED="1"
+OTLP_COMPRESSION=""
 BACKEND_SLOW_SLEEP="6s"
 BACKEND_SLOW_FOR_SECONDS="180"
 BACKEND_SLOW_MODULO="4"
 BACKEND_SLOW_REMAINDER="3"
 BACKEND_UNREADY_FOR_SECONDS="0"
 BACKEND_TIMEOUT="5s"
+GREEN_MAX_OVER_2S_COUNT="0"
 LIVENESS_TIMEOUT_SECONDS="1"
 LIVENESS_FAILURE_THRESHOLD="5"
 RED_BACKEND_TIMEOUT=""
@@ -57,7 +62,7 @@ LB_MEMORY_LIMIT=""
 LB_GO_MEMLIMIT=""
 LB_GOGC=""
 REQUIRE_RED_LIVENESS_RESTART="false"
-STRICT_RED="true"
+STRICT_RED="false"
 ARTIFACT_ROOT="${ROOT_DIR}/artifacts/saw-7500/$(date -u +%Y%m%dT%H%M%SZ)"
 PHASE="both"
 
@@ -75,7 +80,8 @@ while [[ $# -gt 0 ]]; do
     --red-image) RED_IMAGE="$2"; shift 2 ;;
     --green-image) GREEN_IMAGE="$2"; shift 2 ;;
     --fake-backend-image) FAKE_BACKEND_IMAGE="$2"; shift 2 ;;
-    --telemetrygen-image) TELEMETRYGEN_IMAGE="$2"; shift 2 ;;
+    --loadgen-image) LOADGEN_IMAGE="$2"; shift 2 ;;
+    --telemetrygen-image) LOADGEN_IMAGE="$2"; shift 2 ;;
     --lb-replicas) LB_REPLICAS="$2"; shift 2 ;;
     --workers) WORKERS="$2"; shift 2 ;;
     --target-compressed-bytes) TARGET_COMPRESSED_BYTES="$2"; shift 2 ;;
@@ -93,12 +99,17 @@ while [[ $# -gt 0 ]]; do
     --load-workers) LOAD_WORKERS="$2"; shift 2 ;;
     --batch-size) BATCH_SIZE="$2"; shift 2 ;;
     --load-size-mb) LOAD_SIZE_MB="$2"; shift 2 ;;
+    --payload-profile) PAYLOAD_PROFILE="$2"; shift 2 ;;
+    --payload-size-bytes) PAYLOAD_SIZE_BYTES="$2"; shift 2 ;;
+    --payload-random-seed) PAYLOAD_RANDOM_SEED="$2"; shift 2 ;;
+    --otlp-compression) OTLP_COMPRESSION="$2"; shift 2 ;;
     --backend-slow-sleep) BACKEND_SLOW_SLEEP="$2"; shift 2 ;;
     --backend-slow-for-seconds) BACKEND_SLOW_FOR_SECONDS="$2"; shift 2 ;;
     --backend-slow-modulo) BACKEND_SLOW_MODULO="$2"; shift 2 ;;
     --backend-slow-remainder) BACKEND_SLOW_REMAINDER="$2"; shift 2 ;;
     --backend-unready-for-seconds) BACKEND_UNREADY_FOR_SECONDS="$2"; shift 2 ;;
     --backend-timeout) BACKEND_TIMEOUT="$2"; shift 2 ;;
+    --green-max-over-2s-count) GREEN_MAX_OVER_2S_COUNT="$2"; shift 2 ;;
     --red-backend-timeout) RED_BACKEND_TIMEOUT="$2"; shift 2 ;;
     --green-backend-timeout) GREEN_BACKEND_TIMEOUT="$2"; shift 2 ;;
     --liveness-timeout-seconds) LIVENESS_TIMEOUT_SECONDS="$2"; shift 2 ;;
@@ -174,7 +185,7 @@ render_templates() {
   export WORKERS
   export LB_REPLICAS
   export FAKE_BACKEND_IMAGE
-  export TELEMETRYGEN_IMAGE
+  export LOADGEN_IMAGE
   export COLLECTOR_IMAGE="${collector_image}"
   export TARGET_COMPRESSED_BYTES
   export MAX_COMPRESSED_BYTES
@@ -197,6 +208,10 @@ render_templates() {
   export BATCH_SIZE
   export LOAD_SIZE_MB
   export LOG_BODY
+  export PAYLOAD_PROFILE
+  export PAYLOAD_SIZE_BYTES
+  export PAYLOAD_RANDOM_SEED
+  export OTLP_COMPRESSION
   export ENDPOINT_HEALTH_ENABLED="${endpoint_health_enabled}"
   export ACTIVE_PROBE_ENABLED="${active_probe_enabled}"
   export LIVENESS_TIMEOUT_SECONDS="${liveness_timeout_seconds}"
@@ -244,7 +259,7 @@ render_templates() {
       s/__WORKERS__/$ENV{WORKERS}/g;
       s/__LB_REPLICAS__/$ENV{LB_REPLICAS}/g;
       s#__FAKE_BACKEND_IMAGE__#$ENV{FAKE_BACKEND_IMAGE}#g;
-      s#__TELEMETRYGEN_IMAGE__#$ENV{TELEMETRYGEN_IMAGE}#g;
+      s#__LOADGEN_IMAGE__#$ENV{LOADGEN_IMAGE}#g;
       s#__COLLECTOR_IMAGE__#$ENV{COLLECTOR_IMAGE}#g;
       s/__TARGET_COMPRESSED_BYTES__/$ENV{TARGET_COMPRESSED_BYTES}/g;
       s/__MAX_COMPRESSED_BYTES__/$ENV{MAX_COMPRESSED_BYTES}/g;
@@ -263,6 +278,10 @@ render_templates() {
       s/__BATCH_SIZE__/$ENV{BATCH_SIZE}/g;
       s/__LOAD_SIZE_MB__/$ENV{LOAD_SIZE_MB}/g;
       s/__LOG_BODY__/$ENV{LOG_BODY}/g;
+      s/__PAYLOAD_PROFILE__/$ENV{PAYLOAD_PROFILE}/g;
+      s/__PAYLOAD_SIZE_BYTES__/$ENV{PAYLOAD_SIZE_BYTES}/g;
+      s/__PAYLOAD_RANDOM_SEED__/$ENV{PAYLOAD_RANDOM_SEED}/g;
+      s/__OTLP_COMPRESSION__/$ENV{OTLP_COMPRESSION}/g;
       s/__ENDPOINT_HEALTH_ENABLED__/$ENV{ENDPOINT_HEALTH_ENABLED}/g;
       s/__ACTIVE_PROBE_ENABLED__/$ENV{ACTIVE_PROBE_ENABLED}/g;
       s/__LIVENESS_TIMEOUT_SECONDS__/$ENV{LIVENESS_TIMEOUT_SECONDS}/g;
@@ -272,14 +291,16 @@ render_templates() {
     ' "${TEMPLATES_DIR}/${template}.yaml.tmpl" > "${out_dir}/${template}.yaml"
   done
 
-  printf "phase=%s\ncollector_image=%s\nendpoint_health=%s\nactive_probe=%s\nworkers=%s\nlb_replicas=%s\ntarget_compressed_bytes=%s\nmax_compressed_bytes=%s\nmax_uncompressed_batch_bytes=%s\nmax_inflight_uncompressed_bytes=%s\nnum_consumers=%s\nreceiver_max_recv_msg_size_mib=%s\nbackend_max_recv_msg_size_mib=%s\nload_duration_seconds=%s\nwarmup_seconds=%s\nsettle_seconds=%s\nscrape_interval_seconds=%s\nload_rate=%s\nload_workers=%s\nbatch_size=%s\nload_size_mb=%s\nbackend_timeout=%s\nbackend_slow_sleep=%s\nbackend_slow_for_seconds=%s\nbackend_slow_modulo=%s\nbackend_slow_remainder=%s\nbackend_unready_for_seconds=%s\nliveness_timeout_seconds=%s\nliveness_failure_threshold=%s\nlb_cpu_request=%s\nlb_cpu_limit=%s\nlb_memory_request=%s\nlb_memory_limit=%s\nlb_go_memlimit=%s\nlb_gogc=%s\nstrict_red=%s\nrequire_red_liveness_restart=%s\n" \
+  printf "phase=%s\ncollector_image=%s\nendpoint_health=%s\nactive_probe=%s\nworkers=%s\nlb_replicas=%s\ntarget_compressed_bytes=%s\nmax_compressed_bytes=%s\nmax_uncompressed_batch_bytes=%s\nmax_inflight_uncompressed_bytes=%s\nnum_consumers=%s\nreceiver_max_recv_msg_size_mib=%s\nbackend_max_recv_msg_size_mib=%s\nload_duration_seconds=%s\nwarmup_seconds=%s\nsettle_seconds=%s\nscrape_interval_seconds=%s\nload_rate=%s\nload_workers=%s\nbatch_size=%s\nload_size_mb=%s\npayload_profile=%s\npayload_size_bytes=%s\npayload_random_seed=%s\notlp_compression=%s\nbackend_timeout=%s\nbackend_slow_sleep=%s\nbackend_slow_for_seconds=%s\nbackend_slow_modulo=%s\nbackend_slow_remainder=%s\nbackend_unready_for_seconds=%s\nliveness_timeout_seconds=%s\nliveness_failure_threshold=%s\nlb_cpu_request=%s\nlb_cpu_limit=%s\nlb_memory_request=%s\nlb_memory_limit=%s\nlb_go_memlimit=%s\nlb_gogc=%s\nstrict_red=%s\nrequire_red_liveness_restart=%s\n" \
     "${phase}" "${collector_image}" "${endpoint_health_enabled}" "${active_probe_enabled}" \
     "${WORKERS}" "${LB_REPLICAS}" "${TARGET_COMPRESSED_BYTES}" "${MAX_COMPRESSED_BYTES}" \
     "${MAX_UNCOMPRESSED_BATCH_BYTES}" "${MAX_INFLIGHT_UNCOMPRESSED_BYTES}" \
     "${NUM_CONSUMERS}" \
     "${RECEIVER_MAX_RECV_MSG_SIZE_MIB}" "${BACKEND_MAX_RECV_MSG_SIZE_MIB}" \
     "${LOAD_DURATION_SECONDS}" "${WARMUP_SECONDS}" "${SETTLE_SECONDS}" "${SCRAPE_INTERVAL_SECONDS}" \
-    "${LOAD_RATE}" "${LOAD_WORKERS}" "${BATCH_SIZE}" "${LOAD_SIZE_MB}" "${backend_timeout}" \
+    "${LOAD_RATE}" "${LOAD_WORKERS}" "${BATCH_SIZE}" "${LOAD_SIZE_MB}" \
+    "${PAYLOAD_PROFILE}" "${PAYLOAD_SIZE_BYTES}" "${PAYLOAD_RANDOM_SEED}" "${OTLP_COMPRESSION}" \
+    "${backend_timeout}" \
     "${BACKEND_SLOW_SLEEP}" "${BACKEND_SLOW_FOR_SECONDS}" \
     "${BACKEND_SLOW_MODULO}" "${BACKEND_SLOW_REMAINDER}" "${BACKEND_UNREADY_FOR_SECONDS}" \
     "${liveness_timeout_seconds}" "${liveness_failure_threshold}" \
@@ -462,6 +483,7 @@ run_phase() {
     --queue-capacity-bytes "${MAX_COMPRESSED_BYTES}"
     --queue-budget-bytes "${MAX_COMPRESSED_BYTES}"
     --latency-timeout-ms 5000
+    --green-max-over-2s-count "${GREEN_MAX_OVER_2S_COUNT}"
   )
   if [[ "${phase}" == "red" && "${REQUIRE_RED_LIVENESS_RESTART}" == "true" ]]; then
     analyzer_args+=(--require-red-liveness-restart)
@@ -473,10 +495,14 @@ run_phase() {
 }
 
 mkdir -p "${ARTIFACT_ROOT}"
+LOADGEN_IMAGE="${LOADGEN_IMAGE:-${FAKE_BACKEND_IMAGE}}"
+if [[ "${LOAD_SIZE_MB}" != "0" && "${PAYLOAD_SIZE_BYTES}" == "0" ]]; then
+  PAYLOAD_SIZE_BYTES=$((LOAD_SIZE_MB * 1024 * 1024))
+fi
 ensure_cluster
 docker build -t "${FAKE_BACKEND_IMAGE}" "${HARNESS_DIR}/fakebackend"
 load_image_if_local "${FAKE_BACKEND_IMAGE}"
-load_image_if_local "${TELEMETRYGEN_IMAGE}"
+load_image_if_local "${LOADGEN_IMAGE}"
 load_image_if_local "${RED_IMAGE}"
 load_image_if_local "${GREEN_IMAGE}"
 

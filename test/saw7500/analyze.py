@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
 """Analyze SAW-7500 local red/green proof artifacts."""
 
 from __future__ import annotations
@@ -47,6 +50,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--queue-budget-bytes", type=float, required=True)
     parser.add_argument("--latency-timeout-ms", type=float, default=5000)
     parser.add_argument("--green-p95-ms", type=float, default=2000)
+    parser.add_argument("--green-max-over-2s-count", type=float, default=0)
     parser.add_argument("--require-red-liveness-restart", action="store_true")
     parser.add_argument("--strict-red", action="store_true")
     return parser.parse_args()
@@ -169,6 +173,11 @@ def sum_refused(samples: list[tuple[str, dict[str, str], float]]) -> float:
 
 
 def histogram_quantile(samples: list[tuple[str, dict[str, str], float]], base_prefix: str, quantile: float) -> float | None:
+    buckets = histogram_buckets(samples, base_prefix)
+    return histogram_quantile_from_buckets(buckets, quantile)
+
+
+def histogram_buckets(samples: list[tuple[str, dict[str, str], float]], base_prefix: str) -> dict[float, float]:
     buckets: dict[float, float] = defaultdict(float)
     for name, attrs, value in samples:
         if not name.startswith(base_prefix) or not name.endswith("_bucket"):
@@ -177,6 +186,10 @@ def histogram_quantile(samples: list[tuple[str, dict[str, str], float]], base_pr
         if le_raw is None:
             continue
         buckets[parse_value(le_raw)] += value
+    return dict(buckets)
+
+
+def histogram_quantile_from_buckets(buckets: dict[float, float], quantile: float) -> float | None:
     if not buckets:
         return None
 
@@ -200,6 +213,93 @@ def histogram_quantile(samples: list[tuple[str, dict[str, str], float]], base_pr
         fraction = (wanted - prev_count) / bucket_count
         return prev_le + (le - prev_le) * fraction
     return ordered[-1][0]
+
+
+def histogram_count_over_threshold(
+    samples: list[tuple[str, dict[str, str], float]], base_prefix: str, threshold: float
+) -> float | None:
+    return histogram_count_over_threshold_from_buckets(histogram_buckets(samples, base_prefix), threshold)
+
+
+def histogram_count_over_threshold_from_buckets(buckets: dict[float, float], threshold: float) -> float | None:
+    if not buckets:
+        return None
+
+    total = buckets.get(math.inf)
+    if total is None:
+        total = max(buckets.values())
+    below_or_at = [count for le, count in buckets.items() if le <= threshold]
+    threshold_count = max(below_or_at) if below_or_at else 0.0
+    return max(0.0, total - threshold_count)
+
+
+def merge_histogram_buckets(bucket_sets: list[dict[float, float]]) -> dict[float, float]:
+    merged: dict[float, float] = defaultdict(float)
+    for buckets in bucket_sets:
+        for le, value in buckets.items():
+            if not math.isnan(value):
+                merged[le] += value
+    return dict(merged)
+
+
+def histogram_total_from_buckets(buckets: dict[float, float]) -> float:
+    if not buckets:
+        return 0.0
+    total = buckets.get(math.inf)
+    if total is not None:
+        return total
+    return max(buckets.values())
+
+
+def nonempty_histogram_buckets(bucket_sets: list[dict[float, float]]) -> list[dict[float, float]]:
+    return [buckets for buckets in bucket_sets if histogram_total_from_buckets(buckets) > 0]
+
+
+def latency_green_checks(
+    *,
+    settled_p95: float | None,
+    settled_p99: float | None,
+    settled_over_2s_count: float | None,
+    green_p95_ms: float,
+    latency_timeout_ms: float,
+    green_max_over_2s_count: float,
+) -> dict[str, bool]:
+    return {
+        "p95_under_2s": settled_p95 is not None and settled_p95 < green_p95_ms,
+        "p99_not_pinned": settled_p99 is not None and settled_p99 < latency_timeout_ms * 0.95,
+        "latency_over_2s_under_limit": (
+            settled_over_2s_count is not None and settled_over_2s_count <= green_max_over_2s_count
+        ),
+    }
+
+
+def histogram_delta_series(
+    ticks: dict[str, list[tuple[str, dict[str, str], float]]], base_prefix: str
+) -> list[dict[float, float]]:
+    previous: dict[float, float] | None = None
+    deltas: list[dict[float, float]] = []
+    for _, samples in sorted(ticks.items()):
+        current = histogram_buckets(samples, base_prefix)
+        if not current:
+            continue
+        if previous is None:
+            deltas.append(current)
+            previous = current
+            continue
+        all_buckets = set(current) | set(previous)
+        delta: dict[float, float] = {}
+        for bucket in all_buckets:
+            current_value = current.get(bucket, 0.0)
+            previous_value = previous.get(bucket, 0.0)
+            if current_value >= previous_value:
+                delta[bucket] = current_value - previous_value
+            else:
+                # Counter reset or pod replacement. Treat current as the new
+                # interval value rather than carrying the negative delta.
+                delta[bucket] = current_value
+        deltas.append(delta)
+        previous = current
+    return deltas
 
 
 def settled_values(values: list[float], window: int = 3) -> list[float]:
@@ -287,18 +387,17 @@ def summarize(args: argparse.Namespace) -> dict[str, object]:
     pod_heap = [max_metric(samples, PROCESS_HEAP) for samples in lb_ticks.values()]
     tier_sys = [sum_metric(samples, PROCESS_SYS) for samples in lb_ticks.values()]
     pod_sys = [max_metric(samples, PROCESS_SYS) for samples in lb_ticks.values()]
-    p95s = [
-        histogram_quantile(samples, "otelcol_loadbalancer_backend_latency", 0.95)
-        for samples in lb_ticks.values()
-    ]
-    p99s = [
-        histogram_quantile(samples, "otelcol_loadbalancer_backend_latency", 0.99)
-        for samples in lb_ticks.values()
-    ]
+    latency_delta_buckets = histogram_delta_series(lb_ticks, "otelcol_loadbalancer_backend_latency")
+    p95s = [histogram_quantile_from_buckets(buckets, 0.95) for buckets in latency_delta_buckets]
+    p99s = [histogram_quantile_from_buckets(buckets, 0.99) for buckets in latency_delta_buckets]
+    over_2s_counts = [histogram_count_over_threshold_from_buckets(buckets, 2000.0) for buckets in latency_delta_buckets]
     p95_values = [value for value in p95s if value is not None]
     p99_values = [value for value in p99s if value is not None]
-    settled_p95_values = settled_values(p95_values)
-    settled_p99_values = settled_values(p99_values)
+    over_2s_values = [value for value in over_2s_counts if value is not None]
+    settled_latency_buckets = merge_histogram_buckets(settled_values(nonempty_histogram_buckets(latency_delta_buckets)))
+    settled_p95 = histogram_quantile_from_buckets(settled_latency_buckets, 0.95)
+    settled_p99 = histogram_quantile_from_buckets(settled_latency_buckets, 0.99)
+    settled_over_2s_count = histogram_count_over_threshold_from_buckets(settled_latency_buckets, 2000.0)
 
     tally_accepted = counter_total_from_files(directory, "tally-metrics", TALLY_ACCEPTED)
     tally_received = counter_total_from_files(directory, "tally-metrics", TALLY_RECEIVED)
@@ -353,11 +452,19 @@ def summarize(args: argparse.Namespace) -> dict[str, object]:
         "oldest_age_returned_to_baseline": final_age <= max(2000.0, baseline_age + 1000.0),
         "rejected_zero": (max(rejected) if rejected else 0.0) == 0,
         "refused_zero": (max(refused) if refused else 0.0) == 0,
-        "p95_under_2s": bool(settled_p95_values) and max(settled_p95_values) < args.green_p95_ms,
-        "p99_not_pinned": bool(settled_p99_values) and max(settled_p99_values) < args.latency_timeout_ms * 0.95,
         "generated_vs_received_match": generated_match,
         "backend_rollout_completed": rollout_completed(directory / "rollout-status.txt"),
     }
+    green_checks.update(
+        latency_green_checks(
+            settled_p95=settled_p95,
+            settled_p99=settled_p99,
+            settled_over_2s_count=settled_over_2s_count,
+            green_p95_ms=args.green_p95_ms,
+            latency_timeout_ms=args.latency_timeout_ms,
+            green_max_over_2s_count=args.green_max_over_2s_count,
+        )
+    )
 
     if args.expect == "red":
         red_required = {
@@ -406,8 +513,10 @@ def summarize(args: argparse.Namespace) -> dict[str, object]:
         "max_pod_sys_memory_bytes": max(pod_sys) if pod_sys else 0.0,
         "max_backend_latency_p95_ms": max(p95_values) if p95_values else None,
         "max_backend_latency_p99_ms": max(p99_values) if p99_values else None,
-        "settled_backend_latency_p95_ms": max(settled_p95_values) if settled_p95_values else None,
-        "settled_backend_latency_p99_ms": max(settled_p99_values) if settled_p99_values else None,
+        "settled_backend_latency_p95_ms": settled_p95,
+        "settled_backend_latency_p99_ms": settled_p99,
+        "max_backend_latency_over_2s_count": max(over_2s_values) if over_2s_values else None,
+        "settled_backend_latency_over_2s_count": settled_over_2s_count,
         "loadgen_generated_logs": generated,
         "tally_received_logs": tally_received,
         "tally_accepted_logs": tally_accepted,
@@ -450,6 +559,8 @@ def write_outputs(directory: Path, summary: dict[str, object]) -> None:
         f"max_backend_latency_p99_ms: {summary['max_backend_latency_p99_ms']}",
         f"settled_backend_latency_p95_ms: {summary['settled_backend_latency_p95_ms']}",
         f"settled_backend_latency_p99_ms: {summary['settled_backend_latency_p99_ms']}",
+        f"max_backend_latency_over_2s_count: {summary['max_backend_latency_over_2s_count']}",
+        f"settled_backend_latency_over_2s_count: {summary['settled_backend_latency_over_2s_count']}",
         f"loadgen_generated_logs: {summary['loadgen_generated_logs']}",
         f"tally_received_logs: {summary['tally_received_logs']}",
         f"tally_accepted_logs: {summary['tally_accepted_logs']}",

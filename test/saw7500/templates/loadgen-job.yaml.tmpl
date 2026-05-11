@@ -12,29 +12,35 @@ spec:
     spec:
       restartPolicy: Never
       containers:
-        - name: telemetrygen
-          image: __TELEMETRYGEN_IMAGE__
+        - name: loadgen
+          image: __LOADGEN_IMAGE__
           imagePullPolicy: IfNotPresent
-          args:
-            - logs
-            - --duration
-            - __LOAD_DURATION__
-            - --rate
-            - "__LOAD_RATE__"
-            - --workers
-            - "__LOAD_WORKERS__"
-            - --otlp-endpoint
-            - saw-7500-lb.saw-7500.svc.cluster.local:4317
-            - --otlp-insecure
-            - --batch
-            - --batch-size
-            - "__BATCH_SIZE__"
-            - --allow-export-failures
-            - --service
-            - bigid-local-saw-7500
-            - --telemetry-attributes
-            - tenant="bigid"
-            - --body
-            - __LOG_BODY__
-            - --size
-            - "__LOAD_SIZE_MB__"
+          env:
+            - name: MODE
+              value: "loadgen"
+            - name: OTLP_ENDPOINT
+              value: "saw-7500-lb.saw-7500.svc.cluster.local:4317"
+            - name: LOAD_DURATION
+              value: "__LOAD_DURATION__"
+            - name: LOAD_RATE
+              value: "__LOAD_RATE__"
+            - name: LOAD_WORKERS
+              value: "__LOAD_WORKERS__"
+            - name: BATCH_SIZE
+              value: "__BATCH_SIZE__"
+            - name: ALLOW_EXPORT_FAILURES
+              value: "true"
+            - name: SERVICE_NAME
+              value: "bigid-local-saw-7500"
+            - name: TENANT
+              value: "bigid"
+            - name: LOG_BODY
+              value: "__LOG_BODY__"
+            - name: PAYLOAD_PROFILE
+              value: "__PAYLOAD_PROFILE__"
+            - name: PAYLOAD_SIZE_BYTES
+              value: "__PAYLOAD_SIZE_BYTES__"
+            - name: PAYLOAD_RANDOM_SEED
+              value: "__PAYLOAD_RANDOM_SEED__"
+            - name: OTLP_COMPRESSION
+              value: "__OTLP_COMPRESSION__"
