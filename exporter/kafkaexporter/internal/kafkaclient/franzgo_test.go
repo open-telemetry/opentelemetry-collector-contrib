@@ -94,8 +94,6 @@ func assertStatusEvents(t *testing.T, got []*componentstatus.Event, want []wantS
 }
 
 // TestStatusReporter_ComponentStatus exercises broker hook → componentstatus
-// reporting (table-driven: each row is an isolated scenario: arrange steps,
-// act via apply, assert on recorded events).
 func TestStatusReporter_ComponentStatus(t *testing.T) {
 	broker1 := kgo.BrokerMetadata{NodeID: 1, Host: "127.0.0.1", Port: 9092}
 	broker2 := kgo.BrokerMetadata{NodeID: 2, Host: "127.0.0.2", Port: 9092}
