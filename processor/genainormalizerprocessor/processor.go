@@ -113,27 +113,22 @@ func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
 		if !ok {
 			continue
 		}
-		if _, exists := attrs.Get(r.to); exists && !sn.overwrite {
+		dest, existed := attrs.GetOrPutEmpty(r.to)
+		if existed && !sn.overwrite {
 			continue
 		}
 
-		// Read scalar values up front so they remain valid across subsequent
-		// Put* calls that may reallocate the backing slice.
 		switch val.Type() {
 		case pcommon.ValueTypeStr:
-			attrs.PutStr(r.to, sn.applyValueTransform(r.to, val.Str()))
+			dest.SetStr(sn.applyValueTransform(r.to, val.Str()))
 		case pcommon.ValueTypeInt:
-			attrs.PutInt(r.to, val.Int())
+			dest.SetInt(val.Int())
 		case pcommon.ValueTypeDouble:
-			attrs.PutDouble(r.to, val.Double())
+			dest.SetDouble(val.Double())
 		case pcommon.ValueTypeBool:
-			attrs.PutBool(r.to, val.Bool())
+			dest.SetBool(val.Bool())
 		default:
-			// Map / Slice / Bytes: snapshot before writing so the source read
-			// is independent of any reallocation the destination write causes.
-			snap := pcommon.NewValueEmpty()
-			val.CopyTo(snap)
-			snap.CopyTo(attrs.PutEmpty(r.to))
+			val.CopyTo(dest)
 		}
 		wrote = true
 
