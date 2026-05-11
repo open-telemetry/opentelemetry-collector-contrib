@@ -58,10 +58,10 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemPagingFaults"] = mb.metricSystemPagingFaults.config.AggregationStrategy
-			aggMap["SystemPagingOperations"] = mb.metricSystemPagingOperations.config.AggregationStrategy
-			aggMap["SystemPagingUsage"] = mb.metricSystemPagingUsage.config.AggregationStrategy
-			aggMap["SystemPagingUtilization"] = mb.metricSystemPagingUtilization.config.AggregationStrategy
+			aggMap["system.paging.faults"] = mb.metricSystemPagingFaults.config.AggregationStrategy
+			aggMap["system.paging.operations"] = mb.metricSystemPagingOperations.config.AggregationStrategy
+			aggMap["system.paging.usage"] = mb.metricSystemPagingUsage.config.AggregationStrategy
+			aggMap["system.paging.utilization"] = mb.metricSystemPagingUtilization.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {

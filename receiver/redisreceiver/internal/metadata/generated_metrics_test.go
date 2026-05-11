@@ -67,16 +67,16 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["RedisClusterState"] = mb.metricRedisClusterState.config.AggregationStrategy
-			aggMap["RedisCmdCalls"] = mb.metricRedisCmdCalls.config.AggregationStrategy
-			aggMap["RedisCmdLatency"] = mb.metricRedisCmdLatency.config.AggregationStrategy
-			aggMap["RedisCmdUsec"] = mb.metricRedisCmdUsec.config.AggregationStrategy
-			aggMap["RedisCPUTime"] = mb.metricRedisCPUTime.config.AggregationStrategy
-			aggMap["RedisDbAvgTTL"] = mb.metricRedisDbAvgTTL.config.AggregationStrategy
-			aggMap["RedisDbExpires"] = mb.metricRedisDbExpires.config.AggregationStrategy
-			aggMap["RedisDbKeys"] = mb.metricRedisDbKeys.config.AggregationStrategy
-			aggMap["RedisMode"] = mb.metricRedisMode.config.AggregationStrategy
-			aggMap["RedisRole"] = mb.metricRedisRole.config.AggregationStrategy
+			aggMap["redis.cluster.state"] = mb.metricRedisClusterState.config.AggregationStrategy
+			aggMap["redis.cmd.calls"] = mb.metricRedisCmdCalls.config.AggregationStrategy
+			aggMap["redis.cmd.latency"] = mb.metricRedisCmdLatency.config.AggregationStrategy
+			aggMap["redis.cmd.usec"] = mb.metricRedisCmdUsec.config.AggregationStrategy
+			aggMap["redis.cpu.time"] = mb.metricRedisCPUTime.config.AggregationStrategy
+			aggMap["redis.db.avg_ttl"] = mb.metricRedisDbAvgTTL.config.AggregationStrategy
+			aggMap["redis.db.expires"] = mb.metricRedisDbExpires.config.AggregationStrategy
+			aggMap["redis.db.keys"] = mb.metricRedisDbKeys.config.AggregationStrategy
+			aggMap["redis.mode"] = mb.metricRedisMode.config.AggregationStrategy
+			aggMap["redis.role"] = mb.metricRedisRole.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {

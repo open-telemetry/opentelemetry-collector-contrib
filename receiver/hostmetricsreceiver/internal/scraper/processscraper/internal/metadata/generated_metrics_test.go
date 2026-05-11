@@ -67,12 +67,12 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["ProcessContextSwitches"] = mb.metricProcessContextSwitches.config.AggregationStrategy
-			aggMap["ProcessCPUTime"] = mb.metricProcessCPUTime.config.AggregationStrategy
-			aggMap["ProcessCPUUtilization"] = mb.metricProcessCPUUtilization.config.AggregationStrategy
-			aggMap["ProcessDiskIo"] = mb.metricProcessDiskIo.config.AggregationStrategy
-			aggMap["ProcessDiskOperations"] = mb.metricProcessDiskOperations.config.AggregationStrategy
-			aggMap["ProcessPagingFaults"] = mb.metricProcessPagingFaults.config.AggregationStrategy
+			aggMap["process.context_switches"] = mb.metricProcessContextSwitches.config.AggregationStrategy
+			aggMap["process.cpu.time"] = mb.metricProcessCPUTime.config.AggregationStrategy
+			aggMap["process.cpu.utilization"] = mb.metricProcessCPUUtilization.config.AggregationStrategy
+			aggMap["process.disk.io"] = mb.metricProcessDiskIo.config.AggregationStrategy
+			aggMap["process.disk.operations"] = mb.metricProcessDiskOperations.config.AggregationStrategy
+			aggMap["process.paging.faults"] = mb.metricProcessPagingFaults.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {

@@ -67,10 +67,10 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["ApacheConnectionsAsync"] = mb.metricApacheConnectionsAsync.config.AggregationStrategy
-			aggMap["ApacheCPUTime"] = mb.metricApacheCPUTime.config.AggregationStrategy
-			aggMap["ApacheScoreboard"] = mb.metricApacheScoreboard.config.AggregationStrategy
-			aggMap["ApacheWorkers"] = mb.metricApacheWorkers.config.AggregationStrategy
+			aggMap["apache.connections.async"] = mb.metricApacheConnectionsAsync.config.AggregationStrategy
+			aggMap["apache.cpu.time"] = mb.metricApacheCPUTime.config.AggregationStrategy
+			aggMap["apache.scoreboard"] = mb.metricApacheScoreboard.config.AggregationStrategy
+			aggMap["apache.workers"] = mb.metricApacheWorkers.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
