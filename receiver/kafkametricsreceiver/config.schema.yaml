@@ -8,7 +8,7 @@ properties:
     description: GroupMatch consumer groups to collect on
     type: string
   refresh_frequency:
-    description: 'Cluster metadata refresh frequency Configures the refresh frequency to update cached cluster metadata Defaults to 10 minutes from Sarama library If Metadata.RefreshInterval is set, this will be ignored. Deprecated [v0.122.0]: use Metadata.RefreshInterval instead.'
+    description: 'Cluster metadata refresh frequency Configures the refresh frequency to update cached cluster metadata If Metadata.RefreshInterval is set, this will be ignored. Deprecated [v0.122.0]: use Metadata.RefreshInterval instead.'
     type: string
     format: duration
   scrapers:
