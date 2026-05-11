@@ -17,7 +17,6 @@ issues: [47595]
 # Use pipe (|) for multiline entries.
 subtext: |
   - Hosts with non-Amazon DNS suffixes are now treated as path-style endpoints (`s3://host/bucket/key`) instead of virtual-hosted-style.
-  - HTTP (insecure) URIs are now supported in addition to HTTPS.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
