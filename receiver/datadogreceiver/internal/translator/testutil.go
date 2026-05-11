@@ -5,6 +5,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -19,7 +20,7 @@ func createMetricsTranslator() *MetricsTranslator {
 		Command:     "otelcol",
 		Description: "OpenTelemetry Collector",
 		Version:     "latest",
-	})
+	}, 30*time.Minute)
 	return mt
 }
 
