@@ -1,0 +1,16 @@
+type: awssecretsmanagerauth
+display_name: AWS Secrets Manager Auth Extension
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: []
+
+tests:
+  config:
+    secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-basic-auth"
+    refresh_interval: 30s
+    client_auth: {}
