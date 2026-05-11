@@ -28,6 +28,7 @@ type centralQueueTelemetry struct {
 	inflightUncompressed metric.Int64Gauge
 	configuredConsumers  metric.Int64Gauge
 	activeConsumers      metric.Int64Gauge
+	lanes                metric.Int64Gauge
 	windowCompressed     metric.Int64Histogram
 	windowFlush          metric.Int64Counter
 	windowUncompressed   metric.Int64Histogram
@@ -160,6 +161,12 @@ func newCentralQueueTelemetry(settings component.TelemetrySettings, signal signa
 		"otelcol_loadbalancer_central_queue_active_consumers",
 		metric.WithDescription("Central queue drain workers currently processing or sending a leased window."),
 		metric.WithUnit("{workers}"),
+	)
+	errs = errors.Join(errs, err)
+	t.lanes, err = meter.Int64Gauge(
+		"otelcol_loadbalancer_central_queue_lanes",
+		metric.WithDescription("Effective central queue lanes used to coalesce routing keys before backend selection."),
+		metric.WithUnit("{lanes}"),
 	)
 	errs = errors.Join(errs, err)
 	t.windowCompressed, err = meter.Int64Histogram(
@@ -320,6 +327,13 @@ func (t *centralQueueTelemetry) recordActiveConsumers(ctx context.Context, consu
 		return
 	}
 	t.activeConsumers.Record(ctx, consumers, t.signalAttrs)
+}
+
+func (t *centralQueueTelemetry) recordLanes(ctx context.Context, lanes int64) {
+	if t == nil {
+		return
+	}
+	t.lanes.Record(ctx, lanes, t.signalAttrs)
 }
 
 func (t *centralQueueTelemetry) recordWindow(ctx context.Context, window centralQueueWindow, targetCompressedBytes int64) {

@@ -73,7 +73,7 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 		routingKey:               svcRouting,
 		telemetry:                telemetry,
 		logger:                   params.Logger,
-		centralQueueLaneCount:    cfg.(*Config).CentralQueue.LaneCount,
+		centralQueueLaneCount:    cfg.(*Config).CentralQueue.effectiveLaneCount(),
 		centralQueueNumConsumers: cfg.(*Config).CentralQueue.NumConsumers,
 	}
 	if cfg.(*Config).CentralQueue.Enabled {
@@ -157,6 +157,7 @@ func (e *metricExporterImp) startCentralQueueConsumers(ctx context.Context) {
 	}
 	e.centralQueue.settings.telemetry.recordConfiguredConsumers(ctx, int64(consumers))
 	e.centralQueue.settings.telemetry.recordActiveConsumers(ctx, e.centralActiveConsumers.Load())
+	e.centralQueue.settings.telemetry.recordLanes(ctx, int64(e.centralQueueLaneCount))
 	for i := 0; i < consumers; i++ {
 		e.centralWG.Add(1)
 		go e.runCentralQueue(ctx)
@@ -287,6 +288,10 @@ func (e *metricExporterImp) consumeCentralQueueMetricItem(ctx context.Context, i
 }
 
 func (e *metricExporterImp) consumeCentralQueueMetricWindow(ctx context.Context, window centralQueueWindow) error {
+	return e.consumeCentralQueueMetricWindowAttempt(ctx, window, 0)
+}
+
+func (e *metricExporterImp) consumeCentralQueueMetricWindowAttempt(ctx context.Context, window centralQueueWindow, rerouteAttempt int) error {
 	md := pmetric.NewMetrics()
 	decodedAny := false
 	corruptPayloads := 0
@@ -333,7 +338,12 @@ func (e *metricExporterImp) consumeCentralQueueMetricWindow(ctx context.Context,
 	start := time.Now()
 	err = exp.ConsumeMetrics(ctx, md)
 	duration := time.Since(start)
-	e.recordBackendResultWithoutDrain(ctx, exp, duration, err, true)
+	decision := e.recordBackendResultWithoutDrain(ctx, exp, duration, err, true)
+	if err != nil && shouldRerouteDirectFailure(e.loadBalancer, exp.endpoint, decision, rerouteAttempt) {
+		rerouteErr := e.consumeCentralQueueMetricWindowAttempt(ctx, window, rerouteAttempt+1)
+		e.loadBalancer.recordBackendReroute(ctx, "metrics", decision.reason, rerouteErr)
+		return rerouteErr
+	}
 	return err
 }
 

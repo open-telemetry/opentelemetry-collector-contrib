@@ -380,7 +380,7 @@ func TestMetricsCentralQueueFirstRetryUsesInitialDelay(t *testing.T) {
 	require.NoError(t, waitForInflight(t.Context(), &p.centralWG))
 }
 
-func TestMetricsCentralQueueRetriesOnlyFailedEndpointItem(t *testing.T) {
+func TestMetricsCentralQueueReroutesFailedEndpointItem(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := endpoint2Config()
 	enableEndpointHealth(cfg)
@@ -437,19 +437,11 @@ func TestMetricsCentralQueueRetriesOnlyFailedEndpointItem(t *testing.T) {
 	require.Eventually(t, func() bool {
 		callsMu.Lock()
 		defer callsMu.Unlock()
-		return calls["endpoint-1:4317"] == 1 && calls["endpoint-2:4317"] == 1 && p.centralQueue.len() == 1
+		return calls["endpoint-1:4317"] == 1 && calls["endpoint-2:4317"] == 2 && p.centralQueue.len() == 0
 	}, time.Second, time.Millisecond)
 	cancel()
 	require.NoError(t, waitForInflight(t.Context(), &p.centralWG))
-
-	p.centralQueue.mu.Lock()
-	items := append([]centralQueueItem(nil), p.centralQueue.items...)
-	p.centralQueue.mu.Unlock()
-	require.Len(t, items, 1)
-	remaining := items[0]
-	require.Equal(t, []byte(failedRoute), remaining.routingKey)
-	require.Equal(t, 11, remaining.attempt)
-	require.NotZero(t, remaining.nextAttemptUnixNano)
+	assert.NotContains(t, lb.exporters, "endpoint-1:4317")
 }
 
 func TestConsumeMetricsByExporterAggregatesFailedEndpointSubsets(t *testing.T) {
@@ -493,7 +485,7 @@ func TestConsumeMetricsByExporterAggregatesFailedEndpointSubsets(t *testing.T) {
 	require.ElementsMatch(t, []string{routeFailed1, routeFailed2}, serviceNamesFromMetrics(metricsErr.Data()))
 }
 
-func TestMetricsCentralQueueDoesNotDirectReroute(t *testing.T) {
+func TestMetricsCentralQueueReroutesEndpointLocalFailure(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := endpoint2Config()
 	enableEndpointHealth(cfg)
@@ -533,9 +525,10 @@ func TestMetricsCentralQueueDoesNotDirectReroute(t *testing.T) {
 	}
 
 	err = p.consumeCentralQueueMetricItem(t.Context(), item)
-	require.Error(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, calls["endpoint-1:4317"])
-	assert.Zero(t, calls["endpoint-2:4317"])
+	assert.Equal(t, 1, calls["endpoint-2:4317"])
+	assert.NotContains(t, lb.exporters, "endpoint-1:4317")
 }
 
 func TestMetricsCentralQueueConsumersSendWindowsConcurrently(t *testing.T) {

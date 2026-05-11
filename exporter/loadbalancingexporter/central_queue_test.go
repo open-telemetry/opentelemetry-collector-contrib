@@ -26,6 +26,12 @@ func TestCentralQueueAdmitsByCompressedBytes(t *testing.T) {
 	require.EqualValues(t, 10, q.compressedBytes())
 }
 
+func TestCentralQueueDerivedLaneCountKeepsEnoughLanesForConsumers(t *testing.T) {
+	require.Equal(t, 64, centralQueueLaneCount(1))
+	require.Equal(t, 64, centralQueueLaneCount(30))
+	require.Equal(t, 256, centralQueueLaneCount(65))
+}
+
 func TestCentralQueueLeaseReservesInflightUncompressedBytes(t *testing.T) {
 	q := newCentralQueue(centralQueueSettings{
 		maxCompressedBytes:           100,

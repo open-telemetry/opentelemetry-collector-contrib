@@ -160,10 +160,12 @@ func TestBuildExporterConfigDisablesChildQueueInCentralQueueMode(t *testing.T) {
 	cfg.CentralQueue.Enabled = true
 	cfg.CentralQueue.MaxCompressedBytes = 1024
 	cfg.Protocol.OTLP.QueueConfig = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
+	cfg.Protocol.OTLP.RetryConfig.Enabled = true
 
 	exporterCfg := buildExporterConfig(cfg, "the-endpoint")
 
 	require.False(t, exporterCfg.QueueConfig.HasValue())
+	require.False(t, exporterCfg.RetryConfig.Enabled)
 }
 
 func TestBuildExporterSettings(t *testing.T) {

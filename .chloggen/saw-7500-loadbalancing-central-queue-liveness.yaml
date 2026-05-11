@@ -1,0 +1,10 @@
+change_type: bug_fix
+component: exporter/loadbalancing
+note: Keep central queue dispatch responsive during backend churn.
+issues: [66]
+subtext: |-
+  Disables child OTLP retries when central_queue owns backpressure, reroutes
+  endpoint-local central queue failures immediately, derives backend lanes from
+  num_consumers by default, and validates the uncompressed in-flight budget
+  against configured central queue send parallelism.
+change_logs: [user]

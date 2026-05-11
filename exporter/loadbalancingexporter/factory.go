@@ -60,7 +60,7 @@ func createDefaultConfig() component.Config {
 			MaxInflightUncompressedBytes: defaultCentralQueueMaxInflightBytes,
 			TargetCompressedBytes:        defaultCentralQueueTargetCompressedBytes,
 			MaxBatchDelay:                defaultCentralQueueMaxBatchDelay,
-			LaneCount:                    defaultCentralQueueLaneCount,
+			LaneCount:                    0,
 			NumConsumers:                 defaultCentralQueueNumConsumers,
 		},
 		LogBatcher: LogBatcherConfig{
@@ -102,6 +102,7 @@ func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 	oCfg.ClientConfig.Endpoint = endpoint
 	if cfg.CentralQueue.Enabled {
 		oCfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
+		oCfg.RetryConfig.Enabled = false
 	}
 
 	return oCfg

@@ -140,8 +140,9 @@ func TestCentralQueueDefaultDisabled(t *testing.T) {
 	require.Equal(t, int64(512<<20), cfg.CentralQueue.MaxInflightUncompressedBytes)
 	require.Equal(t, int64(256<<10), cfg.CentralQueue.TargetCompressedBytes)
 	require.Equal(t, 250*time.Millisecond, cfg.CentralQueue.MaxBatchDelay)
-	require.Equal(t, 64, cfg.CentralQueue.LaneCount)
-	require.Equal(t, 20, cfg.CentralQueue.NumConsumers)
+	require.Zero(t, cfg.CentralQueue.LaneCount)
+	require.Equal(t, 30, cfg.CentralQueue.NumConsumers)
+	require.Equal(t, 64, cfg.CentralQueue.effectiveLaneCount())
 	require.NoError(t, cfg.Validate())
 }
 
@@ -200,14 +201,27 @@ func TestCentralQueueValidation(t *testing.T) {
 			expectedErr: "central_queue.max_batch_delay",
 		},
 		{
-			name:        "missing lane count",
-			mutate:      func(c *CentralQueueConfig) { c.LaneCount = 0 },
-			expectedErr: "central_queue.lane_count",
-		},
-		{
-			name:        "missing num consumers",
+			name:        "missing consumers",
 			mutate:      func(c *CentralQueueConfig) { c.NumConsumers = 0 },
 			expectedErr: "central_queue.num_consumers",
+		},
+		{
+			name: "inflight budget cannot cover all consumers",
+			mutate: func(c *CentralQueueConfig) {
+				c.NumConsumers = 3
+				c.MaxUncompressedBatchBytes = 16
+				c.MaxInflightUncompressedBytes = 47
+			},
+			expectedErr: "central_queue.max_inflight_uncompressed_bytes",
+		},
+		{
+			name: "explicit lane count below consumers",
+			mutate: func(c *CentralQueueConfig) {
+				c.NumConsumers = 65
+				c.MaxInflightUncompressedBytes = int64(c.NumConsumers * c.MaxUncompressedBatchBytes)
+				c.LaneCount = 64
+			},
+			expectedErr: "central_queue.lane_count",
 		},
 	}
 
@@ -230,6 +244,12 @@ func TestCentralQueueValidation(t *testing.T) {
 
 	cfg.CentralQueue.PayloadCompression = QueuePayloadCompressionZstd
 	require.NoError(t, cfg.Validate())
+
+	cfg.CentralQueue.NumConsumers = 65
+	cfg.CentralQueue.LaneCount = 0
+	cfg.CentralQueue.MaxInflightUncompressedBytes = int64(cfg.CentralQueue.NumConsumers * cfg.CentralQueue.MaxUncompressedBatchBytes)
+	require.NoError(t, cfg.Validate())
+	require.Equal(t, 256, cfg.CentralQueue.effectiveLaneCount())
 }
 
 func TestCentralQueueRejectsChildOTLPQueue(t *testing.T) {
@@ -241,6 +261,7 @@ func TestCentralQueueRejectsChildOTLPQueue(t *testing.T) {
 			"payload_compression":             "zstd",
 			"max_uncompressed_batch_bytes":    1024,
 			"max_inflight_uncompressed_bytes": 2048,
+			"num_consumers":                   2,
 		},
 		"protocol": map[string]any{
 			"otlp": map[string]any{
@@ -293,6 +314,7 @@ func TestCentralQueueAllowsChildOTLPQueueRemovalAcrossUnmarshal(t *testing.T) {
 			"payload_compression":             "zstd",
 			"max_uncompressed_batch_bytes":    1024,
 			"max_inflight_uncompressed_bytes": 2048,
+			"num_consumers":                   2,
 		},
 		"protocol": map[string]any{
 			"otlp": map[string]any{

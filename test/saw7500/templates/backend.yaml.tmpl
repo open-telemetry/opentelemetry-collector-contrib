@@ -1,0 +1,139 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: saw-7500-tally
+  namespace: saw-7500
+spec:
+  selector:
+    app: saw-7500-tally
+  ports:
+    - name: http
+      port: 13134
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: saw-7500-tally
+  namespace: saw-7500
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: saw-7500-tally
+  template:
+    metadata:
+      labels:
+        app: saw-7500-tally
+    spec:
+      containers:
+        - name: tally
+          image: __FAKE_BACKEND_IMAGE__
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: MODE
+              value: "tally"
+            - name: HTTP_ADDR
+              value: ":13134"
+          ports:
+            - name: http
+              containerPort: 13134
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+            initialDelaySeconds: 1
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+            initialDelaySeconds: 1
+            periodSeconds: 5
+            timeoutSeconds: 1
+            failureThreshold: 6
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: saw-7500-backend
+  namespace: saw-7500
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: saw-7500-backend
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: otlp-grpc
+    - name: http
+      port: 13133
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: saw-7500-backend
+  namespace: saw-7500
+spec:
+  serviceName: saw-7500-backend
+  replicas: __WORKERS__
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: saw-7500-backend
+  template:
+    metadata:
+      labels:
+        app: saw-7500-backend
+    spec:
+      terminationGracePeriodSeconds: 45
+      containers:
+        - name: fakebackend
+          image: __FAKE_BACKEND_IMAGE__
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SLOW_AFTER
+              value: "999h"
+            - name: SLOW_FOR
+              value: "0s"
+            - name: SLOW_SLEEP
+              value: "__BACKEND_SLOW_SLEEP__"
+            - name: SLOW_MODULO
+              value: "__BACKEND_SLOW_MODULO__"
+            - name: SLOW_REMAINDER
+              value: "__BACKEND_SLOW_REMAINDER__"
+            - name: UNREADY_AFTER
+              value: "999h"
+            - name: UNREADY_FOR
+              value: "0s"
+            - name: MAX_RECV_MSG_SIZE_MIB
+              value: "__BACKEND_MAX_RECV_MSG_SIZE_MIB__"
+            - name: TALLY_URL
+              value: "http://saw-7500-tally.saw-7500.svc.cluster.local:13134"
+          ports:
+            - name: otlp-grpc
+              containerPort: 4317
+            - name: http
+              containerPort: 13133
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 1
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 1
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+            initialDelaySeconds: 1
+            periodSeconds: 5
+            timeoutSeconds: 1
+            failureThreshold: 6

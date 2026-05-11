@@ -186,7 +186,8 @@ func TestConsumeLogsCentralQueueEnqueuesCompressedByRoutingKey(t *testing.T) {
 			maxInflightUncompressedBytes: 1 << 20,
 			maxUncompressedBatchBytes:    1 << 20,
 		}),
-		centralCodec: codec,
+		centralCodec:          codec,
+		centralQueueLaneCount: 64,
 		randomTraceID: func() pcommon.TraceID {
 			return pcommon.TraceID{1}
 		},
@@ -203,7 +204,7 @@ func TestConsumeLogsCentralQueueEnqueuesCompressedByRoutingKey(t *testing.T) {
 	defer lease.done()
 	require.Equal(t, signalKindLogs, lease.item.signal)
 	expectedRoutingKey := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).TraceID()
-	require.Equal(t, expectedRoutingKey[:], lease.item.routingKey)
+	require.Equal(t, centralQueueLaneRoutingKey(signalKindLogs, expectedRoutingKey[:], 64), lease.item.routingKey)
 	require.Equal(t, len(lease.item.payload), cap(lease.item.payload))
 
 	decoded, err := decodeCentralQueueLogsItem(lease.item, codec)
@@ -211,7 +212,7 @@ func TestConsumeLogsCentralQueueEnqueuesCompressedByRoutingKey(t *testing.T) {
 	require.NoError(t, plogtest.CompareLogs(logs, decoded))
 }
 
-func TestConsumeLogsCentralQueueCoalescesRandomRoutingBeforeLaneSelection(t *testing.T) {
+func TestConsumeLogsCentralQueueUsesLaneRoutingForIgnoredTraceIDs(t *testing.T) {
 	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
 	t.Cleanup(func() { require.NoError(t, codec.Close()) })
 	traceIDs := distinctCentralQueueLaneTraceIDs(t, 2, 64)
@@ -242,8 +243,8 @@ func TestConsumeLogsCentralQueueCoalescesRandomRoutingBeforeLaneSelection(t *tes
 	lease, err := p.centralQueue.lease(t.Context())
 	require.NoError(t, err)
 	defer lease.done()
-	require.Len(t, lease.window.items, 2)
-	require.Equal(t, centralQueueRandomLogsRoutingKey(), lease.window.routingKey)
+	require.Len(t, lease.window.items, 1)
+	require.Equal(t, centralQueueLaneRoutingKey(signalKindLogs, traceIDs[0][:], 64), lease.window.routingKey)
 
 	merged := plog.NewLogs()
 	for _, item := range lease.window.items {
@@ -251,7 +252,56 @@ func TestConsumeLogsCentralQueueCoalescesRandomRoutingBeforeLaneSelection(t *tes
 		require.NoError(t, decodeErr)
 		mergeLogChunksByMove(merged, decoded)
 	}
-	require.Equal(t, first.LogRecordCount()+second.LogRecordCount(), merged.LogRecordCount())
+	require.Equal(t, first.LogRecordCount(), merged.LogRecordCount())
+}
+
+func TestLogsCentralQueueWindowUsesRoutingKeyWhenIgnoringTraceIDs(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+
+	endpoint1 := "endpoint-1:4317"
+	endpoint2 := "endpoint-2:4317"
+	var endpoint1Calls atomic.Int64
+	var endpoint2Calls atomic.Int64
+	endpoint1Exporter := newWrappedExporter(newMockLogsExporter(func(context.Context, plog.Logs) error {
+		endpoint1Calls.Add(1)
+		return nil
+	}), endpoint1)
+	endpoint2Exporter := newWrappedExporter(newMockLogsExporter(func(context.Context, plog.Logs) error {
+		endpoint2Calls.Add(1)
+		return nil
+	}), endpoint2)
+	endpoint2Exporter.markStopping()
+	lb := &loadBalancer{
+		ring: newHashRing([]string{endpoint1, endpoint2}),
+		exporters: map[string]*wrappedExporter{
+			endpoint1: endpoint1Exporter,
+			endpoint2: endpoint2Exporter,
+		},
+		endpointHealth: newEndpointHealthManager(endpointHealthSettings{}),
+	}
+
+	route := findRoutingIDForEndpoint(t, lb.ring, endpoint2)
+	item, err := newCentralQueueLogsItem([]byte(route), simpleLogs(), codec, time.Now())
+	require.NoError(t, err)
+	p := &logExporterImp{
+		centralCodec:  codec,
+		ignoreTraceID: true,
+		loadBalancer:  lb,
+		logger:        ts.Logger,
+		telemetry:     tb,
+	}
+
+	err = p.consumeCentralQueueLogWindow(t.Context(), centralQueueWindow{
+		routingKey: []byte(route),
+		items:      []centralQueueItem{item},
+		count:      item.count,
+	})
+
+	require.NoError(t, err)
+	assert.Zero(t, endpoint1Calls.Load())
+	assert.Equal(t, int64(1), endpoint2Calls.Load())
 }
 
 func TestLogsCentralQueueShutdownCancelsBeforeWaiting(t *testing.T) {
@@ -441,7 +491,7 @@ func TestLogsCentralQueueFirstRetryUsesInitialDelay(t *testing.T) {
 	require.NoError(t, waitForInflight(t.Context(), &p.centralWG))
 }
 
-func TestLogsCentralQueueRetriesOnlyFailedEndpointItem(t *testing.T) {
+func TestLogsCentralQueueReroutesFailedEndpointItem(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := endpoint2Config()
 	enableEndpointHealth(cfg)
@@ -498,19 +548,11 @@ func TestLogsCentralQueueRetriesOnlyFailedEndpointItem(t *testing.T) {
 	require.Eventually(t, func() bool {
 		callsMu.Lock()
 		defer callsMu.Unlock()
-		return calls["endpoint-1:4317"] == 1 && calls["endpoint-2:4317"] == 1 && p.centralQueue.len() == 1
+		return calls["endpoint-1:4317"] == 1 && calls["endpoint-2:4317"] == 2 && p.centralQueue.len() == 0
 	}, time.Second, time.Millisecond)
 	cancel()
 	require.NoError(t, waitForInflight(t.Context(), &p.centralWG))
-
-	p.centralQueue.mu.Lock()
-	items := append([]centralQueueItem(nil), p.centralQueue.items...)
-	p.centralQueue.mu.Unlock()
-	require.Len(t, items, 1)
-	remaining := items[0]
-	require.Equal(t, []byte(failedRoute), remaining.routingKey)
-	require.Equal(t, 11, remaining.attempt)
-	require.NotZero(t, remaining.nextAttemptUnixNano)
+	assert.NotContains(t, lb.exporters, "endpoint-1:4317")
 }
 
 func TestLogsCentralQueueDoesNotDrainSynchronously(t *testing.T) {
@@ -560,7 +602,7 @@ func TestLogsCentralQueueDoesNotDrainSynchronously(t *testing.T) {
 
 	select {
 	case err := <-done:
-		require.Error(t, err)
+		require.NoError(t, err)
 		releaseDrainOnce.Do(func() { close(releaseDrain) })
 	case <-time.After(200 * time.Millisecond):
 		releaseDrainOnce.Do(func() { close(releaseDrain) })

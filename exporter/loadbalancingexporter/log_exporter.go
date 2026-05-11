@@ -73,7 +73,7 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 		ignoreTraceID:            cfg.(*Config).LogRouting.IgnoreTraceID,
 		randomTraceID:            random,
 		centralQueueByteBatching: cfg.(*Config).centralQueueByteBatchingEnabled(),
-		centralQueueLaneCount:    cfg.(*Config).CentralQueue.LaneCount,
+		centralQueueLaneCount:    cfg.(*Config).CentralQueue.effectiveLaneCount(),
 		centralQueueNumConsumers: cfg.(*Config).CentralQueue.NumConsumers,
 	}
 	if cfg.(*Config).CentralQueue.Enabled {
@@ -142,6 +142,7 @@ func (e *logExporterImp) startCentralQueueConsumers(ctx context.Context) {
 	}
 	e.centralQueue.settings.telemetry.recordConfiguredConsumers(ctx, int64(consumers))
 	e.centralQueue.settings.telemetry.recordActiveConsumers(ctx, e.centralActiveConsumers.Load())
+	e.centralQueue.settings.telemetry.recordLanes(ctx, int64(e.centralQueueLaneCount))
 	for i := 0; i < consumers; i++ {
 		e.centralWG.Add(1)
 		go e.runCentralQueue(ctx)
@@ -199,10 +200,7 @@ func (e *logExporterImp) consumeLogsCentralQueue(_ context.Context, ld plog.Logs
 	var errs error
 	now := time.Now()
 	for routingKey, logs := range batches {
-		queueRoutingKey := routingKey[:]
-		if e.ignoreTraceID {
-			queueRoutingKey = centralQueueRandomLogsRoutingKey()
-		}
+		queueRoutingKey := centralQueueLaneRoutingKey(signalKindLogs, routingKey[:], e.centralQueueLaneCount)
 		item, err := newCentralQueueLogsItem(queueRoutingKey, logs, e.centralCodec, now)
 		if err != nil {
 			errs = multierr.Append(errs, err)
@@ -298,6 +296,10 @@ func (e *logExporterImp) consumeCentralQueueLogItem(ctx context.Context, item ce
 }
 
 func (e *logExporterImp) consumeCentralQueueLogWindow(ctx context.Context, window centralQueueWindow) error {
+	return e.consumeCentralQueueLogWindowAttempt(ctx, window, 0)
+}
+
+func (e *logExporterImp) consumeCentralQueueLogWindowAttempt(ctx context.Context, window centralQueueWindow, rerouteAttempt int) error {
 	ld := plog.NewLogs()
 	decodedAny := false
 	corruptPayloads := 0
@@ -332,17 +334,16 @@ func (e *logExporterImp) consumeCentralQueueLogWindow(ctx context.Context, windo
 	if !decodedAny {
 		return nil
 	}
-	var le *wrappedExporter
-	var err error
-	if e.ignoreTraceID {
-		le, _, err = e.loadBalancer.randomExporterAndEndpoint()
-	} else {
-		le, _, err = e.loadBalancer.exporterAndEndpoint(window.routingKey)
-	}
+	le, _, err := e.loadBalancer.exporterAndEndpoint(window.routingKey)
 	if err != nil {
 		return err
 	}
-	_, err = e.consumeBatchWithDecision(ctx, le, ld, logFlushReasonDirect, true, false, false)
+	decision, err := e.consumeBatchWithDecision(ctx, le, ld, logFlushReasonDirect, true, false, false)
+	if err != nil && shouldRerouteDirectFailure(e.loadBalancer, le.endpoint, decision, rerouteAttempt) {
+		rerouteErr := e.consumeCentralQueueLogWindowAttempt(ctx, window, rerouteAttempt+1)
+		e.loadBalancer.recordBackendReroute(ctx, "logs", decision.reason, rerouteErr)
+		return rerouteErr
+	}
 	return err
 }
 

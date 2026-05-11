@@ -28,6 +28,18 @@ func centralQueueReadyWindowLimit(consumers int) int {
 	return consumers
 }
 
+func centralQueueLaneCount(numConsumers int) int {
+	if numConsumers <= 0 {
+		numConsumers = 1
+	}
+	target := max(defaultCentralQueueLaneCount, numConsumers*2)
+	laneCount := 1
+	for laneCount < target {
+		laneCount <<= 1
+	}
+	return laneCount
+}
+
 type centralQueueSettings struct {
 	maxCompressedBytes           int64
 	maxInflightUncompressedBytes int64
@@ -666,8 +678,4 @@ func centralQueueLaneRoutingKey(signal signalKind, routingKey []byte, laneCount 
 	laneRoutingKey[len(signal)] = 0
 	binary.BigEndian.PutUint32(laneRoutingKey[len(signal)+1:], lane)
 	return laneRoutingKey
-}
-
-func centralQueueRandomLogsRoutingKey() []byte {
-	return []byte("logs\x00random")
 }

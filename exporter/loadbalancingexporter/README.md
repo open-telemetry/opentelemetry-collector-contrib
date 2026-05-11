@@ -79,6 +79,7 @@ The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`,
 * When using `k8s`, `dns`, and likely future resolvers, topology changes are eventually reflected in the `loadbalancingexporter`. The `k8s` resolver will update more quickly than `dns`, but a window of time in which the true topology doesn't match the view of the `loadbalancingexporter` remains.
 * Resiliency options 1 (`timeout`, `retry_on_failure` and `sending_queue` settings in `loadbalancing` section) - are useful for highly elastic environment (like k8s), where list of resolved endpoints frequently changed due to deployments, scale-up or scale-down events. In case of permanent change of list of resolved exporters this options provide capability to re-route data into new set of healthy backends. Disabled by default.
 * Resiliency options 2 (`timeout`, `retry_on_failure` and `sending_queue` settings in `otlp` section) - are useful for temporary problems with specific backend, like network flukes. Persistent Queue is NOT supported here as all sub-exporter shares the same `sending_queue` configuration, including `storage`. Enabled by default.
+* When `central_queue` is enabled, the child `otlp` exporters' `sending_queue` and `retry_on_failure` are disabled. In that mode the central queue owns retry/backpressure and endpoint-health rerouting, so per-backend retries would keep work pinned to a failed backend and delay rerouting.
 * The `endpoint_health` option can be enabled to quarantine a resolver-present backend after the first endpoint-local transport failure. When `reroute_on_failure` is enabled, the failed telemetry is rerouted once to another eligible backend, which can temporarily break routing affinity to preserve availability. If every resolver-present backend is quarantined, endpoint health fails open and keeps those endpoints eligible so traffic is not blackholed. `endpoint_health.active_probe` can also be enabled to locally test backend reachability with TCP connects before customer telemetry is routed there.
 
 Unfortunately, data loss is still possible for any resolver type if all of the exporter's targets remains unavailable once redelivery is exhausted. Due consideration needs to be given to the exporter queue and retry configuration when running in a highly elastic environment.
@@ -158,8 +159,8 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `max_inflight_uncompressed_bytes` limits concurrently decompressed bytes while dispatching queue items. Default: `536870912` (`512 MiB`).
   * `target_compressed_bytes` is the soft compressed-size target for one backend request assembled from queued payloads. Default: `262144` (`256 KiB`).
   * `max_batch_delay` bounds how long a small backend lane can wait for more queued payloads before dispatch. Default: `250ms`.
-  * `lane_count` controls how many backend lanes routing keys are coalesced into before a backend endpoint is selected. Default: `64`.
-  * `num_consumers` sets the number of parallel central queue drain workers per signal exporter. Default: `20`.
+  * `num_consumers` sets the number of parallel central queue drain workers per signal exporter. Default: `30`.
+  * `lane_count` optionally overrides the derived number of backend lanes used to coalesce routing keys before endpoint selection. Leave it unset for normal use; by default lanes are derived from `num_consumers`.
   * Queued payloads stay compressed until dispatch. Central queue capacity is enforced on compressed bytes; request windows are decoded only after a ready lane window is leased.
   * The scheduler keeps a bounded set of ready request windows, limited by `num_consumers`. Ready windows reserve uncompressed in-flight budget before a worker leases them, so parallel consumers do not shrink request windows beyond `target_compressed_bytes` unless a bounded flush reason applies.
   * Central queue mode is incompatible with `sending_queue.enabled=true`, `protocol.otlp.sending_queue`, `log_batcher.enabled=true`, and `metric_batcher.enabled=true`. Child OTLP exporter queues are disabled while central queue mode is active.
@@ -205,7 +206,7 @@ exporters:
       max_inflight_uncompressed_bytes: 536870912
       target_compressed_bytes: 262144
       max_batch_delay: 250ms
-      lane_count: 64
+      num_consumers: 30
     log_routing:
       ignore_trace_id: true
     routing_key: "service"
@@ -535,6 +536,7 @@ The following metrics are recorded by this exporter:
 * Central queue worker metrics show whether each LB pod is draining queue windows in parallel:
   * `otelcol_loadbalancer_central_queue_configured_consumers` reports configured drain workers per signal exporter.
   * `otelcol_loadbalancer_central_queue_active_consumers` reports drain workers currently processing or sending a leased queue window.
+  * `otelcol_loadbalancer_central_queue_lanes` reports the effective queue lanes used for routing-key coalescing.
 * Central queue scheduler metrics show the bounded ready-window state:
   * `otelcol_loadbalancer_central_queue_ready_windows` reports request windows ready to be leased by drain workers.
   * `otelcol_loadbalancer_central_queue_ready_window_limit` reports the ready-window bound, which follows `central_queue.num_consumers`.

@@ -24,15 +24,15 @@ $defs:
         type: string
         format: duration
         description: Maximum time to wait for a small central queue lane window to reach target_compressed_bytes.
-      lane_count:
-        type: integer
-        minimum: 1
-        description: Number of backend lanes used to coalesce routing keys before late endpoint selection.
       num_consumers:
         type: integer
         minimum: 1
-        default: 20
+        default: 30
         description: Number of parallel workers draining central queue request windows per signal exporter.
+      lane_count:
+        type: integer
+        minimum: 0
+        description: Optional advanced override for backend lanes used to coalesce routing keys before late endpoint selection. Leave unset or 0 to derive from num_consumers.
       payload_compression:
         type: string
         enum:

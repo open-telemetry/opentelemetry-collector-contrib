@@ -235,9 +235,7 @@ const (
 	defaultCentralQueueTargetCompressedBytes     = int64(256 << 10)
 	defaultCentralQueueMaxBatchDelay             = 250 * time.Millisecond
 	defaultCentralQueueLaneCount                 = 64
-	// Keep default drain parallelism high enough for hot LB pods while avoiding
-	// the goroutine and in-flight memory footprint of larger tuned deployments.
-	defaultCentralQueueNumConsumers = 20
+	defaultCentralQueueNumConsumers              = 30
 )
 
 type CentralQueueConfig struct {
@@ -250,6 +248,13 @@ type CentralQueueConfig struct {
 	MaxBatchDelay                time.Duration           `mapstructure:"max_batch_delay"`
 	LaneCount                    int                     `mapstructure:"lane_count"`
 	NumConsumers                 int                     `mapstructure:"num_consumers"`
+}
+
+func (c CentralQueueConfig) effectiveLaneCount() int {
+	if c.LaneCount > 0 {
+		return c.LaneCount
+	}
+	return centralQueueLaneCount(c.NumConsumers)
 }
 
 func (q QueueSettings) Validate() error {
@@ -350,11 +355,17 @@ func (c CentralQueueConfig) Validate() error {
 	if c.MaxBatchDelay <= 0 {
 		return errors.New("central_queue.max_batch_delay must be greater than 0 when central_queue.enabled=true")
 	}
-	if c.LaneCount <= 0 {
-		return errors.New("central_queue.lane_count must be greater than 0 when central_queue.enabled=true")
-	}
 	if c.NumConsumers <= 0 {
 		return errors.New("central_queue.num_consumers must be greater than 0 when central_queue.enabled=true")
+	}
+	if c.MaxInflightUncompressedBytes/int64(c.NumConsumers) < int64(c.MaxUncompressedBatchBytes) {
+		return errors.New("central_queue.max_inflight_uncompressed_bytes must be greater than or equal to central_queue.num_consumers * central_queue.max_uncompressed_batch_bytes")
+	}
+	if c.LaneCount < 0 {
+		return errors.New("central_queue.lane_count must be greater than or equal to 0 when central_queue.enabled=true")
+	}
+	if c.LaneCount > 0 && c.LaneCount < c.NumConsumers {
+		return errors.New("central_queue.lane_count must be greater than or equal to central_queue.num_consumers when set")
 	}
 	return nil
 }
