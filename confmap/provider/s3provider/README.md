@@ -36,9 +36,9 @@ Example:
 s3://doc-example-bucket.s3.us-west-2.amazonaws.com/config.yaml
 ```
 
-### S3-compatible services (path-style)
+### Amazon S3-compatible services (path-style)
 
-For non-AWS S3-compatible services such as MinIO or DigitalOcean Spaces:
+For Amazon S3-compatible services such as MinIO or DigitalOcean Spaces:
 
 ```
 s3://[ENDPOINT_HOST]/[BUCKET]/[KEY]?region=[REGION]
