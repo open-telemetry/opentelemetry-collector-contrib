@@ -24,7 +24,7 @@ This package provides a `ConfigMapProvider` implementation for S3 (`s3provider`)
 
 ## URI formats
 
-### AWS S3 (virtual-hosted-style)
+### Amazon S3 (virtual-hosted-style)
 
 ```
 s3://[BUCKET].s3.[REGION].amazonaws.com/[KEY]
