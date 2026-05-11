@@ -213,7 +213,9 @@ func TestExportData_AttachesHeaders(t *testing.T) {
 			{Name: "static-key-ONLY", Value: configopaque.String("static-value")},
 			{Name: "shared-key", Value: configopaque.String("static-value-override")},
 		},
-		1024*1024, nil,
+		1024*1024,
+		componenttest.NewNopHost(),
+		nil,
 	)
 
 	records := []*kgo.Record{{Topic: topic, Value: []byte("test-payload")}}
