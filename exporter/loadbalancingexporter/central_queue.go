@@ -487,11 +487,12 @@ func (q *centralQueue) snapshotLocked() centralQueueSnapshot {
 
 func (q *centralQueue) snapshotLockedAt(now time.Time) centralQueueSnapshot {
 	return centralQueueSnapshot{
-		compressedBytes:      q.currentCompressedBytes,
-		compressedCapacity:   q.settings.maxCompressedBytes,
-		items:                int64(len(q.items) + q.readyItemCountLocked()),
-		inflightUncompressed: q.currentInflightBytes,
-		oldestItemAgeMillis:  q.oldestItemAgeMillisLocked(now),
+		compressedBytes:              q.currentCompressedBytes,
+		compressedCapacity:           q.settings.maxCompressedBytes,
+		items:                        int64(len(q.items) + q.readyItemCountLocked()),
+		inflightUncompressed:         q.currentInflightBytes,
+		inflightUncompressedCapacity: q.settings.maxInflightUncompressedBytes,
+		oldestItemAgeMillis:          q.oldestItemAgeMillisLocked(now),
 	}
 }
 

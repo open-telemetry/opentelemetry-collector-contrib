@@ -1,0 +1,9 @@
+change_type: enhancement
+component: exporter/loadbalancing
+note: Add a central queue in-flight uncompressed capacity metric for load-balanced logs and metrics.
+issues: [69]
+subtext: |-
+  Adds `otelcol_loadbalancer_central_queue_inflight_uncompressed_capacity` so
+  downstream readiness checks can compare in-flight uncompressed bytes against
+  the configured central queue limit.
+change_logs: [user]

@@ -3,7 +3,7 @@
 ## Copy/paste `/goal`
 
 ```text
-/goal Follow docs/superpowers/plans/2026-05-11-saw-7500-end-to-end-red-green-goal.md and drive SAW-7500 all the way through release and production validation without deploying to BigID: implement the central-queue concurrency fix in opentelemetry-collector-contrib, prove it with deterministic red/green tests, merge with green PR sweeps, propagate the dependency/version/config through sawmills-collector and collectors-service, deploy to staging and any required non-BigID prod target, and prove from controlled simulation plus live non-BigID runtime metrics that the original incident shape no longer occurs.
+/goal Follow docs/superpowers/plans/2026-05-11-saw-7500-end-to-end-red-green-goal.md and drive SAW-7500 all the way through release and production validation without deploying to BigID: implement the central-queue concurrency fix in opentelemetry-collector-contrib, prove it with deterministic red/green tests, merge with green PR sweeps, propagate the dependency/version/config through sawmills-collector and collectors-service, update the required LaunchDarkly feature flags with `ldcli`, deploy and test in staging and non-BigID prod, and prove from controlled simulation plus live non-BigID runtime metrics that the original incident shape no longer occurs. End with a BigID-ready deployment package and exact `ldcli`/deployment instructions, but do not apply them to BigID.
 
 The proof must cover:
 1. `central_queue.num_consumers` as the single operator-facing send-parallelism knob.
@@ -11,11 +11,12 @@ The proof must cover:
 3. Consistent lane hashing for logs and metrics.
 4. Memory safety validation: `num_consumers * max_uncompressed_batch_bytes <= max_inflight_uncompressed_bytes`.
 5. Boring liveness: backend churn, queue pressure, and exporter drain must not cause kubelet liveness kills.
+   Use the existing Sawmills `backend_drain` extension as the Kubernetes `/ready` owner; do not add a second readiness HTTP server inside contrib.
 6. Dispatch/queue observability: active consumers, configured consumers, effective lanes, queue bytes/items/age, refusals, rejections, reroutes, quarantine, and backend latency.
 7. Evidence-backed request sizing: keep `target_compressed_bytes=256KiB` unless a red/green test proves a different value is better without violating latency/memory gates.
 8. A reusable local/manual or nightly regression harness for the `production-mt-4-us-east-1`-shaped load + backend rolling deploy shape.
 
-Done means all touched PRs are merged or explicitly blocked with evidence, CI/review sweeps are green, staging and any required non-BigID prod deployments are verified from live runtime/config/metrics, and SAW-7500 contains the artifact links and final red/green verdicts.
+Done means all touched PRs from contrib through sawmills-collector and collectors-service are merged or explicitly blocked with evidence, CI/review sweeps are green, LaunchDarkly feature-flag changes are applied and read back with `ldcli`, staging and any required non-BigID prod deployments are verified from live runtime/config/metrics, BigID is ready to deploy from a reviewed package without being deployed, and SAW-7500 contains the artifact links and final red/green verdicts.
 
 Keep SAW-7500 updated continuously while working: after each meaningful red/green gate, PR event, CI sweep, merge, release, deploy, blocker, or live validation step, add or update a ticket comment with the current status, evidence links, and next step. The ticket must remain the recovery anchor until the goal is complete.
 ```
@@ -75,10 +76,13 @@ This red is a dependency/version/config gap, not a production incident.
 Update and validate the collector:
 
 - bump to fixed contrib dependency/version,
+- extend the existing `backend_drain` readiness extension to include pressure-aware `/ready` checks when enabled,
+- prove `/ready` returns 503 under queue/inflight/memory/rejection pressure while liveness/healthcheck remains boring,
 - build/release collector cleanly,
 - run collector-level smoke/regression with the fixed central queue config,
 - verify generated collector binary accepts `central_queue.num_consumers`,
 - merge with green CI/review sweep,
+- do not continue downstream until the PR is swept green or an explicit blocker is documented in SAW-7500,
 - verify release/tag/artifact exists.
 
 ### 5. Collectors-Service Red
@@ -97,7 +101,7 @@ Update and validate config generation and flags:
 - `target_compressed_bytes=256KiB`,
 - inflight bytes are coherent with consumer count and batch size,
 - no unnecessary `lane_count` exposure for normal operation,
-- LaunchDarkly/default variations read back correctly,
+- LaunchDarkly/default variations are updated with `ldcli` and read back correctly,
 - PR checks and review sweep are green,
 - merge complete.
 
@@ -140,7 +144,18 @@ Roll out through the intended production mechanism without targeting BigID clust
 - no LB replica explosion,
 - evidence linked back to SAW-7500.
 
-Do not manufacture a new production red. Do not deploy to BigID. BigID evidence is the historical SAW-7500 incident evidence already captured in the ticket plus the mt-4-shaped simulation evidence.
+### 10. BigID Ready, Not Deployed
+
+Prepare the BigID rollout package after staging and non-BigID prod are green:
+
+- identify the exact BigID clusters that would receive the fix,
+- record the collector image/version, collectors-service version, Helm/chart values, and `ldcli` feature-flag patch commands required for BigID,
+- read back the current BigID LaunchDarkly targeting/config without mutating it,
+- render or dry-run the BigID config and prove it contains the fixed collector version and pressure-safe LB config,
+- define the post-deploy validation checklist: collector version, rendered config, `/ready` behavior if enabled, queue bytes/items/oldest age, active/configured consumers, effective lanes, refused/rejected counters, backend p95/p99, LB replica count, pod restarts, and events,
+- link the package and dry-run/readback evidence in SAW-7500.
+
+Do not manufacture a new production red. Do not deploy to BigID. Do not update BigID LaunchDarkly targeting/config. BigID evidence is the historical SAW-7500 incident evidence already captured in the ticket plus the mt-4-shaped simulation evidence and the ready-to-deploy dry run.
 
 ## Current Local Evidence
 
@@ -162,6 +177,6 @@ Keep SAW-7500 as the recovery anchor:
 - keep updating the ticket as work progresses until this goal is complete,
 - update it after each red/green boundary,
 - update it after each PR, CI sweep, merge, release, deploy, blocker, and live-validation step,
-- include artifact paths, PR links, run IDs, version/tag values, LaunchDarkly variation/readback, and live metric snapshots,
+- include artifact paths, PR links, run IDs, version/tag values, `ldcli` LaunchDarkly patches/readbacks, deployment targets, BigID dry-run package links, and live metric snapshots,
 - separate completed evidence from remaining blockers,
 - do not call the issue fixed until prod green evidence is present or an explicit external blocker is documented.

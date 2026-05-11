@@ -541,6 +541,7 @@ The following metrics are recorded by this exporter:
   * `otelcol_loadbalancer_central_queue_ready_windows` reports request windows ready to be leased by drain workers.
   * `otelcol_loadbalancer_central_queue_ready_window_limit` reports the ready-window bound, which follows `central_queue.num_consumers`.
   * `otelcol_loadbalancer_central_queue_ready_uncompressed_bytes` reports uncompressed bytes reserved by ready windows.
+  * `otelcol_loadbalancer_central_queue_inflight_uncompressed_capacity` reports the configured uncompressed byte capacity for ready and leased queue windows.
   * `otelcol_loadbalancer_central_queue_scheduler_state` reports the latest scheduler state as a gauge with `state` labels. The active state is `1`; other states are `0`. States are `ready`, `queue_empty`, `waiting`, `inflight_uncompressed_bytes`, `ready_window_limit`, and `stopped`.
 * Central queue window metrics show whether request coalescing is addressing small backend requests:
   * `otelcol_loadbalancer_central_queue_window_compressed_bytes` reports compressed bytes leased into each request window.

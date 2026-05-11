@@ -31,11 +31,12 @@ func TestCentralQueueTelemetryRecordsInstruments(t *testing.T) {
 	})
 
 	telemetry.record(t.Context(), centralQueueSnapshot{
-		compressedBytes:      50,
-		compressedCapacity:   100,
-		items:                3,
-		inflightUncompressed: 80,
-		oldestItemAgeMillis:  125,
+		compressedBytes:              50,
+		compressedCapacity:           100,
+		items:                        3,
+		inflightUncompressed:         80,
+		inflightUncompressedCapacity: 160,
+		oldestItemAgeMillis:          125,
 	})
 	telemetry.recordRejected(t.Context(), 7)
 	telemetry.recordRetry(t.Context())
@@ -58,6 +59,7 @@ func TestCentralQueueTelemetryRecordsInstruments(t *testing.T) {
 	requireCentralQueueFloatGauge(t, reader, "otelcol_loadbalancer_central_queue_saturation", "1", attrs, 0.5)
 	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_items", "{items}", attrs, 3)
 	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_inflight_uncompressed_bytes", "By", attrs, 80)
+	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_inflight_uncompressed_capacity", "By", attrs, 160)
 	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_ready_windows", "{windows}", attrs, 2)
 	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_ready_window_limit", "{windows}", attrs, 4)
 	requireCentralQueueIntGauge(t, reader, "otelcol_loadbalancer_central_queue_ready_uncompressed_bytes", "By", attrs, 48)

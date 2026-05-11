@@ -26,6 +26,7 @@ type centralQueueTelemetry struct {
 	retries              metric.Int64Counter
 	decodeFailures       metric.Int64Counter
 	inflightUncompressed metric.Int64Gauge
+	inflightCapacity     metric.Int64Gauge
 	configuredConsumers  metric.Int64Gauge
 	activeConsumers      metric.Int64Gauge
 	lanes                metric.Int64Gauge
@@ -51,11 +52,12 @@ type centralQueueTelemetry struct {
 }
 
 type centralQueueSnapshot struct {
-	compressedBytes      int64
-	compressedCapacity   int64
-	items                int64
-	inflightUncompressed int64
-	oldestItemAgeMillis  int64
+	compressedBytes              int64
+	compressedCapacity           int64
+	items                        int64
+	inflightUncompressed         int64
+	inflightUncompressedCapacity int64
+	oldestItemAgeMillis          int64
 }
 
 type centralQueueSchedulerSnapshot struct {
@@ -148,6 +150,12 @@ func newCentralQueueTelemetry(settings component.TelemetrySettings, signal signa
 	t.inflightUncompressed, err = meter.Int64Gauge(
 		"otelcol_loadbalancer_central_queue_inflight_uncompressed_bytes",
 		metric.WithDescription("Uncompressed bytes currently reserved by ready or leased central load-balancing queue windows."),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	t.inflightCapacity, err = meter.Int64Gauge(
+		"otelcol_loadbalancer_central_queue_inflight_uncompressed_capacity",
+		metric.WithDescription("Configured uncompressed byte capacity for ready and leased central load-balancing queue windows."),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
@@ -292,6 +300,7 @@ func (t *centralQueueTelemetry) record(ctx context.Context, snapshot centralQueu
 	}
 	t.items.Record(ctx, snapshot.items, t.signalAttrs)
 	t.inflightUncompressed.Record(ctx, snapshot.inflightUncompressed, t.signalAttrs)
+	t.inflightCapacity.Record(ctx, snapshot.inflightUncompressedCapacity, t.signalAttrs)
 }
 
 func (t *centralQueueTelemetry) recordRejected(ctx context.Context, compressedBytes int64) {
