@@ -67,9 +67,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["OracledbSessionsUsage"] = mb.metricOracledbSessionsUsage.config.AggregationStrategy
-			aggMap["OracledbTablespaceSizeLimit"] = mb.metricOracledbTablespaceSizeLimit.config.AggregationStrategy
-			aggMap["OracledbTablespaceSizeUsage"] = mb.metricOracledbTablespaceSizeUsage.config.AggregationStrategy
+			aggMap["oracledb.sessions.usage"] = mb.metricOracledbSessionsUsage.config.AggregationStrategy
+			aggMap["oracledb.tablespace_size.limit"] = mb.metricOracledbTablespaceSizeLimit.config.AggregationStrategy
+			aggMap["oracledb.tablespace_size.usage"] = mb.metricOracledbTablespaceSizeUsage.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
