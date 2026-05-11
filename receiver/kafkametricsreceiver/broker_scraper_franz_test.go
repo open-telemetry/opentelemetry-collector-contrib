@@ -35,8 +35,6 @@ func franzTestConfig(t *testing.T) Config {
 }
 
 func TestBrokerScraperFranz_CreateStartScrapeShutdown(t *testing.T) {
-	setFranzGo(t, true)
-
 	cfg := franzTestConfig(t)
 
 	// create franz-backed scraper directly (unit test)
@@ -78,8 +76,6 @@ func TestBrokerScraperFranz_CreateStartScrapeShutdown(t *testing.T) {
 }
 
 func TestBrokerScraperFranz_EmptyClusterAlias(t *testing.T) {
-	setFranzGo(t, true)
-
 	cfg := franzTestConfig(t)
 	cfg.ClusterAlias = "" // ensure empty alias behaves like Sarama test
 
@@ -102,8 +98,6 @@ func TestBrokerScraperFranz_EmptyClusterAlias(t *testing.T) {
 }
 
 func TestBrokerScraperFranz_Create(t *testing.T) {
-	setFranzGo(t, true)
-
 	cfg := franzTestConfig(t)
 	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
@@ -111,8 +105,6 @@ func TestBrokerScraperFranz_Create(t *testing.T) {
 }
 
 func TestBrokerScraperFranz_Start(t *testing.T) {
-	setFranzGo(t, true)
-
 	cfg := franzTestConfig(t)
 	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
@@ -123,8 +115,6 @@ func TestBrokerScraperFranz_Start(t *testing.T) {
 }
 
 func TestBrokerScraperFranz_ScrapeMetricValues(t *testing.T) {
-	setFranzGo(t, true)
-
 	const numBrokers = 3
 	const logRetentionHoursValue = 168
 	_, clientCfg := kafkatest.NewCluster(t,
@@ -180,8 +170,6 @@ func TestBrokerScraperFranz_ScrapeMetricValues(t *testing.T) {
 }
 
 func TestBrokerScraperFranz_ScrapePartialError_UnparseableRetention(t *testing.T) {
-	setFranzGo(t, true)
-
 	const numBrokers = 2
 	_, clientCfg := kafkatest.NewCluster(t,
 		kfake.SeedTopics(1, "meta-topic"),
@@ -223,8 +211,6 @@ func TestBrokerScraperFranz_ScrapePartialError_UnparseableRetention(t *testing.T
 }
 
 func TestBrokerScraperFranz_ScrapeUnreachable(t *testing.T) {
-	setFranzGo(t, true)
-
 	cluster, clientCfg := kafkatest.NewCluster(t, kfake.SeedTopics(1, "meta-topic"))
 	cfg := Config{
 		ClientConfig:         clientCfg,
@@ -245,8 +231,6 @@ func TestBrokerScraperFranz_ScrapeUnreachable(t *testing.T) {
 }
 
 func TestBrokerScraperFranz_ShutdownWithoutStart_OK(t *testing.T) {
-	setFranzGo(t, true)
-
 	// create a legit cfg but never start
 	_, _ = kafkatest.NewCluster(t, kfake.SeedTopics(1, "meta-topic"))
 	cfg := franzTestConfig(t)
