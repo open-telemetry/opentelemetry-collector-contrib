@@ -35,8 +35,6 @@ func franzTopicsTestConfig(t *testing.T) Config {
 }
 
 func TestTopicScraperFranz_CreateStartScrapeShutdown(t *testing.T) {
-	setFranzGo(t, true)
-
 	cfg := franzTopicsTestConfig(t)
 
 	var s scraper.Metrics
@@ -60,8 +58,6 @@ func TestTopicScraperFranz_CreateStartScrapeShutdown(t *testing.T) {
 }
 
 func TestTopicScraperFranz_InvalidTopicRegex(t *testing.T) {
-	setFranzGo(t, true)
-
 	cfg := franzTopicsTestConfig(t)
 	cfg.TopicMatch = "[" // invalid
 
@@ -71,8 +67,6 @@ func TestTopicScraperFranz_InvalidTopicRegex(t *testing.T) {
 }
 
 func TestTopicScraperFranz_EmptyClusterAlias(t *testing.T) {
-	setFranzGo(t, true)
-
 	cfg := franzTopicsTestConfig(t)
 	cfg.ClusterAlias = ""
 
@@ -95,8 +89,6 @@ func TestTopicScraperFranz_EmptyClusterAlias(t *testing.T) {
 }
 
 func TestTopicScraperFranz_ScrapeMetricValues(t *testing.T) {
-	setFranzGo(t, true)
-
 	const (
 		topic         = "topic-a"
 		numPartitions = 3
@@ -184,8 +176,6 @@ func TestTopicScraperFranz_ScrapeMetricValues(t *testing.T) {
 }
 
 func TestTopicScraperFranz_TopicFilterExcludes(t *testing.T) {
-	setFranzGo(t, true)
-
 	_, clientCfg := kafkatest.NewCluster(t, kfake.SeedTopics(1, "include-me", "_internal"))
 	cfg := Config{
 		ClientConfig:         clientCfg,
@@ -219,8 +209,6 @@ func TestTopicScraperFranz_TopicFilterExcludes(t *testing.T) {
 }
 
 func TestTopicScraperFranz_ScrapePartialError_UnparseableConfig(t *testing.T) {
-	setFranzGo(t, true)
-
 	const topic = "topic-a"
 	_, clientCfg := kafkatest.NewCluster(t,
 		kfake.SeedTopics(2, topic),
@@ -262,8 +250,6 @@ func TestTopicScraperFranz_ScrapePartialError_UnparseableConfig(t *testing.T) {
 }
 
 func TestTopicScraperFranz_ScrapeUnreachable(t *testing.T) {
-	setFranzGo(t, true)
-
 	cluster, clientCfg := kafkatest.NewCluster(t, kfake.SeedTopics(1, "topic-a"))
 	cfg := Config{
 		ClientConfig:         clientCfg,
@@ -286,8 +272,6 @@ func TestTopicScraperFranz_ScrapeUnreachable(t *testing.T) {
 
 // Optional parity check: default regex compiles (like Sarama test style)
 func TestTopicScraperFranz_FilterCompilesLikeSarama(t *testing.T) {
-	setFranzGo(t, true)
-
 	r := regexp.MustCompile(defaultTopicMatch)
 	require.NotNil(t, r)
 }
