@@ -1,5 +1,5 @@
 display_name: GenAI Normalizer Processor
-type: genainormalizer
+type: gen_ai_normalizer
 
 status:
   class: processor
