@@ -9,15 +9,19 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/prometheus/config"
 	api_v1 "github.com/prometheus/prometheus/web/api/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/apiserver"
 )
 
 type apiResponse struct {
@@ -46,11 +50,9 @@ func TestPrometheusAPIServer(t *testing.T) {
 		},
 	}
 
-	endpointsToReceivers := map[string]*pReceiver{
-		"localhost:9090": nil,
-		"localhost:9091": nil,
-	}
-	for endpoint := range endpointsToReceivers {
+	endpoints := []string{testutil.GetAvailableLocalAddress(t), testutil.GetAvailableLocalAddress(t)}
+	endpointsToReceivers := make(map[string]*pReceiver, len(endpoints))
+	for _, endpoint := range endpoints {
 		mp, cfg, err := setupMockPrometheus(targets...)
 		require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 		defer mp.Close()
@@ -60,17 +62,15 @@ func TestPrometheusAPIServer(t *testing.T) {
 			require.Nil(t, response)
 		})
 
+		apiCfg := apiserver.DefaultConfig()
+		apiCfg.ServerConfig.NetAddr = confignet.AddrConfig{
+			Transport: "tcp",
+			Endpoint:  endpoint,
+		}
 		receiver, _ := newTestReceiver(t, &Config{
 			PrometheusConfig: cfg,
-			APIServer: APIServer{
-				Enabled: true,
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  endpoint,
-					},
-				},
-			},
+			skipOffsetting:   true,
+			APIServer:        configoptional.Some(apiCfg),
 		})
 		endpointsToReceivers[endpoint] = receiver
 		mp.wg.Wait()
@@ -89,7 +89,8 @@ func TestPrometheusAPIServer(t *testing.T) {
 }
 
 func callAPI(endpoint, path string) (*apiResponse, error) {
-	resp, err := http.Get(fmt.Sprintf("http://%s/api/v1%s", endpoint, path))
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get(fmt.Sprintf("http://%s/api/v1%s", endpoint, path))
 	if err != nil {
 		return nil, err
 	}
