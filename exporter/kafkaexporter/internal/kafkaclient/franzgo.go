@@ -87,7 +87,7 @@ func NewFranzSyncProducer(client *kgo.Client,
 }
 
 // ExportData sends a batch of messages to Kafka
-func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error {
+func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs []Message) error {
 	messages := makeFranzMessages(msgs, p.recordHeaders, metadataToHeaders(ctx, p.metadataKeys))
 	result := p.client.ProduceSync(ctx, messages...)
 	var errs []error
@@ -130,7 +130,7 @@ func (p *FranzSyncProducer) Close(ctx context.Context) error {
 	}
 }
 
-func makeFranzMessages(messages Messages, recordHeaders, metadataHeaders []kgo.RecordHeader) []*kgo.Record {
+func makeFranzMessages(messages []Message, recordHeaders, metadataHeaders []kgo.RecordHeader) []*kgo.Record {
 	var headers []kgo.RecordHeader
 	if n := len(recordHeaders) + len(metadataHeaders); n > 0 {
 		headers = make([]kgo.RecordHeader, 0, n)
@@ -138,16 +138,14 @@ func makeFranzMessages(messages Messages, recordHeaders, metadataHeaders []kgo.R
 		headers = append(headers, metadataHeaders...)
 	}
 
-	msgs := make([]*kgo.Record, 0, messages.Count)
-	for _, msg := range messages.TopicMessages {
-		for _, m := range msg.Messages {
-			msgs = append(msgs, &kgo.Record{
-				Topic:   msg.Topic,
-				Key:     m.Key,
-				Value:   m.Value,
-				Headers: headers,
-			})
-		}
+	msgs := make([]*kgo.Record, 0, len(messages))
+	for _, m := range messages {
+		msgs = append(msgs, &kgo.Record{
+			Topic:   m.Topic,
+			Key:     m.Key,
+			Value:   m.Value,
+			Headers: headers,
+		})
 	}
 	return msgs
 }
