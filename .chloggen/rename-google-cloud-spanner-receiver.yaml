@@ -1,0 +1,6 @@
+change_type: deprecation
+component: receiver/google_cloud_spanner
+note: Rename receiver type from `googlecloudspanner` to `google_cloud_spanner`
+issues: [45339]
+subtext:
+change_logs: [user]
