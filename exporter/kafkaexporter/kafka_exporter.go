@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"iter"
+	"sync"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
@@ -34,7 +35,7 @@ import (
 // producer is an interface that abstracts the Kafka producer operations
 type producer interface {
 	// ExportData sends a batch of messages to Kafka
-	ExportData(ctx context.Context, messages kafkaclient.Messages) error
+	ExportData(ctx context.Context, messages []kafkaclient.Message) error
 	// Close shuts down the producer
 	Close(ctx context.Context) error
 }
@@ -45,8 +46,9 @@ type messenger[T any] interface {
 	// type (plog.Logs, etc.)
 	partitionData(T) iter.Seq2[[]byte, T]
 
-	// marshalData marshals a pdata type into one or more messages.
-	marshalData(T) ([]marshaler.Message, error)
+	// marshalData marshals a pdata type into zero or more messages,
+	// invoking yield once per message with its key and value.
+	marshalData(data T, yield func(key, value []byte)) error
 
 	// getTopic returns the topic name for the given context and data.
 	getTopic(context.Context, T) string
@@ -60,6 +62,7 @@ type kafkaExporter[T any] struct {
 	newMessenger func(host component.Host) (messenger[T], error)
 	messenger    messenger[T]
 	producer     producer
+	messagesPool sync.Pool
 }
 
 func newKafkaExporter[T any](
@@ -72,6 +75,11 @@ func newKafkaExporter[T any](
 		set:          set,
 		logger:       set.Logger,
 		newMessenger: newMessenger,
+		messagesPool: sync.Pool{
+			New: func() any {
+				return &[]kafkaclient.Message{}
+			},
+		},
 	}
 }
 
@@ -130,10 +138,27 @@ func (e *kafkaExporter[T]) Close(ctx context.Context) (err error) {
 }
 
 func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
-	var m kafkaclient.Messages
-	for key, data := range e.messenger.partitionData(data) {
+	pooled := e.messagesPool.Get().(*[]kafkaclient.Message)
+	messages := (*pooled)[:0]
+	defer func() {
+		clear(messages)
+		*pooled = messages[:0]
+		e.messagesPool.Put(pooled)
+	}()
+	for partitionKey, data := range e.messenger.partitionData(data) {
 		topic := e.messenger.getTopic(ctx, data)
-		partitionMessages, err := e.messenger.marshalData(data)
+		err := e.messenger.marshalData(data, func(key, value []byte) {
+			// Marshalers may set the key, but a non-nil partition key
+			// from partitionData takes precedence.
+			if partitionKey != nil {
+				key = partitionKey
+			}
+			messages = append(messages, kafkaclient.Message{
+				Topic: topic,
+				Key:   key,
+				Value: value,
+			})
+		})
 		if err != nil {
 			err = fmt.Errorf("error exporting to topic %q: %w", topic, err)
 			e.logger.Error("kafka records marshal data failed",
@@ -142,28 +167,13 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 			)
 			return consumererror.NewPermanent(err)
 		}
-		for i := range partitionMessages {
-			// Marshalers may set the Key, so don't override
-			// if it's set and we're not partitioning here.
-			if key != nil {
-				partitionMessages[i].Key = key
-			}
-		}
-		m.Count += len(partitionMessages)
-		m.TopicMessages = append(m.TopicMessages, kafkaclient.TopicMessages{
-			Topic:    topic,
-			Messages: partitionMessages,
-		})
 	}
-	err := e.producer.ExportData(ctx, m)
+	err := e.producer.ExportData(ctx, messages)
 	if err != nil {
-		for _, mi := range m.TopicMessages {
-			e.logger.Error("kafka records export failed",
-				zap.Int("records", len(mi.Messages)),
-				zap.String("topic", mi.Topic),
-				zap.Error(err),
-			)
-		}
+		e.logger.Error("kafka records export failed",
+			zap.Int("records", len(messages)),
+			zap.Error(err),
+		)
 		var msgTooLarge *kafkaclient.MessageTooLargeError
 		if errors.As(err, &msgTooLarge) {
 			e.logger.Error("kafka record exceeds max message size",
@@ -173,13 +183,11 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		}
 		return err
 	}
+	// TODO move this logging to a kgo hook, so we capture topic and partition details.
 	if e.logger.Core().Enabled(zap.DebugLevel) {
-		for _, mi := range m.TopicMessages {
-			e.logger.Debug("kafka records exported",
-				zap.Int("records", len(mi.Messages)),
-				zap.String("topic", mi.Topic),
-			)
-		}
+		e.logger.Debug("kafka records exported",
+			zap.Int("records", len(messages)),
+		)
 	}
 	return nil
 }
@@ -208,8 +216,8 @@ type kafkaTracesMessenger struct {
 	marshaler marshaler.TracesMarshaler
 }
 
-func (e *kafkaTracesMessenger) marshalData(td ptrace.Traces) ([]marshaler.Message, error) {
-	return e.marshaler.MarshalTraces(td)
+func (e *kafkaTracesMessenger) marshalData(td ptrace.Traces, yield func(key, value []byte)) error {
+	return e.marshaler.MarshalTraces(td, yield)
 }
 
 func (e *kafkaTracesMessenger) getTopic(ctx context.Context, td ptrace.Traces) string {
@@ -267,8 +275,8 @@ type kafkaLogsMessenger struct {
 	marshaler marshaler.LogsMarshaler
 }
 
-func (e *kafkaLogsMessenger) marshalData(ld plog.Logs) ([]marshaler.Message, error) {
-	return e.marshaler.MarshalLogs(ld)
+func (e *kafkaLogsMessenger) marshalData(ld plog.Logs, yield func(key, value []byte)) error {
+	return e.marshaler.MarshalLogs(ld, yield)
 }
 
 func (e *kafkaLogsMessenger) getTopic(ctx context.Context, ld plog.Logs) string {
@@ -333,8 +341,8 @@ type kafkaMetricsMessenger struct {
 	marshaler marshaler.MetricsMarshaler
 }
 
-func (e *kafkaMetricsMessenger) marshalData(md pmetric.Metrics) ([]marshaler.Message, error) {
-	return e.marshaler.MarshalMetrics(md)
+func (e *kafkaMetricsMessenger) marshalData(md pmetric.Metrics, yield func(key, value []byte)) error {
+	return e.marshaler.MarshalMetrics(md, yield)
 }
 
 func (e *kafkaMetricsMessenger) getTopic(ctx context.Context, md pmetric.Metrics) string {
@@ -386,8 +394,8 @@ type kafkaProfilesMessenger struct {
 	marshaler marshaler.ProfilesMarshaler
 }
 
-func (e *kafkaProfilesMessenger) marshalData(ld pprofile.Profiles) ([]marshaler.Message, error) {
-	return e.marshaler.MarshalProfiles(ld)
+func (e *kafkaProfilesMessenger) marshalData(ld pprofile.Profiles, yield func(key, value []byte)) error {
+	return e.marshaler.MarshalProfiles(ld, yield)
 }
 
 func (e *kafkaProfilesMessenger) getTopic(ctx context.Context, ld pprofile.Profiles) string {

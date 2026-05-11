@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.151.0
 	github.com/prometheus/common v0.67.5
-	github.com/prometheus/prometheus v0.311.2-0.20260409145810-72293ff1d2e0
+	github.com/prometheus/prometheus v0.311.4-0.20260507094802-91c184a899b8
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/component/componenttest v0.151.1-0.20260501001745-24aecacf1c04

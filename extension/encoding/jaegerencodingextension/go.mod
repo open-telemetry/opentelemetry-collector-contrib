@@ -18,7 +18,7 @@ require (
 )
 
 require (
-	github.com/apache/thrift v0.21.0 // indirect
+	github.com/apache/thrift v0.23.1-0.20260429145742-d2acd3c49e58 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -50,7 +50,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/sys v0.43.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

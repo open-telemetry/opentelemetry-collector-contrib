@@ -481,6 +481,27 @@ type mockClient struct {
 	explainQueryCalls []explainQueryCall
 }
 
+type queryPlanSpyClient struct {
+	mockClient
+	querySamples []querySample
+	topQueries   []topQuery
+	explainCalls int
+	explainPlan  string
+}
+
+func (c *queryPlanSpyClient) getQuerySamples(uint64, bool) ([]querySample, error) {
+	return c.querySamples, nil
+}
+
+func (c *queryPlanSpyClient) getTopQueries(uint64, uint64, bool) ([]topQuery, error) {
+	return c.topQueries, nil
+}
+
+func (c *queryPlanSpyClient) explainQuery(_, _, _, _ string, _ *zap.Logger) string {
+	c.explainCalls++
+	return c.explainPlan
+}
+
 func readFile(fname string) (map[string]string, error) {
 	stats := map[string]string{}
 	file, err := os.Open(filepath.Join("testdata", "scraper", fname+".txt"))
@@ -839,6 +860,169 @@ func (*mockClient) Close() error {
 	return nil
 }
 
+func TestQueryPlanCacheReuse(t *testing.T) {
+	baseCfg := createDefaultConfig().(*Config)
+	baseCfg.Username = "otel"
+	baseCfg.Password = "otel"
+	baseCfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	baseCfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	baseCfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	baseCfg.TopQueryCollection.TopQueryCount = 10
+
+	makeScraper := func(t *testing.T, cfg *Config, spy *queryPlanSpyClient) *mySQLScraper {
+		t.Helper()
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper.sqlclient = spy
+		return scraper
+	}
+
+	seedTopQueryDiffCache := func(scraper *mySQLScraper, schema, digest string, countStar, sumTimerWait int64) {
+		// Top query events are emitted only when the value is already cached and increases.
+		scraper.cacheAndDiff(schema, digest, "count_star", countStar-1)
+		scraper.cacheAndDiff(schema, digest, "sum_timer_wait", sumTimerWait-1)
+	}
+
+	t.Run("query samples first then top queries reuses cached plan", func(t *testing.T) {
+		cfg := *baseCfg
+		schema := "adventureworks"
+		digest := "digest-shared"
+		spy := &queryPlanSpyClient{
+			querySamples: []querySample{
+				{
+					processlistDB:      schema,
+					processlistHost:    "192.168.1.80:1234",
+					processlistUser:    "myuser",
+					processlistCommand: "Query",
+					processlistState:   "executing",
+					sqlText:            "SELECT * FROM t",
+					digest:             digest,
+					eventID:            1,
+					sessionStatus:      "waiting",
+					waitEvent:          "CPU",
+				},
+			},
+			topQueries: []topQuery{
+				{
+					schemaName:                schema,
+					digest:                    digest,
+					digestText:                "SELECT * FROM t",
+					querySampleText:           "SELECT * FROM t",
+					countStar:                 10,
+					sumTimerWaitInPicoSeconds: 200,
+				},
+			},
+			explainPlan: `{"query_block":{"select_id":1}}`,
+		}
+
+		scraper := makeScraper(t, &cfg, spy)
+		seedTopQueryDiffCache(scraper, schema, digest, 10, 200)
+
+		_, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err)
+		_, err = scraper.scrapeTopQueryFunc(t.Context())
+		require.NoError(t, err)
+
+		require.Equal(t, 1, spy.explainCalls, "query plan should be fetched only once across both flows")
+	})
+
+	t.Run("query plan hash should be empty if plan is empty", func(t *testing.T) {
+		cfg := *baseCfg
+		schema := "adventureworks"
+		digest := "digest-shared"
+		spy := &queryPlanSpyClient{
+			querySamples: []querySample{
+				{
+					processlistDB:      schema,
+					processlistHost:    "192.168.1.80:1234",
+					processlistUser:    "myuser",
+					processlistCommand: "Query",
+					processlistState:   "executing",
+					sqlText:            "SELECT * FROM t",
+					digest:             digest,
+					eventID:            1,
+					sessionStatus:      "waiting",
+					waitEvent:          "CPU",
+				},
+			},
+			topQueries: []topQuery{
+				{
+					schemaName:                schema,
+					digest:                    digest,
+					digestText:                "SELECT * FROM t",
+					querySampleText:           "SELECT * FROM t",
+					countStar:                 10,
+					sumTimerWaitInPicoSeconds: 200,
+				},
+			},
+			explainPlan: ``,
+		}
+
+		scraper := makeScraper(t, &cfg, spy)
+		seedTopQueryDiffCache(scraper, schema, digest, 10, 200)
+
+		topQueryLogs, err := scraper.scrapeTopQueryFunc(t.Context())
+		require.NoError(t, err)
+
+		querySampleLogs, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err)
+
+		topLogs := topQueryLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+		topPlanHash, _ := topLogs.Attributes().Get("mysql.query_plan.hash")
+		topPlanVal, _ := topLogs.Attributes().Get("mysql.query_plan")
+		assert.Empty(t, topPlanHash.Str(), "mysql.query_plan should be empty when sample text is unavailable")
+		assert.Empty(t, topPlanVal.Str(), "mysql.query_plan should be empty when sample text is unavailable")
+
+		sampleLogs := querySampleLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+		samplePlanHash, _ := sampleLogs.Attributes().Get("mysql.query_plan.hash")
+		samplePlanVal, _ := sampleLogs.Attributes().Get("mysql.query_plan")
+		assert.Empty(t, samplePlanHash.Str(), "mysql.query_plan should be empty when sample text is unavailable")
+		assert.Empty(t, samplePlanVal.Str(), "mysql.query_plan should be empty when sample text is unavailable")
+	})
+
+	t.Run("top queries first then query samples reuses cached plan", func(t *testing.T) {
+		cfg := *baseCfg
+		schema := "adventureworks"
+		digest := "digest-shared"
+		spy := &queryPlanSpyClient{
+			querySamples: []querySample{
+				{
+					processlistDB:      schema,
+					processlistHost:    "192.168.1.80:1234",
+					processlistUser:    "myuser",
+					processlistCommand: "Query",
+					processlistState:   "executing",
+					sqlText:            "SELECT * FROM t",
+					digest:             digest,
+					eventID:            1,
+					sessionStatus:      "waiting",
+					waitEvent:          "CPU",
+				},
+			},
+			topQueries: []topQuery{
+				{
+					schemaName:                schema,
+					digest:                    digest,
+					digestText:                "SELECT * FROM t",
+					querySampleText:           "SELECT * FROM t",
+					countStar:                 10,
+					sumTimerWaitInPicoSeconds: 200,
+				},
+			},
+			explainPlan: `{"query_block":{"select_id":1}}`,
+		}
+
+		scraper := makeScraper(t, &cfg, spy)
+		seedTopQueryDiffCache(scraper, schema, digest, 10, 200)
+
+		_, err := scraper.scrapeTopQueryFunc(t.Context())
+		require.NoError(t, err)
+		_, err = scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err)
+
+		require.Equal(t, 1, spy.explainCalls, "query plan should be fetched only once across both flows")
+	})
+}
+
 // mustDBVersion is a test helper that builds a dbVersion from a raw version
 // string, applying MariaDB detection the same way getDBVersion does.
 func mustDBVersion(t *testing.T, rawVersion string) dbVersion {
@@ -897,6 +1081,12 @@ func TestScrapeTopQueriesNoSampleText(t *testing.T) {
 	if hasPlan {
 		assert.Empty(t, planVal.Str(), "mysql.query_plan should be empty when sample text is unavailable")
 	}
+
+	// mysql.query_plan.hash should also be empty when no plan is available.
+	hashVal, hasHash := lr.Attributes().Get("mysql.query_plan.hash")
+	if hasHash {
+		assert.Empty(t, hashVal.Str(), "mysql.query_plan.hash should be empty when no plan is available")
+	}
 }
 
 // TestScrapeTopQueriesMariaDB verifies the same no-explain behavior for MariaDB.
@@ -916,6 +1106,13 @@ func TestScrapeTopQueriesMariaDB(t *testing.T) {
 	require.Equal(t, 1, logs.ResourceLogs().Len())
 
 	assert.Equal(t, 0, mc.explainQueryCallCount, "explainQuery should not be called for MariaDB")
+
+	// mysql.query_plan.hash should be empty when no plan is available.
+	lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	hashVal, hasHash := lr.Attributes().Get("mysql.query_plan.hash")
+	if hasHash {
+		assert.Empty(t, hashVal.Str(), "mysql.query_plan.hash should be empty when no plan is available")
+	}
 }
 
 // TestScrapeQuerySamplesExplainPlan verifies that scrapeQuerySamples emits the
@@ -939,25 +1136,23 @@ func TestScrapeQuerySamplesExplainPlan(t *testing.T) {
 
 	lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
-	// mysql.query_plan is a top_query attribute — must not appear on query_sample events.
+	// mysql.query_plan must appear on query_sample events.
 	_, hasPlan := lr.Attributes().Get("mysql.query_plan")
-	assert.False(t, hasPlan, "mysql.query_plan must not be present on query_sample events")
+	assert.True(t, hasPlan, "mysql.query_plan must be present on query_sample events")
 
 	// mysql.query_plan.hash is valid on query_sample events.
 	hashVal, hasHash := lr.Attributes().Get("mysql.query_plan.hash")
 	assert.True(t, hasHash, "mysql.query_plan.hash must be present")
 	assert.NotEmpty(t, hashVal.Str(), "mysql.query_plan.hash must not be empty")
 
-	// scrapeQuerySampleFunc never calls explainQuery.
-	assert.Equal(t, 0, mc.explainQueryCallCount)
+	// scrapeQuerySampleFunc calls explainQuery.
+	assert.Equal(t, 1, mc.explainQueryCallCount)
 }
 
-// TestScrapeQuerySamplesNoExplain verifies that scrapeQuerySampleFunc never calls
-// explainQuery. Explain runs only in the top-query scraper; query_sample events
-// carry mysql.query_plan.hash (the digest) but not the plan itself.
-// The shared plan cache is passed through to prove that its presence does not
-// cause an unexpected explainQuery call.
-func TestScrapeQuerySamplesNoExplain(t *testing.T) {
+// TestScrapeQuerySamplesCallsExplain verifies that scrapeQuerySampleFunc calls
+// explainQuery when a digest is present. query_sample events carry mysql.query_plan
+// (fetched via EXPLAIN) and mysql.query_plan.hash when a plan is available.
+func TestScrapeQuerySamplesCallsExplain(t *testing.T) {
 	sharedCache := newTTLCache[string](100, 0)
 
 	cfg := createDefaultConfig().(*Config)
@@ -975,8 +1170,60 @@ func TestScrapeQuerySamplesNoExplain(t *testing.T) {
 	_, err := s.scrapeQuerySampleFunc(t.Context())
 	require.NoError(t, err)
 
-	assert.Equal(t, 0, mc.explainQueryCallCount,
-		"scrapeQuerySampleFunc must never call explainQuery")
+	assert.Equal(t, 1, mc.explainQueryCallCount,
+		"scrapeQuerySampleFunc must call explainQuery")
+}
+
+// TestScrapeQuerySamplesExplainMySQL57 verifies that scrapeQuerySamples calls
+// explainQuery for MySQL 5.7. Unlike the top-query path, scrapeQuerySamples uses
+// events_statements_current.SQL_TEXT which is available on all supported versions,
+// so EXPLAIN runs regardless of whether querySampleText is populated.
+func TestScrapeQuerySamplesExplainMySQL57(t *testing.T) {
+	v57 := mustDBVersion(t, "5.7.44")
+	mc := &mockClient{querySamplesFile: "query_samples", dbVersionOverride: &v57}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
+	s.sqlclient = mc
+	s.detectedVersion = mc.getDBVersion()
+
+	logs, err := s.scrapeQuerySampleFunc(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+
+	assert.Equal(t, 1, mc.explainQueryCallCount, "explainQuery must be called for MySQL 5.7 query samples")
+
+	lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	_, hasPlan := lr.Attributes().Get("mysql.query_plan")
+	assert.True(t, hasPlan, "mysql.query_plan must be present on query_sample events for MySQL 5.7")
+}
+
+// TestScrapeQuerySamplesExplainMariaDB verifies that scrapeQuerySamples calls
+// explainQuery for MariaDB. See TestScrapeQuerySamplesExplainMySQL57 for rationale.
+func TestScrapeQuerySamplesExplainMariaDB(t *testing.T) {
+	mariadb := mustDBVersion(t, "10.11.6-MariaDB")
+	mc := &mockClient{querySamplesFile: "query_samples", dbVersionOverride: &mariadb}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
+	s.sqlclient = mc
+	s.detectedVersion = mc.getDBVersion()
+
+	logs, err := s.scrapeQuerySampleFunc(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+
+	assert.Equal(t, 1, mc.explainQueryCallCount, "explainQuery must be called for MariaDB query samples")
+
+	lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	_, hasPlan := lr.Attributes().Get("mysql.query_plan")
+	assert.True(t, hasPlan, "mysql.query_plan must be present on query_sample events for MariaDB")
 }
 
 // TestLogDetectedVersion verifies the version-detection log output produced by

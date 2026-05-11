@@ -70,6 +70,18 @@ resourceLogs:
       - key: aws.vpc.flow.bytes
         value:
           intValue: "1000"
+      - key: aws.vpc.flow.packets_lost_no_route
+        value:
+          intValue: "1"
+      - key: aws.vpc.flow.packets_lost_blackhole
+        value:
+          intValue: "2"
+      - key: aws.vpc.flow.packets_lost_mtu_exceeded
+        value:
+          intValue: "3"
+      - key: aws.vpc.flow.packets_lost_ttl_expired
+        value:
+          intValue: "4"
       - key: aws.vpc.flow.start
         value:
           intValue: "1700000000"

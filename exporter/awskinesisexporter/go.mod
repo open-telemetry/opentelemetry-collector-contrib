@@ -32,7 +32,7 @@ require (
 )
 
 require (
-	github.com/apache/thrift v0.22.0 // indirect
+	github.com/apache/thrift v0.23.1-0.20260429145742-d2acd3c49e58 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.10 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.23 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.23 // indirect
@@ -87,7 +87,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/sys v0.43.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect
 	google.golang.org/grpc v1.81.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect

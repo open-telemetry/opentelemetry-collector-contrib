@@ -32,7 +32,7 @@ func TestComponentStatus(t *testing.T) {
 	cfg.HTTPConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.GRPCConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.UseV2 = true
-	ext := NewHealthCheckExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+	ext := NewHealthCheckExtension(*cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 	defer func() {
 		// Use Background context for shutdown in defer to avoid cancellation issues
 		//nolint:usetesting // defer functions may run after test context is cancelled
@@ -120,7 +120,7 @@ func TestNotifyConfig(t *testing.T) {
 	cfg.HTTPConfig.Config.Enabled = true
 	cfg.HTTPConfig.Config.Path = "/config"
 
-	ext := NewHealthCheckExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+	ext := NewHealthCheckExtension(*cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 	defer func() {
 		// Use Background context for shutdown in defer to avoid cancellation issues
 		//nolint:usetesting // defer functions may run after test context is cancelled
@@ -154,6 +154,48 @@ func TestNotifyConfig(t *testing.T) {
 	assert.JSONEq(t, string(confJSON), string(body))
 }
 
+// TestComponentStatusChangedAfterShutdownDoesNotDeadlock verifies that calling
+// ComponentStatusChanged after Shutdown does not block. This is a regression
+// test for https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47591.
+func TestComponentStatusChangedAfterShutdownDoesNotDeadlock(t *testing.T) {
+	cfg := NewDefaultConfig().(*Config)
+	cfg.HTTPConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.GRPCConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.UseV2 = true
+	ext := NewHealthCheckExtension(*cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
+	for _, id := range traces.InstanceIDs() {
+		ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStarting))
+	}
+	require.NoError(t, ext.Ready())
+	for _, id := range traces.InstanceIDs() {
+		ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusOK))
+	}
+
+	require.NoError(t, ext.Shutdown(t.Context()))
+
+	// These calls must not block. Before the fix, if eventLoop exited due to
+	// context cancellation, these sends to the unbuffered eventCh would deadlock.
+	done := make(chan struct{})
+	go func() {
+		for _, id := range traces.InstanceIDs() {
+			ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStopping))
+			ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStopped))
+		}
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// success
+	case <-time.After(time.Second):
+		t.Fatal("ComponentStatusChanged blocked after Shutdown - deadlock")
+	}
+}
+
 func TestShutdown(t *testing.T) {
 	t.Run("error in http server start", func(t *testing.T) {
 		// Want to get error in http server start
@@ -166,7 +208,7 @@ func TestShutdown(t *testing.T) {
 		cfg.UseV2 = true
 		cfg.HTTPConfig.NetAddr.Endpoint = endpoint
 
-		ext := NewHealthCheckExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+		ext := NewHealthCheckExtension(*cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 		// Get address already in use here
 		require.Error(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 

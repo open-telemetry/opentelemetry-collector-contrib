@@ -37,8 +37,6 @@ jobs:
             - If you need help or struggle to move your PR forward, raise the topic on [#otel-collector-dev](https://cloud-native.slack.com/archives/C07CCCMRXBK) or a [Collector SIG meeting](https://github.com/open-telemetry/community?tab=readme-ov-file#sig-collector).
 
   draft_if_multiple_prs:
-    permissions:
-      pull-requests: write
     runs-on: ubuntu-latest
     if: >
       github.repository_owner == 'open-telemetry' &&
@@ -46,10 +44,17 @@ jobs:
       github.event.pull_request.draft == false &&
       !contains(github.event.pull_request.labels.*.name, 'keep-as-non-draft')
     steps:
+      - uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+        id: otelbot-token
+        with:
+          app-id: ${{ vars.OTELBOT_APP_ID }}
+          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+          permission-pull-requests: write
+
       # Allow up to two non-draft PRs so that the author can change which PR they mark as ready for review.
       - name: Convert to draft if author has two previous non-draft PRs open
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.otelbot-token.outputs.token }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}

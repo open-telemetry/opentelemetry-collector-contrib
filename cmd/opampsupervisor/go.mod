@@ -21,6 +21,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.57.1-0.20260501001745-24aecacf1c04
+	go.opentelemetry.io/collector/confmap/xconfmap v0.151.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/pdata v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/service v0.151.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/contrib/bridges/otelzap v0.18.0
@@ -45,7 +46,7 @@ require (
 	github.com/antchfx/xmlquery v1.5.1 // indirect
 	github.com/antchfx/xpath v1.3.6 // indirect
 	github.com/apache/arrow-go/v18 v18.5.2 // indirect
-	github.com/apache/thrift v0.22.0 // indirect
+	github.com/apache/thrift v0.23.1-0.20260429145742-d2acd3c49e58 // indirect
 	github.com/axiomhq/hyperloglog v0.2.6 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -161,7 +162,6 @@ require (
 	go.opentelemetry.io/collector/config/configmiddleware v1.57.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.57.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.57.1-0.20260501001745-24aecacf1c04 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.151.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/connector v0.151.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/connector/connectortest v0.151.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.151.1-0.20260501001745-24aecacf1c04 // indirect

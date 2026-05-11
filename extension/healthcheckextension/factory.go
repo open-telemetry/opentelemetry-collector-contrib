@@ -49,7 +49,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createExtension(ctx context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	config := cfg.(*Config)
 
 	if metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.IsEnabled() {
@@ -77,7 +77,7 @@ func createExtension(ctx context.Context, set extension.Settings, cfg component.
 			}
 		}
 
-		return healthcheck.NewHealthCheckExtension(ctx, config.Config, set), nil
+		return healthcheck.NewHealthCheckExtension(config.Config, set), nil
 	}
 
 	// Feature gate disabled: use legacy implementation.

@@ -3,6 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/mcp
 go 1.25.0
 
 require (
+	github.com/mark3labs/mcp-go v0.48.0
+	github.com/pavolloffay/opentelemetry-mcp-server/modules/collectorschema v0.0.0-20260505095018-a097481abafe
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/component/componentstatus v0.151.1-0.20260501001745-24aecacf1c04
@@ -29,6 +31,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
+	github.com/google/jsonschema-go v0.4.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -40,9 +43,15 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
+	github.com/philippgille/chromem-go v0.7.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/cors v1.11.1 // indirect
+	github.com/spf13/cast v1.7.1 // indirect
+	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
+	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
+	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
+	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.57.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/config/configauth v1.57.1-0.20260501001745-24aecacf1c04 // indirect

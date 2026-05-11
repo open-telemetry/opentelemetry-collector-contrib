@@ -95,7 +95,7 @@ func newMetricsReceiver(cfg *Config, set receiver.Settings, next consumer.Metric
 func (a *awsLambdaReceiver) Start(ctx context.Context, host component.Host) error {
 	// Verify we're running in a Lambda environment
 	if os.Getenv("AWS_EXECUTION_ENV") == "" || !strings.HasPrefix(os.Getenv("AWS_EXECUTION_ENV"), "AWS_Lambda_") {
-		return errors.New("awslambdareceiver must be used in an AWS Lambda environment: missing environment variable AWS_EXECUTION_ENV")
+		return errors.New("aws_lambda receiver must be used in an AWS Lambda environment: missing environment variable AWS_EXECUTION_ENV")
 	}
 
 	// Initialize S3 provider to be used by implementations

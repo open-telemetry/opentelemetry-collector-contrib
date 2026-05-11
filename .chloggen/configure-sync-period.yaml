@@ -1,0 +1,6 @@
+change_type: enhancement
+component: processor/k8s_attributes
+note: Add `watch_sync_period` config option to configure informer cache resync period.
+issues: [48111]
+subtext: The `watch_sync_period` config option defaults to `5m` to match the previously hardcoded behavior.
+change_logs: [user]

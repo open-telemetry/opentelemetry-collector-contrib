@@ -189,66 +189,77 @@ func TestDBVersionCapabilities(t *testing.T) {
 		dv                          dbVersion
 		wantSupportsQuerySampleText bool
 		wantSupportsReplicaStatus   bool
+		wantSupportsProcesslist     bool
 	}{
 		{
 			name:                        "MySQL 8.0.27",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.27")},
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   true,
+			wantSupportsProcesslist:     true,
 		},
 		{
 			name:                        "MySQL 8.0.3 (minimum for query_sample_text)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.3")},
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "MySQL 8.0.2 (below query_sample_text minimum)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.2")},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "MySQL 8.0.0 (below query_sample_text minimum)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.0")},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
-			name:                        "MySQL 8.0.22 (minimum for SHOW REPLICA STATUS)",
+			name:                        "MySQL 8.0.22 (minimum for SHOW REPLICA STATUS and processlist)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.22")},
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   true,
+			wantSupportsProcesslist:     true,
 		},
 		{
 			name:                        "MySQL 8.0.21 (below SHOW REPLICA STATUS minimum)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.21")},
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "MySQL 5.7.44",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "5.7.44")},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "MariaDB 10.11.6",
 			dv:                          dbVersion{product: dbProductMariaDB, version: mustParseVersion(t, "10.11.6")},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "MariaDB 11.4.2",
 			dv:                          dbVersion{product: dbProductMariaDB, version: mustParseVersion(t, "11.4.2")},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "zero value (version unknown)",
 			dv:                          dbVersion{},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 	}
 
@@ -256,6 +267,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.wantSupportsQuerySampleText, tt.dv.supportsQuerySampleText(), "supportsQuerySampleText()")
 			assert.Equal(t, tt.wantSupportsReplicaStatus, tt.dv.supportsReplicaStatus(), "supportsReplicaStatus()")
+			assert.Equal(t, tt.wantSupportsProcesslist, tt.dv.supportsProcesslist(), "supportsProcesslist()")
 		})
 	}
 }
