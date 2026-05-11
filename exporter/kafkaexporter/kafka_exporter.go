@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"iter"
+	"slices"
 	"sync"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -32,14 +33,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
-// producer is an interface that abstracts the Kafka producer operations
-type producer interface {
-	// ExportData sends a batch of messages to Kafka
-	ExportData(ctx context.Context, messages []kafkaclient.Message) error
-	// Close shuts down the producer
-	Close(ctx context.Context) error
-}
-
 type messenger[T any] interface {
 	// partitionData returns an iterator that yields key-value pairs
 	// where the key is the partition key, and the value is the pdata
@@ -54,6 +47,14 @@ type messenger[T any] interface {
 	getTopic(context.Context, T) string
 }
 
+// recordsBuffer is a pooled holder for a batch of kgo.Records. space owns
+// the record values; pointers[i] points to space[i] and is what the producer
+// API expects. Both slices are reused across exports.
+type recordsBuffer struct {
+	space    []kgo.Record
+	pointers []*kgo.Record
+}
+
 type kafkaExporter[T any] struct {
 	cfg          Config
 	set          exporter.Settings
@@ -61,8 +62,8 @@ type kafkaExporter[T any] struct {
 	logger       *zap.Logger
 	newMessenger func(host component.Host) (messenger[T], error)
 	messenger    messenger[T]
-	producer     producer
-	messagesPool sync.Pool
+	producer     *kafkaclient.FranzSyncProducer
+	recordsPool  sync.Pool
 }
 
 func newKafkaExporter[T any](
@@ -75,9 +76,9 @@ func newKafkaExporter[T any](
 		set:          set,
 		logger:       set.Logger,
 		newMessenger: newMessenger,
-		messagesPool: sync.Pool{
+		recordsPool: sync.Pool{
 			New: func() any {
-				return &[]kafkaclient.Message{}
+				return &recordsBuffer{}
 			},
 		},
 	}
@@ -138,12 +139,12 @@ func (e *kafkaExporter[T]) Close(ctx context.Context) (err error) {
 }
 
 func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
-	pooled := e.messagesPool.Get().(*[]kafkaclient.Message)
-	messages := (*pooled)[:0]
+	buf := e.recordsPool.Get().(*recordsBuffer)
+	buf.space = buf.space[:0]
 	defer func() {
-		clear(messages)
-		*pooled = messages[:0]
-		e.messagesPool.Put(pooled)
+		clear(buf.space)
+		clear(buf.pointers)
+		e.recordsPool.Put(buf)
 	}()
 	for partitionKey, data := range e.messenger.partitionData(data) {
 		topic := e.messenger.getTopic(ctx, data)
@@ -153,7 +154,7 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 			if partitionKey != nil {
 				key = partitionKey
 			}
-			messages = append(messages, kafkaclient.Message{
+			buf.space = append(buf.space, kgo.Record{
 				Topic: topic,
 				Key:   key,
 				Value: value,
@@ -168,10 +169,17 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 			return consumererror.NewPermanent(err)
 		}
 	}
-	err := e.producer.ExportData(ctx, messages)
+	// Build the pointer slice from space. We do this once here rather
+	// than in lockstep with each append, since append may reallocate
+	// space's backing array and invalidate earlier pointers.
+	buf.pointers = slices.Grow(buf.pointers[:0], len(buf.space))
+	for i := range buf.space {
+		buf.pointers = append(buf.pointers, &buf.space[i])
+	}
+	err := e.producer.ExportData(ctx, buf.pointers)
 	if err != nil {
 		e.logger.Error("kafka records export failed",
-			zap.Int("records", len(messages)),
+			zap.Int("records", len(buf.pointers)),
 			zap.Error(err),
 		)
 		var msgTooLarge *kafkaclient.MessageTooLargeError
@@ -186,7 +194,7 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 	// TODO move this logging to a kgo hook, so we capture topic and partition details.
 	if e.logger.Core().Enabled(zap.DebugLevel) {
 		e.logger.Debug("kafka records exported",
-			zap.Int("records", len(messages)),
+			zap.Int("records", len(buf.pointers)),
 		)
 	}
 	return nil
