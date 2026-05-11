@@ -7,8 +7,10 @@ import (
 	"cmp"
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -27,6 +29,7 @@ type schemaProcessor struct {
 
 	manager          translation.Manager
 	telemetryBuilder *metadata.TelemetryBuilder
+	storageClient    storage.Client
 }
 
 func newSchemaProcessor(_ context.Context, conf component.Config, set processor.Settings) (*schemaProcessor, error) {
@@ -212,7 +215,19 @@ func (t *schemaProcessor) start(ctx context.Context, host component.Host) error 
 	if err != nil {
 		return err
 	}
-	t.manager.AddProvider(translation.NewHTTPProvider(client))
+
+	provider := translation.NewHTTPProvider(client)
+
+	if t.config.StorageID != nil {
+		storageClient, err := getStorageClient(ctx, host, *t.config.StorageID)
+		if err != nil {
+			return err
+		}
+		t.storageClient = storageClient
+		provider = translation.NewStorageProvider(provider, storageClient)
+	}
+
+	t.manager.AddProvider(provider)
 
 	go func(ctx context.Context) {
 		for _, schemaURL := range t.config.Prefetch {
@@ -224,4 +239,23 @@ func (t *schemaProcessor) start(ctx context.Context, host component.Host) error 
 	}(ctx)
 
 	return nil
+}
+
+func (t *schemaProcessor) shutdown(ctx context.Context) error {
+	if t.storageClient != nil {
+		return t.storageClient.Close(ctx)
+	}
+	return nil
+}
+
+func getStorageClient(ctx context.Context, host component.Host, storageID component.ID) (storage.Client, error) {
+	ext, ok := host.GetExtensions()[storageID]
+	if !ok {
+		return nil, fmt.Errorf("storage extension %q not found", storageID)
+	}
+	storageExt, ok := ext.(storage.Extension)
+	if !ok {
+		return nil, fmt.Errorf("extension %q is not a storage extension", storageID)
+	}
+	return storageExt.GetClient(ctx, component.KindProcessor, storageID, "schema_cache")
 }

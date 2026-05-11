@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/google/go-cmp v0.7.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.151.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -15,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.151.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/consumer v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/consumer/consumertest v0.151.1-0.20260501001745-24aecacf1c04
+	go.opentelemetry.io/collector/extension/xextension v0.151.0
 	go.opentelemetry.io/collector/pdata v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/processor v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/processor/processorhelper v0.151.1-0.20260501001745-24aecacf1c04
@@ -68,6 +70,7 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.57.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.57.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.151.1-0.20260501001745-24aecacf1c04 // indirect
+	go.opentelemetry.io/collector/extension v1.57.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.57.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.151.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/featuregate v1.57.1-0.20260501001745-24aecacf1c04 // indirect
