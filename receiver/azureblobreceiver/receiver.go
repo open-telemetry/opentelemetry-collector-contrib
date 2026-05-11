@@ -19,20 +19,22 @@ import (
 )
 
 type logsDataConsumer interface {
-	consumeLogsJSON(ctx context.Context, json []byte) error
+	consumeLogs(ctx context.Context, data []byte) error
 	setNextLogsConsumer(nextLogsConsumer consumer.Logs)
 }
 
 type tracesDataConsumer interface {
-	consumeTracesJSON(ctx context.Context, json []byte) error
+	consumeTraces(ctx context.Context, data []byte) error
 	setNextTracesConsumer(nextracesConsumer consumer.Traces)
 }
 
 type blobReceiver struct {
 	blobEventHandler   eventHandler
 	logger             *zap.Logger
-	logsUnmarshaler    plog.Unmarshaler
-	tracesUnmarshaler  ptrace.Unmarshaler
+	logsEncoding       string
+	tracesEncoding     string
+	logsUnmarshalers   map[string]plog.Unmarshaler
+	tracesUnmarshalers map[string]ptrace.Unmarshaler
 	nextLogsConsumer   consumer.Logs
 	nextTracesConsumer consumer.Traces
 	obsrecv            *receiverhelper.ObsReport
@@ -58,14 +60,19 @@ func (b *blobReceiver) setNextTracesConsumer(nextTracesConsumer consumer.Traces)
 	b.blobEventHandler.setTracesDataConsumer(b)
 }
 
-func (b *blobReceiver) consumeLogsJSON(ctx context.Context, json []byte) error {
+func (b *blobReceiver) consumeLogs(ctx context.Context, data []byte) error {
 	if b.nextLogsConsumer == nil {
 		return nil
 	}
 
+	unmarshaler, ok := b.logsUnmarshalers[b.logsEncoding]
+	if !ok {
+		return fmt.Errorf("unsupported logs encoding %q", b.logsEncoding)
+	}
+
 	logsContext := b.obsrecv.StartLogsOp(ctx)
 
-	logs, err := b.logsUnmarshaler.UnmarshalLogs(json)
+	logs, err := unmarshaler.UnmarshalLogs(data)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal logs: %w", err)
 	}
@@ -77,14 +84,19 @@ func (b *blobReceiver) consumeLogsJSON(ctx context.Context, json []byte) error {
 	return err
 }
 
-func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error {
+func (b *blobReceiver) consumeTraces(ctx context.Context, data []byte) error {
 	if b.nextTracesConsumer == nil {
 		return nil
 	}
 
+	unmarshaler, ok := b.tracesUnmarshalers[b.tracesEncoding]
+	if !ok {
+		return fmt.Errorf("unsupported traces encoding %q", b.tracesEncoding)
+	}
+
 	tracesContext := b.obsrecv.StartTracesOp(ctx)
 
-	traces, err := b.tracesUnmarshaler.UnmarshalTraces(json)
+	traces, err := unmarshaler.UnmarshalTraces(data)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal traces: %w", err)
 	}
@@ -97,7 +109,7 @@ func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error
 }
 
 // Returns a new instance of the log receiver
-func newReceiver(set receiver.Settings, eventHandler eventHandler) (component.Component, error) {
+func newReceiver(set receiver.Settings, eventHandler eventHandler, logsEncoding, tracesEncoding string) (component.Component, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "event",
@@ -108,11 +120,19 @@ func newReceiver(set receiver.Settings, eventHandler eventHandler) (component.Co
 	}
 
 	blobReceiver := &blobReceiver{
-		blobEventHandler:  eventHandler,
-		logger:            set.Logger,
-		logsUnmarshaler:   &plog.JSONUnmarshaler{},
-		tracesUnmarshaler: &ptrace.JSONUnmarshaler{},
-		obsrecv:           obsrecv,
+		blobEventHandler: eventHandler,
+		logger:           set.Logger,
+		logsEncoding:     logsEncoding,
+		tracesEncoding:   tracesEncoding,
+		logsUnmarshalers: map[string]plog.Unmarshaler{
+			EncodingOTLPJSON:  &plog.JSONUnmarshaler{},
+			EncodingOTLPProto: &plog.ProtoUnmarshaler{},
+		},
+		tracesUnmarshalers: map[string]ptrace.Unmarshaler{
+			EncodingOTLPJSON:  &ptrace.JSONUnmarshaler{},
+			EncodingOTLPProto: &ptrace.ProtoUnmarshaler{},
+		},
+		obsrecv: obsrecv,
 	}
 
 	return blobReceiver, nil

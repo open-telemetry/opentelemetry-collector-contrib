@@ -37,8 +37,8 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			Authentication:   ConnectionStringAuth,
 			ConnectionString: goodConnectionString,
-			Logs:             LogsConfig{ContainerName: logsContainerName},
-			Traces:           TracesConfig{ContainerName: tracesContainerName},
+			Logs:             LogsConfig{ContainerName: logsContainerName, Encoding: EncodingOTLPJSON},
+			Traces:           TracesConfig{ContainerName: tracesContainerName, Encoding: EncodingOTLPJSON},
 			Cloud:            defaultCloud,
 		},
 		receiver)
@@ -55,8 +55,8 @@ func TestLoadConfig(t *testing.T) {
 				ClientSecret: "mock-client-secret",
 			},
 			StorageAccountURL: "https://accountName.blob.core.windows.net",
-			Logs:              LogsConfig{ContainerName: logsContainerName},
-			Traces:            TracesConfig{ContainerName: tracesContainerName},
+			Logs:              LogsConfig{ContainerName: logsContainerName, Encoding: EncodingOTLPJSON},
+			Traces:            TracesConfig{ContainerName: tracesContainerName, Encoding: EncodingOTLPJSON},
 			Cloud:             defaultCloud,
 		},
 		receiver)
@@ -76,4 +76,16 @@ func TestMissingServicePrincipalCredentials(t *testing.T) {
 	cfg.(*Config).Authentication = ServicePrincipalAuth
 	err = xconfmap.Validate(cfg)
 	assert.EqualError(t, err, `"TenantID" is not specified in config; "ClientID" is not specified in config; "ClientSecret" is not specified in config; "StorageAccountURL" is not specified in config`)
+}
+
+func TestUnsupportedEncoding(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ConnectionString = goodConnectionString
+	cfg.Logs.Encoding = "totally_made_up"
+	cfg.Traces.Encoding = "also_made_up"
+	err := xconfmap.Validate(cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `logs.encoding "totally_made_up" is not supported`)
+	assert.Contains(t, err.Error(), `traces.encoding "also_made_up" is not supported`)
 }
