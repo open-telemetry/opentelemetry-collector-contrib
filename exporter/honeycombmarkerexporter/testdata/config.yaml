@@ -80,3 +80,13 @@ honeycomb_marker/no_dataset_slug:
         log_conditions:
           - body == "test"
 
+honeycomb_marker/use_service_name:
+  api_key: "test-apikey"
+  api_url: "https://api.testhost.io"
+  markers:
+    - type: "fooType"
+      use_service_name_as_dataset_slug: true
+      rules:
+        log_conditions:
+          - body == "test"
+

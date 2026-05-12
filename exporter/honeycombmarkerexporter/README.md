@@ -29,6 +29,7 @@ The following configuration options are supported:
   * `rules` (Required): This is a list of [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) rules that determine when to create an event marker. 
     * `log_conditions` (Required): A list of [OTTL log](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllog) conditions that determine a match. The marker will be created if **ANY** condition matches.
   * `dataset_slug` (Optional): The dataset in which to create the marker. If not set, will default to `__all__`.
+  * `use_service_name_as_dataset_slug` (Optional, default `false`): When `true`, the marker is sent to the dataset named after the log's resource `service.name` attribute. If `service.name` is missing, the marker falls back to `dataset_slug`, then to `__all__`. Useful for fanning a single marker rule out to per-service Honeycomb datasets.
   * `message_key` (Optional): The key of the attribute whose value will be used as the marker's message. If necessary the value will be converted to a string.
   * `url_key` (Optional): The key of the attribute whose value will be used as the marker's url. If necessary the value will be converted to a string.
 

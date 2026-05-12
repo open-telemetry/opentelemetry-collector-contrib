@@ -162,8 +162,15 @@ func TestExportMarkers(t *testing.T) {
 }
 
 func constructLogs(attributes map[string]string) plog.Logs {
+	return constructLogsWithResource(attributes, nil)
+}
+
+func constructLogsWithResource(attributes, resourceAttributes map[string]string) plog.Logs {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
+	for k, v := range resourceAttributes {
+		rl.Resource().Attributes().PutStr(k, v)
+	}
 	sl := rl.ScopeLogs().AppendEmpty()
 	l := sl.LogRecords().AppendEmpty()
 
@@ -298,4 +305,103 @@ func TestExportMarkers_NoAPICall(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestResolveDatasetSlug(t *testing.T) {
+	tests := []struct {
+		name        string
+		marker      Marker
+		serviceName string
+		want        string
+	}{
+		{name: "default falls back to __all__", marker: Marker{}, want: "__all__"},
+		{name: "configured slug used when flag off", marker: Marker{DatasetSlug: "billing"}, want: "billing"},
+		{name: "service name used when flag on", marker: Marker{UseServiceNameAsDatasetSlug: true}, serviceName: "billing", want: "billing"},
+		{name: "service name preferred over configured slug", marker: Marker{UseServiceNameAsDatasetSlug: true, DatasetSlug: "fallback"}, serviceName: "billing", want: "billing"},
+		{name: "missing service name falls back to configured slug", marker: Marker{UseServiceNameAsDatasetSlug: true, DatasetSlug: "fallback"}, want: "fallback"},
+		{name: "missing service name and missing slug falls back to default", marker: Marker{UseServiceNameAsDatasetSlug: true}, want: "__all__"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resolveDatasetSlug(tt.marker, tt.serviceName)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+// TestExportMarkers_UseServiceNameAsDatasetSlug verifies the end-to-end path:
+// when use_service_name_as_dataset_slug is true and the resource has a service.name,
+// the marker request is sent to /1/markers/<service.name>.
+func TestExportMarkers_UseServiceNameAsDatasetSlug(t *testing.T) {
+	cfg := Config{
+		APIKey: "test-apikey",
+		Markers: []Marker{
+			{
+				Type:                        "test-type",
+				DatasetSlug:                 "should-be-overridden",
+				UseServiceNameAsDatasetSlug: true,
+				Rules: Rules{
+					LogConditions: []string{`body == "test"`},
+				},
+			},
+		},
+	}
+
+	var gotPath string
+	markerServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		gotPath = req.URL.Path
+		rw.WriteHeader(http.StatusAccepted)
+	}))
+	defer markerServer.Close()
+
+	cfg.APIURL = markerServer.URL
+
+	f := NewFactory()
+	exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), &cfg)
+	require.NoError(t, err)
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+
+	logs := constructLogsWithResource(nil, map[string]string{"service.name": "billing"})
+	require.NoError(t, exp.ConsumeLogs(t.Context(), logs))
+
+	assert.Equal(t, "/1/markers/billing", gotPath)
+}
+
+// TestExportMarkers_UseServiceNameMissingFallsBackToSlug verifies the fallback when
+// the flag is on but the resource is missing service.name: the marker still goes to
+// the configured DatasetSlug rather than silently dropping or sending to /__all__.
+func TestExportMarkers_UseServiceNameMissingFallsBackToSlug(t *testing.T) {
+	cfg := Config{
+		APIKey: "test-apikey",
+		Markers: []Marker{
+			{
+				Type:                        "test-type",
+				DatasetSlug:                 "fallback-dataset",
+				UseServiceNameAsDatasetSlug: true,
+				Rules: Rules{
+					LogConditions: []string{`body == "test"`},
+				},
+			},
+		},
+	}
+
+	var gotPath string
+	markerServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		gotPath = req.URL.Path
+		rw.WriteHeader(http.StatusAccepted)
+	}))
+	defer markerServer.Close()
+
+	cfg.APIURL = markerServer.URL
+
+	f := NewFactory()
+	exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), &cfg)
+	require.NoError(t, err)
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+
+	// No resource attributes — service.name is missing.
+	logs := constructLogs(nil)
+	require.NoError(t, exp.ConsumeLogs(t.Context(), logs))
+
+	assert.Equal(t, "/1/markers/fallback-dataset", gotPath)
 }

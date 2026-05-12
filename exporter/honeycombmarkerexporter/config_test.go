@@ -73,6 +73,24 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "use_service_name"),
+			expected: &Config{
+				APIKey: "test-apikey",
+				APIURL: "https://api.testhost.io",
+				Markers: []Marker{
+					{
+						Type:                        "fooType",
+						UseServiceNameAsDatasetSlug: true,
+						Rules: Rules{
+							LogConditions: []string{
+								`body == "test"`,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "bad_syntax_log"),
 		},
 		{
