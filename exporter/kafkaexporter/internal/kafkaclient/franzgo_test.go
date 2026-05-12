@@ -36,7 +36,7 @@ type statusRecorderHost struct {
 	events []*componentstatus.Event
 }
 
-func (h *statusRecorderHost) GetExtensions() map[component.ID]component.Component {
+func (*statusRecorderHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
