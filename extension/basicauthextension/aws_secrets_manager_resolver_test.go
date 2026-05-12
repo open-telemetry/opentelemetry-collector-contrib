@@ -19,8 +19,8 @@ import (
 )
 
 type mockSecretsManagerClient struct {
-	mu       atomic.Pointer[secretsmanager.GetSecretValueOutput]
-	callErr  error
+	mu        atomic.Pointer[secretsmanager.GetSecretValueOutput]
+	callErr   error
 	callCount atomic.Int32
 }
 

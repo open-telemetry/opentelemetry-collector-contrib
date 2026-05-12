@@ -1,7 +1,31 @@
 $defs:
+  aws_secrets_manager_settings:
+    description: AWSSecretsManagerSettings configures credential retrieval from AWS Secrets Manager. The secret must be a JSON object containing the username and password fields. Credentials are polled at the configured interval and rotated in place without restarting the collector.
+    type: object
+    properties:
+      password_key:
+        description: PasswordKey is the JSON key for the password field. Defaults to "password".
+        type: string
+      refresh_interval:
+        description: RefreshInterval controls how often the secret is polled for changes. Defaults to 1h.
+        type: string
+        format: duration
+      region:
+        description: Region is the AWS region. If empty, the SDK default chain is used (AWS_REGION env var, instance metadata, etc.).
+        type: string
+      secret_arn:
+        description: SecretARN is the ARN (or name) of the secret in AWS Secrets Manager. Required.
+        type: string
+      username_key:
+        description: UsernameKey is the JSON key for the username field. Defaults to "username".
+        type: string
   client_auth_settings:
     type: object
     properties:
+      aws_secrets_manager:
+        description: AWSSecretsManager configures credential retrieval from AWS Secrets Manager. Mutually exclusive with Username, UsernameFile, Password, and PasswordFile.
+        x-pointer: true
+        $ref: aws_secrets_manager_settings
       password:
         description: Password holds the password to use for client authentication.
         $ref: go.opentelemetry.io/collector/config/configopaque.string
