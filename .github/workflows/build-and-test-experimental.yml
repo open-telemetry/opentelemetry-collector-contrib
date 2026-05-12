@@ -1,0 +1,133 @@
+name: build-and-test-experimental
+# Shadow workflow that exercises scoped lint, integration, and unit-test paths
+# alongside the regular build-and-test workflow. NOT REQUIRED for merging. Its
+# purpose is to gather data on whether scoped CI paths produce the same
+# pass/fail signal as the full matrices before we cut over.
+#
+# Runs only on pull_request. Jobs are intentionally distinct from the required
+# workflow's job names so branch protection has nothing to match.
+
+on:
+  pull_request:
+
+permissions: read-all
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  detect-scope:
+    runs-on: ubuntu-24.04
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    outputs:
+      mode: ${{ steps.decide.outputs.mode }}
+      go_sources: ${{ steps.decide.outputs.go_sources }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+      - id: decide
+        shell: bash
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          FILE_CAP: '50'
+        run: |
+          set -euo pipefail
+          base=$(git merge-base origin/main "$PR_HEAD")
+          changed=$(git diff --name-only --diff-filter=ACMRTUXB "$base" "$PR_HEAD")
+          echo "Changed files:"
+          echo "$changed"
+
+          # Any of these paths change CI behavior or coverage, so the scoped
+          # path is not safe -- mark mode=full so a real run would fall back
+          # to the full matrices in the required workflow.
+          trigger='^(\.golangci\.yml$|Makefile$|Makefile\.Common$|\.github/workflows/|\.github/actions/|go\.mod$)'
+          if echo "$changed" | grep -qE "$trigger"; then
+            echo "Full-scope trigger matched; experimental jobs will be skipped."
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          go_sources=$(echo "$changed" | grep -E '\.go$' | grep -vE '_test\.go$' || true)
+          if [ -z "$go_sources" ]; then
+            echo "No Go source changes; experimental jobs will be skipped."
+            echo "mode=skip" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          count=$(echo "$go_sources" | wc -l | tr -d ' ')
+          if [ "$count" -gt "$FILE_CAP" ]; then
+            echo "Changed Go source count $count exceeds cap $FILE_CAP; experimental jobs will be skipped."
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Scoping experimental jobs to $count changed source file(s)."
+          {
+            echo "mode=scoped"
+            echo 'go_sources<<EOF'
+            echo "$go_sources"
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+  exp-lint-affected:
+    runs-on: ubuntu-24.04
+    needs: [detect-scope]
+    if: needs.detect-scope.outputs.mode == 'scoped'
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, windows]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Lint affected modules
+        env:
+          CHANGED_GOLANG_SOURCES: ${{ needs.detect-scope.outputs.go_sources }}
+        run: GOOS=${{ matrix.goos }} GOARCH=amd64 make for-affected-components CMD="make lint"
+
+  exp-integration-affected:
+    runs-on: ubuntu-24.04
+    needs: [detect-scope]
+    if: needs.detect-scope.outputs.mode == 'scoped'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Cache Docker images.
+        uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
+        with:
+          key: docker-affected
+      - name: Run integration tests in affected modules
+        env:
+          CHANGED_GOLANG_SOURCES: ${{ needs.detect-scope.outputs.go_sources }}
+        run: make for-affected-components CMD="make mod-integration-test"
+
+  exp-unittest-affected:
+    runs-on: ubuntu-24.04
+    needs: [detect-scope]
+    if: needs.detect-scope.outputs.mode == 'scoped'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Cache Test Build
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        with:
+          path: ~/.cache/go-build
+          key: go-test-build-experimental-${{ runner.os }}-oldstable-${{ hashFiles('**/go.sum') }}
+      - name: Run unit tests in affected modules
+        env:
+          CHANGED_GOLANG_SOURCES: ${{ needs.detect-scope.outputs.go_sources }}
+        run: make for-affected-components CMD="make test"

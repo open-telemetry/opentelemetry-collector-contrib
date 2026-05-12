@@ -39,58 +39,6 @@ jobs:
       - run: make genotelcontribcol
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
-  detect-scope:
-    runs-on: ubuntu-24.04
-    if: ${{ github.actor != 'dependabot[bot]' && github.event_name == 'pull_request' }}
-    outputs:
-      mode: ${{ steps.decide.outputs.mode }}
-      go_sources: ${{ steps.decide.outputs.go_sources }}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          fetch-depth: 0
-      - id: decide
-        shell: bash
-        env:
-          PR_HEAD: ${{ github.event.pull_request.head.sha }}
-          FILE_CAP: '50'
-        run: |
-          set -euo pipefail
-          base=$(git merge-base origin/main "$PR_HEAD")
-          changed=$(git diff --name-only --diff-filter=ACMRTUXB "$base" "$PR_HEAD")
-          echo "Changed files:"
-          echo "$changed"
-
-          # Any of these paths change CI behavior or coverage, so require the full matrices.
-          # TEMPORARY (revert before merge): `.github/workflows/` removed so this PR can exercise the scoped paths on CI.
-          trigger='^(\.golangci\.yml$|Makefile$|Makefile\.Common$|\.github/actions/|go\.mod$)'
-          if echo "$changed" | grep -qE "$trigger"; then
-            echo "Full-scope trigger matched; running full lint and integration matrices."
-            echo "mode=full" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          go_sources=$(echo "$changed" | grep -E '\.go$' | grep -vE '_test\.go$' || true)
-          if [ -z "$go_sources" ]; then
-            echo "No Go source changes; skipping scoped jobs."
-            echo "mode=skip" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          count=$(echo "$go_sources" | wc -l | tr -d ' ')
-          if [ "$count" -gt "$FILE_CAP" ]; then
-            echo "Changed Go source count $count exceeds cap $FILE_CAP; falling back to full matrices."
-            echo "mode=full" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "Scoping to $count changed source file(s)."
-          {
-            echo "mode=scoped"
-            echo 'go_sources<<EOF'
-            echo "$go_sources"
-            echo EOF
-          } >> "$GITHUB_OUTPUT"
   lint-matrix:
     strategy:
       fail-fast: false
@@ -116,11 +64,7 @@ jobs:
           - cmd-0
           - other
     runs-on: ubuntu-24.04
-    needs: [setup-environment, detect-scope]
-    if: |
-      always() &&
-      needs.setup-environment.result == 'success' &&
-      (github.event_name != 'pull_request' || needs.detect-scope.outputs.mode == 'full')
+    needs: [setup-environment]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
@@ -129,49 +73,22 @@ jobs:
       - name: Lint
         run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
-  lint-affected:
-    runs-on: ubuntu-24.04
-    needs: [setup-environment, detect-scope]
-    if: needs.detect-scope.outputs.mode == 'scoped'
-    strategy:
-      fail-fast: false
-      matrix:
-        goos: [linux, windows]
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/setup-go-tools
-        with:
-          go-version: oldstable
-      - name: Lint affected modules
-        env:
-          CHANGED_GOLANG_SOURCES: ${{ needs.detect-scope.outputs.go_sources }}
-        run: GOOS=${{ matrix.goos }} GOARCH=amd64 make for-affected-components CMD="make lint"
-      - run: ./.github/workflows/scripts/check-disk-space.sh
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-24.04
-    needs: [setup-environment, detect-scope, lint-matrix, lint-affected]
+    needs: [setup-environment, lint-matrix]
     steps:
+      - name: Print result
+        run: echo ${{ needs.lint-matrix.result }}
       - name: Interpret result
-        env:
-          MODE: ${{ needs.detect-scope.outputs.mode }}
-          MATRIX_RESULT: ${{ needs.lint-matrix.result }}
-          AFFECTED_RESULT: ${{ needs.lint-affected.result }}
         run: |
-          case "$MODE" in
-            scoped) check="$AFFECTED_RESULT" ;;
-            full|'') check="$MATRIX_RESULT" ;;
-            skip) check='success' ;;
-            *) echo "Unexpected mode: $MODE"; exit 1 ;;
-          esac
-          echo "mode=$MODE matrix=$MATRIX_RESULT affected=$AFFECTED_RESULT check=$check"
-          if [[ "$check" != "success" ]]; then
-            echo "Lint failed."
-            exit 1
+          if [[ success == ${{ needs.lint-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
           fi
-          echo "Lint passed."
   govulncheck:
     strategy:
       fail-fast: false
@@ -278,8 +195,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # On PRs only oldstable runs; stable runs on main pushes and merge_group as a forward-compat check.
-        go-version: ${{ github.event_name == 'pull_request' && fromJSON('["oldstable"]') || fromJSON('["stable","oldstable"]') }}
+        go-version: [stable, oldstable]
         runner: [ubuntu-24.04]
         group:
           - receiver-0
@@ -299,11 +215,7 @@ jobs:
           - cmd-0
           - other
     runs-on: ${{ matrix.runner }}
-    needs: [setup-environment, detect-scope]
-    if: |
-      always() &&
-      needs.setup-environment.result == 'success' &&
-      (github.event_name != 'pull_request' || needs.detect-scope.outputs.mode == 'full')
+    needs: [setup-environment]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
@@ -355,52 +267,22 @@ jobs:
             echo "Tests passed or were skipped. Continuing."
           fi
 
-  unittest-affected:
-    runs-on: ubuntu-24.04
-    needs: [setup-environment, detect-scope]
-    if: needs.detect-scope.outputs.mode == 'scoped'
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/setup-go-tools
-        with:
-          go-version: oldstable
-      - name: Cache Test Build
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
-        with:
-          path: ~/.cache/go-build
-          key: go-test-build-${{ runner.os }}-oldstable-affected-${{ hashFiles('**/go.sum') }}
-      - run: ./.github/workflows/scripts/check-disk-space.sh
-      - name: Run unit tests in affected modules
-        env:
-          CHANGED_GOLANG_SOURCES: ${{ needs.detect-scope.outputs.go_sources }}
-        run: make for-affected-components CMD="make test"
-      - run: ./.github/workflows/scripts/check-disk-space.sh
-
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-24.04
-    needs: [setup-environment, detect-scope, unittest-matrix, unittest-affected]
+    needs: [setup-environment, unittest-matrix]
     steps:
+      - name: Print result
+        run: echo ${{ needs.unittest-matrix.result }}
       - name: Interpret result
-        env:
-          MODE: ${{ needs.detect-scope.outputs.mode }}
-          MATRIX_RESULT: ${{ needs.unittest-matrix.result }}
-          AFFECTED_RESULT: ${{ needs.unittest-affected.result }}
         run: |
-          case "$MODE" in
-            scoped) check="$AFFECTED_RESULT" ;;
-            full|'') check="$MATRIX_RESULT" ;;
-            skip) check='success' ;;
-            *) echo "Unexpected mode: $MODE"; exit 1 ;;
-          esac
-          echo "mode=$MODE matrix=$MATRIX_RESULT affected=$AFFECTED_RESULT check=$check"
-          if [[ "$check" != "success" ]]; then
-            echo "Unit tests failed."
-            exit 1
+          if [[ success == ${{ needs.unittest-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
           fi
-          echo "Unit tests passed."
   coverage:
     runs-on: ubuntu-24.04
     needs: [unittest]
@@ -436,11 +318,7 @@ jobs:
           - pkg
           - cmd-0
     runs-on: ubuntu-24.04
-    needs: [setup-environment, detect-scope]
-    if: |
-      always() &&
-      needs.setup-environment.result == 'success' &&
-      (github.event_name != 'pull_request' || needs.detect-scope.outputs.mode == 'full')
+    needs: [setup-environment]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
@@ -452,27 +330,6 @@ jobs:
           key: docker-${{ matrix.group }}
       - name: Run Integration Tests
         run: make gointegration-test GROUP=${{ matrix.group }}
-      - run: ./.github/workflows/scripts/check-disk-space.sh
-
-  integration-affected:
-    runs-on: ubuntu-24.04
-    needs: [setup-environment, detect-scope]
-    if: needs.detect-scope.outputs.mode == 'scoped'
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/setup-go-tools
-        with:
-          go-version: oldstable
-      - name: Cache Docker images.
-        uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
-        with:
-          key: docker-affected
-      - name: Run integration tests in affected modules
-        env:
-          CHANGED_GOLANG_SOURCES: ${{ needs.detect-scope.outputs.go_sources }}
-        run: make for-affected-components CMD="make mod-integration-test"
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   integration-sudo-tests-matrix:
@@ -503,31 +360,19 @@ jobs:
   integration-tests:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-24.04
-    needs: [setup-environment, detect-scope, integration-tests-matrix, integration-affected, integration-sudo-tests-matrix]
+    needs: [setup-environment, integration-tests-matrix, integration-sudo-tests-matrix]
     steps:
+      - name: Print result
+        run: echo ${{ needs.integration-tests-matrix.result }}
       - name: Interpret result
-        env:
-          MODE: ${{ needs.detect-scope.outputs.mode }}
-          MATRIX_RESULT: ${{ needs.integration-tests-matrix.result }}
-          AFFECTED_RESULT: ${{ needs.integration-affected.result }}
-          SUDO_RESULT: ${{ needs.integration-sudo-tests-matrix.result }}
         run: |
-          case "$MODE" in
-            scoped) check="$AFFECTED_RESULT" ;;
-            full|'') check="$MATRIX_RESULT" ;;
-            skip) check='success' ;;
-            *) echo "Unexpected mode: $MODE"; exit 1 ;;
-          esac
-          echo "mode=$MODE matrix=$MATRIX_RESULT affected=$AFFECTED_RESULT sudo=$SUDO_RESULT check=$check"
-          if [[ "$check" != "success" ]]; then
-            echo "Integration tests failed."
-            exit 1
+          if [[ success == ${{ needs.integration-tests-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
           fi
-          if [[ "$SUDO_RESULT" != "success" && "$SUDO_RESULT" != "skipped" ]]; then
-            echo "Integration sudo tests failed (result=$SUDO_RESULT)."
-            exit 1
-          fi
-          echo "Integration tests passed."
 
   correctness-traces:
     runs-on: ubuntu-24.04
