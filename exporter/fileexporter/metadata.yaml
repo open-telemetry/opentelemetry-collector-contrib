@@ -8,7 +8,8 @@ status:
     development: [profiles]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [atingchen]
+    active: [atingchen, paulojmdias]
+    seeking_new: true
 
 tests:
   config:
