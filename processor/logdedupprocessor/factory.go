@@ -14,8 +14,34 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
+
+func parseConditions(conditions []string, set component.TelemetrySettings) (*ottl.ConditionSequence[*ottllog.TransformContext], error) {
+	parser, err := ottllog.NewParser(filterottl.StandardLogFuncs(), set, ottllog.EnablePathContextNames())
+	if err != nil {
+		return nil, err
+	}
+
+	pc, err := ottl.NewParserCollection[*ottl.ConditionSequence[*ottllog.TransformContext]](
+		set,
+		ottl.EnableParserCollectionModifiedPathsLogging[*ottl.ConditionSequence[*ottllog.TransformContext]](true),
+		ottl.WithParserCollectionContext(
+			ottllog.ContextName,
+			&parser,
+			ottl.WithConditionConverter(func(_ *ottl.ParserCollection[*ottl.ConditionSequence[*ottllog.TransformContext]], _ ottl.ConditionsGetter, parsed []*ottl.Condition[*ottllog.TransformContext]) (*ottl.ConditionSequence[*ottllog.TransformContext], error) {
+				c := ottllog.NewConditionSequence(parsed, set, ottllog.WithConditionSequenceErrorMode(ottl.PropagateError))
+				return &c, nil
+			}),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return pc.ParseConditionsWithContext(ottllog.ContextName, ottl.NewConditionsGetter(conditions), true)
+}
 
 // NewFactory creates a new factory for the processor.
 func NewFactory() processor.Factory {
@@ -46,12 +72,7 @@ func createLogsProcessor(_ context.Context, settings processor.Settings, cfg com
 	if len(processorCfg.Conditions) == 0 {
 		processor.conditions = nil
 	} else {
-		conditions, err := filterottl.NewBoolExprForLog(
-			processorCfg.Conditions,
-			filterottl.StandardLogFuncs(),
-			ottl.PropagateError,
-			settings.TelemetrySettings,
-		)
+		conditions, err := parseConditions(processorCfg.Conditions, settings.TelemetrySettings)
 		if err != nil {
 			return nil, fmt.Errorf("invalid condition: %w", err)
 		}
