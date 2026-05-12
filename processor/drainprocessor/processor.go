@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
@@ -33,7 +34,7 @@ type drainProcessor struct {
 
 	storageClient    storage.Client
 	stopSave         context.CancelFunc // cancels periodic save goroutine
-	lastSnapshotHash uint64
+	lastSnapshotHash atomic.Uint64
 }
 
 func newDrainProcessor(set processor.Settings, cfg *Config) (*drainProcessor, error) {
@@ -89,18 +90,20 @@ func (p *drainProcessor) seed() {
 // Start loads a snapshot from storage (if available) and starts the periodic
 // save goroutine when configured.
 func (p *drainProcessor) Start(ctx context.Context, host component.Host) error {
-	var err error
-	p.storageClient, err = getStorageClient(ctx, host, p.config.Storage, p.componentID)
-	if err != nil {
-		return fmt.Errorf("failed to get storage client: %w", err)
+	if p.config.Storage != nil {
+		var err error
+		p.storageClient, err = getStorageClient(ctx, host, p.config.Storage, p.componentID)
+		if err != nil {
+			return fmt.Errorf("failed to get storage client: %w", err)
+		}
 	}
 
-	if !p.loadSnapshot(ctx) {
+	if p.storageClient == nil || !p.loadSnapshot(ctx) {
 		p.seed()
 	}
 
-	if p.config.SaveInterval > 0 {
-		p.startPeriodicSave()
+	if p.storageClient != nil && p.config.SaveInterval > 0 {
+		p.startPeriodicSave(ctx)
 	}
 	return nil
 }

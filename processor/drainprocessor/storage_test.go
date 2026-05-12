@@ -258,12 +258,12 @@ func TestSaveSkipsWhenUnchanged(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, p.saveSnapshot(ctx))
 
-	hashAfterFirstSave := p.lastSnapshotHash
+	hashAfterFirstSave := p.lastSnapshotHash.Load()
 	assert.NotZero(t, hashAfterFirstSave, "hash should be set after first save")
 
 	// Save again without any changes — hash should remain the same.
 	require.NoError(t, p.saveSnapshot(ctx))
-	assert.Equal(t, hashAfterFirstSave, p.lastSnapshotHash, "hash should not change when tree is unchanged")
+	assert.Equal(t, hashAfterFirstSave, p.lastSnapshotHash.Load(), "hash should not change when tree is unchanged")
 
 	require.NoError(t, p.Shutdown(ctx))
 }

@@ -16,13 +16,8 @@ import (
 
 const storageKey = "drain_tree"
 
-// getStorageClient resolves a storage.Client for the processor. Returns a
-// NopClient when storageID is nil (storage not configured).
+// getStorageClient resolves a storage.Client for the processor.
 func getStorageClient(ctx context.Context, host component.Host, storageID *component.ID, componentID component.ID) (storage.Client, error) {
-	if storageID == nil {
-		return storage.NewNopClient(), nil
-	}
-
 	ext, ok := host.GetExtensions()[*storageID]
 	if !ok {
 		return nil, fmt.Errorf("storage extension %q not found", storageID)
@@ -64,8 +59,8 @@ func (p *drainProcessor) loadSnapshot(ctx context.Context) bool {
 
 // startPeriodicSave launches a background goroutine that saves the tree
 // snapshot at the configured interval.
-func (p *drainProcessor) startPeriodicSave() {
-	ctx, cancel := context.WithCancel(context.Background())
+func (p *drainProcessor) startPeriodicSave(ctx context.Context) {
+	ctx, cancel := context.WithCancel(ctx)
 	p.stopSave = cancel
 
 	go func() {
@@ -97,14 +92,14 @@ func (p *drainProcessor) saveSnapshot(ctx context.Context) error {
 	h := fnv.New64a()
 	h.Write(data)
 	hash := h.Sum64()
-	if hash == p.lastSnapshotHash {
+	if hash == p.lastSnapshotHash.Load() {
 		return nil
 	}
 
 	if err := p.storageClient.Set(ctx, storageKey, data); err != nil {
 		return fmt.Errorf("failed to write snapshot to storage: %w", err)
 	}
-	p.lastSnapshotHash = hash
+	p.lastSnapshotHash.Store(hash)
 	p.logger.Debug("saved drain tree snapshot to storage", zap.Int("bytes", len(data)))
 	return nil
 }
