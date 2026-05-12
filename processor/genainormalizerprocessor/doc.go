@@ -3,7 +3,7 @@
 
 //go:generate make mdatagen
 
-// Package genainormalizer provides a processor that normalizes GenAI telemetry
-// attributes from OpenInference and OpenLLMetry to the official OTel GenAI
-// Semantic Conventions.
+// Package genainormalizerprocessor provides a processor that normalizes GenAI
+// telemetry attributes from OpenInference to the official OTel GenAI Semantic
+// Conventions.
 package genainormalizerprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor"
