@@ -25,7 +25,6 @@ feature_gates:
     from_version: v0.136.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40400
     
-  # TODO: Remove this feature gate when the legacy metric names are removed.
   - id: connector.spanmetrics.legacyMetricNames
     description: When enabled, connector uses legacy metric names.
     # Alpha because we want it disabled by default.
