@@ -1,4 +1,4 @@
-googlecloudspanner:
+google_cloud_spanner:
   collection_interval: 120s
   top_metrics_query_max_rows: 10
   backfill_enabled: true
