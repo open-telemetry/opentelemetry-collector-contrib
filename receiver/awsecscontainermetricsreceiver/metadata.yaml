@@ -1,3 +1,4 @@
+display_name: AWS ECS Container Metrics Receiver
 type: awsecscontainermetrics
 
 status:

@@ -3,7 +3,7 @@ kafka/full:
   brokers: ["foo:123", "bar:456"]
   resolve_canonical_bootstrap_servers_only: true
   client_id: vip
-  protocol_version: 1.2.3
+  protocol_version: 3.1.2
   rack_id: rack1
   tls:
     ca_file: ca.pem
@@ -19,6 +19,7 @@ kafka/full:
     retry:
       max: 10
       backoff: 5s
+  conn_idle_timeout: 5m
 kafka/sasl_aws_msk_iam_oauthbearer:
   auth:
     sasl:
@@ -98,3 +99,6 @@ kafka/foo:
 
 kafka/not_use_leader_epoch:
   use_leader_epoch: false
+
+kafka/conn_idle_timeout:
+  conn_idle_timeout: 5m

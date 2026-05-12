@@ -5,6 +5,8 @@ package vpcflowlog
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -16,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -103,6 +106,24 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 			expectedErr:        "log line has more fields than the ones expected",
 			featureGateEnabled: false,
 		},
+		{
+			name:                 "Valid Transit Gateway (TGW) flow log",
+			logInputReader:       readAndCompressLogFile(t, dir, "valid_tgw_flow_log.log"),
+			logsExpectedFilename: "valid_tgw_flow_log_expected.yaml",
+			featureGateEnabled:   false,
+		},
+		{
+			name:                 "Valid Transit Gateway (TGW) flow log from CloudWatch",
+			logInputReader:       readLogFile(t, dir, "valid_tgw_flow_cw.json"),
+			logsExpectedFilename: "valid_tgw_flow_cw_expected.yaml",
+			featureGateEnabled:   false,
+		},
+		{
+			name:                 "Valid VPC flow log from S3 with ECS fields",
+			logInputReader:       readAndCompressLogFile(t, dir, "valid_vpc_flow_log_ecs.log"),
+			logsExpectedFilename: "valid_vpc_flow_log_ecs_expected.yaml",
+			featureGateEnabled:   false,
+		},
 	}
 
 	for _, test := range tests {
@@ -133,6 +154,95 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
 		})
 	}
+}
+
+func TestNewLogsDecoder(t *testing.T) {
+	directory := "testdata/stream"
+	expectPattern := "valid_vpc_flow_log_multi_%d.yaml"
+
+	tests := []struct {
+		name   string
+		offset int64
+		index  int
+	}{
+		{
+			name:   "Normal streaming",
+			offset: 0,
+			index:  0,
+		},
+		{
+			name:   "Stream with offset",
+			offset: 230, // skip first record
+			index:  1,   // start from first index
+		},
+	}
+
+	config := Config{
+		FileFormat: constants.FileFormatPlainText,
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			vpcUnmarshal, err := NewVPCFlowLogUnmarshaler(config, component.BuildInfo{}, zap.NewNop(), false)
+			require.NoError(t, err)
+
+			data, err := os.ReadFile(filepath.Join(directory, "valid_vpc_flow_log_multi.log"))
+			require.NoError(t, err)
+
+			// Flush after every log for testing purposes & set offset
+			streamer, err := vpcUnmarshal.NewLogsDecoder(bytes.NewReader(data), encoding.WithFlushItems(1), encoding.WithOffset(tt.offset))
+			require.NoError(t, err)
+
+			index := tt.index
+			for {
+				index++
+
+				var logs plog.Logs
+				logs, err = streamer.DecodeLogs()
+				if err != nil {
+					if errors.Is(err, io.EOF) {
+						break
+					}
+
+					t.Errorf("failed to unmarshal log %d: %v", index, err)
+				}
+
+				// To check or update offset, uncomment offset below
+				// fmt.Println(streamer.Offset())
+
+				var expectedLogs plog.Logs
+				expectedLogs, err = golden.ReadLogs(filepath.Join(directory, fmt.Sprintf(expectPattern, index)))
+				require.NoError(t, err)
+				require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+			}
+
+			// expect EOF after all logs are read
+			_, err = streamer.DecodeLogs()
+			require.ErrorIs(t, err, io.EOF)
+		})
+	}
+}
+
+func TestNewLogsDecoder_offsetForFormats(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "valid_vpc_flow_cw_custom.json"))
+	require.NoError(t, err)
+
+	config := Config{
+		FileFormat: constants.FileFormatPlainText,
+	}
+
+	vpcUnmarshal, err := NewVPCFlowLogUnmarshaler(config, component.BuildInfo{}, zap.NewNop(), false)
+	require.NoError(t, err)
+
+	// Derive decoder with a non-zero offset
+	streamer, err := vpcUnmarshal.NewLogsDecoder(bytes.NewReader(data), encoding.WithOffset(50))
+	require.NoError(t, err)
+
+	_, err = streamer.DecodeLogs()
+	require.ErrorIs(t, err, io.EOF)
+
+	// Byte length of the input
+	require.Equal(t, int64(476), streamer.Offset())
 }
 
 func TestHandleAddresses(t *testing.T) {
@@ -194,7 +304,7 @@ func TestHandleAddresses(t *testing.T) {
 		},
 	}
 
-	v := &vpcFlowLogUnmarshaler{logger: zap.NewNop()}
+	v := &VPCFlowLogUnmarshaler{logger: zap.NewNop()}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			record := plog.NewLogRecord()

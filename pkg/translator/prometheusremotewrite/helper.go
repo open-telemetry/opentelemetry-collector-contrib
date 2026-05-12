@@ -22,7 +22,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/multierr"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
@@ -98,8 +98,8 @@ var seps = []byte{'\xff'}
 // createAttributes creates a slice of Prometheus Labels with OTLP attributes and pairs of string values.
 // Unpaired string values are ignored. String pairs overwrite OTLP labels if collisions happen and
 // if logOnOverwrite is true, the overwrite is logged. Resulting label names are sanitized.
-func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externalLabels map[string]string,
-	ignoreAttrs []string, logOnOverwrite bool, labelNamer otlptranslator.LabelNamer, extras ...string,
+func createAttributes(resource pcommon.Resource, attributes pcommon.Map, scope pcommon.InstrumentationScope, externalLabels map[string]string,
+	ignoreAttrs []string, logOnOverwrite bool, labelNamer otlptranslator.LabelNamer, disableScopeInfo bool, extras ...string,
 ) ([]prompb.Label, error) {
 	resourceAttrs := resource.Attributes()
 	serviceName, haveServiceName := resourceAttrs.Get(string(conventions.ServiceNameKey))
@@ -115,6 +115,16 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	if haveInstanceID {
 		maxLabelCount++
 	}
+	// Scope info
+	if !disableScopeInfo {
+		if scope.Name() != "" {
+			maxLabelCount++
+		}
+		if scope.Version() != "" {
+			maxLabelCount++
+		}
+		maxLabelCount += scope.Attributes().Len()
+	}
 
 	// map ensures no duplicate label name
 	l := make(map[string]string, maxLabelCount)
@@ -126,7 +136,11 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	// (as they get mapped to other Prometheus labels)?
 	for key, value := range attributes.All() {
 		if !slices.Contains(ignoreAttrs, key) {
-			labels = append(labels, prompb.Label{Name: key, Value: value.AsString()})
+			strVal := value.AsString()
+			if strVal == "" {
+				continue
+			}
+			labels = append(labels, prompb.Label{Name: key, Value: strVal})
 		}
 	}
 	sort.Stable(ByLabelName(labels))
@@ -149,14 +163,19 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	// Map service.name + service.namespace to job
 	if haveServiceName {
 		val := serviceName.AsString()
-		if serviceNamespace, ok := resourceAttrs.Get(string(conventions.ServiceNamespaceKey)); ok {
-			val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
+		if val != "" {
+			if serviceNamespace, ok := resourceAttrs.Get(string(conventions.ServiceNamespaceKey)); ok {
+				val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
+			}
+			l[model.JobLabel] = val
 		}
-		l[model.JobLabel] = val
 	}
 	// Map service.instance.id to instance
 	if haveInstanceID {
-		l[model.InstanceLabel] = instance.AsString()
+		val := instance.AsString()
+		if val != "" {
+			l[model.InstanceLabel] = val
+		}
 	}
 	for key, value := range externalLabels {
 		// External labels have already been sanitized
@@ -167,10 +186,30 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 		l[key] = value
 	}
 
-	for i := 0; i < len(extras); i += 2 {
-		if i+1 >= len(extras) {
-			break
+	if !disableScopeInfo {
+		if scope.Name() != "" {
+			if key, err := labelNamer.Build("otel_scope_name"); err == nil {
+				l[key] = scope.Name()
+			}
 		}
+		if scope.Version() != "" {
+			if key, err := labelNamer.Build("otel_scope_version"); err == nil {
+				l[key] = scope.Version()
+			}
+		}
+		scope.Attributes().Range(func(k string, v pcommon.Value) bool {
+			if k == "name" || k == "version" || k == "schema_url" {
+				return true
+			}
+			key, err := labelNamer.Build("otel_scope_" + k)
+			if err == nil {
+				l[key] = v.AsString()
+			}
+			return true
+		})
+	}
+
+	for i := 0; i+1 < len(extras); i += 2 {
 		_, found := l[extras[i]]
 		if found && logOnOverwrite {
 			log.Println("label " + extras[i] + " is overwritten. Check if Prometheus reserved labels are used.")
@@ -213,13 +252,13 @@ func isValidAggregationTemporality(metric pmetric.Metric) bool {
 }
 
 func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice,
-	resource pcommon.Resource, settings Settings, baseName string,
+	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, baseName string,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
-		baseLabels, err := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false, c.labelNamer)
+		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -395,14 +434,14 @@ func mostRecentTimestampInMetric(metric pmetric.Metric) pcommon.Timestamp {
 	return ts
 }
 
-func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
+func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource, scope pcommon.InstrumentationScope,
 	settings Settings, baseName string,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
-		baseLabels, err := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false, c.labelNamer)
+		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -457,9 +496,7 @@ func createLabels(name string, baseLabels []prompb.Label, extras ...string) []pr
 	labels := make([]prompb.Label, len(baseLabels), len(baseLabels)+extraLabelCount+1) // +1 for name
 	copy(labels, baseLabels)
 
-	n := len(extras)
-	n -= n % 2
-	for extrasIdx := 0; extrasIdx < n; extrasIdx += 2 {
+	for extrasIdx := 0; extrasIdx+1 < len(extras); extrasIdx += 2 {
 		labels = append(labels, prompb.Label{Name: extras[extrasIdx], Value: extras[extrasIdx+1]})
 	}
 
@@ -531,7 +568,7 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 		name = settings.Namespace + "_" + name
 	}
 
-	labels, err := createAttributes(resource, attributes, settings.ExternalLabels, identifyingAttrs, false, otlptranslator.LabelNamer{PreserveMultipleUnderscores: !prometheustranslator.DropSanitizationGate.IsEnabled()}, model.MetricNameLabel, name)
+	labels, err := createAttributes(resource, attributes, pcommon.NewInstrumentationScope(), settings.ExternalLabels, identifyingAttrs, false, otlptranslator.LabelNamer{PreserveMultipleUnderscores: !prometheustranslator.DropSanitizationGate.IsEnabled()}, settings.DisableScopeInfo, model.MetricNameLabel, name)
 	if err != nil {
 		return err
 	}

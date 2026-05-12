@@ -1,90 +1,115 @@
+display_name: Redfish Receiver
 type: redfish
+reaggregation_enabled: true
+
+description: |
+  This receiver fetches metrics for a server running a [Redfish](https://en.wikipedia.org/wiki/Redfish_(specification))
+  API.
 
 status:
   class: receiver
   stability:
     development: [metrics]
   codeowners:
-    active: [steven-freed]
+    active: [steven-freed, khushijain21]
 
 resource_attributes:
-  base_url:
-    description: base url.
-    type: string
-    enabled: true
-  system.host_name:
+  host.name:
     description: System host name.
+    type: string
+    enabled: true        
+  url.full:
+    description:  Full URL of Redfish API endpoint.
     type: string
     enabled: true
     
 attributes:
   chassis.asset_tag:
     description: Chassis asset tag.
+    requirement_level: recommended
     type: string
   chassis.chassis_type:
     description: Chassis type.
+    requirement_level: recommended
     type: string
   chassis.id:
     description: Chassis id.
+    requirement_level: recommended
     type: string
   chassis.manufacturer:
     description: Chassis manufacturer.
+    requirement_level: recommended
     type: string
   chassis.model:
     description: Chassis model.
+    requirement_level: recommended
     type: string
   chassis.name:
     description: Chassis name.
+    requirement_level: recommended
     type: string
   chassis.serial_number:
     description: Chassis serial number.
+    requirement_level: recommended
     type: string
   chassis.sku:
     description: Chassis sku.
+    requirement_level: recommended
     type: string
   fan.name:
     description: Fan name.
+    requirement_level: recommended
     type: string
   fan.reading_units:
     description: Fan reading units.
+    requirement_level: recommended
     type: string
   system.asset_tag:
     description: System asset tag.
+    requirement_level: recommended
     type: string
   system.bios_version:
     description: System bios version.
+    requirement_level: recommended
     type: string
   system.id:
     description: System id.
+    requirement_level: recommended
     type: string
   system.manufacturer:
     description: System manufacturer.
+    requirement_level: recommended
     type: string
   system.model:
     description: System model.
+    requirement_level: recommended
     type: string
   system.name:
     description: System name.
+    requirement_level: recommended
     type: string
   system.serial_number:
     description: System serial number.
+    requirement_level: recommended
     type: string
   system.sku:
     description: System sku.
+    requirement_level: recommended
     type: string
   system.system_type:
     description: System type.
+    requirement_level: recommended
     type: string
   temperature.name:
     description: Temperature name.
+    requirement_level: recommended
     type: string
 
 metrics:
   chassis.powerstate:
     description: Measures the power state of a chassis (-1 unknown, 0 off, 1 on).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{powerstate}"
@@ -92,8 +117,7 @@ metrics:
   chassis.status.health:
     description: Measures the health of a chassis (-1 unknown, 0 critical, 1 ok, 2 warning).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statushealth}"
@@ -101,8 +125,7 @@ metrics:
   chassis.status.state:
     description: Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statusstate}"
@@ -110,8 +133,7 @@ metrics:
   fan.reading:
     description: Measures the reading of a chassis fan.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{}"
@@ -119,8 +141,7 @@ metrics:
   fan.status.health:
     description: Measures the health of a chassis fan (-1 unknown, 0 critical, 1 ok, 2 warning).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statushealth}"
@@ -128,8 +149,7 @@ metrics:
   fan.status.state:
     description: Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statusstate}"
@@ -137,8 +157,7 @@ metrics:
   system.powerstate:
     description: Measures the power state of a system (-1 unknown, 0 off, 1 on).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{powerstate}"
@@ -146,8 +165,7 @@ metrics:
   system.status.health:
     description: Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statushealth}"
@@ -155,8 +173,7 @@ metrics:
   system.status.state:
     description: Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statusstate}"
@@ -164,8 +181,7 @@ metrics:
   temperature.reading:
     description: Measures the reading of a chassis temperature.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "°C"
@@ -173,8 +189,7 @@ metrics:
   temperature.status.health:
     description: Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 warning).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statushealth}"
@@ -182,8 +197,7 @@ metrics:
   temperature.status.state:
     description: Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statusstate}"

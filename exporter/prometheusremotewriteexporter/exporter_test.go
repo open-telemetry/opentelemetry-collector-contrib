@@ -225,6 +225,9 @@ func Test_Start(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
+			defer func() {
+				assert.NoError(t, prwe.Shutdown(t.Context()))
+			}()
 			assert.NotNil(t, prwe.client)
 		})
 	}
@@ -241,11 +244,9 @@ func Test_Shutdown(t *testing.T) {
 	require.NoError(t, err)
 	errChan := make(chan error, 5)
 	for range 5 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			errChan <- prwe.PushMetrics(t.Context(), pmetric.NewMetrics())
-		}()
+		})
 	}
 	wg.Wait()
 	close(errChan)
@@ -384,6 +385,9 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	if err := prwe.Start(context.Background(), componenttest.NewNopHost()); err != nil {
 		return err
 	}
+	defer func() {
+		_ = prwe.Shutdown(context.Background())
+	}()
 
 	return prwe.handleExport(context.Background(), testmap, nil)
 }
@@ -758,9 +762,9 @@ func Test_PushMetrics(t *testing.T) {
 
 					if tt.enableSendingRW2 {
 						cfg.RemoteWriteProtoMsg = remoteapi.WriteV2MessageType
-						oldValue := enableSendingRW2FeatureGate.IsEnabled()
-						testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, tt.enableSendingRW2)
-						defer testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, oldValue)
+						oldValue := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.IsEnabled()
+						testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, tt.enableSendingRW2)
+						defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, oldValue)
 					} else {
 						cfg.RemoteWriteProtoMsg = remoteapi.WriteV1MessageType
 					}

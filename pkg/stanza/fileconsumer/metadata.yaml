@@ -6,7 +6,7 @@ status:
   stability:
     beta: [logs]
   codeowners:
-    active: [andrzej-stencel]
+    active: [andrzej-stencel, paulojmdias, VihasMakwana, braydonk]
     emeritus: [djaglowski]
 
 feature_gates:
@@ -35,6 +35,12 @@ feature_gates:
       When enabled, allows usage of `ordering_criteria.mode` = `mtime`.
     from_version: v0.89.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812
+  - id: filelog.protobufCheckpointEncoding
+    stage: alpha
+    description: >-
+      Use protobuf encoding for checkpoint storage instead of JSON.
+    from_version: v0.148.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266
   - id: filelog.windows.caseInsensitive
     stage: alpha
     description: >-
@@ -48,8 +54,7 @@ telemetry:
       description: Number of open files
       unit: "1"
       enabled: true
-      stability:
-        level: development
+      stability: development
       sum:
         value_type: int
         monotonic: false
@@ -57,8 +62,7 @@ telemetry:
       description: Number of open files that are being read
       unit: "1"
       enabled: true
-      stability:
-        level: development
+      stability: development
       sum:
         value_type: int
         monotonic: false

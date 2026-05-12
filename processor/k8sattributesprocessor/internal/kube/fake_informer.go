@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+	clientmeta "k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -73,7 +74,7 @@ type FakeNamespaceInformer struct {
 }
 
 func NewFakeNamespaceInformer(
-	_ kubernetes.Interface,
+	_ clientmeta.Interface,
 ) cache.SharedInformer {
 	return &FakeInformer{
 		FakeController: &FakeController{},
@@ -98,7 +99,7 @@ type FakeReplicaSetInformer struct {
 }
 
 func NewFakeReplicaSetInformer(
-	_ kubernetes.Interface,
+	_ clientmeta.Interface,
 	_ string,
 ) cache.SharedInformer {
 	return &FakeInformer{
@@ -166,7 +167,7 @@ type NoOpInformer struct {
 }
 
 func NewNoOpInformer(
-	_ kubernetes.Interface,
+	_ clientmeta.Interface,
 ) cache.SharedInformer {
 	return &NoOpInformer{
 		NoOpController: &NoOpController{},

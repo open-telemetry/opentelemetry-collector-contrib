@@ -188,7 +188,7 @@ func Test_NewSupervisorFailedStorageCreation(t *testing.T) {
 func Test_composeEffectiveConfig(t *testing.T) {
 	fileLogConfig := `
 receivers:
-  filelog:
+  file_log:
     include: ['/test/logs/input.log']
     start_at: "beginning"
 
@@ -199,7 +199,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       exporters: [file]`
 
 	// load expected effective config bytes once
@@ -554,7 +554,8 @@ service:
                 - stderr
             output_paths:
                 - stdout
-        resource: null
+        resource:
+            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 
 		remoteConfig := &protobufs.AgentRemoteConfig{
@@ -655,7 +656,8 @@ service:
                 - stderr
             output_paths:
                 - stdout
-        resource: null
+        resource:
+            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 
 		remoteConfig := &protobufs.AgentRemoteConfig{
@@ -841,7 +843,8 @@ service:
                 - stderr
             output_paths:
                 - stdout
-        resource: null
+        resource:
+            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 
 		// store the initial remote config message so the supervisor is initialized with it
@@ -1722,6 +1725,7 @@ service:
                             endpoint: localhost-metrics
                             protocol: http/protobuf
         resource:
+            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
             service.name: otelcol
         traces:
             processors:
@@ -1841,6 +1845,9 @@ service:
                 - nop
             receivers:
                 - nop
+    telemetry:
+        resource:
+            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 	s := Supervisor{
 		persistentState: &persistentState{
@@ -1884,6 +1891,9 @@ service:
                 - nop
             receivers:
                 - nop
+    telemetry:
+        resource:
+            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 	s := Supervisor{
 		persistentState: &persistentState{
@@ -2260,9 +2270,7 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 	startSignal := make(chan struct{})
 	var wg sync.WaitGroup
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		<-startSignal
 		for i := range 1000 {
 			if i%2 == 0 {
@@ -2271,11 +2279,9 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 				s.remoteConfig.Store(config2)
 			}
 		}
-	}()
+	})
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		<-startSignal
 		for range 1000 {
 			cfg := s.remoteConfig.Load()
@@ -2283,7 +2289,7 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 				_ = cfg.GetConfigHash()
 			}
 		}
-	}()
+	})
 
 	close(startSignal)
 	wg.Wait()

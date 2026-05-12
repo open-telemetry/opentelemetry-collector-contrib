@@ -5,6 +5,7 @@ package awsfirehosereceiver
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -193,6 +194,26 @@ func TestFirehoseRequest(t *testing.T) {
 			wantStatusCode: http.StatusBadRequest,
 			wantErr:        fmt.Errorf("unable to base64 decode the record at index 0: %w", base64.CorruptInputError(12)),
 		},
+		"WithGzipRecord": {
+			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
+				testFirehoseRecordFromBytes(newGzipRecord(t, []byte("test"))),
+			}),
+			consumer: firehoseConsumerFunc(func(_ context.Context, next nextRecordFunc, _ map[string]string) (int, error) {
+				record, err := next()
+				if err != nil {
+					return http.StatusBadRequest, err
+				}
+				if string(record) != "test" {
+					return http.StatusBadRequest, fmt.Errorf("unexpected record content: %q", record)
+				}
+				_, err = next()
+				if !errors.Is(err, io.EOF) {
+					return http.StatusBadRequest, fmt.Errorf("unexpected next() result: %w", err)
+				}
+				return http.StatusOK, nil
+			}),
+			wantStatusCode: http.StatusOK,
+		},
 		"WithValidRecords": {
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				testFirehoseRecord("test"),
@@ -296,6 +317,21 @@ func testFirehoseRequest(requestID string, records []firehoseRecord) firehoseReq
 func testFirehoseRecord(data string) firehoseRecord {
 	encoded := base64.StdEncoding.EncodeToString([]byte(data))
 	return firehoseRecord{Data: encoded}
+}
+
+func testFirehoseRecordFromBytes(data []byte) firehoseRecord {
+	encoded := base64.StdEncoding.EncodeToString(data)
+	return firehoseRecord{Data: encoded}
+}
+
+func newGzipRecord(t *testing.T, payload []byte) []byte {
+	t.Helper()
+	var compressed bytes.Buffer
+	writer := gzip.NewWriter(&compressed)
+	_, err := writer.Write(payload)
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	return compressed.Bytes()
 }
 
 func newNextRecordFunc(records [][]byte) nextRecordFunc {

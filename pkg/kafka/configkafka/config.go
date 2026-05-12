@@ -8,7 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/IBM/sarama"
+	"github.com/twmb/franz-go/pkg/kversion"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -37,10 +38,12 @@ type ClientConfig struct {
 	// Brokers holds the list of Kafka bootstrap servers (default localhost:9092).
 	Brokers []string `mapstructure:"brokers"`
 
-	// ResolveCanonicalBootstrapServersOnly configures the Kafka client to perform
-	// a DNS lookup on each of the provided brokers, and then perform a reverse
-	// lookup on the resulting IPs to obtain the canonical hostnames to use as the
-	// bootstrap servers. This can be required in SASL environments.
+	// ResolveCanonicalBootstrapServersOnly is ignored, and exists for
+	// backwards compatibility in config parsing.
+	//
+	// Deprecated [v0.153.0]: this field is a no-op since the migration to franz-go,
+	// which has no direct equivalent to the associated Sarama config. This config
+	// will be removed in a future release.
 	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
 
 	// ProtocolVersion defines the Kafka protocol version that the client will
@@ -76,14 +79,18 @@ type ClientConfig struct {
 	//
 	// NOTE: this is experimental and may be removed in a future release.
 	UseLeaderEpoch bool `mapstructure:"use_leader_epoch"`
+
+	// ConnIdleTimeout specifies the time after which idle connections are not reused and may be closed.
+	ConnIdleTimeout time.Duration `mapstructure:"conn_idle_timeout"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
-		Brokers:        []string{"localhost:9092"},
-		ClientID:       "otel-collector",
-		Metadata:       NewDefaultMetadataConfig(),
-		UseLeaderEpoch: true,
+		Brokers:         []string{"localhost:9092"},
+		ClientID:        "otel-collector",
+		Metadata:        NewDefaultMetadataConfig(),
+		UseLeaderEpoch:  true,
+		ConnIdleTimeout: 9 * time.Minute,
 	}
 }
 
@@ -92,9 +99,12 @@ func (c ClientConfig) Validate() error {
 		return errors.New("brokers must be specified")
 	}
 	if c.ProtocolVersion != "" {
-		if _, err := sarama.ParseKafkaVersion(c.ProtocolVersion); err != nil {
-			return fmt.Errorf("invalid protocol version: %w", err)
+		if kversion.FromString(c.ProtocolVersion) == nil {
+			return fmt.Errorf("invalid protocol version: %q", c.ProtocolVersion)
 		}
+	}
+	if c.ConnIdleTimeout <= 0 {
+		return fmt.Errorf("conn_idle_timeout (%s) must be positive", c.ConnIdleTimeout)
 	}
 	return nil
 }
@@ -135,9 +145,11 @@ type ConsumerConfig struct {
 	MaxPartitionFetchSize int32 `mapstructure:"max_partition_fetch_size"`
 
 	// GroupRebalanceStrategy specifies the strategy to use for partition assignment.
-	// Possible values are "range", "roundrobin", "sticky", and "cooperative-sticky".
+	// Built-in values are "range", "roundrobin", "sticky", and "cooperative-sticky".
+	// Any other value is treated as the component ID of a registered extension
+	// that implements kgo.GroupBalancer.
 	//
-	// Defaults to "cooperative-sticky"
+	// Defaults to "cooperative-sticky".
 	GroupRebalanceStrategy GroupRebalanceStrategy `mapstructure:"group_rebalance_strategy,omitempty"`
 
 	// GroupInstanceID specifies the ID of the consumer
@@ -175,13 +187,19 @@ func (c ConsumerConfig) Validate() error {
 	if c.GroupRebalanceStrategy != "" {
 		switch c.GroupRebalanceStrategy {
 		case RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy:
-			// Valid
+			// Built-in strategy, valid.
 		default:
-			return fmt.Errorf(
-				"rebalance_strategy should be one of '%s', '%s', '%s', or '%s'. configured value %v",
-				RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy,
-				c.GroupRebalanceStrategy,
-			)
+			// Accept any value that parses as a component ID; the extension
+			// will be resolved at runtime by the consumer client.
+			var id component.ID
+			if err := id.UnmarshalText([]byte(c.GroupRebalanceStrategy)); err != nil {
+				return fmt.Errorf(
+					"group_rebalance_strategy %q is not a built-in strategy (%s, %s, %s, %s) or a valid extension ID: %w",
+					c.GroupRebalanceStrategy,
+					RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy,
+					err,
+				)
+			}
 		}
 	}
 
@@ -397,12 +415,20 @@ type SASLConfig struct {
 	Username string `mapstructure:"username"`
 	// Password to be used on authentication
 	Password string `mapstructure:"password"`
-	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, SCRAM-SHA-256 or SCRAM-SHA-512).
+	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER,
+	// SCRAM-SHA-256 or SCRAM-SHA-512).
 	Mechanism string `mapstructure:"mechanism"`
-	// SASL Protocol Version to be used, possible values are: (0, 1). Defaults to 0.
+	// Version is ignored, and exists for backwards compatibility in config parsing.
+	//
+	// Deprecated [v0.153.0]: this field is a no-op since the migration to franz-go,
+	// which negotiates the SASL handshake version automatically. This config will be
+	// removed in a future release.
 	Version int `mapstructure:"version"`
 	// AWSMSK holds configuration specific to AWS MSK.
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
+	// ID of type "extension" providing a TokenSource for OAUTHBEARER Mechanism,
+	// typically named "oauth2client"
+	OAuthBearerTokenSource component.ID `mapstructure:"oauthbearer_token_source,omitempty"`
 }
 
 func (c SASLConfig) Validate() error {
@@ -416,6 +442,10 @@ func (c SASLConfig) Validate() error {
 		}
 		if c.Password == "" {
 			return errors.New("password is required")
+		}
+	case "OAUTHBEARER":
+		if c.OAuthBearerTokenSource == (component.ID{}) {
+			return errors.New("oauth2authclient extension is required")
 		}
 	default:
 		return fmt.Errorf(

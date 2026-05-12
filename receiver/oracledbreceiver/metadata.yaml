@@ -1,4 +1,10 @@
+display_name: Oracle DB Receiver
 type: oracledb
+
+description: |
+  This receiver periodically queries an Oracle Database host to collect metrics.
+
+reaggregation_enabled: true
 
 status:
   class: receiver
@@ -63,6 +69,9 @@ attributes:
   oracledb.cluster_wait_time:
     description: Total time (in seconds) that a query waited due to Oracle Real Application Clusters (RAC) coordination (reporting delta).
     type: double
+  oracledb.command_type:
+    description: Command type of the query.
+    type: int
   oracledb.concurrency_wait_time:
     description: Total time (in seconds) a query spent waiting on concurrency-related events (reporting delta).
     type: double
@@ -112,6 +121,9 @@ attributes:
   oracledb.plan_hash_value:
     description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
     type: string
+  oracledb.procedure_execution_count:
+    description: The number of times the stored procedure has been executed, derived from the minimum statement execution count across all statements in the procedure (reporting delta). Please note, this is best effort and may not be accurate in some scenarios. Use with caution.
+    type: int
   oracledb.procedure_id:
     description: The identifier of the stored procedure or function being executed by the query.
     type: int
@@ -160,12 +172,15 @@ attributes:
   session_status:
     description: Session status
     type: string
+    requirement_level: recommended
   session_type:
     description: Session type
     type: string
+    requirement_level: recommended
   tablespace_name:
     description: Tablespace name
     type: string
+    requirement_level: recommended
   # attributes for events
   ## top query
   user.name:
@@ -218,6 +233,7 @@ events:
       - oracledb.application_wait_time
       - oracledb.buffer_gets
       - oracledb.cluster_wait_time
+      - oracledb.command_type
       - oracledb.concurrency_wait_time
       - oracledb.cpu_time
       - oracledb.direct_reads
@@ -231,6 +247,7 @@ events:
       - oracledb.physical_write_requests
       - oracledb.rows_processed
       - oracledb.user_io_wait_time
+      - oracledb.procedure_execution_count
       - oracledb.procedure_id
       - oracledb.procedure_name
       - oracledb.procedure_type
@@ -238,8 +255,7 @@ metrics:
   oracledb.consistent_gets:
     description: Number of times a consistent read was requested for a block from the buffer cache.
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -249,18 +265,23 @@ metrics:
   oracledb.cpu_time:
     description: Cumulative CPU time, in seconds
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
       value_type: double
     unit: s
+  oracledb.data_dictionary.hit_ratio:
+    description: Data dictionary cache hit ratio from v$rowcache.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
   oracledb.db_block_gets:
     description: Number of times a current block was requested from the buffer cache.
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -270,8 +291,7 @@ metrics:
   oracledb.ddl_statements_parallelized:
     description: Number of DDL statements that were executed in parallel
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -281,8 +301,7 @@ metrics:
   oracledb.dml_locks.limit:
     description: Maximum limit of active DML (Data Manipulation Language) locks, -1 if unlimited.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
       input_type: string
@@ -290,8 +309,7 @@ metrics:
   oracledb.dml_locks.usage:
     description: Current count of active DML (Data Manipulation Language) locks.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
       input_type: string
@@ -299,8 +317,7 @@ metrics:
   oracledb.dml_statements_parallelized:
     description: Number of DML statements that were executed in parallel
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -310,8 +327,7 @@ metrics:
   oracledb.enqueue_deadlocks:
     description: Total number of deadlocks between table or row locks in different sessions.
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -321,8 +337,7 @@ metrics:
   oracledb.enqueue_locks.limit:
     description: Maximum limit of active enqueue locks, -1 if unlimited.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
       input_type: string
@@ -330,8 +345,7 @@ metrics:
   oracledb.enqueue_locks.usage:
     description: Current count of active enqueue locks.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
       input_type: string
@@ -339,8 +353,7 @@ metrics:
   oracledb.enqueue_resources.limit:
     description: Maximum limit of active enqueue resources, -1 if unlimited.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
       input_type: string
@@ -348,8 +361,7 @@ metrics:
   oracledb.enqueue_resources.usage:
     description: Current count of active enqueue resources.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
       input_type: string
@@ -357,8 +369,7 @@ metrics:
   oracledb.exchange_deadlocks:
     description: Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges.
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -368,8 +379,7 @@ metrics:
   oracledb.executions:
     description: Total number of calls (user and recursive) that executed SQL statements
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -379,8 +389,7 @@ metrics:
   oracledb.hard_parses:
     description: Number of hard parses
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -390,8 +399,7 @@ metrics:
   oracledb.logical_reads:
     description: Number of logical reads
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -401,8 +409,7 @@ metrics:
   oracledb.logons:
     description: Number of logon operations
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -414,8 +421,7 @@ metrics:
   oracledb.parallel_operations_downgraded_1_to_25_pct:
     description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -425,8 +431,7 @@ metrics:
   oracledb.parallel_operations_downgraded_25_to_50_pct:
     description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -436,8 +441,7 @@ metrics:
   oracledb.parallel_operations_downgraded_50_to_75_pct:
     description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 50-75% because of insufficient parallel execution servers
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -447,8 +451,7 @@ metrics:
   oracledb.parallel_operations_downgraded_75_to_99_pct:
     description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -458,8 +461,7 @@ metrics:
   oracledb.parallel_operations_downgraded_to_serial:
     description: Number of times parallel execution was requested but execution was serial because of insufficient parallel execution servers
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -469,8 +471,7 @@ metrics:
   oracledb.parallel_operations_not_downgraded:
     description: Number of times parallel execution was executed at the requested degree of parallelism
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -480,8 +481,7 @@ metrics:
   oracledb.parse_calls:
     description: Total number of parse calls.
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -491,8 +491,7 @@ metrics:
   oracledb.pga_memory:
     description: Session PGA (Program Global Area) memory
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -502,8 +501,7 @@ metrics:
   oracledb.physical_read_io_requests:
     description: Number of read requests for application activity
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -513,8 +511,7 @@ metrics:
   oracledb.physical_reads:
     description: Number of physical reads
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -524,8 +521,7 @@ metrics:
   oracledb.physical_reads_direct:
     description: Number of reads directly from disk, bypassing the buffer cache
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -535,8 +531,7 @@ metrics:
   oracledb.physical_write_io_requests:
     description: Number of write requests for application activity
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -546,8 +541,7 @@ metrics:
   oracledb.physical_writes:
     description: Number of physical writes
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -557,8 +551,7 @@ metrics:
   oracledb.physical_writes_direct:
     description: Number of writes directly to disk, bypassing the buffer cache
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -568,8 +561,7 @@ metrics:
   oracledb.processes.limit:
     description: Maximum limit of active processes, -1 if unlimited.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
       input_type: string
@@ -577,8 +569,7 @@ metrics:
   oracledb.processes.usage:
     description: Current count of active processes.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
       input_type: string
@@ -586,19 +577,24 @@ metrics:
   oracledb.queries_parallelized:
     description: Number of SELECT statements executed in parallel
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
     unit: "{queries}"
+  oracledb.recycle_bin.limit:
+    description: Total size of the recycle bin.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: By
   oracledb.sessions.limit:
     description: Maximum limit of active sessions, -1 if unlimited.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
       input_type: string
@@ -609,19 +605,31 @@ metrics:
       - session_status
     description: Count of active sessions.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
       input_type: string
     unit: "{sessions}"
+  oracledb.storage.usage:
+    description: Used database storage size from dba_data_files and dba_free_space.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: By
+  oracledb.storage.utilization:
+    description: Fraction of allocated database storage that is used.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "1"
   oracledb.tablespace_size.limit:
     attributes:
       - tablespace_name
     description: Maximum size of tablespace in bytes, -1 if unlimited.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: By
@@ -630,16 +638,14 @@ metrics:
       - tablespace_name
     description: Used tablespace in bytes.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: By
   oracledb.transactions.limit:
     description: Maximum limit of active transactions, -1 if unlimited.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
       input_type: string
@@ -647,8 +653,7 @@ metrics:
   oracledb.transactions.usage:
     description: Current count of active transactions.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
       input_type: string
@@ -656,8 +661,7 @@ metrics:
   oracledb.user_commits:
     description: Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true
@@ -667,8 +671,7 @@ metrics:
   oracledb.user_rollbacks:
     description: Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       aggregation_temporality: cumulative
       monotonic: true

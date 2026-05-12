@@ -197,6 +197,10 @@ component_management:
     name: exporter_googlemanagedprometheus
     paths:
     - exporter/googlemanagedprometheusexporter/**
+  - component_id: exporter_googlesecops
+    name: exporter_googlesecops
+    paths:
+    - exporter/googlesecopsexporter/**
   - component_id: exporter_honeycombmarker
     name: exporter_honeycombmarker
     paths:
@@ -249,10 +253,6 @@ component_management:
     name: exporter_rabbitmq
     paths:
     - exporter/rabbitmqexporter/**
-  - component_id: exporter_sapm
-    name: exporter_sapm
-    paths:
-    - exporter/sapmexporter/**
   - component_id: exporter_sematext
     name: exporter_sematext
     paths:
@@ -345,6 +345,10 @@ component_management:
     name: extension_httpforwarder
     paths:
     - extension/httpforwarderextension/**
+  - component_id: extension_internal_credentialsfile
+    name: extension_internal_credentialsfile
+    paths:
+    - extension/internal/credentialsfile/**
   - component_id: extension_jaegerremotesampling
     name: extension_jaegerremotesampling
     paths:
@@ -353,6 +357,10 @@ component_management:
     name: extension_k8sleaderelector
     paths:
     - extension/k8sleaderelector/**
+  - component_id: extension_mcp
+    name: extension_mcp
+    paths:
+    - extension/mcp/**
   - component_id: extension_oauth2clientauth
     name: extension_oauth2clientauth
     paths:
@@ -433,10 +441,18 @@ component_management:
     name: extension_sumologic
     paths:
     - extension/sumologicextension/**
+  - component_id: extension_tailstorage_pebbletailstorage
+    name: extension_tailstorage_pebbletailstorage
+    paths:
+    - extension/tailstorage/pebbletailstorageextension/**
   - component_id: processor_attributes
     name: processor_attributes
     paths:
     - processor/attributesprocessor/**
+  - component_id: processor_cardinalityguardian
+    name: processor_cardinalityguardian
+    paths:
+    - processor/cardinalityguardianprocessor/**
   - component_id: processor_coralogix
     name: processor_coralogix
     paths:
@@ -445,10 +461,6 @@ component_management:
     name: processor_cumulativetodelta
     paths:
     - processor/cumulativetodeltaprocessor/**
-  - component_id: processor_datadogsemantics
-    name: processor_datadogsemantics
-    paths:
-    - processor/datadogsemanticsprocessor/**
   - component_id: processor_deltatocumulative
     name: processor_deltatocumulative
     paths:
@@ -457,14 +469,18 @@ component_management:
     name: processor_deltatorate
     paths:
     - processor/deltatorateprocessor/**
-  - component_id: processor_dnslookup
-    name: processor_dnslookup
+  - component_id: processor_drain
+    name: processor_drain
     paths:
-    - processor/dnslookupprocessor/**
+    - processor/drainprocessor/**
   - component_id: processor_filter
     name: processor_filter
     paths:
     - processor/filterprocessor/**
+  - component_id: processor_genainormalizer
+    name: processor_genainormalizer
+    paths:
+    - processor/genainormalizerprocessor/**
   - component_id: processor_geoip
     name: processor_geoip
     paths:
@@ -541,6 +557,10 @@ component_management:
     name: processor_span
     paths:
     - processor/spanprocessor/**
+  - component_id: processor_spanpruning
+    name: processor_spanpruning
+    paths:
+    - processor/spanpruningprocessor/**
   - component_id: processor_sumologic
     name: processor_sumologic
     paths:
@@ -609,14 +629,14 @@ component_management:
     name: receiver_azureeventhub
     paths:
     - receiver/azureeventhubreceiver/**
+  - component_id: receiver_azurefunctions
+    name: receiver_azurefunctions
+    paths:
+    - receiver/azurefunctionsreceiver/**
   - component_id: receiver_azuremonitor
     name: receiver_azuremonitor
     paths:
     - receiver/azuremonitorreceiver/**
-  - component_id: receiver_bigip
-    name: receiver_bigip
-    paths:
-    - receiver/bigipreceiver/**
   - component_id: receiver_carbon
     name: receiver_carbon
     paths:
@@ -757,10 +777,6 @@ component_management:
     name: receiver_k8sevents
     paths:
     - receiver/k8seventsreceiver/**
-  - component_id: receiver_k8slog
-    name: receiver_k8slog
-    paths:
-    - receiver/k8slogreceiver/**
   - component_id: receiver_k8sobjects
     name: receiver_k8sobjects
     paths:

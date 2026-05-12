@@ -54,13 +54,15 @@ type metadata struct {
 }
 
 func newPrometheusConverterV2(settings Settings) *prometheusConverterV2 {
+	withSuffixes, utf8Allowed := getTranslationConfiguration(settings)
+
 	return &prometheusConverterV2{
 		unique:      map[uint64]*writev2.TimeSeries{},
 		conflicts:   map[uint64][]*writev2.TimeSeries{},
 		symbolTable: writev2.NewSymbolTable(),
-		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
-		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled()},
-		unitNamer:   otlptranslator.UnitNamer{},
+		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: withSuffixes, Namespace: settings.Namespace, UTF8Allowed: utf8Allowed},
+		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled(), UTF8Allowed: utf8Allowed},
+		unitNamer:   otlptranslator.UnitNamer{UTF8Allowed: utf8Allowed},
 	}
 }
 
@@ -71,11 +73,12 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 		resourceMetrics := resourceMetricsSlice.At(i)
 		resource := resourceMetrics.Resource()
 		scopeMetricsSlice := resourceMetrics.ScopeMetrics()
-		// keep track of the most recent timestamp in the ResourceMetrics for
 		// use with the "target" info metric
 		var mostRecentTimestamp pcommon.Timestamp
 		for j := 0; j < scopeMetricsSlice.Len(); j++ {
-			metricSlice := scopeMetricsSlice.At(j).Metrics()
+			scopeMetrics := scopeMetricsSlice.At(j)
+			metricSlice := scopeMetrics.Metrics()
+			scope := scopeMetrics.Scope()
 
 			// TODO: decide if instrumentation library information should be exported as labels
 			for k := 0; k < metricSlice.Len(); k++ {
@@ -92,6 +95,8 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					errs = multierr.Append(errs, err)
 					continue
 				}
+
+				// Initialize metadata
 				m := metadata{
 					Type: otelMetricTypeToPromMetricTypeV2(metric),
 					Help: metric.Description(),
@@ -106,36 +111,36 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					if dataPoints.Len() == 0 {
 						break
 					}
-					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName, m))
+					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, settings, promName, m))
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
 					if !metric.Sum().IsMonotonic() {
-						errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName, m))
+						errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, settings, promName, m))
 					} else {
-						errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName, m))
+						errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, scope, metric, settings, promName, m))
 					}
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
-					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, settings, promName, m))
+					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, scope, settings, promName, m))
 				case pmetric.MetricTypeExponentialHistogram:
 					dataPoints := metric.ExponentialHistogram().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
 					errs = multierr.Append(errs, c.addExponentialHistogramDataPoints(
-						dataPoints, resource, settings, promName, m))
+						dataPoints, resource, scope, settings, promName, m))
 				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
-					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, settings, promName, m))
+					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, scope, settings, promName, m))
 				default:
 					errs = multierr.Append(errs, errors.New("unsupported metric type"))
 				}
@@ -161,9 +166,10 @@ func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
 	return allTS
 }
 
-func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label, metadata metadata) {
+func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label, metadata metadata) *writev2.TimeSeries {
 	ts := c.getOrCreateTimeSeries(lbls, metadata)
 	ts.Samples = append(ts.Samples, *sample)
+	return ts
 }
 
 // isSameMetricV2 checks if two time series are the same metric

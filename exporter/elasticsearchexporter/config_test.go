@@ -417,6 +417,15 @@ func TestConfig(t *testing.T) {
 				qbCfg.Sizer = exporterhelper.RequestSizerTypeBytes
 			}),
 		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "suppress_conflict_errors"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.SuppressConflictErrors = true
+			}),
+		},
 	}
 
 	for _, tt := range tests {
@@ -488,27 +497,12 @@ func TestConfig_Validate(t *testing.T) {
 			}),
 			err: "exactly one of [endpoint, endpoints, cloudid] must be specified",
 		},
-		"invalid mapping mode": {
-			config: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoints = []string{"http://test:9200"}
-				cfg.Mapping.Mode = "invalid"
-			}),
-			err: `invalid or disallowed default mapping mode "invalid"`,
-		},
 		"invalid allowed mapping modes": {
 			config: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoints = []string{"http://test:9200"}
 				cfg.Mapping.AllowedModes = []string{"foo"}
 			}),
 			err: `unknown allowed mapping mode name "foo"`,
-		},
-		"disallowed mapping mode": {
-			config: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoints = []string{"http://test:9200"}
-				cfg.Mapping.Mode = "otel"
-				cfg.Mapping.AllowedModes = []string{"raw"}
-			}),
-			err: `invalid or disallowed default mapping mode "otel"`,
 		},
 		"invalid scheme": {
 			config: withDefaultConfig(func(cfg *Config) {

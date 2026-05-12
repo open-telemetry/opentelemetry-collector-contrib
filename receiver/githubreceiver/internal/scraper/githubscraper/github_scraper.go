@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate ../../../../../.tools/genqlient
+//go:generate go tool github.com/Khan/genqlient
 
 package githubscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/scraper/githubscraper"
 
@@ -35,7 +35,20 @@ type githubScraper struct {
 func (ghs *githubScraper) start(ctx context.Context, host component.Host) (err error) {
 	ghs.logger.Sugar().Info("starting the GitHub scraper")
 	ghs.client, err = ghs.cfg.ToClient(ctx, host.GetExtensions(), ghs.settings)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Wrap the transport with retry logic for transient GitHub API errors.
+	// Retries are bounded by the scrape context (cancelled at next collection
+	// interval).
+	ghs.client.Transport = &retryRoundTripper{
+		base:   ghs.client.Transport,
+		cfg:    ghs.cfg.RetryConfig,
+		logger: ghs.logger,
+	}
+
+	return nil
 }
 
 func newGitHubScraper(

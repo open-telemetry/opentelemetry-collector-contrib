@@ -50,7 +50,7 @@ data:
             if path == "/metadata/instance/compute":
                 # Check for required Metadata header
                 metadata_header = self.headers.get("Metadata")
-                if metadata_header != "True":
+                if metadata_header != "true":
                     self.send_response(400)
                     self.send_header("Content-Type", "text/plain")
                     self.end_headers()

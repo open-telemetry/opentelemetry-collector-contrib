@@ -24,11 +24,11 @@ More docs for [cgroups v1](https://www.kernel.org/doc/Documentation/cgroup-v1/bl
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| device_major | Device major number for block IO operations. | Any Str | Recommended |
-| device_minor | Device minor number for block IO operations. | Any Str | Recommended |
-| operation | Type of BlockIO operation. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| device_major | Device major number for block IO operations. | Any Str | Recommended | - |
+| device_minor | Device minor number for block IO operations. | Any Str | Recommended | - |
+| operation | Type of BlockIO operation. | Any Str | Recommended | - |
 
 ### container.cpu.usage.kernelmode
 
@@ -114,9 +114,9 @@ Bytes received by the container.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Network interface. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| interface | Network interface. | Any Str | Recommended | - |
 
 ### container.network.io.usage.rx_dropped
 
@@ -128,9 +128,9 @@ Incoming packets dropped.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Network interface. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| interface | Network interface. | Any Str | Recommended | - |
 
 ### container.network.io.usage.tx_bytes
 
@@ -142,9 +142,9 @@ Bytes sent.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Network interface. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| interface | Network interface. | Any Str | Recommended | - |
 
 ### container.network.io.usage.tx_dropped
 
@@ -156,9 +156,9 @@ Outgoing packets dropped.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Network interface. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| interface | Network interface. | Any Str | Recommended | - |
 
 ## Optional Metrics
 
@@ -182,11 +182,11 @@ Number of bios/requests merged into requests belonging to this cgroup and its de
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| device_major | Device major number for block IO operations. | Any Str | Recommended |
-| device_minor | Device minor number for block IO operations. | Any Str | Recommended |
-| operation | Type of BlockIO operation. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| device_major | Device major number for block IO operations. | Any Str | Recommended | - |
+| device_minor | Device minor number for block IO operations. | Any Str | Recommended | - |
+| operation | Type of BlockIO operation. | Any Str | Recommended | - |
 
 ### container.blockio.io_queued_recursive
 
@@ -200,11 +200,11 @@ Number of requests queued up for this cgroup and its descendant cgroups (Only av
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| device_major | Device major number for block IO operations. | Any Str | Recommended |
-| device_minor | Device minor number for block IO operations. | Any Str | Recommended |
-| operation | Type of BlockIO operation. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| device_major | Device major number for block IO operations. | Any Str | Recommended | - |
+| device_minor | Device minor number for block IO operations. | Any Str | Recommended | - |
+| operation | Type of BlockIO operation. | Any Str | Recommended | - |
 
 ### container.blockio.io_service_time_recursive
 
@@ -218,11 +218,11 @@ Total amount of time in nanoseconds between request dispatch and request complet
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| device_major | Device major number for block IO operations. | Any Str | Recommended |
-| device_minor | Device minor number for block IO operations. | Any Str | Recommended |
-| operation | Type of BlockIO operation. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| device_major | Device major number for block IO operations. | Any Str | Recommended | - |
+| device_minor | Device minor number for block IO operations. | Any Str | Recommended | - |
+| operation | Type of BlockIO operation. | Any Str | Recommended | - |
 
 ### container.blockio.io_serviced_recursive
 
@@ -236,11 +236,11 @@ Number of IOs (bio) issued to the disk by the group and descendant groups (Only 
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| device_major | Device major number for block IO operations. | Any Str | Recommended |
-| device_minor | Device minor number for block IO operations. | Any Str | Recommended |
-| operation | Type of BlockIO operation. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| device_major | Device major number for block IO operations. | Any Str | Recommended | - |
+| device_minor | Device minor number for block IO operations. | Any Str | Recommended | - |
+| operation | Type of BlockIO operation. | Any Str | Recommended | - |
 
 ### container.blockio.io_time_recursive
 
@@ -254,11 +254,11 @@ Disk time allocated to cgroup (and descendant cgroups) per device in millisecond
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| device_major | Device major number for block IO operations. | Any Str | Recommended |
-| device_minor | Device minor number for block IO operations. | Any Str | Recommended |
-| operation | Type of BlockIO operation. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| device_major | Device major number for block IO operations. | Any Str | Recommended | - |
+| device_minor | Device minor number for block IO operations. | Any Str | Recommended | - |
+| operation | Type of BlockIO operation. | Any Str | Recommended | - |
 
 ### container.blockio.io_wait_time_recursive
 
@@ -272,11 +272,11 @@ Total amount of time the IOs for this cgroup (and descendant cgroups) spent wait
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| device_major | Device major number for block IO operations. | Any Str | Recommended |
-| device_minor | Device minor number for block IO operations. | Any Str | Recommended |
-| operation | Type of BlockIO operation. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| device_major | Device major number for block IO operations. | Any Str | Recommended | - |
+| device_minor | Device minor number for block IO operations. | Any Str | Recommended | - |
+| operation | Type of BlockIO operation. | Any Str | Recommended | - |
 
 ### container.blockio.sectors_recursive
 
@@ -290,11 +290,11 @@ Number of sectors transferred to/from disk by the group and descendant groups (O
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| device_major | Device major number for block IO operations. | Any Str | Recommended |
-| device_minor | Device minor number for block IO operations. | Any Str | Recommended |
-| operation | Type of BlockIO operation. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| device_major | Device major number for block IO operations. | Any Str | Recommended | - |
+| device_minor | Device minor number for block IO operations. | Any Str | Recommended | - |
+| operation | Type of BlockIO operation. | Any Str | Recommended | - |
 
 ### container.cpu.limit
 
@@ -356,9 +356,9 @@ Per-core CPU usage by the container (Only available with cgroups v1).
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| core | The CPU core number when utilising per-CPU metrics. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| core | The CPU core number when utilising per-CPU metrics. | Any Str | Recommended | - |
 
 ### container.cpu.usage.system
 
@@ -666,9 +666,9 @@ Received errors. Not supported on Windows.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Network interface. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| interface | Network interface. | Any Str | Recommended | - |
 
 ### container.network.io.usage.rx_packets
 
@@ -680,9 +680,9 @@ Packets received.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Network interface. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| interface | Network interface. | Any Str | Recommended | - |
 
 ### container.network.io.usage.tx_errors
 
@@ -694,9 +694,9 @@ Sent errors. Not supported on Windows.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Network interface. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| interface | Network interface. | Any Str | Recommended | - |
 
 ### container.network.io.usage.tx_packets
 
@@ -708,9 +708,9 @@ Packets sent.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Network interface. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| interface | Network interface. | Any Str | Recommended | - |
 
 ### container.pids.count
 
@@ -750,12 +750,12 @@ Time elapsed since container start time.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| container.command_line | The full command executed by the container. | Any Str | false |
-| container.hostname | The hostname of the container. | Any Str | true |
-| container.id | The ID of the container. | Any Str | true |
-| container.image.id | The ID of the container image. | Any Str | false |
-| container.image.name | The name of the docker image in use by the container. | Any Str | true |
-| container.name | The name of the container. | Any Str | true |
-| container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| container.command_line | The full command executed by the container. | Any Str | false | - |
+| container.hostname | The hostname of the container. | Any Str | true | - |
+| container.id | The ID of the container. | Any Str | true | - |
+| container.image.id | The ID of the container image. | Any Str | false | - |
+| container.image.name | The name of the docker image in use by the container. | Any Str | true | - |
+| container.name | The name of the container. | Any Str | true | - |
+| container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | Any Str | true | - |

@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
@@ -199,9 +199,9 @@ func setResourceAttributes(key resourceKey, resource pcommon.Resource) {
 // if prepended by AWS/. Otherwise, it returns the CloudWatch namespace as the
 // service name with an empty service namespace
 func toServiceAttributes(namespace string) (serviceNamespace, serviceName string) {
-	index := strings.Index(namespace, namespaceDelimiter)
-	if index != -1 && strings.EqualFold(namespace[:index], conventions.CloudProviderAWS.Value.AsString()) {
-		return namespace[:index], namespace[index+1:]
+	before, after, ok := strings.Cut(namespace, namespaceDelimiter)
+	if ok && strings.EqualFold(before, conventions.CloudProviderAWS.Value.AsString()) {
+		return before, after
 	}
 	return "", namespace
 }

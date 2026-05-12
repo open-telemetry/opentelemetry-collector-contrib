@@ -3,10 +3,25 @@ all_set:
   metrics:
     systemd.service.cpu.time:
       enabled: true
+      attributes: ["cpu.mode"]
     systemd.service.restarts:
       enabled: true
     systemd.unit.state:
       enabled: true
+      attributes: ["systemd.unit.active_state"]
+  resource_attributes:
+    systemd.unit.name:
+      enabled: true
+reaggregate_set:
+  metrics:
+    systemd.service.cpu.time:
+      enabled: true
+      attributes: []
+    systemd.service.restarts:
+      enabled: true
+    systemd.unit.state:
+      enabled: true
+      attributes: []
   resource_attributes:
     systemd.unit.name:
       enabled: true
@@ -14,10 +29,12 @@ none_set:
   metrics:
     systemd.service.cpu.time:
       enabled: false
+      attributes: ["cpu.mode"]
     systemd.service.restarts:
       enabled: false
     systemd.unit.state:
       enabled: false
+      attributes: ["systemd.unit.active_state"]
   resource_attributes:
     systemd.unit.name:
       enabled: false

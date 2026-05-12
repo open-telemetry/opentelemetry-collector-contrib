@@ -1,4 +1,9 @@
+display_name: CollectD `write_http` plugin JSON receiver
 type: collectd
+
+description: |
+  This receiver can receive data exported by the CollectD's `write_http` plugin. Only JSON format is supported.
+  Authentication is not supported at this time.
 
 status:
   class: receiver

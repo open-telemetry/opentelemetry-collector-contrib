@@ -45,7 +45,7 @@ func selectors() (labels.Selector, fields.Selector) {
 }
 
 // newFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
-func newFakeClient(_ component.TelemetrySettings, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformersFactoryList, _ bool, _ time.Duration) (kube.Client, error) {
+func newFakeClient(_ component.TelemetrySettings, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformersFactoryList, _ bool, _, _ time.Duration) (kube.Client, error) {
 	cs := fake.NewClientset()
 
 	ls, fs := selectors()
@@ -108,11 +108,9 @@ func (f *fakeClient) GetJob(jobUID string) (*kube.Job, bool) {
 func (f *fakeClient) Start() error {
 	startInformer := func(informer cache.SharedInformer) {
 		if informer != nil {
-			f.stopWg.Add(1)
-			go func() {
-				defer f.stopWg.Done()
+			f.stopWg.Go(func() {
 				informer.Run(f.StopCh)
-			}()
+			})
 		}
 	}
 

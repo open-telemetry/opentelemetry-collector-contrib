@@ -32,6 +32,9 @@ properties:
   hash_function:
     description: HashFunction defines the function for hashing the values instead of masking them with a fixed string. By default, no hash function is used and masking with a fixed string is performed.
     $ref: hash_function
+  hmac_key:
+    description: 'HMACKey is the secret key used for HMAC hashing when HashFunction is set to hmac-sha256 or hmac-sha512. This should be loaded from a secure source like environment variables. Minimum length: 32 bytes for HMAC-SHA256, 64 bytes for HMAC-SHA512.'
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
   ignored_key_patterns:
     description: IgnoredKeyPatterns is a list of attribute key patterns (regex) that are not redacted. attributes matching any of these patterns are allowed to pass through the filter without their values being checked or modified.
     type: array

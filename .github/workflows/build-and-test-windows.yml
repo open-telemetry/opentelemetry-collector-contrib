@@ -96,11 +96,6 @@ jobs:
       - name: Ensure required ports in the dynamic range are available
         run: |
           & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
-      - name: Build shared test tools
-        # If component tests share Makefile targets they need to be added here to avoid
-        # concurrent component tests clashing when building such targets. This applies
-        # specifically to Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34691
-        run: make "$(${PWD} -replace '\\', '/')/.tools/gotestsum"
       
       # Unit tests without JUnit output are much faster, so it's fine to run on every PR.
       # The only time we don't run them is when we already ran them with JUnit output.
@@ -117,7 +112,7 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         continue-on-error: true # Allow uploading artifacts even if the test fails
         run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           name: test-results-windows-${{ matrix.os }}-${{ matrix.group }}
@@ -165,7 +160,7 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           merge-multiple: true
           pattern: test-results-windows-${{ matrix.os }}-*
@@ -174,6 +169,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          make install-tools
-          ./.tools/issuegenerator -path ./internal/tools/testresults/ -labels "flaky tests,needs triage"
+          go tool -modfile=./internal/tools/go.mod go.opentelemetry.io/build-tools/issuegenerator -path ./internal/tools/testresults/ -labels "flaky tests,needs triage"
       - run: ./.github/workflows/scripts/check-disk-space.sh

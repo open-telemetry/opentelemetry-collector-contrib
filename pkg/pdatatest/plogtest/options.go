@@ -49,6 +49,22 @@ func (opt ignoreResourceAttributeValue) maskLogsResourceAttributeValue(logs plog
 	}
 }
 
+// IgnoreResourceEntityRefs is a CompareLogsOption that clears entity references
+// on all resources.
+func IgnoreResourceEntityRefs() CompareLogsOption {
+	return compareLogsOptionFunc(func(expected, actual plog.Logs) {
+		maskLogsResourceEntityRefs(expected)
+		maskLogsResourceEntityRefs(actual)
+	})
+}
+
+func maskLogsResourceEntityRefs(logs plog.Logs) {
+	rls := logs.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		internal.MaskResourceEntityRefs(rls.At(i).Resource())
+	}
+}
+
 // IgnoreLogRecordAttributeValue is a CompareLogsOption that sets the value of an attribute
 // to empty bytes for every log record
 func IgnoreLogRecordAttributeValue(attributeName string) CompareLogsOption {

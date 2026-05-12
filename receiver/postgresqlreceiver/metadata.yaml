@@ -1,4 +1,8 @@
+display_name: PostgreSQL Receiver
 type: postgresql
+
+description: |
+  This receiver queries the PostgreSQL [statistics collector](https://www.postgresql.org/docs/13/monitoring-stats.html).
 
 status:
   class: receiver
@@ -10,6 +14,27 @@ status:
     active: [antonblock, ishleenk17, Caleb-Hurshman]
     seeking_new: true
     emeritus: [djaglowski]
+
+reaggregation_enabled: true
+
+feature_gates:
+  - id: postgresqlreceiver.preciselagmetrics
+    description: Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`.
+    stage: beta
+    from_version: "v0.89.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831
+
+  - id: receiver.postgresql.connectionPool
+    description: Use of connection pooling
+    stage: beta
+    from_version: "v0.96.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831
+
+  - id: receiver.postgresql.separateSchemaAttr
+    description: Moves Schema Names into dedicated Attribute
+    stage: alpha
+    from_version: "v0.122.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559
 
 resource_attributes:
   postgresql.database.name:
@@ -43,6 +68,7 @@ attributes:
       - checkpoints
       - bgwriter
     name_override: source
+    requirement_level: recommended
   bg_checkpoint_type:
     description: The type of checkpoint state.
     type: string
@@ -50,6 +76,7 @@ attributes:
       - requested
       - scheduled
     name_override: type
+    requirement_level: recommended
   bg_duration_type:
     description: The type of time spent during the checkpoint.
     type: string
@@ -57,6 +84,7 @@ attributes:
       - sync
       - write
     name_override: type
+    requirement_level: recommended
   db.namespace:
     description: The namespace or schema of the database where the query is executed.
     type: string
@@ -70,12 +98,15 @@ attributes:
   function:
     description: The name of the function.
     type: string
+    requirement_level: recommended
   lock_type:
     description: Type of the lockable object.
     type: string
+    requirement_level: recommended
   mode:
     description: Name of the lock mode held or desired by the process.
     type: string
+    requirement_level: recommended
   network.peer.address:
     description: IP address of the client connected to this backend.
     type: string
@@ -86,6 +117,7 @@ attributes:
     description: The database operation.
     type: string
     enum: [ins, upd, del, hot_upd]
+    requirement_level: recommended
   postgresql.application_name:
     description: Name of the application that is connected to this backend.
     type: string
@@ -153,9 +185,11 @@ attributes:
   relation:
     description: OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation.
     type: string
+    requirement_level: recommended
   replication_client:
     description: The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket.
     type: string
+    requirement_level: recommended
   source:
     description: The block read source type.
     type: string
@@ -168,10 +202,12 @@ attributes:
       - toast_hit
       - tidx_read
       - tidx_hit
+    requirement_level: recommended
   state:
     description: The tuple (row) state.
     type: string
     enum: [dead, live]
+    requirement_level: recommended
   user.name:
     description: Name of the user logged into this backend.
     type: string
@@ -180,9 +216,10 @@ attributes:
     description: The operation which is responsible for the lag.
     type: string
     enum: [flush, replay, write]
+    requirement_level: recommended
 events:
   db.server.query_sample:
-    enabled: true
+    enabled: false
     description: query sample
     attributes:
       - db.system.name
@@ -201,7 +238,7 @@ events:
       - postgresql.query_id
       - postgresql.total_exec_time
   db.server.top_query:
-    enabled: true
+    enabled: false
     description: top query
     attributes:
       - db.system.name
@@ -225,8 +262,7 @@ metrics:
   postgresql.backends:
     enabled: true
     description: The number of backends.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -234,8 +270,7 @@ metrics:
       aggregation_temporality: cumulative
   postgresql.bgwriter.buffers.allocated:
     description: Number of buffers allocated.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -246,8 +281,7 @@ metrics:
     attributes:
       - bg_buffer_source
     description: Number of buffers written.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -258,8 +292,7 @@ metrics:
     attributes:
       - bg_checkpoint_type
     description: The number of checkpoints performed.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -270,8 +303,7 @@ metrics:
     attributes:
       - bg_duration_type
     description: Total time spent writing and syncing files to disk by checkpoints.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -280,8 +312,7 @@ metrics:
     unit: ms
   postgresql.bgwriter.maxwritten:
     description: Number of times the background writer stopped a cleaning scan because it had written too many buffers.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -291,8 +322,7 @@ metrics:
   postgresql.blks_hit:
     enabled: false
     description: Number of times disk blocks were found already in the buffer cache.
-    stability:
-      level: development
+    stability: development
     unit: "{blks_hit}"
     sum:
       value_type: int
@@ -301,8 +331,7 @@ metrics:
   postgresql.blks_read:
     enabled: false
     description: Number of disk blocks read in this database.
-    stability:
-      level: development
+    stability: development
     unit: "{blks_read}"
     sum:
       value_type: int
@@ -311,8 +340,7 @@ metrics:
   postgresql.blocks_read:
     enabled: true
     description: The number of blocks read.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -322,8 +350,7 @@ metrics:
   postgresql.commits:
     enabled: true
     description: The number of commits.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -332,15 +359,13 @@ metrics:
   postgresql.connection.max:
     enabled: true
     description: Configured maximum number of client connections allowed
-    stability:
-      level: development
+    stability: development
     unit: "{connections}"
     gauge:
       value_type: int
   postgresql.database.count:
     description: Number of user databases.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -350,8 +375,7 @@ metrics:
   postgresql.database.locks:
     enabled: false
     description: The number of database locks.
-    stability:
-      level: development
+    stability: development
     unit: "{lock}"
     gauge:
       value_type: int
@@ -359,8 +383,7 @@ metrics:
   postgresql.db_size:
     enabled: true
     description: The database disk usage.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -369,8 +392,7 @@ metrics:
   postgresql.deadlocks:
     enabled: false
     description: The number of deadlocks.
-    stability:
-      level: development
+    stability: development
     unit: "{deadlock}"
     sum:
       value_type: int
@@ -379,8 +401,7 @@ metrics:
   postgresql.function.calls:
     enabled: false
     description: The number of calls made to a function. Requires `track_functions=pl|all` in Postgres config.
-    stability:
-      level: development
+    stability: development
     unit: "{call}"
     sum:
       value_type: int
@@ -389,8 +410,7 @@ metrics:
     attributes: [function]
   postgresql.index.scans:
     description: The number of index scans on a table.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -399,8 +419,7 @@ metrics:
     unit: "{scans}"
   postgresql.index.size:
     description: The size of the index on disk.
-    stability:
-      level: development
+    stability: development
     enabled: true
     gauge:
       value_type: int
@@ -408,8 +427,7 @@ metrics:
   postgresql.operations:
     enabled: true
     description: The number of db row operations.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -419,8 +437,7 @@ metrics:
   postgresql.replication.data_delay:
     attributes: [replication_client]
     description: The amount of data delayed in replication.
-    stability:
-      level: development
+    stability: development
     enabled: true
     gauge:
       value_type: int
@@ -428,8 +445,7 @@ metrics:
   postgresql.rollbacks:
     enabled: true
     description: The number of rollbacks.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -438,8 +454,7 @@ metrics:
   postgresql.rows:
     enabled: true
     description: The number of rows in the database.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -449,8 +464,7 @@ metrics:
   postgresql.sequential_scans:
     enabled: false
     description: The number of sequential scans.
-    stability:
-      level: development
+    stability: development
     unit: "{sequential_scan}"
     sum:
       value_type: int
@@ -458,8 +472,7 @@ metrics:
       aggregation_temporality: cumulative
   postgresql.table.count:
     description: Number of user tables in a database.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -468,8 +481,7 @@ metrics:
     unit: "{table}"
   postgresql.table.size:
     description: Disk space used by a table.
-    stability:
-      level: development
+    stability: development
     enabled: true
     unit: By
     sum:
@@ -478,8 +490,7 @@ metrics:
       value_type: int
   postgresql.table.vacuum.count:
     description: Number of times a table has manually been vacuumed.
-    stability:
-      level: development
+    stability: development
     enabled: true
     unit: "{vacuum}"
     sum:
@@ -489,8 +500,7 @@ metrics:
   postgresql.temp.io:
     enabled: false
     description: Total amount of data written to temporary files by queries.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -499,8 +509,7 @@ metrics:
   postgresql.temp_files:
     enabled: false
     description: The number of temp files.
-    stability:
-      level: development
+    stability: development
     unit: "{temp_file}"
     sum:
       value_type: int
@@ -509,8 +518,7 @@ metrics:
   postgresql.tup_deleted:
     enabled: false
     description: Number of rows deleted by queries in the database.
-    stability:
-      level: development
+    stability: development
     unit: "{tup_deleted}"
     sum:
       value_type: int
@@ -519,8 +527,7 @@ metrics:
   postgresql.tup_fetched:
     enabled: false
     description: Number of rows fetched by queries in the database.
-    stability:
-      level: development
+    stability: development
     unit: "{tup_fetched}"
     sum:
       value_type: int
@@ -529,8 +536,7 @@ metrics:
   postgresql.tup_inserted:
     enabled: false
     description: Number of rows inserted by queries in the database.
-    stability:
-      level: development
+    stability: development
     unit: "{tup_inserted}"
     sum:
       value_type: int
@@ -539,8 +545,7 @@ metrics:
   postgresql.tup_returned:
     enabled: false
     description: Number of rows returned by queries in the database.
-    stability:
-      level: development
+    stability: development
     unit: "{tup_returned}"
     sum:
       value_type: int
@@ -549,8 +554,7 @@ metrics:
   postgresql.tup_updated:
     enabled: false
     description: Number of rows updated by queries in the database.
-    stability:
-      level: development
+    stability: development
     unit: "{tup_updated}"
     sum:
       value_type: int
@@ -560,8 +564,7 @@ metrics:
     description: Age of the oldest WAL file.
     extended_documentation: |
       This metric requires WAL to be enabled with at least one replica.
-    stability:
-      level: development
+    stability: development
     enabled: true
     unit: s
     gauge:
@@ -569,8 +572,7 @@ metrics:
   postgresql.wal.delay:
     attributes: [wal_operation_lag, replication_client]
     description: Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
-    stability:
-      level: development
+    stability: development
     enabled: false
     unit: s
     gauge:
@@ -580,8 +582,7 @@ metrics:
   postgresql.wal.lag:
     attributes: [wal_operation_lag, replication_client]
     description: Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
-    stability:
-      level: development
+    stability: development
     enabled: true
     unit: s
     gauge:

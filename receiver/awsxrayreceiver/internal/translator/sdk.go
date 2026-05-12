@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -27,9 +27,9 @@ func addSdkToResource(seg *awsxray.Segment, attrs pcommon.Map) {
 				// sample *xr.SDK: "X-Ray for Go"
 				sep := "for "
 				sdkStr := *xr.SDK
-				i := strings.Index(sdkStr, sep)
-				if i != -1 {
-					attrs.PutStr(string(conventions.TelemetrySDKLanguageKey), sdkStr[i+len(sep):])
+				_, after, ok := strings.Cut(sdkStr, sep)
+				if ok {
+					attrs.PutStr(string(conventions.TelemetrySDKLanguageKey), after)
 				}
 			}
 		}

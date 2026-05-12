@@ -6,6 +6,7 @@ package cloudtraillog
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -13,7 +14,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -135,6 +141,95 @@ func TestCloudtrailLogUnmarshaler_UnmarshalAWSDigest(t *testing.T) {
 			}
 
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareLogsOptions...))
+		})
+	}
+}
+
+func TestNewLogsDecoder(t *testing.T) {
+	directory := "testdata/stream"
+	expectPattern := "cloudtrail_log_expect_%d.yaml"
+
+	tests := []struct {
+		name   string
+		offset int64
+	}{
+		{
+			name:   "Normal streaming",
+			offset: 0,
+		},
+		{
+			name:   "Streaming with offset",
+			offset: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content := readLogFile(t, directory, "cloudtrail_log.json")
+			unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, false)
+
+			// flush each record and start with defined offset
+			streamer, err := unmarshaler.NewLogsDecoder(content, encoding.WithFlushItems(1), encoding.WithOffset(tt.offset))
+			require.NoError(t, err)
+
+			index := tt.offset
+			for {
+				index++
+				var logs plog.Logs
+				logs, err = streamer.DecodeLogs()
+				if err != nil {
+					if errors.Is(err, io.EOF) {
+						break
+					}
+
+					t.Errorf("failed to unmarshal log %d: %v", index, err)
+				}
+
+				var expectedLogs plog.Logs
+				expectedLogs, err = golden.ReadLogs(filepath.Join(directory, fmt.Sprintf(expectPattern, index)))
+				require.NoError(t, err)
+				require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+				require.Equal(t, index, streamer.Offset())
+			}
+
+			// expect EOF after all logs are read
+			_, err = streamer.DecodeLogs()
+			require.ErrorIs(t, err, io.EOF)
+		})
+	}
+}
+
+func TestNewLogsDecoder_offsetForFormats(t *testing.T) {
+	tests := []struct {
+		name          string
+		inputLogsFile string
+		offset        int64
+	}{
+		{
+			name:          "Valid CloudTrail from CloudWatch subscription filter",
+			inputLogsFile: "cloudtrail_log_cw.json",
+			offset:        1878, // byte length of the input
+		},
+		{
+			name:          "Valid CloudTrail digest record",
+			inputLogsFile: "cloudtrail_digest.json",
+			offset:        1214, // byte length of the input
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content := readLogFile(t, filesDirectory, tt.inputLogsFile)
+			unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, false)
+
+			// Derive decoder with a non-zero offset
+			streamer, err := unmarshaler.NewLogsDecoder(content, encoding.WithOffset(50))
+			require.NoError(t, err)
+
+			_, err = streamer.DecodeLogs()
+			require.ErrorIs(t, err, io.EOF)
+
+			require.Equal(t, tt.offset, streamer.Offset())
 		})
 	}
 }
@@ -321,4 +416,70 @@ func readLogFile(t *testing.T, dir, file string) io.Reader {
 	data, err := os.ReadFile(filepath.Join(dir, file))
 	require.NoError(t, err)
 	return bytes.NewReader(data)
+}
+
+func TestRPCAttributeFeatureGates(t *testing.T) {
+	// not parallel: mutates global featuregate registry
+	record := &CloudTrailRecord{
+		EventVersion: "1.08",
+		EventID:      "test-event-id",
+		EventName:    "TestAction",
+		EventType:    "AwsApiCall",
+		EventSource:  "test.amazonaws.com",
+	}
+
+	tests := []struct {
+		name           string
+		emitV1         bool
+		dontEmitV0     bool
+		wantSystem     bool
+		wantService    bool
+		wantSystemName bool
+	}{
+		{
+			name:           "default: only v0 attributes",
+			wantSystem:     true,
+			wantService:    true,
+			wantSystemName: false,
+		},
+		{
+			name:           "emit v1: both old and new",
+			emitV1:         true,
+			wantSystem:     true,
+			wantService:    true,
+			wantSystemName: true,
+		},
+		{
+			name:           "emit v1 and dont emit v0: only new",
+			emitV1:         true,
+			dontEmitV0:     true,
+			wantSystem:     false,
+			wantService:    false,
+			wantSystemName: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			registry := featuregate.GlobalRegistry()
+			require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), tt.emitV1))
+			require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), tt.dontEmitV0))
+			t.Cleanup(func() {
+				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), false))
+				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), false))
+			})
+
+			u := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test"}, false)
+			attrs := pcommon.NewMap()
+			u.setLogAttributes(attrs, record)
+
+			_, hasSystem := attrs.Get("rpc.system")
+			_, hasService := attrs.Get("rpc.service")
+			_, hasSystemName := attrs.Get("rpc.system.name")
+
+			require.Equal(t, tt.wantSystem, hasSystem, "rpc.system")
+			require.Equal(t, tt.wantService, hasService, "rpc.service")
+			require.Equal(t, tt.wantSystemName, hasSystemName, "rpc.system.name")
+		})
+	}
 }

@@ -15,10 +15,14 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
@@ -28,6 +32,11 @@ func TestNewReceiver(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
 		return fake.NewClientset(), nil
+	}
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+	rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+		return dynamicfake.NewSimpleDynamicClient(scheme), nil
 	}
 	r, err := newReceiver(
 		receivertest.NewNopSettings(metadata.Type),
@@ -90,23 +99,6 @@ func TestDropEventsOlderThanStartupTime(t *testing.T) {
 	assert.Equal(t, 0, sink.LogRecordCount())
 }
 
-func TestGetEventTimestamp(t *testing.T) {
-	k8sEvent := getEvent("Normal")
-	eventTimestamp := getEventTimestamp(k8sEvent)
-	assert.Equal(t, k8sEvent.FirstTimestamp.Time, eventTimestamp)
-
-	k8sEvent.FirstTimestamp = v1.Time{Time: time.Now().Add(-time.Hour)}
-	k8sEvent.LastTimestamp = v1.Now()
-	eventTimestamp = getEventTimestamp(k8sEvent)
-	assert.Equal(t, k8sEvent.LastTimestamp.Time, eventTimestamp)
-
-	k8sEvent.FirstTimestamp = v1.Time{}
-	k8sEvent.LastTimestamp = v1.Time{}
-	k8sEvent.EventTime = v1.MicroTime(v1.Now())
-	eventTimestamp = getEventTimestamp(k8sEvent)
-	assert.Equal(t, k8sEvent.EventTime.Time, eventTimestamp)
-}
-
 func TestAllowEvent(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	r, err := newReceiver(
@@ -140,6 +132,11 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	cfg.K8sLeaderElector = &leaderID
 	cfg.makeClient = func(_ k8sconfig.APIConfig) (k8s.Interface, error) {
 		return fake.NewClientset(), nil
+	}
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+	cfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+		return dynamicfake.NewSimpleDynamicClient(scheme), nil
 	}
 
 	sink := new(consumertest.LogsSink)
@@ -204,5 +201,253 @@ func getEvent(eventType string) *corev1.Event {
 			Component: "testComponent",
 			Host:      "testHost",
 		},
+		ReportingController: "some-controller",
+		ReportingInstance:   "some-instance",
 	}
+}
+
+// TestConfigGetK8sClient tests the getK8sClient method
+func TestConfigGetK8sClient(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	cfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
+		return fake.NewClientset(), nil
+	}
+
+	client, err := cfg.getK8sClient()
+	assert.NoError(t, err)
+	assert.NotNil(t, client)
+}
+
+// TestStartWithDynamicClientError tests Start when getDynamicClient fails
+func TestStartWithDynamicClientError(t *testing.T) {
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+		return nil, assert.AnError
+	}
+
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	err = r.Start(t.Context(), componenttest.NewNopHost())
+	assert.Error(t, err)
+}
+
+// TestStartWithUnknownLeaderElector tests Start when leader elector extension is not found
+func TestStartWithUnknownLeaderElector(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+
+	leaderID := component.MustNewID("unknown_elector")
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.K8sLeaderElector = &leaderID
+	rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
+		return fake.NewClientset(), nil
+	}
+	rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+		return dynamicfake.NewSimpleDynamicClient(scheme), nil
+	}
+
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	err = r.Start(t.Context(), componenttest.NewNopHost())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown k8s leader elector")
+}
+
+// TestShutdownWithNilCancel tests Shutdown when cancel is nil
+func TestShutdownWithNilCancel(t *testing.T) {
+	rCfg := createDefaultConfig().(*Config)
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	recv := r.(*k8seventsReceiver)
+	recv.cancel = nil
+
+	err = recv.Shutdown(t.Context())
+	assert.NoError(t, err)
+}
+
+// TestHandleEventWithConsumerError tests handleEvent when consumer returns an error
+func TestHandleEventWithConsumerError(t *testing.T) {
+	rCfg := createDefaultConfig().(*Config)
+
+	errConsumer := consumertest.NewErr(assert.AnError)
+
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		errConsumer,
+	)
+	require.NoError(t, err)
+
+	recv := r.(*k8seventsReceiver)
+	recv.ctx = t.Context()
+
+	k8sEvent := getEvent("Normal")
+	recv.handleEvent(k8sEvent)
+}
+
+// TestAllowEventWithZeroTimestamp tests allowEvent with zero-value timestamp
+func TestAllowEventWithZeroTimestamp(t *testing.T) {
+	rCfg := createDefaultConfig().(*Config)
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	recv := r.(*k8seventsReceiver)
+
+	k8sEvent := getEvent("Normal")
+	k8sEvent.EventTime = v1.MicroTime{}
+	k8sEvent.LastTimestamp = v1.Time{}
+	k8sEvent.FirstTimestamp = v1.Time{}
+
+	shouldAllowEvent := recv.allowEvent(k8sEvent)
+	assert.False(t, shouldAllowEvent)
+}
+
+// TestReceiverStorageInitialization tests that storage client is initialized when storage is configured
+func TestReceiverStorageInitialization(t *testing.T) {
+	tests := []struct {
+		name                string
+		storageID           *component.ID
+		expectStorageClient bool
+	}{
+		{
+			name:                "storage configured",
+			storageID:           ptr(storagetest.NewStorageID("file_storage")),
+			expectStorageClient: true,
+		},
+		{
+			name:                "no storage configured",
+			storageID:           nil,
+			expectStorageClient: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scheme := runtime.NewScheme()
+			_ = corev1.AddToScheme(scheme)
+
+			rCfg := createDefaultConfig().(*Config)
+			rCfg.Storage = tt.storageID
+			rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
+				return fake.NewClientset(), nil
+			}
+			rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+				return dynamicfake.NewSimpleDynamicClient(scheme), nil
+			}
+
+			r, err := newReceiver(
+				receivertest.NewNopSettings(metadata.Type),
+				rCfg,
+				consumertest.NewNop(),
+			)
+			require.NoError(t, err)
+			require.NotNil(t, r)
+
+			host := componenttest.NewNopHost()
+			if tt.storageID != nil {
+				host = storagetest.NewStorageHost().WithInMemoryStorageExtension("file_storage")
+			}
+
+			err = r.Start(t.Context(), host)
+			require.NoError(t, err)
+
+			recv := r.(*k8seventsReceiver)
+			if tt.expectStorageClient {
+				assert.NotNil(t, recv.storageClient, "storage client should be initialized")
+			} else {
+				assert.Nil(t, recv.storageClient, "storage client should be nil when not configured")
+			}
+
+			require.NoError(t, r.Shutdown(t.Context()))
+		})
+	}
+}
+
+// TestStartWithStorageExtensionNotFound tests that Start returns an error when the storage extension is not found
+func TestStartWithStorageExtensionNotFound(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+
+	storageID := ptr(storagetest.NewStorageID("file_storage"))
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.Storage = storageID
+	rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
+		return fake.NewClientset(), nil
+	}
+	rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+		return dynamicfake.NewSimpleDynamicClient(scheme), nil
+	}
+
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	// Use a host without the storage extension
+	err = r.Start(t.Context(), componenttest.NewNopHost())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get storage client")
+}
+
+func ptr[T any](v T) *T {
+	return &v
+}
+
+// TestStartWatchersMultipleNamespaces tests watching multiple namespaces
+func TestStartWatchersMultipleNamespaces(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+
+	fakeClient := dynamicfake.NewSimpleDynamicClient(scheme)
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.Namespaces = []string{"default", "kube-system"}
+	rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
+		return fake.NewClientset(), nil
+	}
+	rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+		return fakeClient, nil
+	}
+
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+
+	recv := r.(*k8seventsReceiver)
+	recv.mu.Lock()
+	watcherCount := len(recv.stopperChanList)
+	recv.mu.Unlock()
+
+	// Should have at least 1 watcher started
+	assert.GreaterOrEqual(t, watcherCount, 1)
+	require.NoError(t, r.Shutdown(t.Context()))
 }

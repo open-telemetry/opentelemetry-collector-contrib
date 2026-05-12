@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -91,6 +92,10 @@ func (s Supervisor) Validate() error {
 
 	if err := s.HealthCheck.Validate(); err != nil {
 		return err
+	}
+
+	if err := s.Telemetry.Resource.Validate(); err != nil {
+		return fmt.Errorf("invalid telemetry::resource settings: %w", err)
 	}
 
 	return nil
@@ -214,6 +219,7 @@ func (o OpAMPServer) Validate() error {
 
 type Agent struct {
 	Executable              string            `mapstructure:"executable"`
+	InstanceID              string            `mapstructure:"instance_id"`
 	OrphanDetectionInterval time.Duration     `mapstructure:"orphan_detection_interval"`
 	Description             AgentDescription  `mapstructure:"description"`
 	ConfigApplyTimeout      time.Duration     `mapstructure:"config_apply_timeout"`
@@ -221,6 +227,7 @@ type Agent struct {
 	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
 	UseHUPConfigReload      bool              `mapstructure:"use_hup_config_reload"`
+	ValidateConfig          bool              `mapstructure:"validate_config"`
 	ConfigFiles             []string          `mapstructure:"config_files"`
 	Arguments               []string          `mapstructure:"args"`
 	Env                     map[string]string `mapstructure:"env"`
@@ -237,6 +244,12 @@ func (a Agent) Validate() error {
 
 	if a.OpAMPServerPort < 0 || a.OpAMPServerPort > 65535 {
 		return errors.New("agent::opamp_server_port must be a valid port number")
+	}
+
+	if a.InstanceID != "" {
+		if _, err := uuid.Parse(a.InstanceID); err != nil {
+			return fmt.Errorf("agent::instance_id must be a valid UUID string when set: %w", err)
+		}
 	}
 
 	if a.Executable == "" {
@@ -296,10 +309,12 @@ type Telemetry struct {
 	Metrics Metrics                        `mapstructure:"metrics"`
 	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
-	Resource map[string]*string `mapstructure:"resource"`
+	Resource otelconftelemetry.ResourceConfig `mapstructure:"resource"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
+
+type ResourceConfig = otelconftelemetry.ResourceConfig
 
 type HealthCheck struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
@@ -380,6 +395,7 @@ func DefaultSupervisor() Supervisor {
 			ConfigApplyTimeout:      5 * time.Second,
 			BootstrapTimeout:        3 * time.Second,
 			PassthroughLogs:         false,
+			ValidateConfig:          false,
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{

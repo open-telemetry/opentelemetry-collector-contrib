@@ -6,20 +6,26 @@ package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	k8s "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	apiWatch "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/dynamic"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
+	watchobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/watch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
@@ -33,6 +39,9 @@ type k8seventsReceiver struct {
 	cancel          context.CancelFunc
 	obsrecv         *receiverhelper.ObsReport
 	mu              sync.Mutex
+	client          dynamic.Interface
+	storageClient   storage.Client
+	wg              sync.WaitGroup
 }
 
 // newReceiver creates the Kubernetes events receiver with the given configuration.
@@ -64,9 +73,19 @@ func newReceiver(
 func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) error {
 	kr.ctx, kr.cancel = context.WithCancel(ctx)
 
-	k8sInterface, err := kr.config.getK8sClient()
+	client, err := kr.config.getDynamicClient()
 	if err != nil {
 		return err
+	}
+	kr.client = client
+
+	// Initialize storage client for resource version persistence if storage is configured.
+	if kr.config.Storage != nil {
+		storageClient, storageErr := getStorageClient(ctx, host, kr.config.Storage, kr.settings.ID)
+		if storageErr != nil {
+			return fmt.Errorf("failed to get storage client: %w", storageErr)
+		}
+		kr.storageClient = storageClient
 	}
 
 	if kr.config.K8sLeaderElector != nil {
@@ -90,13 +109,7 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 				kr.cancel = cancel
 				kr.ctx = cctx
 				kr.settings.Logger.Info("Events Receiver started as leader")
-				if len(kr.config.Namespaces) == 0 {
-					kr.startWatch(corev1.NamespaceAll, k8sInterface)
-				} else {
-					for _, ns := range kr.config.Namespaces {
-						kr.startWatch(ns, k8sInterface)
-					}
-				}
+				kr.startWatchers()
 			},
 			func() {
 				// Shutdown on leader loss. The receiver will restart if leadership is regained
@@ -112,17 +125,11 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 
 	// No leader election: start immediately.
 	kr.settings.Logger.Info("starting to watch namespaces for the events.")
-	if len(kr.config.Namespaces) == 0 {
-		kr.startWatch(corev1.NamespaceAll, k8sInterface)
-	} else {
-		for _, ns := range kr.config.Namespaces {
-			kr.startWatch(ns, k8sInterface)
-		}
-	}
+	kr.startWatchers()
 	return nil
 }
 
-func (kr *k8seventsReceiver) Shutdown(context.Context) error {
+func (kr *k8seventsReceiver) Shutdown(ctx context.Context) error {
 	if kr.cancel != nil {
 		kr.cancel()
 	}
@@ -133,31 +140,78 @@ func (kr *k8seventsReceiver) Shutdown(context.Context) error {
 	}
 	kr.stopperChanList = nil
 	kr.mu.Unlock()
+	kr.wg.Wait()
+
+	// Close storage client if it exists.
+	if kr.storageClient != nil {
+		if err := kr.storageClient.Close(ctx); err != nil {
+			kr.settings.Logger.Error("failed to close storage client", zap.Error(err))
+		}
+	}
+
 	return nil
 }
 
-// Add the 'Event' handler and trigger the watch for a specific namespace.
-// For new and updated events, the code is relying on the following k8s code implementation:
-// https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/client-go/tools/record/events_cache.go#L327
-func (kr *k8seventsReceiver) startWatch(ns string, client k8s.Interface) {
-	stopperChan := make(chan struct{})
+// startWatchers creates and starts the k8sinventory watch observer
+func (kr *k8seventsReceiver) startWatchers() {
+	// Events GVR (GroupVersionResource)
+	eventsGVR := schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "events",
+	}
+
+	namespaces := kr.config.Namespaces
+	if len(namespaces) == 0 {
+		namespaces = []string{""} // Empty string means all namespaces
+	}
+
+	observer, err := watchobserver.New(
+		kr.client,
+		watchobserver.Config{
+			Config: k8sinventory.Config{
+				Gvr:        eventsGVR,
+				Namespaces: namespaces,
+			},
+			IncludeInitialState: false,                                               // Don't send initial state, only new events
+			Exclude:             map[apiWatch.EventType]bool{apiWatch.Deleted: true}, // Skip DELETED events (matches old Informer behavior)
+		},
+		kr.settings.Logger,
+		kr.storageClient,
+		func(event *apiWatch.Event) {
+			// The k8sinventory watch observer uses dynamic client which returns unstructured objects
+			// We need to convert them to corev1.Event
+			unstructuredObj, ok := event.Object.(*unstructured.Unstructured)
+			if !ok {
+				kr.settings.Logger.Warn("Received non-Unstructured object from watch",
+					zap.String("type", fmt.Sprintf("%T", event.Object)))
+				return
+			}
+
+			// Convert unstructured to corev1.Event
+			ev := &corev1.Event{}
+			err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredObj.Object, ev)
+			if err != nil {
+				kr.settings.Logger.Error("Failed to convert unstructured object to Event",
+					zap.Error(err))
+				return
+			}
+
+			kr.handleEvent(ev)
+		},
+	)
+	if err != nil {
+		kr.settings.Logger.Error("Failed to create watch observer", zap.Error(err))
+		return
+	}
+
+	stopperChan := observer.Start(kr.ctx, &kr.wg)
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
-	kr.startWatchingNamespace(client, cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj any) {
-			if ev, ok := obj.(*corev1.Event); ok {
-				kr.handleEvent(ev)
-			}
-		},
-		UpdateFunc: func(_, obj any) {
-			if ev, ok := obj.(*corev1.Event); ok {
-				kr.handleEvent(ev)
-			}
-		},
-	}, ns, stopperChan)
 }
 
+// handleEvent processes a Kubernetes event and sends it to the logs consumer
 func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
 	if kr.allowEvent(ev) {
 		ld := k8sEventToLogData(kr.settings.Logger, ev, kr.settings.BuildInfo.Version)
@@ -168,46 +222,32 @@ func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
 	}
 }
 
-// startWatchingNamespace creates an informer and starts
-// watching a specific namespace for the events.
-func (*k8seventsReceiver) startWatchingNamespace(
-	clientset k8s.Interface,
-	handlers cache.ResourceEventHandlerFuncs,
-	ns string,
-	stopper chan struct{},
-) {
-	client := clientset.CoreV1().RESTClient()
-	watchList := cache.NewListWatchFromClient(client, "events", ns, fields.Everything())
-	_, controller := cache.NewInformerWithOptions(cache.InformerOptions{
-		ListerWatcher: watchList,
-		ObjectType:    &corev1.Event{},
-		ResyncPeriod:  0,
-		Handler:       handlers,
-	})
-	go controller.Run(stopper)
-}
-
 // Allow events with eventTimestamp(EventTime/LastTimestamp/FirstTimestamp)
 // not older than the receiver start time so that
 // event flood can be avoided upon startup.
 func (kr *k8seventsReceiver) allowEvent(ev *corev1.Event) bool {
-	eventTimestamp := getEventTimestamp(ev)
+	eventTimestamp := k8sinventory.GetEventTimestamp(ev)
 	return !eventTimestamp.Before(kr.startTime)
 }
 
-// Return the EventTimestamp based on the populated k8s event timestamps.
-// Priority: EventTime > LastTimestamp > FirstTimestamp.
-func getEventTimestamp(ev *corev1.Event) time.Time {
-	var eventTimestamp time.Time
-
-	switch {
-	case ev.EventTime.Time != time.Time{}:
-		eventTimestamp = ev.EventTime.Time
-	case ev.LastTimestamp.Time != time.Time{}:
-		eventTimestamp = ev.LastTimestamp.Time
-	case ev.FirstTimestamp.Time != time.Time{}:
-		eventTimestamp = ev.FirstTimestamp.Time
+func getStorageClient(ctx context.Context, host component.Host, storageID *component.ID, componentID component.ID) (storage.Client, error) {
+	if storageID == nil {
+		return storage.NewNopClient(), nil
 	}
 
-	return eventTimestamp
+	extension, ok := host.GetExtensions()[*storageID]
+	if !ok {
+		return nil, fmt.Errorf("storage extension '%s' not found", storageID)
+	}
+
+	storageExtension, ok := extension.(storage.Extension)
+	if !ok {
+		return nil, fmt.Errorf("non-storage extension '%s' found", storageID)
+	}
+
+	// Make storage immune to component renames that add underscores to the component type.
+	// This is a workaround for https://github.com/open-telemetry/opentelemetry-collector/issues/14988.
+	normalizedComponentType := strings.ReplaceAll(componentID.Type().String(), "_", "")
+	normalizedComponentID := component.MustNewIDWithName(normalizedComponentType, componentID.Name())
+	return storageExtension.GetClient(ctx, component.KindReceiver, normalizedComponentID, "")
 }
