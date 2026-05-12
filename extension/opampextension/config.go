@@ -70,8 +70,9 @@ type Capabilities struct {
 	// AcceptsRestartCommand enables the OpAMP AcceptsRestartCommand Capability (default: false)
 	AcceptsRestartCommand bool `mapstructure:"accepts_restart_command"`
 	// ReportsHeartbeat enables the OpAMP ReportsHeartbeat Capability, allowing the server to
-	// adjust the agent's heartbeat interval via ConnectionSettingsOffers. Only takes effect when
-	// the extension.opampextension.HeartbeatIntervalNegotiation feature gate is also enabled. (default: true)
+	// adjust the agent's heartbeat interval via ConnectionSettingsOffers.
+	// Default is false unless the extension.opampextension.HeartbeatIntervalNegotiation
+	// feature gate (alpha) is enabled.
 	ReportsHeartbeat bool `mapstructure:"reports_heartbeat"`
 }
 
@@ -91,7 +92,7 @@ func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
 	if caps.AcceptsRestartCommand {
 		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
 	}
-	if caps.ReportsHeartbeat && HeartbeatIntervalNegotiationFeatureGate.IsEnabled() {
+	if caps.ReportsHeartbeat {
 		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
 	}
 

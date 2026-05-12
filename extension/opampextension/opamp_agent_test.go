@@ -47,7 +47,7 @@ func TestNewOpampAgent(t *testing.T) {
 	assert.NotEmpty(t, o.instanceUID.String())
 	assert.True(t, o.capabilities.ReportsEffectiveConfig)
 	assert.True(t, o.capabilities.ReportsHealth)
-	assert.True(t, o.capabilities.ReportsHeartbeat)
+	assert.False(t, o.capabilities.ReportsHeartbeat)
 	assert.Empty(t, o.effectiveConfig)
 	assert.Nil(t, o.agentDescription)
 	assert.NoError(t, o.Shutdown(t.Context()))
@@ -77,12 +77,12 @@ func TestReportsHeartbeatCapabilityGating(t *testing.T) {
 		wantBitSet       bool
 	}{
 		{
-			name:             "enabled but gate disabled",
+			name:             "explicitly enabled",
 			reportsHeartbeat: true,
-			wantBitSet:       false,
+			wantBitSet:       true,
 		},
 		{
-			name:             "disabled (default)",
+			name:             "disabled",
 			reportsHeartbeat: false,
 			wantBitSet:       false,
 		},

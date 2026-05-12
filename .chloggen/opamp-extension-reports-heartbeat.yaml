@@ -16,13 +16,13 @@ issues: [48042]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Adds the `reports_heartbeat` config option (default: true) and the
-  `extension.opampextension.HeartbeatIntervalNegotiation` feature gate (alpha). When both
-  `reports_heartbeat` is true and the feature gate is enabled, the agent advertises the
-  OpAMP ReportsHeartbeat capability. This allows the server to negotiate a different
-  heartbeat interval by setting heartbeat_interval_seconds in OpAMPConnectionSettings.
-  Without the feature gate enabled, the agent uses a hardcoded 30-second heartbeat interval
-  that the server cannot adjust, regardless of the config setting.
+  Adds the `reports_heartbeat` config option and the
+  `extension.opampextension.HeartbeatIntervalNegotiation` feature gate (alpha).
+  By default, `reports_heartbeat` is `false`; when the feature gate is enabled,
+  the default becomes `true`. When `reports_heartbeat` is enabled, the agent
+  advertises the OpAMP ReportsHeartbeat capability. This allows the server to
+  negotiate a different heartbeat interval by setting heartbeat_interval_seconds
+  in OpAMPConnectionSettings.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
