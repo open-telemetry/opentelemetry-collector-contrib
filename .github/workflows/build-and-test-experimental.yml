@@ -42,7 +42,8 @@ jobs:
           # Any of these paths change CI behavior or coverage, so the scoped
           # path is not safe -- mark mode=full so a real run would fall back
           # to the full matrices in the required workflow.
-          trigger='^(\.golangci\.yml$|Makefile$|Makefile\.Common$|\.github/workflows/|\.github/actions/|go\.mod$)'
+          # TEMPORARY (revert before merge): `.github/workflows/` removed so this PR can exercise the experimental scoped paths.
+          trigger='^(\.golangci\.yml$|Makefile$|Makefile\.Common$|\.github/actions/|go\.mod$)'
           if echo "$changed" | grep -qE "$trigger"; then
             echo "Full-scope trigger matched; experimental jobs will be skipped."
             echo "mode=full" >> "$GITHUB_OUTPUT"
