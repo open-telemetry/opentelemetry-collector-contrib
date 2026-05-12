@@ -105,7 +105,7 @@ exporters:
     sourcetype: "otel"
     # Splunk index, optional name of the Splunk index targeted.
     index: "metrics"
-    # Maximum HTTP connections to use simultaneously when sending data. Defaults to 100.
+    # Maximum idle HTTP connections the client can keep open. Defaults to 100.
     max_idle_conns: 200
     # Whether to disable gzip compression over HTTP. Defaults to false.
     disable_compression: false
