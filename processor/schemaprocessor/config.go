@@ -14,8 +14,12 @@ import (
 )
 
 var (
-	errRequiresTargets  = errors.New("requires schema targets")
-	errDuplicateTargets = errors.New("duplicate targets detected")
+	errRequiresTargets          = errors.New("requires schema targets")
+	errDuplicateTargets         = errors.New("duplicate targets detected")
+	errMigrationTargetNotFound  = errors.New("migration target does not match any configured target")
+	errMigrationFamilyMismatch  = errors.New("migration from and target must be in the same schema family")
+	errMigrationDuplicateTarget = errors.New("duplicate migration entry for same target")
+	errMigrationRequiresFrom    = errors.New("migration entry requires a from schema URL")
 )
 
 // Config defines the user provided values for the Schema Processor
@@ -40,6 +44,25 @@ type Config struct {
 	// translated to, allowing older and newer formats
 	// to conform to the target schema identifier.
 	Targets []string `mapstructure:"targets"`
+
+	// Migration defines migration entries that preserve original attributes
+	// alongside renamed ones during schema translation. Each entry specifies
+	// a target and the version being migrated from. Only renames between
+	// the from version and the target version are copied.
+	Migration []MigrationEntry `mapstructure:"migration"`
+}
+
+// MigrationEntry defines a migration for a specific target schema.
+type MigrationEntry struct {
+	// Target is the schema URL that this migration applies to.
+	// Must match one of the configured targets exactly.
+	Target string `mapstructure:"target"`
+
+	// From is the schema URL of the version that operators are migrating
+	// away from. Must be in the same schema family as Target.
+	// Renames between this version and the target are copied
+	// (both old and new attribute names are preserved).
+	From string `mapstructure:"from"`
 }
 
 func (c *Config) Validate() error {
@@ -62,6 +85,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("no schema targets defined: %w", errRequiresTargets)
 	}
 
+	targets := make(map[string]struct{})
 	families := make(map[string]struct{})
 	for _, target := range c.Targets {
 		family, _, err := translation.GetFamilyAndVersion(target)
@@ -72,6 +96,33 @@ func (c *Config) Validate() error {
 			return errDuplicateTargets
 		}
 		families[family] = struct{}{}
+		targets[target] = struct{}{}
+	}
+
+	migrationTargets := make(map[string]struct{})
+	for _, entry := range c.Migration {
+		if entry.From == "" {
+			return errMigrationRequiresFrom
+		}
+		if _, match := targets[entry.Target]; !match {
+			return fmt.Errorf("%q: %w", entry.Target, errMigrationTargetNotFound)
+		}
+		if _, dup := migrationTargets[entry.Target]; dup {
+			return fmt.Errorf("%q: %w", entry.Target, errMigrationDuplicateTarget)
+		}
+		migrationTargets[entry.Target] = struct{}{}
+
+		targetFamily, _, err := translation.GetFamilyAndVersion(entry.Target)
+		if err != nil {
+			return fmt.Errorf("migration.target: %w", err)
+		}
+		fromFamily, _, err := translation.GetFamilyAndVersion(entry.From)
+		if err != nil {
+			return fmt.Errorf("migration.from: %w", err)
+		}
+		if targetFamily != fromFamily {
+			return fmt.Errorf("migration %q -> %q: %w", entry.From, entry.Target, errMigrationFamilyMismatch)
+		}
 	}
 
 	return nil
