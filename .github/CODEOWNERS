@@ -44,6 +44,7 @@ connector/slowsqlconnector/                                      @open-telemetry
 connector/spanmetricsconnector/                                  @open-telemetry/collector-contrib-approvers @portertech @Frapschen @iblancasa
 connector/sumconnector/                                          @open-telemetry/collector-contrib-approvers @greatestusername @shalper2 @crobert-1
 exporter/alertmanagerexporter/                                   @open-telemetry/collector-contrib-approvers @sokoide @mcube8
+exporter/alibabacloudlogserviceexporter/                         @open-telemetry/collector-contrib-approvers @vyagh
 exporter/awscloudwatchlogsexporter/                              @open-telemetry/collector-contrib-approvers @yaten2302
 exporter/awsemfexporter/                                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 exporter/awskinesisexporter/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
@@ -61,13 +62,13 @@ exporter/datasetexporter/                                        @open-telemetry
 exporter/dorisexporter/                                          @open-telemetry/collector-contrib-approvers @atoulme @joker-star-l
 exporter/elasticsearchexporter/                                  @open-telemetry/collector-contrib-approvers @JaredTan95 @carsonip @lahsivjar
 exporter/faroexporter/                                           @open-telemetry/collector-contrib-approvers @dehaansa @rlankfo @mar4uk
-exporter/fileexporter/                                           @open-telemetry/collector-contrib-approvers @atingchen
+exporter/fileexporter/                                           @open-telemetry/collector-contrib-approvers @atingchen @paulojmdias
 exporter/googlecloudexporter/                                    @open-telemetry/collector-contrib-approvers @aabmass @dashpole @braydonk @jsuereth @psx95 @ridwanmsharif
 exporter/googlecloudpubsubexporter/                              @open-telemetry/collector-contrib-approvers @alexvanboxel
 exporter/googlecloudstorageexporter/                             @open-telemetry/collector-contrib-approvers @constanca-m @braydonk
 exporter/googlemanagedprometheusexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @braydonk @jsuereth @psx95 @ridwanmsharif
 exporter/googlesecopsexporter/                                   @open-telemetry/collector-contrib-approvers @braydonk @colelaven @dpaasman00 @mrsillydog
-exporter/honeycombmarkerexporter/                                @open-telemetry/collector-contrib-approvers @TylerHelmuth @fchikwekwe
+exporter/honeycombmarkerexporter/                                @open-telemetry/collector-contrib-approvers @VinozzZ @codeboten
 exporter/influxdbexporter/                                       @open-telemetry/collector-contrib-approvers @jacobmarble
 exporter/kafkaexporter/                                          @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @axw @paulojmdias
 exporter/loadbalancingexporter/                                  @open-telemetry/collector-contrib-approvers @rlankfo
@@ -398,6 +399,6 @@ reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 
 # Start unmaintained components list
 
-exporter/alibabacloudlogserviceexporter/                         @open-telemetry/collector-contrib-approvers
+
 
 # End unmaintained components list
