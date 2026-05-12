@@ -85,6 +85,7 @@ func createDefaultConfig() component.Config {
 			LogResponseBody:             false,
 			LogFailedDocsInput:          false,
 			LogFailedDocsInputRateLimit: time.Second,
+			PreserveErrorReason:         true,
 		},
 		IncludeSourceOnError: nil,
 	}

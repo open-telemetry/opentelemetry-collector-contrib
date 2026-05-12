@@ -101,7 +101,9 @@ type Config struct {
 	// have no effect.
 	//
 	// NOTE: The default behavior if this configuration is not set, is to
-	// discard the error reason entirely, i.e. only the error type is returned.
+	// preserve error.reason without requesting source snippets. To restore the
+	// upstream docappender behavior that discards error.reason, set
+	// telemetry::preserve_error_reason to false.
 	//
 	// WARNING: If set to true, the exporter may log error responses containing
 	// request payload, causing potential sensitive data to be exposed in logs.
@@ -127,6 +129,7 @@ type TelemetrySettings struct {
 
 	LogFailedDocsInput          bool          `mapstructure:"log_failed_docs_input"`
 	LogFailedDocsInputRateLimit time.Duration `mapstructure:"log_failed_docs_input_rate_limit"`
+	PreserveErrorReason         bool          `mapstructure:"preserve_error_reason"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

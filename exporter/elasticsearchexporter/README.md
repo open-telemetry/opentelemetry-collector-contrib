@@ -386,7 +386,7 @@ In the exporter, the equivalent configuration is also named `include_source_on_e
 - `include_source_on_error`:
   - `true`: Enables bulk index responses to include source document on error. Requires Elasticsearch 8.18+. WARNING: the exporter may log error responses containing request payload, causing potential sensitive data to be exposed in logs.
   - `false`: Disables including source document on bulk index error responses.  Requires Elasticsearch 8.18+.
-  - `null` (default): Backward-compatible option for older Elasticsearch versions. By default, the error reason is discarded from bulk index responses entirely, i.e. only error type is returned.
+  - `null` (default): Does not request source documents on bulk index errors. With `telemetry.preserve_error_reason` enabled, the exporter keeps backend-provided `error.reason` while stripping the `include_source_on_error` request parameter for OpenSearch compatibility.
 
 ### Elasticsearch node discovery
 
@@ -408,6 +408,7 @@ The Elasticsearch Exporter's own telemetry settings for testing and debugging pu
 ⚠️ This is experimental and may change at any time.
 
 - `telemetry`:
+  - `preserve_error_reason` (default=true): Preserves backend-provided bulk item `error.reason` in failed document logs without asking Elasticsearch/OpenSearch to include source snippets. This keeps mapper parsing details visible for debugging while avoiding the `include_source_on_error` bulk request parameter that some OpenSearch versions reject. WARNING: backend error reasons may still include field names, rejected values, or other sensitive details.
   - `log_request_body` (default=false): Logs Elasticsearch client request body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
   - `log_response_body` (default=false): Logs Elasticsearch client response body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
   - `log_failed_docs_input` (default=false): Include the input (action line and document line) causing indexing error under `input` field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.

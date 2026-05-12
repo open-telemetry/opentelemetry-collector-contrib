@@ -94,16 +94,34 @@ func bulkIndexerConfig(client elastictransport.Interface, config *Config, requir
 		compressionLevel = int(config.CompressionParams.Level)
 	}
 	return docappender.BulkIndexerConfig{
-		Client:                  client,
+		Client:                  bulkIndexerClient(client, config),
 		MaxDocumentRetries:      maxDocRetries,
 		Pipeline:                config.Pipeline,
 		RetryOnDocumentStatus:   config.Retry.RetryOnStatus,
 		RequireDataStream:       requireDataStream,
 		CompressionLevel:        compressionLevel,
 		PopulateFailedDocsInput: config.LogFailedDocsInput,
-		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.IncludeSourceOnError),
+		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config),
 		QueryParams:             getQueryParamsFromEndpoint(config, logger),
 	}
+}
+
+type stripIncludeSourceOnErrorTransport struct {
+	next elastictransport.Interface
+}
+
+func (t stripIncludeSourceOnErrorTransport) Perform(req *http.Request) (*http.Response, error) {
+	q := req.URL.Query()
+	q.Del("include_source_on_error")
+	req.URL.RawQuery = q.Encode()
+	return t.next.Perform(req)
+}
+
+func bulkIndexerClient(client elastictransport.Interface, config *Config) elastictransport.Interface {
+	if shouldPreserveErrorReasonWithoutSourceParam(config) {
+		return stripIncludeSourceOnErrorTransport{next: client}
+	}
+	return client
 }
 
 func getQueryParamsFromEndpoint(config *Config, logger *zap.Logger) (queryParams map[string][]string) {
@@ -127,14 +145,25 @@ func getQueryParamsFromEndpoint(config *Config, logger *zap.Logger) (queryParams
 	return nil
 }
 
-func bulkIndexerIncludeSourceOnError(includeSourceOnError *bool) docappender.Value {
-	if includeSourceOnError == nil {
+func bulkIndexerIncludeSourceOnError(config *Config) docappender.Value {
+	if config.IncludeSourceOnError == nil {
+		// go-docappender currently preserves bulk item error.reason only when
+		// IncludeSourceOnError is explicitly set. OpenSearch rejects the matching
+		// request parameter, so the transport wrapper strips it before the request
+		// leaves the exporter.
+		if config.PreserveErrorReason {
+			return docappender.False
+		}
 		return docappender.Unset
 	}
-	if *includeSourceOnError {
+	if *config.IncludeSourceOnError {
 		return docappender.True
 	}
 	return docappender.False
+}
+
+func shouldPreserveErrorReasonWithoutSourceParam(config *Config) bool {
+	return config.IncludeSourceOnError == nil && config.PreserveErrorReason
 }
 
 func newSyncBulkIndexer(
