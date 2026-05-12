@@ -148,9 +148,6 @@ linters:
         path: internal/filter/
       - linters:
           - forbidigo
-        path: pkg/ottl/
-      - linters:
-          - forbidigo
         path: receiver/awscontainerinsightreceiver/
       - linters:
           - forbidigo
