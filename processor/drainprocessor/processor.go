@@ -96,15 +96,18 @@ func (p *drainProcessor) Start(ctx context.Context, host component.Host) error {
 		if err != nil {
 			return fmt.Errorf("failed to get storage client: %w", err)
 		}
+
+		if !p.loadSnapshot(ctx) {
+			p.seed()
+		}
+
+		if p.config.SaveInterval > 0 {
+			p.startPeriodicSave(ctx)
+		}
+		return nil
 	}
 
-	if p.storageClient == nil || !p.loadSnapshot(ctx) {
-		p.seed()
-	}
-
-	if p.storageClient != nil && p.config.SaveInterval > 0 {
-		p.startPeriodicSave(ctx)
-	}
+	p.seed()
 	return nil
 }
 
