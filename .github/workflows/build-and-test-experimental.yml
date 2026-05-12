@@ -214,76 +214,83 @@ jobs:
         run: make gogovulncheck GROUP=${{ matrix.group }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
+  # Split the 18 checks/codegen targets across parallel matrix shards. Each
+  # shard gets a fresh runner + checkout so the file-modifying targets
+  # (goporto, gogci, gotidy, crosslink, generate) don't trample each other
+  # inside a single working tree. Wall time is bounded by the slowest shard.
   exp-checks:
     runs-on: ubuntu-24.04
     needs: [exp-setup-environment]
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - codegen
+          - porto-and-gci
+          - go-mod-hygiene
+          - small-generators
+          - schemas-and-templates
+          - read-only-checks
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - run: make genotelcontribcol
-      - name: CheckDoc
-        run: make checkdoc
-      - name: CheckMetadata
-        run: make checkmetadata
-      - name: CheckApi
-        run: make checkapi
-      - name: Porto
+      - name: Run shard ${{ matrix.shard }}
         run: |
-          make -j2 goporto
-          git diff --exit-code || (echo 'Porto links are out of date, please run "make goporto" and commit the changes in this PR.' && exit 1)
-      - name: crosslink
-        run: |
-          make crosslink
-          git diff --exit-code || (echo 'Replace statements are out of date, please run "make crosslink" and commit the changes in this PR.' && exit 1)
-      - name: tidylist
-        run: |
-          make tidylist
-          git diff --exit-code || (echo 'Tidylist is out of date, please run "make tidylist" and commit the changes in this PR.' && exit 1)
-      - name: Check for go mod dependency changes
-        run: |
-          make gotidy
-          git diff --exit-code || (echo 'go.mod/go.sum deps changes detected, please run "make gotidy" and commit the changes in this PR.' && exit 1)
-      - name: Check for go package import order
-        run: |
-          make gogci
-          git diff --exit-code || (echo 'go package imports not formatted, please run "make gogci" and commit the changes in this PR.' && exit 1)
-      - name: Gen distributions
-        run: |
-          make gendistributions
-          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gendistributions" and commit the changes in this PR.' && exit 1)
-      - name: Gen labels
-        run: |
-          make genlabels
-          git diff -s --exit-code || (echo '.github/component_labels.txt is out of date, please run "make genlabels" and commit the changes in this PR.' && exit 1)
-      - name: Gen CodeCov
-        run: |
-          make gencodecov
-          git --no-pager diff
-          git diff -s --exit-code '.codecov.yml' || (echo '.codecov.yml is out of date, please run "make gencodecov" and commit the changes in this PR.' && exit 1)
-      - name: CodeGen
-        run: |
-          make generate
-          if [[ -n $(git status -s) ]]; then
-            echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.'
-            exit 1
-          fi
-      - name: MultimodVerify
-        run: make multimod-verify
-      - name: Components dropdown in issue templates
-        run: |
-          make generate-gh-issue-templates
-          git diff --exit-code '.github/ISSUE_TEMPLATE' || (echo 'Dropdowns in issue templates are out of date, please run "make generate-gh-issue-templates" and commit the changes in this PR.' && exit 1)
+          set -euo pipefail
+          case "${{ matrix.shard }}" in
+            codegen)
+              make generate
+              if [[ -n $(git status -s) ]]; then
+                echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.'
+                exit 1
+              fi
+              ;;
+            porto-and-gci)
+              make -j2 goporto
+              git diff --exit-code || (echo 'Porto links are out of date, please run "make goporto" and commit the changes in this PR.' && exit 1)
+              make gogci
+              git diff --exit-code || (echo 'go package imports not formatted, please run "make gogci" and commit the changes in this PR.' && exit 1)
+              ;;
+            go-mod-hygiene)
+              make crosslink
+              git diff --exit-code || (echo 'Replace statements are out of date, please run "make crosslink" and commit the changes in this PR.' && exit 1)
+              make tidylist
+              git diff --exit-code || (echo 'Tidylist is out of date, please run "make tidylist" and commit the changes in this PR.' && exit 1)
+              make gotidy
+              git diff --exit-code || (echo 'go.mod/go.sum deps changes detected, please run "make gotidy" and commit the changes in this PR.' && exit 1)
+              ;;
+            small-generators)
+              make gendistributions
+              git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gendistributions" and commit the changes in this PR.' && exit 1)
+              make genlabels
+              git diff -s --exit-code || (echo '.github/component_labels.txt is out of date, please run "make genlabels" and commit the changes in this PR.' && exit 1)
+              make gencodecov
+              git --no-pager diff
+              git diff -s --exit-code '.codecov.yml' || (echo '.codecov.yml is out of date, please run "make gencodecov" and commit the changes in this PR.' && exit 1)
+              ;;
+            schemas-and-templates)
+              make generate-gh-issue-templates
+              git diff --exit-code '.github/ISSUE_TEMPLATE' || (echo 'Dropdowns in issue templates are out of date, please run "make generate-gh-issue-templates" and commit the changes in this PR.' && exit 1)
+              make generate-schemas
+              git diff --exit-code '*.schema.yaml' || (echo 'Config schemas are out of date, please run "make generate-schemas" and commit the changes in this PR.' && exit 1)
+              make generate-chloggen-components
+              git diff --exit-code || (echo '.chloggen/config.yaml is out of date, please run "make generate-chloggen-components" and commit the changes.' && exit 1)
+              ;;
+            read-only-checks)
+              make checkdoc
+              make checkmetadata
+              make checkapi
+              make multimod-verify
+              ;;
+            *)
+              echo "Unknown shard: ${{ matrix.shard }}"
+              exit 1
+              ;;
+          esac
       - run: ./.github/workflows/scripts/check-disk-space.sh
-      - name: Check config schemas
-        run: |
-          make generate-schemas
-          git diff --exit-code '*.schema.yaml' || (echo 'Config schemas are out of date, please run "make generate-schemas" and commit the changes in this PR.' && exit 1)
-      - name: generate-chloggen-components
-        run: |
-          make generate-chloggen-components
-          git diff --exit-code || (echo '.chloggen/config.yaml is out of date, please run "make generate-chloggen-components" and commit the changes.' && exit 1)
 
   exp-unittest-matrix:
     strategy:
