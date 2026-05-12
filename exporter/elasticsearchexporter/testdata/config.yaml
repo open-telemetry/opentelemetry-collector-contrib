@@ -100,6 +100,10 @@ elasticsearch/compression_gzip:
 elasticsearch/include_source_on_error:
   endpoint: https://elastic.example.com:9200
   include_source_on_error: true
+elasticsearch/preserve_error_reason_disabled:
+  endpoint: https://elastic.example.com:9200
+  telemetry:
+    preserve_error_reason: false
 elasticsearch/metadata_keys:
   endpoint: https://elastic.example.com:9200
   metadata_keys:

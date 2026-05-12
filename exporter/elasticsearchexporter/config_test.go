@@ -138,6 +138,7 @@ func TestConfig(t *testing.T) {
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
+					PreserveErrorReason:         true,
 				},
 			},
 		},
@@ -214,6 +215,7 @@ func TestConfig(t *testing.T) {
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
+					PreserveErrorReason:         true,
 				},
 			},
 		},
@@ -290,6 +292,7 @@ func TestConfig(t *testing.T) {
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
+					PreserveErrorReason:         true,
 				},
 			},
 		},
@@ -351,6 +354,14 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 				includeSource := true
 				cfg.IncludeSourceOnError = &includeSource
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "preserve_error_reason_disabled"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.PreserveErrorReason = false
 			}),
 		},
 		{
