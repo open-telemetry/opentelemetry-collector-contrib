@@ -48,8 +48,14 @@ func ValidateMetrics(md pmetric.Metrics) error {
 					rm.Resource().Attributes().AsRaw(), sm.Scope().Name())
 				errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, err))
 			}
+
+			// TODO (PR 5): Check for multiple Metric entries with the same name that are mergeable
 		}
+
+		// TODO (PR 4): Check for multiple ScopeMetrics with equal scope under the same resource
 	}
+
+	// TODO (PR 3): Check for multiple ResourceMetrics with equal resource attributes
 
 	return errs
 }

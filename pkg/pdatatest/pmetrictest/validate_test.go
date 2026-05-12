@@ -540,4 +540,10 @@ func TestValidateMetrics(t *testing.T) {
 
 		assert.NoError(t, ValidateMetrics(md))
 	})
+
+	// TODO (PR 5): Add tests for multiple Metric entries with the same name that are mergeable
+
+	// TODO (PR 4): Add tests for multiple ScopeMetrics with equal scope under the same resource
+
+	// TODO (PR 3): Add tests for multiple ResourceMetrics with equal resource attributes
 }
