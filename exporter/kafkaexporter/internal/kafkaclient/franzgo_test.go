@@ -66,7 +66,7 @@ type statusStep struct {
 	err  error // connect outcome; ignored for disconnect
 }
 
-func (st statusStep) apply(r *statusReporter) {
+func (st statusStep) apply(r *StatusReporter) {
 	switch st.kind {
 	case statusStepConnect:
 		r.OnBrokerConnect(st.meta, 0, nil, st.err)

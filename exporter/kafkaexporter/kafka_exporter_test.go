@@ -16,6 +16,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -1194,6 +1195,64 @@ func TestMetricsPusher_topicFromAttribute_multiResource(t *testing.T) {
 		"resource on %s must have attribute value %q", topicA, topicA)
 }
 
+func TestKafkaExporter_ComponentStatus(t *testing.T) {
+
+	t.Run("when status is OK", func(t *testing.T) {
+		statusChan := make(chan *componentstatus.Event, 3)
+		reporter := &testStatusReporter{statusChan: statusChan}
+
+		config := createDefaultConfig().(*Config)
+
+		exp, fakeCluster := newKgoMockLogsExporter(t, *config, reporter, config.Logs.Topic)
+		t.Cleanup(func() { fakeCluster.Close() })
+
+		logs := testdata.GenerateLogs(1)
+		require.NoError(t, exp.exportData(t.Context(), logs))
+
+		select {
+		case event := <-statusChan:
+			assert.NoError(t, event.Err())
+			assert.Equal(t, componentstatus.StatusOK, event.Status())
+		default:
+			require.Fail(t, "successful export should report StatusOK")
+		}
+	})
+
+	t.Run("when status is RecoverablError", func(t *testing.T) {
+		statusChan := make(chan *componentstatus.Event, 2)
+		reporter := &testStatusReporter{statusChan: statusChan}
+
+		config := createDefaultConfig().(*Config)
+
+		exp, fakeCluster := newKgoMockLogsExporter(t, *config, reporter, config.Logs.Topic)
+		fakeCluster.Close()
+
+		logs := testdata.GenerateLogs(1)
+
+		ctx, ctxCancel := context.WithCancel(t.Context())
+		go func() {
+			exp.exportData(ctx, logs)
+		}()
+
+		event := <-statusChan
+		assert.Error(t, event.Err())
+		assert.Equal(t, componentstatus.StatusRecoverableError, event.Status())
+		ctxCancel()
+	})
+}
+
+type testStatusReporter struct {
+	statusChan chan *componentstatus.Event
+}
+
+func (tsr *testStatusReporter) Report(event *componentstatus.Event) {
+	tsr.statusChan <- event
+}
+
+func (tsr *testStatusReporter) GetExtensions() map[component.ID]component.Component {
+	return make(map[component.ID]component.Component)
+}
+
 type extensionsHost map[component.ID]component.Component
 
 func (m extensionsHost) GetExtensions() map[component.ID]component.Component {
@@ -1283,14 +1342,13 @@ func newKgoMockProfilesExporter(t *testing.T, cfg Config, host component.Host, t
 func configureExporter[T any](tb testing.TB,
 	exp *kafkaExporter[T], cfg Config, host component.Host, topics ...string,
 ) *kfake.Cluster {
-	exp.host = host
-
 	cluster, kcfg := kafkatest.NewCluster(tb, kfake.SeedTopics(1, topics...))
 
 	// Create a kgo.Client using the broker addresses from the fake cluster.
 	kgoClientOpts := []kgo.Opt{
 		kgo.SeedBrokers(kcfg.Brokers...),
 		kgo.ClientID(cfg.ClientID),
+		kgo.WithHooks(kafkaclient.NewStatusReporter(host)),
 	}
 
 	client, err := kafka.NewFranzSyncProducer(tb.Context(), host, kcfg,

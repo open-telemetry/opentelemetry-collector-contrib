@@ -20,17 +20,17 @@ import (
 )
 
 var (
-	_ kgo.HookBrokerConnect    = (*statusReporter)(nil)
-	_ kgo.HookBrokerDisconnect = (*statusReporter)(nil)
+	_ kgo.HookBrokerConnect    = (*StatusReporter)(nil)
+	_ kgo.HookBrokerDisconnect = (*StatusReporter)(nil)
 )
 
-type statusReporter struct {
+type StatusReporter struct {
 	host        component.Host
 	connections int
 	mu          sync.Mutex
 }
 
-func (s *statusReporter) OnBrokerConnect(_ kgo.BrokerMetadata, _ time.Duration, _ net.Conn, err error) {
+func (s *StatusReporter) OnBrokerConnect(_ kgo.BrokerMetadata, _ time.Duration, _ net.Conn, err error) {
 	var openConnections int
 	s.mu.Lock()
 	if err == nil {
@@ -48,7 +48,7 @@ func (s *statusReporter) OnBrokerConnect(_ kgo.BrokerMetadata, _ time.Duration, 
 	}
 }
 
-func (s *statusReporter) OnBrokerDisconnect(_ kgo.BrokerMetadata, _ net.Conn) {
+func (s *StatusReporter) OnBrokerDisconnect(_ kgo.BrokerMetadata, _ net.Conn) {
 	s.mu.Lock()
 	if s.connections > 0 {
 		s.connections--
@@ -56,8 +56,8 @@ func (s *statusReporter) OnBrokerDisconnect(_ kgo.BrokerMetadata, _ net.Conn) {
 	s.mu.Unlock()
 }
 
-func NewStatusReporter(host component.Host) *statusReporter {
-	return &statusReporter{host: host, connections: 0}
+func NewStatusReporter(host component.Host) *StatusReporter {
+	return &StatusReporter{host: host, connections: 0}
 }
 
 // MessageTooLargeError wraps a MessageTooLarge Kafka error with the actual
@@ -162,6 +162,7 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, records []*kgo.Recor
 		} else {
 			err = fmt.Errorf("error exporting to topic %q: %w", r.Record.Topic, r.Err)
 		}
+		// check if its defined as a non-retriable error by franzgo
 		kgoErr := &kerr.Error{}
 		if errors.As(r.Err, &kgoErr) && !kgoErr.Retriable {
 			err = consumererror.NewPermanent(err)

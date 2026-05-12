@@ -60,7 +60,6 @@ type kafkaExporter[T any] struct {
 	set          exporter.Settings
 	tb           *metadata.TelemetryBuilder
 	logger       *zap.Logger
-	host         component.Host
 	newMessenger func(host component.Host) (messenger[T], error)
 	messenger    messenger[T]
 	producer     *kafkaclient.FranzSyncProducer
@@ -86,7 +85,6 @@ func newKafkaExporter[T any](
 }
 
 func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err error) {
-	e.host = host
 
 	tb, err := metadata.NewTelemetryBuilder(e.set.TelemetrySettings)
 	if err != nil {
@@ -123,7 +121,7 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		e.cfg.IncludeMetadataKeys,
 		e.cfg.RecordHeaders,
 		e.cfg.Producer.MaxMessageBytes,
-		e.host,
+		host,
 		clientCancel,
 	)
 	return nil
