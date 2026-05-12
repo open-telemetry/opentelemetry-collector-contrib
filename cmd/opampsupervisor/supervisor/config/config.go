@@ -82,7 +82,7 @@ func Load(configFile string) (Supervisor, error) {
 	return cfg, nil
 }
 
-func (s Supervisor) Validate() error {
+func (Supervisor) Validate() error {
 	return nil
 }
 
