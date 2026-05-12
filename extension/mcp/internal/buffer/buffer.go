@@ -2,7 +2,7 @@
 // Copyright 2025 Austin Parker
 // SPDX-License-Identifier: Apache-2.0
 
-package buffer // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/mcp/internal/mcp/buffer"
+package buffer // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/mcp/internal/buffer"
 
 import (
 	"sync"
