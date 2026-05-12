@@ -74,19 +74,28 @@ func (p *blobEventHandler) processContainer(ctx context.Context, containerName s
 	}
 
 	for _, blobName := range blobs {
-		if ctx.Err() != nil {
-			return
-		}
+		p.processBlob(ctx, containerName, blobName, consume)
+	}
+}
 
-		blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
-		if err != nil {
-			p.logger.Error("failed to read blob", zap.String("container", containerName), zap.String("blob", blobName), zap.Error(err))
-			continue
-		}
+func (p *blobEventHandler) processBlob(ctx context.Context, containerName, blobName string, consume func(context.Context, []byte) error) {
+	if ctx.Err() != nil {
+		return
+	}
 
-		if err := consume(ctx, blobData.Bytes()); err != nil {
-			p.logger.Error("failed to consume blob data", zap.String("container", containerName), zap.String("blob", blobName), zap.Error(err))
-		}
+	blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
+	if err != nil {
+		p.logger.Error("failed to read blob", zap.String("container", containerName), zap.String("blob", blobName), zap.Error(err))
+		return
+	}
+
+	if err := consume(ctx, blobData.Bytes()); err != nil {
+		p.logger.Error("failed to consume blob data", zap.String("container", containerName), zap.String("blob", blobName), zap.Error(err))
+		return
+	}
+
+	if err := p.blobClient.deleteBlob(ctx, containerName, blobName); err != nil {
+		p.logger.Error("failed to delete blob", zap.String("container", containerName), zap.String("blob", blobName), zap.Error(err))
 	}
 }
 

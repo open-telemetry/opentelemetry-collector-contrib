@@ -5,6 +5,8 @@ package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -54,6 +56,7 @@ func TestBlobEventHandler_ProcessContainers(t *testing.T) {
 	blobClient.On("listBlobs", mock.Anything, logsContainerName).Return([]string{"log1.json", "log2.json"}, nil)
 	blobClient.On("listBlobs", mock.Anything, tracesContainerName).Return([]string{"trace1.json"}, nil)
 	blobClient.On("readBlob", mock.Anything, mock.Anything, mock.Anything).Return(bytes.NewBufferString("{}"), nil)
+	blobClient.On("deleteBlob", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	handler := getBlobEventHandler(t, blobClient)
 
@@ -67,6 +70,62 @@ func TestBlobEventHandler_ProcessContainers(t *testing.T) {
 	logsConsumer.AssertNumberOfCalls(t, "consumeLogsJSON", 2)
 	tracesConsumer.AssertNumberOfCalls(t, "consumeTracesJSON", 1)
 	blobClient.AssertNumberOfCalls(t, "readBlob", 3)
+	blobClient.AssertNumberOfCalls(t, "deleteBlob", 3)
+}
+
+func TestBlobEventHandler_ProcessBlob_DeletesAfterSuccessfulConsume(t *testing.T) {
+	blobClient := newMockBlobClient()
+	handler := getBlobEventHandler(t, blobClient)
+	handler.setLogsDataConsumer(newMockLogsDataConsumer())
+
+	handler.processBlob(t.Context(), logsContainerName, "log1.json", func(_ context.Context, _ []byte) error {
+		return nil
+	})
+
+	blobClient.AssertCalled(t, "readBlob", mock.Anything, logsContainerName, "log1.json")
+	blobClient.AssertCalled(t, "deleteBlob", mock.Anything, logsContainerName, "log1.json")
+}
+
+func TestBlobEventHandler_ProcessBlob_DoesNotDeleteOnReadError(t *testing.T) {
+	blobClient := &mockBlobClient{}
+	blobClient.On("readBlob", mock.Anything, mock.Anything, mock.Anything).Return((*bytes.Buffer)(nil), errors.New("read failed"))
+
+	handler := getBlobEventHandler(t, blobClient)
+	handler.setLogsDataConsumer(newMockLogsDataConsumer())
+
+	handler.processBlob(t.Context(), logsContainerName, "log1.json", func(_ context.Context, _ []byte) error {
+		return nil
+	})
+
+	blobClient.AssertCalled(t, "readBlob", mock.Anything, logsContainerName, "log1.json")
+	blobClient.AssertNotCalled(t, "deleteBlob", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestBlobEventHandler_ProcessBlob_DoesNotDeleteOnConsumeError(t *testing.T) {
+	blobClient := newMockBlobClient()
+	handler := getBlobEventHandler(t, blobClient)
+
+	handler.processBlob(t.Context(), logsContainerName, "log1.json", func(_ context.Context, _ []byte) error {
+		return errors.New("consume failed")
+	})
+
+	blobClient.AssertCalled(t, "readBlob", mock.Anything, logsContainerName, "log1.json")
+	blobClient.AssertNotCalled(t, "deleteBlob", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestBlobEventHandler_ProcessBlob_DoesNotDeleteOnCancelledContext(t *testing.T) {
+	blobClient := newMockBlobClient()
+	handler := getBlobEventHandler(t, blobClient)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	handler.processBlob(ctx, logsContainerName, "log1.json", func(_ context.Context, _ []byte) error {
+		return nil
+	})
+
+	blobClient.AssertNotCalled(t, "readBlob", mock.Anything, mock.Anything, mock.Anything)
+	blobClient.AssertNotCalled(t, "deleteBlob", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func TestBlobEventHandler_ProcessContainersWithNoConsumers(t *testing.T) {
