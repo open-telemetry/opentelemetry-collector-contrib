@@ -665,7 +665,7 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 // so that spans with different tracestate produce distinct metrics.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, dimensions dimensionList, optionalDims dimensionList, resourceOrEventAttrs pcommon.Map, isAdjusted bool) metrics.Key {
+func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, dimensions, optionalDims dimensionList, resourceOrEventAttrs pcommon.Map, isAdjusted bool) metrics.Key {
 	p.keyBuf.Reset()
 
 	if !slices.Contains(p.config.ExcludeDimensions, serviceNameKey) {
@@ -687,10 +687,10 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, dimensions
 		}
 	}
 
-	matchDimensions(dimensions, span, resourceOrEventAttrs, func(n string, v pcommon.Value) {
+	matchDimensions(dimensions, span, resourceOrEventAttrs, func(_ string, v pcommon.Value) {
 		concatDimensionValue(p.keyBuf, v.AsString(), true)
 	})
-	matchDimensions(optionalDims, span, resourceOrEventAttrs, func(n string, v pcommon.Value) {
+	matchDimensions(optionalDims, span, resourceOrEventAttrs, func(_ string, v pcommon.Value) {
 		concatDimensionValue(p.keyBuf, v.AsString(), true)
 	})
 
