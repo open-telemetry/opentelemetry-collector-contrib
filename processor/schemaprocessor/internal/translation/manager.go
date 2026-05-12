@@ -32,6 +32,7 @@ type Manager interface {
 type manager struct {
 	log              *zap.Logger
 	telemetryBuilder *metadata.TelemetryBuilder
+	migrationMap     map[string]*Version // target schema URL → copyFromVersion
 	cooldown         time.Duration
 	limit            int
 
@@ -45,7 +46,7 @@ var _ Manager = (*manager)(nil)
 
 // NewManager creates a manager that will allow for management
 // of schema
-func NewManager(targetSchemaURLS []string, log *zap.Logger, cooldown time.Duration, limit int, telemetryBuilder *metadata.TelemetryBuilder, providers ...Provider) (Manager, error) {
+func NewManager(targetSchemaURLS []string, log *zap.Logger, cooldown time.Duration, limit int, telemetryBuilder *metadata.TelemetryBuilder, migrationMap map[string]*Version, providers ...Provider) (Manager, error) {
 	if log == nil {
 		return nil, fmt.Errorf("logger: %w", errNilValueProvided)
 	}
@@ -62,6 +63,7 @@ func NewManager(targetSchemaURLS []string, log *zap.Logger, cooldown time.Durati
 	m := &manager{
 		log:              log,
 		telemetryBuilder: telemetryBuilder,
+		migrationMap:     migrationMap,
 		cooldown:         cooldown,
 		limit:            limit,
 		match:            match,
@@ -126,13 +128,16 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) (Tra
 			// try the next provider
 			continue
 		}
+		targetSchemaURL := joinSchemaFamilyAndVersion(family, targetTranslation)
+		copyFromVersion := m.migrationMap[targetSchemaURL]
 		t, err := newTranslator(
 			m.log.Named("translator").With(
 				zap.String("family", family),
 				zap.Stringer("target", targetTranslation),
 			),
-			joinSchemaFamilyAndVersion(family, targetTranslation),
+			targetSchemaURL,
 			content,
+			copyFromVersion,
 		)
 		if err != nil {
 			m.log.Error("Failed to create translator", zap.Error(err))

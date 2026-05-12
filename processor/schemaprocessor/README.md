@@ -17,7 +17,81 @@ On a match, the processor will fetch the schema translation file (if not cached)
 required to export as the target semantic convention version.
 
 Furthermore, it is also possible for organisations and vendors to publish their own semantic conventions and be used by this processor,
-be sure to follow [schema overview](https://opentelemetry.io/docs/reference/specification/schemas/overview/) for all the details.
+be sure to follow [schema overview](https://opentelemetry.io/docs/specs/otel/schemas/) for all the details.
+
+For a practical guide on how to use the processor, including migration workflows and monitoring, see the [Operators Guide](./GUIDE.md).
+
+## Configuration
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `targets` | `[]string` | Yes | Schema URLs to translate signals to. One per schema family. |
+| `prefetch` | `[]string` | No | Schema URLs to download and cache at startup. |
+| `migration` | `[]object` | No | Migration entries that preserve old attributes during renames. |
+| `migration[].target` | `string` | Yes | Must match one of the configured `targets` exactly. |
+| `migration[].from` | `string` | Yes | The schema version being migrated away from. Must be in the same family as `target`. |
+
+## Migration
+
+By default, the processor performs hard renames: when an attribute is migrated, the old name is removed and the new name is written. This can be disruptive during active migrations because queries, dashboards, and alerts referencing old attribute names silently stop matching.
+
+Adding a `migration` section to the config changes this behavior: when an attribute is renamed, both the old and new attribute names are written to the signal. This gives operators a window to update their queries, dashboards, and alerts before committing to the new names.
+
+If both the old and new attribute already exist on an incoming signal, neither is overwritten.
+
+### Scoping with `from`
+
+Each migration entry specifies a `target` (which must match one of the configured targets exactly) and a `from` version. Only renames between the `from` version and the target version are affected — all other renames are applied normally. This works for both upgrades (`from` < target) and downgrades (`from` > target).
+
+The `from` URL must be in the same schema family as the `target`. Each target can have at most one migration entry. Targets without a migration entry are unaffected and apply hard renames as normal.
+
+### Workflow
+
+1. Update the target to the desired version
+2. Add a `migration` section with `from` set to the version you are migrating away from
+3. Deploy the config change — signals will now have both old and new attribute names
+4. Update queries, dashboards, and alerts to reference the new attribute names
+5. Remove the `migration` section and redeploy
+
+### Examples
+
+**Upgrade** (migrating from 1.13 to 1.14):
+```yaml
+processors:
+  schema:
+    targets:
+      - https://opentelemetry.io/schemas/1.14.0
+    migration:
+      - target: https://opentelemetry.io/schemas/1.14.0
+        from: https://opentelemetry.io/schemas/1.13.0
+```
+
+**Downgrade** (migrating from 1.20 to 1.19):
+```yaml
+processors:
+  schema:
+    targets:
+      - https://opentelemetry.io/schemas/1.19.0
+    migration:
+      - target: https://opentelemetry.io/schemas/1.19.0
+        from: https://opentelemetry.io/schemas/1.20.0
+```
+
+**Multiple schema families:**
+```yaml
+processors:
+  schema:
+    targets:
+      - https://opentelemetry.io/schemas/1.14.0
+      - https://example.com/schemas/2.0.0
+    migration:
+      - target: https://opentelemetry.io/schemas/1.14.0
+        from: https://opentelemetry.io/schemas/1.13.0
+      - target: https://example.com/schemas/2.0.0
+        from: https://example.com/schemas/1.9.0
+```
+
+> **Note:** While `migration` is active, the number of attributes per signal increases for renamed attributes. Backends sensitive to high cardinality or attribute count may see increased storage or cost. Setting `from` limits the scope to only the renames between two versions.
 
 ## Caching Schema Translation Files
 
@@ -36,7 +110,7 @@ return an error immediately.
 
 ## Schema Formats
 
-A [schema URL](https://opentelemetry.io/docs/reference/specification/schemas/overview/#schema-url) is made up in two parts, _Schema Family_ and _Schema Version_, the schema URL is broken down like so:
+A [schema URL](https://opentelemetry.io/docs/specs/otel/schemas/#schema-url) is made up in two parts, _Schema Family_ and _Schema Version_, the schema URL is broken down like so:
 
 ```text
 |                       Schema URL                           |
@@ -64,6 +138,10 @@ processors:
     targets:
       - https://opentelemetry.io/schemas/1.6.1
       - http://example.com/telemetry/schemas/1.0.1
+    # optional: preserve original attributes for renames between from and target
+    migration:
+      - target: https://opentelemetry.io/schemas/1.6.1
+        from: https://opentelemetry.io/schemas/1.5.0
 ```
 
 For more complete examples, please refer to [config.yml](./testdata/config.yml).

@@ -50,6 +50,7 @@ func TestRequestTranslation(t *testing.T) {
 		zaptest.NewLogger(t),
 		5*time.Minute, 5,
 		telemetryBuilder,
+		nil,
 		NewHTTPProvider(s.Client()),
 	)
 	require.NoError(t, err, "Must not error when created manager")
@@ -119,6 +120,7 @@ versions:
 		zaptest.NewLogger(t),
 		5*time.Minute, 5,
 		telemetryBuilder,
+		nil,
 		NewHTTPProvider(s.Client()),
 	)
 	require.NoError(t, err)
@@ -163,6 +165,7 @@ func TestManagerError(t *testing.T) {
 		zaptest.NewLogger(t),
 		5*time.Minute, 5,
 		telemetryBuilder,
+		nil,
 		&errorProvider{},
 	)
 	require.NoError(t, err, "Must not error when created manager")

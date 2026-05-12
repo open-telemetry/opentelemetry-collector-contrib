@@ -7,12 +7,15 @@ import (
 	"cmp"
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
@@ -25,14 +28,26 @@ type schemaProcessor struct {
 
 	log *zap.Logger
 
-	manager          translation.Manager
-	telemetryBuilder *metadata.TelemetryBuilder
+	manager           translation.Manager
+	telemetryBuilder  *metadata.TelemetryBuilder
+	migrationFromURLs map[string]string // target schema URL → migration from URL (for metrics)
 }
 
 func newSchemaProcessor(_ context.Context, conf component.Config, set processor.Settings) (*schemaProcessor, error) {
 	cfg, ok := conf.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration provided")
+	}
+
+	migrationMap := make(map[string]*translation.Version)
+	migrationFromURLs := make(map[string]string)
+	for _, entry := range cfg.Migration {
+		_, fromVersion, err := translation.GetFamilyAndVersion(entry.From)
+		if err != nil {
+			return nil, fmt.Errorf("migration.from: %w", err)
+		}
+		migrationMap[entry.Target] = fromVersion
+		migrationFromURLs[entry.Target] = entry.From
 	}
 
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
@@ -46,17 +61,30 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 		cfg.CacheCooldown,
 		cfg.CacheRetryLimit,
 		telemetryBuilder,
+		migrationMap,
 	)
 	if err != nil {
 		return nil, err
 	}
 	return &schemaProcessor{
-		config:           cfg,
-		telemetry:        set.TelemetrySettings,
-		log:              set.Logger,
-		manager:          m,
-		telemetryBuilder: telemetryBuilder,
+		config:            cfg,
+		telemetry:         set.TelemetrySettings,
+		log:               set.Logger,
+		manager:           m,
+		telemetryBuilder:  telemetryBuilder,
+		migrationFromURLs: migrationFromURLs,
 	}, nil
+}
+
+func (t schemaProcessor) recordTranslation(ctx context.Context, fromSchemaURL, toSchemaURL string) {
+	attrs := []attribute.KeyValue{
+		attribute.String("from_schema_url", fromSchemaURL),
+		attribute.String("to_schema_url", toSchemaURL),
+	}
+	if migrationFrom, ok := t.migrationFromURLs[toSchemaURL]; ok {
+		attrs = append(attrs, attribute.String("migration_from_schema_url", migrationFrom))
+	}
+	t.telemetryBuilder.ProcessorSchemaTranslated.Add(ctx, 1, metric.WithAttributes(attrs...))
 }
 
 func (t schemaProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
@@ -78,6 +106,7 @@ func (t schemaProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 				t.telemetryBuilder.ProcessorSchemaResourceFailed.Add(ctx, 1)
 				return ld, err
 			}
+			t.recordTranslation(ctx, resourceSchemaURL, tr.TargetSchemaURL())
 		}
 		for ss := 0; ss < rLogs.ScopeLogs().Len(); ss++ {
 			logs := rLogs.ScopeLogs().At(ss)
@@ -127,6 +156,7 @@ func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 				t.telemetryBuilder.ProcessorSchemaResourceFailed.Add(ctx, 1)
 				return md, err
 			}
+			t.recordTranslation(ctx, resourceSchemaURL, tr.TargetSchemaURL())
 		}
 		for sm := 0; sm < rMetric.ScopeMetrics().Len(); sm++ {
 			metric := rMetric.ScopeMetrics().At(sm)
@@ -176,6 +206,7 @@ func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 				t.telemetryBuilder.ProcessorSchemaResourceFailed.Add(ctx, 1)
 				return td, err
 			}
+			t.recordTranslation(ctx, resourceSchemaURL, tr.TargetSchemaURL())
 		}
 		for ss := 0; ss < rTrace.ScopeSpans().Len(); ss++ {
 			span := rTrace.ScopeSpans().At(ss)
@@ -208,6 +239,10 @@ func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 
 // start will add HTTP provider to the manager and prefetch schemas
 func (t *schemaProcessor) start(ctx context.Context, host component.Host) error {
+	for _, entry := range t.config.Migration {
+		t.log.Warn("migration is enabled: attribute renames will preserve original attributes alongside renamed ones; this is a temporary migration aid",
+			zap.String("target", entry.Target), zap.String("from", entry.From))
+	}
 	client, err := t.config.ToClient(ctx, host.GetExtensions(), t.telemetry)
 	if err != nil {
 		return err
