@@ -8,8 +8,10 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"sort"
 	"sync"
 	"testing"
@@ -28,6 +30,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
+	"golang.org/x/oauth2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
@@ -652,6 +655,101 @@ func TestNewFranzClient_And_Admin(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestConfigureKgoKerberos(t *testing.T) {
+	for name, tc := range map[string]struct {
+		cfg         configkafka.KerberosConfig
+		wantErrIs   error
+		wantErrText string
+	}{
+		"password_auth": {
+			cfg: configkafka.KerberosConfig{
+				ServiceName: "kafka",
+				Realm:       "EXAMPLE.COM",
+				Username:    "user",
+				Password:    "pass",
+			},
+		},
+		"disable_fast_negotiation": {
+			cfg: configkafka.KerberosConfig{
+				ServiceName:     "kafka",
+				Username:        "user",
+				Password:        "pass",
+				DisablePAFXFAST: true,
+			},
+		},
+		"bad_config_path": {
+			cfg: configkafka.KerberosConfig{
+				ServiceName: "kafka",
+				ConfigPath:  filepath.Join("nonexistent", "krb5.conf"),
+			},
+			wantErrText: "configuration file could not be opened",
+		},
+		"bad_keytab_path": {
+			cfg: configkafka.KerberosConfig{
+				ServiceName: "kafka",
+				Username:    "user",
+				KeyTabPath:  filepath.Join("nonexistent", "krb5.keytab"),
+			},
+			wantErrIs: fs.ErrNotExist,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			opt, err := configureKgoKerberos(&tc.cfg)
+			if tc.wantErrIs != nil {
+				require.ErrorIs(t, err, tc.wantErrIs)
+				return
+			}
+			if tc.wantErrText != "" {
+				require.ErrorContains(t, err, tc.wantErrText)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, opt)
+		})
+	}
+}
+
+func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER(t *testing.T) {
+	opt, err := configureKgoSASL(&configkafka.SASLConfig{
+		Mechanism: AWSMSKIAMOAUTHBEARER,
+		AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
+	}, componenttest.NewNopHost())
+	require.NoError(t, err)
+	require.NotNil(t, opt)
+}
+
+func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
+	extID := component.MustNewID("oauth2client")
+
+	t.Run("missing_extension", func(t *testing.T) {
+		_, err := configureKgoSASL(&configkafka.SASLConfig{
+			Mechanism:              OAUTHBEARER,
+			OAuthBearerTokenSource: extID,
+		}, componenttest.NewNopHost())
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "is not configured")
+	})
+
+	t.Run("present_extension", func(t *testing.T) {
+		host := &mockHost{extensions: map[component.ID]component.Component{
+			extID: &mockTokenSource{token: "tok"},
+		}}
+		opt, err := configureKgoSASL(&configkafka.SASLConfig{
+			Mechanism:              OAUTHBEARER,
+			OAuthBearerTokenSource: extID,
+		}, host)
+		require.NoError(t, err)
+		require.NotNil(t, opt)
+	})
+}
+
+func TestConfigureKgoSASL_UnsupportedMechanism(t *testing.T) {
+	_, err := configureKgoSASL(&configkafka.SASLConfig{
+		Mechanism: "BOGUS",
+	}, componenttest.NewNopHost())
+	require.ErrorContains(t, err, "unsupported SASL mechanism")
+}
+
 // mockHost is a minimal component.Host that returns a fixed extension map.
 type mockHost struct {
 	extensions map[component.ID]component.Component
@@ -664,6 +762,16 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 // nopComponent is a component.Component that does not implement GroupBalancer.
 type nopComponent struct {
 	extension.Extension
+}
+
+// mockTokenSource is a contextTokenSource extension used to test OAUTHBEARER.
+type mockTokenSource struct {
+	extension.Extension
+	token string
+}
+
+func (m *mockTokenSource) Token(context.Context) (*oauth2.Token, error) {
+	return &oauth2.Token{AccessToken: m.token}, nil
 }
 
 // mockGroupBalancer is a no-op kgo.GroupBalancer used in tests.
