@@ -26,7 +26,7 @@ $defs:
         description: 'ReportsHealth enables the OpAMP ReportsHealth Capability. (default: true)'
         type: boolean
       reports_heartbeat:
-        description: 'ReportsHeartbeat enables the OpAMP ReportsHeartbeat Capability. When enabled, the server can adjust the agent''s heartbeat interval via ConnectionSettingsOffers. (default: true)'
+        description: 'ReportsHeartbeat enables the OpAMP ReportsHeartbeat Capability, allowing the server to adjust the agent''s heartbeat interval via ConnectionSettingsOffers. Only takes effect when the extension.opampextension.HeartbeatIntervalNegotiation feature gate is also enabled. (default: true)'
         type: boolean
   op_amp_server:
     description: OpAMPServer contains the OpAMP transport configuration.

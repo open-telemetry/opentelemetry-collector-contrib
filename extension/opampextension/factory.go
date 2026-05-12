@@ -9,8 +9,31 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension/internal/metadata"
+)
+
+const (
+	remoteRestartsFeatureGateName            = "extension.opampextension.RemoteRestarts"
+	heartbeatIntervalNegotiationGateName = "extension.opampextension.HeartbeatIntervalNegotiation"
+)
+
+// RemoteRestartsFeatureGate is the feature gate that controls the remote restart capability for the OpAMP client.
+// HeartbeatIntervalNegotiationFeatureGate is the feature gate that controls the default value of reports_heartbeat.
+var (
+	RemoteRestartsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		remoteRestartsFeatureGateName,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, the OpAMP extension supports restart commands from the OpAMP server through the `CommandType_Restart` command."),
+		featuregate.WithRegisterFromVersion("v0.145.0"),
+	)
+	HeartbeatIntervalNegotiationFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		heartbeatIntervalNegotiationGateName,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, the OpAMP extension defaults `reports_heartbeat` to true."),
+		featuregate.WithRegisterFromVersion("v0.127.0"),
+	)
 )
 
 func NewFactory() extension.Factory {
@@ -30,7 +53,7 @@ func createDefaultConfig() component.Config {
 			ReportsHealth:              true,
 			ReportsAvailableComponents: true,
 			AcceptsRestartCommand:      false,
-			ReportsHeartbeat:           true,
+			ReportsHeartbeat:           HeartbeatIntervalNegotiationFeatureGate.IsEnabled(),
 		},
 		PPIDPollInterval: 5 * time.Second,
 	}

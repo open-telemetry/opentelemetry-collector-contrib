@@ -77,12 +77,12 @@ func TestReportsHeartbeatCapabilityGating(t *testing.T) {
 		wantBitSet       bool
 	}{
 		{
-			name:             "enabled (default)",
+			name:             "enabled but gate disabled",
 			reportsHeartbeat: true,
-			wantBitSet:       true,
+			wantBitSet:       false,
 		},
 		{
-			name:             "disabled",
+			name:             "disabled (default)",
 			reportsHeartbeat: false,
 			wantBitSet:       false,
 		},

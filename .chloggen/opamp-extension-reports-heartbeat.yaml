@@ -7,7 +7,7 @@ change_type: enhancement
 component: extension/opamp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add support for the OpAMP ReportsHeartbeat capability, allowing the server to adjust the agent's heartbeat interval via ConnectionSettingsOffers.
+note: Add reports_heartbeat capability to allow the OpAMP server to configure the agent's heartbeat interval
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48042]
@@ -16,11 +16,13 @@ issues: [48042]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  When enabled (default: true), the agent advertises the ReportsHeartbeat capability to the
-  OpAMP server. This allows the server to negotiate a different heartbeat interval by setting
-  heartbeat_interval_seconds in OpAMPConnectionSettings. The opamp-go client library handles
-  the interval adjustment automatically. This aligns the extension with the supervisor, which
-  already supports this capability.
+  Adds the `reports_heartbeat` config option (default: true) and the
+  `extension.opampextension.HeartbeatIntervalNegotiation` feature gate (alpha). When both
+  `reports_heartbeat` is true and the feature gate is enabled, the agent advertises the
+  OpAMP ReportsHeartbeat capability. This allows the server to negotiate a different
+  heartbeat interval by setting heartbeat_interval_seconds in OpAMPConnectionSettings.
+  Without the feature gate enabled, the agent uses a hardcoded 30-second heartbeat interval
+  that the server cannot adjust, regardless of the config setting.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

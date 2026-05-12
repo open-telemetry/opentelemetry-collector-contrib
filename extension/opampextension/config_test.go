@@ -403,17 +403,17 @@ func TestCapabilities_toAgentCapabilities(t *testing.T) {
 				ReportsAvailableComponents: true,
 				ReportsHeartbeat:           true,
 			},
-			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus | protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig | protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth | protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents | protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat,
+			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus | protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig | protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth | protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents,
 		},
 		{
-			name: "only heartbeat enabled",
+			name: "heartbeat enabled but gate disabled",
 			fields: fields{
 				ReportsEffectiveConfig:     false,
 				ReportsHealth:              false,
 				ReportsAvailableComponents: false,
 				ReportsHeartbeat:           true,
 			},
-			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus | protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat,
+			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
 		},
 	}
 	for _, tt := range tests {
