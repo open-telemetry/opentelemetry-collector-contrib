@@ -91,7 +91,7 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 			maxReadyWindows:              centralQueueReadyWindowLimit(centralCfg.NumConsumers),
 			telemetry:                    centralTelemetry,
 		})
-		logExporter.centralCodec = newQueuePayloadCodec(centralCfg.PayloadCompression)
+		logExporter.centralCodec = newQueuePayloadCodec(centralCfg.PayloadCompression, cfg.(*Config).PayloadCodec.Zstd)
 	}
 	if cfg.(*Config).LogBatcher.Enabled {
 		logBatcherCfg := cfg.(*Config).LogBatcher
@@ -103,6 +103,7 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 				maxBytes:           logBatcherCfg.MaxBytes,
 				flushInterval:      logBatcherCfg.FlushInterval,
 				payloadCompression: logBatcherCfg.PayloadCompression,
+				zstd:               cfg.(*Config).PayloadCodec.Zstd,
 			},
 			logExporter.consumeBatcherFlush,
 			logExporter.rerouteDrainBatch,

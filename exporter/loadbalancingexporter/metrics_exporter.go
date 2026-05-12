@@ -91,7 +91,7 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 			maxReadyWindows:              centralQueueReadyWindowLimit(centralCfg.NumConsumers),
 			telemetry:                    centralTelemetry,
 		})
-		metricExporter.centralCodec = newQueuePayloadCodec(centralCfg.PayloadCompression)
+		metricExporter.centralCodec = newQueuePayloadCodec(centralCfg.PayloadCompression, cfg.(*Config).PayloadCodec.Zstd)
 	}
 
 	switch cfg.(*Config).RoutingKey {
@@ -118,6 +118,7 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 				flushInterval:            cfg.(*Config).MetricBatcher.FlushInterval,
 				maxRetryBufferMultiplier: cfg.(*Config).MetricBatcher.MaxRetryBufferMultiplier,
 				payloadCompression:       cfg.(*Config).MetricBatcher.PayloadCompression,
+				zstd:                     cfg.(*Config).PayloadCodec.Zstd,
 			},
 			metricExporter.consumeBatch,
 			metricExporter.rerouteDrainBatch,

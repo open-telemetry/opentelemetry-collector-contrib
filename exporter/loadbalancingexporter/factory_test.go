@@ -371,6 +371,19 @@ func TestNewQueuePayloadCodecIfEnabled(t *testing.T) {
 		cfg.QueueSettings.PayloadCompression = QueuePayloadCompressionNone
 		assert.NotNil(t, newQueuePayloadCodecIfEnabled(cfg))
 	})
+
+	t.Run("zstd options are passed to codec", func(t *testing.T) {
+		cfg.QueueSettings.PayloadCompression = QueuePayloadCompressionZstd
+		cfg.PayloadCodec.Zstd = ZstdPayloadCodecConfig{
+			EncoderConcurrency: 1,
+			WindowSize:         2 << 20,
+			LowerEncoderMem:    true,
+		}
+
+		codec := newQueuePayloadCodecIfEnabled(cfg)
+		require.NotNil(t, codec)
+		assert.Equal(t, cfg.PayloadCodec.Zstd, codec.zstd)
+	})
 }
 
 func TestQueueConfigForExportKeepsMemoryQueueWhenRequested(t *testing.T) {

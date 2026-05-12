@@ -28,6 +28,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadatatest"
 )
 
+func TestMetricBatcherPayloadCodecUsesZstdOptions(t *testing.T) {
+	zstd := ZstdPayloadCodecConfig{
+		EncoderConcurrency: 1,
+		WindowSize:         2 << 20,
+		LowerEncoderMem:    true,
+	}
+
+	codec := newMetricBatcherPayloadCodec(QueuePayloadCompressionZstd, zstd)
+	require.NotNil(t, codec)
+	require.Equal(t, zstd, codec.zstd)
+}
+
 func TestMetricBatcherReroutesEndpointLocalFlushFailure(t *testing.T) {
 	ts, tb, telemetry := getTelemetryAssetsWithReader(t)
 	cfg := endpoint2Config()

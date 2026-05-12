@@ -45,6 +45,7 @@ type metricBatcherSettings struct {
 	flushInterval            time.Duration
 	maxRetryBufferMultiplier int
 	payloadCompression       QueuePayloadCompression
+	zstd                     ZstdPayloadCodecConfig
 }
 
 type (
@@ -359,18 +360,18 @@ func newBackendMetricBatcher(
 		drainErr:     drainErr,
 		requests:     make(chan metricBatcherRequest, 16),
 		done:         make(chan struct{}),
-		payloadCodec: newMetricBatcherPayloadCodec(settings.payloadCompression),
+		payloadCodec: newMetricBatcherPayloadCodec(settings.payloadCompression, settings.zstd),
 	}
 
 	go backend.run()
 	return backend
 }
 
-func newMetricBatcherPayloadCodec(compression QueuePayloadCompression) *queuePayloadCodec {
+func newMetricBatcherPayloadCodec(compression QueuePayloadCompression, zstdConfig ...ZstdPayloadCodecConfig) *queuePayloadCodec {
 	if compression == "" || compression == QueuePayloadCompressionNone {
 		return nil
 	}
-	return newQueuePayloadCodec(compression)
+	return newQueuePayloadCodec(compression, zstdConfig...)
 }
 
 func (b *backendMetricBatcher) stopAndFlush(ctx context.Context, reason string) error {

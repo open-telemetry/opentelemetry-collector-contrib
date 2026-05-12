@@ -39,6 +39,7 @@ type logBatcherSettings struct {
 	maxBytes           int
 	flushInterval      time.Duration
 	payloadCompression QueuePayloadCompression
+	zstd               ZstdPayloadCodecConfig
 }
 
 type (
@@ -331,18 +332,18 @@ func newBackendLogBatcher(
 		telemetry:    telemetry,
 		requests:     make(chan logBatcherRequest, 16),
 		done:         make(chan struct{}),
-		payloadCodec: newLogBatcherPayloadCodec(settings.payloadCompression),
+		payloadCodec: newLogBatcherPayloadCodec(settings.payloadCompression, settings.zstd),
 	}
 
 	go backend.run()
 	return backend
 }
 
-func newLogBatcherPayloadCodec(compression QueuePayloadCompression) *queuePayloadCodec {
+func newLogBatcherPayloadCodec(compression QueuePayloadCompression, zstdConfig ...ZstdPayloadCodecConfig) *queuePayloadCodec {
 	if compression == "" || compression == QueuePayloadCompressionNone {
 		return nil
 	}
-	return newQueuePayloadCodec(compression)
+	return newQueuePayloadCodec(compression, zstdConfig...)
 }
 
 func (b *backendLogBatcher) stopAndFlush(ctx context.Context, reason string) error {

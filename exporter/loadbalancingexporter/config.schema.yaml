@@ -160,6 +160,26 @@ $defs:
           - none
           - snappy
           - zstd
+  payload_codec_config:
+    type: object
+    properties:
+      zstd:
+        $ref: zstd_payload_codec_config
+  zstd_payload_codec_config:
+    type: object
+    properties:
+      encoder_concurrency:
+        type: integer
+        minimum: 0
+        description: Optional zstd encoder worker limit. Leave unset or 0 for the library default.
+      window_size:
+        type: integer
+        minimum: 1024
+        maximum: 536870912
+        description: Optional zstd encoder window size. Must be a power of two between 1024 and 536870912.
+      lower_encoder_mem:
+        type: boolean
+        description: Enables the zstd lower-memory encoder mode.
   protocol:
     description: Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.
     type: object
@@ -201,6 +221,8 @@ properties:
     $ref: log_routing_config
   metric_batcher:
     $ref: metric_batcher_config
+  payload_codec:
+    $ref: payload_codec_config
   protocol:
     $ref: protocol
   resolver:

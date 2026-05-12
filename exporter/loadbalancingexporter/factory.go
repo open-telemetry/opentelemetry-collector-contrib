@@ -228,7 +228,7 @@ func newQueuePayloadCodecIfEnabled(cfg *Config) *queuePayloadCodec {
 		return nil
 	}
 
-	return newQueuePayloadCodec(cfg.QueueSettings.PayloadCompression)
+	return newQueuePayloadCodec(cfg.QueueSettings.PayloadCompression, cfg.PayloadCodec.Zstd)
 }
 
 func shutdownWithCodec(shutdown component.ShutdownFunc, codec *queuePayloadCodec) component.ShutdownFunc {

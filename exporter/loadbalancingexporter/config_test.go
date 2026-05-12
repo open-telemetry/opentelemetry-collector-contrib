@@ -46,6 +46,86 @@ func TestConfigValidatePayloadCompression(t *testing.T) {
 	require.Error(t, cfg.Validate())
 }
 
+func TestLoadConfigWithZstdPayloadCodecOptions(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	conf := confmap.NewFromStringMap(map[string]any{
+		"protocol": map[string]any{
+			"otlp": map[string]any{
+				"endpoint": "localhost:4317",
+				"tls": map[string]any{
+					"insecure": true,
+				},
+			},
+		},
+		"resolver": map[string]any{
+			"static": map[string]any{
+				"hostnames": []string{"localhost:4317"},
+			},
+		},
+		"payload_codec": map[string]any{
+			"zstd": map[string]any{
+				"encoder_concurrency": 2,
+				"window_size":         2 << 20,
+				"lower_encoder_mem":   true,
+			},
+		},
+	})
+
+	require.NoError(t, conf.Unmarshal(cfg))
+	require.Equal(t, 2, cfg.PayloadCodec.Zstd.EncoderConcurrency)
+	require.Equal(t, 2<<20, cfg.PayloadCodec.Zstd.WindowSize)
+	require.True(t, cfg.PayloadCodec.Zstd.LowerEncoderMem)
+	require.NoError(t, cfg.Validate())
+}
+
+func TestConfigValidateZstdPayloadCodecOptions(t *testing.T) {
+	tests := []struct {
+		name        string
+		zstd        ZstdPayloadCodecConfig
+		expectedErr string
+	}{
+		{
+			name:        "negative concurrency",
+			zstd:        ZstdPayloadCodecConfig{EncoderConcurrency: -1},
+			expectedErr: "payload_codec.zstd.encoder_concurrency",
+		},
+		{
+			name:        "too small window",
+			zstd:        ZstdPayloadCodecConfig{WindowSize: 512},
+			expectedErr: "payload_codec.zstd.window_size",
+		},
+		{
+			name:        "non power of two window",
+			zstd:        ZstdPayloadCodecConfig{WindowSize: 3 << 20},
+			expectedErr: "payload_codec.zstd.window_size",
+		},
+		{
+			name:        "too large window",
+			zstd:        ZstdPayloadCodecConfig{WindowSize: 1 << 30},
+			expectedErr: "payload_codec.zstd.window_size",
+		},
+		{
+			name:        "valid bounded options",
+			zstd:        ZstdPayloadCodecConfig{EncoderConcurrency: 1, WindowSize: 2 << 20, LowerEncoderMem: true},
+			expectedErr: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.PayloadCodec.Zstd = tt.zstd
+
+			err := cfg.Validate()
+			if tt.expectedErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.ErrorContains(t, err, tt.expectedErr)
+		})
+	}
+}
+
 func TestConfigValidateCompressInMemory(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.QueueSettings.CompressInMemory = true

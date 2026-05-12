@@ -151,6 +151,10 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `payload_compression` compresses log batcher chunks while they are pending in memory. Supported values: `none`, `snappy`, `zstd`. Default: `none`.
 * The `metric_batcher` property enables post-routing metric batching per backend. It is `disabled` by default for backward compatibility.
   * `payload_compression` compresses metric batcher chunks while they are pending in memory. Supported values: `none`, `snappy`, `zstd`. Default: `none`.
+* The `payload_codec` property controls shared payload codec options used by `sending_queue.payload_compression`, `log_batcher.payload_compression`, `metric_batcher.payload_compression`, and `central_queue.payload_compression`.
+  * `zstd.encoder_concurrency` optionally limits zstd encoder workers. Leave unset or `0` for the library default.
+  * `zstd.window_size` optionally sets the zstd encoder window size. It must be a power of two between `1024` and `536870912`.
+  * `zstd.lower_encoder_mem` enables zstd lower-memory encoder mode. Default: `false`.
 * The `central_queue` property enables a single load-balancer queue per exporter instance for logs and metrics. It is `disabled` by default for backward compatibility.
   * `enabled` turns the central compressed queue on or off.
   * `max_compressed_bytes` sets the central queue capacity in compressed OTLP payload bytes and must be greater than zero when enabled.
@@ -198,6 +202,11 @@ exporters:
       max_bytes: 1048576
       flush_interval: 100ms
       payload_compression: zstd
+    payload_codec:
+      zstd:
+        encoder_concurrency: 1
+        window_size: 1048576
+        lower_encoder_mem: false
     central_queue:
       enabled: false
       max_compressed_bytes: 4294967296

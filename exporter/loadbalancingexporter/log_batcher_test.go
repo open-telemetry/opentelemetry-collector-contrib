@@ -416,6 +416,18 @@ func TestCompressedLogBatcherChunkDoesNotRetainUncompressedPayload(t *testing.T)
 	require.Equal(t, logs.LogRecordCount(), decoded.LogRecordCount())
 }
 
+func TestLogBatcherPayloadCodecUsesZstdOptions(t *testing.T) {
+	zstd := ZstdPayloadCodecConfig{
+		EncoderConcurrency: 1,
+		WindowSize:         2 << 20,
+		LowerEncoderMem:    true,
+	}
+
+	codec := newLogBatcherPayloadCodec(QueuePayloadCompressionZstd, zstd)
+	require.NotNil(t, codec)
+	require.Equal(t, zstd, codec.zstd)
+}
+
 func TestCompressedLogBatcherFlushPreservesLogsAndSplitsByMaxRecords(t *testing.T) {
 	ts, _ := getTelemetryAssets(t)
 	var mu sync.Mutex

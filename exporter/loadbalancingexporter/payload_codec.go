@@ -29,6 +29,7 @@ const (
 
 type queuePayloadCodec struct {
 	compression QueuePayloadCompression
+	zstd        ZstdPayloadCodecConfig
 	zstdOnce    sync.Once
 	closeOnce   sync.Once
 	zstdEnc     *zstd.Encoder
@@ -36,8 +37,12 @@ type queuePayloadCodec struct {
 	zstdErr     error
 }
 
-func newQueuePayloadCodec(compression QueuePayloadCompression) *queuePayloadCodec {
-	return &queuePayloadCodec{compression: compression}
+func newQueuePayloadCodec(compression QueuePayloadCompression, zstdConfig ...ZstdPayloadCodecConfig) *queuePayloadCodec {
+	codec := &queuePayloadCodec{compression: compression}
+	if len(zstdConfig) > 0 {
+		codec.zstd = zstdConfig[0]
+	}
+	return codec
 }
 
 func (c *queuePayloadCodec) Encode(payload []byte) ([]byte, error) {
@@ -112,7 +117,7 @@ func (c *queuePayloadCodec) decompress(codecID byte, payload []byte) ([]byte, er
 
 func (c *queuePayloadCodec) initZstd() error {
 	c.zstdOnce.Do(func() {
-		c.zstdEnc, c.zstdErr = zstd.NewWriter(nil)
+		c.zstdEnc, c.zstdErr = zstd.NewWriter(nil, c.zstd.encoderOptions()...)
 		if c.zstdErr != nil {
 			return
 		}
@@ -125,6 +130,20 @@ func (c *queuePayloadCodec) initZstd() error {
 		}
 	})
 	return c.zstdErr
+}
+
+func (c ZstdPayloadCodecConfig) encoderOptions() []zstd.EOption {
+	opts := make([]zstd.EOption, 0, 3)
+	if c.EncoderConcurrency > 0 {
+		opts = append(opts, zstd.WithEncoderConcurrency(c.EncoderConcurrency))
+	}
+	if c.WindowSize > 0 {
+		opts = append(opts, zstd.WithWindowSize(c.WindowSize))
+	}
+	if c.LowerEncoderMem {
+		opts = append(opts, zstd.WithLowerEncoderMem(true))
+	}
+	return opts
 }
 
 func (c *queuePayloadCodec) Close() error {

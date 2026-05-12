@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
+	"github.com/klauspost/compress/zstd"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
@@ -48,6 +49,7 @@ type Config struct {
 	LogBatcher                LogBatcherConfig     `mapstructure:"log_batcher"`
 	LogRouting                LogRoutingConfig     `mapstructure:"log_routing"`
 	MetricBatcher             MetricBatcherConfig  `mapstructure:"metric_batcher"`
+	PayloadCodec              PayloadCodecConfig   `mapstructure:"payload_codec"`
 	EndpointHealth            EndpointHealthConfig `mapstructure:"endpoint_health"`
 
 	Protocol Protocol         `mapstructure:"protocol"`
@@ -128,6 +130,20 @@ type MetricBatcherConfig struct {
 	FlushInterval            time.Duration           `mapstructure:"flush_interval"`
 	MaxRetryBufferMultiplier int                     `mapstructure:"max_retry_buffer_multiplier"`
 	PayloadCompression       QueuePayloadCompression `mapstructure:"payload_compression"`
+}
+
+type PayloadCodecConfig struct {
+	Zstd ZstdPayloadCodecConfig `mapstructure:"zstd"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+type ZstdPayloadCodecConfig struct {
+	EncoderConcurrency int  `mapstructure:"encoder_concurrency"`
+	WindowSize         int  `mapstructure:"window_size"`
+	LowerEncoderMem    bool `mapstructure:"lower_encoder_mem"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 const defaultEndpointHealthQuarantineDuration = 30 * time.Second
@@ -298,6 +314,9 @@ func (cfg *Config) centralQueueByteBatchingEnabled() bool {
 }
 
 func (cfg *Config) Validate() error {
+	if err := cfg.PayloadCodec.Validate(); err != nil {
+		return err
+	}
 	if err := cfg.QueueSettings.Validate(); err != nil {
 		return err
 	}
@@ -323,6 +342,26 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 	return cfg.EndpointHealth.Validate()
+}
+
+func (c PayloadCodecConfig) Validate() error {
+	return c.Zstd.Validate()
+}
+
+func (c ZstdPayloadCodecConfig) Validate() error {
+	if c.EncoderConcurrency < 0 {
+		return errors.New("payload_codec.zstd.encoder_concurrency must be greater than or equal to 0")
+	}
+	if c.WindowSize == 0 {
+		return nil
+	}
+	if c.WindowSize < zstd.MinWindowSize || c.WindowSize > zstd.MaxWindowSize {
+		return fmt.Errorf("payload_codec.zstd.window_size must be a power of two between %d and %d", zstd.MinWindowSize, zstd.MaxWindowSize)
+	}
+	if c.WindowSize&(c.WindowSize-1) != 0 {
+		return fmt.Errorf("payload_codec.zstd.window_size must be a power of two between %d and %d", zstd.MinWindowSize, zstd.MaxWindowSize)
+	}
+	return nil
 }
 
 func (c CentralQueueConfig) Validate() error {

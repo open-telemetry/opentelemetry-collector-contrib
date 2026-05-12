@@ -1,0 +1,10 @@
+change_type: enhancement
+component: exporter/loadbalancing
+note: Add configurable zstd encoder memory controls for load balancing exporter queue payload codecs.
+issues: [70]
+subtext: |-
+  Adds optional `payload_codec.zstd` settings for encoder concurrency, window size,
+  and lower-memory encoding so operators can bound retained zstd working memory
+  while keeping queue, log batcher, metric batcher, and central queue payload
+  compression on zstd.
+change_logs: [user]
