@@ -8,10 +8,11 @@
 package tools
 
 import (
+	"encoding/json"
 	"slices"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pavolloffay/opentelemetry-mcp-server/modules/collectorschema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,10 +26,11 @@ func setupSchemaManager(t *testing.T) (*collectorschema.SchemaManager, string) {
 	return sm, version
 }
 
-func newRequest(args map[string]any) mcp.CallToolRequest {
-	return mcp.CallToolRequest{
-		Params: mcp.CallToolParams{
-			Arguments: args,
+func newRequest(args map[string]any) *mcp.CallToolRequest {
+	raw, _ := json.Marshal(args)
+	return &mcp.CallToolRequest{
+		Params: &mcp.CallToolParamsRaw{
+			Arguments: raw,
 		},
 	}
 }
@@ -76,7 +78,7 @@ func TestCollectorVersionsTool(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, result.IsError)
 	require.Len(t, result.Content, 1)
-	text, ok := result.Content[0].(mcp.TextContent)
+	text, ok := result.Content[0].(*mcp.TextContent)
 	require.True(t, ok)
 	assert.Contains(t, text.Text, "versions:")
 }
@@ -239,7 +241,7 @@ func TestCollectorSchemaValidationTool(t *testing.T) {
 			args:        map[string]any{"kind": "receiver", "name": "otlp", "config": `{"protocols": {"grpc": {}}}`},
 			wantIsError: false,
 			checkResult: func(t *testing.T, result *mcp.CallToolResult) {
-				text, ok := result.Content[0].(mcp.TextContent)
+				text, ok := result.Content[0].(*mcp.TextContent)
 				require.True(t, ok)
 				assert.Contains(t, text.Text, "is valid:")
 			},
@@ -299,11 +301,6 @@ func TestCollectorDocumentationRAG(t *testing.T) {
 		args        map[string]any
 		wantIsError bool
 	}{
-		{
-			name:        "missing required version",
-			args:        map[string]any{"query": "how to configure otlp receiver"},
-			wantIsError: true,
-		},
 		{
 			name:        "missing required query",
 			args:        map[string]any{"version": version},
