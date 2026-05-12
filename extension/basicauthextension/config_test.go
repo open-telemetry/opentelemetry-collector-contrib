@@ -16,6 +16,81 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension/internal/metadata"
 )
 
+func TestClientAuthSettingsValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     ClientAuthSettings
+		wantErr string
+	}{
+		{
+			name: "aws_secrets_manager only is valid",
+			cfg: ClientAuthSettings{
+				AWSSecretsManager: &AWSSecretsManagerSettings{
+					SecretARN: "arn:aws:secretsmanager:us-east-1:123:secret:test",
+				},
+			},
+		},
+		{
+			name: "aws_secrets_manager missing secret_arn",
+			cfg: ClientAuthSettings{
+				AWSSecretsManager: &AWSSecretsManagerSettings{},
+			},
+			wantErr: "aws_secrets_manager.secret_arn is required",
+		},
+		{
+			name: "aws_secrets_manager combined with username",
+			cfg: ClientAuthSettings{
+				Username: "user",
+				AWSSecretsManager: &AWSSecretsManagerSettings{
+					SecretARN: "arn:aws:secretsmanager:us-east-1:123:secret:test",
+				},
+			},
+			wantErr: "aws_secrets_manager cannot be combined with",
+		},
+		{
+			name: "aws_secrets_manager combined with password",
+			cfg: ClientAuthSettings{
+				Password: "pass",
+				AWSSecretsManager: &AWSSecretsManagerSettings{
+					SecretARN: "arn:aws:secretsmanager:us-east-1:123:secret:test",
+				},
+			},
+			wantErr: "aws_secrets_manager cannot be combined with",
+		},
+		{
+			name: "aws_secrets_manager combined with username_file",
+			cfg: ClientAuthSettings{
+				UsernameFile: "/etc/secrets/user",
+				AWSSecretsManager: &AWSSecretsManagerSettings{
+					SecretARN: "arn:aws:secretsmanager:us-east-1:123:secret:test",
+				},
+			},
+			wantErr: "aws_secrets_manager cannot be combined with",
+		},
+		{
+			name: "aws_secrets_manager combined with password_file",
+			cfg: ClientAuthSettings{
+				PasswordFile: "/etc/secrets/pass",
+				AWSSecretsManager: &AWSSecretsManagerSettings{
+					SecretARN: "arn:aws:secretsmanager:us-east-1:123:secret:test",
+				},
+			},
+			wantErr: "aws_secrets_manager cannot be combined with",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 

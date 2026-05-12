@@ -6,6 +6,7 @@ package basicauthextension // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -20,14 +21,20 @@ type secretsManagerClient interface {
 	GetSecretValue(ctx context.Context, params *secretsmanager.GetSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error)
 }
 
+// secretCredentials holds a consistent username/password pair fetched from a single secret.
+// Stored as a single atomic pointer to guarantee HTTP clients always read a matched pair.
+type secretCredentials struct {
+	username string
+	password string
+}
+
 // awsSecretsManagerResolver fetches a JSON secret from AWS Secrets Manager and polls
 // for changes at a configurable interval, updating credentials in place without restarting
 // the collector.
 type awsSecretsManagerResolver struct {
 	cfg        *AWSSecretsManagerSettings
 	client     secretsManagerClient
-	username   atomic.Pointer[string]
-	password   atomic.Pointer[string]
+	creds      atomic.Pointer[secretCredentials]
 	onChange   func()
 	shutdownCh chan struct{}
 	doneCh     chan struct{}
@@ -56,6 +63,9 @@ func (r *awsSecretsManagerResolver) start(ctx context.Context) error {
 }
 
 func (r *awsSecretsManagerResolver) startWithClient(ctx context.Context) error {
+	if r.shutdownCh != nil {
+		return errors.New("already started")
+	}
 	if err := r.fetch(ctx); err != nil {
 		return fmt.Errorf("initial fetch from AWS Secrets Manager failed: %w", err)
 	}
@@ -76,21 +86,34 @@ func (r *awsSecretsManagerResolver) shutdown() error {
 }
 
 func (r *awsSecretsManagerResolver) Username() string {
-	if v := r.username.Load(); v != nil {
-		return *v
+	if c := r.creds.Load(); c != nil {
+		return c.username
 	}
 	return ""
 }
 
 func (r *awsSecretsManagerResolver) Password() string {
-	if v := r.password.Load(); v != nil {
-		return *v
+	if c := r.creds.Load(); c != nil {
+		return c.password
 	}
 	return ""
 }
 
 func (r *awsSecretsManagerResolver) poll(interval time.Duration) {
 	defer close(r.doneCh)
+
+	// cancelCtx lets in-flight AWS calls be interrupted when shutdown is requested,
+	// avoiding a long block waiting for the SDK timeout.
+	// Capture the channel value (not the field) to avoid a race with shutdown()
+	// zeroing r.shutdownCh after doneCh is closed.
+	shutdownCh := r.shutdownCh
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		<-shutdownCh
+		cancel()
+	}()
+
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
@@ -98,7 +121,7 @@ func (r *awsSecretsManagerResolver) poll(interval time.Duration) {
 		case <-r.shutdownCh:
 			return
 		case <-ticker.C:
-			if err := r.fetch(context.Background()); err != nil {
+			if err := r.fetch(ctx); err != nil {
 				r.logger.Warn("failed to refresh credentials from AWS Secrets Manager, keeping last known values",
 					zap.String("secret_arn", r.cfg.SecretARN),
 					zap.Error(err))
@@ -135,16 +158,13 @@ func (r *awsSecretsManagerResolver) fetch(ctx context.Context) error {
 		return fmt.Errorf("key %q not found in secret %q", passwordKey, r.cfg.SecretARN)
 	}
 
-	changed := false
-	if old := r.username.Load(); old == nil || *old != newUsername {
-		r.username.Store(&newUsername)
-		changed = true
+	// Store both credentials atomically so HTTP clients always read a matched pair.
+	old := r.creds.Load()
+	if old != nil && old.username == newUsername && old.password == newPassword {
+		return nil
 	}
-	if old := r.password.Load(); old == nil || *old != newPassword {
-		r.password.Store(&newPassword)
-		changed = true
-	}
-	if changed && r.onChange != nil {
+	r.creds.Store(&secretCredentials{username: newUsername, password: newPassword})
+	if r.onChange != nil {
 		r.onChange()
 	}
 	return nil

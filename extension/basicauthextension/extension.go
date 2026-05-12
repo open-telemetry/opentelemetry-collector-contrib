@@ -246,7 +246,7 @@ func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 			return err
 		}
 		ba.awsSecretsManager = r
-		ba.updateGRPCMetadata()
+		// gRPC metadata is updated by the onChange callback fired during the initial fetch.
 		return nil
 	}
 

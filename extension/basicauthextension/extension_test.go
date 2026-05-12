@@ -296,3 +296,42 @@ func TestBasicAuth_ClientInvalid(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestBasicAuth_ClientAWSSecretsManager(t *testing.T) {
+	mock := newMockClient("awsuser", "awspass")
+
+	ext := newClientAuthExtension(&Config{
+		ClientAuth: &ClientAuthSettings{
+			AWSSecretsManager: &AWSSecretsManagerSettings{
+				SecretARN: "arn:aws:secretsmanager:us-east-1:123:secret:test",
+			},
+		},
+	})
+	// Inject the mock client before Start so we bypass real AWS calls.
+	ext.awsSecretsManager = newAWSSecretsManagerResolver(
+		ext.clientAuth.AWSSecretsManager,
+		ext.logger,
+		ext.updateGRPCMetadata,
+	)
+	ext.awsSecretsManager.client = mock
+	require.NoError(t, ext.awsSecretsManager.startWithClient(t.Context()))
+	// updateGRPCMetadata is called by onChange during startWithClient.
+
+	authCreds := base64.StdEncoding.EncodeToString([]byte("awsuser:awspass"))
+
+	// HTTP round-tripper uses the credentials.
+	rt, err := ext.RoundTripper(&mockRoundTripper{})
+	require.NoError(t, err)
+	resp, err := rt.RoundTrip(&http.Request{Header: http.Header{}})
+	require.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf("Basic %s", authCreds), resp.Header.Get("Authorization"))
+
+	// gRPC credentials use the same credentials.
+	cred, err := ext.PerRPCCredentials()
+	require.NoError(t, err)
+	md, err := cred.GetRequestMetadata(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf("Basic %s", authCreds), md["authorization"])
+
+	require.NoError(t, ext.Shutdown(t.Context()))
+}
