@@ -1,3 +1,14 @@
+$defs:
+  migration_entry:
+    description: MigrationEntry defines a migration for a specific target schema.
+    type: object
+    properties:
+      from:
+        description: From is the schema URL of the version that operators are migrating away from. Must be in the same schema family as Target. Renames between this version and the target are copied (both old and new attribute names are preserved).
+        type: string
+      target:
+        description: Target is the schema URL that this migration applies to. Must match one of the configured targets exactly.
+        type: string
 description: Config defines the user provided values for the Schema Processor
 type: object
 properties:
@@ -8,6 +19,11 @@ properties:
   cache_retry_limit:
     description: CacheRetryLimit is the number of consecutive failed schema fetch attempts allowed before enforcing the cooldown period. Defaults to 5.
     type: integer
+  migration:
+    description: Migration defines migration entries that preserve original attributes alongside renamed ones during schema translation. Each entry specifies a target and the version being migrated from. Only renames between the from version and the target version are copied.
+    type: array
+    items:
+      $ref: migration_entry
   prefetch:
     description: PreCache is a list of schema URLs that are downloaded and cached at the start of the collector runtime in order to avoid fetching data that later on could block processing of signals. (Optional field)
     type: array

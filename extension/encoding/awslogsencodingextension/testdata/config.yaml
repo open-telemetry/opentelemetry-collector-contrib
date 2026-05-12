@@ -8,11 +8,6 @@ aws_logs_encoding/text_vpcflow:
   vpcflow:
     file_format: plain-text
 
-aws_logs_encoding/text_vpc_flow_log:
-  format: vpc_flow_log
-  vpc_flow_log:
-    file_format: plain-text
-
 aws_logs_encoding/parquet_vpcflow:
   format: vpcflow
   vpcflow:
@@ -21,11 +16,6 @@ aws_logs_encoding/parquet_vpcflow:
 aws_logs_encoding/invalid_vpcflow:
   format: vpcflow
   vpcflow:
-    file_format: invalid
-
-aws_logs_encoding/invalid_vpc_flow_log:
-  format: vpc_flow_log
-  vpc_flow_log:
     file_format: invalid
 
 aws_logs_encoding/s3access:
