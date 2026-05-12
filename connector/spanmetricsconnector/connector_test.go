@@ -512,6 +512,57 @@ func initSpan(span span, s ptrace.Span) {
 	e.Attributes().PutStr(exceptionTypeAttrName, "NullPointerException")
 }
 
+func setSpanAttributeValue(traces ptrace.Traces, key, value string) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		scopeSpans := traces.ResourceSpans().At(i).ScopeSpans()
+		for j := 0; j < scopeSpans.Len(); j++ {
+			spans := scopeSpans.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				spans.At(k).Attributes().PutStr(key, value)
+			}
+		}
+	}
+}
+
+func hasDataPointWithStringAttrValue(metrics pmetric.Metrics, value string) bool {
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		scopeMetrics := metrics.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metricSlice := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metricSlice.Len(); k++ {
+				metric := metricSlice.At(k)
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
+					dps := metric.Sum().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						attr, ok := dps.At(l).Attributes().Get(stringAttrName)
+						if ok && attr.Str() == value {
+							return true
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					dps := metric.Histogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						attr, ok := dps.At(l).Attributes().Get(stringAttrName)
+						if ok && attr.Str() == value {
+							return true
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					dps := metric.ExponentialHistogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						attr, ok := dps.At(l).Attributes().Get(stringAttrName)
+						if ok && attr.Str() == value {
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
 func disabledExemplarsConfig() ExemplarsConfig {
 	return ExemplarsConfig{
 		Enabled: false,
@@ -1135,6 +1186,39 @@ func TestResourceMetricsExpiration(t *testing.T) {
 	err = p.ConsumeTraces(ctx, buildSampleTrace())
 	require.NoError(t, err)
 	assert.Equal(t, 2, p.resourceMetrics.Len())
+}
+
+func TestSeriesExpiration(t *testing.T) {
+	mockClock := clockwork.NewFakeClock()
+	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, mockClock, false)
+	require.NoError(t, err)
+	p.config.SeriesExpiration = time.Millisecond
+
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
+
+	tracesA := buildSampleTrace()
+	setSpanAttributeValue(tracesA, stringAttrName, "A")
+
+	tracesB := buildSampleTrace()
+	setSpanAttributeValue(tracesB, stringAttrName, "B")
+
+	require.NoError(t, p.ConsumeTraces(ctx, tracesA))
+	exported := p.buildMetrics()
+	assert.True(t, hasDataPointWithStringAttrValue(exported, "A"))
+	assert.False(t, hasDataPointWithStringAttrValue(exported, "B"))
+	p.resetState()
+
+	mockClock.Advance(time.Millisecond)
+
+	require.NoError(t, p.ConsumeTraces(ctx, tracesB))
+	exported = p.buildMetrics()
+	assert.True(t, hasDataPointWithStringAttrValue(exported, "A"))
+	assert.True(t, hasDataPointWithStringAttrValue(exported, "B"))
+	p.resetState()
+
+	exported = p.buildMetrics()
+	assert.False(t, hasDataPointWithStringAttrValue(exported, "A"))
+	assert.True(t, hasDataPointWithStringAttrValue(exported, "B"))
 }
 
 func TestResourceMetricsKeyAttributes(t *testing.T) {
