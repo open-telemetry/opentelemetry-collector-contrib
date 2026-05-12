@@ -67,8 +67,7 @@ jobs:
           # Any of these paths change CI behavior or coverage, so require the full matrices.
           # cmd/otelcontribcol/ is the assembly layer for the binary; any change there
           # (Go source, builder-config.yaml, Dockerfile, etc.) must run the full cross-compile.
-          # TEMPORARY (revert before merge): `.github/workflows/` removed so this PR can exercise the scoped paths on CI.
-          trigger='^(\.golangci\.yml$|Makefile$|Makefile\.Common$|\.github/actions/|go\.mod$|cmd/otelcontribcol/)'
+          trigger='^(\.golangci\.yml$|Makefile$|Makefile\.Common$|\.github/workflows/|\.github/actions/|go\.mod$|cmd/otelcontribcol/)'
           if echo "$changed" | grep -qE "$trigger"; then
             echo "Full-scope trigger matched; running full lint and integration matrices."
             echo "mode=full" >> "$GITHUB_OUTPUT"
