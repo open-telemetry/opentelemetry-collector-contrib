@@ -732,3 +732,42 @@ func newReceiver(t *testing.T, cfg *Config, nextConsumer consumer.Logs) *logsRec
 	require.NoError(t, err)
 	return r
 }
+
+func TestArrayAttributesArePreserved(t *testing.T) {
+	recv := newReceiver(t, &Config{
+		Logs: LogsConfig{
+			Endpoint:           "localhost:0",
+			TLS:                &configtls.ServerConfig{},
+			MaxRequestBodySize: 1024,
+			TimestampField:     "EdgeStartTimestamp",
+			TimestampFormat:    "rfc3339",
+			Separator:          ".",
+		},
+	}, &consumertest.LogsSink{})
+
+	payload := `{"EdgeStartTimestamp":"2023-03-03T05:29:05Z","SecurityActions":["log","block"],"BotDetectionIDs":[101,202],"Nested":{"SecurityRuleIDs":[11,22]}}`
+
+	rawLogs, err := parsePayload([]byte(payload))
+	require.NoError(t, err)
+
+	logs := recv.processLogs(pcommon.NewTimestampFromTime(time.Now()), rawLogs)
+	lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	actions, ok := lr.Attributes().Get("SecurityActions")
+	require.True(t, ok)
+	require.Equal(t, pcommon.ValueTypeSlice, actions.Type())
+	require.Equal(t, "log", actions.Slice().At(0).Str())
+	require.Equal(t, "block", actions.Slice().At(1).Str())
+
+	ids, ok := lr.Attributes().Get("BotDetectionIDs")
+	require.True(t, ok)
+	require.Equal(t, pcommon.ValueTypeDouble, ids.Slice().At(0).Type())
+	require.Equal(t, 101.0, ids.Slice().At(0).Double())
+	require.Equal(t, 202.0, ids.Slice().At(1).Double())
+
+	nestedIDs, ok := lr.Attributes().Get("Nested.SecurityRuleIDs")
+	require.True(t, ok)
+	require.Equal(t, pcommon.ValueTypeDouble, nestedIDs.Slice().At(0).Type())
+	require.Equal(t, 11.0, nestedIDs.Slice().At(0).Double())
+	require.Equal(t, 22.0, nestedIDs.Slice().At(1).Double())
+}
