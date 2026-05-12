@@ -7,6 +7,26 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.152.0
+
+### 💡 Enhancements 💡
+
+- `pkg/faro`: Emit `k6_testRunId` in the log body when `meta.k6.testRunId` is present in the Faro payload. (#47935)
+  Surfaces the k6 test run identifier that the Faro Web SDK already
+  forwards from `window.k6.testRunId`, alongside the existing
+  `k6_isK6Browser` key. The reverse (logs -> Faro) translator extracts
+  it back into `Meta.K6.TestRunID` for round-trip parity.
+  
+- `pkg/translator/pprof`: Expose the `ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error)` method (#48014)
+- `receiver/couchdb`: Enables dynamic metric reaggregation in the CouchDB receiver. This does not break existing configuration files. (#46351)
+- `receiver/kafka`: Add support for custom consumer-group partition-assignment strategies via extensions that implement `kgo.GroupBalancer`. Set `group_rebalance_strategy` to the component ID of a registered extension to use a custom balancer. (#48096)
+  The four built-in strategies (`range`, `roundrobin`, `sticky`, `cooperative-sticky`) continue to work unchanged.
+  Any other value for `group_rebalance_strategy` is now resolved as an extension component ID at runtime.
+  
+- `receiver/memcached`: Enables dynamic metric reaggregation in the Memcached receiver. This does not break existing configuration files. (#46364)
+
+<!-- previous-version -->
+
 ## v0.151.0
 
 ### 🛑 Breaking changes 🛑

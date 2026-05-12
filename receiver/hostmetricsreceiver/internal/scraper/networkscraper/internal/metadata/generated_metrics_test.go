@@ -58,11 +58,11 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemNetworkConnections"] = mb.metricSystemNetworkConnections.config.AggregationStrategy
-			aggMap["SystemNetworkDropped"] = mb.metricSystemNetworkDropped.config.AggregationStrategy
-			aggMap["SystemNetworkErrors"] = mb.metricSystemNetworkErrors.config.AggregationStrategy
-			aggMap["SystemNetworkIo"] = mb.metricSystemNetworkIo.config.AggregationStrategy
-			aggMap["SystemNetworkPackets"] = mb.metricSystemNetworkPackets.config.AggregationStrategy
+			aggMap["system.network.connections"] = mb.metricSystemNetworkConnections.config.AggregationStrategy
+			aggMap["system.network.dropped"] = mb.metricSystemNetworkDropped.config.AggregationStrategy
+			aggMap["system.network.errors"] = mb.metricSystemNetworkErrors.config.AggregationStrategy
+			aggMap["system.network.io"] = mb.metricSystemNetworkIo.config.AggregationStrategy
+			aggMap["system.network.packets"] = mb.metricSystemNetworkPackets.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {

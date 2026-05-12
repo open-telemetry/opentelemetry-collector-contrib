@@ -1,4 +1,0 @@
-change_type: deprecation
-component: receiver/aws_lambda
-note: Rename awslambda receiver to use lower_snake_case name `aws_lambda`.
-issues: [45339]

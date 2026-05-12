@@ -20,7 +20,7 @@ components:
     - connector/exceptions
     - connector/failover
     - connector/grafana_cloud
-    - connector/metricsaslogs
+    - connector/metrics_as_logs
     - connector/otlp_json
     - connector/round_robin
     - connector/routing
@@ -196,7 +196,7 @@ components:
     - processor/drain
     - processor/dynatracedetector
     - processor/filter
-    - processor/genainormalizer
+    - processor/gen_ai_normalizer
     - processor/geoip
     - processor/groupbyattrs
     - processor/groupbytrace

@@ -67,9 +67,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["IisNetworkFileCount"] = mb.metricIisNetworkFileCount.config.AggregationStrategy
-			aggMap["IisNetworkIo"] = mb.metricIisNetworkIo.config.AggregationStrategy
-			aggMap["IisRequestCount"] = mb.metricIisRequestCount.config.AggregationStrategy
+			aggMap["iis.network.file.count"] = mb.metricIisNetworkFileCount.config.AggregationStrategy
+			aggMap["iis.network.io"] = mb.metricIisNetworkIo.config.AggregationStrategy
+			aggMap["iis.request.count"] = mb.metricIisRequestCount.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {

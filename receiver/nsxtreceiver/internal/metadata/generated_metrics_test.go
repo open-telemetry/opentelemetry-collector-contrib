@@ -67,10 +67,10 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["NsxtNodeCPUUtilization"] = mb.metricNsxtNodeCPUUtilization.config.AggregationStrategy
-			aggMap["NsxtNodeFilesystemUsage"] = mb.metricNsxtNodeFilesystemUsage.config.AggregationStrategy
-			aggMap["NsxtNodeNetworkIo"] = mb.metricNsxtNodeNetworkIo.config.AggregationStrategy
-			aggMap["NsxtNodeNetworkPacketCount"] = mb.metricNsxtNodeNetworkPacketCount.config.AggregationStrategy
+			aggMap["nsxt.node.cpu.utilization"] = mb.metricNsxtNodeCPUUtilization.config.AggregationStrategy
+			aggMap["nsxt.node.filesystem.usage"] = mb.metricNsxtNodeFilesystemUsage.config.AggregationStrategy
+			aggMap["nsxt.node.network.io"] = mb.metricNsxtNodeNetworkIo.config.AggregationStrategy
+			aggMap["nsxt.node.network.packet.count"] = mb.metricNsxtNodeNetworkPacketCount.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {

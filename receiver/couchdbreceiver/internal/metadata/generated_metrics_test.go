@@ -67,10 +67,10 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["CouchdbDatabaseOperations"] = mb.metricCouchdbDatabaseOperations.config.AggregationStrategy
-			aggMap["CouchdbHttpdRequests"] = mb.metricCouchdbHttpdRequests.config.AggregationStrategy
-			aggMap["CouchdbHttpdResponses"] = mb.metricCouchdbHttpdResponses.config.AggregationStrategy
-			aggMap["CouchdbHttpdViews"] = mb.metricCouchdbHttpdViews.config.AggregationStrategy
+			aggMap["couchdb.database.operations"] = mb.metricCouchdbDatabaseOperations.config.AggregationStrategy
+			aggMap["couchdb.httpd.requests"] = mb.metricCouchdbHttpdRequests.config.AggregationStrategy
+			aggMap["couchdb.httpd.responses"] = mb.metricCouchdbHttpdResponses.config.AggregationStrategy
+			aggMap["couchdb.httpd.views"] = mb.metricCouchdbHttpdViews.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {

@@ -67,9 +67,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["OracledbSessionsUsage"] = mb.metricOracledbSessionsUsage.config.AggregationStrategy
-			aggMap["OracledbTablespaceSizeLimit"] = mb.metricOracledbTablespaceSizeLimit.config.AggregationStrategy
-			aggMap["OracledbTablespaceSizeUsage"] = mb.metricOracledbTablespaceSizeUsage.config.AggregationStrategy
+			aggMap["oracledb.sessions.usage"] = mb.metricOracledbSessionsUsage.config.AggregationStrategy
+			aggMap["oracledb.tablespace_size.limit"] = mb.metricOracledbTablespaceSizeLimit.config.AggregationStrategy
+			aggMap["oracledb.tablespace_size.usage"] = mb.metricOracledbTablespaceSizeUsage.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -85,6 +85,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbCPUTimeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordOracledbDataDictionaryHitRatioDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordOracledbDbBlockGetsDataPoint(ts, "1")
@@ -198,6 +201,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOracledbQueriesParallelizedDataPoint(ts, "1")
 
+			allMetricsCount++
+			mb.RecordOracledbRecycleBinLimitDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbSessionsLimitDataPoint(ts, "1")
@@ -208,6 +214,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSessionsUsageDataPoint(ts, "3", "session_type-val-2", "session_status-val-2")
 			}
+
+			allMetricsCount++
+			mb.RecordOracledbStorageUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordOracledbStorageUtilizationDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -300,6 +312,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "oracledb.data_dictionary.hit_ratio":
+					assert.False(t, validatedMetrics["oracledb.data_dictionary.hit_ratio"], "Found a duplicate in the metrics slice: oracledb.data_dictionary.hit_ratio")
+					validatedMetrics["oracledb.data_dictionary.hit_ratio"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Data dictionary cache hit ratio from v$rowcache.", mi.Description())
+					assert.Equal(t, "%", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -736,6 +760,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.recycle_bin.limit":
+					assert.False(t, validatedMetrics["oracledb.recycle_bin.limit"], "Found a duplicate in the metrics slice: oracledb.recycle_bin.limit")
+					validatedMetrics["oracledb.recycle_bin.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Total size of the recycle bin.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "oracledb.sessions.limit":
 					assert.False(t, validatedMetrics["oracledb.sessions.limit"], "Found a duplicate in the metrics slice: oracledb.sessions.limit")
 					validatedMetrics["oracledb.sessions.limit"] = true
@@ -793,6 +829,30 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("session_status")
 						assert.False(t, ok)
 					}
+				case "oracledb.storage.usage":
+					assert.False(t, validatedMetrics["oracledb.storage.usage"], "Found a duplicate in the metrics slice: oracledb.storage.usage")
+					validatedMetrics["oracledb.storage.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Used database storage size from dba_data_files and dba_free_space.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "oracledb.storage.utilization":
+					assert.False(t, validatedMetrics["oracledb.storage.utilization"], "Found a duplicate in the metrics slice: oracledb.storage.utilization")
+					validatedMetrics["oracledb.storage.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Fraction of allocated database storage that is used.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "oracledb.tablespace_size.limit":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["oracledb.tablespace_size.limit"], "Found a duplicate in the metrics slice: oracledb.tablespace_size.limit")

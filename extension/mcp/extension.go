@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
@@ -39,26 +39,25 @@ func newExtension(cfg *Config, telemetry component.TelemetrySettings) *mcpExtens
 func (mcpe *mcpExtension) Start(ctx context.Context, host component.Host) error {
 	var err error
 
-	// Create a new MCP server
-	s := server.NewMCPServer(
-		"otel-mcp-server",
-		"0.0.1",
-		server.WithToolCapabilities(true),
-		server.WithRecovery(),
-	)
+	s := mcp.NewServer(&mcp.Implementation{
+		Name:    "otel-mcp-server",
+		Version: "0.0.1",
+	}, nil)
 
-	// Get all tools from the tools package
 	allTools, err := tools.GetAllTools()
 	if err != nil {
 		return err
 	}
 
-	// Register all tools with the server
-	for _, tool := range allTools { //nolint:gocritic
+	for _, tool := range allTools {
 		s.AddTool(tool.Tool, tool.Handler)
 	}
 
-	mcpe.server, err = mcpe.cfg.ToServer(ctx, host.GetExtensions(), mcpe.settings, server.NewStreamableHTTPServer(s))
+	handler := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server {
+		return s
+	}, nil)
+
+	mcpe.server, err = mcpe.cfg.ToServer(ctx, host.GetExtensions(), mcpe.settings, handler)
 	if err != nil {
 		return err
 	}
