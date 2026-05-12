@@ -150,9 +150,9 @@ func TestWithDefaults(t *testing.T) {
 			want: CloudWatchStream{Name: "lambda", LogGroupPattern: "/custom/*", Encoding: encID, Payload: PayloadEnvelope},
 		},
 		{
-			name: "unknown name -> stream returned unchanged",
+			name: "unknown name -> payload defaulted to message",
 			in:   CloudWatchStream{Name: "weird", Encoding: encID},
-			want: CloudWatchStream{Name: "weird", Encoding: encID},
+			want: CloudWatchStream{Name: "weird", Encoding: encID, Payload: DefaultPayloadMode},
 		},
 	}
 
@@ -168,8 +168,13 @@ func TestSortStreams(t *testing.T) {
 	t.Parallel()
 
 	encID := mustNewID(t, "fake/a")
-	mk := func(group, stream string) CloudWatchStream {
+	// in() builds an input stream (no payload set; user-style).
+	in := func(group, stream string) CloudWatchStream {
 		return CloudWatchStream{LogGroupPattern: group, LogStreamPattern: stream, Encoding: encID}
+	}
+	// out() builds the post-withDefaults form (payload filled to DefaultPayloadMode).
+	out := func(group, stream string) CloudWatchStream {
+		return CloudWatchStream{LogGroupPattern: group, LogStreamPattern: stream, Encoding: encID, Payload: DefaultPayloadMode}
 	}
 
 	tests := []struct {
@@ -180,49 +185,49 @@ func TestSortStreams(t *testing.T) {
 		{
 			name: "catch-all goes last",
 			input: []CloudWatchStream{
-				mk("*", ""),
-				mk("/aws/lambda/*", ""),
+				in("*", ""),
+				in("/aws/lambda/*", ""),
 			},
 			want: []CloudWatchStream{
-				mk("/aws/lambda/*", ""),
-				mk("*", ""),
+				out("/aws/lambda/*", ""),
+				out("*", ""),
 			},
 		},
 		{
 			name: "log_group before log_stream-only",
 			input: []CloudWatchStream{
-				mk("", "eni-*"),
-				mk("/aws/lambda/*", ""),
+				in("", "eni-*"),
+				in("/aws/lambda/*", ""),
 			},
 			want: []CloudWatchStream{
-				mk("/aws/lambda/*", ""),
-				mk("", "eni-*"),
+				out("/aws/lambda/*", ""),
+				out("", "eni-*"),
 			},
 		},
 		{
 			name: "more specific group pattern first",
 			input: []CloudWatchStream{
-				mk("/aws/lambda/*", ""),
-				mk("/aws/lambda/payment-*", ""),
+				in("/aws/lambda/*", ""),
+				in("/aws/lambda/payment-*", ""),
 			},
 			want: []CloudWatchStream{
-				mk("/aws/lambda/payment-*", ""),
-				mk("/aws/lambda/*", ""),
+				out("/aws/lambda/payment-*", ""),
+				out("/aws/lambda/*", ""),
 			},
 		},
 		{
 			name: "three-level interaction",
 			input: []CloudWatchStream{
-				mk("*", ""),                     // catch-all
-				mk("", "eni-*"),                 // stream-only
-				mk("/aws/lambda/*", ""),         // generic group
-				mk("/aws/lambda/payment-*", ""), // specific group
+				in("*", ""),                     // catch-all
+				in("", "eni-*"),                 // stream-only
+				in("/aws/lambda/*", ""),         // generic group
+				in("/aws/lambda/payment-*", ""), // specific group
 			},
 			want: []CloudWatchStream{
-				mk("/aws/lambda/payment-*", ""),
-				mk("/aws/lambda/*", ""),
-				mk("", "eni-*"),
-				mk("*", ""),
+				out("/aws/lambda/payment-*", ""),
+				out("/aws/lambda/*", ""),
+				out("", "eni-*"),
+				out("*", ""),
 			},
 		},
 	}

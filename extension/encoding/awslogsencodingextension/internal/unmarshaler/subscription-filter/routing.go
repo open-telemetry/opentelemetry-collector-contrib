@@ -13,11 +13,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-// Payload modes for CloudWatchStream.Payload. See README for semantics.
+// PayloadMode controls how each CloudWatch subscription-filter envelope is
+// handed to the inner encoding. See README for semantics.
+type PayloadMode string
+
 const (
-	PayloadMessage  = "message"
-	PayloadEnvelope = "envelope"
+	PayloadMessage  PayloadMode = "message"
+	PayloadEnvelope PayloadMode = "envelope"
 )
+
+// DefaultPayloadMode is applied when a stream is matched and Payload is
+// unset and the stream's name has no default in defaultCWPatterns.
+const DefaultPayloadMode = PayloadMessage
 
 // CloudWatchStream maps a logGroup and/or logStream pattern (or a known
 // service name) to an inner encoding extension.
@@ -26,7 +33,7 @@ type CloudWatchStream struct {
 	Encoding         component.ID `mapstructure:"encoding"`
 	LogGroupPattern  string       `mapstructure:"log_group_pattern"`
 	LogStreamPattern string       `mapstructure:"log_stream_pattern"`
-	Payload          string       `mapstructure:"payload"`
+	Payload          PayloadMode  `mapstructure:"payload"`
 }
 
 var defaultCWPatterns = map[string]CloudWatchStream{
@@ -40,18 +47,20 @@ var defaultCWPatterns = map[string]CloudWatchStream{
 }
 
 // withDefaults fills in unset fields from defaultCWPatterns. User-supplied
-// values are never overwritten.
+// values are never overwritten. Payload always ends up non-empty:
+// per-name default if available, otherwise DefaultPayloadMode.
 func (r CloudWatchStream) withDefaults() CloudWatchStream {
-	d, ok := defaultCWPatterns[r.Name]
-	if !ok {
-		return r
-	}
-	if r.LogGroupPattern == "" && r.LogStreamPattern == "" {
-		r.LogGroupPattern = d.LogGroupPattern
-		r.LogStreamPattern = d.LogStreamPattern
+	if d, ok := defaultCWPatterns[r.Name]; ok {
+		if r.LogGroupPattern == "" && r.LogStreamPattern == "" {
+			r.LogGroupPattern = d.LogGroupPattern
+			r.LogStreamPattern = d.LogStreamPattern
+		}
+		if r.Payload == "" {
+			r.Payload = d.Payload
+		}
 	}
 	if r.Payload == "" {
-		r.Payload = d.Payload
+		r.Payload = DefaultPayloadMode
 	}
 	return r
 }

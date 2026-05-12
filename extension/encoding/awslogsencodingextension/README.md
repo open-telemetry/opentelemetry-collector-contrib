@@ -108,7 +108,7 @@ an object with:
 | `encoding`           | Required. The component ID of an inner encoding extension that implements `plog.Unmarshaler`.                                       |
 | `log_group_pattern`  | Optional. Pattern matched against the event's `logGroup`.                                                                           |
 | `log_stream_pattern` | Optional. Pattern matched against the event's `logStream`.                                                                          |
-| `payload`            | Optional. `message` (default for most names) or `envelope` (default for `vpcflow` and `cloudtrail`). See [Payload modes](#payload-modes). |
+| `payload`            | Optional. Defaults to `message` (except `vpcflow` and `cloudtrail`, which default to `envelope`). See [Payload modes](#payload-modes). |
 
 A stream must set at least one of `log_group_pattern` / `log_stream_pattern`,
 **or** use a `name` that has a built-in default (see table below). Explicit

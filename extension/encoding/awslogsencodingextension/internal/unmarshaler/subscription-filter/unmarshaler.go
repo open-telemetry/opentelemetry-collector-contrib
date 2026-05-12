@@ -40,7 +40,7 @@ type route struct {
 	inner          plog.Unmarshaler
 	logGroupParts  []string
 	logStreamParts []string
-	payload        string
+	payload        PayloadMode
 }
 
 type SubscriptionFilterUnmarshaler struct {
@@ -189,23 +189,22 @@ func (f *SubscriptionFilterUnmarshaler) decodeOne(
 	}
 
 	r := f.matchRoute(hdr.LogGroup, hdr.LogStream)
-	switch {
-	case r == nil:
-		var cwLog cloudwatchLogsData
-		if err := gojson.Unmarshal(raw, &cwLog); err != nil {
-			return fmt.Errorf("failed to decode decompressed reader: %w", err)
-		}
+
+	// Envelope dispatch hands the raw bytes directly to the inner encoding; no full parse needed.
+	if r != nil && r.payload == PayloadEnvelope {
+		return f.dispatchEnvelope(logs, []byte(raw), hdr.LogGroup, *r)
+	}
+
+	// Both the no-route fallback and message dispatch need the parsed envelope.
+	var cwLog cloudwatchLogsData
+	if err := gojson.Unmarshal(raw, &cwLog); err != nil {
+		return fmt.Errorf("failed to decode decompressed reader: %w", err)
+	}
+	if r == nil {
 		f.appendLogs(logs, resourceLogsByKey, cwLog)
 		return nil
-	case r.payload == PayloadEnvelope:
-		return f.dispatchEnvelope(logs, []byte(raw), hdr.LogGroup, *r)
-	default:
-		var cwLog cloudwatchLogsData
-		if err := gojson.Unmarshal(raw, &cwLog); err != nil {
-			return fmt.Errorf("failed to decode decompressed reader: %w", err)
-		}
-		return f.dispatchMessage(logs, cwLog, *r)
 	}
+	return f.dispatchMessage(logs, cwLog, *r)
 }
 
 func (f *SubscriptionFilterUnmarshaler) matchRoute(logGroup, logStream string) *route {
