@@ -250,6 +250,10 @@ type StringAttributeCfg struct {
 type RateLimitingCfg struct {
 	// SpansPerSecond sets the limit on the maximum number of spans that can be processed each second.
 	SpansPerSecond int64 `mapstructure:"spans_per_second"`
+	// BurstCapacity sets the maximum burst capacity in spans. If not specified, defaults to 2x SpansPerSecond.
+	// This allows for short bursts of traffic above the sustained rate. It also acts as a
+	// limit for individual trace span counts, a single trace with more spans than the burst size will not pass.
+	BurstCapacity int64 `mapstructure:"burst_capacity"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
