@@ -5,6 +5,8 @@ all_set:
       enabled: true
     oracledb.cpu_time:
       enabled: true
+    oracledb.data_dictionary.hit_ratio:
+      enabled: true
     oracledb.db_block_gets:
       enabled: true
     oracledb.ddl_statements_parallelized:
@@ -69,11 +71,17 @@ all_set:
       enabled: true
     oracledb.queries_parallelized:
       enabled: true
+    oracledb.recycle_bin.limit:
+      enabled: true
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
       enabled: true
       attributes: ["session_type","session_status"]
+    oracledb.storage.usage:
+      enabled: true
+    oracledb.storage.utilization:
+      enabled: true
     oracledb.tablespace_size.limit:
       enabled: true
       attributes: ["tablespace_name"]
@@ -106,6 +114,8 @@ reaggregate_set:
       enabled: true
     oracledb.cpu_time:
       enabled: true
+    oracledb.data_dictionary.hit_ratio:
+      enabled: true
     oracledb.db_block_gets:
       enabled: true
     oracledb.ddl_statements_parallelized:
@@ -170,11 +180,17 @@ reaggregate_set:
       enabled: true
     oracledb.queries_parallelized:
       enabled: true
+    oracledb.recycle_bin.limit:
+      enabled: true
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
       enabled: true
       attributes: []
+    oracledb.storage.usage:
+      enabled: true
+    oracledb.storage.utilization:
+      enabled: true
     oracledb.tablespace_size.limit:
       enabled: true
       attributes: []
@@ -207,6 +223,8 @@ none_set:
       enabled: false
     oracledb.cpu_time:
       enabled: false
+    oracledb.data_dictionary.hit_ratio:
+      enabled: false
     oracledb.db_block_gets:
       enabled: false
     oracledb.ddl_statements_parallelized:
@@ -271,11 +289,17 @@ none_set:
       enabled: false
     oracledb.queries_parallelized:
       enabled: false
+    oracledb.recycle_bin.limit:
+      enabled: false
     oracledb.sessions.limit:
       enabled: false
     oracledb.sessions.usage:
       enabled: false
       attributes: ["session_type","session_status"]
+    oracledb.storage.usage:
+      enabled: false
+    oracledb.storage.utilization:
+      enabled: false
     oracledb.tablespace_size.limit:
       enabled: false
       attributes: ["tablespace_name"]
