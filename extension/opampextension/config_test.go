@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension/internal/metadata"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,10 +28,10 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 
 func TestCreateDefaultConfigReportsHeartbeatFeatureGate(t *testing.T) {
 	t.Run("disabled", func(t *testing.T) {
-		previousValue := HeartbeatIntervalNegotiationFeatureGate.IsEnabled()
-		require.NoError(t, featuregate.GlobalRegistry().Set(HeartbeatIntervalNegotiationFeatureGate.ID(), false))
+		previousValue := metadata.ExtensionOpampextensionHeartbeatIntervalNegotiationFeatureGate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionOpampextensionHeartbeatIntervalNegotiationFeatureGate.ID(), false))
 		t.Cleanup(func() {
-			require.NoError(t, featuregate.GlobalRegistry().Set(HeartbeatIntervalNegotiationFeatureGate.ID(), previousValue))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionOpampextensionHeartbeatIntervalNegotiationFeatureGate.ID(), previousValue))
 		})
 
 		cfg := NewFactory().CreateDefaultConfig().(*Config)
@@ -38,10 +39,10 @@ func TestCreateDefaultConfigReportsHeartbeatFeatureGate(t *testing.T) {
 	})
 
 	t.Run("enabled", func(t *testing.T) {
-		previousValue := HeartbeatIntervalNegotiationFeatureGate.IsEnabled()
-		require.NoError(t, featuregate.GlobalRegistry().Set(HeartbeatIntervalNegotiationFeatureGate.ID(), true))
+		previousValue := metadata.ExtensionOpampextensionHeartbeatIntervalNegotiationFeatureGate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionOpampextensionHeartbeatIntervalNegotiationFeatureGate.ID(), true))
 		t.Cleanup(func() {
-			require.NoError(t, featuregate.GlobalRegistry().Set(HeartbeatIntervalNegotiationFeatureGate.ID(), previousValue))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionOpampextensionHeartbeatIntervalNegotiationFeatureGate.ID(), previousValue))
 		})
 
 		cfg := NewFactory().CreateDefaultConfig().(*Config)
