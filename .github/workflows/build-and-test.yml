@@ -62,7 +62,8 @@ jobs:
           echo "$changed"
 
           # Any of these paths change lint behavior or coverage, so require the full matrix.
-          trigger='^(\.golangci\.yml$|Makefile$|Makefile\.Common$|\.github/workflows/|\.github/actions/|go\.mod$)'
+          # TEMPORARY (revert before merge): `.github/workflows/` removed so this PR can exercise the scoped lint path on CI.
+          trigger='^(\.golangci\.yml$|Makefile$|Makefile\.Common$|\.github/actions/|go\.mod$)'
           if echo "$changed" | grep -qE "$trigger"; then
             echo "Full-lint trigger matched; running full lint matrix."
             echo "mode=full" >> "$GITHUB_OUTPUT"
