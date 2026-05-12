@@ -1,6 +1,6 @@
 $defs:
   encoding_config:
-    description: EncodingConfig holds the binding name and encoding for an Event Hub signal (logs or metrics). Name is the Azure Functions binding name and typically corresponds to the request path (e.g. /logs, /metrics).
+    description: EncodingConfig holds the binding name and encoding for a signal (logs or metrics). Name is the Azure Functions binding name and typically corresponds to the request path (e.g. /logs, /metrics).
     type: object
     properties:
       encoding:
