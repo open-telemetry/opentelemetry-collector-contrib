@@ -9,7 +9,7 @@ exporters:
     endpoint: https://faro.example.com/collect
     timeout: 10s
     headers:
-      X-API-Key: "my-api-key"
+      X-Custom-Header: "custom-value"
 
   faro/with_queue_settings:
     endpoint: https://faro.example.com/collect
