@@ -111,25 +111,6 @@ The following format values are supported in the `awslogsencodingextension` to i
 | CloudWatch Logs | `cloudwatch` | CloudWatch Logs Subscription Filter events |
 | Network Firewall Logs | `networkfirewall` | AWS Network Firewall event logs (Alert/Flow, TLS) |
 
-### Breaking Change Notice
-
-**Format values have been simplified in v0.137.0**
-
-**The old format values are deprecated and will be unsupported in v0.138.0.**
-
-| **AWS Log Type** | **Old Format Value (Deprecated)** | **New Format Value** |
-|------------------|-----------------------------------|---------------------|
-| VPC Flow Logs | `vpc_flow_log` | `vpcflow` |
-| ELB Access Logs | `elb_access_log` | `elbaccess` |
-| S3 Access Logs | `s3_access_log` | `s3access` |
-| CloudTrail Logs | `cloudtrail_log` | `cloudtrail` |
-| WAF Logs | `waf_log` | `waf` |
-| CloudWatch Logs | `cloudwatch_logs_subscription_filter` | `cloudwatch` |
-
-#### Migration Path
-
-If you're using the old format values you should update the encoding extension configuration with the new format values.
-
 ## Feature Gates
 
 Following feature gates are available to modify the behavior of the AWS Logs encoding extension.
