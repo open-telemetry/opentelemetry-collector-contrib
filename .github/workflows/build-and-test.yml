@@ -278,7 +278,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [stable, oldstable]
+        # On PRs only oldstable runs; stable runs on main pushes and merge_group as a forward-compat check.
+        go-version: ${{ github.event_name == 'pull_request' && fromJSON('["oldstable"]') || fromJSON('["stable","oldstable"]') }}
         runner: [ubuntu-24.04]
         group:
           - receiver-0
