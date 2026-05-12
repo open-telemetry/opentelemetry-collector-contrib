@@ -5,9 +5,9 @@ go 1.25.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.152.0
-	github.com/splunk/stef/go/grpc v0.1.1
-	github.com/splunk/stef/go/otel v0.1.1
-	github.com/splunk/stef/go/pdata v0.1.1
+	github.com/splunk/stef/go/grpc v0.1.2
+	github.com/splunk/stef/go/otel v0.1.2
+	github.com/splunk/stef/go/pdata v0.1.2
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.58.0
 	go.opentelemetry.io/collector/component/componentstatus v0.152.0
@@ -58,7 +58,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/splunk/stef/go/pkg v0.1.1 // indirect
+	github.com/splunk/stef/go/pkg v0.1.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector v0.152.0 // indirect
 	go.opentelemetry.io/collector/client v1.58.0 // indirect
@@ -97,7 +97,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260406210006-6f92a3bedf2d // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	modernc.org/b/v2 v2.1.10 // indirect
+	modernc.org/b/v2 v2.1.11 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter => ../../exporter/stefexporter
