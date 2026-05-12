@@ -28,5 +28,5 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// Type alias for backward compatibility
+// ResponseBodySettings is a type alias kept for backward compatibility.
 type ResponseBodySettings = healthcheck.ResponseBodyConfig
