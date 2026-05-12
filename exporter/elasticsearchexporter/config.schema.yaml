@@ -112,6 +112,8 @@ $defs:
         type: boolean
       log_response_body:
         type: boolean
+      preserve_error_reason:
+        type: boolean
 description: Config defines configuration for Elastic exporter.
 type: object
 properties:
@@ -129,7 +131,7 @@ properties:
     description: 'Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::batch` instead. If this config is defined then it will be used to configure sending queue''s batch provided sending queue''s config are not explicitly defined.'
     $ref: flush_settings
   include_source_on_error:
-    description: 'IncludeSourceOnError configures whether the bulk index responses include a part of the source document on error. Defaults to nil. This setting requires Elasticsearch 8.18+. Using it in prior versions have no effect. NOTE: The default behavior if this configuration is not set, is to discard the error reason entirely, i.e. only the error type is returned. WARNING: If set to true, the exporter may log error responses containing request payload, causing potential sensitive data to be exposed in logs. Users are expected to sanitize the responses themselves.'
+    description: 'IncludeSourceOnError configures whether the bulk index responses include a part of the source document on error. Defaults to nil. This setting requires Elasticsearch 8.18+. Using it in prior versions have no effect. NOTE: The default behavior if this configuration is not set, is to preserve error.reason without requesting source snippets. To restore the upstream docappender behavior that discards error.reason, set telemetry::preserve_error_reason to false. WARNING: If set to true, the exporter may log error responses containing request payload, causing potential sensitive data to be exposed in logs. Users are expected to sanitize the responses themselves.'
     x-pointer: true
     type: boolean
   logs_dynamic_id:

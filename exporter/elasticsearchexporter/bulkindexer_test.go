@@ -7,6 +7,7 @@ import (
 	"compress/gzip"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"sync/atomic"
@@ -47,6 +48,18 @@ func (t *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return defaultRoundTripFunc(req)
 	}
 	return t.RoundTripFunc(req)
+}
+
+type fakeElasticTransport struct {
+	request *http.Request
+}
+
+func (t *fakeElasticTransport) Perform(req *http.Request) (*http.Response, error) {
+	t.request = req
+	return &http.Response{
+		Body:       io.NopCloser(strings.NewReader("{}")),
+		StatusCode: http.StatusOK,
+	}, nil
 }
 
 const successResp = `{
@@ -377,6 +390,86 @@ func TestQueryParamsParsedFromEndpoints(t *testing.T) {
 		"pretty":              {"false"},
 		"require_data_stream": {"true"},
 	}, bi.QueryParams)
+}
+
+func TestBulkIndexerIncludeSourceOnError(t *testing.T) {
+	falsePtr := func() *bool {
+		v := false
+		return &v
+	}
+	truePtr := func() *bool {
+		v := true
+		return &v
+	}
+
+	tests := []struct {
+		name       string
+		cfg        func(*Config)
+		wantValue  docappender.Value
+		wantStrip  bool
+		wantClient any
+	}{
+		{
+			name:       "default preserves reason for opensearch compatibility",
+			wantValue:  docappender.False,
+			wantStrip:  true,
+			wantClient: stripIncludeSourceOnErrorTransport{},
+		},
+		{
+			name: "disabled leaves docappender default behavior",
+			cfg: func(cfg *Config) {
+				cfg.PreserveErrorReason = false
+			},
+			wantValue: docappender.Unset,
+		},
+		{
+			name: "explicit include source false keeps upstream request parameter",
+			cfg: func(cfg *Config) {
+				cfg.IncludeSourceOnError = falsePtr()
+			},
+			wantValue: docappender.False,
+		},
+		{
+			name: "explicit include source true keeps upstream request parameter",
+			cfg: func(cfg *Config) {
+				cfg.IncludeSourceOnError = truePtr()
+			},
+			wantValue: docappender.True,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			if tt.cfg != nil {
+				tt.cfg(cfg)
+			}
+
+			assert.Equal(t, tt.wantValue, bulkIndexerIncludeSourceOnError(cfg))
+			client := bulkIndexerClient(&fakeElasticTransport{}, cfg)
+			if tt.wantStrip {
+				assert.IsType(t, tt.wantClient, client)
+			} else {
+				assert.IsType(t, &fakeElasticTransport{}, client)
+			}
+		})
+	}
+}
+
+func TestStripIncludeSourceOnErrorTransport(t *testing.T) {
+	next := &fakeElasticTransport{}
+	transport := stripIncludeSourceOnErrorTransport{next: next}
+	req := httptest.NewRequest(http.MethodPost, "http://localhost:9200/_bulk?include_source_on_error=false&filter_path=items.*.error&pipeline=test", nil)
+
+	resp, err := transport.Perform(req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	q := next.request.URL.Query()
+	_, ok := q["include_source_on_error"]
+	assert.False(t, ok)
+	assert.Equal(t, []string{"items.*.error"}, q["filter_path"])
+	assert.Equal(t, []string{"test"}, q["pipeline"])
 }
 
 func TestNewBulkIndexer(t *testing.T) {
