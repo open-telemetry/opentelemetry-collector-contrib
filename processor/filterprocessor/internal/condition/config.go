@@ -62,7 +62,7 @@ type ContextConditions struct {
 	// this group of conditions. When provided, it overrides the default Config ErrorMode.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 	// Action determines whether matching data should be dropped or kept.
-	// When provided, it overrides the default Config Action.
+	// When provided, it overrides the processor-level Action.
 	// Valid values are "drop" (default) and "keep".
 	Action Action `mapstructure:"action"`
 }

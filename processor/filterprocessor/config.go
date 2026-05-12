@@ -42,6 +42,7 @@ type Config struct {
 	// Action determines whether matching data should be dropped or kept.
 	// `drop` (default) discards data that matches the condition.
 	// `keep` retains only data that matches the condition and discards the rest.
+	// This processor-level Action can be overridden per condition group by setting `action` on individual condition entries.
 	Action condition.Action `mapstructure:"action"`
 
 	// Deprecated: use TraceConditions instead.
