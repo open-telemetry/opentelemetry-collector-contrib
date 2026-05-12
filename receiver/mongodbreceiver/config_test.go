@@ -122,7 +122,7 @@ func TestValidate(t *testing.T) {
 				Hosts:                hosts,
 				Scheme:               tc.scheme,
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			}
 			err := xconfmap.Validate(cfg)
 			if tc.expected == nil {
@@ -175,7 +175,7 @@ func TestBadTLSConfigs(t *testing.T) {
 				},
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 				ClientConfig:         tc.tlsConfig,
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			}
 			err := xconfmap.Validate(cfg)
 			if tc.expectError {

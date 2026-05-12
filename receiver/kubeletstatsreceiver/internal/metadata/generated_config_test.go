@@ -20,7 +20,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
@@ -119,6 +119,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeNetworkIo: MetricConfig{
 						Enabled: true,
 					},
+					K8sNodeSystemContainerCPUTime: MetricConfig{
+						Enabled: true,
+					},
+					K8sNodeSystemContainerCPUUsage: MetricConfig{
+						Enabled: true,
+					},
+					K8sNodeSystemContainerMemoryUsage: MetricConfig{
+						Enabled: true,
+					},
+					K8sNodeSystemContainerMemoryWorkingSet: MetricConfig{
+						Enabled: true,
+					},
 					K8sNodeUptime: MetricConfig{
 						Enabled: true,
 					},
@@ -211,6 +223,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sContainerName:             ResourceAttributeConfig{Enabled: true},
 					K8sNamespaceName:             ResourceAttributeConfig{Enabled: true},
 					K8sNodeName:                  ResourceAttributeConfig{Enabled: true},
+					K8sNodeSystemContainerName:   ResourceAttributeConfig{Enabled: true},
 					K8sPersistentvolumeclaimName: ResourceAttributeConfig{Enabled: true},
 					K8sPodName:                   ResourceAttributeConfig{Enabled: true},
 					K8sPodUID:                    ResourceAttributeConfig{Enabled: true},
@@ -317,6 +330,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeNetworkIo: MetricConfig{
 						Enabled: false,
 					},
+					K8sNodeSystemContainerCPUTime: MetricConfig{
+						Enabled: false,
+					},
+					K8sNodeSystemContainerCPUUsage: MetricConfig{
+						Enabled: false,
+					},
+					K8sNodeSystemContainerMemoryUsage: MetricConfig{
+						Enabled: false,
+					},
+					K8sNodeSystemContainerMemoryWorkingSet: MetricConfig{
+						Enabled: false,
+					},
 					K8sNodeUptime: MetricConfig{
 						Enabled: false,
 					},
@@ -409,6 +434,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sContainerName:             ResourceAttributeConfig{Enabled: false},
 					K8sNamespaceName:             ResourceAttributeConfig{Enabled: false},
 					K8sNodeName:                  ResourceAttributeConfig{Enabled: false},
+					K8sNodeSystemContainerName:   ResourceAttributeConfig{Enabled: false},
 					K8sPersistentvolumeclaimName: ResourceAttributeConfig{Enabled: false},
 					K8sPodName:                   ResourceAttributeConfig{Enabled: false},
 					K8sPodUID:                    ResourceAttributeConfig{Enabled: false},
@@ -433,7 +459,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
@@ -459,6 +485,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sContainerName:             ResourceAttributeConfig{Enabled: true},
 				K8sNamespaceName:             ResourceAttributeConfig{Enabled: true},
 				K8sNodeName:                  ResourceAttributeConfig{Enabled: true},
+				K8sNodeSystemContainerName:   ResourceAttributeConfig{Enabled: true},
 				K8sPersistentvolumeclaimName: ResourceAttributeConfig{Enabled: true},
 				K8sPodName:                   ResourceAttributeConfig{Enabled: true},
 				K8sPodUID:                    ResourceAttributeConfig{Enabled: true},
@@ -479,6 +506,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sContainerName:             ResourceAttributeConfig{Enabled: false},
 				K8sNamespaceName:             ResourceAttributeConfig{Enabled: false},
 				K8sNodeName:                  ResourceAttributeConfig{Enabled: false},
+				K8sNodeSystemContainerName:   ResourceAttributeConfig{Enabled: false},
 				K8sPersistentvolumeclaimName: ResourceAttributeConfig{Enabled: false},
 				K8sPodName:                   ResourceAttributeConfig{Enabled: false},
 				K8sPodUID:                    ResourceAttributeConfig{Enabled: false},

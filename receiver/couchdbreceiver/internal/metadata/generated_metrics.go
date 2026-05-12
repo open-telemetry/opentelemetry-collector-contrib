@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -10,6 +11,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+)
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
 )
 
 // AttributeHTTPMethod specifies the value http.method attribute.
@@ -153,9 +161,9 @@ type metricInfo struct {
 }
 
 type metricCouchdbAverageRequestTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   CouchdbAverageRequestTimeMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills couchdb.average_request_time metric with initial data.
@@ -192,7 +200,7 @@ func (m *metricCouchdbAverageRequestTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricCouchdbAverageRequestTime(cfg MetricConfig) metricCouchdbAverageRequestTime {
+func newMetricCouchdbAverageRequestTime(cfg CouchdbAverageRequestTimeMetricConfig) metricCouchdbAverageRequestTime {
 	m := metricCouchdbAverageRequestTime{config: cfg}
 
 	if cfg.Enabled {
@@ -203,9 +211,9 @@ func newMetricCouchdbAverageRequestTime(cfg MetricConfig) metricCouchdbAverageRe
 }
 
 type metricCouchdbDatabaseOpen struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   CouchdbDatabaseOpenMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills couchdb.database.open metric with initial data.
@@ -244,7 +252,7 @@ func (m *metricCouchdbDatabaseOpen) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricCouchdbDatabaseOpen(cfg MetricConfig) metricCouchdbDatabaseOpen {
+func newMetricCouchdbDatabaseOpen(cfg CouchdbDatabaseOpenMetricConfig) metricCouchdbDatabaseOpen {
 	m := metricCouchdbDatabaseOpen{config: cfg}
 
 	if cfg.Enabled {
@@ -255,9 +263,10 @@ func newMetricCouchdbDatabaseOpen(cfg MetricConfig) metricCouchdbDatabaseOpen {
 }
 
 type metricCouchdbDatabaseOperations struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        CouchdbDatabaseOperationsMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills couchdb.database.operations metric with initial data.
@@ -269,17 +278,48 @@ func (m *metricCouchdbDatabaseOperations) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricCouchdbDatabaseOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, CouchdbDatabaseOperationsMetricAttributeKeyOperation) {
+		dp.Attributes().PutStr("operation", operationAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("operation", operationAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -292,13 +332,18 @@ func (m *metricCouchdbDatabaseOperations) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricCouchdbDatabaseOperations) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricCouchdbDatabaseOperations(cfg MetricConfig) metricCouchdbDatabaseOperations {
+func newMetricCouchdbDatabaseOperations(cfg CouchdbDatabaseOperationsMetricConfig) metricCouchdbDatabaseOperations {
 	m := metricCouchdbDatabaseOperations{config: cfg}
 
 	if cfg.Enabled {
@@ -309,9 +354,9 @@ func newMetricCouchdbDatabaseOperations(cfg MetricConfig) metricCouchdbDatabaseO
 }
 
 type metricCouchdbFileDescriptorOpen struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   CouchdbFileDescriptorOpenMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills couchdb.file_descriptor.open metric with initial data.
@@ -350,7 +395,7 @@ func (m *metricCouchdbFileDescriptorOpen) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricCouchdbFileDescriptorOpen(cfg MetricConfig) metricCouchdbFileDescriptorOpen {
+func newMetricCouchdbFileDescriptorOpen(cfg CouchdbFileDescriptorOpenMetricConfig) metricCouchdbFileDescriptorOpen {
 	m := metricCouchdbFileDescriptorOpen{config: cfg}
 
 	if cfg.Enabled {
@@ -361,9 +406,9 @@ func newMetricCouchdbFileDescriptorOpen(cfg MetricConfig) metricCouchdbFileDescr
 }
 
 type metricCouchdbHttpdBulkRequests struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   CouchdbHttpdBulkRequestsMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills couchdb.httpd.bulk_requests metric with initial data.
@@ -402,7 +447,7 @@ func (m *metricCouchdbHttpdBulkRequests) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricCouchdbHttpdBulkRequests(cfg MetricConfig) metricCouchdbHttpdBulkRequests {
+func newMetricCouchdbHttpdBulkRequests(cfg CouchdbHttpdBulkRequestsMetricConfig) metricCouchdbHttpdBulkRequests {
 	m := metricCouchdbHttpdBulkRequests{config: cfg}
 
 	if cfg.Enabled {
@@ -413,9 +458,10 @@ func newMetricCouchdbHttpdBulkRequests(cfg MetricConfig) metricCouchdbHttpdBulkR
 }
 
 type metricCouchdbHttpdRequests struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        CouchdbHttpdRequestsMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills couchdb.httpd.requests metric with initial data.
@@ -427,17 +473,48 @@ func (m *metricCouchdbHttpdRequests) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricCouchdbHttpdRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpMethodAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, CouchdbHttpdRequestsMetricAttributeKeyHTTPMethod) {
+		dp.Attributes().PutStr("http.method", httpMethodAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("http.method", httpMethodAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -450,13 +527,18 @@ func (m *metricCouchdbHttpdRequests) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricCouchdbHttpdRequests) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricCouchdbHttpdRequests(cfg MetricConfig) metricCouchdbHttpdRequests {
+func newMetricCouchdbHttpdRequests(cfg CouchdbHttpdRequestsMetricConfig) metricCouchdbHttpdRequests {
 	m := metricCouchdbHttpdRequests{config: cfg}
 
 	if cfg.Enabled {
@@ -467,9 +549,10 @@ func newMetricCouchdbHttpdRequests(cfg MetricConfig) metricCouchdbHttpdRequests 
 }
 
 type metricCouchdbHttpdResponses struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        CouchdbHttpdResponsesMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills couchdb.httpd.responses metric with initial data.
@@ -481,17 +564,48 @@ func (m *metricCouchdbHttpdResponses) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricCouchdbHttpdResponses) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpStatusCodeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, CouchdbHttpdResponsesMetricAttributeKeyHTTPStatusCode) {
+		dp.Attributes().PutStr("http.status_code", httpStatusCodeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("http.status_code", httpStatusCodeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -504,13 +618,18 @@ func (m *metricCouchdbHttpdResponses) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricCouchdbHttpdResponses) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricCouchdbHttpdResponses(cfg MetricConfig) metricCouchdbHttpdResponses {
+func newMetricCouchdbHttpdResponses(cfg CouchdbHttpdResponsesMetricConfig) metricCouchdbHttpdResponses {
 	m := metricCouchdbHttpdResponses{config: cfg}
 
 	if cfg.Enabled {
@@ -521,9 +640,10 @@ func newMetricCouchdbHttpdResponses(cfg MetricConfig) metricCouchdbHttpdResponse
 }
 
 type metricCouchdbHttpdViews struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        CouchdbHttpdViewsMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills couchdb.httpd.views metric with initial data.
@@ -535,17 +655,48 @@ func (m *metricCouchdbHttpdViews) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricCouchdbHttpdViews) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, viewAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, CouchdbHttpdViewsMetricAttributeKeyView) {
+		dp.Attributes().PutStr("view", viewAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("view", viewAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -558,13 +709,18 @@ func (m *metricCouchdbHttpdViews) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricCouchdbHttpdViews) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricCouchdbHttpdViews(cfg MetricConfig) metricCouchdbHttpdViews {
+func newMetricCouchdbHttpdViews(cfg CouchdbHttpdViewsMetricConfig) metricCouchdbHttpdViews {
 	m := metricCouchdbHttpdViews{config: cfg}
 
 	if cfg.Enabled {

@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: processor/k8s_attributes
+note: Re-enable otelcol.k8s.pod.association metric with low-cardinality pod_identifier attribute. The attribute now encodes the association source type/name (e.g. "connection", "resource_attribute/k8s.pod.ip") rather than actual pod identifier values, preventing unbounded metric time series growth.
+issues: [47669]
+subtext:
+change_logs: [user]

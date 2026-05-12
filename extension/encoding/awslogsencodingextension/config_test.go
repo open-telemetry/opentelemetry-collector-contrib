@@ -42,30 +42,12 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfig: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "text_vpcflow"),
 			expected: &Config{
 				Format: constants.FormatVPCFlowLog,
-				VPCFlowLogConfig: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "text_vpc_flow_log"),
-			expected: &Config{
-				Format: constants.FormatVPCFlowLogV1,
-				VPCFlowLogConfigV1: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
 				VPCFlowLogConfig: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
@@ -78,20 +60,10 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfig: vpcflowlog.Config{
 					FileFormat: constants.FileFormatParquet,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "invalid_vpcflow"),
-			expectedErr: fmt.Sprintf(
-				`unsupported file format "invalid" for VPC flow log, expected one of %q`,
-				supportedVPCFlowLogFileFormat,
-			),
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "invalid_vpc_flow_log"),
 			expectedErr: fmt.Sprintf(
 				`unsupported file format "invalid" for VPC flow log, expected one of %q`,
 				supportedVPCFlowLogFileFormat,
@@ -104,9 +76,6 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfig: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
 			},
 		},
 		{
@@ -114,9 +83,6 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Format: constants.FormatWAFLog,
 				VPCFlowLogConfig: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
 			},
@@ -128,9 +94,6 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfig: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
 			},
 		},
 		{
@@ -140,9 +103,6 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfig: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
 			},
 		},
 		{
@@ -150,9 +110,6 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Format: constants.FormatNetworkFirewallLog,
 				VPCFlowLogConfig: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
 			},

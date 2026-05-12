@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -62,6 +63,7 @@ func createDefaultConfig() component.Config {
 			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_json",
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}
 }
 
@@ -81,6 +83,7 @@ func createLogsExporter(ctx context.Context,
 		s3Exporter.ConsumeLogs,
 		exporterhelper.WithStart(s3Exporter.start),
 		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 	)
 	if err != nil {
@@ -118,6 +121,7 @@ func createMetricsExporter(ctx context.Context,
 		s3Exporter.ConsumeMetrics,
 		exporterhelper.WithStart(s3Exporter.start),
 		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 	)
 	if err != nil {
@@ -156,6 +160,7 @@ func createTracesExporter(ctx context.Context,
 		s3Exporter.ConsumeTraces,
 		exporterhelper.WithStart(s3Exporter.start),
 		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 	)
 	if err != nil {

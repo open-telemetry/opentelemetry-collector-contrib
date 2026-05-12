@@ -7,6 +7,7 @@ package schemaprocessor // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -26,7 +27,9 @@ type factory struct{}
 // with the default values being used throughout it
 func newDefaultConfiguration() component.Config {
 	return &Config{
-		ClientConfig: confighttp.NewDefaultClientConfig(),
+		ClientConfig:    confighttp.NewDefaultClientConfig(),
+		CacheCooldown:   5 * time.Minute,
+		CacheRetryLimit: 5,
 	}
 }
 

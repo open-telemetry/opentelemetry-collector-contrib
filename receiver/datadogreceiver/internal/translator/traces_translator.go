@@ -157,8 +157,8 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 	// ddSpan.Attributes["grpc.status.code"] contains the gRPC status code name (eg "OK")
 	// not the numeric value (eg "0")
 	// it's ddSpan.error that indicates holds the gRPC status code numeric value
-	newSpan.Attributes().PutStr(string(conventionsv138.RPCSystemKey), conventionsv138.RPCSystemGRPC.Value.AsString())
-	newSpan.Attributes().PutInt(string(conventionsv138.RPCGRPCStatusCodeKey), int64(span.GetError()))
+	newSpan.Attributes().PutStr(string(conventions.RPCSystemNameKey), conventions.RPCSystemNameGRPC.Value.AsString())
+	newSpan.Attributes().PutStr(string(conventions.RPCResponseStatusCodeKey), strconv.Itoa(int(span.GetError())))
 
 	method := ""
 	service := ""
@@ -213,7 +213,7 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 
 func processAWSSdkSpan(span *pb.Span, newSpan *ptrace.Span) {
 	// https://opentelemetry.io/docs/specs/semconv/cloud-providers/aws-sdk/
-	newSpan.Attributes().PutStr(string(conventionsv138.RPCSystemKey), "aws-api")
+	newSpan.Attributes().PutStr(string(conventions.RPCSystemNameKey), "aws-api")
 	if service, ok := span.Meta[("aws.service")]; ok {
 		if operation, ok := span.Meta[("aws.operation")]; ok {
 			newSpan.SetName(service + "/" + operation)

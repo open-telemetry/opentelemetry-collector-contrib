@@ -39,7 +39,7 @@ func TestFactory(t *testing.T) {
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
 		MetadataCollectionInterval: 5 * time.Minute,
-		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig:       metadata.NewDefaultMetricsBuilderConfig(),
 	}, rCfg)
 
 	r, err := f.CreateTraces(

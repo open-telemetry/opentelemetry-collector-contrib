@@ -37,9 +37,10 @@ const (
 
 // k8sHintsBuilder creates configurations from hints provided as Pod's annotations.
 type k8sHintsBuilder struct {
-	logger             *zap.Logger
-	ignoreReceivers    map[string]bool
-	defaultAnnotations map[string]string
+	logger               *zap.Logger
+	ignoreReceivers      map[string]bool
+	defaultAnnotations   map[string]string
+	defaultFileLogConfig userConfigMap
 }
 
 func createK8sHintsBuilder(config DiscoveryConfig, logger *zap.Logger) k8sHintsBuilder {
@@ -48,9 +49,10 @@ func createK8sHintsBuilder(config DiscoveryConfig, logger *zap.Logger) k8sHintsB
 		ignoreReceivers[r] = true
 	}
 	return k8sHintsBuilder{
-		logger:             logger,
-		ignoreReceivers:    ignoreReceivers,
-		defaultAnnotations: config.DefaultAnnotations,
+		logger:               logger,
+		ignoreReceivers:      ignoreReceivers,
+		defaultAnnotations:   config.DefaultAnnotations,
+		defaultFileLogConfig: config.DefaultFileLogConfig,
 	}
 }
 
@@ -169,6 +171,7 @@ func (builder *k8sHintsBuilder) createLogsReceiver(
 		pod.UID,
 		pod.Name,
 		pod.Namespace,
+		builder.defaultFileLogConfig,
 		builder.logger)
 
 	recTemplate, err := newReceiverTemplate(fmt.Sprintf("%v/%v_%v", subreceiverKey, pod.UID, containerName), userConfMap)
@@ -222,17 +225,12 @@ func getScraperConfFromAnnotations(
 func createLogsConfig(
 	annotations map[string]string,
 	containerName, podUID, podName, namespace string,
+	defaultConfMap userConfigMap,
 	logger *zap.Logger,
 ) userConfigMap {
 	scopeSuffix := containerName
 	logPath := fmt.Sprintf(defaultLogPathPattern, namespace, podName, podUID, containerName)
-	cont := []any{map[string]any{"id": "container-parser", "type": "container"}}
-	defaultConfMap := userConfigMap{
-		"include":           []string{logPath},
-		"include_file_path": true,
-		"include_file_name": false,
-		"operators":         cont,
-	}
+	defaultConfMap["include"] = []string{logPath}
 
 	configStr, found := getHintAnnotation(annotations, otelLogsHints, configHint, scopeSuffix)
 	if !found || configStr == "" {

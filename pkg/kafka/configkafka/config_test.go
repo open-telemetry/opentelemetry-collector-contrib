@@ -28,7 +28,7 @@ func TestClientConfig(t *testing.T) {
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ResolveCanonicalBootstrapServersOnly: true,
 				ClientID:                             "vip",
-				ProtocolVersion:                      "1.2.3",
+				ProtocolVersion:                      "3.1.2",
 				TLS: &configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile:   "ca.pem",
@@ -132,7 +132,7 @@ func TestClientConfig(t *testing.T) {
 			expectedErr: "brokers must be specified",
 		},
 		"invalid_protocol_version": {
-			expectedErr: "invalid protocol version: invalid version `none`",
+			expectedErr: `invalid protocol version: "none"`,
 		},
 		"sasl_invalid_mechanism": {
 			expectedErr: "auth::sasl: mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FANCY",

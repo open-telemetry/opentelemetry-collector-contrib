@@ -21,10 +21,22 @@ data:
             enabled: true
           k8s.service.load_balancer.ingress.count:
             enabled: true
+          k8s.persistentvolume.status.phase:
+            enabled: true
+          k8s.persistentvolume.storage.capacity:
+            enabled: true
+          k8s.persistentvolumeclaim.status.phase:
+            enabled: true
+          k8s.persistentvolumeclaim.storage.capacity:
+            enabled: true
+          k8s.persistentvolumeclaim.storage.request:
+            enabled: true
         resource_attributes:
           k8s.service.traffic_distribution:
             enabled: true
           k8s.service.publish_not_ready_addresses:
+            enabled: true
+          k8s.persistentvolume.reclaim_policy:
             enabled: true
     service:
       telemetry:

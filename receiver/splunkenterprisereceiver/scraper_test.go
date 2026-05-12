@@ -168,7 +168,7 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 	} else {
 		endpoint = ts.URL
 	}
-	metricsCfg := metadata.DefaultMetricsBuilderConfig()
+	metricsCfg := metadata.NewDefaultMetricsBuilderConfig()
 	// in the future add more metrics
 	metricsCfg.Metrics.SplunkHealth.Enabled = false
 	metricsCfg.Metrics.SplunkIndexerThroughput.Enabled = true

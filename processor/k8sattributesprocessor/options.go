@@ -423,3 +423,11 @@ func withWaitForMetadataTimeout(timeout time.Duration) option {
 		return nil
 	}
 }
+
+// withWatchSyncPeriod allows specifying the resync period for informer.
+func withWatchSyncPeriod(duration time.Duration) option {
+	return func(p *kubernetesprocessor) error {
+		p.watchSyncPeriod = duration
+		return nil
+	}
+}

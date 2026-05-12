@@ -18,16 +18,18 @@ type AttributeChangeSet struct {
 	// new attribute name starting from this version (comment from ast.AttributeMap)
 	updates map[string]string
 	// the inverse of the updates map
-	rollback map[string]string
+	rollback       map[string]string
+	copyAttributes bool
 }
 
 // NewAttributeChangeSet allows for typed strings to be used as part
 // of the invocation that will be converted into the default string type.
-func NewAttributeChangeSet(mappings map[string]string) AttributeChangeSet {
+func NewAttributeChangeSet(mappings map[string]string, copyAttributes bool) AttributeChangeSet {
 	// for ambiguous rollbacks (if updates contains entries with multiple keys that have the same value), rollback contains the last key iterated over in mappings
 	attr := AttributeChangeSet{
-		updates:  make(map[string]string, len(mappings)),
-		rollback: make(map[string]string, len(mappings)),
+		updates:        make(map[string]string, len(mappings)),
+		rollback:       make(map[string]string, len(mappings)),
+		copyAttributes: copyAttributes,
 	}
 	for k, v := range mappings {
 		attr.updates[k] = v
@@ -55,16 +57,25 @@ func (a *AttributeChangeSet) Do(ss StateSelector, attrs pcommon.Map) (errs error
 			key, matched = a.rollback[k]
 		}
 		if matched {
-			k, updated[key] = key, struct{}{}
-		} else {
-			// TODO: Since the spec hasn't decided the behavior on what
-			//       should happen on a name conflict, this will assume
-			//       the rewrite has priority and will set it to the original
-			//       entry's value, not the existing value.
-			if _, overridden := updated[k]; overridden {
-				errs = multierr.Append(errs, fmt.Errorf("value %q already exists", k))
-				continue
+			updated[key] = struct{}{}
+			if a.copyAttributes {
+				// In copy mode, preserve the original attribute and also
+				// write the renamed copy (unless the target already exists).
+				if _, targetExists := attrs.Get(key); !targetExists {
+					v.CopyTo(results.PutEmpty(key))
+				}
+				// Original key k is preserved — falls through to CopyTo below.
+			} else {
+				k = key
 			}
+		} else if _, overridden := updated[k]; overridden && !a.copyAttributes {
+			// The schema file format spec does not define behavior for name
+			// conflicts (when the target attribute already exists). We treat
+			// identical values as a no-op and only report an error when they differ.
+			if renamed, ok := results.Get(k); ok && !v.Equal(renamed) {
+				errs = multierr.Append(errs, fmt.Errorf("value %q already exists", k))
+			}
+			continue
 		}
 		v.CopyTo(results.PutEmpty(k))
 	}

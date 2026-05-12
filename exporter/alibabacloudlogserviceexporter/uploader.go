@@ -5,6 +5,7 @@ package alibabacloudlogserviceexporter // import "github.com/open-telemetry/open
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"os"
 
@@ -59,10 +60,15 @@ func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, 
 		producerConfig.StsTokenShutDown = make(chan struct{})
 	}
 
+	producer, err := producer.NewProducer(producerConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Log Service producer: %w", err)
+	}
+
 	c := &logServiceClientImpl{
 		project:        config.Project,
 		logstore:       config.Logstore,
-		clientInstance: producer.InitProducer(producerConfig),
+		clientInstance: producer,
 		logger:         logger,
 	}
 	c.clientInstance.Start()

@@ -41,8 +41,11 @@ func newMongoDBAtlasReceiver(settings receiver.Settings, cfg *Config) (*mongodba
 		return nil, fmt.Errorf("failed to create MongoDB Atlas client receiver: %w", err)
 	}
 
-	for _, p := range cfg.Projects {
-		p.populateIncludesAndExcludes()
+	// Use index-based iteration: cfg.Projects is []ProjectConfig (value slice),
+	// so a range-copy would make populateIncludesAndExcludes a no-op on the
+	// original elements.
+	for i := range cfg.Projects {
+		cfg.Projects[i].populateIncludesAndExcludes()
 	}
 
 	return &mongodbatlasreceiver{

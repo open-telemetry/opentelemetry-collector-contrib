@@ -19,13 +19,21 @@ type MetadataUpdateClient interface {
 	PushMetadata([]*metadata.MetadataUpdate) error
 }
 
+// resourceIDsSkipSanitization lists resource ID keys whose properties should
+// pass through without label-prefix stripping or k8s.service.* rewriting.
+var resourceIDsSkipSanitization = map[string]bool{
+	"k8s.service.uid":               true,
+	"k8s.persistentvolume.uid":      true,
+	"k8s.persistentvolumeclaim.uid": true,
+}
+
 func getDimensionUpdateFromMetadata(
 	defaults map[string]string,
 	metadata metadata.MetadataUpdate,
 	nonAlphanumericDimChars string,
 	stripK8sLabelPrefix bool,
 ) *DimensionUpdate {
-	skipSanitization := metadata.ResourceIDKey == "k8s.service.uid"
+	skipSanitization := resourceIDsSkipSanitization[metadata.ResourceIDKey]
 	properties, tags := getPropertiesAndTags(defaults, metadata, skipSanitization, stripK8sLabelPrefix)
 
 	return &DimensionUpdate{

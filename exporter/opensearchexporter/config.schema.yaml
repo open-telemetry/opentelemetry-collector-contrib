@@ -42,6 +42,9 @@ properties:
     type: string
   namespace:
     type: string
+  pipeline:
+    description: Pipeline is the optional ID of an ingest pipeline to apply when indexing documents. https://opensearch.org/docs/latest/ingest-pipelines/
+    type: string
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config

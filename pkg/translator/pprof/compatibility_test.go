@@ -26,7 +26,7 @@ func TestRoundTripConversion(t *testing.T) {
 		require.NoError(t, err)
 
 		// Convert back to pprof
-		roundTrip, err := convertPprofileToPprof(pprofiles)
+		roundTrip, err := ConvertPprofileToPprof(pprofiles)
 		require.NoError(t, err)
 
 		// Compare the profiles
@@ -48,7 +48,7 @@ func TestRoundTripConversion(t *testing.T) {
 		require.NoError(t, err)
 
 		// Convert back to pprof
-		roundTrip, err := convertPprofileToPprof(pprofiles)
+		roundTrip, err := ConvertPprofileToPprof(pprofiles)
 		require.NoError(t, err)
 
 		// Compare the profiles

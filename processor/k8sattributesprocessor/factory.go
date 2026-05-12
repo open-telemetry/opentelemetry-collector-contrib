@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
@@ -25,6 +26,7 @@ var (
 	kubeClientProvider   = kube.ClientProvider(nil)
 	consumerCapabilities = consumer.Capabilities{MutatesData: true}
 	defaultExcludes      = ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}}
+	processors           = sharedcomponent.NewSharedComponents()
 )
 
 // NewFactory returns a new factory for the k8s processor.
@@ -48,6 +50,7 @@ func createDefaultConfig() component.Config {
 			Metadata: enabledAttributes(),
 		},
 		WaitForMetadataTimeout: 10 * time.Second,
+		WatchSyncPeriod:        5 * time.Minute,
 	}
 }
 
@@ -57,7 +60,23 @@ func createTracesProcessor(
 	cfg component.Config,
 	next consumer.Traces,
 ) (processor.Traces, error) {
-	return createTracesProcessorWithOptions(ctx, params, cfg, next)
+	if !metadata.ProcessorK8sattributesShareProcessorBetweenPipelinesFeatureGate.IsEnabled() {
+		return createTracesProcessorWithOptions(ctx, params, cfg, next)
+	}
+	sc := processors.GetOrAdd(cfg, func() component.Component {
+		return createKubernetesProcessor(params, cfg)
+	})
+	kp := sc.Unwrap().(*kubernetesprocessor)
+
+	return processorhelper.NewTraces(
+		ctx,
+		params,
+		cfg,
+		next,
+		kp.processTraces,
+		processorhelper.WithCapabilities(consumerCapabilities),
+		processorhelper.WithStart(sc.Start),
+		processorhelper.WithShutdown(sc.Shutdown))
 }
 
 func createLogsProcessor(
@@ -66,7 +85,23 @@ func createLogsProcessor(
 	cfg component.Config,
 	nextLogsConsumer consumer.Logs,
 ) (processor.Logs, error) {
-	return createLogsProcessorWithOptions(ctx, params, cfg, nextLogsConsumer)
+	if !metadata.ProcessorK8sattributesShareProcessorBetweenPipelinesFeatureGate.IsEnabled() {
+		return createLogsProcessorWithOptions(ctx, params, cfg, nextLogsConsumer)
+	}
+	sc := processors.GetOrAdd(cfg, func() component.Component {
+		return createKubernetesProcessor(params, cfg)
+	})
+	kp := sc.Unwrap().(*kubernetesprocessor)
+
+	return processorhelper.NewLogs(
+		ctx,
+		params,
+		cfg,
+		nextLogsConsumer,
+		kp.processLogs,
+		processorhelper.WithCapabilities(consumerCapabilities),
+		processorhelper.WithStart(sc.Start),
+		processorhelper.WithShutdown(sc.Shutdown))
 }
 
 func createMetricsProcessor(
@@ -75,7 +110,23 @@ func createMetricsProcessor(
 	cfg component.Config,
 	nextMetricsConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
-	return createMetricsProcessorWithOptions(ctx, params, cfg, nextMetricsConsumer)
+	if !metadata.ProcessorK8sattributesShareProcessorBetweenPipelinesFeatureGate.IsEnabled() {
+		return createMetricsProcessorWithOptions(ctx, params, cfg, nextMetricsConsumer)
+	}
+	sc := processors.GetOrAdd(cfg, func() component.Component {
+		return createKubernetesProcessor(params, cfg)
+	})
+	kp := sc.Unwrap().(*kubernetesprocessor)
+
+	return processorhelper.NewMetrics(
+		ctx,
+		params,
+		cfg,
+		nextMetricsConsumer,
+		kp.processMetrics,
+		processorhelper.WithCapabilities(consumerCapabilities),
+		processorhelper.WithStart(sc.Start),
+		processorhelper.WithShutdown(sc.Shutdown))
 }
 
 func createProfilesProcessor(
@@ -84,7 +135,24 @@ func createProfilesProcessor(
 	cfg component.Config,
 	nextProfilesConsumer xconsumer.Profiles,
 ) (xprocessor.Profiles, error) {
-	return createProfilesProcessorWithOptions(ctx, params, cfg, nextProfilesConsumer)
+	if !metadata.ProcessorK8sattributesShareProcessorBetweenPipelinesFeatureGate.IsEnabled() {
+		return createProfilesProcessorWithOptions(ctx, params, cfg, nextProfilesConsumer)
+	}
+	sc := processors.GetOrAdd(cfg, func() component.Component {
+		return createKubernetesProcessor(params, cfg)
+	})
+	kp := sc.Unwrap().(*kubernetesprocessor)
+
+	return xprocessorhelper.NewProfiles(
+		ctx,
+		params,
+		cfg,
+		nextProfilesConsumer,
+		kp.processProfiles,
+		xprocessorhelper.WithCapabilities(consumerCapabilities),
+		xprocessorhelper.WithStart(sc.Start),
+		xprocessorhelper.WithShutdown(sc.Shutdown),
+	)
 }
 
 func createTracesProcessorWithOptions(
@@ -211,7 +279,8 @@ func createProcessorOpts(cfg component.Config) []option {
 		withAPIConfig(oCfg.APIConfig),
 		withExtractPodAssociations(oCfg.Association...),
 		withExcludes(oCfg.Exclude),
-		withWaitForMetadataTimeout(oCfg.WaitForMetadataTimeout))
+		withWaitForMetadataTimeout(oCfg.WaitForMetadataTimeout),
+		withWatchSyncPeriod(oCfg.WatchSyncPeriod))
 
 	if oCfg.WaitForMetadata {
 		opts = append(opts, withWaitForMetadata(true))

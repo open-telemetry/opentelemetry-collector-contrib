@@ -73,7 +73,9 @@ properties:
     $ref: signal_config
   record_headers:
     description: RecordHeaders sets static headers on every outgoing Kafka record.
-    $ref: go.opentelemetry.io/collector/config/configopaque.map_list
+    type: array
+    items:
+      $ref: ./internal/kafkaclient.record_header
   record_partitioner:
     description: RecordPartitioner configures how Kafka records are assigned to partitions. The default ("sarama_compatible") retains the legacy Sarama-compatible hashing behavior. Set to "sticky", "round_robin", or "least_backup" to use one of the built-in franz-go partitioners, or "extension" to delegate to a custom extension.
     $ref: record_partitioner_config

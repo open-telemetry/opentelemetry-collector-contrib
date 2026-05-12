@@ -68,6 +68,10 @@ properties:
   poll_rate:
     description: azeventhub lib specific
     type: integer
+  prefetch_count:
+    description: PrefetchCount controls the size of the SDK's internal prefetch buffer per partition. The SDK uses this value to maintain an asynchronous cache of events so that ReceiveEvents calls return from a local buffer rather than waiting on the network. 0  - use the SDK default (300) <0  - disable prefetch >0  - use the explicit value
+    type: integer
+    x-customType: int32
   storage:
     x-pointer: true
     type: string
