@@ -11,7 +11,7 @@ var ExtensionOpampextensionHeartbeatIntervalNegotiationFeatureGate = featuregate
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the OpAMP extension defaults `reports_heartbeat` to true."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48043"),
-	featuregate.WithRegisterFromVersion("v0.152.0"),
+	featuregate.WithRegisterFromVersion("v0.153.0"),
 )
 
 var ExtensionOpampextensionRemoteRestartsFeatureGate = featuregate.GlobalRegistry().MustRegister(
