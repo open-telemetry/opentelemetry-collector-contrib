@@ -31,6 +31,7 @@ The following are the configuration options:
 - `client_auth.username_file`: Path to a file containing the username. If set, takes precedence over `username`. The file is watched for changes, allowing rotation without restarting the collector.
 - `client_auth.password`: Password to use for client authentication.
 - `client_auth.password_file`: Path to a file containing the password. If set, takes precedence over `password`. The file is watched for changes, allowing rotation without restarting the collector.
+- `client_auth.aws_secrets_manager`: Fetch credentials from AWS Secrets Manager. Mutually exclusive with the inline/file options above. See [AWS Secrets Manager](#aws-secrets-manager) for details.
 
 To configure the extension as a server authenticator, either one of `htpasswd.file` or `htpasswd.inline` has to be set. If both are configured, `htpasswd.inline` credentials take precedence.
 
@@ -58,6 +59,16 @@ extensions:
       username_file: /etc/secrets/username
       password_file: /etc/secrets/password
 
+  # AWS Secrets Manager (polled for changes, enabling rotation without restart)
+  basicauth/client_from_aws:
+    client_auth:
+      aws_secrets_manager:
+        secret_arn: arn:aws:secretsmanager:us-east-1:123456789012:secret:my-credentials
+        region: us-east-1           # optional; falls back to AWS_REGION / instance metadata
+        refresh_interval: 1h        # optional; defaults to 1h
+        username_key: username      # optional; defaults to "username"
+        password_key: password      # optional; defaults to "password"
+
 receivers:
   otlp:
     protocols:
@@ -80,3 +91,24 @@ service:
       processors: []
       exporters: [otlp_grpc]
 ```
+
+## AWS Secrets Manager
+
+When `client_auth.aws_secrets_manager` is set, the extension fetches credentials from AWS Secrets Manager at startup and polls for changes at the configured `refresh_interval` (default: `1h`). Credentials are swapped in place when a rotation is detected — no collector restart required.
+
+The secret must be a JSON object containing the username and password. The default key names match AWS's own rotation templates for RDS, Redshift, DocumentDB, and ElastiCache:
+
+```json
+{
+  "username": "myuser",
+  "password": "mypassword"
+}
+```
+
+Use `username_key` and `password_key` to override the field names if your secret uses different keys.
+
+**Authentication:** The extension uses the standard AWS SDK credential chain — environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`), shared credentials file (`~/.aws/credentials`), IAM instance profile, ECS/EKS task role, etc. No additional configuration is needed if the collector is running on an AWS resource with an appropriate IAM role.
+
+**Behavior on poll failure:** If a refresh fails (e.g., transient network error, temporary permission issue), the extension logs a warning and continues using the last successfully fetched credentials. The collector is not interrupted.
+
+`aws_secrets_manager` is mutually exclusive with `username`, `username_file`, `password`, and `password_file`.

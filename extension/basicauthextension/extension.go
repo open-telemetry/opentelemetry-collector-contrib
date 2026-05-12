@@ -218,11 +218,12 @@ var (
 )
 
 type basicAuthClient struct {
-	clientAuth       *ClientAuthSettings
-	logger           *zap.Logger
-	usernameResolver credentialsfile.ValueResolver
-	passwordResolver credentialsfile.ValueResolver
-	grpcMetadata     atomic.Pointer[map[string]string]
+	clientAuth        *ClientAuthSettings
+	logger            *zap.Logger
+	usernameResolver  credentialsfile.ValueResolver
+	passwordResolver  credentialsfile.ValueResolver
+	awsSecretsManager *awsSecretsManagerResolver
+	grpcMetadata      atomic.Pointer[map[string]string]
 }
 
 func (ba *basicAuthClient) updateGRPCMetadata() {
@@ -237,8 +238,19 @@ func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 	if ba.clientAuth == nil {
 		return errNoCredentialSource
 	}
-	onChange := func(_ string) { ba.updateGRPCMetadata() }
 	ca := ba.clientAuth
+
+	if ca.AWSSecretsManager != nil {
+		r := newAWSSecretsManagerResolver(ca.AWSSecretsManager, ba.logger, ba.updateGRPCMetadata)
+		if err := r.start(ctx); err != nil {
+			return err
+		}
+		ba.awsSecretsManager = r
+		ba.updateGRPCMetadata()
+		return nil
+	}
+
+	onChange := func(_ string) { ba.updateGRPCMetadata() }
 	if ca.Username != "" || ca.UsernameFile != "" {
 		r, err := credentialsfile.NewValueResolver(ca.Username, ca.UsernameFile, ba.logger, credentialsfile.WithOnChange(onChange))
 		if err != nil {
@@ -265,6 +277,9 @@ func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 
 func (ba *basicAuthClient) Shutdown(_ context.Context) error {
 	var errs []error
+	if ba.awsSecretsManager != nil {
+		errs = append(errs, ba.awsSecretsManager.shutdown())
+	}
 	if ba.usernameResolver != nil {
 		errs = append(errs, ba.usernameResolver.Shutdown())
 	}
@@ -275,6 +290,9 @@ func (ba *basicAuthClient) Shutdown(_ context.Context) error {
 }
 
 func (ba *basicAuthClient) username() string {
+	if ba.awsSecretsManager != nil {
+		return ba.awsSecretsManager.Username()
+	}
 	if ba.usernameResolver != nil {
 		return ba.usernameResolver.Value()
 	}
@@ -285,6 +303,9 @@ func (ba *basicAuthClient) username() string {
 }
 
 func (ba *basicAuthClient) password() string {
+	if ba.awsSecretsManager != nil {
+		return ba.awsSecretsManager.Password()
+	}
 	if ba.passwordResolver != nil {
 		return ba.passwordResolver.Value()
 	}
