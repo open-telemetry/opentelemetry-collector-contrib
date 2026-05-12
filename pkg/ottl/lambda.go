@@ -45,6 +45,8 @@ func (s *lambdaScopeStack) allows(name string) bool {
 // LambdaExpression is a parsed OTTL lambda expression. OTTL functions may accept it as an argument.
 // Implementations that run the lambda should call [LambdaExpression.Eval] with params in declaration
 // order where params[i] is the value for the i-th parameter (see [LambdaExpression.NumParams]).
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 type LambdaExpression[K any] struct {
 	paramNames []string
 	body       Getter[K] // mutually exclusive with bodyExpr
