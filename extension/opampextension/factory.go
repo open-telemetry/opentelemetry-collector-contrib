@@ -15,19 +15,11 @@ import (
 )
 
 const (
-	remoteRestartsFeatureGateName            = "extension.opampextension.RemoteRestarts"
 	heartbeatIntervalNegotiationGateName = "extension.opampextension.HeartbeatIntervalNegotiation"
 )
 
-// RemoteRestartsFeatureGate is the feature gate that controls the remote restart capability for the OpAMP client.
 // HeartbeatIntervalNegotiationFeatureGate is the feature gate that controls the default value of reports_heartbeat.
 var (
-	RemoteRestartsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-		remoteRestartsFeatureGateName,
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled, the OpAMP extension supports restart commands from the OpAMP server through the `CommandType_Restart` command."),
-		featuregate.WithRegisterFromVersion("v0.145.0"),
-	)
 	HeartbeatIntervalNegotiationFeatureGate = featuregate.GlobalRegistry().MustRegister(
 		heartbeatIntervalNegotiationGateName,
 		featuregate.StageAlpha,
