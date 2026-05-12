@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/prometheus_remote_write
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Replace string-based hashing with the identity library for metric, resource, and exemplar identity computation
+note: Performance improvements while processing remote write requests.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47850]
@@ -15,10 +15,7 @@ issues: [47850]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-    All string concatenation and xxhash-based hashing in the receiver has been replaced
-    with `internal/exp/metrics/identity` and `hash/fnv`, eliminating intermediate string
-    allocations and aligning with the hashing approach used elsewhere in the collector.
+subtext:
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
