@@ -42,13 +42,11 @@ Example:
 ```yaml
 exporters:
   faro:
-    endpoint: https://faro.example.com/collect
+    endpoint: https://faro.example.com/collect/<app-key>
     timeout: 10s
-    headers:
-      X-Custom-Header: "custom-value"
 ```
 
-> **Note:** A Faro collector endpoint identifies the application via the app key in the URL path (e.g. `https://faro.example.com/collect/<app-key>`). It does **not** authenticate requests via an `X-API-Key` header, so do not set one for that purpose. The `headers` block is provided for passing any additional HTTP headers your deployment may require (e.g. via an intermediate proxy).
+> **Note:** The app key in the URL path identifies the application sending telemetry to the Faro endpoint.
 
 The full list of settings exposed for this exporter are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
 
