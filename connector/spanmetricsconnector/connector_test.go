@@ -56,11 +56,12 @@ const (
 
 // metricID represents the minimum attributes that uniquely identifies a metric in our tests.
 type metricID struct {
-	service        string
-	name           string
-	kind           string
-	statusCode     string
-	otelStatusCode string
+	service             string
+	name                string
+	kind                string
+	statusCode          string
+	collectorInstanceID string
+	otelStatusCode      string
 }
 
 type metricDataPoint interface {
@@ -373,6 +374,8 @@ func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[met
 			mID.kind = v.Str()
 		case statusCodeKey:
 			mID.statusCode = v.Str()
+		case collectorInstanceKey:
+			mID.collectorInstanceID = v.Str()
 		case otelStatusCodeKey:
 			mID.otelStatusCode = v.Str()
 		case metricAttrSamplingMethod:
@@ -507,6 +510,57 @@ func initSpan(span span, s ptrace.Span) {
 	e := s.Events().AppendEmpty()
 	e.SetName("exception")
 	e.Attributes().PutStr(exceptionTypeAttrName, "NullPointerException")
+}
+
+func setSpanAttributeValue(traces ptrace.Traces, key, value string) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		scopeSpans := traces.ResourceSpans().At(i).ScopeSpans()
+		for j := 0; j < scopeSpans.Len(); j++ {
+			spans := scopeSpans.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				spans.At(k).Attributes().PutStr(key, value)
+			}
+		}
+	}
+}
+
+func hasDataPointWithStringAttrValue(metrics pmetric.Metrics, value string) bool {
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		scopeMetrics := metrics.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metricSlice := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metricSlice.Len(); k++ {
+				metric := metricSlice.At(k)
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
+					dps := metric.Sum().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						attr, ok := dps.At(l).Attributes().Get(stringAttrName)
+						if ok && attr.Str() == value {
+							return true
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					dps := metric.Histogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						attr, ok := dps.At(l).Attributes().Get(stringAttrName)
+						if ok && attr.Str() == value {
+							return true
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					dps := metric.ExponentialHistogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						attr, ok := dps.At(l).Attributes().Get(stringAttrName)
+						if ok && attr.Str() == value {
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+	return false
 }
 
 func disabledExemplarsConfig() ExemplarsConfig {
@@ -1132,6 +1186,39 @@ func TestResourceMetricsExpiration(t *testing.T) {
 	err = p.ConsumeTraces(ctx, buildSampleTrace())
 	require.NoError(t, err)
 	assert.Equal(t, 2, p.resourceMetrics.Len())
+}
+
+func TestSeriesExpiration(t *testing.T) {
+	mockClock := clockwork.NewFakeClock()
+	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, mockClock, false)
+	require.NoError(t, err)
+	p.config.SeriesExpiration = time.Millisecond
+
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
+
+	tracesA := buildSampleTrace()
+	setSpanAttributeValue(tracesA, stringAttrName, "A")
+
+	tracesB := buildSampleTrace()
+	setSpanAttributeValue(tracesB, stringAttrName, "B")
+
+	require.NoError(t, p.ConsumeTraces(ctx, tracesA))
+	exported := p.buildMetrics()
+	assert.True(t, hasDataPointWithStringAttrValue(exported, "A"))
+	assert.False(t, hasDataPointWithStringAttrValue(exported, "B"))
+	p.resetState()
+
+	mockClock.Advance(time.Millisecond)
+
+	require.NoError(t, p.ConsumeTraces(ctx, tracesB))
+	exported = p.buildMetrics()
+	assert.True(t, hasDataPointWithStringAttrValue(exported, "A"))
+	assert.True(t, hasDataPointWithStringAttrValue(exported, "B"))
+	p.resetState()
+
+	exported = p.buildMetrics()
+	assert.False(t, hasDataPointWithStringAttrValue(exported, "A"))
+	assert.True(t, hasDataPointWithStringAttrValue(exported, "B"))
 }
 
 func TestResourceMetricsKeyAttributes(t *testing.T) {
@@ -2184,6 +2271,7 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 				statusCodeKey:                  "STATUS_CODE_UNSET",
 				instrumentationScopeNameKey:    "express",
 				instrumentationScopeVersionKey: "1.0.0",
+				collectorInstanceKey:           instanceID,
 			},
 		},
 		{
@@ -2196,10 +2284,11 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 			}(),
 			config: Config{EnableMetricsSamplingMethod: true},
 			want: map[string]string{
-				serviceNameKey: "test_service",
-				spanNameKey:    "test_span",
-				spanKindKey:    "SPAN_KIND_INTERNAL",
-				statusCodeKey:  "STATUS_CODE_UNSET",
+				serviceNameKey:       "test_service",
+				spanNameKey:          "test_span",
+				spanKindKey:          "SPAN_KIND_INTERNAL",
+				statusCodeKey:        "STATUS_CODE_UNSET",
+				collectorInstanceKey: instanceID,
 			},
 		},
 		{
@@ -2214,10 +2303,11 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 				EnableMetricsSamplingMethod: true,
 			},
 			want: map[string]string{
-				serviceNameKey: "test_service",
-				spanNameKey:    "test_span",
-				spanKindKey:    "SPAN_KIND_INTERNAL",
-				statusCodeKey:  "STATUS_CODE_UNSET",
+				serviceNameKey:       "test_service",
+				spanNameKey:          "test_span",
+				spanKindKey:          "SPAN_KIND_INTERNAL",
+				statusCodeKey:        "STATUS_CODE_UNSET",
+				collectorInstanceKey: instanceID,
 			},
 		},
 
@@ -2238,13 +2328,14 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 				spanKindKey:                 "SPAN_KIND_INTERNAL",
 				statusCodeKey:               "STATUS_CODE_UNSET",
 				instrumentationScopeNameKey: "express",
+				collectorInstanceKey:        instanceID,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &connectorImp{config: tt.config}
+			p := &connectorImp{config: tt.config, instanceID: instanceID}
 
 			span := ptrace.NewSpan()
 			span.SetName("test_span")
@@ -2524,6 +2615,7 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 				instrumentationScopeNameKey:    "express",
 				instrumentationScopeVersionKey: "1.0.0",
 			},
+			includeCollectorInstanceID: false,
 		},
 		{
 			name: "enable includeCollectorInstanceID feature-gate",
@@ -2553,11 +2645,11 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &connectorImp{config: tt.config, instanceID: instanceID}
-			if tt.includeCollectorInstanceID {
-				require.NoError(t, featuregate.GlobalRegistry().Set(includeCollectorInstanceID.ID(), true))
+			if !tt.includeCollectorInstanceID {
+				require.NoError(t, featuregate.GlobalRegistry().Set(includeCollectorInstanceID.ID(), false))
 			}
 			defer func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(includeCollectorInstanceID.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(includeCollectorInstanceID.ID(), true))
 			}()
 
 			span := ptrace.NewSpan()

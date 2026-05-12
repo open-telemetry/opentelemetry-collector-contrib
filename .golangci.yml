@@ -145,25 +145,13 @@ linters:
         path: extension/encoding/awslogsencodingextension/
       - linters:
           - forbidigo
-        path: extension/opampextension/
-      - linters:
-          - forbidigo
         path: internal/filter/
-      - linters:
-          - forbidigo
-        path: pkg/ottl/
-      - linters:
-          - forbidigo
-        path: pkg/translator/prometheus/
       - linters:
           - forbidigo
         path: receiver/awscontainerinsightreceiver/
       - linters:
           - forbidigo
         path: receiver/datadogreceiver/
-      - linters:
-          - forbidigo
-        path: receiver/hostmetricsreceiver/
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47586
       - linters:
