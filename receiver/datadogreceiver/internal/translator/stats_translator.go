@@ -53,6 +53,7 @@ func (st *StatsTranslator) TranslateStats(clientStats *pb.ClientStatsPayload, la
 	mx.SetName(keyStatsPayload)
 	sum := mx.SetEmptySum()
 	sum.SetIsMonotonic(false)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	dp := sum.DataPoints().AppendEmpty()
 	byteSlice := dp.Attributes().PutEmptyBytes(keyStatsPayload)
 	byteSlice.Append(bytes...)

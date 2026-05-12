@@ -584,6 +584,11 @@ include:
 					Enabled:            true,
 					IgnoreReceivers:    test.ignoreReceivers,
 					DefaultAnnotations: test.defaultAnnotations,
+					DefaultFileLogConfig: userConfigMap{
+						"include_file_path": true,
+						"include_file_name": false,
+						"operators":         []any{map[string]any{"id": "container-parser", "type": "container"}},
+					},
 				},
 				logger)
 			env, err := test.inputEndpoint.Env()
@@ -750,6 +755,9 @@ operators:
 					"my-uid",
 					"my-pod",
 					"my-ns",
+					userConfigMap{
+						"include_file_path": true,
+					},
 					zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))),
 			)
 		})

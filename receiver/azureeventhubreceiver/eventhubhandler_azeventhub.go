@@ -207,6 +207,7 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 		)
 		pc, err := h.hub.NewPartitionClient(partitionID, &azeventhubs.PartitionClientOptions{
 			StartPosition: startPos,
+			Prefetch:      h.config.PrefetchCount,
 		})
 		if err != nil {
 			return nil, err
@@ -400,7 +401,9 @@ func createProcessor(config *Config, host component.Host, logger *zap.Logger) (*
 		return nil, nil, err
 	}
 
-	processor, err := azeventhubs.NewProcessor(consumerClient, checkpointStore, nil)
+	processor, err := azeventhubs.NewProcessor(consumerClient, checkpointStore, &azeventhubs.ProcessorOptions{
+		Prefetch: config.PrefetchCount,
+	})
 	if err != nil {
 		consumerClient.Close(context.Background())
 		return nil, nil, fmt.Errorf("failed to create processor: %w", err)

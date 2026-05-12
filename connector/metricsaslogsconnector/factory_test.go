@@ -17,14 +17,14 @@ func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
 
 	assert.NotNil(t, factory)
-	assert.Equal(t, component.MustNewType("metricsaslogs"), factory.Type())
+	assert.Equal(t, component.MustNewType("metrics_as_logs"), factory.Type())
 	assert.Equal(t, component.StabilityLevelAlpha, factory.MetricsToLogsStability())
 }
 
 func TestCreateMetricsToLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := connectortest.NewNopSettings(component.MustNewType("metricsaslogs"))
+	set := connectortest.NewNopSettings(component.MustNewType("metrics_as_logs"))
 	consumer := &consumertest.LogsSink{}
 
 	connector, err := factory.CreateMetricsToLogs(

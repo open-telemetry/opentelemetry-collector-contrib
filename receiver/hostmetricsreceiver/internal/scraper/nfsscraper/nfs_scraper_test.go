@@ -161,7 +161,7 @@ func TestScrape(t *testing.T) {
 			scraper := &nfsScraper{
 				settings: scrapertest.NewNopSettings(metadata.Type),
 				config: &Config{
-					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+					MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				},
 				getNfsStats:  mockGetNfsStats,
 				getNfsdStats: mockGetNfsdStats,

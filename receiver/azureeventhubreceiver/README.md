@@ -68,6 +68,7 @@ When `blob_checkpoint_store` is set, the receiver uses the Azure SDK [Processor]
 |-------|------|----------|---------|-------------|
 | `max_poll_events` | int | No | `100` | Maximum events to retrieve per poll. |
 | `poll_rate` | int | No | `5` | Maximum seconds to wait before returning fewer than `max_poll_events`. |
+| `prefetch_count` | int | No | `0` | Size of the SDK's per-partition prefetch buffer. The SDK fills this buffer asynchronously so `ReceiveEvents` calls return from a local cache instead of waiting on the network. `0` uses the SDK default (300). A negative value disables prefetch. Increase this when poll batches are draining the buffer faster than the SDK refills it. |
 
 ### Data Transformation Settings
 

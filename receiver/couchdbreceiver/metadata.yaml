@@ -1,5 +1,6 @@
 display_name: CouchDB Receiver
 type: couchdb
+reaggregation_enabled: true
 
 description: |
   This receiver fetches stats from a CouchDB server using the `/_node/{node-name}/_stats/couchdb`
@@ -24,17 +25,21 @@ resource_attributes:
 attributes:
   http.method:
     description: An HTTP request method.
+    requirement_level: recommended
     type: string
     enum: [COPY, DELETE, GET, HEAD, OPTIONS, POST, PUT]
   http.status_code:
     description: An HTTP status code.
+    requirement_level: recommended
     type: string
   operation:
     description: The operation type.
+    requirement_level: recommended
     type: string
     enum: [writes, reads]
   view:
     description: The view type.
+    requirement_level: recommended
     type: string
     enum: [temporary_view_reads, view_reads]
 

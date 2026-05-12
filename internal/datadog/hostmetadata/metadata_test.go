@@ -19,6 +19,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata/payload"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/azure"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -259,6 +260,78 @@ func TestPusher(t *testing.T) {
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.Meta.SocketHostname, hostname)
+}
+
+type mockSourceAliasesProvider struct {
+	src     source.Source
+	aliases []string
+	err     error
+}
+
+func (m *mockSourceAliasesProvider) Source(ctx context.Context) (source.Source, error) {
+	src, _, err := m.SourceWithAliases(ctx)
+	return src, err
+}
+
+func (m *mockSourceAliasesProvider) SourceWithAliases(_ context.Context) (source.Source, []string, error) {
+	return m.src, m.aliases, m.err
+}
+
+func TestFillHostMetadataWithAliases(t *testing.T) {
+	params := exportertest.NewNopSettings(exportertest.NopType)
+	params.BuildInfo = mockBuildInfo
+
+	t.Run("aliases added from source provider", func(t *testing.T) {
+		pcfg := PusherConfig{ConfigHostname: "config-hostname"}
+		p := &mockSourceAliasesProvider{
+			src:     source.Source{Kind: source.HostnameKind, Identifier: "config-hostname"},
+			aliases: []string{"my-node-my-cluster"},
+		}
+		metadata := payload.NewEmpty()
+		fillHostMetadata(params, pcfg, p, &metadata)
+		assert.Equal(t, "config-hostname", metadata.InternalHostname)
+		assert.Contains(t, metadata.Meta.HostAliases, "my-node-my-cluster")
+	})
+
+	t.Run("alias not duplicated when already present", func(t *testing.T) {
+		pcfg := PusherConfig{ConfigHostname: "config-hostname"}
+		p := &mockSourceAliasesProvider{
+			src:     source.Source{Kind: source.HostnameKind, Identifier: "config-hostname"},
+			aliases: []string{"my-node-my-cluster"},
+		}
+		metadata := payload.NewEmpty()
+		metadata.Meta.HostAliases = []string{"my-node-my-cluster"}
+		fillHostMetadata(params, pcfg, p, &metadata)
+		count := 0
+		for _, a := range metadata.Meta.HostAliases {
+			if a == "my-node-my-cluster" {
+				count++
+			}
+		}
+		assert.Equal(t, 1, count, "alias should appear exactly once")
+	})
+
+	t.Run("no aliases when hostname already set from resource attributes", func(t *testing.T) {
+		pcfg := PusherConfig{ConfigHostname: "config-hostname"}
+		p := &mockSourceAliasesProvider{
+			src:     source.Source{Kind: source.HostnameKind, Identifier: "config-hostname"},
+			aliases: []string{"should-not-appear"},
+		}
+		metadata := payload.NewEmpty()
+		metadata.InternalHostname = "from-resource"
+		metadata.Meta.Hostname = "from-resource"
+		fillHostMetadata(params, pcfg, p, &metadata)
+		assert.Empty(t, metadata.Meta.HostAliases)
+	})
+
+	t.Run("no aliases with plain source.Provider", func(t *testing.T) {
+		pcfg := PusherConfig{ConfigHostname: "config-hostname"}
+		hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "config-hostname", 31*time.Second)
+		require.NoError(t, err)
+		metadata := payload.NewEmpty()
+		fillHostMetadata(params, pcfg, hostProvider, &metadata)
+		assert.Empty(t, metadata.Meta.HostAliases)
+	})
 }
 
 func TestDeepCopyHostMetadata(t *testing.T) {

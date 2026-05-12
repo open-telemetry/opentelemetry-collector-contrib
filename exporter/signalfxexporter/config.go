@@ -185,7 +185,7 @@ func (cfg *Config) getMetricTranslator(done chan struct{}) (*translation.MetricT
 func (cfg *Config) getIngestURL() (*url.URL, error) {
 	strURL := cfg.IngestURL
 	if cfg.IngestURL == "" {
-		strURL = fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm)
+		strURL = fmt.Sprintf("https://ingest.%s.observability.splunkcloud.com", cfg.Realm)
 	}
 
 	ingestURL, err := url.Parse(strURL)
@@ -198,7 +198,7 @@ func (cfg *Config) getIngestURL() (*url.URL, error) {
 func (cfg *Config) getAPIURL() (*url.URL, error) {
 	strURL := cfg.APIURL
 	if cfg.APIURL == "" {
-		strURL = fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm)
+		strURL = fmt.Sprintf("https://api.%s.observability.splunkcloud.com", cfg.Realm)
 	}
 
 	apiURL, err := url.Parse(strURL)

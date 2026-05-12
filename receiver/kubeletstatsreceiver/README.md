@@ -54,7 +54,7 @@ to authenticate and use API server proxy to access the kubelet API.
 
 ```yaml
 receivers:
-  kubeletstats:
+  kubelet_stats:
     collection_interval: 20s
     initial_delay: 1s
     auth_type: "tls"
@@ -92,7 +92,7 @@ Then the otel config can reference the `K8S_NODE_NAME` environment variable:
 
 ```yaml
 receivers:
-  kubeletstats:
+  kubelet_stats:
     collection_interval: 20s
     auth_type: "serviceAccount"
     endpoint: "https://${env:K8S_NODE_NAME}:10250"
@@ -126,7 +126,7 @@ This use case applies to AKS cluster, where the kubelet certificate is issued by
 
 ```yaml
 receivers:
-  kubeletstats:
+  kubelet_stats:
     collection_interval: 20s
     auth_type: "serviceAccount"
     endpoint: "https://${env:K8S_NODE_NAME}:10250"
@@ -139,7 +139,7 @@ The following config can be used to collect Kubelet metrics from read-only endpo
 
 ```yaml
 receivers:
-  kubeletstats:
+  kubelet_stats:
     collection_interval: 20s
     auth_type: "none"
     endpoint: "http://${env:K8S_NODE_NAME}:10255"
@@ -159,7 +159,7 @@ The following config can be used to collect Kubelet metrics from read-only endpo
 
 ```yaml
 receivers:
-  kubeletstats:
+  kubelet_stats:
     collection_interval: 20s
     auth_type: "kubeConfig"
     context: "my-context"
@@ -200,7 +200,7 @@ it, for example:
 
 ```yaml
 receivers:
-  kubeletstats:
+  kubelet_stats:
     collection_interval: 10s
     auth_type: "serviceAccount"
     endpoint: "${env:K8S_NODE_NAME}:10250"
@@ -219,7 +219,7 @@ is an example, configuration to achieve this.
 
 ```yaml
 receivers:
-  kubeletstats:
+  kubelet_stats:
     collection_interval: 10s
     auth_type: "serviceAccount"
     endpoint: "${env:K8S_NODE_NAME}:10250"
@@ -250,7 +250,7 @@ looking to collect only `node` and `pod` metrics from the receiver use the follo
 
 ```yaml
 receivers:
-  kubeletstats:
+  kubelet_stats:
     collection_interval: 10s
     auth_type: "serviceAccount"
     endpoint: "${env:K8S_NODE_NAME}:10250"
@@ -267,7 +267,7 @@ For example, if you would like to have network IO/error metrics from all network
 
 ```yaml
 receivers:
-  kubeletstats:
+  kubelet_stats:
     collection_interval: 10s
     auth_type: "serviceAccount"
     endpoint: "${env:K8S_NODE_NAME}:10250"
@@ -297,7 +297,7 @@ Then set `node` value to `${env:K8S_NODE_NAME}` in the receiver's configuration:
 
 ```yaml
 receivers:
-    kubeletstats:
+    kubelet_stats:
       collection_interval: 10s
       auth_type: 'serviceAccount'
       endpoint: '${env:K8S_NODE_NAME}:10250'

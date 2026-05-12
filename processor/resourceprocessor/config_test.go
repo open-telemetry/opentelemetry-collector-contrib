@@ -37,6 +37,16 @@ func TestLoadConfig(t *testing.T) {
 			valid: true,
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "with_defaults"),
+			expected: &Config{
+				AttributesActions: []attraction.ActionKeyValue{
+					{Key: "service.namespace", FromAttribute: "namespace", DefaultValue: "default", Action: attraction.INSERT},
+					{Key: "cloud.region", FromContext: "metadata.region", DefaultValue: "us-east-1", Action: attraction.UPSERT},
+				},
+			},
+			valid: true,
+		},
+		{
 			id:       component.NewIDWithName(metadata.Type, "invalid"),
 			expected: createDefaultConfig(),
 		},

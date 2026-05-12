@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -57,7 +58,7 @@ func createLogsReceiver(
 	// Wrap the consumer with SID enrichment
 	enrichedConsumer := newSIDEnrichingConsumer(nextConsumer, cache, set.Logger)
 
-	stanzaFactory := adapter.NewFactory(receiverType{}, metadata.LogsStability)
+	stanzaFactory := adapter.NewFactory(receiverType{}, metadata.LogsStability, xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType))
 
 	if metadata.DomainControllersAutodiscoveryFeatureGate.IsEnabled() && receiverCfg.DiscoverDomainControllers {
 		remoteConfigs, err := getDomainControllersRemoteConfig(set.Logger, receiverCfg.InputConfig.Remote.Username, receiverCfg.InputConfig.Remote.Password)

@@ -374,7 +374,7 @@ func setupReceiver(client *fake.Clientset, osQuotaClient quotaclientset.Interfac
 		NodeConditionTypesToReport: []string{"Ready"},
 		AllocatableTypesToReport:   []string{"cpu", "memory"},
 		Distribution:               distribution,
-		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig:       metadata.NewDefaultMetricsBuilderConfig(),
 	}
 
 	config.Namespaces = namespaces
@@ -409,6 +409,8 @@ func newFakeClientWithAllResources() *fake.Clientset {
 				gvkToAPIResource(gvk.ReplicationController),
 				gvkToAPIResource(gvk.ResourceQuota),
 				gvkToAPIResource(gvk.Service),
+				gvkToAPIResource(gvk.PersistentVolume),
+				gvkToAPIResource(gvk.PersistentVolumeClaim),
 			},
 		},
 		{

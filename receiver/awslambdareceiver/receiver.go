@@ -95,7 +95,7 @@ func newMetricsReceiver(cfg *Config, set receiver.Settings, next consumer.Metric
 func (a *awsLambdaReceiver) Start(ctx context.Context, host component.Host) error {
 	// Verify we're running in a Lambda environment
 	if os.Getenv("AWS_EXECUTION_ENV") == "" || !strings.HasPrefix(os.Getenv("AWS_EXECUTION_ENV"), "AWS_Lambda_") {
-		return errors.New("awslambdareceiver must be used in an AWS Lambda environment: missing environment variable AWS_EXECUTION_ENV")
+		return errors.New("aws_lambda receiver must be used in an AWS Lambda environment: missing environment variable AWS_EXECUTION_ENV")
 	}
 
 	// Initialize S3 provider to be used by implementations
@@ -229,38 +229,78 @@ func newLogsHandler(
 ) (handlerProvider, error) {
 	logger := set.Logger
 
-	var err error
-	s3LogsDecoder := internal.NewDefaultS3LogsDecoder()
-	if cfg.S3.Encoding != "" {
-		logger.Info("Using configured S3 encoding for logs", zap.String("encoding", cfg.S3.Encoding))
-
-		s3LogsDecoder, err = resolveLogsDecoder(host, cfg.S3.Encoding)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	s3Service, err := s3Provider.GetService(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load the S3 service: %w", err)
 	}
 
+	registry := make(handlerRegistry)
+
+	// S3: multi-encoding or single-encoding. Both paths resolve to newS3LogsHandler,
+	// which accepts a per-event getDecoder function.
+	var getLogsDecoder func(objectKey string) (encoding.LogsDecoderFactory, string, error)
+	if len(cfg.S3.Encodings) > 0 {
+		s3Router, buildErr := buildS3LogsRouter(host, cfg.S3, logger)
+		if buildErr != nil {
+			return nil, fmt.Errorf("failed to build S3 multi-encoding router: %w", buildErr)
+		}
+		getLogsDecoder = s3Router.GetDecoder
+	} else {
+		s3LogsDecoder := internal.NewDefaultS3LogsDecoder()
+		if cfg.S3.Encoding != "" {
+			logger.Info("Using configured S3 encoding for logs", zap.String("encoding", cfg.S3.Encoding))
+			s3LogsDecoder, err = resolveLogsDecoder(host, cfg.S3.Encoding)
+			if err != nil {
+				return nil, err
+			}
+		}
+		encodingName := cfg.S3.Encoding
+		getLogsDecoder = func(_ string) (encoding.LogsDecoderFactory, string, error) {
+			return s3LogsDecoder, encodingName, nil
+		}
+	}
+	registry[s3Event] = newS3LogsHandler(s3Service, logger, getLogsDecoder, next)
+
+	// CloudWatch: single-encoding path unchanged in this PR.
 	cwDecoder := internal.NewDefaultCWLogsDecoder()
 	if cfg.CloudWatch.Encoding != "" {
 		logger.Info("Using configured CloudWatch encoding for logs", zap.String("encoding", cfg.CloudWatch.Encoding))
-
 		cwDecoder, err = resolveLogsDecoder(host, cfg.CloudWatch.Encoding)
 		if err != nil {
 			return nil, err
 		}
 	}
-
-	// Register handlers. Logs supports S3 and CloudWatch Logs subscription events.
-	registry := make(handlerRegistry)
-	registry[s3Event] = newS3LogsHandler(s3Service, logger, s3LogsDecoder, next)
 	registry[cwEvent] = newCWLogsSubscriptionHandler(cwDecoder, next)
 
 	return newHandlerProvider(registry), nil
+}
+
+// buildS3LogsRouter constructs a logsDecoderRouter from the S3 encodings config.
+// Encodings are sorted by path pattern specificity before being passed to the router.
+func buildS3LogsRouter(host component.Host, cfg S3Config, logger *zap.Logger) (*logsDecoderRouter, error) {
+	sortedEncodings := cfg.sortedEncodings()
+	decoders := make(map[string]encoding.LogsDecoderFactory, len(sortedEncodings))
+
+	defaultDecoder := internal.NewDefaultS3LogsDecoder()
+	for _, enc := range sortedEncodings {
+		if enc.Encoding == "" {
+			// No extension configured: use the raw-passthrough decoder.
+			decoders[enc.Name] = defaultDecoder
+			continue
+		}
+		decoder, err := resolveLogsDecoder(host, enc.Encoding)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve encoding for S3 entry %q: %w", enc.Name, err)
+		}
+		logger.Info("Registered decoder for S3 encoding entry",
+			zap.String("name", enc.Name),
+			zap.String("encoding", enc.Encoding),
+			zap.String("pattern", enc.resolvePathPattern()),
+		)
+		decoders[enc.Name] = decoder
+	}
+
+	return newLogsDecoderRouter(sortedEncodings, decoders), nil
 }
 
 func newMetricsHandler(
@@ -272,6 +312,10 @@ func newMetricsHandler(
 	s3Provider internal.S3Provider,
 ) (handlerProvider, error) {
 	logger := set.Logger
+	// Multi-format routing via 's3.encodings' is only supported for logs.
+	if len(cfg.S3.Encodings) > 0 {
+		return nil, errors.New("'s3.encodings' is only supported for the logs signal type; use 's3.encoding' for metrics")
+	}
 	extensionID := defaultMetricsEncodingExtension
 	// Note: for metrics, we currently support S3 trigger only.
 	if cfg.S3.Encoding != "" {

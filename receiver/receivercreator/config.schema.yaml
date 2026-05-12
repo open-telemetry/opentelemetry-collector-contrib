@@ -6,6 +6,10 @@ $defs:
         type: object
         additionalProperties:
           type: string
+      default_file_log_config:
+        type: object
+        additionalProperties:
+          x-customType: any
       enabled:
         type: boolean
       ignore_receivers:

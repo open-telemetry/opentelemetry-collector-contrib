@@ -21,33 +21,51 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
-	require.NoError(t, err)
-	require.NoError(t, sub.Unmarshal(cfg))
-
-	assert.Equal(t,
-		&Config{
-			ControllerConfig: scraperhelper.ControllerConfig{
-				CollectionInterval: 120 * time.Second,
-				InitialDelay:       1 * time.Second,
-			},
-			ProjectID: "my-project-id",
-			MetricsList: []MetricConfig{
-				{
-					MetricName: "compute.googleapis.com/instance/cpu/usage_time",
+	tests := []struct {
+		id       component.ID
+		expected *Config
+	}{
+		{
+			id: component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 120 * time.Second,
+					InitialDelay:       1 * time.Second,
 				},
-				{
-					MetricName: "connectors.googleapis.com/flex/instance/cpu/usage_time",
-				},
-				{
-					MetricDescriptorFilter: "metric.type = starts_with(\"compute.googleapis.com\")",
+				ProjectID: "my-project-id",
+				MetricsList: []MetricConfig{
+					{MetricName: "compute.googleapis.com/instance/cpu/usage_time"},
+					{MetricName: "connectors.googleapis.com/flex/instance/cpu/usage_time"},
+					{MetricDescriptorFilter: "metric.type = starts_with(\"compute.googleapis.com\")"},
 				},
 			},
 		},
-		cfg,
-	)
+		{
+			id: component.NewIDWithName(metadata.Type, "endpoint"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 120 * time.Second,
+					InitialDelay:       1 * time.Second,
+				},
+				ProjectID: "my-project-id",
+				Endpoint:  "monitoring.example.com:443",
+				MetricsList: []MetricConfig{
+					{MetricName: "compute.googleapis.com/instance/cpu/usage_time"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func TestValidateService(t *testing.T) {

@@ -67,8 +67,8 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["FlinkOperatorRecordCount"] = mb.metricFlinkOperatorRecordCount.config.AggregationStrategy
-			aggMap["FlinkOperatorWatermarkOutput"] = mb.metricFlinkOperatorWatermarkOutput.config.AggregationStrategy
+			aggMap["flink.operator.record.count"] = mb.metricFlinkOperatorRecordCount.config.AggregationStrategy
+			aggMap["flink.operator.watermark.output"] = mb.metricFlinkOperatorWatermarkOutput.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {

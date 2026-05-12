@@ -58,7 +58,7 @@ If the receiver will be handling TLS termination:
 - `timestamp_format` (default: `unixnano`)
   - One of `unix`, `unixnano`, or `rfc3339`, matching how your LogPush job encodes the timestamp field.
 - `attributes`
-  - This parameter allows the receiver to be configured to set log record attributes based on fields found in the log message. The fields are not removed from the log message when set in this way. Only string, boolean, integer or float fields can be mapped using this parameter.
+  - This parameter allows the receiver to be configured to set log record attributes based on fields found in the log message. The fields are not removed from the log message when set in this way. Only string, boolean, integer, float, or array fields can be mapped using this parameter.
   - When the `attributes` configuration is empty, the receiver will automatically ingest all fields from the log messages as attributes, using the original field names as attribute names.
 - `separator` (default: `.`)
   - The separator used to join nested fields in the log message when setting attributes. For example, if the log message contains a field `"RequestHeaders": { "Content-Type": "application/json" }`, and the `separator` is set to `.`, the attribute will be set as `RequestHeaders.Content_Type`. If the separator is set to `_`, it will be set as `RequestHeaders_Content_Type`.

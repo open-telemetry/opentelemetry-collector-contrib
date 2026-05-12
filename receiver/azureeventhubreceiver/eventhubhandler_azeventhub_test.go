@@ -61,6 +61,7 @@ type mockAzeventHub struct {
 	partitionProperties azeventhubs.PartitionProperties
 	partitionID         string
 	offset              string
+	prefetch            int32
 	closed              bool
 	partitionClient     *mockPartitionClient
 }
@@ -75,8 +76,11 @@ func (a *mockAzeventHub) GetPartitionProperties(_ context.Context, _ string, _ *
 
 func (a *mockAzeventHub) NewPartitionClient(partitionID string, options *azeventhubs.PartitionClientOptions) (azPartitionClient, error) {
 	a.partitionID = partitionID
-	if options != nil && options.StartPosition.Offset != nil {
-		a.offset = *options.StartPosition.Offset
+	if options != nil {
+		if options.StartPosition.Offset != nil {
+			a.offset = *options.StartPosition.Offset
+		}
+		a.prefetch = options.Prefetch
 	}
 	if a.partitionClient != nil {
 		return a.partitionClient, nil
@@ -118,12 +122,13 @@ func TestHubWrapperAzeventhubImpl_GetEventHubProperties(t *testing.T) {
 
 func TestHubWrapperAzeventhubImpl_Receive(t *testing.T) {
 	testCases := []struct {
-		name           string
-		hub            *mockAzeventHub
-		config         *Config
-		applyOffset    bool
-		expectErr      bool
-		expectedOffset string
+		name             string
+		hub              *mockAzeventHub
+		config           *Config
+		applyOffset      bool
+		expectErr        bool
+		expectedOffset   string
+		expectedPrefetch int32
 	}{
 		{
 			name:      "nil hub",
@@ -164,6 +169,35 @@ func TestHubWrapperAzeventhubImpl_Receive(t *testing.T) {
 			applyOffset:    false,
 			expectErr:      false,
 		},
+		{
+			name: "prefetch default (zero passes through to SDK default)",
+			hub:  &mockAzeventHub{},
+			config: &Config{
+				Connection: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=abcd;EntityPath=main",
+				PollRate:   1,
+			},
+			expectedPrefetch: 0,
+		},
+		{
+			name: "prefetch explicit positive",
+			hub:  &mockAzeventHub{},
+			config: &Config{
+				Connection:    "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=abcd;EntityPath=main",
+				PollRate:      1,
+				PrefetchCount: 500,
+			},
+			expectedPrefetch: 500,
+		},
+		{
+			name: "prefetch disabled (negative)",
+			hub:  &mockAzeventHub{},
+			config: &Config{
+				Connection:    "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=abcd;EntityPath=main",
+				PollRate:      1,
+				PrefetchCount: -1,
+			},
+			expectedPrefetch: -1,
+		},
 	}
 
 	for _, test := range testCases {
@@ -192,6 +226,7 @@ func TestHubWrapperAzeventhubImpl_Receive(t *testing.T) {
 			}
 
 			require.Equal(t, test.expectedOffset, test.hub.offset)
+			require.Equal(t, test.expectedPrefetch, test.hub.prefetch)
 			require.NoError(t, err)
 			<-listener.Done()
 		})

@@ -6,6 +6,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
@@ -36,8 +37,8 @@ func addSQLToSpan(sql *awsxray.SQLData, attrs pcommon.Map) error {
 	return nil
 }
 
-// SQL URL is of the format: protocol+transport://host:port/dbName?queryParam
-var re = regexp.MustCompile(`^(.+//.+)/([^\?]+)\??.*$`)
+// SQL URL is of the format: protocol+transport://host:port/dbName?queryParam or protocol+transport:dbName?queryParam
+var re = regexp.MustCompile(`^([^/]+:(?://[^/]+/)?)([^\?]+)\??.*$`)
 
 const (
 	dbURLI  = 1
@@ -52,5 +53,5 @@ func splitSQLURL(rawURL string) (string, string, error) {
 			rawURL,
 		)
 	}
-	return m[dbURLI], m[dbNameI], nil
+	return strings.TrimRight(m[dbURLI], "/"), m[dbNameI], nil
 }

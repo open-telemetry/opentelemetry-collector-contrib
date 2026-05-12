@@ -61,7 +61,7 @@ func TestFactory_ConfigWithDevice(t *testing.T) {
 
 func TestConfig_AllMetricsEnabled(t *testing.T) {
 	config := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 
 	// Verify all interface metrics are enabled by default
@@ -75,7 +75,7 @@ func TestConfig_AllMetricsEnabled(t *testing.T) {
 
 func TestConfig_DisableMetrics(t *testing.T) {
 	config := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 
 	// Test disabling specific metrics
@@ -184,7 +184,7 @@ func TestFactory_Type(t *testing.T) {
 
 func TestConfig_EmptyDevice(t *testing.T) {
 	config := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		Device:               connection.DeviceConfig{},
 	}
 

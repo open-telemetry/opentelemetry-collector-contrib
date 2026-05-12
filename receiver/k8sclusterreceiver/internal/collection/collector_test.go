@@ -121,7 +121,7 @@ func TestCollectMetricData(t *testing.T) {
 		},
 	})
 
-	dc := NewDataCollector(receivertest.NewNopSettings(metadata.Type), ms, metadata.DefaultMetricsBuilderConfig(), []string{"Ready"}, nil)
+	dc := NewDataCollector(receivertest.NewNopSettings(metadata.Type), ms, metadata.NewDefaultMetricsBuilderConfig(), []string{"Ready"}, nil)
 	m1 := dc.CollectMetricData(time.Now())
 
 	// Verify number of resource metrics only, content is tested in other tests.
@@ -148,7 +148,7 @@ func TestCollectServiceMetrics(t *testing.T) {
 		},
 	})
 
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sServiceEndpointCount.Enabled = true
 	dc := NewDataCollector(receivertest.NewNopSettings(metadata.Type), ms, mbc, nil, nil)
 	m := dc.CollectMetricData(time.Now())
@@ -200,7 +200,7 @@ func TestCollectLoadBalancerServiceMetrics(t *testing.T) {
 		},
 	})
 
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sServiceLoadBalancerIngressCount.Enabled = true
 	dc := NewDataCollector(receivertest.NewNopSettings(metadata.Type), ms, mbc, nil, nil)
 	m := dc.CollectMetricData(time.Now())

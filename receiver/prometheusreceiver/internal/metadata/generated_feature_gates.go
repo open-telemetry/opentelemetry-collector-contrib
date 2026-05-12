@@ -14,37 +14,10 @@ var ReceiverPrometheusreceiverEnableCreatedTimestampZeroIngestionFeatureGate = f
 	featuregate.WithRegisterFromVersion("v0.113.0"),
 )
 
-var ReceiverPrometheusreceiverEnableNativeHistogramsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.EnableNativeHistograms",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("Converts scraped Prometheus native histograms into OpenTelemetry exponential histograms. You still need to configure 'scrape_native_histograms: true' in your Prometheus scrape config to actually scrape native histograms. For mixed histograms (both classic and native), only the native histogram buckets are used."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/34473"),
-	featuregate.WithRegisterFromVersion("v0.142.0"),
-	featuregate.WithRegisterToVersion("v0.145.0"),
-)
-
 var ReceiverPrometheusreceiverIgnoreScopeInfoMetricFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.IgnoreScopeInfoMetric",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the `otel_scope_info` metric is ignored for scope attribute extraction."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41502"),
 	featuregate.WithRegisterFromVersion("v0.148.0"),
-)
-
-var ReceiverPrometheusreceiverRemoveStartTimeAdjustmentFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.RemoveStartTimeAdjustment",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will leave the start time unset. Use the metric_start_time processor instead if you need this functionality."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/36364"),
-	featuregate.WithRegisterFromVersion("v0.121.0"),
-	featuregate.WithRegisterToVersion("v0.142.0"),
-)
-
-var ReceiverPrometheusreceiverUseCreatedMetricFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.UseCreatedMetric",
-	featuregate.StageDeprecated,
-	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will retrieve the start time for Summary, Histogram and Sum metrics from _created metric."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21909"),
-	featuregate.WithRegisterFromVersion("v0.89.0"),
-	featuregate.WithRegisterToVersion("v0.141.0"),
 )

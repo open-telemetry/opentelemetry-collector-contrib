@@ -5,6 +5,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"sort"
+	"time"
 
 	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -17,9 +18,10 @@ const overflowKey = "otel.metric.overflow"
 type Key string
 
 type HistogramMetrics interface {
-	GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp) (Histogram, bool)
+	GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp, lastSeen time.Time) (Histogram, bool)
 	BuildMetrics(pmetric.Metric, pcommon.Timestamp, func(Key, pcommon.Timestamp) pcommon.Timestamp, pmetric.AggregationTemporality)
 	ClearExemplars()
+	ExpireSeries(expiration time.Duration, now time.Time)
 }
 
 type Histogram interface {
@@ -55,6 +57,7 @@ type explicitHistogram struct {
 	maxExemplarCount int
 
 	startTimestamp pcommon.Timestamp
+	lastSeen       time.Time
 }
 
 type exponentialHistogram struct {
@@ -66,6 +69,7 @@ type exponentialHistogram struct {
 	maxExemplarCount int
 
 	startTimestamp pcommon.Timestamp
+	lastSeen       time.Time
 }
 
 type BuildAttributesFun func() pcommon.Map
@@ -92,7 +96,7 @@ func (m *explicitHistogramMetrics) IsCardinalityLimitReached() bool {
 	return m.cardinalityLimit > 0 && len(m.metrics) >= m.cardinalityLimit
 }
 
-func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp) (Histogram, bool) {
+func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp, lastSeen time.Time) (Histogram, bool) {
 	limitReached := false
 	h, ok := m.metrics[key]
 	if !ok {
@@ -120,9 +124,11 @@ func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttri
 			bucketCounts:     make([]uint64, len(m.bounds)+1),
 			maxExemplarCount: m.maxExemplarCount,
 			startTimestamp:   startTimestamp,
+			lastSeen:         lastSeen,
 		}
 		m.metrics[key] = h
 	}
+	h.lastSeen = lastSeen
 	return h, limitReached
 }
 
@@ -158,11 +164,22 @@ func (m *explicitHistogramMetrics) ClearExemplars() {
 	}
 }
 
+func (m *explicitHistogramMetrics) ExpireSeries(expiration time.Duration, now time.Time) {
+	if expiration <= 0 {
+		return
+	}
+	for k, h := range m.metrics {
+		if now.Sub(h.lastSeen) >= expiration {
+			delete(m.metrics, k)
+		}
+	}
+}
+
 func (m *exponentialHistogramMetrics) IsCardinalityLimitReached() bool {
 	return m.cardinalityLimit > 0 && len(m.metrics) >= m.cardinalityLimit
 }
 
-func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimeStamp pcommon.Timestamp) (Histogram, bool) {
+func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimeStamp pcommon.Timestamp, lastSeen time.Time) (Histogram, bool) {
 	limitReached := false
 	h, ok := m.metrics[key]
 	if !ok {
@@ -195,9 +212,11 @@ func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAt
 			exemplars:        pmetric.NewExemplarSlice(),
 			maxExemplarCount: m.maxExemplarCount,
 			startTimestamp:   startTimeStamp,
+			lastSeen:         lastSeen,
 		}
 		m.metrics[key] = h
 	}
+	h.lastSeen = lastSeen
 	return h, limitReached
 }
 
@@ -261,6 +280,17 @@ func (m *exponentialHistogramMetrics) ClearExemplars() {
 	}
 }
 
+func (m *exponentialHistogramMetrics) ExpireSeries(expiration time.Duration, now time.Time) {
+	if expiration <= 0 {
+		return
+	}
+	for k, h := range m.metrics {
+		if now.Sub(h.lastSeen) >= expiration {
+			delete(m.metrics, k)
+		}
+	}
+}
+
 func (h *explicitHistogram) Observe(value float64) {
 	h.sum += value
 	h.count++
@@ -319,7 +349,8 @@ type Sum struct {
 	// is used to ensure that new Sum metrics being with 0, and then are incremented
 	// to the desired value.  This avoids Prometheus throwing away the first
 	// value in the series, due to the transition from null -> x.
-	isFirst bool
+	isFirst  bool
+	lastSeen time.Time
 }
 
 func (s *Sum) Add(value uint64) {
@@ -344,7 +375,7 @@ func (m *SumMetrics) IsCardinalityLimitReached() bool {
 	return m.cardinalityLimit > 0 && len(m.metrics) >= m.cardinalityLimit
 }
 
-func (m *SumMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp) (*Sum, bool) {
+func (m *SumMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp, lastSeen time.Time) (*Sum, bool) {
 	limitReached := false
 	s, ok := m.metrics[key]
 	if !ok {
@@ -372,9 +403,11 @@ func (m *SumMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, star
 			maxExemplarCount: m.maxExemplarCount,
 			startTimestamp:   startTimestamp,
 			isFirst:          true,
+			lastSeen:         lastSeen,
 		}
 		m.metrics[key] = s
 	}
+	s.lastSeen = lastSeen
 
 	return s, limitReached
 }
@@ -422,5 +455,16 @@ func (m *SumMetrics) BuildMetrics(
 func (m *SumMetrics) ClearExemplars() {
 	for _, sum := range m.metrics {
 		sum.exemplars = pmetric.NewExemplarSlice()
+	}
+}
+
+func (m *SumMetrics) ExpireSeries(expiration time.Duration, now time.Time) {
+	if expiration <= 0 {
+		return
+	}
+	for k, s := range m.metrics {
+		if now.Sub(s.lastSeen) >= expiration {
+			delete(m.metrics, k)
+		}
 	}
 }

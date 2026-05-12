@@ -58,15 +58,15 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["NfsClientNetCount"] = mb.metricNfsClientNetCount.config.AggregationStrategy
-			aggMap["NfsClientOperationCount"] = mb.metricNfsClientOperationCount.config.AggregationStrategy
-			aggMap["NfsClientProcedureCount"] = mb.metricNfsClientProcedureCount.config.AggregationStrategy
-			aggMap["NfsServerIo"] = mb.metricNfsServerIo.config.AggregationStrategy
-			aggMap["NfsServerNetCount"] = mb.metricNfsServerNetCount.config.AggregationStrategy
-			aggMap["NfsServerOperationCount"] = mb.metricNfsServerOperationCount.config.AggregationStrategy
-			aggMap["NfsServerProcedureCount"] = mb.metricNfsServerProcedureCount.config.AggregationStrategy
-			aggMap["NfsServerRepcacheRequests"] = mb.metricNfsServerRepcacheRequests.config.AggregationStrategy
-			aggMap["NfsServerRPCCount"] = mb.metricNfsServerRPCCount.config.AggregationStrategy
+			aggMap["nfs.client.net.count"] = mb.metricNfsClientNetCount.config.AggregationStrategy
+			aggMap["nfs.client.operation.count"] = mb.metricNfsClientOperationCount.config.AggregationStrategy
+			aggMap["nfs.client.procedure.count"] = mb.metricNfsClientProcedureCount.config.AggregationStrategy
+			aggMap["nfs.server.io"] = mb.metricNfsServerIo.config.AggregationStrategy
+			aggMap["nfs.server.net.count"] = mb.metricNfsServerNetCount.config.AggregationStrategy
+			aggMap["nfs.server.operation.count"] = mb.metricNfsServerOperationCount.config.AggregationStrategy
+			aggMap["nfs.server.procedure.count"] = mb.metricNfsServerProcedureCount.config.AggregationStrategy
+			aggMap["nfs.server.repcache.requests"] = mb.metricNfsServerRepcacheRequests.config.AggregationStrategy
+			aggMap["nfs.server.rpc.count"] = mb.metricNfsServerRPCCount.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {

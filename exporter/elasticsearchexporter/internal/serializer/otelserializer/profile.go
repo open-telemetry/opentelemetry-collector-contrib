@@ -140,13 +140,13 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 	err = s.knownHosts.WithLock(func(hostMetadata lru.LockedLRUSet) error {
 		for i := range data {
 			payload := &data[i]
-			hostID := payload.HostMetadata.HostID
+			hostID := payload.ResourceAttrs.HostID
 			if hostID == "" {
 				continue
 			}
 
 			if !hostMetadata.CheckAndAdd(hostID) {
-				err = pushDataAsJSON(payload.HostMetadata, "", HostsMetadataIndex)
+				err = pushDataAsJSON(payload.ResourceAttrs, "", HostsMetadataIndex)
 				if err != nil {
 					return err
 				}

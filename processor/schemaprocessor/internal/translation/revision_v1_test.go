@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	ast10 "go.opentelemetry.io/otel/schema/v1.0/ast"
 	"go.opentelemetry.io/otel/schema/v1.0/types"
 	ast11 "go.opentelemetry.io/otel/schema/v1.1/ast"
@@ -156,27 +158,27 @@ func TestNewRevisionV1(t *testing.T) {
 							MetricAttributes: transformer.MetricAttributes{
 								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 									"state": "status",
-								}),
+								}, false),
 							},
 							LogAttributes: transformer.LogAttributes{
 								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 									"state": "status",
-								}),
+								}, false),
 							},
 							SpanAttributes: transformer.SpanAttributes{
 								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 									"state": "status",
-								}),
+								}, false),
 							},
 							SpanEventAttributes: transformer.SpanEventAttributes{
 								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 									"state": "status",
-								}),
+								}, false),
 							},
 							ResourceAttributes: transformer.ResourceAttributes{
 								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 									"state": "status",
-								}),
+								}, false),
 							},
 						},
 						transformer.AllAttributes{
@@ -184,27 +186,27 @@ func TestNewRevisionV1(t *testing.T) {
 							MetricAttributes: transformer.MetricAttributes{
 								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 									"status": "state",
-								}),
+								}, false),
 							},
 							LogAttributes: transformer.LogAttributes{
 								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 									"status": "state",
-								}),
+								}, false),
 							},
 							SpanAttributes: transformer.SpanAttributes{
 								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 									"status": "state",
-								}),
+								}, false),
 							},
 							SpanEventAttributes: transformer.SpanEventAttributes{
 								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 									"status": "state",
-								}),
+								}, false),
 							},
 							ResourceAttributes: transformer.ResourceAttributes{
 								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 									"status": "state",
-								}),
+								}, false),
 							},
 						},
 					},
@@ -212,15 +214,18 @@ func TestNewRevisionV1(t *testing.T) {
 				resources: &changelist.ChangeList{Migrators: []migrate.Migrator{
 					transformer.ResourceAttributes{AttributeChange: migrate.NewAttributeChangeSet(
 						map[string]string{"service_name": "service.name"},
+						false,
 					)},
 				}},
 				spans: &changelist.ChangeList{Migrators: []migrate.Migrator{
 					transformer.SpanConditionalAttributes{Migrator: migrate.NewConditionalAttributeSet(
 						map[string]string{"service_version": "service.version"},
+						false,
 						"application start",
 					)},
 					transformer.SpanConditionalAttributes{Migrator: migrate.NewConditionalAttributeSet[string](
 						map[string]string{"deployment.environment": "service.deployment.environment"},
+						false,
 					)},
 				}},
 				spanEvents: &changelist.ChangeList{Migrators: []migrate.Migrator{
@@ -232,6 +237,7 @@ func TestNewRevisionV1(t *testing.T) {
 					transformer.SpanEventConditionalAttributes{
 						MultiConditionalAttributeSet: migrate.NewMultiConditionalAttributeSet(
 							map[string]string{"service.app.name": "service.name"},
+							false,
 							map[string][]string{
 								"span.name":  {"service running"},
 								"event.name": {"service errored"},
@@ -245,6 +251,7 @@ func TestNewRevisionV1(t *testing.T) {
 					})},
 					transformer.MetricDataPointAttributes{ConditionalAttributeChange: migrate.NewConditionalAttributeSet(
 						map[string]string{"runtime": "service.language"},
+						false,
 						"service.runtime",
 					)},
 				}},
@@ -252,7 +259,7 @@ func TestNewRevisionV1(t *testing.T) {
 					transformer.LogAttributes{
 						AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 							"ERROR": "error",
-						}),
+						}, false),
 					},
 				}},
 			},
@@ -261,7 +268,8 @@ func TestNewRevisionV1(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			rev := NewRevision(tc.inVersion, tc.inDefinition)
+			rev, err := NewRevision(tc.inVersion, tc.inDefinition, false)
+			require.NoError(t, err)
 
 			// use go-cmp to compare tc.expect and rev and fail the test if there's a difference
 			if diff := cmp.Diff(tc.expect, rev, cmp.AllowUnexported(RevisionV1{}, migrate.AttributeChangeSet{}, migrate.ConditionalAttributeSet{}, migrate.SignalNameChange{}, transformer.SpanEventConditionalAttributes{}, migrate.MultiConditionalAttributeSet{})); diff != "" {
@@ -269,4 +277,20 @@ func TestNewRevisionV1(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewRevisionInvalidSpanEvents(t *testing.T) {
+	t.Parallel()
+
+	// A span_events change with neither rename_events nor rename_attributes set
+	// must return an error rather than panicking.
+	_, err := NewRevision(&Version{1, 0, 0}, ast11.VersionDef{
+		SpanEvents: ast10.SpanEvents{
+			Changes: []ast10.SpanEventsChange{
+				{}, // empty: neither field set
+			},
+		},
+	}, false)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "span_events")
 }

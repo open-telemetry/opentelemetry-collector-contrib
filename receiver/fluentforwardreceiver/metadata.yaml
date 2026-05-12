@@ -1,5 +1,6 @@
 display_name: Fluent Forward Receiver
-type: fluentforward
+type: fluent_forward
+deprecated_type: fluentforward
 
 description: |
   This receiver runs a TCP server that accepts events via the

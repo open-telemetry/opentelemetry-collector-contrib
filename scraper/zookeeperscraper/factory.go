@@ -30,7 +30,7 @@ func createDefaultConfig() component.Config {
 		TCPAddrConfig: confignet.TCPAddrConfig{
 			Endpoint: defaultEndpoint,
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 }
 

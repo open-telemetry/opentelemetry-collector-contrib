@@ -227,6 +227,14 @@ func TestLoadConfig(t *testing.T) {
 				return assert.ErrorContains(t, err, errTracesIndexTimeFormatInvalid.Error())
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "pipeline"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.Pipeline = "my-pipeline"
+			}),
+			configValidateAssert: assert.NoError,
+		},
 	}
 
 	for _, tt := range tests {

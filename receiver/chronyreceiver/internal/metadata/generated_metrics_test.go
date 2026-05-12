@@ -58,11 +58,11 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["NtpFrequencyOffset"] = mb.metricNtpFrequencyOffset.config.AggregationStrategy
-			aggMap["NtpTimeCorrection"] = mb.metricNtpTimeCorrection.config.AggregationStrategy
-			aggMap["NtpTimeLastOffset"] = mb.metricNtpTimeLastOffset.config.AggregationStrategy
-			aggMap["NtpTimeRmsOffset"] = mb.metricNtpTimeRmsOffset.config.AggregationStrategy
-			aggMap["NtpTimeRootDelay"] = mb.metricNtpTimeRootDelay.config.AggregationStrategy
+			aggMap["ntp.frequency.offset"] = mb.metricNtpFrequencyOffset.config.AggregationStrategy
+			aggMap["ntp.time.correction"] = mb.metricNtpTimeCorrection.config.AggregationStrategy
+			aggMap["ntp.time.last_offset"] = mb.metricNtpTimeLastOffset.config.AggregationStrategy
+			aggMap["ntp.time.rms_offset"] = mb.metricNtpTimeRmsOffset.config.AggregationStrategy
+			aggMap["ntp.time.root_delay"] = mb.metricNtpTimeRootDelay.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {

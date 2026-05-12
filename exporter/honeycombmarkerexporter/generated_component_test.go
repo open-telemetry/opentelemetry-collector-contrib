@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var typ = component.MustNewType("honeycombmarker")
+var typ = component.MustNewType("honeycomb_marker")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())

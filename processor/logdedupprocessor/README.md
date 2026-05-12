@@ -34,7 +34,7 @@ emitting a single log with the count of logs that were deduplicated.
 | Field               | Type     | Default     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | ---                 | ---      | ---         | ---                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | interval            | duration | `10s`       | The interval at which logs are aggregated. The counter will reset after each interval.                                                                                                                                                                                                                                                                                                                                                                  |
-| conditions          | []string | `[]`        | A slice of [OTTL] expressions used to evaluate which log records are deduped.  All paths in the [log context] are available to reference. All [converters] are available to use.                                                                                                                                                                                                                                                                        |
+| conditions          | []string | `[]`        | A slice of [OTTL] expressions used to evaluate which log records are deduped.  All paths in the [log context] are available to reference. Paths should be prefixed with their context name (e.g. `log.attributes["foo"]`, `resource.attributes["bar"]`). The un-prefixed form (e.g. `attributes["foo"]`) is deprecated; if used, the processor will log the rewritten conditions at startup so they can be migrated. All [converters] are available to use.                                                                                                                                                                                                                                                                        |
 | log_count_attribute | string   | `log_count` | The name of the count attribute of deduplicated logs that will be added to the emitted aggregated log.                                                                                                                                                                                                                                                                                                                                                  |
 | include_fields                | []string | `[]`        | Fields to include in duplication matching. Fields can be from the log `body` or `attributes`.  Nested fields must be `.` delimited. If a field contains a `.` it can be escaped by using a `\`.  This option is **mutually exclusive** with `exclude_fields`. See [example config](#example-config-with-deduplication-key).
 | timezone            | string   | `UTC`       | The timezone of the `first_observed_timestamp` and `last_observed_timestamp` timestamps on the emitted aggregated log. The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`.                                                                                                                               |
@@ -44,6 +44,8 @@ emitting a single log with the count of logs that were deduplicated.
 [converters]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.109.0/pkg/ottl/ottlfuncs/README.md#converters
 [log context]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.109.0/pkg/ottl/contexts/ottllog/README.md
 
+> **Note:** The processor type has been renamed from `logdedup` to `log_dedup`. The old name is still accepted but will log a deprecation warning.
+
 ### Example Config
 The following config is an example configuration for the log deduplication processor. It is configured with an aggregation interval of `60 seconds`, a timezone of `America/Los_Angeles`, and a log count attribute of `dedup_count`. It has no fields being excluded.
 ```yaml
@@ -51,7 +53,7 @@ receivers:
     file_log:
         include: [./example/*.log]
 processors:
-    logdedup:
+    log_dedup:
         interval: 60s
         log_count_attribute: dedup_count
         timezone: 'America/Los_Angeles'
@@ -62,7 +64,7 @@ service:
     pipelines:
         logs:
             receivers: [file_log]
-            processors: [logdedup]
+            processors: [log_dedup]
             exporters: [googlecloud]
 ```
 
@@ -78,7 +80,7 @@ receivers:
     file_log:
         include: [./example/*.log]
 processors:
-    logdedup:
+    log_dedup:
         exclude_fields:
           - body.timestamp
           - attributes.host\.name
@@ -90,7 +92,7 @@ service:
     pipelines:
         logs:
             receivers: [file_log]
-            processors: [logdedup]
+            processors: [log_dedup]
             exporters: [googlecloud]
 ```
 
@@ -102,7 +104,7 @@ receivers:
     file_log:
         include: [./example/*.log]
 processors:
-    logdedup:
+    log_dedup:
         include_fields:
           - attributes.id
           - attributes.name
@@ -116,7 +118,7 @@ service:
     pipelines:
         logs:
             receivers: [file_log]
-            processors: [logdedup]
+            processors: [log_dedup]
             exporters: [googlecloud]
 ```
 
@@ -128,9 +130,9 @@ receivers:
     file_log:
         include: [./example/*.log]
 processors:
-    logdedup:
+    log_dedup:
         conditions:
-            - attributes["ID"] == 1
+            - log.attributes["ID"] == 1
             - resource.attributes["service.name"] == "my-service"
         interval: 60s
         log_count_attribute: dedup_count
@@ -142,6 +144,6 @@ service:
     pipelines:
         logs:
             receivers: [file_log]
-            processors: [logdedup]
+            processors: [log_dedup]
             exporters: [googlecloud]
 ```

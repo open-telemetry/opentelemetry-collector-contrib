@@ -23,6 +23,12 @@ GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
 GOTESTARCH?=$(GOARCH)
 
+# Ignored vulnerabilities with justification:
+IGNORED_VULNS =
+
+# Ignore all golang-related vulnerabilities (stdlib, golang.org/x/*, google.golang.org/*, etc.)
+IGNORE_GOLANG_VULNS ?=
+
 # On Windows arm64 neither `-race` nor cgo are not supported (cgo is not supported due to the GH runner installed gcc not having arm64 libs)
 ifeq ($(GOOS)-$(GOARCH),windows-arm64)
 	CGO_ENABLED_OPT?=0
@@ -79,6 +85,7 @@ BUILDER             = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/coll
 GOFUMPT             = $(subst \,/,$(shell $(GO_TOOL) -n mvdan.cc/gofumpt))
 GOVULNCHECK         = $(subst \,/,$(shell $(GO_TOOL) -n golang.org/x/vuln/cmd/govulncheck))
 GCI                 = $(subst \,/,$(shell $(GO_TOOL) -n github.com/daixiang0/gci))
+GOJQ                = $(subst \,/,$(shell $(GO_TOOL) -n github.com/itchyny/gojq/cmd/gojq))
 GOTESTSUM           = $(subst \,/,$(shell $(GO_TOOL) -n gotest.tools/gotestsum))
 CHECKAPI            = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/checkapi))
 MODERNIZE           = $(subst \,/,$(shell $(GO_TOOL) -n golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize))
@@ -263,16 +270,39 @@ endif
 lint: checklicense misspell
 	$(LINT) run
 
+# jq filter: Build OSV lookup map {id: {withdrawn, summary, pkg}}
+_GOVUL_MAP = reduce (.[] | select(.osv)) as $$osv ({}; . + {($$osv.osv.id): {summary: $$osv.osv.summary, withdrawn: $$osv.osv.withdrawn, pkg: ($$osv.osv.affected[0].package.name // "")}}) as $$osv_data
+# jq filter: Check if vulnerability should be skipped (withdrawn, golang+IGNORE_GOLANG_VULNS, or has no position/symbol in trace)
+_GOVUL_SKIP = ($$osv_data[.finding.osv].withdrawn | . != null and . != "") or ("$(IGNORE_GOLANG_VULNS)" == "1" and ($$osv_data[.finding.osv].pkg | test("^(stdlib|golang\\.org|google\\.golang\\.org)"))) or (.finding.trace | length == 0 or (all(.position == null and .symbol == null)))
 .PHONY: govulncheck
 govulncheck:
-	$(GOVULNCHECK) ./...
+	@set -e; \
+	$(GOVULNCHECK) -format json ./... > govulncheck-output.json; \
+	FOUND="$$( $(GOJQ) -r -s '$(_GOVUL_MAP) | [.[] | select(.finding != null and ($(_GOVUL_SKIP) | not)) | .finding.osv] | unique | .[]' govulncheck-output.json | sort -u )"; \
+	[ -z "$$FOUND" ] && echo "No vulnerabilities found" && rm -f govulncheck-output.json && exit 0; \
+	echo "Found: $$FOUND"; \
+	\
+	UNIGNORED=""; \
+	for id in $$FOUND; do \
+		echo "$(IGNORED_VULNS)" | grep -qw "$$id" || UNIGNORED="$$UNIGNORED $$id"; \
+	done; \
+	UNIGNORED="$$(echo $$UNIGNORED | xargs)"; \
+	[ -z "$$UNIGNORED" ] && echo "All vulnerabilities ignored" && rm -f govulncheck-output.json && exit 0; \
+	\
+	echo "Vulnerabilities need attention: $$UNIGNORED"; \
+	echo ""; \
+	echo "Vulnerability Summary:"; \
+	echo "ID/LINK    SUMMARY    POSITION"; \
+	$(GOJQ) -r -s '$(_GOVUL_MAP) | [.[] | select(.finding != null and ($(_GOVUL_SKIP) | not)) | ["https://pkg.go.dev/vuln/" + .finding.osv, $$osv_data[.finding.osv].summary, (.finding.trace | map(select(.position != null or .symbol != null) | (.position // .symbol | tostring)) | join("; "))] ] | unique_by(.[0]) | .[] | @tsv' govulncheck-output.json; \
+	rm -f govulncheck-output.json; \
+	exit 1
 
 .PHONY: modernize
 modernize:
 	$(MODERNIZE) -fix -test -tags integration -v -any -fmtappendf -forvar -mapsloop -minmax -newexpr \
 		-omitzero -plusbuild \
 		-rangeint -reflecttypefor -slicescontains -slicessort -stditerators -stringscut \
-		-stringscutprefix -stringsseq -stringsbuilder -testingcontext -unsafefuncs -waitgroup ./...
+		-stringscutprefix -stringsseq -stringsbuilder -testingcontext -unsafefuncs -waitgroupgo ./...
 
 .PHONY: tidy
 tidy:

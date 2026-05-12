@@ -360,6 +360,10 @@ $defs:
     description: RateLimitingCfg holds the configurable settings to create a rate limiting sampling policy evaluator.
     type: object
     properties:
+      burst_capacity:
+        description: BurstCapacity sets the maximum burst capacity in spans. If not specified, defaults to 2x SpansPerSecond. This allows for short bursts of traffic above the sustained rate. It also acts as a limit for individual trace span counts, a single trace with more spans than the burst size will not pass.
+        type: integer
+        x-customType: int64
       spans_per_second:
         description: SpansPerSecond sets the limit on the maximum number of spans that can be processed each second.
         type: integer

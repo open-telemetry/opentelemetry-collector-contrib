@@ -317,6 +317,9 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 
 	if !c.withoutScopeInfo {
 		for k, v := range scopeAttributes.All() {
+			if isReservedScopeAttribute(k) {
+				continue
+			}
 			labelName, err := c.labelNamer.Build("otel_scope_" + k)
 			if err != nil {
 				multiErrs = multierr.Append(multiErrs, err)
@@ -346,6 +349,15 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 		return nil, nil, multiErrs
 	}
 	return prometheus.NewDesc(name, help, keys, c.constLabels), values, nil
+}
+
+func isReservedScopeAttribute(k string) bool {
+	switch k {
+	case "name", "version", "schema_url":
+		return true
+	default:
+		return false
+	}
 }
 
 func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {

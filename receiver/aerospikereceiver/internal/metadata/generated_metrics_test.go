@@ -67,12 +67,12 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["AerospikeNamespaceMemoryUsage"] = mb.metricAerospikeNamespaceMemoryUsage.config.AggregationStrategy
-			aggMap["AerospikeNamespaceQueryCount"] = mb.metricAerospikeNamespaceQueryCount.config.AggregationStrategy
-			aggMap["AerospikeNamespaceScanCount"] = mb.metricAerospikeNamespaceScanCount.config.AggregationStrategy
-			aggMap["AerospikeNamespaceTransactionCount"] = mb.metricAerospikeNamespaceTransactionCount.config.AggregationStrategy
-			aggMap["AerospikeNodeConnectionCount"] = mb.metricAerospikeNodeConnectionCount.config.AggregationStrategy
-			aggMap["AerospikeNodeConnectionOpen"] = mb.metricAerospikeNodeConnectionOpen.config.AggregationStrategy
+			aggMap["aerospike.namespace.memory.usage"] = mb.metricAerospikeNamespaceMemoryUsage.config.AggregationStrategy
+			aggMap["aerospike.namespace.query.count"] = mb.metricAerospikeNamespaceQueryCount.config.AggregationStrategy
+			aggMap["aerospike.namespace.scan.count"] = mb.metricAerospikeNamespaceScanCount.config.AggregationStrategy
+			aggMap["aerospike.namespace.transaction.count"] = mb.metricAerospikeNamespaceTransactionCount.config.AggregationStrategy
+			aggMap["aerospike.node.connection.count"] = mb.metricAerospikeNodeConnectionCount.config.AggregationStrategy
+			aggMap["aerospike.node.connection.open"] = mb.metricAerospikeNodeConnectionOpen.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {

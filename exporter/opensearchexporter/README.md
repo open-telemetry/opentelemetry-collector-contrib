@@ -40,7 +40,7 @@ The OpenSearch exporter supports dynamic index names for both logs and traces us
 - `logs_index_fallback` - Fallback value when placeholder is missing (default: `unknown`)
 - `logs_index_time_format` - Time suffix format for logs
 - `traces_index` - Custom index name pattern for traces
-- `traces_index_fallback` - Fallback value when placeholder is missing (default: `unknown`)  
+- `traces_index_fallback` - Fallback value when placeholder is missing (default: `unknown`)
 - `traces_index_time_format` - Time suffix format for traces
 
 **Placeholder Syntax:**
@@ -58,7 +58,7 @@ Both logs and traces support time-formatted suffixes using `*_time_format` optio
 
 - **Valid tokens** (case-sensitive):
   - `yyyy` (4-digit year), `yy` (2-digit year)
-  - `MM` (2-digit month), `dd` (2-digit day) 
+  - `MM` (2-digit month), `dd` (2-digit day)
   - `HH` (2-digit hour, 24h), `mm` (2-digit minute), `ss` (2-digit second)
 - **Allowed separators**: `-`, `.`, `_`, `+`
 - **Examples:** `yyyy.MM.dd` → `2024.06.07`, `yyyy-MM` → `2024-06`, `yyMMdd` → `240607`
@@ -80,7 +80,7 @@ exporters:
     logs_index: "otel-logs-%{service.name}-%{env}"
     logs_index_fallback: "default"
     logs_index_time_format: "yyyy.MM.dd"
-    # Traces configuration  
+    # Traces configuration
     traces_index: "otel-traces-%{service.name}-%{deployment.environment}"
     traces_index_fallback: "unknown"
     traces_index_time_format: "yyyy.MM.dd"
@@ -99,7 +99,7 @@ If any placeholder key is missing, the fallback value is used e.g.:
 ### OpenSearch document mapping
 
 
-The mapping mode can be controlled via the scope attribute `opensearch.mapping.mode`. 
+The mapping mode can be controlled via the scope attribute `opensearch.mapping.mode`.
 
 The OpenSearch exporter supports several document schemas and preprocessing behaviors, which may be configured through the following settings:
 
@@ -185,6 +185,7 @@ Supports standard TLS settings as part of HTTP settings. See [TLS Configuration/
 ### Bulk Indexer Options
 
 - `bulk_action` (optional): the [action](https://opensearch.org/docs/2.9/api-reference/document-apis/bulk/) for ingesting data. Only `create` and `index` are allowed here.
+- `pipeline` (optional): the ID of an [ingest pipeline](https://opensearch.org/docs/latest/ingest-pipelines/) to apply when indexing documents. When set, all documents sent via the bulk API will be processed by the specified pipeline before being indexed. The ingest pipeline must exist in the cluster and there must be at least one node with the `ingest` node role assigned.
 
 ## Example
 

@@ -23,7 +23,7 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 	}{
 		{
 			name:       "No changes defined",
-			cond:       NewMultiConditionalAttributeSet[string](map[string]string{}, map[string][]string{}),
+			cond:       NewMultiConditionalAttributeSet[string](map[string]string{}, false, map[string][]string{}),
 			inCondData: map[string]string{"span.name": "database operation"},
 			inAttr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("service.version", "v0.0.0")
@@ -38,6 +38,7 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 				map[string]string{
 					"service.version": "application.version",
 				},
+				false,
 				map[string][]string{"span.name": {"application start"}},
 			),
 			inCondData: map[string]string{"span.name": "database operation"},
@@ -54,6 +55,7 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 				map[string]string{
 					"service.version": "application.version",
 				},
+				false,
 				map[string][]string{},
 			),
 			inCondData: map[string]string{"span.name": "database operation"},
@@ -70,6 +72,7 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 				map[string]string{
 					"service.version": "application.version",
 				},
+				false,
 				map[string][]string{
 					"span.name": {"application start", "application end"},
 				},
@@ -88,6 +91,7 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 				map[string]string{
 					"service.version": "application.version",
 				},
+				false,
 				map[string][]string{
 					"span.name": {"application start", "application end"},
 				},
@@ -106,6 +110,7 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 				map[string]string{
 					"service.version": "application.version",
 				},
+				false,
 				map[string][]string{
 					"trace.name": {"application start"},
 					"span.name":  {"application end"},
@@ -125,6 +130,7 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 				map[string]string{
 					"service.version": "application.version",
 				},
+				false,
 				map[string][]string{
 					"span.name":  {"application start"},
 					"trace.name": {"application end"},

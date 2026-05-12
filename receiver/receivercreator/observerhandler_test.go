@@ -297,9 +297,13 @@ func TestOnAddForLogsWithHints(t *testing.T) {
 		expectedError          string
 	}{
 		{
-			name:                 "dynamically generated standard file_log receiver with explicit enablement",
-			target:               podContainerEndpointWithHints,
-			hintsConfig:          DiscoveryConfig{Enabled: true},
+			name:   "dynamically generated standard file_log receiver with explicit enablement",
+			target: podContainerEndpointWithHints,
+			hintsConfig: DiscoveryConfig{Enabled: true, DefaultFileLogConfig: userConfigMap{
+				"include_file_path": true,
+				"include_file_name": false,
+				"operators":         []any{map[string]any{"id": "container-parser", "type": "container"}},
+			}},
 			expectedReceiverType: &nopWithFileLogReceiver{},
 			expectedReceiverConfig: &nopWithFileLogConfig{
 				Include:         []string{"/var/log/pods/default_pod-2_pod-2-UID/redis/*.log"},
