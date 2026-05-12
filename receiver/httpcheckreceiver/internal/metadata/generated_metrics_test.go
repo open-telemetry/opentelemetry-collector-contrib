@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -37,6 +38,11 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
 		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
+		},
+		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
 			resAttrsSet: testDataSetNone,
@@ -51,54 +57,119 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["HttpcheckClientConnectionDuration"] = mb.metricHttpcheckClientConnectionDuration.config.AggregationStrategy
+			aggMap["HttpcheckClientRequestDuration"] = mb.metricHttpcheckClientRequestDuration.config.AggregationStrategy
+			aggMap["HttpcheckDNSLookupDuration"] = mb.metricHttpcheckDNSLookupDuration.config.AggregationStrategy
+			aggMap["HttpcheckDuration"] = mb.metricHttpcheckDuration.config.AggregationStrategy
+			aggMap["HttpcheckError"] = mb.metricHttpcheckError.config.AggregationStrategy
+			aggMap["HttpcheckResponseDuration"] = mb.metricHttpcheckResponseDuration.config.AggregationStrategy
+			aggMap["HttpcheckResponseSize"] = mb.metricHttpcheckResponseSize.config.AggregationStrategy
+			aggMap["HttpcheckStatus"] = mb.metricHttpcheckStatus.config.AggregationStrategy
+			aggMap["HttpcheckTLSCertRemaining"] = mb.metricHttpcheckTLSCertRemaining.config.AggregationStrategy
+			aggMap["HttpcheckTLSHandshakeDuration"] = mb.metricHttpcheckTLSHandshakeDuration.config.AggregationStrategy
+			aggMap["HttpcheckValidationFailed"] = mb.metricHttpcheckValidationFailed.config.AggregationStrategy
+			aggMap["HttpcheckValidationPassed"] = mb.metricHttpcheckValidationPassed.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
 			allMetricsCount++
 			mb.RecordHttpcheckClientConnectionDurationDataPoint(ts, 1, "http.url-val", "network.transport-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordHttpcheckClientConnectionDurationDataPoint(ts, 3, "http.url-val-2", "network.transport-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckClientRequestDurationDataPoint(ts, 1, "http.url-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordHttpcheckClientRequestDurationDataPoint(ts, 3, "http.url-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckDNSLookupDurationDataPoint(ts, 1, "http.url-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordHttpcheckDNSLookupDurationDataPoint(ts, 3, "http.url-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHttpcheckDurationDataPoint(ts, 1, "http.url-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordHttpcheckDurationDataPoint(ts, 3, "http.url-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHttpcheckErrorDataPoint(ts, 1, "http.url-val", "error.message-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordHttpcheckErrorDataPoint(ts, 3, "http.url-val-2", "error.message-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckResponseDurationDataPoint(ts, 1, "http.url-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordHttpcheckResponseDurationDataPoint(ts, 3, "http.url-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckResponseSizeDataPoint(ts, 1, "http.url-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordHttpcheckResponseSizeDataPoint(ts, 3, "http.url-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordHttpcheckStatusDataPoint(ts, 1, "http.url-val", 16, "http.method-val", "http.status_class-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordHttpcheckStatusDataPoint(ts, 3, "http.url-val-2", 17, "http.method-val-2", "http.status_class-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckTLSCertRemainingDataPoint(ts, 1, "http.url-val", "http.tls.issuer-val", "http.tls.cn-val", []any{"http.tls.san-item1", "http.tls.san-item2"})
+			if tt.name == "reaggregate_set" {
+				mb.RecordHttpcheckTLSCertRemainingDataPoint(ts, 3, "http.url-val-2", "http.tls.issuer-val-2", "http.tls.cn-val-2", []any{"http.tls.san-item3", "http.tls.san-item4"})
+			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckTLSHandshakeDurationDataPoint(ts, 1, "http.url-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordHttpcheckTLSHandshakeDurationDataPoint(ts, 3, "http.url-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckValidationFailedDataPoint(ts, 1, "http.url-val", "validation.type-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordHttpcheckValidationFailedDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordHttpcheckValidationPassedDataPoint(ts, 1, "http.url-val", "validation.type-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordHttpcheckValidationPassedDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2")
+			}
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricHttpcheckClientConnectionDuration.aggDataPoints)
+				assert.Empty(t, mb.metricHttpcheckClientRequestDuration.aggDataPoints)
+				assert.Empty(t, mb.metricHttpcheckDNSLookupDuration.aggDataPoints)
+				assert.Empty(t, mb.metricHttpcheckDuration.aggDataPoints)
+				assert.Empty(t, mb.metricHttpcheckError.aggDataPoints)
+				assert.Empty(t, mb.metricHttpcheckResponseDuration.aggDataPoints)
+				assert.Empty(t, mb.metricHttpcheckResponseSize.aggDataPoints)
+				assert.Empty(t, mb.metricHttpcheckStatus.aggDataPoints)
+				assert.Empty(t, mb.metricHttpcheckTLSCertRemaining.aggDataPoints)
+				assert.Empty(t, mb.metricHttpcheckTLSHandshakeDuration.aggDataPoints)
+				assert.Empty(t, mb.metricHttpcheckValidationFailed.aggDataPoints)
+				assert.Empty(t, mb.metricHttpcheckValidationPassed.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -126,223 +197,551 @@ func TestMetricsBuilder(t *testing.T) {
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
 				case "httpcheck.client.connection.duration":
-					assert.False(t, validatedMetrics["httpcheck.client.connection.duration"], "Found a duplicate in the metrics slice: httpcheck.client.connection.duration")
-					validatedMetrics["httpcheck.client.connection.duration"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Time spent establishing TCP connection to the endpoint.", mi.Description())
-					assert.Equal(t, "ms", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					httpURLAttrVal, ok := dp.Attributes().Get("http.url")
-					assert.True(t, ok)
-					assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
-					networkTransportAttrVal, ok := dp.Attributes().Get("network.transport")
-					assert.True(t, ok)
-					assert.Equal(t, "network.transport-val", networkTransportAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["httpcheck.client.connection.duration"], "Found a duplicate in the metrics slice: httpcheck.client.connection.duration")
+						validatedMetrics["httpcheck.client.connection.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time spent establishing TCP connection to the endpoint.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						httpURLAttrVal, ok := dp.Attributes().Get("http.url")
+						assert.True(t, ok)
+						assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+						networkTransportAttrVal, ok := dp.Attributes().Get("network.transport")
+						assert.True(t, ok)
+						assert.Equal(t, "network.transport-val", networkTransportAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["httpcheck.client.connection.duration"], "Found a duplicate in the metrics slice: httpcheck.client.connection.duration")
+						validatedMetrics["httpcheck.client.connection.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time spent establishing TCP connection to the endpoint.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["httpcheck.client.connection.duration"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("http.url")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.transport")
+						assert.False(t, ok)
+					}
 				case "httpcheck.client.request.duration":
-					assert.False(t, validatedMetrics["httpcheck.client.request.duration"], "Found a duplicate in the metrics slice: httpcheck.client.request.duration")
-					validatedMetrics["httpcheck.client.request.duration"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Time spent sending the HTTP request to the endpoint.", mi.Description())
-					assert.Equal(t, "ms", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					httpURLAttrVal, ok := dp.Attributes().Get("http.url")
-					assert.True(t, ok)
-					assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["httpcheck.client.request.duration"], "Found a duplicate in the metrics slice: httpcheck.client.request.duration")
+						validatedMetrics["httpcheck.client.request.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time spent sending the HTTP request to the endpoint.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						httpURLAttrVal, ok := dp.Attributes().Get("http.url")
+						assert.True(t, ok)
+						assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["httpcheck.client.request.duration"], "Found a duplicate in the metrics slice: httpcheck.client.request.duration")
+						validatedMetrics["httpcheck.client.request.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time spent sending the HTTP request to the endpoint.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["httpcheck.client.request.duration"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("http.url")
+						assert.False(t, ok)
+					}
 				case "httpcheck.dns.lookup.duration":
-					assert.False(t, validatedMetrics["httpcheck.dns.lookup.duration"], "Found a duplicate in the metrics slice: httpcheck.dns.lookup.duration")
-					validatedMetrics["httpcheck.dns.lookup.duration"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Time spent performing DNS lookup for the endpoint.", mi.Description())
-					assert.Equal(t, "ms", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					httpURLAttrVal, ok := dp.Attributes().Get("http.url")
-					assert.True(t, ok)
-					assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["httpcheck.dns.lookup.duration"], "Found a duplicate in the metrics slice: httpcheck.dns.lookup.duration")
+						validatedMetrics["httpcheck.dns.lookup.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time spent performing DNS lookup for the endpoint.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						httpURLAttrVal, ok := dp.Attributes().Get("http.url")
+						assert.True(t, ok)
+						assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["httpcheck.dns.lookup.duration"], "Found a duplicate in the metrics slice: httpcheck.dns.lookup.duration")
+						validatedMetrics["httpcheck.dns.lookup.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time spent performing DNS lookup for the endpoint.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["httpcheck.dns.lookup.duration"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("http.url")
+						assert.False(t, ok)
+					}
 				case "httpcheck.duration":
-					assert.False(t, validatedMetrics["httpcheck.duration"], "Found a duplicate in the metrics slice: httpcheck.duration")
-					validatedMetrics["httpcheck.duration"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the duration of the HTTP check.", mi.Description())
-					assert.Equal(t, "ms", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					httpURLAttrVal, ok := dp.Attributes().Get("http.url")
-					assert.True(t, ok)
-					assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["httpcheck.duration"], "Found a duplicate in the metrics slice: httpcheck.duration")
+						validatedMetrics["httpcheck.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the duration of the HTTP check.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						httpURLAttrVal, ok := dp.Attributes().Get("http.url")
+						assert.True(t, ok)
+						assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["httpcheck.duration"], "Found a duplicate in the metrics slice: httpcheck.duration")
+						validatedMetrics["httpcheck.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Measures the duration of the HTTP check.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["httpcheck.duration"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("http.url")
+						assert.False(t, ok)
+					}
 				case "httpcheck.error":
-					assert.False(t, validatedMetrics["httpcheck.error"], "Found a duplicate in the metrics slice: httpcheck.error")
-					validatedMetrics["httpcheck.error"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Records errors occurring during HTTP check.", mi.Description())
-					assert.Equal(t, "{error}", mi.Unit())
-					assert.False(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					httpURLAttrVal, ok := dp.Attributes().Get("http.url")
-					assert.True(t, ok)
-					assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
-					errorMessageAttrVal, ok := dp.Attributes().Get("error.message")
-					assert.True(t, ok)
-					assert.Equal(t, "error.message-val", errorMessageAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["httpcheck.error"], "Found a duplicate in the metrics slice: httpcheck.error")
+						validatedMetrics["httpcheck.error"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Records errors occurring during HTTP check.", mi.Description())
+						assert.Equal(t, "{error}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						httpURLAttrVal, ok := dp.Attributes().Get("http.url")
+						assert.True(t, ok)
+						assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+						errorMessageAttrVal, ok := dp.Attributes().Get("error.message")
+						assert.True(t, ok)
+						assert.Equal(t, "error.message-val", errorMessageAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["httpcheck.error"], "Found a duplicate in the metrics slice: httpcheck.error")
+						validatedMetrics["httpcheck.error"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Records errors occurring during HTTP check.", mi.Description())
+						assert.Equal(t, "{error}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["httpcheck.error"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("http.url")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error.message")
+						assert.False(t, ok)
+					}
 				case "httpcheck.response.duration":
-					assert.False(t, validatedMetrics["httpcheck.response.duration"], "Found a duplicate in the metrics slice: httpcheck.response.duration")
-					validatedMetrics["httpcheck.response.duration"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Time spent receiving the HTTP response from the endpoint.", mi.Description())
-					assert.Equal(t, "ms", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					httpURLAttrVal, ok := dp.Attributes().Get("http.url")
-					assert.True(t, ok)
-					assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["httpcheck.response.duration"], "Found a duplicate in the metrics slice: httpcheck.response.duration")
+						validatedMetrics["httpcheck.response.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time spent receiving the HTTP response from the endpoint.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						httpURLAttrVal, ok := dp.Attributes().Get("http.url")
+						assert.True(t, ok)
+						assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["httpcheck.response.duration"], "Found a duplicate in the metrics slice: httpcheck.response.duration")
+						validatedMetrics["httpcheck.response.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time spent receiving the HTTP response from the endpoint.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["httpcheck.response.duration"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("http.url")
+						assert.False(t, ok)
+					}
 				case "httpcheck.response.size":
-					assert.False(t, validatedMetrics["httpcheck.response.size"], "Found a duplicate in the metrics slice: httpcheck.response.size")
-					validatedMetrics["httpcheck.response.size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Size of response body in bytes.", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					httpURLAttrVal, ok := dp.Attributes().Get("http.url")
-					assert.True(t, ok)
-					assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["httpcheck.response.size"], "Found a duplicate in the metrics slice: httpcheck.response.size")
+						validatedMetrics["httpcheck.response.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Size of response body in bytes.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						httpURLAttrVal, ok := dp.Attributes().Get("http.url")
+						assert.True(t, ok)
+						assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["httpcheck.response.size"], "Found a duplicate in the metrics slice: httpcheck.response.size")
+						validatedMetrics["httpcheck.response.size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Size of response body in bytes.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["httpcheck.response.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("http.url")
+						assert.False(t, ok)
+					}
 				case "httpcheck.status":
-					assert.False(t, validatedMetrics["httpcheck.status"], "Found a duplicate in the metrics slice: httpcheck.status")
-					validatedMetrics["httpcheck.status"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "1 if the check resulted in status_code matching the status_class, otherwise 0.", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					assert.False(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					httpURLAttrVal, ok := dp.Attributes().Get("http.url")
-					assert.True(t, ok)
-					assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
-					httpStatusCodeAttrVal, ok := dp.Attributes().Get("http.status_code")
-					assert.True(t, ok)
-					assert.EqualValues(t, 16, httpStatusCodeAttrVal.Int())
-					httpMethodAttrVal, ok := dp.Attributes().Get("http.method")
-					assert.True(t, ok)
-					assert.Equal(t, "http.method-val", httpMethodAttrVal.Str())
-					httpStatusClassAttrVal, ok := dp.Attributes().Get("http.status_class")
-					assert.True(t, ok)
-					assert.Equal(t, "http.status_class-val", httpStatusClassAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["httpcheck.status"], "Found a duplicate in the metrics slice: httpcheck.status")
+						validatedMetrics["httpcheck.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "1 if the check resulted in status_code matching the status_class, otherwise 0.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						httpURLAttrVal, ok := dp.Attributes().Get("http.url")
+						assert.True(t, ok)
+						assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+						httpStatusCodeAttrVal, ok := dp.Attributes().Get("http.status_code")
+						assert.True(t, ok)
+						assert.EqualValues(t, 16, httpStatusCodeAttrVal.Int())
+						httpMethodAttrVal, ok := dp.Attributes().Get("http.method")
+						assert.True(t, ok)
+						assert.Equal(t, "http.method-val", httpMethodAttrVal.Str())
+						httpStatusClassAttrVal, ok := dp.Attributes().Get("http.status_class")
+						assert.True(t, ok)
+						assert.Equal(t, "http.status_class-val", httpStatusClassAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["httpcheck.status"], "Found a duplicate in the metrics slice: httpcheck.status")
+						validatedMetrics["httpcheck.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "1 if the check resulted in status_code matching the status_class, otherwise 0.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["httpcheck.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("http.url")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("http.status_code")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("http.method")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("http.status_class")
+						assert.False(t, ok)
+					}
 				case "httpcheck.tls.cert_remaining":
-					assert.False(t, validatedMetrics["httpcheck.tls.cert_remaining"], "Found a duplicate in the metrics slice: httpcheck.tls.cert_remaining")
-					validatedMetrics["httpcheck.tls.cert_remaining"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.", mi.Description())
-					assert.Equal(t, "s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					httpURLAttrVal, ok := dp.Attributes().Get("http.url")
-					assert.True(t, ok)
-					assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
-					httpTLSIssuerAttrVal, ok := dp.Attributes().Get("http.tls.issuer")
-					assert.True(t, ok)
-					assert.Equal(t, "http.tls.issuer-val", httpTLSIssuerAttrVal.Str())
-					httpTLSCnAttrVal, ok := dp.Attributes().Get("http.tls.cn")
-					assert.True(t, ok)
-					assert.Equal(t, "http.tls.cn-val", httpTLSCnAttrVal.Str())
-					httpTLSSanAttrVal, ok := dp.Attributes().Get("http.tls.san")
-					assert.True(t, ok)
-					assert.Equal(t, []any{"http.tls.san-item1", "http.tls.san-item2"}, httpTLSSanAttrVal.Slice().AsRaw())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["httpcheck.tls.cert_remaining"], "Found a duplicate in the metrics slice: httpcheck.tls.cert_remaining")
+						validatedMetrics["httpcheck.tls.cert_remaining"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						httpURLAttrVal, ok := dp.Attributes().Get("http.url")
+						assert.True(t, ok)
+						assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+						httpTLSIssuerAttrVal, ok := dp.Attributes().Get("http.tls.issuer")
+						assert.True(t, ok)
+						assert.Equal(t, "http.tls.issuer-val", httpTLSIssuerAttrVal.Str())
+						httpTLSCnAttrVal, ok := dp.Attributes().Get("http.tls.cn")
+						assert.True(t, ok)
+						assert.Equal(t, "http.tls.cn-val", httpTLSCnAttrVal.Str())
+						httpTLSSanAttrVal, ok := dp.Attributes().Get("http.tls.san")
+						assert.True(t, ok)
+						assert.Equal(t, []any{"http.tls.san-item1", "http.tls.san-item2"}, httpTLSSanAttrVal.Slice().AsRaw())
+					} else {
+						assert.False(t, validatedMetrics["httpcheck.tls.cert_remaining"], "Found a duplicate in the metrics slice: httpcheck.tls.cert_remaining")
+						validatedMetrics["httpcheck.tls.cert_remaining"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["httpcheck.tls.cert_remaining"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("http.url")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("http.tls.issuer")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("http.tls.cn")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("http.tls.san")
+						assert.False(t, ok)
+					}
 				case "httpcheck.tls.handshake.duration":
-					assert.False(t, validatedMetrics["httpcheck.tls.handshake.duration"], "Found a duplicate in the metrics slice: httpcheck.tls.handshake.duration")
-					validatedMetrics["httpcheck.tls.handshake.duration"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Time spent performing TLS handshake with the endpoint.", mi.Description())
-					assert.Equal(t, "ms", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					httpURLAttrVal, ok := dp.Attributes().Get("http.url")
-					assert.True(t, ok)
-					assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["httpcheck.tls.handshake.duration"], "Found a duplicate in the metrics slice: httpcheck.tls.handshake.duration")
+						validatedMetrics["httpcheck.tls.handshake.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time spent performing TLS handshake with the endpoint.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						httpURLAttrVal, ok := dp.Attributes().Get("http.url")
+						assert.True(t, ok)
+						assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["httpcheck.tls.handshake.duration"], "Found a duplicate in the metrics slice: httpcheck.tls.handshake.duration")
+						validatedMetrics["httpcheck.tls.handshake.duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time spent performing TLS handshake with the endpoint.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["httpcheck.tls.handshake.duration"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("http.url")
+						assert.False(t, ok)
+					}
 				case "httpcheck.validation.failed":
-					assert.False(t, validatedMetrics["httpcheck.validation.failed"], "Found a duplicate in the metrics slice: httpcheck.validation.failed")
-					validatedMetrics["httpcheck.validation.failed"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of response validations that failed.", mi.Description())
-					assert.Equal(t, "{validation}", mi.Unit())
-					assert.False(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					httpURLAttrVal, ok := dp.Attributes().Get("http.url")
-					assert.True(t, ok)
-					assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
-					validationTypeAttrVal, ok := dp.Attributes().Get("validation.type")
-					assert.True(t, ok)
-					assert.Equal(t, "validation.type-val", validationTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["httpcheck.validation.failed"], "Found a duplicate in the metrics slice: httpcheck.validation.failed")
+						validatedMetrics["httpcheck.validation.failed"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of response validations that failed.", mi.Description())
+						assert.Equal(t, "{validation}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						httpURLAttrVal, ok := dp.Attributes().Get("http.url")
+						assert.True(t, ok)
+						assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+						validationTypeAttrVal, ok := dp.Attributes().Get("validation.type")
+						assert.True(t, ok)
+						assert.Equal(t, "validation.type-val", validationTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["httpcheck.validation.failed"], "Found a duplicate in the metrics slice: httpcheck.validation.failed")
+						validatedMetrics["httpcheck.validation.failed"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of response validations that failed.", mi.Description())
+						assert.Equal(t, "{validation}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["httpcheck.validation.failed"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("http.url")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("validation.type")
+						assert.False(t, ok)
+					}
 				case "httpcheck.validation.passed":
-					assert.False(t, validatedMetrics["httpcheck.validation.passed"], "Found a duplicate in the metrics slice: httpcheck.validation.passed")
-					validatedMetrics["httpcheck.validation.passed"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of response validations that passed.", mi.Description())
-					assert.Equal(t, "{validation}", mi.Unit())
-					assert.False(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					httpURLAttrVal, ok := dp.Attributes().Get("http.url")
-					assert.True(t, ok)
-					assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
-					validationTypeAttrVal, ok := dp.Attributes().Get("validation.type")
-					assert.True(t, ok)
-					assert.Equal(t, "validation.type-val", validationTypeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["httpcheck.validation.passed"], "Found a duplicate in the metrics slice: httpcheck.validation.passed")
+						validatedMetrics["httpcheck.validation.passed"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of response validations that passed.", mi.Description())
+						assert.Equal(t, "{validation}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						httpURLAttrVal, ok := dp.Attributes().Get("http.url")
+						assert.True(t, ok)
+						assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+						validationTypeAttrVal, ok := dp.Attributes().Get("validation.type")
+						assert.True(t, ok)
+						assert.Equal(t, "validation.type-val", validationTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["httpcheck.validation.passed"], "Found a duplicate in the metrics slice: httpcheck.validation.passed")
+						validatedMetrics["httpcheck.validation.passed"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of response validations that passed.", mi.Description())
+						assert.Equal(t, "{validation}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["httpcheck.validation.passed"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("http.url")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("validation.type")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})
