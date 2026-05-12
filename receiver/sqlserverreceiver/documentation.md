@@ -413,7 +413,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| KBy | Gauge | Int | Development |
+| kBy | Gauge | Int | Development |
 
 #### Attributes
 
@@ -429,7 +429,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {objects} | Gauge | Int | Development |
+| {object} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -441,9 +441,9 @@ This metric is only available when the receiver is configured to directly connec
 
 Total number of memory grants pending.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| “{grants}” | Sum | Int | Cumulative | false | Development |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {grant} | Gauge | Int | Development |
 
 ### sqlserver.memory.page.count
 
@@ -453,7 +453,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {pages} | Gauge | Int | Development |
+| {page} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -463,11 +463,11 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.memory.usage
 
-Total memory in use.
+Total amount of dynamic memory the server is currently consuming.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| “KB” | Sum | Double | Cumulative | false | Development |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| kBy | Gauge | Int | Development |
 
 ### sqlserver.os.wait.duration
 

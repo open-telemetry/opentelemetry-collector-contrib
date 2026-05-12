@@ -694,12 +694,12 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				s.mb.RecordSqlserverUserConnectionCountDataPoint(now, val.(int64))
 			}
 		case usedMemory:
-			val, err := retrieveFloat(row, valueKey)
+			val, err := retrieveInt(row, valueKey)
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, usedMemory)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverMemoryUsageDataPoint(now, val.(float64))
+				s.mb.RecordSqlserverMemoryUsageDataPoint(now, val.(int64))
 			}
 		case versionStoreSize:
 			val, err := retrieveFloat(row, valueKey)

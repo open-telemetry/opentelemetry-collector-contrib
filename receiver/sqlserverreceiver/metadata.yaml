@@ -589,7 +589,7 @@ metrics:
     enabled: false
     description: Amount of memory used by the SQL Server memory area.
     stability: development
-    unit: "KBy"
+    unit: "kBy"
     gauge:
       value_type: int
     attributes: [memory.area]
@@ -598,7 +598,7 @@ metrics:
     enabled: false
     description: Number of cache objects in the SQL Server cache.
     stability: development
-    unit: "{objects}"
+    unit: "{object}"
     gauge:
       value_type: int
     attributes: [cache.state]
@@ -607,30 +607,26 @@ metrics:
     enabled: false
     description: Total number of memory grants pending.
     stability: development
-    unit: “{grants}”
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: false
+    unit: "{grant}"
+    gauge:
       value_type: int
     attributes: []
   sqlserver.memory.page.count:
     enabled: false
     description: Number of pages in the SQL Server buffer pool.
     stability: development
-    unit: "{pages}"
+    unit: "{page}"
     gauge:
       value_type: int
     attributes: [page.pool]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.memory.usage:
     enabled: false
-    description: Total memory in use.
+    description: Total amount of dynamic memory the server is currently consuming.
     stability: development
-    unit: “KB”
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: false
-      value_type: double
+    unit: "kBy"
+    gauge:
+      value_type: int
     attributes: []
   sqlserver.os.wait.duration:
     enabled: false

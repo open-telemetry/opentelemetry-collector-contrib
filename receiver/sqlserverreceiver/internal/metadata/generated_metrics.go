@@ -1903,7 +1903,7 @@ type metricSqlserverMemoryArea struct {
 func (m *metricSqlserverMemoryArea) init() {
 	m.data.SetName("sqlserver.memory.area")
 	m.data.SetDescription("Amount of memory used by the SQL Server memory area.")
-	m.data.SetUnit("KBy")
+	m.data.SetUnit("kBy")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -1992,7 +1992,7 @@ type metricSqlserverMemoryCacheObjectCount struct {
 func (m *metricSqlserverMemoryCacheObjectCount) init() {
 	m.data.SetName("sqlserver.memory.cache.object.count")
 	m.data.SetDescription("Number of cache objects in the SQL Server cache.")
-	m.data.SetUnit("{objects}")
+	m.data.SetUnit("{object}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -2080,17 +2080,15 @@ type metricSqlserverMemoryGrantsPendingCount struct {
 func (m *metricSqlserverMemoryGrantsPendingCount) init() {
 	m.data.SetName("sqlserver.memory.grants.pending.count")
 	m.data.SetDescription("Total number of memory grants pending.")
-	m.data.SetUnit("“{grants}”")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.SetUnit("{grant}")
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverMemoryGrantsPendingCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -2098,14 +2096,14 @@ func (m *metricSqlserverMemoryGrantsPendingCount) recordDataPoint(start pcommon.
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricSqlserverMemoryGrantsPendingCount) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSqlserverMemoryGrantsPendingCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2133,7 +2131,7 @@ type metricSqlserverMemoryPageCount struct {
 func (m *metricSqlserverMemoryPageCount) init() {
 	m.data.SetName("sqlserver.memory.page.count")
 	m.data.SetDescription("Number of pages in the SQL Server buffer pool.")
-	m.data.SetUnit("{pages}")
+	m.data.SetUnit("{page}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -2220,33 +2218,31 @@ type metricSqlserverMemoryUsage struct {
 // init fills sqlserver.memory.usage metric with initial data.
 func (m *metricSqlserverMemoryUsage) init() {
 	m.data.SetName("sqlserver.memory.usage")
-	m.data.SetDescription("Total memory in use.")
-	m.data.SetUnit("“KB”")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.SetDescription("Total amount of dynamic memory the server is currently consuming.")
+	m.data.SetUnit("kBy")
+	m.data.SetEmptyGauge()
 }
 
-func (m *metricSqlserverMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSqlserverMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricSqlserverMemoryUsage) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSqlserverMemoryUsage) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -4308,7 +4304,7 @@ func (mb *MetricsBuilder) RecordSqlserverMemoryPageCountDataPoint(ts pcommon.Tim
 }
 
 // RecordSqlserverMemoryUsageDataPoint adds a data point to sqlserver.memory.usage metric.
-func (mb *MetricsBuilder) RecordSqlserverMemoryUsageDataPoint(ts pcommon.Timestamp, val float64) {
+func (mb *MetricsBuilder) RecordSqlserverMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSqlserverMemoryUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
