@@ -1229,15 +1229,18 @@ func TestKafkaExporter_ComponentStatus(t *testing.T) {
 
 		logs := testdata.GenerateLogs(1)
 
-		ctx, ctxCancel := context.WithCancel(t.Context())
 		go func() {
-			exp.exportData(ctx, logs)
+			exp.exportData(t.Context(), logs)
 		}()
 
-		event := <-statusChan
-		assert.Error(t, event.Err())
-		assert.Equal(t, componentstatus.StatusRecoverableError, event.Status())
-		ctxCancel()
+		select {
+		case event := <-statusChan:
+			assert.Error(t, event.Err())
+			assert.Equal(t, componentstatus.StatusRecoverableError, event.Status())
+		case <-time.After(2 * time.Minute):
+			require.Fail(t, "export should report recoverable error")
+		}
+
 	})
 }
 
