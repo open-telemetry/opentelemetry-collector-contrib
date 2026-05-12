@@ -8,6 +8,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `opampsupervisor.Extensions` | alpha | When enabled, the opampsupervisor can be configured with and use specific extensions from the collector ecosystem. | v0.152.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47690) |
+| `opampsupervisor.Extensions` | alpha | When enabled, the opampsupervisor can be configured with and use specific extensions from the collector ecosystem. | v0.153.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47690) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

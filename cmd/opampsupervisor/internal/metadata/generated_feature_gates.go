@@ -11,5 +11,5 @@ var OpampsupervisorExtensionsFeatureGate = featuregate.GlobalRegistry().MustRegi
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the opampsupervisor can be configured with and use specific extensions from the collector ecosystem."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47690"),
-	featuregate.WithRegisterFromVersion("v0.152.0"),
+	featuregate.WithRegisterFromVersion("v0.153.0"),
 )

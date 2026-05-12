@@ -13,5 +13,5 @@ feature_gates:
     stage: alpha
     description: >-
       When enabled, the opampsupervisor can be configured with and use specific extensions from the collector ecosystem.
-    from_version: v0.152.0
+    from_version: v0.153.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47690

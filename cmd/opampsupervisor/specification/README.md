@@ -305,7 +305,7 @@ This results in the following Collector process invocation:
 **Note:** This functionality is in development and no extensions are currently supported.
 
 **Note:** This capability is experimental and must be manually enabled via the
-`opampsupervisor.Extensions` feature gate (alpha, introduced in v0.152.0).
+`opampsupervisor.Extensions` feature gate (alpha, introduced in v0.153.0).
 If `extensions` are configured but the gate is disabled, the Supervisor
 will not start and the error message names the gate to enable.
 
