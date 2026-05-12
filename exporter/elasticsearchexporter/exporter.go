@@ -157,6 +157,9 @@ func (e *elasticsearchExporter) pushLogRecord(
 	record plog.LogRecord,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
+	if elasticsearch.NewMappingHintGetter(record.Attributes()).HasMappingHint(elasticsearch.HintNoIndex) {
+		return nil
+	}
 	index, err := router.routeLogRecord(ec.resource, ec.scope, record.Attributes())
 	if err != nil {
 		return err
@@ -227,6 +230,9 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 			hasher.UpdateScope(scope)
 			for _, metric := range scopeMetrics.Metrics().All() {
 				upsertDataPoint := func(dp datapoints.DataPoint) error {
+					if dp.HasMappingHint(elasticsearch.HintNoIndex) {
+						return nil
+					}
 					index, err := router.routeDataPoint(resource, scope, dp.Attributes())
 					if err != nil {
 						return err
@@ -418,6 +424,9 @@ func (e *elasticsearchExporter) pushTraceRecord(
 	span ptrace.Span,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
+	if elasticsearch.NewMappingHintGetter(span.Attributes()).HasMappingHint(elasticsearch.HintNoIndex) {
+		return nil
+	}
 	index, err := router.routeSpan(ec.resource, ec.scope, span.Attributes())
 	if err != nil {
 		return err
@@ -445,6 +454,9 @@ func (e *elasticsearchExporter) pushSpanEvent(
 	spanEvent ptrace.SpanEvent,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
+	if elasticsearch.NewMappingHintGetter(spanEvent.Attributes()).HasMappingHint(elasticsearch.HintNoIndex) {
+		return nil
+	}
 	index, err := router.routeSpanEvent(ec.resource, ec.scope, spanEvent.Attributes())
 	if err != nil {
 		return err
