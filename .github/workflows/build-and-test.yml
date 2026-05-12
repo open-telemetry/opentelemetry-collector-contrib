@@ -299,7 +299,11 @@ jobs:
           - cmd-0
           - other
     runs-on: ${{ matrix.runner }}
-    needs: [setup-environment]
+    needs: [setup-environment, detect-scope]
+    if: |
+      always() &&
+      needs.setup-environment.result == 'success' &&
+      (github.event_name != 'pull_request' || needs.detect-scope.outputs.mode == 'full')
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
@@ -351,22 +355,52 @@ jobs:
             echo "Tests passed or were skipped. Continuing."
           fi
 
+  unittest-affected:
+    runs-on: ubuntu-24.04
+    needs: [setup-environment, detect-scope]
+    if: needs.detect-scope.outputs.mode == 'scoped'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Cache Test Build
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        with:
+          path: ~/.cache/go-build
+          key: go-test-build-${{ runner.os }}-oldstable-affected-${{ hashFiles('**/go.sum') }}
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+      - name: Run unit tests in affected modules
+        env:
+          CHANGED_GOLANG_SOURCES: ${{ needs.detect-scope.outputs.go_sources }}
+        run: make for-affected-components CMD="make test"
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-24.04
-    needs: [setup-environment, unittest-matrix]
+    needs: [setup-environment, detect-scope, unittest-matrix, unittest-affected]
     steps:
-      - name: Print result
-        run: echo ${{ needs.unittest-matrix.result }}
       - name: Interpret result
+        env:
+          MODE: ${{ needs.detect-scope.outputs.mode }}
+          MATRIX_RESULT: ${{ needs.unittest-matrix.result }}
+          AFFECTED_RESULT: ${{ needs.unittest-affected.result }}
         run: |
-          if [[ success == ${{ needs.unittest-matrix.result }} ]]
-          then
-            echo "All matrix jobs passed!"
-          else
-            echo "One or more matrix jobs failed."
-            false
+          case "$MODE" in
+            scoped) check="$AFFECTED_RESULT" ;;
+            full|'') check="$MATRIX_RESULT" ;;
+            skip) check='success' ;;
+            *) echo "Unexpected mode: $MODE"; exit 1 ;;
+          esac
+          echo "mode=$MODE matrix=$MATRIX_RESULT affected=$AFFECTED_RESULT check=$check"
+          if [[ "$check" != "success" ]]; then
+            echo "Unit tests failed."
+            exit 1
           fi
+          echo "Unit tests passed."
   coverage:
     runs-on: ubuntu-24.04
     needs: [unittest]
