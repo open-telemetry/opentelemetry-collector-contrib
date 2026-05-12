@@ -207,6 +207,24 @@ func TestLoadConfig(t *testing.T) {
 				Namespace: DefaultNamespace,
 			},
 		},
+		{
+			name: "dimensions_with_globs",
+			id:   component.NewIDWithName(metadata.Type, "dimensions_with_globs"),
+			expected: &Config{
+				AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				Histogram:              HistogramConfig{Disable: false, Unit: defaultUnit},
+				Dimensions: []Dimension{
+					{Name: "http.method", Default: &defaultMethod},
+					{Glob: "db.*"},
+				},
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     60 * time.Second,
+				Exemplars: ExemplarsConfig{
+					MaxPerDataPoint: defaultMaxPerDatapoint,
+				},
+				Namespace: DefaultNamespace,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -274,6 +292,64 @@ func TestValidateDimensions(t *testing.T) {
 				{Name: "service_name"},
 			},
 			expectedErr: "duplicate dimension name service_name",
+		},
+		{
+			name: "name and glob mixed",
+			dimensions: []Dimension{
+				{Name: "http.method"},
+				{Glob: "db.*"},
+			},
+		},
+		{
+			name: "entry sets both name and glob",
+			dimensions: []Dimension{
+				{Name: "http.method", Glob: "http.*"},
+			},
+			expectedErr: "dimension entry must set only one of `name` or `glob`, got both: name=\"http.method\" glob=\"http.*\"",
+		},
+		{
+			name: "entry sets neither name nor glob",
+			dimensions: []Dimension{
+				{},
+			},
+			expectedErr: "dimension entry must set one of `name` or `glob`",
+		},
+		{
+			name: "duplicate globs",
+			dimensions: []Dimension{
+				{Glob: "db.*"},
+				{Glob: "db.*"},
+			},
+			expectedErr: "duplicate dimension glob \"db.*\"",
+		},
+		{
+			name: "default on glob",
+			dimensions: []Dimension{
+				{Glob: "db.*", Default: stringp("x")},
+			},
+			expectedErr: "`default` is not supported on glob dimension \"db.*\"",
+		},
+		{
+			name: "invalid glob pattern",
+			dimensions: []Dimension{
+				{Glob: "db.["},
+			},
+			expectedErr: "invalid dimension glob \"db.[\": unexpected end of input",
+		},
+		{
+			name: "glob conflicts with reserved label",
+			dimensions: []Dimension{
+				{Glob: "service.*"},
+			},
+			expectedErr: "duplicate dimension name service.name conflicting with glob \"service.*\"",
+		},
+		{
+			name: "glob conflicts with configured name dimension",
+			dimensions: []Dimension{
+				{Name: "http.method"},
+				{Glob: "http.*"},
+			},
+			expectedErr: "duplicate dimension name http.method conflicting with glob \"http.*\"",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

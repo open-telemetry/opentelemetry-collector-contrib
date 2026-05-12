@@ -123,12 +123,13 @@ The following settings can be optionally configured:
   - `exponential`:
     - `max_size` (default: `160`) the maximum number of buckets per positive or negative number range.
 - `dimensions`: the list of dimensions to add to `traces.span.metrics.calls`, `traces.span.metrics.duration` and `traces.span.metrics.event` metrics with the default dimensions defined above.
-  Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes or
-  resource attributes (AKA process tags) such as `ip`, `host.name` or `region`.
-  
-  If the `name`d attribute is missing in the span, the optional provided `default` is used.
-  
-  If no `default` is provided, this dimension will be **omitted** from the metric.
+  Each list entry must set **exactly one** of:
+  1. `name` which is looked up in the span's collection of attributes or resource attributes (AKA process tags) such as `ip`, `host.name` or `region`.
+
+     If the `name`d attribute is missing in the span, the optional provided `default` is used.
+
+     If no `default` is provided, this dimension will be **omitted** from the metric.
+  2. `glob`: a glob pattern. Every span or resource attribute whose key matches the pattern is emitted as its own dimension.
 - `calls_dimensions`: additional attributes to add as dimensions to the `traces.span.metrics.calls` metric, 
   which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
 - `exclude_dimensions`: the list of dimensions to be excluded from the default set of dimensions. Use to exclude unneeded data from metrics. 
@@ -183,6 +184,7 @@ connectors:
       - name: http.method
         default: GET
       - name: http.status_code
+      - glob: "k8s.*"
     calls_dimensions:
       - name: http.url
         default: /ping
