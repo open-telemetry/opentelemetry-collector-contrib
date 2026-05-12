@@ -15,6 +15,7 @@ import (
 
 // valueTransformer applies value-level normalization after an attribute is
 // renamed. Sources that do not need value normalization may leave this nil.
+// TODO [kylehounslow]: Review interface vs. typed function
 type valueTransformer interface {
 	TransformValue(targetKey, value string) string
 }

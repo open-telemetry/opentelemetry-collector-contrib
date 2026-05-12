@@ -23,10 +23,14 @@ var operationNameValues = map[string]string{
 	"prompt":    "text_completion",
 }
 
+// Transformer adapts the package-level TransformValue function to the
+// processor's valueTransformer interface.
+type Transformer struct{}
+
 // TransformValue applies OpenInference-specific value normalization when the
 // target attribute is gen_ai.operation.name. Returns the original value if no
 // mapping applies.
-func TransformValue(targetKey, value string) string {
+func (Transformer) TransformValue(targetKey, value string) string {
 	if targetKey != otelsemconv.GenAIOperationName {
 		return value
 	}
@@ -34,13 +38,4 @@ func TransformValue(targetKey, value string) string {
 		return mapped
 	}
 	return value
-}
-
-// Transformer adapts the package-level TransformValue function to the
-// processor's valueTransformer interface.
-type Transformer struct{}
-
-// TransformValue implements the processor's valueTransformer interface.
-func (Transformer) TransformValue(targetKey, value string) string {
-	return TransformValue(targetKey, value)
 }

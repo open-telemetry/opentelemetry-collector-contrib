@@ -38,7 +38,7 @@ func TestTransformValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, TransformValue(tt.targetKey, tt.value))
+			assert.Equal(t, tt.want, Transformer{}.TransformValue(tt.targetKey, tt.value))
 		})
 	}
 }
