@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 )
@@ -31,7 +32,7 @@ func TestStorageProviderHit(t *testing.T) {
 	require.NoError(t, client.Set(t.Context(), "http://example.com/schemas/1.0.0", []byte("cached content")))
 
 	wrapped := &recordingProvider{content: "http content"}
-	sp := NewStorageProvider(wrapped, client)
+	sp := NewStorageProvider(wrapped, client, zaptest.NewLogger(t))
 
 	result, err := sp.Retrieve(t.Context(), "http://example.com/schemas/1.0.0")
 	require.NoError(t, err)
@@ -43,7 +44,7 @@ func TestStorageProviderMiss(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindProcessor, component.ID{}, "test")
 
 	wrapped := &recordingProvider{content: "http content"}
-	sp := NewStorageProvider(wrapped, client)
+	sp := NewStorageProvider(wrapped, client, zaptest.NewLogger(t))
 
 	result, err := sp.Retrieve(t.Context(), "http://example.com/schemas/1.0.0")
 	require.NoError(t, err)
@@ -60,7 +61,7 @@ func TestStorageProviderWrappedError(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindProcessor, component.ID{}, "test")
 
 	wrapped := &recordingProvider{err: errors.New("fetch failed")}
-	sp := NewStorageProvider(wrapped, client)
+	sp := NewStorageProvider(wrapped, client, zaptest.NewLogger(t))
 
 	_, err := sp.Retrieve(t.Context(), "http://example.com/schemas/1.0.0")
 	require.Error(t, err)

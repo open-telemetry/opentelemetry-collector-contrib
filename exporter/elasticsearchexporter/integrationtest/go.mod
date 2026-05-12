@@ -138,10 +138,10 @@ require (
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/splunk/stef/go/grpc v0.1.1 // indirect
-	github.com/splunk/stef/go/otel v0.1.1 // indirect
-	github.com/splunk/stef/go/pdata v0.1.1 // indirect
-	github.com/splunk/stef/go/pkg v0.1.1 // indirect
+	github.com/splunk/stef/go/grpc v0.1.2 // indirect
+	github.com/splunk/stef/go/otel v0.1.2 // indirect
+	github.com/splunk/stef/go/pdata v0.1.2 // indirect
+	github.com/splunk/stef/go/pkg v0.1.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/twmb/murmur3 v1.1.8 // indirect
@@ -247,7 +247,7 @@ require (
 	google.golang.org/grpc v1.81.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	modernc.org/b/v2 v2.1.10 // indirect
+	modernc.org/b/v2 v2.1.11 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter => ../
