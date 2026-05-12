@@ -65,8 +65,10 @@ jobs:
           echo "$changed"
 
           # Any of these paths change CI behavior or coverage, so require the full matrices.
+          # cmd/otelcontribcol/ is the assembly layer for the binary; any change there
+          # (Go source, builder-config.yaml, Dockerfile, etc.) must run the full cross-compile.
           # TEMPORARY (revert before merge): `.github/workflows/` removed so this PR can exercise the scoped paths on CI.
-          trigger='^(\.golangci\.yml$|Makefile$|Makefile\.Common$|\.github/actions/|go\.mod$)'
+          trigger='^(\.golangci\.yml$|Makefile$|Makefile\.Common$|\.github/actions/|go\.mod$|cmd/otelcontribcol/)'
           if echo "$changed" | grep -qE "$trigger"; then
             echo "Full-scope trigger matched; running full lint and integration matrices."
             echo "mode=full" >> "$GITHUB_OUTPUT"
@@ -548,13 +550,17 @@ jobs:
         run: make build-examples
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
-  # Full arch matrix with per-arch ~/.cache/go-build caching. Cold first run
-  # behaves like the required workflow's uncached job; warm runs (unchanged
-  # go.sum) should be substantially faster. Uploads use distinct artifact
-  # names so they cannot collide with the required workflow's uploads.
+  # Full arch matrix; only runs on mode=full since `go-build` caching on this
+  # repo gets evicted before it can ever warm up (the 10 GB per-repo budget is
+  # contended). On scoped PRs, exp-cross-compile-affected handles per-arch
+  # verification at the changed-module level instead.
   exp-cross-compile:
     runs-on: ubuntu-24.04
-    needs: [exp-setup-environment]
+    needs: [exp-setup-environment, exp-detect-scope]
+    if: |
+      always() &&
+      needs.exp-setup-environment.result == 'success' &&
+      needs.exp-detect-scope.outputs.mode == 'full'
     strategy:
       fail-fast: false
       matrix:
@@ -600,13 +606,6 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-      - name: Cache Go build cache
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
-        with:
-          path: ~/.cache/go-build
-          key: cross-compile-experimental-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm && format('-{0}', matrix.arm) || '' }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            cross-compile-experimental-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.arm && format('-{0}', matrix.arm) || '' }}-
       - name: Generate collector files
         run: make genotelcontribcol
       - name: Build Collector ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.arm }}
@@ -616,6 +615,71 @@ jobs:
         with:
           name: experimental-collector-binaries-${{ matrix.os }}-${{ matrix.arch }}
           path: ./bin/*
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  # Scoped cross-compile: on PRs that only touch a small set of Go sources,
+  # verify those modules (and the modules that depend on them) build for each
+  # supported platform without rebuilding the whole otelcontribcol binary.
+  # cmd/otelcontribcol/ changes force mode=full in exp-detect-scope so the
+  # assembly layer is always exercised by exp-cross-compile when it changes.
+  exp-cross-compile-affected:
+    runs-on: ubuntu-24.04
+    needs: [exp-setup-environment, exp-detect-scope]
+    if: needs.exp-detect-scope.outputs.mode == 'scoped'
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - darwin
+          - linux
+          - windows
+        arch:
+          - 386
+          - amd64
+          - arm
+          - arm64
+          - ppc64le
+          - riscv64
+          - s390x
+        include:
+          - os: linux
+            arch: arm
+            arm: 7
+          - os: aix
+            arch: ppc64
+        exclude:
+          - os: darwin
+            arch: 386
+          - os: darwin
+            arch: arm
+          - os: darwin
+            arch: ppc64le
+          - os: darwin
+            arch: riscv64
+          - os: darwin
+            arch: s390x
+          - os: windows
+            arch: arm
+          - os: windows
+            arch: ppc64le
+          - os: windows
+            arch: riscv64
+          - os: windows
+            arch: s390x
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Build affected modules for ${{ matrix.os }}/${{ matrix.arch }}${{ matrix.arm && format('v{0}', matrix.arm) || '' }}
+        env:
+          CHANGED_GOLANG_SOURCES: ${{ needs.exp-detect-scope.outputs.go_sources }}
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+          GOARM: ${{ matrix.arm }}
+        run: make for-affected-components CMD="go build ./..."
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   exp-publish-check:
