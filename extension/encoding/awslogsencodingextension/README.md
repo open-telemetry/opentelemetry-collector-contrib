@@ -89,16 +89,15 @@ extensions:
 
 ## Routing CloudWatch subscription-filter events to other encodings
 
-When `format: cloudwatch` is set, the extension can route incoming events to
-different inner encoding extensions based on the event's `logGroup` and/or
-`logStream`. A single Lambda or Firehose receiver subscribed to multiple log
-groups can dispatch each group's events to the appropriate decoder, instead of
-running a separate receiver per group.
+When subscription filters from multiple CloudWatch log groups feed a single
+collector pipeline (for example via Firehose or Lambda receivers), this extension can
+dispatch each envelope to a configured inner encoding based on its log group
+and log stream. This removes the need for a separate pipeline per log format.
 
 Routing decisions are made **per envelope**, which means CloudWatch payloads
 that aggregate multiple envelopes from different log groups (common with
-Firehose) are dispatched correctly:
-each envelope is matched independently against the routing table.
+Firehose) are dispatched correctly: each envelope is matched independently
+against the routing table.
 
 Routing is configured via the nested `cloudwatch.streams` list. Each entry is
 an object with:
