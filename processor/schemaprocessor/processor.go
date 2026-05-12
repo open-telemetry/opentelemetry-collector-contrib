@@ -24,8 +24,9 @@ import (
 )
 
 type schemaProcessor struct {
-	telemetry component.TelemetrySettings
-	config    *Config
+	telemetry   component.TelemetrySettings
+	componentID component.ID
+	config      *Config
 
 	log *zap.Logger
 
@@ -70,6 +71,7 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 	}
 	return &schemaProcessor{
 		config:            cfg,
+		componentID:       set.ID,
 		telemetry:         set.TelemetrySettings,
 		log:               set.Logger,
 		manager:           m,
@@ -253,7 +255,7 @@ func (t *schemaProcessor) start(ctx context.Context, host component.Host) error 
 	provider := translation.NewHTTPProvider(client)
 
 	if t.config.StorageID != nil {
-		storageClient, err := getStorageClient(ctx, host, *t.config.StorageID)
+		storageClient, err := getStorageClient(ctx, host, *t.config.StorageID, t.componentID)
 		if err != nil {
 			return err
 		}
@@ -282,7 +284,7 @@ func (t *schemaProcessor) shutdown(ctx context.Context) error {
 	return nil
 }
 
-func getStorageClient(ctx context.Context, host component.Host, storageID component.ID) (storage.Client, error) {
+func getStorageClient(ctx context.Context, host component.Host, storageID component.ID, componentID component.ID) (storage.Client, error) {
 	ext, ok := host.GetExtensions()[storageID]
 	if !ok {
 		return nil, fmt.Errorf("storage extension %q not found", storageID)
@@ -291,5 +293,5 @@ func getStorageClient(ctx context.Context, host component.Host, storageID compon
 	if !ok {
 		return nil, fmt.Errorf("extension %q is not a storage extension", storageID)
 	}
-	return storageExt.GetClient(ctx, component.KindProcessor, storageID, "schema_cache")
+	return storageExt.GetClient(ctx, component.KindProcessor, componentID, "")
 }
