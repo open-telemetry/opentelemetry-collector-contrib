@@ -13,6 +13,8 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 )
 
 // PathExpressionParser is how a context provides OTTL access to all its Paths.
@@ -728,7 +730,16 @@ func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc
 	return vals, nil
 }
 
+var errLambdaExpressionDisable = fmt.Errorf(
+	"lambda expression arguments requires the `%s` feature gate to be enabled",
+	metadata.OttlFunctionsEnableLambdaFeatureGate.ID(),
+)
+
 func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*LambdaExpression[K], error) {
+	if !metadata.OttlFunctionsEnableLambdaFeatureGate.IsEnabled() {
+		return nil, errLambdaExpressionDisable
+	}
+
 	paramNames := make([]string, 0, len(l.Params))
 	validParams := make(map[string]struct{}, len(l.Params))
 	for _, param := range l.Params {

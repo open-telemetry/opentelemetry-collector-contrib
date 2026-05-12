@@ -13,8 +13,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -3309,4 +3311,58 @@ func Test_Optional_GetOr(t *testing.T) {
 
 	setOpt := NewTestingOptional[string]("foo")
 	assert.Equal(t, "foo", setOpt.GetOr("bar"))
+}
+
+func Test_OttlFunctionsEnableLambdaFeatureGate(t *testing.T) {
+	funcWithLambda := editor{
+		Function: "eval_lambda",
+		Arguments: []argument{
+			{
+				Value: value{
+					Lambda: &lambdaExpr{
+						Params: []lambdaParamDecl{"value"},
+						Body: lambdaBody{
+							Value: &value{
+								Literal: &mathExprLiteral{
+									LambdaParamPath: &lambdaParamPath{Name: "value"},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				Value: value{
+					List: &list{Values: []value{{String: ottltest.Strp("hello")}}},
+				},
+			},
+		},
+	}
+
+	p, _ := NewParser(
+		defaultFunctionsForTests(),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	t.Run("enabled with lambda", func(t *testing.T) {
+		err := featuregate.GlobalRegistry().Set(
+			metadata.OttlFunctionsEnableLambdaFeatureGate.ID(),
+			true,
+		)
+		require.NoError(t, err)
+		_, err = p.newParseContext().newFunctionCall(funcWithLambda)
+		require.NoError(t, err)
+	})
+
+	t.Run("disabled with lambda", func(t *testing.T) {
+		err := featuregate.GlobalRegistry().Set(
+			metadata.OttlFunctionsEnableLambdaFeatureGate.ID(),
+			false,
+		)
+		require.NoError(t, err)
+		_, err = p.newParseContext().newFunctionCall(funcWithLambda)
+		require.ErrorContains(t, err, "lambda expression arguments requires the `ottl.functions.enableLambda` feature gate to be enabled")
+	})
 }

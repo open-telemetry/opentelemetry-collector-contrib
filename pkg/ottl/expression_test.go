@@ -12,8 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -110,6 +112,12 @@ func basicSliceByte() (ExprFunc[any], error) {
 }
 
 func Test_newGetter(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set(
+		metadata.OttlFunctionsEnableLambdaFeatureGate.ID(),
+		true,
+	)
+	require.NoError(t, err)
+
 	tests := []struct {
 		name        string
 		val         value
