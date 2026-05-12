@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.uber.org/zap/zapcore"
 )
@@ -37,7 +36,7 @@ func TestValidate(t *testing.T) {
 	tlsConfig.InsecureSkipVerify = true
 
 	// Cases that exercise a non-HealthCheck failure path still need a
-	// HealthCheck with a valid transport so xconfmap.Validate doesn't trip on
+	// HealthCheck with a valid transport so confmap.Validate doesn't trip on
 	// the empty default before reaching the field under test.
 	defaultHealthCheck := HealthCheck{
 		ServerConfig: confighttp.ServerConfig{
@@ -566,7 +565,7 @@ func TestValidate(t *testing.T) {
 					return ""
 				})
 
-			err := xconfmap.Validate(tc.config)
+			err := confmap.Validate(tc.config)
 
 			if tc.expectedErrorFunc != nil && tc.expectedErrorFunc() != "" {
 				require.ErrorContains(t, err, tc.expectedErrorFunc())
@@ -607,7 +606,7 @@ func TestSupervisor_UnmarshalExtensionsUnknownType(t *testing.T) {
 	require.Contains(t, err.Error(), "unknown extension type")
 }
 
-// TestSupervisor_TopLevelValidate confirms that xconfmap.Validate produces
+// TestSupervisor_TopLevelValidate confirms that confmap.Validate produces
 // path-prefixed errors when called at the supervisor-config root, which is
 // what NewSupervisor relies on for actionable validation messages.
 func TestSupervisor_TopLevelValidate(t *testing.T) {
@@ -620,7 +619,7 @@ func TestSupervisor_TopLevelValidate(t *testing.T) {
 		},
 	}
 
-	err := xconfmap.Validate(cfg)
+	err := confmap.Validate(cfg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "healthcheck")
 }

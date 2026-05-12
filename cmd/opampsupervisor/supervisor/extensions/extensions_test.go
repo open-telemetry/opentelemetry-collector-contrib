@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
@@ -286,7 +285,7 @@ func TestConfig_Unmarshal(t *testing.T) {
 	}
 }
 
-// TestConfig_TopLevelValidate confirms that xconfmap.Validate walks into a
+// TestConfig_TopLevelValidate confirms that confmap.Validate walks into a
 // Config map and reports the failing field path with the extension ID, so we
 // don't need to wrap per-extension errors ourselves.
 func TestConfig_TopLevelValidate(t *testing.T) {
@@ -299,7 +298,7 @@ func TestConfig_TopLevelValidate(t *testing.T) {
 		Extensions: Config{id: &requiredFieldConfig{}},
 	}
 
-	err := xconfmap.Validate(p)
+	err := confmap.Validate(p)
 	require.Error(t, err)
 	// Path should include the extensions key, the component ID, and the field.
 	require.Contains(t, err.Error(), "extensions::requiredfield/primary")
@@ -308,7 +307,7 @@ func TestConfig_TopLevelValidate(t *testing.T) {
 
 // requiredFieldConfig is a tiny config type that fails Validate when its
 // required field is empty. It exists only to verify path-prefixed error
-// formatting from xconfmap.Validate.
+// formatting from confmap.Validate.
 type requiredFieldConfig struct {
 	Field string `mapstructure:"field"`
 }

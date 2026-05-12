@@ -17,7 +17,7 @@ type Config map[component.ID]component.Config
 
 // Unmarshal turns the raw extensions block into typed configs using the
 // supervisor's allowlisted factories. Validation is left to a top-level
-// xconfmap.Validate call so error paths are reported with full context.
+// confmap.Validate call so error paths are reported with full context.
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	factories := Factories()
 

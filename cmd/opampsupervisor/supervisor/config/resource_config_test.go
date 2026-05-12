@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	otelconftelemetry "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 )
@@ -43,7 +42,7 @@ func TestTelemetryResourceConfigUnmarshal(t *testing.T) {
 
 		var cfg otelconftelemetry.ResourceConfig
 		require.NoError(t, conf.Unmarshal(&cfg))
-		require.NoError(t, xconfmap.Validate(&cfg))
+		require.NoError(t, confmap.Validate(&cfg))
 		require.NotNil(t, cfg.SchemaUrl)
 		assert.Equal(t, "https://opentelemetry.io/schemas/1.38.0", *cfg.SchemaUrl)
 		assert.Len(t, cfg.Attributes, 1)
@@ -57,7 +56,7 @@ func TestTelemetryResourceConfigUnmarshal(t *testing.T) {
 
 		var cfg otelconftelemetry.ResourceConfig
 		require.NoError(t, conf.Unmarshal(&cfg))
-		require.ErrorContains(t, xconfmap.Validate(&cfg), "resource::attributes_list is not currently supported")
+		require.ErrorContains(t, confmap.Validate(&cfg), "resource::attributes_list is not currently supported")
 	})
 
 	t.Run("legacy and declarative attributes cannot be mixed", func(t *testing.T) {
@@ -70,7 +69,7 @@ func TestTelemetryResourceConfigUnmarshal(t *testing.T) {
 
 		var cfg otelconftelemetry.ResourceConfig
 		require.NoError(t, conf.Unmarshal(&cfg))
-		require.ErrorContains(t, xconfmap.Validate(&cfg), "resource::attributes cannot be used together with legacy inline resource attributes")
+		require.ErrorContains(t, confmap.Validate(&cfg), "resource::attributes cannot be used together with legacy inline resource attributes")
 	})
 }
 
