@@ -4,7 +4,7 @@ component: connector/countconnector
 
 note: Support OTTL path context names in `conditions`.
 
-issues: []
+issues: [48316]
 
 subtext: |
   Conditions for spans, span events, metrics, data points, logs, and profiles can now use
