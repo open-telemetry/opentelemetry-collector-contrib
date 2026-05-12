@@ -78,13 +78,7 @@ type encodingExtension struct {
 
 func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension, error) {
 	switch cfg.Format {
-	case constants.FormatCloudWatchLogsSubscriptionFilter, constants.FormatCloudWatchLogsSubscriptionFilterV1:
-		if cfg.Format == constants.FormatCloudWatchLogsSubscriptionFilterV1 {
-			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", constants.FormatCloudWatchLogsSubscriptionFilterV1),
-				zap.String("new_format", constants.FormatCloudWatchLogsSubscriptionFilter),
-			)
-		}
+	case constants.FormatCloudWatchLogsSubscriptionFilter:
 		sub := subscriptionfilter.NewSubscriptionFilterUnmarshaler(settings.BuildInfo)
 		return &encodingExtension{
 			cfg:                cfg,
@@ -94,13 +88,7 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			logger:             settings.Logger,
 			selfID:             settings.ID,
 		}, nil
-	case constants.FormatVPCFlowLog, constants.FormatVPCFlowLogV1:
-		if cfg.Format == constants.FormatVPCFlowLogV1 {
-			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", constants.FormatVPCFlowLogV1),
-				zap.String("new_format", constants.FormatVPCFlowLog),
-			)
-		}
+	case constants.FormatVPCFlowLog:
 		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
 			cfg.VPCFlowLogConfig,
 			settings.BuildInfo,
@@ -113,37 +101,19 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			format:      constants.FormatVPCFlowLog,
 			logger:      settings.Logger,
 		}, err
-	case constants.FormatS3AccessLog, constants.FormatS3AccessLogV1:
-		if cfg.Format == constants.FormatS3AccessLogV1 {
-			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", constants.FormatS3AccessLogV1),
-				zap.String("new_format", constants.FormatS3AccessLog),
-			)
-		}
+	case constants.FormatS3AccessLog:
 		return &encodingExtension{
 			unmarshaler: s3accesslog.NewS3AccessLogUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatS3AccessLog,
 			logger:      settings.Logger,
 		}, nil
-	case constants.FormatWAFLog, constants.FormatWAFLogV1:
-		if cfg.Format == constants.FormatWAFLogV1 {
-			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", constants.FormatWAFLogV1),
-				zap.String("new_format", constants.FormatWAFLog),
-			)
-		}
+	case constants.FormatWAFLog:
 		return &encodingExtension{
 			unmarshaler: waf.NewWAFLogUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatWAFLog,
 			logger:      settings.Logger,
 		}, nil
-	case constants.FormatCloudTrailLog, constants.FormatCloudTrailLogV1:
-		if cfg.Format == constants.FormatCloudTrailLogV1 {
-			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", constants.FormatCloudTrailLogV1),
-				zap.String("new_format", constants.FormatCloudTrailLog),
-			)
-		}
+	case constants.FormatCloudTrailLog:
 		if metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.IsEnabled() &&
 			!metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.IsEnabled() {
 			return nil, errors.New("extension.encoding.awslogsencoding.DontEmitV0RPCConventions requires extension.encoding.awslogsencoding.EmitV1RPCConventions to be enabled")
@@ -155,13 +125,7 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			format: constants.FormatCloudTrailLog,
 			logger: settings.Logger,
 		}, nil
-	case constants.FormatELBAccessLog, constants.FormatELBAccessLogV1:
-		if cfg.Format == constants.FormatELBAccessLogV1 {
-			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", constants.FormatELBAccessLogV1),
-				zap.String("new_format", constants.FormatELBAccessLog),
-			)
-		}
+	case constants.FormatELBAccessLog:
 		return &encodingExtension{
 			unmarshaler: elbaccesslogs.NewELBAccessLogUnmarshaler(
 				settings.BuildInfo,

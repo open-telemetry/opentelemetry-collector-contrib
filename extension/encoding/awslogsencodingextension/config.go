@@ -18,7 +18,6 @@ var _ xconfmap.Validator = (*Config)(nil)
 
 var (
 	supportedLogFormats = []string{
-		// New format values
 		constants.FormatCloudWatchLogsSubscriptionFilter,
 		constants.FormatVPCFlowLog,
 		constants.FormatS3AccessLog,
@@ -26,13 +25,6 @@ var (
 		constants.FormatCloudTrailLog,
 		constants.FormatELBAccessLog,
 		constants.FormatNetworkFirewallLog,
-		// Legacy format values (for backward compatibility)
-		constants.FormatCloudWatchLogsSubscriptionFilterV1,
-		constants.FormatVPCFlowLogV1,
-		constants.FormatS3AccessLogV1,
-		constants.FormatWAFLogV1,
-		constants.FormatCloudTrailLogV1,
-		constants.FormatELBAccessLogV1,
 	}
 	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
 )
@@ -42,8 +34,6 @@ type Config struct {
 	Format string `mapstructure:"format"`
 
 	VPCFlowLogConfig vpcflowlog.Config `mapstructure:"vpcflow"`
-	// Deprecated: use VPCFlowLogConfig. Will be removed in v0.138.0.
-	VPCFlowLogConfigV1 vpcflowlog.Config `mapstructure:"vpc_flow_log"`
 
 	// CloudWatch is consulted only when Format is a CloudWatch subscription-filter format.
 	CloudWatch CloudWatchConfig `mapstructure:"cloudwatch"`
@@ -67,19 +57,13 @@ func (cfg *Config) Validate() error {
 	switch cfg.Format {
 	case "":
 		errs = append(errs, fmt.Errorf("format unspecified, expected one of %q", supportedLogFormats))
-	case constants.FormatCloudWatchLogsSubscriptionFilter,
-		constants.FormatCloudWatchLogsSubscriptionFilterV1,
-		constants.FormatVPCFlowLogV1,
-		constants.FormatVPCFlowLog,
-		constants.FormatS3AccessLogV1,
-		constants.FormatS3AccessLog,
-		constants.FormatWAFLogV1,
-		constants.FormatWAFLog,
-		constants.FormatCloudTrailLogV1,
-		constants.FormatCloudTrailLog,
-		constants.FormatELBAccessLogV1,
-		constants.FormatELBAccessLog,
-		constants.FormatNetworkFirewallLog:
+	case constants.FormatCloudWatchLogsSubscriptionFilter: // valid
+	case constants.FormatVPCFlowLog: // valid
+	case constants.FormatS3AccessLog: // valid
+	case constants.FormatWAFLog: // valid
+	case constants.FormatCloudTrailLog: // valid
+	case constants.FormatELBAccessLog: // valid
+	case constants.FormatNetworkFirewallLog: // valid
 	default:
 		errs = append(errs, fmt.Errorf("unsupported format %q, expected one of %q", cfg.Format, supportedLogFormats))
 	}
@@ -94,22 +78,8 @@ func (cfg *Config) Validate() error {
 		))
 	}
 
-	// to be deprecated in v0.138.0
-	switch cfg.VPCFlowLogConfigV1.FileFormat {
-	case constants.FileFormatParquet, constants.FileFormatPlainText:
-	default:
-		errs = append(errs, fmt.Errorf(
-			"unsupported file format %q for VPC flow log, expected one of %q",
-			cfg.VPCFlowLogConfigV1.FileFormat,
-			supportedVPCFlowLogFileFormat,
-		))
-	}
-
 	if len(cfg.CloudWatch.Streams) > 0 {
-		switch cfg.Format {
-		case constants.FormatCloudWatchLogsSubscriptionFilter,
-			constants.FormatCloudWatchLogsSubscriptionFilterV1:
-		default:
+		if cfg.Format != constants.FormatCloudWatchLogsSubscriptionFilter {
 			errs = append(errs, fmt.Errorf(
 				"'cloudwatch.streams' is only valid with format %q; got %q",
 				constants.FormatCloudWatchLogsSubscriptionFilter, cfg.Format,
