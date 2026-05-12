@@ -1,6 +1,6 @@
 change_type: enhancement
 
-component: connector/countconnector
+component: connector/count
 
 note: Support OTTL path context names in `conditions`.
 
