@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -2091,8 +2092,10 @@ func TestSupervisor_addSpecialConfigFiles(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg.Agent.ConfigFiles = tc.configFiles
 			supervisor := Supervisor{config: cfg}
-			supervisor.addSpecialConfigFiles()
-			require.Equal(t, tc.expectedConfigFiles, supervisor.config.Agent.ConfigFiles)
+			originalConfigFiles := slices.Clone(tc.configFiles)
+			configFiles := supervisor.addSpecialConfigFiles()
+			require.Equal(t, tc.expectedConfigFiles, configFiles)
+			require.Equal(t, originalConfigFiles, supervisor.config.Agent.ConfigFiles)
 		})
 	}
 }
