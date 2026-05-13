@@ -1196,7 +1196,6 @@ func TestMetricsPusher_topicFromAttribute_multiResource(t *testing.T) {
 }
 
 func TestKafkaExporter_ComponentStatus(t *testing.T) {
-
 	t.Run("when status is OK", func(t *testing.T) {
 		statusChan := make(chan *componentstatus.Event, 3)
 		reporter := &testStatusReporter{statusChan: statusChan}
@@ -1230,7 +1229,9 @@ func TestKafkaExporter_ComponentStatus(t *testing.T) {
 		logs := testdata.GenerateLogs(1)
 
 		go func() {
+			//nolint:errcheck
 			exp.exportData(t.Context(), logs)
+
 		}()
 
 		select {
@@ -1240,7 +1241,6 @@ func TestKafkaExporter_ComponentStatus(t *testing.T) {
 		case <-time.After(2 * time.Minute):
 			require.Fail(t, "export should report recoverable error")
 		}
-
 	})
 }
 

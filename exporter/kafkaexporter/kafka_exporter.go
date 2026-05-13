@@ -85,7 +85,6 @@ func newKafkaExporter[T any](
 }
 
 func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err error) {
-
 	tb, err := metadata.NewTelemetryBuilder(e.set.TelemetrySettings)
 	if err != nil {
 		return err
