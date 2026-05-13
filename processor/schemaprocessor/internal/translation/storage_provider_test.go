@@ -57,6 +57,23 @@ func TestStorageProviderMiss(t *testing.T) {
 	assert.Equal(t, "http content", string(data))
 }
 
+func TestStorageProviderEmptyContent(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindProcessor, component.ID{}, "test")
+
+	wrapped := &recordingProvider{content: ""}
+	sp := NewStorageProvider(wrapped, client, zaptest.NewLogger(t))
+
+	result, err := sp.Retrieve(t.Context(), "http://example.com/schemas/1.0.0")
+	require.NoError(t, err)
+	assert.Empty(t, result)
+	assert.True(t, wrapped.called, "wrapped provider should be called on storage miss")
+
+	// Verify nothing was persisted to storage.
+	data, err := client.Get(t.Context(), "http://example.com/schemas/1.0.0")
+	require.NoError(t, err)
+	assert.Nil(t, data)
+}
+
 func TestStorageProviderWrappedError(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindProcessor, component.ID{}, "test")
 

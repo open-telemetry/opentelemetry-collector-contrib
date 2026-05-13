@@ -47,6 +47,11 @@ func (p *StorageProvider) Retrieve(ctx context.Context, schemaURL string) (strin
 		return "", err
 	}
 
+	if content == "" {
+		p.log.Warn("schema URL returned empty content, skipping storage cache", zap.String("url", schemaURL))
+		return "", nil
+	}
+
 	// Persist to storage for next time. Best-effort — don't fail on storage errors.
 	if err := p.client.Set(ctx, schemaURL, []byte(content)); err != nil {
 		p.log.Warn("failed to persist schema to storage", zap.String("url", schemaURL), zap.Error(err))
