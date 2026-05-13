@@ -75,9 +75,11 @@ func readDocument(path string) (*document, error) {
 // expandShorthand fills in the implicit single-datapoint-with-no-attributes
 // case. An omitted or empty `datapoints:` means "one datapoint with no
 // attributes", which is the most common shape for single-series metrics.
+//
 // This relies on the invariant enforced by ValidateMetrics (#48106) that a
-// Metric must have at least one datapoint; pmetricassert does not accept the
-// empty-metric encoding as a valid assertion either.
+// Metric must have at least one datapoint. [AssertMetrics] expands shorthand
+// before comparison, so pmetricassert does not accept the empty-metric
+// encoding as a valid assertion either.
 func expandShorthand(doc *document) {
 	for i := range doc.Resources {
 		for j := range doc.Resources[i].Scopes {

@@ -4,11 +4,11 @@
 package pmetricassert // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetricassert"
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
 )
 
 // AssertMetrics compares actual against the assertion file at expectedPath.
@@ -27,7 +27,7 @@ func AssertMetrics(expectedPath string, actual pmetric.Metrics) error {
 }
 
 func compareDocuments(expected, actual *document) error {
-	var errs error
+	var errs []error
 
 	expRes := indexResources(expected.Resources)
 	actRes := indexResources(actual.Resources)
@@ -35,19 +35,19 @@ func compareDocuments(expected, actual *document) error {
 	for key, er := range expRes {
 		ar, ok := actRes[key]
 		if !ok {
-			errs = multierr.Append(errs, fmt.Errorf("missing expected resource: %v", er.Attributes))
+			errs = append(errs, fmt.Errorf("missing expected resource: %v", er.Attributes))
 			continue
 		}
 		if err := compareResource(er, ar); err != nil {
-			errs = multierr.Append(errs, fmt.Errorf("resource %v: %w", er.Attributes, err))
+			errs = append(errs, fmt.Errorf("resource %v: %w", er.Attributes, err))
 		}
 	}
 	for key, ar := range actRes {
 		if _, ok := expRes[key]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("unexpected resource: %v", ar.Attributes))
+			errs = append(errs, fmt.Errorf("unexpected resource: %v", ar.Attributes))
 		}
 	}
-	return errs
+	return errors.Join(errs...)
 }
 
 func indexResources(rs []resourceAssertion) map[string]resourceAssertion {
@@ -59,26 +59,26 @@ func indexResources(rs []resourceAssertion) map[string]resourceAssertion {
 }
 
 func compareResource(expected, actual resourceAssertion) error {
-	var errs error
+	var errs []error
 	expScopes := indexScopes(expected.Scopes)
 	actScopes := indexScopes(actual.Scopes)
 
 	for key, es := range expScopes {
 		as, ok := actScopes[key]
 		if !ok {
-			errs = multierr.Append(errs, fmt.Errorf("missing expected scope name=%q version=%q", es.Name, es.Version))
+			errs = append(errs, fmt.Errorf("missing expected scope name=%q version=%q", es.Name, es.Version))
 			continue
 		}
 		if err := compareScope(es, as); err != nil {
-			errs = multierr.Append(errs, fmt.Errorf("scope name=%q: %w", es.Name, err))
+			errs = append(errs, fmt.Errorf("scope name=%q: %w", es.Name, err))
 		}
 	}
 	for key, as := range actScopes {
 		if _, ok := expScopes[key]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version))
+			errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version))
 		}
 	}
-	return errs
+	return errors.Join(errs...)
 }
 
 func indexScopes(ss []scopeAssertion) map[string]scopeAssertion {
@@ -90,26 +90,26 @@ func indexScopes(ss []scopeAssertion) map[string]scopeAssertion {
 }
 
 func compareScope(expected, actual scopeAssertion) error {
-	var errs error
+	var errs []error
 	expMetrics := indexMetrics(expected.Metrics)
 	actMetrics := indexMetrics(actual.Metrics)
 
 	for name, em := range expMetrics {
 		am, ok := actMetrics[name]
 		if !ok {
-			errs = multierr.Append(errs, fmt.Errorf("missing expected metric %q", name))
+			errs = append(errs, fmt.Errorf("missing expected metric %q", name))
 			continue
 		}
 		if err := compareMetric(em, am); err != nil {
-			errs = multierr.Append(errs, fmt.Errorf("metric %q: %w", name, err))
+			errs = append(errs, fmt.Errorf("metric %q: %w", name, err))
 		}
 	}
 	for name := range actMetrics {
 		if _, ok := expMetrics[name]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("unexpected metric %q", name))
+			errs = append(errs, fmt.Errorf("unexpected metric %q", name))
 		}
 	}
-	return errs
+	return errors.Join(errs...)
 }
 
 func indexMetrics(ms []metricAssertion) map[string]metricAssertion {
@@ -121,24 +121,24 @@ func indexMetrics(ms []metricAssertion) map[string]metricAssertion {
 }
 
 func compareMetric(expected, actual metricAssertion) error {
-	var errs error
+	var errs []error
 	if expected.Type != actual.Type {
-		errs = multierr.Append(errs, fmt.Errorf("type mismatch: expected %q, got %q", expected.Type, actual.Type))
+		errs = append(errs, fmt.Errorf("type mismatch: expected %q, got %q", expected.Type, actual.Type))
 	}
 	if expected.Unit != actual.Unit {
-		errs = multierr.Append(errs, fmt.Errorf("unit mismatch: expected %q, got %q", expected.Unit, actual.Unit))
+		errs = append(errs, fmt.Errorf("unit mismatch: expected %q, got %q", expected.Unit, actual.Unit))
 	}
 	if expected.Temporality != actual.Temporality {
-		errs = multierr.Append(errs, fmt.Errorf("temporality mismatch: expected %q, got %q", expected.Temporality, actual.Temporality))
+		errs = append(errs, fmt.Errorf("temporality mismatch: expected %q, got %q", expected.Temporality, actual.Temporality))
 	}
 	if !boolPtrEqual(expected.Monotonic, actual.Monotonic) {
-		errs = multierr.Append(errs, fmt.Errorf("monotonic mismatch: expected %v, got %v",
+		errs = append(errs, fmt.Errorf("monotonic mismatch: expected %v, got %v",
 			boolPtrString(expected.Monotonic), boolPtrString(actual.Monotonic)))
 	}
 	if err := compareDatapoints(expected.Datapoints, actual.Datapoints); err != nil {
-		errs = multierr.Append(errs, err)
+		errs = append(errs, err)
 	}
-	return errs
+	return errors.Join(errs...)
 }
 
 func compareDatapoints(expected, actual []datapointAssertion) error {
@@ -161,14 +161,14 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 	}
 	sort.Strings(missing)
 	sort.Strings(unexpected)
-	var errs error
+	var errs []error
 	for _, k := range missing {
-		errs = multierr.Append(errs, fmt.Errorf("missing datapoint with attributes %s", k))
+		errs = append(errs, fmt.Errorf("missing datapoint with attributes %s", k))
 	}
 	for _, k := range unexpected {
-		errs = multierr.Append(errs, fmt.Errorf("unexpected datapoint with attributes %s", k))
+		errs = append(errs, fmt.Errorf("unexpected datapoint with attributes %s", k))
 	}
-	return errs
+	return errors.Join(errs...)
 }
 
 func indexDatapoints(dps []datapointAssertion) map[string]datapointAssertion {
