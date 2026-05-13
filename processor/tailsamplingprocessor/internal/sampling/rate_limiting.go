@@ -10,39 +10,41 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 type rateLimiting struct {
-	currentSecond        int64
-	spansInCurrentSecond int64
-	spansPerSecond       int64
-	logger               *zap.Logger
+	// Rate limiter using golang.org/x/time/rate for efficient token bucket implementation.
+	limiter *rate.Limiter
+	logger  *zap.Logger
 }
 
 var _ samplingpolicy.Evaluator = (*rateLimiting)(nil)
 
-// NewRateLimiting creates a policy evaluator the samples all traces.
+// NewRateLimiting creates a policy evaluator that samples traces based on a span limit per second using a token bucket algorithm.
+// The bucket capacity defaults to 2x the spans per second to allow for reasonable burst traffic.
 func NewRateLimiting(settings component.TelemetrySettings, spansPerSecond int64) samplingpolicy.Evaluator {
+	return NewRateLimitingWithBurstCapacity(settings, spansPerSecond, spansPerSecond*2)
+}
+
+// NewRateLimitingWithBurstCapacity creates a rate limiting policy evaluator with a configurable
+// burst capacity, using a token bucket algorithm. Tokens (spans) refill continuously at
+// spansPerSecond and the bucket holds at most burstCapacity tokens. A single trace whose span
+// count exceeds the burst capacity will not pass.
+func NewRateLimitingWithBurstCapacity(settings component.TelemetrySettings, spansPerSecond, burstCapacity int64) samplingpolicy.Evaluator {
 	return &rateLimiting{
-		spansPerSecond: spansPerSecond,
-		logger:         settings.Logger,
+		limiter: rate.NewLimiter(rate.Limit(spansPerSecond), int(burstCapacity)),
+		logger:  settings.Logger,
 	}
 }
 
-// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
+// Evaluate looks at the trace data and returns a corresponding SamplingDecision based on token bucket consumption.
 func (r *rateLimiting) Evaluate(_ context.Context, _ pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	r.logger.Debug("Evaluating spans in rate-limiting filter")
-	currSecond := time.Now().Unix()
-	if r.currentSecond != currSecond {
-		r.currentSecond = currSecond
-		r.spansInCurrentSecond = 0
-	}
 
-	spansInSecondIfSampled := r.spansInCurrentSecond + trace.SpanCount
-	if spansInSecondIfSampled < r.spansPerSecond {
-		r.spansInCurrentSecond = spansInSecondIfSampled
+	if r.limiter.AllowN(time.Now(), int(trace.SpanCount)) {
 		return samplingpolicy.Sampled, nil
 	}
 
