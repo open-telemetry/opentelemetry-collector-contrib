@@ -371,6 +371,13 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 					attrs.PutDouble(attrName, v)
 				case bool:
 					attrs.PutBool(attrName, v)
+				case []any:
+					if err := attrs.PutEmptySlice(attrName).FromRaw(v); err != nil {
+						l.logger.Warn("unable to translate field to attribute, unsupported array value",
+							zap.String("field", field),
+							zap.Any("value", v),
+							zap.Error(err))
+					}
 				case map[string]any:
 					// Flatten the map and add each field with a prefixed key
 					flattened := make(map[string]any)
@@ -387,6 +394,13 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 							attrs.PutDouble(k, v)
 						case bool:
 							attrs.PutBool(k, v)
+						case []any:
+							if err := attrs.PutEmptySlice(k).FromRaw(v); err != nil {
+								l.logger.Warn("unable to translate flattened field to attribute, unsupported array value",
+									zap.String("field", k),
+									zap.Any("value", v),
+									zap.Error(err))
+							}
 						default:
 							l.logger.Warn("unable to translate flattened field to attribute, unsupported type",
 								zap.String("field", k),

@@ -6,6 +6,13 @@ all_set:
   resource_attributes:
     ntp.host:
       enabled: true
+reaggregate_set:
+  metrics:
+    ntp.offset:
+      enabled: true
+  resource_attributes:
+    ntp.host:
+      enabled: true
 none_set:
   metrics:
     ntp.offset:
