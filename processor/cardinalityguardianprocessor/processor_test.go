@@ -81,6 +81,7 @@ func TestCardinalityProcessor_HighCardinalityLimit(t *testing.T) {
 		MaxCardinalityDeltaPerEpoch: 50,
 		EpochDurationSeconds:        30,
 		NeverDropLabels:             []string{"region"},
+		EnforcementMode:             EnforcementStripAndReaggregate,
 	}
 
 	next := new(consumertest.MetricsSink)
@@ -501,7 +502,7 @@ func TestCardinalityProcessor_TagOnlyMode(t *testing.T) {
 	cfg := &Config{
 		MaxCardinalityDeltaPerEpoch: 50,
 		EpochDurationSeconds:        300,
-		TagOnly:                     true, // Enable Dual-Route Tagging
+		EnforcementMode:             EnforcementTagOnly,
 	}
 
 	next := new(consumertest.MetricsSink)
@@ -1345,6 +1346,7 @@ func TestDropLogSampling_LimitEnforced(t *testing.T) {
 		MaxCardinalityDeltaPerEpoch: 5,
 		EpochDurationSeconds:        300,
 		DropLogMaxPerEpoch:          3,
+		EnforcementMode:             EnforcementStripAndReaggregate,
 	}
 
 	core, logs := observer.New(zap.WarnLevel)
@@ -1376,6 +1378,7 @@ func TestDropLogSampling_Disabled(t *testing.T) {
 		MaxCardinalityDeltaPerEpoch: 5,
 		EpochDurationSeconds:        300,
 		DropLogMaxPerEpoch:          0, // disabled — log everything
+		EnforcementMode:             EnforcementStripAndReaggregate,
 	}
 
 	core, logs := observer.New(zap.WarnLevel)
@@ -1404,6 +1407,7 @@ func TestDropLogSampling_ResetOnRotate(t *testing.T) {
 		MaxCardinalityDeltaPerEpoch: 5,
 		EpochDurationSeconds:        300,
 		DropLogMaxPerEpoch:          2,
+		EnforcementMode:             EnforcementStripAndReaggregate,
 	}
 
 	core, logs := observer.New(zap.WarnLevel)
@@ -1722,18 +1726,17 @@ func TestEnforcementModeValidation(t *testing.T) {
 	}
 }
 
-// TestResolvedEnforcementMode verifies backward compatibility of the deprecated
-// TagOnly field.
+// TestResolvedEnforcementMode verifies that ResolvedEnforcementMode returns
+// the configured mode or defaults to tag_only.
 func TestResolvedEnforcementMode(t *testing.T) {
-	// TagOnly: true → tag_only
-	cfg := &Config{TagOnly: true}
+	// Default (empty) → tag_only
+	cfg := &Config{}
 	assert.Equal(t, EnforcementTagOnly, cfg.ResolvedEnforcementMode())
 
-	// TagOnly: false (default) → strip_and_reaggregate
-	cfg = &Config{TagOnly: false}
-	assert.Equal(t, EnforcementStripAndReaggregate, cfg.ResolvedEnforcementMode())
+	// Explicit EnforcementMode is returned as-is (lowercased)
+	cfg = &Config{EnforcementMode: EnforcementTagOnly}
+	assert.Equal(t, EnforcementTagOnly, cfg.ResolvedEnforcementMode())
 
-	// Explicit EnforcementMode overrides TagOnly
-	cfg = &Config{TagOnly: true, EnforcementMode: EnforcementOverflowAttribute}
+	cfg = &Config{EnforcementMode: EnforcementOverflowAttribute}
 	assert.Equal(t, EnforcementOverflowAttribute, cfg.ResolvedEnforcementMode())
 }

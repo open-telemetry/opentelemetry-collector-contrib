@@ -19,14 +19,13 @@ import (
 //	    max_cardinality_delta_per_epoch: 500
 //	    epoch_duration_seconds: 300
 //	    never_drop_labels: [region, http.status_code]
-//	    tag_only: false
+//	    enforcement_mode: tag_only
 //	    estimated_cost_per_metric_month: 0.05
 type Config struct {
 	// MaxCardinalityDeltaPerEpoch is the maximum number of new unique label
 	// values that are allowed for a single metric+label-key combination within
 	// one epoch. Once this threshold is exceeded, additional unique values are
-	// either dropped (TagOnly: false) or tagged for cold-storage routing
-	// (TagOnly: true).
+	// handled according to the configured EnforcementMode.
 	//
 	// The processor measures cardinality growth using a HyperLogLog sketch and
 	// compares the current epoch's estimate against the previous epoch's
@@ -60,16 +59,6 @@ type Config struct {
 	// construction time and never accessed in the hot path.
 	NeverDropLabels []string `mapstructure:"never_drop_labels"`
 
-	// TagOnly switches the processor from hard-drop mode to dual-route tagging
-	// mode. When false (the default), high-cardinality attributes are silently
-	// removed from the data point, keeping expensive time-series databases clean.
-	// When true, the attribute is preserved and a boolean attribute
-	// "otel.metric.overflow: true" is injected into the same data point.
-	//
-	// Deprecated: Use EnforcementMode instead. If EnforcementMode is set,
-	// TagOnly is ignored. TagOnly: true maps to EnforcementMode: "tag_only";
-	// TagOnly: false maps to EnforcementMode: "strip_and_reaggregate".
-	TagOnly bool `mapstructure:"tag_only"`
 
 	// EnforcementMode controls how the processor handles high-cardinality
 	// attributes once the delta threshold is exceeded. Three modes are available:
@@ -90,8 +79,7 @@ type Config struct {
 	//     Cumulative Sums, Histograms, and ExponentialHistograms fall back to
 	//     tag_only behavior with a warning log.
 	//
-	// If empty, defaults to "tag_only" when TagOnly is true, or
-	// "strip_and_reaggregate" when TagOnly is false.
+	// If empty, defaults to "tag_only".
 	EnforcementMode EnforcementMode `mapstructure:"enforcement_mode"`
 
 	// EstimatedCostPerMetricMonth configures the theoretical cost per active time-series. This is
@@ -168,17 +156,13 @@ const (
 // OTel SDK convention for cardinality overflow handling.
 const overflowSentinel = "otel.cardinality_overflow"
 
-// ResolvedEnforcementMode returns the effective enforcement mode, resolving
-// the deprecated TagOnly field if EnforcementMode is not explicitly set.
+// ResolvedEnforcementMode returns the effective enforcement mode.
+// If EnforcementMode is not explicitly set, it defaults to tag_only.
 func (c *Config) ResolvedEnforcementMode() EnforcementMode {
 	if c.EnforcementMode != "" {
 		return EnforcementMode(strings.ToLower(string(c.EnforcementMode)))
 	}
-	// Backward compatibility: map the deprecated TagOnly bool.
-	if c.TagOnly {
-		return EnforcementTagOnly
-	}
-	return EnforcementStripAndReaggregate
+	return EnforcementTagOnly
 }
 
 // Validate checks that all required Config fields are within their acceptable

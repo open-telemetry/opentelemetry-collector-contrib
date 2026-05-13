@@ -20,10 +20,9 @@
 // HyperLogLog++ sketches — one for the current epoch and one for the
 // previous epoch. On each data point the unique count is estimated as the
 // delta between those two sketches. When the delta exceeds the configured
-// MaxCardinalityDeltaPerEpoch the processor either removes the offending
-// attribute (TagOnly: false, the default) or injects a routing tag so that
-// downstream components can shunt the metric to cheap cold storage
-// (TagOnly: true).
+// MaxCardinalityDeltaPerEpoch the processor handles the offending attribute
+// according to the configured EnforcementMode: tagging it for downstream
+// routing, replacing the value with a sentinel, or stripping it entirely.
 //
 // # Architecture
 //
