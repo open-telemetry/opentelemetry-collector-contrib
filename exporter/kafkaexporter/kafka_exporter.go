@@ -109,7 +109,7 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		e.cfg.TimeoutSettings.Timeout,
 		e.logger,
 		kgo.WithContext(clientCtx),
-		kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
+		kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb), kafkaclient.NewStatusReporter(host)),
 		partitionerOpt,
 	)
 	if err != nil {
