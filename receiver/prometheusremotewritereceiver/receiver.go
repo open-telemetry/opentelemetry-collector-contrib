@@ -238,7 +238,7 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 
 	obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
 	err = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
-	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.ResourceMetrics().Len(), err)
+	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.DataPointCount(), err)
 	if err != nil {
 		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 		if consumererror.IsPermanent(err) {
