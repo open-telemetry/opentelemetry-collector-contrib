@@ -7,7 +7,7 @@ awscloudwatch/initial-lookback:
   region: us-west-1
   logs:
     poll_interval: 1m
-    initial_lookback: -1h
+    initial_lookback: 1h
 
 awscloudwatch/prefix-log-group-autodiscover:
   region: us-west-1

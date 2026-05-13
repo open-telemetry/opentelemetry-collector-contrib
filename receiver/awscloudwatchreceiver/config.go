@@ -129,7 +129,7 @@ var (
 	errEmptyStatName                    = errors.New("stat name must not be empty")
 	errCollectionIntervalLessThanPeriod = errors.New("metrics collection_interval must be greater than or equal to period")
 	errInitialLookbackAndStartFrom      = errors.New("both initial_lookback and start_from are configured, Only one or the other is permitted")
-	errInvalidInitialLookback           = errors.New("initial_lookback must be a negative duration (e.g. -1h) to look back from the current time")
+	errInvalidInitialLookback           = errors.New("initial_lookback must be a positive duration (e.g. 1h)")
 )
 
 // Validate overrides the embedded ControllerConfig.Validate so that a zero CollectionInterval
@@ -237,7 +237,7 @@ func (c *Config) validateLogsConfig() error {
 		return errInitialLookbackAndStartFrom
 	}
 
-	if c.Logs.InitialLookback > 0 {
+	if c.Logs.InitialLookback < 0 {
 		return errInvalidInitialLookback
 	}
 
