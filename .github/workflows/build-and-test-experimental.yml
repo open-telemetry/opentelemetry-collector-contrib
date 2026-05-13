@@ -1,16 +1,4 @@
 name: build-and-test-experimental
-# Shadow of every job in build-and-test.yml that fires on a pull_request,
-# with the proposed CI improvements layered in. NOT REQUIRED for merging --
-# all job names are prefixed `exp-` so they cannot match branch-protection
-# rules. Jobs gated to push/tag/main events in the required workflow
-# (publish-dev, publish-stable, rotate-milestone, flakytests-generate-issues)
-# are intentionally omitted because they never run on PRs.
-#
-# Scope detection uses compute-ci-scope.sh, adopted from constanca-m's
-# proposal in https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/45267
-# which does a fixed-point traversal of the Go module graph instead of the
-# previous "for-affected-components" + file-count cap heuristic.
-
 on:
   pull_request:
     # `labeled`/`unlabeled` are required so that adding/removing `ci:full` on
