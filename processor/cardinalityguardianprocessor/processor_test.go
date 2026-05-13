@@ -416,6 +416,7 @@ func TestInternalTelemetry(t *testing.T) {
 		MaxCardinalityDeltaPerEpoch: cardinalityLimit,
 		EpochDurationSeconds:        300,
 		EstimatedCostPerMetricMonth: costPerMetric,
+		EnforcementMode:             EnforcementStripAndReaggregate,
 	}
 
 	// ManualReader captures all SDK metric data on demand via Collect().
