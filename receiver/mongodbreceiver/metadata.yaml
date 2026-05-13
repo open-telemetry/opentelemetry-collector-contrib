@@ -105,12 +105,30 @@ attributes:
   mongodb.database.name:
     description: The name of the MongoDB database.
     type: string
+  mongodb.lsid:
+    description: The logical session identifier associated with the MongoDB operation, encoded as JSON.
+    type: string
   mongodb.operation.duration:
     description: The duration of the MongoDB operation in seconds.
     type: double
+  mongodb.operation.flow_control_stats:
+    description: The flow control statistics for the MongoDB operation.
+    type: string
   mongodb.operation.id:
     description: Identifier of the MongoDB operation.
     type: string
+  mongodb.operation.lock_stats:
+    description: The lock acquisition statistics for the MongoDB operation.
+    type: string
+  mongodb.operation.locks:
+    description: The type and mode of locks the MongoDB operation currently holds.
+    type: string
+  mongodb.operation.plan_summary:
+    description: Summary of the execution plan for the MongoDB operation.
+    type: string
+  mongodb.operation.prepare_read_conflict.count:
+    description: The number of times the MongoDB operation had to wait for a prepared transaction with a write to commit or abort.
+    type: int
   mongodb.operation.status:
     description: Simplified status of the MongoDB operation.
     type: string
@@ -120,6 +138,30 @@ attributes:
   mongodb.operation.type:
     description: The low-level MongoDB operation type (e.g. query, insert, update, remove, getmore, command).
     type: string
+  mongodb.operation.waiting_for_flow_control:
+    description: Whether the MongoDB operation had to wait because of flow control.
+    type: bool
+  mongodb.operation.waiting_for_latch:
+    description: Whether the MongoDB operation is waiting to acquire an internal latch or for an internal condition to be met.
+    type: bool
+  mongodb.operation.waiting_for_latch.details:
+    description: Details about the MongoDB operation's internal latch wait.
+    type: string
+  mongodb.operation.waiting_for_lock:
+    description: Whether the MongoDB operation is waiting for a lock.
+    type: bool
+  mongodb.operation.write_conflict.count:
+    description: The number of times the MongoDB operation conflicted with another write operation on the same document.
+    type: int
+  mongodb.operation.yield.count:
+    description: The number of times the MongoDB operation yielded to allow other operations to complete.
+    type: int
+  mongodb.query_truncated:
+    description: Whether the MongoDB command returned by currentOp was truncated.
+    type: string
+    enum:
+      - truncated
+      - not_truncated
   operation:
     description: The MongoDB operation being counted.
     type: string
@@ -163,13 +205,26 @@ events:
       - db.collection.name
       - db.operation.name
       - db.query.text
+      - mongodb.query_truncated
       - user.name
       - mongodb.application.name
       - mongodb.database.name
+      - mongodb.lsid
       - mongodb.operation.id
+      - mongodb.operation.plan_summary
       - mongodb.operation.status
       - mongodb.operation.type
       - mongodb.operation.duration
+      - mongodb.operation.prepare_read_conflict.count
+      - mongodb.operation.write_conflict.count
+      - mongodb.operation.yield.count
+      - mongodb.operation.waiting_for_lock
+      - mongodb.operation.locks
+      - mongodb.operation.lock_stats
+      - mongodb.operation.waiting_for_flow_control
+      - mongodb.operation.flow_control_stats
+      - mongodb.operation.waiting_for_latch
+      - mongodb.operation.waiting_for_latch.details
 
 metrics:
   mongodb.active.reads:

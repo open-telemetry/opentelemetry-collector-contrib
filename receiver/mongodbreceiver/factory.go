@@ -21,6 +21,7 @@ import (
 )
 
 const defaultMongoDBPort = 27017
+const defaultMaxRowsPerQuery = 100
 
 var defaultEndpoint = "localhost:" + strconv.Itoa(defaultMongoDBPort)
 
@@ -44,7 +45,10 @@ func createDefaultConfig() component.Config {
 		},
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
-		ClientConfig:         configtls.ClientConfig{},
+		QuerySampleCollection: QuerySampleCollection{
+			MaxRowsPerQuery: defaultMaxRowsPerQuery,
+		},
+		ClientConfig: configtls.ClientConfig{},
 	}
 }
 

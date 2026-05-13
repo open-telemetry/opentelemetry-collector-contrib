@@ -569,13 +569,26 @@ query sample
 | db.collection.name | The namespace of the MongoDB operation (database.collection). | Any Str | - |
 | db.operation.name | The name of the MongoDB command being executed. | Any Str | - |
 | db.query.text | The obfuscated MongoDB command statement. | Any Str | - |
+| mongodb.query_truncated | Whether the MongoDB command returned by currentOp was truncated. | Str: ``truncated``, ``not_truncated`` | - |
 | user.name | Name of the user associated with the operation. | Any Str | - |
 | mongodb.application.name | The identifier of the client application which ran the operation | Any Str | - |
 | mongodb.database.name | The name of the MongoDB database. | Any Str | - |
+| mongodb.lsid | The logical session identifier associated with the MongoDB operation, encoded as JSON. | Any Str | - |
 | mongodb.operation.id | Identifier of the MongoDB operation. | Any Str | - |
+| mongodb.operation.plan_summary | Summary of the execution plan for the MongoDB operation. | Any Str | - |
 | mongodb.operation.status | Simplified status of the MongoDB operation. | Str: ``active``, ``waiting`` | - |
 | mongodb.operation.type | The low-level MongoDB operation type (e.g. query, insert, update, remove, getmore, command). | Any Str | - |
 | mongodb.operation.duration | The duration of the MongoDB operation in seconds. | Any Double | - |
+| mongodb.operation.prepare_read_conflict.count | The number of times the MongoDB operation had to wait for a prepared transaction with a write to commit or abort. | Any Int | - |
+| mongodb.operation.write_conflict.count | The number of times the MongoDB operation conflicted with another write operation on the same document. | Any Int | - |
+| mongodb.operation.yield.count | The number of times the MongoDB operation yielded to allow other operations to complete. | Any Int | - |
+| mongodb.operation.waiting_for_lock | Whether the MongoDB operation is waiting for a lock. | Any Bool | - |
+| mongodb.operation.locks | The type and mode of locks the MongoDB operation currently holds. | Any Str | - |
+| mongodb.operation.lock_stats | The lock acquisition statistics for the MongoDB operation. | Any Str | - |
+| mongodb.operation.waiting_for_flow_control | Whether the MongoDB operation had to wait because of flow control. | Any Bool | - |
+| mongodb.operation.flow_control_stats | The flow control statistics for the MongoDB operation. | Any Str | - |
+| mongodb.operation.waiting_for_latch | Whether the MongoDB operation is waiting to acquire an internal latch or for an internal condition to be met. | Any Bool | - |
+| mongodb.operation.waiting_for_latch.details | Details about the MongoDB operation's internal latch wait. | Any Str | - |
 
 ## Resource Attributes
 

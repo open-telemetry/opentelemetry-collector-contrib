@@ -208,6 +208,32 @@ var MapAttributeMongodbOperationStatus = map[string]AttributeMongodbOperationSta
 	"waiting": AttributeMongodbOperationStatusWaiting,
 }
 
+// AttributeMongodbQueryTruncated specifies the value mongodb.query_truncated attribute.
+type AttributeMongodbQueryTruncated int
+
+const (
+	_ AttributeMongodbQueryTruncated = iota
+	AttributeMongodbQueryTruncatedTruncated
+	AttributeMongodbQueryTruncatedNotTruncated
+)
+
+// String returns the string representation of the AttributeMongodbQueryTruncated.
+func (av AttributeMongodbQueryTruncated) String() string {
+	switch av {
+	case AttributeMongodbQueryTruncatedTruncated:
+		return "truncated"
+	case AttributeMongodbQueryTruncatedNotTruncated:
+		return "not_truncated"
+	}
+	return ""
+}
+
+// MapAttributeMongodbQueryTruncated is a helper map of string to AttributeMongodbQueryTruncated attribute value.
+var MapAttributeMongodbQueryTruncated = map[string]AttributeMongodbQueryTruncated{
+	"truncated":     AttributeMongodbQueryTruncatedTruncated,
+	"not_truncated": AttributeMongodbQueryTruncatedNotTruncated,
+}
+
 // AttributeOperation specifies the value operation attribute.
 type AttributeOperation int
 

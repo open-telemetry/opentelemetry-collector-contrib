@@ -42,9 +42,18 @@ const (
 	clientKey                = "client"
 	applicationNameKey       = "appName"
 	effectiveUsersKey        = "effectiveUsers"
+	lsidKey                  = "lsid"
 	operationIDKey           = "opid"
+	planSummaryKey           = "planSummary"
+	prepareReadConflictsKey  = "prepareReadConflicts"
+	writeConflictsKey        = "writeConflicts"
+	numYieldsKey             = "numYields"
 	waitingForLockKey        = "waitingForLock"
+	locksKey                 = "locks"
+	lockStatsKey             = "lockStats"
 	waitingForFlowControlKey = "waitingForFlowControl"
+	flowControlStatsKey      = "flowControlStats"
+	waitingForLatchKey       = "waitingForLatch"
 )
 
 // generateInstanceID generates a deterministic UUID v5 from server address and port.
@@ -212,6 +221,7 @@ func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now
 }
 
 func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson.M, now pcommon.Timestamp) {
+	emitted := uint64(0)
 	for _, op := range operations {
 		if !s.shouldIncludeOperation(op) {
 			continue
@@ -221,7 +231,20 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		command := getValue[bson.D](op, commandKey)
 		opType := getValue[string](op, opKey)
 		commandType := command[0].Key
-		operationStatus, ok := deriveOperationStatus(op)
+		queryTruncated := getQueryTruncated(command)
+		prepareReadConflictCount := getInt64Value(op, prepareReadConflictsKey)
+		writeConflictCount := getInt64Value(op, writeConflictsKey)
+		yieldCount := getInt64Value(op, numYieldsKey)
+		lsid := getJSONValue(op, lsidKey)
+		planSummary := getValue[string](op, planSummaryKey)
+		waitingForLock := getBoolValue(op, waitingForLockKey)
+		locks := getJSONValue(op, locksKey)
+		lockStats := getJSONValue(op, lockStatsKey)
+		waitingForFlowControl := getBoolValue(op, waitingForFlowControlKey)
+		flowControlStats := getJSONValue(op, flowControlStatsKey)
+		waitingForLatchDetails := getJSONValue(op, waitingForLatchKey)
+		waitingForLatch := waitingForLatchDetails != ""
+		operationStatus, ok := deriveOperationStatus(op, waitingForLock, waitingForFlowControl, waitingForLatch)
 		if !ok {
 			s.logger.Debug("Skipping operation without supported status", zap.Any("operation", op))
 			continue
@@ -256,14 +279,31 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 			collectionName,
 			commandType,
 			obfuscatedStatement,
+			queryTruncated,
 			userName,
 			applicationName,
 			databaseName,
+			lsid,
 			operationID,
+			planSummary,
 			operationStatus,
 			opType,
 			durationSeconds,
+			prepareReadConflictCount,
+			writeConflictCount,
+			yieldCount,
+			waitingForLock,
+			locks,
+			lockStats,
+			waitingForFlowControl,
+			flowControlStats,
+			waitingForLatch,
+			waitingForLatchDetails,
 		)
+		emitted++
+		if s.config.QuerySampleCollection.MaxRowsPerQuery > 0 && emitted >= s.config.QuerySampleCollection.MaxRowsPerQuery {
+			break
+		}
 	}
 	s.logger.Debug("Processed MongoDB current operations", zap.Int("total_operations", len(operations)))
 }
@@ -275,8 +315,8 @@ func extractOperationID(op bson.M) string {
 	return ""
 }
 
-func deriveOperationStatus(op bson.M) (metadata.AttributeMongodbOperationStatus, bool) {
-	if getValue[bool](op, waitingForLockKey) || getValue[bool](op, waitingForFlowControlKey) {
+func deriveOperationStatus(op bson.M, waitingForLock, waitingForFlowControl, waitingForLatch bool) (metadata.AttributeMongodbOperationStatus, bool) {
+	if waitingForLock || waitingForFlowControl || waitingForLatch {
 		return metadata.AttributeMongodbOperationStatusWaiting, true
 	}
 	if getValue[bool](op, activeKey) {
@@ -353,6 +393,15 @@ func getCollectionFromNamespace(namespace string) string {
 	return ""
 }
 
+func getQueryTruncated(command bson.D) metadata.AttributeMongodbQueryTruncated {
+	for _, elem := range command {
+		if elem.Key == "$truncated" {
+			return metadata.AttributeMongodbQueryTruncatedTruncated
+		}
+	}
+	return metadata.AttributeMongodbQueryTruncatedNotTruncated
+}
+
 // getValue extracts a value from a BSON document with type assertion
 func getValue[T any](doc bson.M, key string) T {
 	var zero T
@@ -362,6 +411,69 @@ func getValue[T any](doc bson.M, key string) T {
 		}
 	}
 	return zero
+}
+
+func getBoolValue(doc bson.M, key string) bool {
+	val, ok := doc[key]
+	if !ok {
+		return false
+	}
+	typedVal, _ := val.(bool)
+	return typedVal
+}
+
+func getInt64Value(doc bson.M, key string) int64 {
+	val, ok := doc[key]
+	if !ok {
+		return 0
+	}
+	intVal, _ := toInt64(val)
+	return intVal
+}
+
+func toInt64(val any) (int64, bool) {
+	switch typedVal := val.(type) {
+	case int:
+		return int64(typedVal), true
+	case int8:
+		return int64(typedVal), true
+	case int16:
+		return int64(typedVal), true
+	case int32:
+		return int64(typedVal), true
+	case int64:
+		return typedVal, true
+	case uint:
+		if uint64(typedVal) > uint64(^uint64(0)>>1) {
+			return 0, false
+		}
+		return int64(typedVal), true
+	case uint8:
+		return int64(typedVal), true
+	case uint16:
+		return int64(typedVal), true
+	case uint32:
+		return int64(typedVal), true
+	case uint64:
+		if typedVal > uint64(^uint64(0)>>1) {
+			return 0, false
+		}
+		return int64(typedVal), true
+	default:
+		return 0, false
+	}
+}
+
+func getJSONValue(doc bson.M, key string) string {
+	val, ok := doc[key]
+	if !ok {
+		return ""
+	}
+	jsonVal, err := bson.MarshalExtJSON(val, false, false)
+	if err != nil {
+		return fmt.Sprint(val)
+	}
+	return string(jsonVal)
 }
 
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {

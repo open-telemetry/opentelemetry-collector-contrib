@@ -96,6 +96,12 @@ func TestDeriveOperationStatus(t *testing.T) {
 			ok:       true,
 		},
 		{
+			name:     "waiting for latch",
+			op:       bson.M{"active": true, "waitingForLatch": bson.M{"captureName": "FutureResolution"}},
+			expected: metadata.AttributeMongodbOperationStatusWaiting,
+			ok:       true,
+		},
+		{
 			name: "unsupported status",
 			op:   bson.M{"active": false},
 			ok:   false,
@@ -104,7 +110,12 @@ func TestDeriveOperationStatus(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, ok := deriveOperationStatus(tc.op)
+			actual, ok := deriveOperationStatus(
+				tc.op,
+				getBoolValue(tc.op, waitingForLockKey),
+				getBoolValue(tc.op, waitingForFlowControlKey),
+				getJSONValue(tc.op, waitingForLatchKey) != "",
+			)
 			require.Equal(t, tc.ok, ok)
 			require.Equal(t, tc.expected, actual)
 		})
@@ -621,12 +632,14 @@ func TestScrapeLogs(t *testing.T) {
 					{
 						"ns":                "mydb.mycol",
 						"op":                "query",
-						"command":           bson.D{{Key: "find", Value: "mycol"}, {Key: "filter", Value: bson.D{{Key: "x", Value: 1}}}},
+						"command":           bson.D{{Key: "find", Value: "mycol"}, {Key: "filter", Value: bson.D{{Key: "x", Value: 1}}}, {Key: "$truncated", Value: "find(...)"}},
 						"active":            true,
 						"microsecs_running": int64(5000),
 						"client":            "192.168.1.1:12345",
 						"appName":           "testApp",
 						"opid":              int32(123),
+						"planSummary":       "IXSCAN { x: 1 }",
+						"lsid":              bson.M{"id": "session-1"},
 						"effectiveUsers":    bson.A{bson.M{"user": "admin"}},
 					},
 				}, nil)
@@ -643,6 +656,17 @@ func TestScrapeLogs(t *testing.T) {
 				instanceID, ok := attrs.Get("service.instance.id")
 				require.True(t, ok)
 				require.NotEmpty(t, instanceID.Str())
+				lr := rl.ScopeLogs().At(0).LogRecords().At(0)
+				logAttrs := lr.Attributes()
+				queryTruncated, ok := logAttrs.Get("mongodb.query_truncated")
+				require.True(t, ok)
+				require.Equal(t, "truncated", queryTruncated.Str())
+				lsid, ok := logAttrs.Get("mongodb.lsid")
+				require.True(t, ok)
+				require.Equal(t, `{"id":"session-1"}`, lsid.Str())
+				planSummary, ok := logAttrs.Get("mongodb.operation.plan_summary")
+				require.True(t, ok)
+				require.Equal(t, "IXSCAN { x: 1 }", planSummary.Str())
 			},
 		},
 		{
@@ -1064,6 +1088,156 @@ func TestProcessCurrentOp(t *testing.T) {
 
 	logs := scraper.lb.Emit()
 	require.Equal(t, 2, logs.LogRecordCount(), "only 2 of 4 operations should produce log records")
+}
+
+func TestProcessCurrentOpContentionAttributes(t *testing.T) {
+	scraperCfg := createDefaultConfig().(*Config)
+	scraperCfg.Events.DbServerQuerySample.Enabled = true
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
+	latchTime := time.Date(2020, 3, 19, 23, 25, 58, 412_000_000, time.UTC)
+
+	operations := []bson.M{
+		{
+			"ns":                   "mydb.orders",
+			"op":                   "query",
+			"command":              bson.D{{Key: "find", Value: "orders"}},
+			"active":               true,
+			"prepareReadConflicts": int32(2),
+			"writeConflicts":       int64(3),
+			"numYields":            4,
+			"waitingForLock":       false,
+			"locks":                bson.D{{Key: "Global", Value: "r"}, {Key: "Database", Value: "r"}},
+			"lockStats": bson.M{
+				"Global": bson.M{
+					"acquireCount":        bson.M{"r": int32(1)},
+					"timeAcquiringMicros": bson.M{"r": int64(20)},
+				},
+			},
+			"waitingForFlowControl": true,
+			"flowControlStats": bson.M{
+				"acquireCount":        int64(5),
+				"acquireWaitCount":    int32(1),
+				"timeAcquiringMicros": int64(10),
+				"dateTimeValue":       bson.NewDateTimeFromTime(latchTime),
+			},
+			"waitingForLatch": bson.M{
+				"timestamp":   bson.NewDateTimeFromTime(latchTime),
+				"captureName": "FutureResolution",
+				"backtrace":   bson.A{"frame"},
+			},
+		},
+		{
+			"ns":      "mydb.products",
+			"op":      "query",
+			"command": bson.D{{Key: "find", Value: "products"}},
+			"active":  true,
+		},
+	}
+
+	scraper.processCurrentOp(t.Context(), operations, pcommon.NewTimestampFromTime(time.Now()))
+
+	logs := scraper.lb.Emit()
+	require.Equal(t, 2, logs.LogRecordCount())
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+
+	attrs := records.At(0).Attributes()
+	requireIntAttribute(t, attrs, "mongodb.operation.prepare_read_conflict.count", 2)
+	requireIntAttribute(t, attrs, "mongodb.operation.write_conflict.count", 3)
+	requireIntAttribute(t, attrs, "mongodb.operation.yield.count", 4)
+	requireBoolAttribute(t, attrs, "mongodb.operation.waiting_for_lock", false)
+	requireBoolAttribute(t, attrs, "mongodb.operation.waiting_for_flow_control", true)
+	requireBoolAttribute(t, attrs, "mongodb.operation.waiting_for_latch", true)
+	requireStringAttribute(t, attrs, "mongodb.operation.status", metadata.AttributeMongodbOperationStatusWaiting.String())
+
+	locks, ok := attrs.Get("mongodb.operation.locks")
+	require.True(t, ok)
+	require.JSONEq(t, `{"Database":"r","Global":"r"}`, locks.Str())
+
+	lockStats, ok := attrs.Get("mongodb.operation.lock_stats")
+	require.True(t, ok)
+	require.JSONEq(t, `{"Global":{"acquireCount":{"r":1},"timeAcquiringMicros":{"r":20}}}`, lockStats.Str())
+
+	flowControlStats, ok := attrs.Get("mongodb.operation.flow_control_stats")
+	require.True(t, ok)
+	require.JSONEq(t, `{"acquireCount":5,"acquireWaitCount":1,"timeAcquiringMicros":10,"dateTimeValue":{"$date":"2020-03-19T23:25:58.412Z"}}`, flowControlStats.Str())
+
+	latchDetails, ok := attrs.Get("mongodb.operation.waiting_for_latch.details")
+	require.True(t, ok)
+	require.JSONEq(t, `{"timestamp":{"$date":"2020-03-19T23:25:58.412Z"},"captureName":"FutureResolution","backtrace":["frame"]}`, latchDetails.Str())
+}
+
+func requireIntAttribute(t *testing.T, attrs pcommon.Map, key string, expected int64) {
+	attr, ok := attrs.Get(key)
+	require.True(t, ok)
+	require.Equal(t, expected, attr.Int())
+}
+
+func requireBoolAttribute(t *testing.T, attrs pcommon.Map, key string, expected bool) {
+	attr, ok := attrs.Get(key)
+	require.True(t, ok)
+	require.Equal(t, expected, attr.Bool())
+}
+
+func requireStringAttribute(t *testing.T, attrs pcommon.Map, key, expected string) {
+	attr, ok := attrs.Get(key)
+	require.True(t, ok)
+	require.Equal(t, expected, attr.Str())
+}
+
+func TestProcessCurrentOpMaxRowsPerQueryAppliesAfterSkipping(t *testing.T) {
+	scraperCfg := createDefaultConfig().(*Config)
+	scraperCfg.Events.DbServerQuerySample.Enabled = true
+	scraperCfg.QuerySampleCollection.MaxRowsPerQuery = 2
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
+
+	operations := []bson.M{
+		// Should be skipped: admin namespace
+		{
+			"ns":      "admin.system.version",
+			"op":      "query",
+			"command": bson.D{{Key: "find", Value: 1}},
+			"active":  true,
+		},
+		// Should be skipped: inactive operation
+		{
+			"ns":      "mydb.skipped",
+			"op":      "query",
+			"command": bson.D{{Key: "find", Value: "skipped"}},
+			"active":  false,
+		},
+		{
+			"ns":      "mydb.first",
+			"op":      "query",
+			"command": bson.D{{Key: "find", Value: "first"}},
+			"active":  true,
+		},
+		{
+			"ns":             "mydb.second",
+			"op":             "update",
+			"command":        bson.D{{Key: "update", Value: "second"}},
+			"waitingForLock": true,
+		},
+		{
+			"ns":      "mydb.third",
+			"op":      "query",
+			"command": bson.D{{Key: "find", Value: "third"}},
+			"active":  true,
+		},
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	scraper.processCurrentOp(t.Context(), operations, now)
+
+	logs := scraper.lb.Emit()
+	require.Equal(t, 2, logs.LogRecordCount(), "skipped operations should not consume max_rows_per_query")
+
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	namespace, ok := records.At(0).Attributes().Get("db.namespace")
+	require.True(t, ok)
+	require.Equal(t, "mydb.first", namespace.Str())
+	namespace, ok = records.At(1).Attributes().Get("db.namespace")
+	require.True(t, ok)
+	require.Equal(t, "mydb.second", namespace.Str())
 }
 
 func TestDependentMetricsWhenDisabled(t *testing.T) {

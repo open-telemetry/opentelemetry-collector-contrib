@@ -17,7 +17,7 @@ type eventDbServerQuerySample struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, clientAddressAttributeValue string, clientPortAttributeValue int64, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, userNameAttributeValue string, mongodbApplicationNameAttributeValue string, mongodbDatabaseNameAttributeValue string, mongodbOperationIDAttributeValue string, mongodbOperationStatusAttributeValue string, mongodbOperationTypeAttributeValue string, mongodbOperationDurationAttributeValue float64) {
+func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, clientAddressAttributeValue string, clientPortAttributeValue int64, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, mongodbQueryTruncatedAttributeValue string, userNameAttributeValue string, mongodbApplicationNameAttributeValue string, mongodbDatabaseNameAttributeValue string, mongodbLsidAttributeValue string, mongodbOperationIDAttributeValue string, mongodbOperationPlanSummaryAttributeValue string, mongodbOperationStatusAttributeValue string, mongodbOperationTypeAttributeValue string, mongodbOperationDurationAttributeValue float64, mongodbOperationPrepareReadConflictCountAttributeValue int64, mongodbOperationWriteConflictCountAttributeValue int64, mongodbOperationYieldCountAttributeValue int64, mongodbOperationWaitingForLockAttributeValue bool, mongodbOperationLocksAttributeValue string, mongodbOperationLockStatsAttributeValue string, mongodbOperationWaitingForFlowControlAttributeValue bool, mongodbOperationFlowControlStatsAttributeValue string, mongodbOperationWaitingForLatchAttributeValue bool, mongodbOperationWaitingForLatchDetailsAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -36,13 +36,26 @@ func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pc
 	dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
 	dp.Attributes().PutStr("db.operation.name", dbOperationNameAttributeValue)
 	dp.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
+	dp.Attributes().PutStr("mongodb.query_truncated", mongodbQueryTruncatedAttributeValue)
 	dp.Attributes().PutStr("user.name", userNameAttributeValue)
 	dp.Attributes().PutStr("mongodb.application.name", mongodbApplicationNameAttributeValue)
 	dp.Attributes().PutStr("mongodb.database.name", mongodbDatabaseNameAttributeValue)
+	dp.Attributes().PutStr("mongodb.lsid", mongodbLsidAttributeValue)
 	dp.Attributes().PutStr("mongodb.operation.id", mongodbOperationIDAttributeValue)
+	dp.Attributes().PutStr("mongodb.operation.plan_summary", mongodbOperationPlanSummaryAttributeValue)
 	dp.Attributes().PutStr("mongodb.operation.status", mongodbOperationStatusAttributeValue)
 	dp.Attributes().PutStr("mongodb.operation.type", mongodbOperationTypeAttributeValue)
 	dp.Attributes().PutDouble("mongodb.operation.duration", mongodbOperationDurationAttributeValue)
+	dp.Attributes().PutInt("mongodb.operation.prepare_read_conflict.count", mongodbOperationPrepareReadConflictCountAttributeValue)
+	dp.Attributes().PutInt("mongodb.operation.write_conflict.count", mongodbOperationWriteConflictCountAttributeValue)
+	dp.Attributes().PutInt("mongodb.operation.yield.count", mongodbOperationYieldCountAttributeValue)
+	dp.Attributes().PutBool("mongodb.operation.waiting_for_lock", mongodbOperationWaitingForLockAttributeValue)
+	dp.Attributes().PutStr("mongodb.operation.locks", mongodbOperationLocksAttributeValue)
+	dp.Attributes().PutStr("mongodb.operation.lock_stats", mongodbOperationLockStatsAttributeValue)
+	dp.Attributes().PutBool("mongodb.operation.waiting_for_flow_control", mongodbOperationWaitingForFlowControlAttributeValue)
+	dp.Attributes().PutStr("mongodb.operation.flow_control_stats", mongodbOperationFlowControlStatsAttributeValue)
+	dp.Attributes().PutBool("mongodb.operation.waiting_for_latch", mongodbOperationWaitingForLatchAttributeValue)
+	dp.Attributes().PutStr("mongodb.operation.waiting_for_latch.details", mongodbOperationWaitingForLatchDetailsAttributeValue)
 
 }
 
@@ -187,6 +200,6 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 }
 
 // RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.
-func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, clientAddressAttributeValue string, clientPortAttributeValue int64, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, userNameAttributeValue string, mongodbApplicationNameAttributeValue string, mongodbDatabaseNameAttributeValue string, mongodbOperationIDAttributeValue string, mongodbOperationStatusAttributeValue AttributeMongodbOperationStatus, mongodbOperationTypeAttributeValue string, mongodbOperationDurationAttributeValue float64) {
-	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, clientAddressAttributeValue, clientPortAttributeValue, dbSystemNameAttributeValue.String(), dbNamespaceAttributeValue, dbCollectionNameAttributeValue, dbOperationNameAttributeValue, dbQueryTextAttributeValue, userNameAttributeValue, mongodbApplicationNameAttributeValue, mongodbDatabaseNameAttributeValue, mongodbOperationIDAttributeValue, mongodbOperationStatusAttributeValue.String(), mongodbOperationTypeAttributeValue, mongodbOperationDurationAttributeValue)
+func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, clientAddressAttributeValue string, clientPortAttributeValue int64, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, mongodbQueryTruncatedAttributeValue AttributeMongodbQueryTruncated, userNameAttributeValue string, mongodbApplicationNameAttributeValue string, mongodbDatabaseNameAttributeValue string, mongodbLsidAttributeValue string, mongodbOperationIDAttributeValue string, mongodbOperationPlanSummaryAttributeValue string, mongodbOperationStatusAttributeValue AttributeMongodbOperationStatus, mongodbOperationTypeAttributeValue string, mongodbOperationDurationAttributeValue float64, mongodbOperationPrepareReadConflictCountAttributeValue int64, mongodbOperationWriteConflictCountAttributeValue int64, mongodbOperationYieldCountAttributeValue int64, mongodbOperationWaitingForLockAttributeValue bool, mongodbOperationLocksAttributeValue string, mongodbOperationLockStatsAttributeValue string, mongodbOperationWaitingForFlowControlAttributeValue bool, mongodbOperationFlowControlStatsAttributeValue string, mongodbOperationWaitingForLatchAttributeValue bool, mongodbOperationWaitingForLatchDetailsAttributeValue string) {
+	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, clientAddressAttributeValue, clientPortAttributeValue, dbSystemNameAttributeValue.String(), dbNamespaceAttributeValue, dbCollectionNameAttributeValue, dbOperationNameAttributeValue, dbQueryTextAttributeValue, mongodbQueryTruncatedAttributeValue.String(), userNameAttributeValue, mongodbApplicationNameAttributeValue, mongodbDatabaseNameAttributeValue, mongodbLsidAttributeValue, mongodbOperationIDAttributeValue, mongodbOperationPlanSummaryAttributeValue, mongodbOperationStatusAttributeValue.String(), mongodbOperationTypeAttributeValue, mongodbOperationDurationAttributeValue, mongodbOperationPrepareReadConflictCountAttributeValue, mongodbOperationWriteConflictCountAttributeValue, mongodbOperationYieldCountAttributeValue, mongodbOperationWaitingForLockAttributeValue, mongodbOperationLocksAttributeValue, mongodbOperationLockStatsAttributeValue, mongodbOperationWaitingForFlowControlAttributeValue, mongodbOperationFlowControlStatsAttributeValue, mongodbOperationWaitingForLatchAttributeValue, mongodbOperationWaitingForLatchDetailsAttributeValue)
 }
