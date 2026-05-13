@@ -63,11 +63,11 @@ func createDefaultConfig() component.Config {
 		EpochDurationSeconds:        300,
 		NeverDropLabels:             []string{"http.status_code", "region"},
 		EnforcementMode:             EnforcementTagOnly,
-		EstimatedCostPerMetricMonth: 0.05,  // Default to $0.05 per metric/month
-		TopOffendersCount:           10,    // Report the top 10 exploding (metric, label) pairs
-		MaxTrackerCount:             0,     // Default to unlimited
-		MetricOverrides:             nil,   // No per-metric overrides by default
-		DropLogMaxPerEpoch:          10,    // Only log the first 10 drops per epoch
+		EstimatedCostPerMetricMonth: 0.05, // Default to $0.05 per metric/month
+		TopOffendersCount:           10,   // Report the top 10 exploding (metric, label) pairs
+		MaxTrackerCount:             0,    // Default to unlimited
+		MetricOverrides:             nil,  // No per-metric overrides by default
+		DropLogMaxPerEpoch:          10,   // Only log the first 10 drops per epoch
 	}
 }
 

@@ -59,7 +59,6 @@ type Config struct {
 	// construction time and never accessed in the hot path.
 	NeverDropLabels []string `mapstructure:"never_drop_labels"`
 
-
 	// EnforcementMode controls how the processor handles high-cardinality
 	// attributes once the delta threshold is exceeded. Three modes are available:
 	//

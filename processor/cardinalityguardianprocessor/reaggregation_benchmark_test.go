@@ -5,6 +5,7 @@ package cardinalityguardianprocessor
 
 import (
 	"testing"
+
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 

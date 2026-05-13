@@ -865,23 +865,27 @@ func (p *cardinalityProcessor) Start(_ context.Context, _ component.Host) error 
 			zap.Int("interval_seconds", p.config.EpochDurationSeconds))
 
 		p.wg.Add(1)
-		go func() {
-			defer p.wg.Done()
-			ticker := time.NewTicker(time.Duration(p.config.EpochDurationSeconds) * time.Second)
-			defer ticker.Stop()
-
-			for {
-				select {
-				case <-ticker.C:
-					p.rotate()
-				case <-p.ctx.Done():
-					return
-				}
-			}
-		}()
+		go p.rotationLoop()
 	})
 
 	return nil
+}
+
+// rotationLoop runs the background epoch-rotation ticker. It runs until
+// the processor's context is canceled.
+func (p *cardinalityProcessor) rotationLoop() {
+	defer p.wg.Done()
+	ticker := time.NewTicker(time.Duration(p.config.EpochDurationSeconds) * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			p.rotate()
+		case <-p.ctx.Done():
+			return
+		}
+	}
 }
 
 // Shutdown is called by the OTel Collector host when the pipeline is stopping.

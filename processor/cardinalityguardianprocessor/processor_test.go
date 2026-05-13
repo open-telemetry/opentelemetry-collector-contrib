@@ -263,7 +263,6 @@ func TestConcurrency_Sharded(t *testing.T) {
 	// If we reach here without a deadlock, race condition, or panic, the test passes.
 }
 
-
 func TestCardinalityProcessor_TagOnlyMode(t *testing.T) {
 	cfg := &Config{
 		MaxCardinalityDeltaPerEpoch: 50,

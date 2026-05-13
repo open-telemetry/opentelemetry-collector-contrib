@@ -415,4 +415,3 @@ func TestAddNumberValue_EmptyType(t *testing.T) {
 	// Promotes to double because types are not explicitly Int or Double, but evaluates to 0.0 + 0.0
 	assert.InDelta(t, 0.0, dst.DoubleValue(), 0.001)
 }
-
