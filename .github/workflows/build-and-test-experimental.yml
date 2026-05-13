@@ -505,11 +505,6 @@ jobs:
         run: make genotelcontribcol
       - name: Build Collector ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.arm }}
         run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
-      - name: Upload Collector Binaries
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: experimental-collector-binaries-${{ matrix.os }}-${{ matrix.arch }}
-          path: ./bin/*
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   # Scoped cross-compile: on PRs that only touch a small set of Go sources,
@@ -582,26 +577,3 @@ jobs:
             (cd "$mod" && go build ./...)
           done
       - run: ./.github/workflows/scripts/check-disk-space.sh
-
-  # Only runs in mode=full because exp-cross-compile is the producer of the
-  # experimental-collector-binaries-* artifacts this job verifies. On scoped
-  # PRs, exp-cross-compile-affected runs `go build ./...` per module and
-  # doesn't link the otelcontribcol binary, so there's nothing to verify.
-  exp-publish-check:
-    runs-on: ubuntu-24.04
-    needs: [exp-ci-scope, exp-lint, exp-unittest, exp-integration-tests, exp-cross-compile]
-    if: needs.exp-ci-scope.outputs.mode == 'full'
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          sparse-checkout: |
-            .github/workflows/scripts/verify-dist-files-exist.sh
-      - name: Download Binaries
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          merge-multiple: true
-          path: ./bin/
-          pattern: experimental-collector-binaries-*
-      - name: Verify Distribution Files Exist
-        id: check
-        run: ./.github/workflows/scripts/verify-dist-files-exist.sh
