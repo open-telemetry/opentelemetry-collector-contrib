@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.58.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.152.0
 	go.opentelemetry.io/collector/extension v1.58.0
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.152.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.152.0
 	go.opentelemetry.io/collector/extension/xextension v0.152.0
 	go.opentelemetry.io/collector/featuregate v1.58.0
