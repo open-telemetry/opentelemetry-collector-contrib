@@ -571,9 +571,14 @@ jobs:
           done
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
+  # Only runs in mode=full because exp-cross-compile is the producer of the
+  # experimental-collector-binaries-* artifacts this job verifies. On scoped
+  # PRs, exp-cross-compile-affected runs `go build ./...` per module and
+  # doesn't link the otelcontribcol binary, so there's nothing to verify.
   exp-publish-check:
     runs-on: ubuntu-24.04
-    needs: [exp-lint, exp-unittest, exp-integration-tests, exp-cross-compile]
+    needs: [exp-ci-scope, exp-lint, exp-unittest, exp-integration-tests, exp-cross-compile]
+    if: needs.exp-ci-scope.outputs.mode == 'full'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
