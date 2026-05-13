@@ -14,6 +14,7 @@ var (
 	errMultipleAuthenticators = errors.New("only one of `htpasswd` or `client_auth` can be specified")
 )
 
+// HtpasswdSettings configures the htpasswd-backed credential source.
 type HtpasswdSettings struct {
 	// Path to the htpasswd file.
 	File string `mapstructure:"file"`
