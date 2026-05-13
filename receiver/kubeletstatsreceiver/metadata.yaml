@@ -97,6 +97,10 @@ attributes:
     description: Direction of flow of bytes/operations (receive or transmit).
     type: string
     enum: [receive, transmit]
+  fs.type:
+    description: The type of filesystem component.
+    type: string
+    enum: [rootfs, logs]
   interface:
     description: Name of the network interface.
     type: string
@@ -226,6 +230,16 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  k8s.container.ephemeral_storage.usage:
+    enabled: false
+    description: "Ephemeral storage used by the container."
+    unit: By
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [fs.type]
   k8s.container.memory.node.utilization:
     enabled: false
     description: "Container memory utilization as a ratio of the node's capacity"

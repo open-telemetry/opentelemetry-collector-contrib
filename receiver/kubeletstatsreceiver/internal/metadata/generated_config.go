@@ -44,6 +44,7 @@ type MetricsConfig struct {
 	K8sContainerCPUNodeUtilization         MetricConfig `mapstructure:"k8s.container.cpu.node.utilization"`
 	K8sContainerCPULimitUtilization        MetricConfig `mapstructure:"k8s.container.cpu_limit_utilization"`
 	K8sContainerCPURequestUtilization      MetricConfig `mapstructure:"k8s.container.cpu_request_utilization"`
+	K8sContainerEphemeralStorageUsage      MetricConfig `mapstructure:"k8s.container.ephemeral_storage.usage"`
 	K8sContainerMemoryNodeUtilization      MetricConfig `mapstructure:"k8s.container.memory.node.utilization"`
 	K8sContainerMemoryLimitUtilization     MetricConfig `mapstructure:"k8s.container.memory_limit_utilization"`
 	K8sContainerMemoryRequestUtilization   MetricConfig `mapstructure:"k8s.container.memory_request_utilization"`
@@ -138,6 +139,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		K8sContainerCPURequestUtilization: MetricConfig{
+			Enabled: false,
+		},
+		K8sContainerEphemeralStorageUsage: MetricConfig{
 			Enabled: false,
 		},
 		K8sContainerMemoryNodeUtilization: MetricConfig{

@@ -109,6 +109,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      k8s.container.ephemeral_storage.usage:
+        description: "K8sContainerEphemeralStorageUsageMetricConfig provides config for the k8s.container.ephemeral_storage.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       k8s.container.memory.node.utilization:
         description: "K8sContainerMemoryNodeUtilizationMetricConfig provides config for the k8s.container.memory.node.utilization metric."
         type: object

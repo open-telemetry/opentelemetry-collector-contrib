@@ -148,6 +148,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sContainerCPURequestUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordK8sContainerEphemeralStorageUsageDataPoint(ts, 1, AttributeFsTypeRootfs)
+
+			allMetricsCount++
 			mb.RecordK8sContainerMemoryNodeUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -548,6 +551,23 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "k8s.container.ephemeral_storage.usage":
+					assert.False(t, validatedMetrics["k8s.container.ephemeral_storage.usage"], "Found a duplicate in the metrics slice: k8s.container.ephemeral_storage.usage")
+					validatedMetrics["k8s.container.ephemeral_storage.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Ephemeral storage used by the container.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					fsTypeAttrVal, ok := dp.Attributes().Get("fs.type")
+					assert.True(t, ok)
+					assert.Equal(t, "rootfs", fsTypeAttrVal.Str())
 				case "k8s.container.memory.node.utilization":
 					assert.False(t, validatedMetrics["k8s.container.memory.node.utilization"], "Found a duplicate in the metrics slice: k8s.container.memory.node.utilization")
 					validatedMetrics["k8s.container.memory.node.utilization"] = true
