@@ -2252,7 +2252,7 @@ func TestSupervisor_onOpampConnectionSettings(t *testing.T) {
 		ctx, cancel := context.WithCancel(t.Context())
 
 		mp := metric.NewMeterProvider()
-		t.Cleanup(func() { _ = mp.Shutdown(context.Background()) })
+		t.Cleanup(func() { _ = mp.Shutdown(t.Context()) })
 		metrics, err := telemetry.NewMetrics(mp)
 		require.NoError(t, err)
 
@@ -2298,7 +2298,7 @@ func TestSupervisor_onOpampConnectionSettings(t *testing.T) {
 
 		t.Cleanup(func() {
 			cancel()
-			stopCtx, stopCancel := context.WithTimeout(context.Background(), time.Second)
+			stopCtx, stopCancel := context.WithTimeout(t.Context(), time.Second)
 			defer stopCancel()
 			_ = s.opampClient.Stop(stopCtx)
 		})
