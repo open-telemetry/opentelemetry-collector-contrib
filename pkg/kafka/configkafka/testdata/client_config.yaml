@@ -3,7 +3,7 @@ kafka/full:
   brokers: ["foo:123", "bar:456"]
   resolve_canonical_bootstrap_servers_only: true
   client_id: vip
-  protocol_version: 1.2.3
+  protocol_version: 3.1.2
   rack_id: rack1
   tls:
     ca_file: ca.pem
