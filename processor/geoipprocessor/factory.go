@@ -6,7 +6,6 @@ package geoipprocessor // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -32,15 +31,13 @@ var (
 	}
 )
 
-// providerFactories is a map that stores GeoIPProviderFactory instances, keyed by the provider type.
-// Access must go through getProviderFactory or setProviderFactory; tests in particular run in
-// parallel and would otherwise race on this map.
-var (
-	providerFactoriesMu sync.RWMutex
-	providerFactories   = map[string]provider.GeoIPProviderFactory{
-		maxmind.TypeStr: &maxmind.Factory{},
-	}
-)
+// defaultProviderFactories is the read-only set of provider factories baked into the geoip
+// processor at build time. Each Config snapshots this map in createDefaultConfig so that
+// runtime overrides (e.g. tests installing a mock provider) live on the Config instance
+// instead of mutating shared package state.
+var defaultProviderFactories = map[string]provider.GeoIPProviderFactory{
+	maxmind.TypeStr: &maxmind.Factory{},
+}
 
 // NewFactory creates a new processor factory with default configuration,
 // and registers the processors for metrics, traces, and logs.
@@ -48,23 +45,12 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(metadata.Type, createDefaultConfig, processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability), processor.WithLogs(createLogsProcessor, metadata.LogsStability), processor.WithTraces(createTracesProcessor, metadata.TracesStability))
 }
 
-// getProviderFactory retrieves the GeoIPProviderFactory for the given key.
-// It returns the factory and a boolean indicating whether the factory was found.
-func getProviderFactory(key string) (provider.GeoIPProviderFactory, bool) {
-	providerFactoriesMu.RLock()
-	defer providerFactoriesMu.RUnlock()
-	if factory, ok := providerFactories[key]; ok {
-		return factory, true
-	}
-
-	return nil, false
-}
-
 // createDefaultConfig returns a default configuration for the processor.
 func createDefaultConfig() component.Config {
 	return &Config{
-		Context:    resource,
-		Attributes: defaultAttributes,
+		Context:           resource,
+		Attributes:        defaultAttributes,
+		providerFactories: defaultProviderFactories,
 	}
 }
 
@@ -77,7 +63,7 @@ func createGeoIPProviders(
 	providers := make([]provider.GeoIPProvider, 0, len(config.Providers))
 
 	for key, cfg := range config.Providers {
-		factory, ok := getProviderFactory(key)
+		factory, ok := config.providerFactories[key]
 		if !ok {
 			return nil, fmt.Errorf("geoIP provider factory not found for key: %q", key)
 		}

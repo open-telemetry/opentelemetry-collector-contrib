@@ -7,7 +7,7 @@ change_type: bug_fix
 component: processor/geoip
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Guard the provider factory registry with a mutex so concurrent tests no longer race on it.
+note: Fix a data race on the provider factory registry observed when geoip processor tests run in parallel.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [46853]

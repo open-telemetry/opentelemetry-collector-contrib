@@ -6,6 +6,7 @@ package geoipprocessor
 import (
 	"context"
 	"errors"
+	"maps"
 	"net/netip"
 	"path/filepath"
 	"testing"
@@ -84,34 +85,26 @@ var baseMockFactory = providerFactoryMock{
 	},
 }
 
-var baseProviderMock = providerMock{
-	LocationF: func(context.Context, netip.Addr) (attribute.Set, error) {
-		return attribute.Set{}, nil
-	},
-	CloseF: func(context.Context) error {
-		return nil
-	},
-}
-
-// setMockProviderFactoryForTest registers the mock provider factory under "mock" while the
-// current test runs. It takes the providerFactories lock and restores the previous entry on
-// cleanup, so tests no longer race with other tests that read the map via getProviderFactory.
-func setMockProviderFactoryForTest(tb testing.TB, factory provider.GeoIPProviderFactory) {
-	tb.Helper()
-	const key = "mock"
-	providerFactoriesMu.Lock()
-	prev, existed := providerFactories[key]
-	providerFactories[key] = factory
-	providerFactoriesMu.Unlock()
-	tb.Cleanup(func() {
-		providerFactoriesMu.Lock()
-		defer providerFactoriesMu.Unlock()
-		if existed {
-			providerFactories[key] = prev
-		} else {
-			delete(providerFactories, key)
+// newFactoryWithMocks returns a processor.Factory whose default Config carries the built-in
+// provider factories plus the supplied extras. Tests that route through otelcoltest or
+// otherwise rely on factory.CreateDefaultConfig() to construct the Config use this helper
+// to inject mock providers without mutating package-level state.
+func newFactoryWithMocks(extras map[string]provider.GeoIPProviderFactory) processor.Factory {
+	createCfg := func() component.Config {
+		factories := make(map[string]provider.GeoIPProviderFactory, len(defaultProviderFactories)+len(extras))
+		maps.Copy(factories, defaultProviderFactories)
+		maps.Copy(factories, extras)
+		return &Config{
+			Context:           resource,
+			Attributes:        defaultAttributes,
+			providerFactories: factories,
 		}
-	})
+	}
+	return processor.NewFactory(metadata.Type, createCfg,
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
+	)
 }
 
 var testCases = []struct {
@@ -233,30 +226,36 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 func TestProcessor(t *testing.T) {
 	t.Parallel()
 
-	baseMockFactory.CreateGeoIPProviderF = func(context.Context, processor.Settings, provider.Config) (provider.GeoIPProvider, error) {
-		return &baseProviderMock, nil
-	}
-
-	baseProviderMock.LocationF = func(_ context.Context, sourceIP netip.Addr) (attribute.Set, error) {
-		if sourceIP.Compare(netip.AddrFrom4([4]byte{1, 2, 3, 4})) == 0 {
-			return attribute.NewSet([]attribute.KeyValue{
-				attribute.String(conventions.AttributeGeoCityName, "Boxford"),
-				attribute.String(conventions.AttributeGeoContinentCode, "EU"),
-				attribute.String(conventions.AttributeGeoContinentName, "Europe"),
-				attribute.String(conventions.AttributeGeoCountryIsoCode, "GB"),
-				attribute.String(conventions.AttributeGeoCountryName, "United Kingdom"),
-				attribute.String(conventions.AttributeGeoTimezone, "Europe/London"),
-				attribute.String(conventions.AttributeGeoRegionIsoCode, "WBK"),
-				attribute.String(conventions.AttributeGeoRegionName, "West Berkshire"),
-				attribute.String(conventions.AttributeGeoPostalCode, "OX1"),
-				attribute.Float64(conventions.AttributeGeoLocationLat, 1234),
-				attribute.Float64(conventions.AttributeGeoLocationLon, 5678),
-			}...), nil
-		}
-		return attribute.Set{}, provider.ErrNoMetadataFound
+	mockFactory := providerFactoryMock{
+		CreateDefaultConfigF: func() provider.Config {
+			return &providerConfigMock{ValidateF: func() error { return nil }}
+		},
+		CreateGeoIPProviderF: func(context.Context, processor.Settings, provider.Config) (provider.GeoIPProvider, error) {
+			return &providerMock{
+				LocationF: func(_ context.Context, sourceIP netip.Addr) (attribute.Set, error) {
+					if sourceIP.Compare(netip.AddrFrom4([4]byte{1, 2, 3, 4})) == 0 {
+						return attribute.NewSet([]attribute.KeyValue{
+							attribute.String(conventions.AttributeGeoCityName, "Boxford"),
+							attribute.String(conventions.AttributeGeoContinentCode, "EU"),
+							attribute.String(conventions.AttributeGeoContinentName, "Europe"),
+							attribute.String(conventions.AttributeGeoCountryIsoCode, "GB"),
+							attribute.String(conventions.AttributeGeoCountryName, "United Kingdom"),
+							attribute.String(conventions.AttributeGeoTimezone, "Europe/London"),
+							attribute.String(conventions.AttributeGeoRegionIsoCode, "WBK"),
+							attribute.String(conventions.AttributeGeoRegionName, "West Berkshire"),
+							attribute.String(conventions.AttributeGeoPostalCode, "OX1"),
+							attribute.Float64(conventions.AttributeGeoLocationLat, 1234),
+							attribute.Float64(conventions.AttributeGeoLocationLon, 5678),
+						}...), nil
+					}
+					return attribute.Set{}, provider.ErrNoMetadataFound
+				},
+				CloseF: func(context.Context) error { return nil },
+			}, nil
+		},
 	}
 	const providerKey string = "mock"
-	setMockProviderFactoryForTest(t, &baseMockFactory)
+	factories := map[string]provider.GeoIPProviderFactory{providerKey: &mockFactory}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
@@ -264,7 +263,12 @@ func TestProcessor(t *testing.T) {
 			if tt.attributes != nil {
 				attributes = tt.attributes
 			}
-			cfg := &Config{Context: tt.context, Providers: map[string]provider.Config{providerKey: &providerConfigMock{}}, Attributes: attributes}
+			cfg := &Config{
+				Context:           tt.context,
+				Providers:         map[string]provider.Config{providerKey: &providerConfigMock{}},
+				Attributes:        attributes,
+				providerFactories: factories,
+			}
 			compareAllSignals(cfg, tt.goldenDir)(t)
 		})
 	}
