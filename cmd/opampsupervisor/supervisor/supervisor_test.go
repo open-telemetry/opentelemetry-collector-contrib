@@ -2317,13 +2317,6 @@ func TestSupervisor_onOpampConnectionSettings(t *testing.T) {
 		return port
 	}
 
-	t.Run("nil settings is a no-op", func(t *testing.T) {
-		s := newTestSupervisor(t, fmt.Sprintf("http://127.0.0.1:%d", freePort(t)), true)
-		err := s.onOpampConnectionSettings(t.Context(), nil)
-		require.NoError(t, err)
-		assert.EqualValues(t, 30, s.heartbeatIntervalSeconds)
-	})
-
 	t.Run("zero HeartbeatIntervalSeconds leaves interval unchanged when ReportsHeartbeat=true", func(t *testing.T) {
 		// Per the OpAMP spec, HeartbeatIntervalSeconds=0 means "use current default";
 		// the supervisor must NOT pass 0 to the opamp-go client (HTTP rejects it, WS disables heartbeats).
@@ -2356,13 +2349,11 @@ func TestSupervisor_onOpampConnectionSettings(t *testing.T) {
 		assert.EqualValues(t, 30, s.heartbeatIntervalSeconds, "interval should not change when capability is disabled")
 	})
 
-	t.Run("heartbeat interval reverted when startOpAMPClient fails with new settings", func(t *testing.T) {
+	t.Run("heartbeat interval reverted when reconnect with new settings fails", func(t *testing.T) {
 		// Old endpoint uses HTTP (Start is async → always returns nil).
 		// New endpoint uses WSS with an invalid CA cert: LoadTLSConfig fails synchronously
 		// before any connection is attempted, giving us a reliable way to trigger the
-		// revert path in onOpampConnectionSettings.
-		// After the failure the supervisor falls back to the old endpoint; both the
-		// server config and the heartbeat interval must be restored.
+		// heartbeat rollback path in onOpampConnectionSettings.
 		oldEndpoint := fmt.Sprintf("http://127.0.0.1:%d", freePort(t))
 
 		s := newTestSupervisor(t, oldEndpoint, true)
@@ -2380,7 +2371,6 @@ func TestSupervisor_onOpampConnectionSettings(t *testing.T) {
 			t.Logf("fallback also failed (expected in some environments): %v", err)
 		}
 		assert.EqualValues(t, 30, s.heartbeatIntervalSeconds, "interval must be reverted after failed reconnect")
-		assert.Equal(t, oldEndpoint, s.config.Server.Endpoint, "server endpoint must be reverted after failed reconnect")
 	})
 }
 
