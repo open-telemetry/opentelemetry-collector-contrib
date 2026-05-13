@@ -1231,7 +1231,6 @@ func TestKafkaExporter_ComponentStatus(t *testing.T) {
 		go func() {
 			//nolint:errcheck
 			exp.exportData(t.Context(), logs)
-
 		}()
 
 		select {
@@ -1252,7 +1251,7 @@ func (tsr *testStatusReporter) Report(event *componentstatus.Event) {
 	tsr.statusChan <- event
 }
 
-func (tsr *testStatusReporter) GetExtensions() map[component.ID]component.Component {
+func (*testStatusReporter) GetExtensions() map[component.ID]component.Component {
 	return make(map[component.ID]component.Component)
 }
 
@@ -1362,7 +1361,7 @@ func configureExporter[T any](tb testing.TB,
 	require.NoError(tb, err, "failed to create messenger for metrics")
 
 	exp.messenger = messenger
-	exp.producer = kafkaclient.NewFranzSyncProducer(client, cfg.IncludeMetadataKeys, cfg.RecordHeaders, cfg.Producer.MaxMessageBytes, host, nil)
+	exp.producer = kafkaclient.NewFranzSyncProducer(client, cfg.IncludeMetadataKeys, cfg.RecordHeaders, cfg.Producer.MaxMessageBytes, nil)
 
 	tb.Cleanup(func() { client.Close() })
 	return cluster

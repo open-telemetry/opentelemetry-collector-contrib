@@ -104,7 +104,6 @@ type FranzSyncProducer struct {
 	metadataKeys    []string
 	recordHeaders   []kgo.RecordHeader
 	maxMessageBytes int
-	host            component.Host
 }
 
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
@@ -114,7 +113,6 @@ func NewFranzSyncProducer(client *kgo.Client,
 	metadataKeys []string,
 	recordHeaders []RecordHeader,
 	maxMessageBytes int,
-	host component.Host,
 	clientCancel context.CancelFunc,
 ) *FranzSyncProducer {
 	headers := make([]kgo.RecordHeader, 0, len(recordHeaders))
@@ -131,7 +129,6 @@ func NewFranzSyncProducer(client *kgo.Client,
 		metadataKeys:    metadataKeys,
 		recordHeaders:   headers,
 		maxMessageBytes: maxMessageBytes,
-		host:            host,
 	}
 }
 

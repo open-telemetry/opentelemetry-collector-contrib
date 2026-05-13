@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
@@ -168,7 +167,7 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(client.Close)
 
-	producer := NewFranzSyncProducer(client, nil, nil, maxMessageBytes, componenttest.NewNopHost(), nil)
+	producer := NewFranzSyncProducer(client, nil, nil, maxMessageBytes, nil)
 
 	// Create a message larger than maxMessageBytes to trigger MessageTooLarge.
 	largeValue := []byte(strings.Repeat("x", maxMessageBytes*2))
@@ -214,7 +213,6 @@ func TestExportData_AttachesHeaders(t *testing.T) {
 			{Name: "shared-key", Value: configopaque.String("static-value-override")},
 		},
 		1024*1024,
-		componenttest.NewNopHost(),
 		nil,
 	)
 
@@ -248,7 +246,7 @@ func TestClose_UnblocksInFlightExportData(t *testing.T) {
 	// Shut down the broker so ExportData blocks indefinitely.
 	fakeCluster.Close()
 
-	producer := NewFranzSyncProducer(kgoClient, nil, nil, 1024*1024, nil, clientCancel)
+	producer := NewFranzSyncProducer(kgoClient, nil, nil, 1024*1024, clientCancel)
 
 	records := []*kgo.Record{{Topic: "otlp_logs", Value: []byte("test")}}
 
