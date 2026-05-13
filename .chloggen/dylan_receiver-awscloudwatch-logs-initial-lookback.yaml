@@ -7,7 +7,7 @@ change_type: "enhancement"
 component: "receiver/awscloudwatch"
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Adds a new configuration option to configure an initial lookback duration when collecting logs.
+note: Adds a new configuration option `initial_lookback` to the AWS CloudWatch Logs receiver for specifying how far back from the collector's startup time to begin collecting logs.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47754]
