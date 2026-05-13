@@ -121,6 +121,7 @@ components:
         - remotetap
         - resource
         - resourcedetection
+        - schema
         - span
         - spanpruning
         - sumologic
@@ -137,11 +138,11 @@ components:
         - aerospike
         - apache
         - apachespark
+        - aws_lambda
         - awscloudwatch
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
-        - awslambda
         - awss3
         - awsxray
         - azure_blob
@@ -226,8 +227,8 @@ components:
         - stef
         - syslog
         - systemd
+        - tcp_check
         - tcp_log
-        - tcpcheck
         - tls_check
         - udp_log
         - vcenter

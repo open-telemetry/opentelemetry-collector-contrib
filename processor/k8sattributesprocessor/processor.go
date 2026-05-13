@@ -17,6 +17,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
@@ -44,6 +46,7 @@ type kubernetesprocessor struct {
 	podIgnore              kube.Excludes
 	waitForMetadata        bool
 	waitForMetadataTimeout time.Duration
+	watchSyncPeriod        time.Duration
 }
 
 func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, kubeClient kube.ClientProvider) error {
@@ -51,7 +54,7 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout)
+		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout, kp.watchSyncPeriod)
 		if err != nil {
 			return err
 		}
@@ -139,7 +142,7 @@ func (kp *kubernetesprocessor) Shutdown(context.Context) error {
 func (kp *kubernetesprocessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
-		kp.processResource(ctx, rss.At(i).Resource())
+		kp.processResource(ctx, rss.At(i).Resource(), "traces")
 	}
 
 	return td, nil
@@ -149,7 +152,7 @@ func (kp *kubernetesprocessor) processTraces(ctx context.Context, td ptrace.Trac
 func (kp *kubernetesprocessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
-		kp.processResource(ctx, rm.At(i).Resource())
+		kp.processResource(ctx, rm.At(i).Resource(), "metrics")
 	}
 
 	return md, nil
@@ -159,7 +162,7 @@ func (kp *kubernetesprocessor) processMetrics(ctx context.Context, md pmetric.Me
 func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	rl := ld.ResourceLogs()
 	for i := 0; i < rl.Len(); i++ {
-		kp.processResource(ctx, rl.At(i).Resource())
+		kp.processResource(ctx, rl.At(i).Resource(), "logs")
 	}
 
 	return ld, nil
@@ -169,14 +172,15 @@ func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (p
 func (kp *kubernetesprocessor) processProfiles(ctx context.Context, pd pprofile.Profiles) (pprofile.Profiles, error) {
 	rp := pd.ResourceProfiles()
 	for i := 0; i < rp.Len(); i++ {
-		kp.processResource(ctx, rp.At(i).Resource())
+		kp.processResource(ctx, rp.At(i).Resource(), "profiles")
 	}
 
 	return pd, nil
 }
 
-// processResource adds Pod metadata tags to resource based on pod association configuration
-func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource) {
+// processResource adds Pod metadata tags to resource based on pod association configuration.
+// signal is the OTLP signal type ("traces", "metrics", "logs", "profiles") used for telemetry.
+func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource, signal string) {
 	podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
 	kp.logger.Debug("evaluating pod identifier", zap.Any("value", podIdentifierValue))
 
@@ -209,6 +213,18 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		// Record failed pod association when no identifier found
 		kp.logger.Debug("no pod identifier found")
 	}
+
+	status := "success"
+	if !podFound {
+		status = "error"
+	}
+	kp.telemetry.K8sPodAssociation.Add(ctx, 1,
+		metric.WithAttributes(
+			attribute.String("status", status),
+			attribute.String("pod_identifier", buildPodIdentifierString(podIdentifierValue)),
+			attribute.String("otelcol.signal", signal),
+		),
+	)
 
 	namespace := getNamespace(pod, resource.Attributes())
 	if namespace != "" {
