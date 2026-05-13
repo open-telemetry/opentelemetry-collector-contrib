@@ -84,6 +84,7 @@ type MetricQuery struct {
 // LogsConfig is the configuration for the logs portion of this receiver
 type LogsConfig struct {
 	StartFrom           string        `mapstructure:"start_from"`
+	InitialLookback     time.Duration `mapstructure:"initial_lookback"`
 	PollInterval        time.Duration `mapstructure:"poll_interval"`
 	MaxEventsPerRequest int           `mapstructure:"max_events_per_request"`
 	Groups              GroupConfig   `mapstructure:"groups"`
@@ -127,6 +128,8 @@ var (
 	errInvalidDiscoveryLimit            = errors.New("metrics discovery limit must be greater than 0")
 	errEmptyStatName                    = errors.New("stat name must not be empty")
 	errCollectionIntervalLessThanPeriod = errors.New("metrics collection_interval must be greater than or equal to period")
+	errInitialLookbackAndStartFrom      = errors.New("both initial_lookback and start_from are configured, Only one or the other is permitted")
+	errInvalidInitialLookback           = errors.New("initial_lookback must be a negative duration (e.g. -1h) to look back from the current time")
 )
 
 // Validate overrides the embedded ControllerConfig.Validate so that a zero CollectionInterval
@@ -230,6 +233,14 @@ func (c *Config) Unmarshal(componentParser *confmap.Conf) error {
 }
 
 func (c *Config) validateLogsConfig() error {
+	if c.Logs.InitialLookback != 0 && c.Logs.StartFrom != "" {
+		return errInitialLookbackAndStartFrom
+	}
+
+	if c.Logs.InitialLookback > 0 {
+		return errInvalidInitialLookback
+	}
+
 	if c.Logs.StartFrom != "" {
 		_, err := time.Parse(time.RFC3339, c.Logs.StartFrom)
 		if err != nil {

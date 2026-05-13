@@ -46,6 +46,41 @@ func TestStart(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestInitialLookback(t *testing.T) {
+	fixedNow := time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
+	originalNow := nowFunc
+	nowFunc = func() time.Time { return fixedNow }
+	t.Cleanup(func() { nowFunc = originalNow })
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.Groups = GroupConfig{
+		NamedConfigs: map[string]StreamConfig{
+			"my-log-group": {},
+		},
+	}
+	cfg.Logs.InitialLookback = -time.Hour
+
+	mc := &mockClient{}
+	expectedStart := fixedNow.Add(-time.Hour).UnixMilli()
+	expectedEnd := fixedNow.UnixMilli()
+	mc.On("FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
+		return input.StartTime != nil && *input.StartTime == expectedStart &&
+			input.EndTime != nil && *input.EndTime == expectedEnd
+	}), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{}, nil)
+
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, &consumertest.LogsSink{})
+	logsRcvr.client = mc
+
+	require.Equal(t, fixedNow.Add(-time.Hour), logsRcvr.initialStartTime)
+	require.NoError(t, logsRcvr.poll(t.Context()))
+	mc.AssertExpectations(t)
+}
+
 func TestPrefixedConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Region = "us-west-1"
