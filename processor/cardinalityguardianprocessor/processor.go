@@ -334,6 +334,10 @@ type cardinalityProcessor struct {
 	// Protected by topOffendersMu.
 	topOffenders   []offenderEntry
 	topOffendersMu sync.RWMutex
+
+	// wg tracks the background rotation goroutine so Shutdown can block
+	// until it fully exits.
+	wg sync.WaitGroup
 }
 
 // newCardinalityProcessor constructs a cardinalityProcessor, registers its
@@ -860,7 +864,9 @@ func (p *cardinalityProcessor) Start(_ context.Context, _ component.Host) error 
 		p.logger.Info("Starting cardinality rotation ticker",
 			zap.Int("interval_seconds", p.config.EpochDurationSeconds))
 
+		p.wg.Add(1)
 		go func() {
+			defer p.wg.Done()
 			ticker := time.NewTicker(time.Duration(p.config.EpochDurationSeconds) * time.Second)
 			defer ticker.Stop()
 
@@ -897,6 +903,7 @@ func (p *cardinalityProcessor) Shutdown(_ context.Context) error {
 		p.telemetry.Shutdown()
 	}
 	p.cancel()
+	p.wg.Wait()
 	return nil
 }
 
