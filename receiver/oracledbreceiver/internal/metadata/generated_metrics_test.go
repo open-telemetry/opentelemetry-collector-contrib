@@ -67,7 +67,10 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["oracledb.physical_io.bytes"] = mb.metricOracledbPhysicalIoBytes.config.AggregationStrategy
+			aggMap["oracledb.physical_io.requests"] = mb.metricOracledbPhysicalIoRequests.config.AggregationStrategy
 			aggMap["oracledb.sessions.usage"] = mb.metricOracledbSessionsUsage.config.AggregationStrategy
+			aggMap["oracledb.sqlnet.bytes"] = mb.metricOracledbSqlnetBytes.config.AggregationStrategy
 			aggMap["oracledb.tablespace_size.limit"] = mb.metricOracledbTablespaceSizeLimit.config.AggregationStrategy
 			aggMap["oracledb.tablespace_size.usage"] = mb.metricOracledbTablespaceSizeUsage.config.AggregationStrategy
 
@@ -172,6 +175,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbPgaMemoryDataPoint(ts, "1")
 
 			allMetricsCount++
+			mb.RecordOracledbPhysicalIoBytesDataPoint(ts, "1", AttributeDirectionRead, AttributeIoTypeBuffered)
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbPhysicalIoBytesDataPoint(ts, "3", AttributeDirectionWrite, AttributeIoTypeTotal)
+			}
+
+			allMetricsCount++
+			mb.RecordOracledbPhysicalIoRequestsDataPoint(ts, "1", AttributeDirectionRead, AttributeBlockSizeAll)
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbPhysicalIoRequestsDataPoint(ts, "3", AttributeDirectionWrite, AttributeBlockSizeMulti)
+			}
+
+			allMetricsCount++
 			mb.RecordOracledbPhysicalReadIoRequestsDataPoint(ts, "1")
 
 			defaultMetricsCount++
@@ -189,6 +204,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordOracledbPhysicalWritesDirectDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbPhysicalWritesFromCacheDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -213,6 +231,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbSessionsUsageDataPoint(ts, "1", "session_type-val", "session_status-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSessionsUsageDataPoint(ts, "3", "session_type-val-2", "session_status-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordOracledbSqlnetBytesDataPoint(ts, "1", AttributeSqlnetDirectionReceived, AttributePeerClient)
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbSqlnetBytesDataPoint(ts, "3", AttributeSqlnetDirectionSent, AttributePeerDblink)
 			}
 
 			allMetricsCount++
@@ -258,7 +282,10 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricOracledbPhysicalIoBytes.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbPhysicalIoRequests.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbSessionsUsage.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbSqlnetBytes.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbTablespaceSizeLimit.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbTablespaceSizeUsage.aggDataPoints)
 			}
@@ -638,6 +665,104 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.physical_io.bytes":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.physical_io.bytes"], "Found a duplicate in the metrics slice: oracledb.physical_io.bytes")
+						validatedMetrics["oracledb.physical_io.bytes"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Total physical I/O bytes transferred between Oracle and storage. Sums across all data files. Sourced from v$sysstat names physical read/write bytes (io_type=buffered) and physical read/write total bytes (io_type=total).", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", directionAttrVal.Str())
+						ioTypeAttrVal, ok := dp.Attributes().Get("io_type")
+						assert.True(t, ok)
+						assert.Equal(t, "buffered", ioTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.physical_io.bytes"], "Found a duplicate in the metrics slice: oracledb.physical_io.bytes")
+						validatedMetrics["oracledb.physical_io.bytes"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Total physical I/O bytes transferred between Oracle and storage. Sums across all data files. Sourced from v$sysstat names physical read/write bytes (io_type=buffered) and physical read/write total bytes (io_type=total).", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.physical_io.bytes"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("io_type")
+						assert.False(t, ok)
+					}
+				case "oracledb.physical_io.requests":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.physical_io.requests"], "Found a duplicate in the metrics slice: oracledb.physical_io.requests")
+						validatedMetrics["oracledb.physical_io.requests"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of physical I/O requests issued to storage. Sourced from v$sysstat names physical read/write total IO requests (block_size=all) and physical read/write total multi block requests (block_size=multi).", mi.Description())
+						assert.Equal(t, "{requests}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", directionAttrVal.Str())
+						blockSizeAttrVal, ok := dp.Attributes().Get("block_size")
+						assert.True(t, ok)
+						assert.Equal(t, "all", blockSizeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.physical_io.requests"], "Found a duplicate in the metrics slice: oracledb.physical_io.requests")
+						validatedMetrics["oracledb.physical_io.requests"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of physical I/O requests issued to storage. Sourced from v$sysstat names physical read/write total IO requests (block_size=all) and physical read/write total multi block requests (block_size=multi).", mi.Description())
+						assert.Equal(t, "{requests}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.physical_io.requests"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("block_size")
+						assert.False(t, ok)
+					}
 				case "oracledb.physical_read_io_requests":
 					assert.False(t, validatedMetrics["oracledb.physical_read_io_requests"], "Found a duplicate in the metrics slice: oracledb.physical_read_io_requests")
 					validatedMetrics["oracledb.physical_read_io_requests"] = true
@@ -714,6 +839,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Number of writes directly to disk, bypassing the buffer cache", mi.Description())
+					assert.Equal(t, "{writes}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.physical_writes_from_cache":
+					assert.False(t, validatedMetrics["oracledb.physical_writes_from_cache"], "Found a duplicate in the metrics slice: oracledb.physical_writes_from_cache")
+					validatedMetrics["oracledb.physical_writes_from_cache"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$sysstat name physical writes from cache.", mi.Description())
 					assert.Equal(t, "{writes}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -827,6 +966,55 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("session_type")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("session_status")
+						assert.False(t, ok)
+					}
+				case "oracledb.sqlnet.bytes":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.sqlnet.bytes"], "Found a duplicate in the metrics slice: oracledb.sqlnet.bytes")
+						validatedMetrics["oracledb.sqlnet.bytes"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes transferred via SQL*Net between Oracle and clients/dblinks. Sourced from v$sysstat names bytes received/sent via SQL*Net from/to client/dblink.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						sqlnetDirectionAttrVal, ok := dp.Attributes().Get("sqlnet_direction")
+						assert.True(t, ok)
+						assert.Equal(t, "received", sqlnetDirectionAttrVal.Str())
+						peerAttrVal, ok := dp.Attributes().Get("peer")
+						assert.True(t, ok)
+						assert.Equal(t, "client", peerAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.sqlnet.bytes"], "Found a duplicate in the metrics slice: oracledb.sqlnet.bytes")
+						validatedMetrics["oracledb.sqlnet.bytes"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes transferred via SQL*Net between Oracle and clients/dblinks. Sourced from v$sysstat names bytes received/sent via SQL*Net from/to client/dblink.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.sqlnet.bytes"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("sqlnet_direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("peer")
 						assert.False(t, ok)
 					}
 				case "oracledb.storage.usage":
