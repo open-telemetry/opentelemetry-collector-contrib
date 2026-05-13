@@ -40,7 +40,7 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 | Parameter                | Type     | Default                                    | Description                                                                                            |
 |--------------------------|----------|--------------------------------------------|--------------------------------------------------------------------------------------------------------|
 | `start_from`             | String   | Read all available logs from the beginning | Timestamp in `RFC3339` format (e.g., 2006-01-02T15:04:05Z07:00) indicating where to start reading logs. Mutually exclusive with `initial_lookback`.
-| `initial_lookback`       | Duration | 0 | Negative duration (e.g., `-1h`) to start collecting logs from that far before the collector's startup time. Mutually exclusive with `start_from`.
+| `initial_lookback`       | Duration | 0                                          | The amount of time to look back from the current time for the first log event. Mutually exclusive with `start_from`.
 | `poll_interval`          | Duration | 1 minute                                   | Time to wait between log requests                                                                      |
 | `max_events_per_request` | Integer  | 1,000                                      | The maximum number of events to process per request to Cloudwatch                                      |
 | `groups`                 | Optional | All Log Groups and Streams                 | Configuration for Log Groups, by default all Log Groups and Log Streams will be collected.             |
