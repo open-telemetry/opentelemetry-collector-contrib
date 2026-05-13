@@ -1,0 +1,56 @@
+{
+  "@timestamp": "2024-01-15T10:30:00.000000000Z",
+  "data_stream": {
+    "dataset": "generic",
+    "namespace": "default",
+    "type": "logs"
+  },
+  "duration_ms": 45.67,
+  "event": {
+    "action": "user.login",
+    "severity": 9
+  },
+  "host": {
+    "architecture": "amd64",
+    "hostname": "prod-server-01",
+    "name": "prod-server-01",
+    "os": {
+      "platform": "linux",
+      "version": "5.15.0"
+    }
+  },
+  "http": {
+    "method": "GET",
+    "status_code": 200,
+    "url": "https://example.com/api/v1/users"
+  },
+  "log": {
+    "level": "INFO"
+  },
+  "message": "Sample log message with important information",
+  "scope": {
+    "attribute": "example-value"
+  },
+  "service": {
+    "environment": "production",
+    "language": {
+      "name": "go",
+      "version": "1.21.0"
+    },
+    "name": "test-service",
+    "node": {
+      "name": "instance-123"
+    },
+    "version": "1.0.0"
+  },
+  "span": {
+    "id": "0102030405060708"
+  },
+  "success": true,
+  "trace": {
+    "id": "0102030405060708090a0b0c0d0e0f10"
+  },
+  "user": {
+    "id": "12345"
+  }
+}
