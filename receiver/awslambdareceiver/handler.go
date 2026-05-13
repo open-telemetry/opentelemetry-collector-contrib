@@ -210,18 +210,17 @@ func (s *s3Handler) handle(ctx context.Context, event json.RawMessage) error {
 		return err
 	}
 
-	wrappedReader, err := gunzipIfNeeded(reader)
-	if err != nil {
-		return fmt.Errorf("failed to derive reader with wrapper: %w", err)
+	var decodeReader io.Reader = bufio.NewReaderSize(reader, readerBufferSize)
+	if strings.HasSuffix(parsedEvent.S3.Object.URLDecodedKey, ".gz") {
+		gr, grErr := gzip.NewReader(decodeReader)
+		if grErr != nil {
+			return fmt.Errorf("failed to decompress gzip stream: %w", grErr)
+		}
+		defer gr.Close()
+		decodeReader = gr
 	}
 
-	defer func() {
-		if gzReader, ok := wrappedReader.(*gzip.Reader); ok {
-			_ = gzReader.Close()
-		}
-	}()
-
-	err = s.decodeF(ctx, wrappedReader, parsedEvent)
+	err = s.decodeF(ctx, decodeReader, parsedEvent)
 	if err != nil {
 		return err
 	}
@@ -305,24 +304,6 @@ func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMe
 	}
 
 	return nil
-}
-
-// gunzipIfNeeded checks if the provided reader is a gzipped stream and returns a reader with gunzip wrapping if needed.
-func gunzipIfNeeded(r io.Reader) (io.Reader, error) {
-	buf := bufio.NewReaderSize(r, readerBufferSize)
-	header, err := buf.Peek(2)
-	if err != nil {
-		return nil, err
-	}
-	// gzip magic number: 0x1f 0x8b
-	if header[0] == 0x1f && header[1] == 0x8b {
-		gr, err := gzip.NewReader(buf)
-		if err != nil {
-			return nil, err
-		}
-		return gr, nil
-	}
-	return buf, nil
 }
 
 func enrichS3Logs(logs plog.Logs, event events.S3EventRecord) {
