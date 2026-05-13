@@ -141,6 +141,41 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errAutodiscoverAndNamedConfigured,
 		},
+		{
+			name: "Initial Lookback and Start From",
+			config: Config{
+				Region: "us-east-1",
+				Logs: LogsConfig{
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: defaultLogGroupLimit,
+						},
+					},
+					StartFrom:       "2020-01-01T00:00:00Z",
+					InitialLookback: -time.Hour,
+				},
+			},
+			expectedErr: errInitialLookbackAndStartFrom,
+		},
+		{
+			name: "Positive Initial Lookback",
+			config: Config{
+				Region: "us-east-1",
+				Logs: LogsConfig{
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: defaultLogGroupLimit,
+						},
+					},
+					InitialLookback: time.Hour,
+				},
+			},
+			expectedErr: errInvalidInitialLookback,
+		},
 	}
 
 	for _, tc := range cases {
@@ -269,6 +304,22 @@ func TestLoadLogsConfig(t *testing.T) {
 							},
 						},
 					},
+				},
+			},
+		},
+		{
+			name: "initial-lookback",
+			expectedConfig: &Config{
+				Region: "us-west-1",
+				Logs: LogsConfig{
+					PollInterval:        time.Minute,
+					MaxEventsPerRequest: defaultEventLimit,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: defaultLogGroupLimit,
+						},
+					},
+					InitialLookback: -time.Hour,
 				},
 			},
 		},

@@ -58,6 +58,8 @@ type streamNames struct {
 	names []*string
 }
 
+var nowFunc = time.Now
+
 func (sn *streamNames) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
 	base := &cloudwatchlogs.FilterLogEventsInput{
 		LogGroupName: &sn.group,
@@ -134,6 +136,10 @@ func newLogsReceiver(cfg *Config, settings receiver.Settings, consumer consumer.
 		} else {
 			startTime = parsedTime
 		}
+	}
+
+	if cfg.Logs.InitialLookback != 0 {
+		startTime = nowFunc().Add(cfg.Logs.InitialLookback)
 	}
 
 	return &logsReceiver{
@@ -216,7 +222,7 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
 	currentGroups := make(map[string]bool)
-	endTime := time.Now()
+	endTime := nowFunc()
 	for _, r := range l.groupRequests {
 		groupName := r.groupName()
 		currentGroups[groupName] = true
@@ -315,7 +321,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 				return nextStartTime, fmt.Errorf("failed to retrieve logs from log group %s: %w", logGroup, err)
 			}
 
-			observedTime := pcommon.NewTimestampFromTime(time.Now())
+			observedTime := pcommon.NewTimestampFromTime(nowFunc())
 			logs := l.processEvents(observedTime, logGroup, resp)
 			if logs.LogRecordCount() > 0 {
 				if err = l.consumer.ConsumeLogs(ctx, logs); err != nil {
