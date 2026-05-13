@@ -45,6 +45,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/metadata"
@@ -921,6 +922,57 @@ func TestSupervisorPackageCapabilitiesReturnError(t *testing.T) {
 	err = s.Start(t.Context())
 	require.ErrorContains(t, err, "accepts_packages and reports_package_statuses capabilities are not yet fully implemented")
 	require.False(t, connected.Load(), "Supervisor should not have connected to the server")
+}
+
+func TestReproReportsRemoteConfigDisabledStillReportsStatus(t *testing.T) {
+	storageDir := t.TempDir()
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, _ *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	cfgFile := getSupervisorConfig(t, "basic", map[string]string{"url": server.addr, "storage_dir": storageDir})
+	cfg, err := config.Load(cfgFile.Name())
+	require.NoError(t, err)
+	cfg.Capabilities.ReportsRemoteConfig = false
+
+	observedLogs, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(observedLogs)
+
+	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
+	require.NoError(t, err)
+
+	if err := s.Start(t.Context()); err != nil {
+		t.Fatalf("supervisor start failed: %v\nagent logs:\n%s", err, getAgentLogs(t, storageDir))
+	}
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	collectorCfg, hash, _, _ := createSimplePipelineCollectorConf(t)
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: collectorCfg.Bytes()},
+				},
+			},
+			ConfigHash: hash,
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		entries := logs.FilterMessage("Could not report OpAMP remote config status").All()
+		return len(entries) > 0
+	}, 10*time.Second, 250*time.Millisecond, "expected supervisor to attempt remote config status reporting even though reports_remote_config is disabled")
+
+	entries := logs.FilterMessage("Could not report OpAMP remote config status").All()
+	require.NotEmpty(t, entries)
+	assert.Contains(t, entries[0].ContextMap()["error"], "ReportsRemoteConfig capability is not set")
 }
 
 func TestSupervisorBootstrapsCollector(t *testing.T) {

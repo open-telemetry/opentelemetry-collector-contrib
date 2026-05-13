@@ -1022,9 +1022,10 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 	}
 
 	// Update the heartbeat interval if the agent supports it.
-	// A value of 0 means "use the current default"; skip the update to avoid
-	// passing a zero duration to the opamp-go sender, which rejects it for HTTP
-	// transport and silently disables heartbeats for WebSocket transport.
+	// Ignore non-positive intervals from the server and keep the current value.
+	// This avoids passing a zero duration to the opamp-go sender, which rejects
+	// it for HTTP transport and silently disables heartbeats for WebSocket
+	// transport.
 	oldHeartbeatIntervalSeconds := s.heartbeatIntervalSeconds
 	if s.config.Capabilities.ReportsHeartbeat && settings.HeartbeatIntervalSeconds > 0 {
 		s.heartbeatIntervalSeconds = settings.HeartbeatIntervalSeconds

@@ -2318,8 +2318,8 @@ func TestSupervisor_onOpampConnectionSettings(t *testing.T) {
 	}
 
 	t.Run("zero HeartbeatIntervalSeconds leaves interval unchanged when ReportsHeartbeat=true", func(t *testing.T) {
-		// Per the OpAMP spec, HeartbeatIntervalSeconds=0 means "use current default";
-		// the supervisor must NOT pass 0 to the opamp-go client (HTTP rejects it, WS disables heartbeats).
+		// Server-sent zero must leave the current interval unchanged; the supervisor
+		// must NOT pass 0 to the opamp-go client (HTTP rejects it, WS disables heartbeats).
 		s := newTestSupervisor(t, fmt.Sprintf("http://127.0.0.1:%d", freePort(t)), true)
 		err := s.onOpampConnectionSettings(t.Context(), &protobufs.OpAMPConnectionSettings{
 			DestinationEndpoint:      fmt.Sprintf("http://127.0.0.1:%d", freePort(t)),
