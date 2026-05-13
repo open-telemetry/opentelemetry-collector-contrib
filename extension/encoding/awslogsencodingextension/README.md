@@ -198,7 +198,7 @@ The table below summarizes streaming support details for each log type, along wi
 | S3 Access Logs      | -                              | Bytes processed             |                                                                                                                       |
 | Subscription filter | -                              | Number of records processed | Supports processing multi-line inputs and offset tracks number of records that get processed                          |
 | VPC Flow Logs       | S3 plain text                  | Bytes processed             |                                                                                                                       |
-| VPC Flow Logs       | S3 Parquet                     | Rows processed              | If the reader implements `io.ReaderAt`, and `io.Seeker` or `Size() int64`, the file is opened without full buffering  |
+| VPC Flow Logs       | S3 Parquet                     | Rows processed              | If the reader implements `io.ReaderAt`, and `io.Seeker` or `Size() int64`, the content is decoded without full buffering. Otherwise the full content is buffered in memory, in which case you may wish to decrease the VPC flow log aggregation interval to reduce the size of the S3 files, and memory needed to decode them. |
 | VPC Flow Logs       | CloudWatch subscription filter | Bytes processed             | If non-zero offset is given, then invocation returns EOF with an empty log. The offset carries the full record length |
 | WAF Logs            | -                              | Bytes processed             |                                                                                                                       |
 
