@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,13 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["tlscheck.time_left"] = mb.metricTlscheckTimeLeft.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -70,11 +80,17 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTlscheckTimeLeftDataPoint(ts, 1, "tlscheck.x509.issuer-val", "tlscheck.x509.cn-val", []any{"tlscheck.x509.san-item1", "tlscheck.x509.san-item2"})
+			if tt.name == "reaggregate_set" {
+				mb.RecordTlscheckTimeLeftDataPoint(ts, 3, "tlscheck.x509.issuer-val-2", "tlscheck.x509.cn-val-2", []any{"tlscheck.x509.san-item3", "tlscheck.x509.san-item4"})
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetTlscheckTarget("tlscheck.target-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricTlscheckTimeLeft.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -102,26 +118,52 @@ func TestMetricsBuilder(t *testing.T) {
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
 				case "tlscheck.time_left":
-					assert.False(t, validatedMetrics["tlscheck.time_left"], "Found a duplicate in the metrics slice: tlscheck.time_left")
-					validatedMetrics["tlscheck.time_left"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.", mi.Description())
-					assert.Equal(t, "s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					tlscheckX509IssuerAttrVal, ok := dp.Attributes().Get("tlscheck.x509.issuer")
-					assert.True(t, ok)
-					assert.Equal(t, "tlscheck.x509.issuer-val", tlscheckX509IssuerAttrVal.Str())
-					tlscheckX509CnAttrVal, ok := dp.Attributes().Get("tlscheck.x509.cn")
-					assert.True(t, ok)
-					assert.Equal(t, "tlscheck.x509.cn-val", tlscheckX509CnAttrVal.Str())
-					tlscheckX509SanAttrVal, ok := dp.Attributes().Get("tlscheck.x509.san")
-					assert.True(t, ok)
-					assert.Equal(t, []any{"tlscheck.x509.san-item1", "tlscheck.x509.san-item2"}, tlscheckX509SanAttrVal.Slice().AsRaw())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["tlscheck.time_left"], "Found a duplicate in the metrics slice: tlscheck.time_left")
+						validatedMetrics["tlscheck.time_left"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						tlscheckX509IssuerAttrVal, ok := dp.Attributes().Get("tlscheck.x509.issuer")
+						assert.True(t, ok)
+						assert.Equal(t, "tlscheck.x509.issuer-val", tlscheckX509IssuerAttrVal.Str())
+						tlscheckX509CnAttrVal, ok := dp.Attributes().Get("tlscheck.x509.cn")
+						assert.True(t, ok)
+						assert.Equal(t, "tlscheck.x509.cn-val", tlscheckX509CnAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["tlscheck.time_left"], "Found a duplicate in the metrics slice: tlscheck.time_left")
+						validatedMetrics["tlscheck.time_left"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["tlscheck.time_left"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("tlscheck.x509.issuer")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("tlscheck.x509.cn")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("tlscheck.x509.san")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})

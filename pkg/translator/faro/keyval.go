@@ -102,6 +102,9 @@ func exceptionToKeyVal(e *faroTypes.Exception) *keyVal {
 	keyValAdd(kv, faroLogLevel, string(faroTypes.LogLevelError))
 	keyValAdd(kv, faroExceptionType, e.Type)
 	keyValAdd(kv, faroExceptionValue, e.Value)
+	if e.Fatal {
+		keyValAdd(kv, faroExceptionFatal, strconv.FormatBool(e.Fatal))
+	}
 	keyValAdd(kv, faroExceptionStacktrace, exceptionToString(e))
 	mergeKeyVal(kv, traceToKeyVal(e.Trace))
 	mergeKeyValWithPrefix(kv, keyValFromMap(e.Context), faroContextPrefix)
@@ -192,6 +195,8 @@ func metaToKeyVal(m faroTypes.Meta) *keyVal {
 	mergeKeyVal(kv, sessionToKeyVal(m.Session))
 	mergeKeyVal(kv, pageToKeyVal(m.Page))
 	mergeKeyVal(kv, browserToKeyVal(m.Browser))
+	mergeKeyVal(kv, deviceToKeyVal(m.Device))
+	mergeKeyVal(kv, osToKeyVal(m.OS))
 	mergeKeyVal(kv, k6ToKeyVal(m.K6))
 	mergeKeyVal(kv, viewToKeyVal(m.View))
 	mergeKeyVal(kv, geoToKeyVal(m.Geo))
@@ -230,6 +235,7 @@ func appToKeyVal(a faroTypes.App) *keyVal {
 	keyValAdd(kv, faroAppRelease, a.Release)
 	keyValAdd(kv, faroAppVersion, a.Version)
 	keyValAdd(kv, faroAppEnvironment, a.Environment)
+	keyValAdd(kv, faroAppInstallationID, a.InstallationID)
 	return kv
 }
 
@@ -289,12 +295,37 @@ func browserToKeyVal(b faroTypes.Browser) *keyVal {
 	return kv
 }
 
+// deviceToKeyVal produces key->value representation of Device metadata
+func deviceToKeyVal(d faroTypes.Device) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, faroDeviceManufacturer, d.Manufacturer)
+	keyValAdd(kv, faroDeviceModelIdentifier, d.ModelIdentifier)
+	keyValAdd(kv, faroDeviceModelName, d.ModelName)
+	keyValAdd(kv, faroDeviceBrand, d.Brand)
+	if d.IsPhysical {
+		keyValAdd(kv, faroDeviceIsPhysical, strconv.FormatBool(d.IsPhysical))
+	}
+	keyValAdd(kv, faroDeviceType, d.Type)
+	return kv
+}
+
+// osToKeyVal produces key->value representation of OS metadata
+func osToKeyVal(o faroTypes.OS) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, faroOSName, o.Name)
+	keyValAdd(kv, faroOSVersion, o.Version)
+	keyValAdd(kv, faroOSBuildID, o.BuildID)
+	keyValAdd(kv, faroOSDetail, o.Detail)
+	return kv
+}
+
 // k6ToKeyVal produces a key->value representation K6 metadata
 func k6ToKeyVal(k faroTypes.K6) *keyVal {
 	kv := newKeyVal()
 	if k.IsK6Browser {
 		keyValAdd(kv, faroIsK6Browser, strconv.FormatBool(k.IsK6Browser))
 	}
+	keyValAdd(kv, faroK6TestRunID, k.TestRunID)
 	return kv
 }
 

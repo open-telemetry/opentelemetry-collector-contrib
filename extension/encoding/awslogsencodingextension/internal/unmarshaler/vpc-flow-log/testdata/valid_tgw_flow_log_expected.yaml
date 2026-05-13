@@ -1,0 +1,110 @@
+resourceLogs:
+- resource:
+    attributes:
+    - key: cloud.provider
+      value:
+        stringValue: aws
+    - key: cloud.account.id
+      value:
+        stringValue: "123456789012"
+    - key: cloud.region
+      value:
+        stringValue: us-east-1
+  scopeLogs:
+  - logRecords:
+    - attributes:
+      - key: aws.vpc.flow.log.version
+        value:
+          intValue: "6"
+      - key: aws.tgw.id
+        value:
+          stringValue: tgw-0abc12345def67890
+      - key: aws.tgw.attachment.id
+        value:
+          stringValue: tgw-attach-0abc12345def67890
+      - key: aws.tgw.source.vpc.id
+        value:
+          stringValue: vpc-0abc12345def67890
+      - key: aws.tgw.destination.vpc.id
+        value:
+          stringValue: vpc-0def12345abc67890
+      - key: aws.tgw.source.vpc.subnet.id
+        value:
+          stringValue: subnet-0abc12345def67890
+      - key: aws.tgw.destination.vpc.subnet.id
+        value:
+          stringValue: subnet-0def12345abc67890
+      - key: aws.tgw.source.eni.id
+        value:
+          stringValue: eni-0abc12345def67890
+      - key: aws.tgw.destination.eni.id
+        value:
+          stringValue: eni-0def12345abc67890
+      - key: aws.tgw.source.az.id
+        value:
+          stringValue: use1-az1
+      - key: aws.tgw.destination.az.id
+        value:
+          stringValue: use1-az2
+      - key: aws.tgw.attachment.pair.id
+        value:
+          stringValue: tgw-attach-0def12345abc67890
+      - key: source.address
+        value:
+          stringValue: 10.0.0.1
+      - key: destination.address
+        value:
+          stringValue: 10.0.1.1
+      - key: source.port
+        value:
+          intValue: "12345"
+      - key: destination.port
+        value:
+          intValue: "443"
+      - key: network.protocol.name
+        value:
+          stringValue: tcp
+      - key: aws.vpc.flow.packets
+        value:
+          intValue: "10"
+      - key: aws.vpc.flow.bytes
+        value:
+          intValue: "1000"
+      - key: aws.vpc.flow.packets_lost_no_route
+        value:
+          intValue: "1"
+      - key: aws.vpc.flow.packets_lost_blackhole
+        value:
+          intValue: "2"
+      - key: aws.vpc.flow.packets_lost_mtu_exceeded
+        value:
+          intValue: "3"
+      - key: aws.vpc.flow.packets_lost_ttl_expired
+        value:
+          intValue: "4"
+      - key: aws.vpc.flow.start
+        value:
+          intValue: "1700000000"
+      - key: aws.vpc.flow.status
+        value:
+          stringValue: OK
+      - key: network.type
+        value:
+          stringValue: ipv4
+      - key: network.tcp.flags
+        value:
+          stringValue: "2"
+      - key: network.io.direction
+        value:
+          stringValue: receive
+      body: {}
+      spanId: ""
+      timeUnixNano: "1700000060000000000"
+      traceId: ""
+    scope:
+      attributes:
+      - key: encoding.format
+        value:
+          stringValue: aws.vpcflow
+      name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+

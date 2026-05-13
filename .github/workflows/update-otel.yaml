@@ -23,7 +23,7 @@ jobs:
         with:
           path: opentelemetry-collector
           repository: open-telemetry/opentelemetry-collector
-      - uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+      - uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}
@@ -72,6 +72,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.otelbot-token.outputs.token }}
       - name: File an issue if the workflow failed
+        id: file-issue
         if: failure()
         run: |
           job_url="$(gh run view ${{ github.run_id }} -R ${{ github.repository }} --json jobs -q '.jobs[] | select(.name == "update-otel") | .url')"
@@ -84,6 +85,25 @@ jobs:
           %s
           ```
           </details>' "$job_url" "$(tail -n100 log.out | tail -c63K)")"
-          gh issue create -R ${{ github.repository }} -t 'update-otel workflow failed' -b "$body" -l 'ci-cd'
+          issue_url="$(gh issue create -R ${{ github.repository }} -t 'update-otel workflow failed' -b "$body" -l 'ci-cd')"
+          {
+            echo "job_url=$job_url"
+            echo "issue_url=$issue_url"
+          } >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: Post to Slack if the workflow failed
+        if: failure()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          payload=$(jq -n \
+            --arg run_url "${RUN_URL}" \
+            --arg issue_url "${ISSUE_URL}" \
+            '{run_url: $run_url, issue_url: $issue_url}')
+          curl -fsS -X POST -H 'Content-Type: application/json' \
+            --data-binary "${payload}" "${SLACK_WEBHOOK_URL}"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_UPDATE_OTEL_FAILURE }}
+          RUN_URL: ${{ steps.file-issue.outputs.job_url }}
+          ISSUE_URL: ${{ steps.file-issue.outputs.issue_url }}

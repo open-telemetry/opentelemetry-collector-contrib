@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,6 +19,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -32,13 +34,15 @@ import (
 )
 
 type logsReceiver struct {
-	logger   *zap.Logger
-	cfg      *LogsConfig
-	server   *http.Server
-	consumer consumer.Logs
-	wg       *sync.WaitGroup
-	id       component.ID // ID of the receiver component
-	obsrecv  *receiverhelper.ObsReport
+	logger            *zap.Logger
+	cfg               *LogsConfig
+	serverConfig      *confighttp.ServerConfig
+	server            *http.Server
+	consumer          consumer.Logs
+	wg                *sync.WaitGroup
+	telemetrySettings component.TelemetrySettings
+	id                component.ID // ID of the receiver component
+	obsrecv           *receiverhelper.ObsReport
 }
 
 const secretHeaderName = "X-CF-Secret"
@@ -54,27 +58,28 @@ func newLogsReceiver(params rcvr.Settings, cfg *Config, consumer consumer.Logs) 
 	}
 
 	recv := &logsReceiver{
-		cfg:      &cfg.Logs,
-		consumer: consumer,
-		logger:   params.Logger,
-		wg:       &sync.WaitGroup{},
-		obsrecv:  obsrecv,
-		id:       params.ID,
+		cfg:               &cfg.Logs,
+		consumer:          consumer,
+		logger:            params.Logger,
+		wg:                &sync.WaitGroup{},
+		obsrecv:           obsrecv,
+		telemetrySettings: params.TelemetrySettings,
+		id:                params.ID,
 	}
 
-	recv.server = &http.Server{
-		Handler:           http.HandlerFunc(recv.handleRequest),
+	serverConfig := confighttp.ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  recv.cfg.Endpoint,
+			Transport: "tcp",
+		},
 		ReadHeaderTimeout: 20 * time.Second,
 	}
 
-	if recv.cfg.TLS != nil {
-		tlsConfig, err := recv.cfg.TLS.LoadTLSConfig(context.Background())
-		if err != nil {
-			return nil, err
-		}
-
-		recv.server.TLSConfig = tlsConfig
+	if tlsConfig := recv.cfg.TLS; tlsConfig != nil {
+		serverConfig.TLS = configoptional.Some(*tlsConfig)
 	}
+
+	recv.serverConfig = &serverConfig
 
 	return recv, nil
 }
@@ -85,9 +90,11 @@ func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
 
 func (l *logsReceiver) Shutdown(ctx context.Context) error {
 	l.logger.Debug("Shutting down server")
-	err := l.server.Shutdown(ctx)
-	if err != nil {
-		return err
+	if l.server != nil {
+		err := l.server.Shutdown(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	l.logger.Debug("Waiting for shutdown to complete.")
@@ -97,42 +104,45 @@ func (l *logsReceiver) Shutdown(ctx context.Context) error {
 
 func (l *logsReceiver) startListening(ctx context.Context, host component.Host) error {
 	l.logger.Debug("starting receiver HTTP server")
-	// We use l.server.Serve* over l.server.ListenAndServe*
-	// So that we can catch and return errors relating to binding to network interface on start.
-	var lc net.ListenConfig
+	server, err := l.serverConfig.ToServer(
+		ctx,
+		host.GetExtensions(),
+		l.telemetrySettings,
+		http.HandlerFunc(l.handleRequest),
+	)
+	if err != nil {
+		return err
+	}
+	l.server = server
 
-	listener, err := lc.Listen(ctx, "tcp", l.cfg.Endpoint)
+	listener, err := l.serverConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
 
 	l.wg.Go(func() {
-		if l.cfg.TLS != nil {
-			l.logger.Debug("Starting ServeTLS",
-				zap.String("address", l.cfg.Endpoint),
-				zap.String("certfile", l.cfg.TLS.CertFile),
-				zap.String("keyfile", l.cfg.TLS.KeyFile))
-
-			err := l.server.ServeTLS(listener, l.cfg.TLS.CertFile, l.cfg.TLS.KeyFile)
-
-			l.logger.Debug("ServeTLS done")
-
-			if !errors.Is(err, http.ErrServerClosed) {
-				l.logger.Error("ServeTLS failed", zap.Error(err))
-				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-			}
+		if l.serverConfig.TLS.HasValue() {
+			tlsConfig := l.serverConfig.TLS.Get()
+			l.logger.Debug(
+				"Starting ServeTLS",
+				zap.String("address", l.serverConfig.NetAddr.Endpoint),
+				zap.String("certfile", tlsConfig.CertFile),
+				zap.String("keyfile", tlsConfig.KeyFile),
+			)
 		} else {
-			l.logger.Debug("Starting Serve",
-				zap.String("address", l.cfg.Endpoint))
+			l.logger.Debug(
+				"Starting Serve",
+				zap.String("address", l.serverConfig.NetAddr.Endpoint),
+			)
+		}
 
-			err := l.server.Serve(listener)
+		err := server.Serve(listener)
 
-			l.logger.Debug("Serve done")
+		l.logger.Debug("Serve done")
 
-			if !errors.Is(err, http.ErrServerClosed) {
-				l.logger.Error("Serve failed", zap.Error(err))
-				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-			}
+		if !errors.Is(err, http.ErrServerClosed) {
+			l.logger.Error("Serve failed", zap.Error(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	})
 	return nil
@@ -361,6 +371,13 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 					attrs.PutDouble(attrName, v)
 				case bool:
 					attrs.PutBool(attrName, v)
+				case []any:
+					if err := attrs.PutEmptySlice(attrName).FromRaw(v); err != nil {
+						l.logger.Warn("unable to translate field to attribute, unsupported array value",
+							zap.String("field", field),
+							zap.Any("value", v),
+							zap.Error(err))
+					}
 				case map[string]any:
 					// Flatten the map and add each field with a prefixed key
 					flattened := make(map[string]any)
@@ -377,6 +394,13 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 							attrs.PutDouble(k, v)
 						case bool:
 							attrs.PutBool(k, v)
+						case []any:
+							if err := attrs.PutEmptySlice(k).FromRaw(v); err != nil {
+								l.logger.Warn("unable to translate flattened field to attribute, unsupported array value",
+									zap.String("field", k),
+									zap.Any("value", v),
+									zap.Error(err))
+							}
 						default:
 							l.logger.Warn("unable to translate flattened field to attribute, unsupported type",
 								zap.String("field", k),

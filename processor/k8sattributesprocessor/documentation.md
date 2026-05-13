@@ -42,6 +42,22 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol.k8s.pod.association
+
+Number of pod associations' evaluations
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {resources} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| status | The status of the pod association operation | Str: ``success``, ``error`` | - |
+| pod_identifier | The source(s) used to identify the pod, formatted as 'from/name' (e.g., 'connection', 'resource_attribute/k8s.pod.ip'). Does not contain actual identifier values to avoid high cardinality. | Any Str | - |
+| otelcol.signal | The signal type the telemetry metric is associated with | Str: ``metrics``, ``traces``, ``logs``, ``profiles`` | - |
+
 ### otelcol.k8s.watcher.job.added
 
 Number of job add events received
@@ -320,6 +336,7 @@ This component has the following feature gates:
 | `k8sattr.labelsAnnotationsSingular.allow` | deprecated | When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural | v0.125.0 | v0.145.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39774) |
 | `processor.k8sattributes.DontEmitV0K8sConventions` | alpha | When enabled, semconv legacy attributes are disabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589) |
 | `processor.k8sattributes.EmitV1K8sConventions` | alpha | When enabled, semconv stable attributes are enabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589) |
+| `processor.k8sattributes.ShareProcessorBetweenPipelines` | alpha | When enabled, processor instances with identical configuration are shared across different signal type pipelines, reducing duplicate Kubernetes API watchers. | v0.150.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/2450) |
 | `processor.k8sattributes.telemetry.disableOldFormatMetrics` | alpha | When enabled, old formatted internal telemetry metrics are disabled. | v0.146.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871) |
 | `processor.k8sattributes.telemetry.enableNewFormatMetrics` | alpha | When enabled, new formatted internal telemetry metrics are enabled. | v0.146.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871) |
 
