@@ -41,42 +41,17 @@ const staleSweepEpochs = 2
 //     concurrent goroutines under a uniform metric-name distribution.
 const numShards = 256
 
-// sketchPool is a package-level pool of fresh HyperLogLog++ sketches. It
-// amortizes GC pressure when many trackers are initialized or rotated
-// simultaneously — the most expensive moments are cardinality explosions and
-// epoch boundaries, which are exactly when a naive "allocate on demand" approach
-// would create the most GC pauses.
-//
-// Why New14()? The "14" refers to the precision parameter p=14, which uses
+// mustGetSketch retrieves a fresh HyperLogLog++ sketch.
+// The "14" refers to the precision parameter p=14, which uses
 // 2^14 = 16 384 registers and yields a standard error of ~0.81%. This is
 // accurate enough for cardinality enforcement while keeping each sketch at a
 // fixed ~12 KB in dense mode.
 //
-// Why are dirty sketches NOT returned to the pool?
-// hyperloglog.Sketch has no Reset() method. UnmarshalBinary (the closest
-// alternative) allocates a new internal struct when the sketch is non-empty
-// because it detects a non-empty tmpSet or sparseList. Returning a used sketch
-// to the pool and then calling Get() on it would hand out a pre-contaminated
-// sketch, corrupting the delta calculation for the new epoch. The pool therefore
-// acts as a pre-allocation cache: New() vends fresh New14() instances and
-// Get() returns them; used sketches are simply abandoned to the GC.
-// If the upstream library ever adds Reset(), add the following inside rotate():
-//
-//	old.Reset(); sketchPool.Put(old)
-var sketchPool = sync.Pool{
-	New: func() any { return hyperloglog.New14() },
-}
-
-// mustGetSketch retrieves a fresh HyperLogLog++ sketch from sketchPool.
-// The pool's New function always returns *hyperloglog.Sketch, so the
-// type assertion is guaranteed to succeed. A panic here would indicate
-// a programming error in the pool configuration — it cannot occur at runtime.
+// Note: We allocate directly instead of using a sync.Pool because the
+// hyperloglog.Sketch library does not provide a safe Reset() method.
+// Returning a dirty sketch to a pool would corrupt calculations.
 func mustGetSketch() *hyperloglog.Sketch {
-	s, ok := sketchPool.Get().(*hyperloglog.Sketch)
-	if !ok {
-		panic("sketchPool: New returned a non-*hyperloglog.Sketch value")
-	}
-	return s
+	return hyperloglog.New14()
 }
 
 // trackerKey is a zero-allocation composite key for the trackers map.
@@ -284,10 +259,9 @@ type cardinalityProcessor struct {
 	// dereference on every hot-path lookup.
 	shards [numShards]*trackerShard
 
-	// ctx and cancel manage the lifetime of the background rotation goroutine.
-	// ctx is a child of the context passed to newCardinalityProcessor, and
-	// cancel is called in Shutdown() after the gauge registration is released.
-	ctx    context.Context
+	// cancel is called in Shutdown() after the gauge registration is released
+	// to stop the background rotation goroutine. We don't cache context.Context
+	// per Go best practices.
 	cancel context.CancelFunc
 
 	// startOnce ensures the background ticker goroutine is launched exactly once
@@ -299,11 +273,6 @@ type cardinalityProcessor struct {
 	// directly on the struct to avoid an extra pointer dereference + method call
 	// into the Config on every data point.
 	enforcementMode EnforcementMode
-
-	// estimatedCostPerMetricMonth mirrors Config.EstimatedCostPerMetricMonth for
-	// the same reason: it is read on every attribute that exceeds the limit and
-	// benefits from being on the processor struct rather than behind a pointer.
-	estimatedCostPerMetricMonth float64
 
 	// labelsStripped is an atomic counter tracking how many attributes were
 	// stripped or tagged. By tracking this purely as an integer, we prevent
@@ -346,24 +315,22 @@ type cardinalityProcessor struct {
 // Collector log records carry the correct component attributes — passing a
 // separate *zap.Logger alongside processor.Settings would create two sources of
 // truth and risk log records reaching the wrong sink.
-func newCardinalityProcessor(ctx context.Context, cfg *Config, set processor.Settings, next consumer.Metrics) (processor.Metrics, error) {
+func newCardinalityProcessor(_ context.Context, cfg *Config, set processor.Settings, next consumer.Metrics) (processor.Metrics, error) {
 	protected := make(map[string]struct{}, len(cfg.NeverDropLabels))
 	for _, l := range cfg.NeverDropLabels {
 		protected[l] = struct{}{}
 	}
 
-	childCtx, cancel := context.WithCancel(ctx)
+	_, cancel := context.WithCancel(context.Background())
 
 	p := &cardinalityProcessor{
-		config:                      cfg,
-		logger:                      set.Logger,
-		next:                        next,
-		protectedLabels:             protected,
-		seed:                        maphash.MakeSeed(),
-		ctx:                         childCtx,
-		cancel:                      cancel,
-		enforcementMode:             cfg.ResolvedEnforcementMode(),
-		estimatedCostPerMetricMonth: cfg.EstimatedCostPerMetricMonth,
+		config:          cfg,
+		logger:          set.Logger,
+		next:            next,
+		protectedLabels: protected,
+		seed:            maphash.MakeSeed(),
+		cancel:          cancel,
+		enforcementMode: cfg.ResolvedEnforcementMode(),
 	}
 
 	for i := range p.shards {
@@ -402,7 +369,7 @@ func newCardinalityProcessor(ctx context.Context, cfg *Config, set processor.Set
 
 	err = builder.RegisterProcessorCardinalitySavingsEstimatedCallback(func(_ context.Context, o metric.Float64Observer) error {
 		drops := p.labelsStripped.Load()
-		savings := float64(drops) * p.estimatedCostPerMetricMonth
+		savings := float64(drops) * p.config.EstimatedCostPerMetricMonth
 		roundedSavings := math.Round(savings*100) / 100
 		o.Observe(roundedSavings)
 		return nil
@@ -598,8 +565,6 @@ func (p *cardinalityProcessor) handleAttributesWithMode(metricName string, attrs
 		}
 
 		if p.shouldDrop(metricName, k, v.AsString()) {
-			p.labelsStripped.Add(1)
-
 			switch mode {
 			case EnforcementTagOnly:
 				// DUAL-ROUTE MODE: record the decision, keep the attribute.
@@ -613,6 +578,7 @@ func (p *cardinalityProcessor) handleAttributesWithMode(metricName string, attrs
 
 			case EnforcementStripAndReaggregate:
 				// STRIP MODE: log and signal RemoveIf to delete this attribute.
+				p.labelsStripped.Add(1)
 				p.dropsThisEpoch.Add(1)
 				if maxLog := p.config.DropLogMaxPerEpoch; maxLog == 0 || p.dropLogCount.Add(1) <= int64(maxLog) {
 					p.logger.Warn("Dropping high-cardinality attribute",
@@ -857,23 +823,27 @@ func sortOffenders(s []offenderEntry) {
 
 // Start is called by the OTel Collector host when the pipeline is starting.
 // It launches the background epoch-rotation goroutine exactly once (guarded by
-// startOnce) and returns immediately. The goroutine exits when p.ctx is
-// canceled, which happens in Shutdown().
-func (p *cardinalityProcessor) Start(_ context.Context, _ component.Host) error {
+// startOnce) and returns immediately. The goroutine exits when the internal
+// cancel function is called, which happens in Shutdown().
+func (p *cardinalityProcessor) Start(ctx context.Context, _ component.Host) error {
 	p.startOnce.Do(func() {
+		// Create a local cancelable context derived from the startup context
+		childCtx, cancel := context.WithCancel(ctx)
+		p.cancel = cancel
+
 		p.logger.Info("Starting cardinality rotation ticker",
 			zap.Int("interval_seconds", p.config.EpochDurationSeconds))
 
 		p.wg.Add(1)
-		go p.rotationLoop()
+		go p.rotationLoop(childCtx)
 	})
 
 	return nil
 }
 
 // rotationLoop runs the background epoch-rotation ticker. It runs until
-// the processor's context is canceled.
-func (p *cardinalityProcessor) rotationLoop() {
+// the provided context is canceled.
+func (p *cardinalityProcessor) rotationLoop(ctx context.Context) {
 	defer p.wg.Done()
 	ticker := time.NewTicker(time.Duration(p.config.EpochDurationSeconds) * time.Second)
 	defer ticker.Stop()
@@ -882,7 +852,7 @@ func (p *cardinalityProcessor) rotationLoop() {
 		select {
 		case <-ticker.C:
 			p.rotate()
-		case <-p.ctx.Done():
+		case <-ctx.Done():
 			return
 		}
 	}
