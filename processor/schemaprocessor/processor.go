@@ -284,7 +284,7 @@ func (t *schemaProcessor) shutdown(ctx context.Context) error {
 	return nil
 }
 
-func getStorageClient(ctx context.Context, host component.Host, storageID component.ID, componentID component.ID) (storage.Client, error) {
+func getStorageClient(ctx context.Context, host component.Host, storageID, componentID component.ID) (storage.Client, error) {
 	ext, ok := host.GetExtensions()[storageID]
 	if !ok {
 		return nil, fmt.Errorf("storage extension %q not found", storageID)
