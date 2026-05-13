@@ -35,12 +35,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 	otelattr "go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -3353,14 +3353,14 @@ func TestEndMetricsOpReportsDataPointCount(t *testing.T) {
 	// ResourceMetrics().Len() == 1, but DataPointCount() == 3.
 	request := &writev2.Request{
 		Symbols: []string{
-			"",             // 0 - required empty string
-			"__name__",     // 1
-			"gauge_a",      // 2
-			"gauge_b",      // 3
-			"gauge_c",      // 4
-			"job",          // 5
-			"test-job",     // 6
-			"instance",     // 7
+			"",              // 0 - required empty string
+			"__name__",      // 1
+			"gauge_a",       // 2
+			"gauge_b",       // 3
+			"gauge_c",       // 4
+			"job",           // 5
+			"test-job",      // 6
+			"instance",      // 7
 			"test-instance", // 8
 		},
 		Timeseries: []writev2.TimeSeries{
