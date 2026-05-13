@@ -1,4 +1,4 @@
-# OpAMP: Vision and Roadmap
+# OpAMP Supervisor: Vision and Roadmap
 
 Status: v1
 
