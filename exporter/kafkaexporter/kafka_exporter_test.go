@@ -1229,8 +1229,9 @@ func TestKafkaExporter_ComponentStatus(t *testing.T) {
 		logs := testdata.GenerateLogs(1)
 
 		go func() {
-			//nolint:errcheck
-			exp.exportData(t.Context(), logs)
+			// exportData will block due to the cluster being unavailable.
+			// It will unblock when the test completes.
+			_ = exp.exportData(t.Context(), logs)
 		}()
 
 		select {
