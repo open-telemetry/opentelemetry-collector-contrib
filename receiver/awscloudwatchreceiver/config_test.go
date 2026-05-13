@@ -321,6 +321,7 @@ func TestLoadLogsConfig(t *testing.T) {
 					},
 					InitialLookback: time.Hour,
 				},
+				Metrics: defaultMetrics,
 			},
 		},
 	}
