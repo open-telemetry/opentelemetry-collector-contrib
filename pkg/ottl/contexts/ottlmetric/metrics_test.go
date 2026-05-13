@@ -5,6 +5,7 @@ package ottlmetric
 
 import (
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -293,6 +294,58 @@ func createTelemetry() pmetric.Metric {
 	metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	metric.Sum().SetIsMonotonic(true)
 	return metric
+}
+
+// Test_newPathGetSetter_RelaxedNames verifies that the OTTL `metric.name`
+// path getter/setter accepts arbitrary UTF-8 strings, including names that
+// are disallowed by the current OpenTelemetry instrument-name syntax (e.g.
+// names containing `:`, `\`, spaces, or starting with non-alphabetic
+// characters).
+//
+// This test exists to demonstrate that relaxing the instrument-name
+// restrictions in the OpenTelemetry specification does not require any
+// change to OTTL itself: the path is an opaque string passthrough.
+//
+// See https://github.com/open-telemetry/opentelemetry-specification/issues/4371
+// and https://github.com/open-telemetry/opentelemetry-specification/issues/4736.
+func Test_newPathGetSetter_RelaxedNames(t *testing.T) {
+	relaxedNames := []string{
+		"with:colon",
+		"with space",
+		"with/slash",
+		`with\backslash`,
+		"-leadingDash",
+		".leadingDot",
+		"with🦀utf8",
+		"",
+		// Length intentionally exceeds the current 255-char spec limit.
+		strings.Repeat("a", 300),
+	}
+
+	cacheGetter := func(*TransformContext) pcommon.Map {
+		return pcommon.NewMap()
+	}
+	path := &pathtest.Path[*TransformContext]{N: "name"}
+	accessor, err := pathExpressionParser(cacheGetter)(path)
+	require.NoError(t, err)
+
+	for _, name := range relaxedNames {
+		t.Run(name, func(t *testing.T) {
+			metric := pmetric.NewMetric()
+			metric.SetName("original")
+
+			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			defer ctx.Close()
+
+			err := accessor.Set(t.Context(), ctx, name)
+			require.NoError(t, err)
+
+			got, err := accessor.Get(t.Context(), ctx)
+			require.NoError(t, err)
+			assert.Equal(t, name, got)
+			assert.Equal(t, name, metric.Name())
+		})
+	}
 }
 
 func Test_ParseEnum(t *testing.T) {
