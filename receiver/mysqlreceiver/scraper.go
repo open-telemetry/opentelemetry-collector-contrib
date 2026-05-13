@@ -749,30 +749,13 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 		var queryPlan string
 		// querySampleText is "" when the fallback template was used (MySQL <8 / MariaDB).
 		// Skip EXPLAIN in that case — there is no sample statement to explain.
-		if q.querySampleText != "" {
-			cacheKey := q.schemaName + "-" + q.digest
-			var ok bool
-			if queryPlan, ok = m.queryPlanCache.Get(cacheKey); !ok {
-				// attempt to explain the query
-				queryPlan = m.sqlclient.explainQuery(q.digestText, q.querySampleText, q.schemaName, q.digest, m.logger)
-				if queryPlan == "" {
-					m.logger.Debug("query plan not available", zap.String("digest", q.digest), zap.String("digest_text", q.digestText))
-				} else {
-					// Obfuscate the plan
-					queryPlan, err = m.obfuscator.obfuscatePlan(queryPlan)
-					if err != nil {
-						// Obfuscation returned an error, log it. We cannot publish the unobfuscated plan as it may contain sensitive data.
-						// queryPlan is intentionally left as "" so the cache entry below suppresses
-						// repeated EXPLAIN attempts for this digest — EXPLAIN succeeds or fails
-						// consistently for a given query shape, so retrying every scrape cycle
-						// provides no benefit and adds unnecessary load.
-						m.logger.Error("Failed to obfuscate query plan", zap.Error(err))
-					}
-				}
-				// Cache the result (including "" for unavailable/failed plans) so that
-				// scrapeQuerySamples can reuse it and EXPLAIN is not re-issued every cycle.
-				m.queryPlanCache.Add(cacheKey, queryPlan)
-			}
+		if q.digest != "" && q.querySampleText != "" {
+			queryPlan = m.retrieveQueryPlan(q.digestText, q.querySampleText, q.schemaName, q.digest)
+		}
+
+		queryPlanHash := ""
+		if queryPlan != "" {
+			queryPlanHash = q.digest
 		}
 
 		m.lb.RecordDbServerTopQueryEvent(
@@ -781,7 +764,7 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 			metadata.AttributeDbSystemNameMysql,
 			obfuscatedQuery,
 			queryPlan,
-			q.digest,
+			queryPlanHash,
 			q.digest,
 			countStarVal,
 			sumTimerWaitVal,
@@ -823,6 +806,16 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			}
 		}
 
+		var queryPlan string
+		if sample.digest != "" {
+			queryPlan = m.retrieveQueryPlan(obfuscatedQuery, sample.sqlText, sample.processlistDB, sample.digest)
+		}
+
+		queryPlanHash := ""
+		if queryPlan != "" {
+			queryPlanHash = sample.digest
+		}
+
 		m.lb.RecordDbServerQuerySampleEvent(
 			recordCtx,
 			now,
@@ -834,7 +827,8 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			sample.processlistState,
 			obfuscatedQuery,
 			sample.digest,
-			sample.digest,
+			queryPlan,
+			queryPlanHash,
 			sample.eventID,
 			sample.waitEvent,
 			sample.sessionStatus,
@@ -847,6 +841,34 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			networkPeerPort,
 		)
 	}
+}
+
+func (m *mySQLScraper) retrieveQueryPlan(queryDigestText, querySampleText, schemaOrDbName, digest string) string {
+	var queryPlan string
+	var ok bool
+	cacheKey := createCacheKey(schemaOrDbName, digest)
+	if queryPlan, ok = m.queryPlanCache.Get(cacheKey); !ok {
+		// attempt to explain the query
+		queryPlan = m.sqlclient.explainQuery(queryDigestText, querySampleText, schemaOrDbName, digest, m.logger)
+		if queryPlan == "" {
+			m.logger.Debug("query plan not available", zap.String("digest", digest), zap.String("digest_text", queryDigestText))
+		} else {
+			// Obfuscate the plan
+			var obfErr error
+			queryPlan, obfErr = m.obfuscator.obfuscatePlan(queryPlan)
+			if obfErr != nil {
+				// Obfuscation returned an error, log it. We cannot publish the unobfuscated plan as it may contain sensitive data
+				m.logger.Error("Failed to obfuscate query plan", zap.Error(obfErr))
+			}
+		}
+		// add the obfuscated plan to the cache so we can use it again
+		m.queryPlanCache.Add(cacheKey, queryPlan)
+	}
+	return queryPlan
+}
+
+func createCacheKey(dbName, digest string) string {
+	return dbName + "-" + digest
 }
 
 // contextWithTraceparent extracts a W3C TraceContext traceparent from the given
