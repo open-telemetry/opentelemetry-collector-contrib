@@ -8,7 +8,7 @@ This extension unmarshalls logs encoded in formats produced by AWS services.
 | Stability     | [alpha]  |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fawslogsencoding%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fawslogsencoding) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fawslogsencoding%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fawslogsencoding) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@axw](https://www.github.com/axw), [@constanca-m](https://www.github.com/constanca-m), [@Kavindu-Dodan](https://www.github.com/Kavindu-Dodan) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@axw](https://www.github.com/axw), [@constanca-m](https://www.github.com/constanca-m), [@Kavindu-Dodan](https://www.github.com/Kavindu-Dodan), [@MichaelKatsoulis](https://www.github.com/MichaelKatsoulis) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -110,25 +110,6 @@ The following format values are supported in the `awslogsencodingextension` to i
 | WAF Logs | `waf` | AWS Web Application Firewall logs |
 | CloudWatch Logs | `cloudwatch` | CloudWatch Logs Subscription Filter events |
 | Network Firewall Logs | `networkfirewall` | AWS Network Firewall event logs (Alert/Flow, TLS) |
-
-### Breaking Change Notice
-
-**Format values have been simplified in v0.137.0**
-
-**The old format values are deprecated and will be unsupported in v0.138.0.**
-
-| **AWS Log Type** | **Old Format Value (Deprecated)** | **New Format Value** |
-|------------------|-----------------------------------|---------------------|
-| VPC Flow Logs | `vpc_flow_log` | `vpcflow` |
-| ELB Access Logs | `elb_access_log` | `elbaccess` |
-| S3 Access Logs | `s3_access_log` | `s3access` |
-| CloudTrail Logs | `cloudtrail_log` | `cloudtrail` |
-| WAF Logs | `waf_log` | `waf` |
-| CloudWatch Logs | `cloudwatch_logs_subscription_filter` | `cloudwatch` |
-
-#### Migration Path
-
-If you're using the old format values you should update the encoding extension configuration with the new format values.
 
 ## Feature Gates
 

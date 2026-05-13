@@ -319,6 +319,15 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	if s.config.Capabilities.AcceptsPackages || s.config.Capabilities.ReportsPackageStatuses {
+		s.telemetrySettings.Logger.Error(
+			"accepts_packages and reports_package_statuses capabilities are not yet fully implemented. " +
+				"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272 for progress.",
+		)
+		return errors.New("accepts_packages and reports_package_statuses capabilities are not yet fully implemented")
+	}
+
 	if err = s.getFeatureGates(); err != nil {
 		return fmt.Errorf("could not get feature gates from the Collector: %w", err)
 	}

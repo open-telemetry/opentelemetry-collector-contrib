@@ -32,6 +32,9 @@ type Translation interface {
 	// updates.
 	SupportedVersion(v *Version) bool
 
+	// TargetSchemaURL returns the target schema URL for this translation.
+	TargetSchemaURL() string
+
 	// ApplyAllResourceChanges will modify the resource part of the incoming signals
 	// This applies to all telemetry types and should be applied there
 	ApplyAllResourceChanges(in alias.Resource, inSchemaURL string) error
@@ -52,6 +55,7 @@ type translator struct {
 	target          *Version
 	indexes         map[Version]int // map from version to index in revisions containing the pertinent Version
 	revisions       []RevisionV1
+	copyFromVersion *Version
 
 	log *zap.Logger
 }
@@ -77,7 +81,18 @@ func (t *translator) loadTranslation(content *ast11.Schema) error {
 		if exist {
 			continue
 		}
-		rev, err := NewRevision(version, def)
+		// When copyFromVersion is set, attribute renames preserve both old
+		// and new names for revisions between copyFromVersion and the target
+		// (in either direction).
+		copyAttributes := false
+		if t.copyFromVersion != nil {
+			lower, upper := t.copyFromVersion, t.target
+			if t.target.LessThan(t.copyFromVersion) {
+				lower, upper = t.target, t.copyFromVersion
+			}
+			copyAttributes = lower.LessThan(version) && !upper.LessThan(version)
+		}
+		rev, err := NewRevision(version, def, copyAttributes)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -93,7 +108,7 @@ func (t *translator) loadTranslation(content *ast11.Schema) error {
 	return errs
 }
 
-func newTranslatorFromSchema(log *zap.Logger, targetSchemaURL string, schemaFileSchema *ast11.Schema) (*translator, error) {
+func newTranslatorFromSchema(log *zap.Logger, targetSchemaURL string, schemaFileSchema *ast11.Schema, copyFromVersion *Version) (*translator, error) {
 	_, target, err := GetFamilyAndVersion(targetSchemaURL)
 	if err != nil {
 		return nil, err
@@ -102,6 +117,7 @@ func newTranslatorFromSchema(log *zap.Logger, targetSchemaURL string, schemaFile
 		targetSchemaURL: targetSchemaURL,
 		target:          target,
 		log:             log,
+		copyFromVersion: copyFromVersion,
 		indexes:         map[Version]int{},
 	}
 
@@ -111,13 +127,13 @@ func newTranslatorFromSchema(log *zap.Logger, targetSchemaURL string, schemaFile
 	return t, nil
 }
 
-func newTranslator(log *zap.Logger, targetSchemaURL, schema string) (*translator, error) {
+func newTranslator(log *zap.Logger, targetSchemaURL, schema string, copyFromVersion *Version) (*translator, error) {
 	schemaFileSchema, err := encoder.Parse(strings.NewReader(schema))
 	if err != nil {
 		return nil, err
 	}
 	var t *translator
-	if t, err = newTranslatorFromSchema(log, targetSchemaURL, schemaFileSchema); err != nil {
+	if t, err = newTranslatorFromSchema(log, targetSchemaURL, schemaFileSchema, copyFromVersion); err != nil {
 		return nil, err
 	}
 	return t, nil
@@ -135,6 +151,10 @@ func (t *translator) Swap(i, j int) {
 	a, b := t.revisions[i].Version(), t.revisions[j].Version()
 	t.indexes[*a], t.indexes[*b] = j, i
 	t.revisions[i], t.revisions[j] = t.revisions[j], t.revisions[i]
+}
+
+func (t *translator) TargetSchemaURL() string {
+	return t.targetSchemaURL
 }
 
 func (t *translator) SupportedVersion(v *Version) bool {

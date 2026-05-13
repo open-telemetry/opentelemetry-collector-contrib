@@ -30,26 +30,8 @@ func TestNew_CloudWatchLogsSubscriptionFilter(t *testing.T) {
 	require.ErrorContains(t, err, `failed to unmarshal logs as "cloudwatch" format`)
 }
 
-func TestNew_CloudWatchLogsSubscriptionFilterV1(t *testing.T) {
-	e, err := newExtension(&Config{Format: constants.FormatCloudWatchLogsSubscriptionFilterV1}, extensiontest.NewNopSettings(extensiontest.NopType))
-	require.NoError(t, err)
-	require.NotNil(t, e)
-
-	_, err = e.UnmarshalLogs([]byte("invalid"))
-	require.ErrorContains(t, err, `failed to unmarshal logs as "cloudwatch" format`)
-}
-
 func TestNew_CloudTrailLog(t *testing.T) {
 	e, err := newExtension(&Config{Format: constants.FormatCloudTrailLog}, extensiontest.NewNopSettings(extensiontest.NopType))
-	require.NoError(t, err)
-	require.NotNil(t, e)
-
-	_, err = e.UnmarshalLogs([]byte("invalid"))
-	require.ErrorContains(t, err, `failed to unmarshal logs as "cloudtrail" format`)
-}
-
-func TestNew_CloudTrailLogV1(t *testing.T) {
-	e, err := newExtension(&Config{Format: constants.FormatCloudTrailLogV1}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.NoError(t, err)
 	require.NotNil(t, e)
 
@@ -68,14 +50,6 @@ func TestNew_VPCFlowLog(t *testing.T) {
 	require.ErrorContains(t, err, "failed to read first line of VPC logs from S3")
 }
 
-func TestNew_VPCFlowLogV1(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Format = constants.FormatVPCFlowLogV1
-	e, err := newExtension(cfg, extensiontest.NewNopSettings(extensiontest.NopType))
-	require.NoError(t, err)
-	require.NotNil(t, e)
-}
-
 func TestNew_S3AccessLog(t *testing.T) {
 	e, err := newExtension(&Config{Format: constants.FormatS3AccessLog}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.NoError(t, err)
@@ -83,14 +57,6 @@ func TestNew_S3AccessLog(t *testing.T) {
 
 	_, err = e.UnmarshalLogs([]byte("invalid"))
 	require.ErrorContains(t, err, `failed to unmarshal logs as "s3access" format`)
-}
-
-func TestNew_S3AccessLogV1(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Format = constants.FormatS3AccessLogV1
-	e, err := newExtension(cfg, extensiontest.NewNopSettings(extensiontest.NopType))
-	require.NoError(t, err)
-	require.NotNil(t, e)
 }
 
 func TestNew_WAFLog(t *testing.T) {
@@ -102,14 +68,6 @@ func TestNew_WAFLog(t *testing.T) {
 	require.ErrorContains(t, err, `failed to unmarshal logs as "waf" format`)
 }
 
-func TestNew_WAFLogV1(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Format = constants.FormatWAFLogV1
-	e, err := newExtension(cfg, extensiontest.NewNopSettings(extensiontest.NopType))
-	require.NoError(t, err)
-	require.NotNil(t, e)
-}
-
 func TestNew_ELBAcessLog(t *testing.T) {
 	e, err := newExtension(&Config{Format: constants.FormatELBAccessLog}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.NoError(t, err)
@@ -117,14 +75,6 @@ func TestNew_ELBAcessLog(t *testing.T) {
 
 	_, err = e.UnmarshalLogs([]byte("invalid"))
 	require.ErrorContains(t, err, `failed to unmarshal logs as "elbaccess" format`)
-}
-
-func TestNew_ELBAcessLogV1(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Format = constants.FormatELBAccessLogV1
-	e, err := newExtension(cfg, extensiontest.NewNopSettings(extensiontest.NopType))
-	require.NoError(t, err)
-	require.NotNil(t, e)
 }
 
 func TestNew_Unimplemented(t *testing.T) {

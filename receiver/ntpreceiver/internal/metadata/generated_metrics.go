@@ -12,6 +12,13 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
+)
+
 var MetricsInfo = metricsInfo{
 	NtpOffset: metricInfo{
 		Name: "ntp.offset",
@@ -27,9 +34,9 @@ type metricInfo struct {
 }
 
 type metricNtpOffset struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric        // data buffer for generated metric.
+	config   NtpOffsetMetricConfig // metric config provided by user.
+	capacity int                   // max observed number of data points added to the metric.
 }
 
 // init fills ntp.offset metric with initial data.
@@ -66,7 +73,7 @@ func (m *metricNtpOffset) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNtpOffset(cfg MetricConfig) metricNtpOffset {
+func newMetricNtpOffset(cfg NtpOffsetMetricConfig) metricNtpOffset {
 	m := metricNtpOffset{config: cfg}
 
 	if cfg.Enabled {

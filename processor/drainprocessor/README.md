@@ -48,6 +48,10 @@ processors:
 
     # Warmup suppression (optional)
     warmup_min_clusters: 0     # default: 0 (disabled; annotates from the first record)
+
+    # Snapshot persistence (optional)
+    storage: ""                # default: "" (disabled; ID of a storage extension)
+    save_interval: 0s          # default: 0s (save on shutdown only; e.g. "5m" for periodic saves)
 ```
 
 ### Parameters
@@ -64,6 +68,8 @@ processors:
 | `seed_templates` | []string | `[]` | Template strings to pre-load at startup (see [Seeding](#seeding)). |
 | `seed_logs` | []string | `[]` | Raw example log lines to train on at startup (see [Seeding](#seeding)). |
 | `warmup_min_clusters` | int | `0` | Number of distinct clusters that must be observed before annotation is enabled. `0` disables warmup suppression (see [Warmup suppression](#warmup-suppression)). |
+| `storage` | string | `""` | ID of a [storage extension](../../extension/storage/) to use for persisting the Drain tree across restarts (see [Snapshot persistence](#snapshot-persistence)). |
+| `save_interval` | duration | `0s` | Interval between periodic snapshot saves. `0s` saves on shutdown only. Requires `storage` to be set. |
 
 ## Seeding
 
@@ -201,8 +207,38 @@ Given a log body `{"level": "info", "message": "user alice logged in from 10.0.0
 
 > **Note**: `body_field` only supports a single top-level key. Full OTTL path expressions (e.g. `body["event"]["message"]`) are not supported and are noted as a future extension.
 
+## Snapshot persistence
+
+When `storage` is set to the ID of a [storage extension](../../extension/storage/), the processor saves and restores the Drain tree state across restarts. This eliminates the need for seeding and warmup in most deployments.
+
+```yaml
+extensions:
+  file_storage:
+    directory: /var/lib/otelcol/drain
+
+processors:
+  drain:
+    storage: file_storage
+    save_interval: 5m
+```
+
+### Lifecycle
+
+- **Startup**: the processor attempts to load a snapshot from storage. If a valid snapshot is found, `seed_templates` and `seed_logs` are skipped (they are already incorporated in the snapshot). If the loaded tree has enough clusters to satisfy `warmup_min_clusters`, warmup is also skipped.
+- **Runtime**: if `save_interval` is set, the tree is snapshotted periodically. A hash check avoids redundant writes when the tree has not changed.
+- **Shutdown**: a final snapshot is always saved.
+
+If the snapshot is corrupt or cannot be loaded, the processor logs a warning and falls back to seeding as if no snapshot existed.
+
+### Shared storage for scaled deployments
+
+With a shared storage backend (Redis, database), periodic saves allow new instances joining a scaled deployment to load a tree that was trained by already-running instances. This avoids the cold-start problem where newly added collectors must rebuild the tree from scratch.
+
+Multiple instances writing to the same storage key is safe — all instances see similar log traffic and converge on similar trees, so any snapshot is useful as a starting point. The hash check reduces redundant writes across instances.
+
+To clear the snapshot and force a fresh start (e.g. after changing Drain parameters), delete the storage data for the processor.
+
 ## Future extensions
 
-- **Snapshot persistence**: save and restore the Drain tree state across restarts, eliminating the need for seeding and `warmup_min_clusters` for most deployments. The internal drain package already exposes JSON snapshot hooks; the remaining work is plumbing them into the collector lifecycle and shared storage.
 - **OTTL body extraction**: support full OTTL path expressions for `body_field` instead of a single top-level key name.
-- **Multi-instance synchronization**: optional shared snapshot file or gossip-based tree merging for consistent templates across horizontally scaled deployments.
+- **Multi-instance tree merging**: gossip-based tree merging for consistent templates across horizontally scaled deployments.
