@@ -25,6 +25,7 @@ type TelemetryBuilder struct {
 	meter                                               metric.Meter
 	mu                                                  sync.Mutex
 	registrations                                       []metric.Registration
+	ProcessorTailSamplingCountBytesSampled              metric.Int64Counter
 	ProcessorTailSamplingCountSpansSampled              metric.Int64Counter
 	ProcessorTailSamplingCountTracesSampled             metric.Int64Counter
 	ProcessorTailSamplingEarlyReleasesFromCacheDecision metric.Int64Counter
@@ -70,6 +71,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ProcessorTailSamplingCountBytesSampled, err = builder.meter.Int64Counter(
+		"otelcol_processor_tail_sampling_count_bytes_sampled",
+		metric.WithDescription("Count of bytes that were sampled or not per sampling policy [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingCountSpansSampled, err = builder.meter.Int64Counter(
 		"otelcol_processor_tail_sampling_count_spans_sampled",
 		metric.WithDescription("Count of spans that were sampled or not per sampling policy [Development]"),

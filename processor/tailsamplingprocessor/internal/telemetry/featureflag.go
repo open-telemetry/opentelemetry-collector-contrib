@@ -11,6 +11,10 @@ func IsMetricStatCountSpansSampledEnabled() bool {
 	return metadata.ProcessorTailsamplingprocessorMetricstatcountspanssampledFeatureGate.IsEnabled()
 }
 
+func IsMetricStatCountBytesSampledEnabled() bool {
+	return metadata.ProcessorTailsamplingprocessorMetricstatcountbytessampledFeatureGate.IsEnabled()
+}
+
 func IsRecordPolicyEnabled() bool {
 	return metadata.ProcessorTailsamplingprocessorRecordpolicyFeatureGate.IsEnabled()
 }
