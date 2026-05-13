@@ -560,7 +560,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		}
 		// Create resource if needed (only for the first valid histogram)
 		if hashedLabels == 0 {
-			rm, _ = prw.getOrCreateRM(ls, otelMetrics, modifiedRM)
+			rm, hashedLabels = prw.getOrCreateRM(ls, otelMetrics, modifiedRM)
 			resourceID = identity.OfResource(rm.Resource())
 		}
 
