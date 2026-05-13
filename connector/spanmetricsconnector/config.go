@@ -232,17 +232,14 @@ func validateDimensions(dimensions []Dimension) error {
 			return errors.New("dimension entry must set one of `name` or `glob`")
 		case d.Name != "":
 			if _, ok := labelNames[d.Name]; ok {
-				return fmt.Errorf("duplicate dimension name %s", d.Name)
+				return fmt.Errorf("duplicate dimension name %q", d.Name)
 			}
 			labelNames[d.Name] = struct{}{}
 		default: // Glob != ""
 			if d.Default != nil {
-				return fmt.Errorf("`default` is not supported on glob dimension %q", d.Glob)
+				return fmt.Errorf("`default` is not supported on `glob` dimension %q", d.Glob)
 			}
-			if _, ok := globs[d.Glob]; ok {
-				return fmt.Errorf("duplicate dimension glob %q", d.Glob)
-			}
-			compiledGlob, err := glob.Compile(d.Glob)
+			compiledGlob, err := glob.Compile(d.Glob, '.')
 			if err != nil {
 				return fmt.Errorf("invalid dimension glob %q: %w", d.Glob, err)
 			}
@@ -253,7 +250,7 @@ func validateDimensions(dimensions []Dimension) error {
 	for name := range labelNames {
 		for stringGlob, compiledGlob := range globs {
 			if compiledGlob.Match(name) {
-				return fmt.Errorf("duplicate dimension name %s conflicting with glob %q", name, stringGlob)
+				return fmt.Errorf("duplicate dimension name %q conflicting with glob %q", name, stringGlob)
 			}
 		}
 	}

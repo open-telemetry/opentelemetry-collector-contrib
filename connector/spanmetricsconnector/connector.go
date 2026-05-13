@@ -113,7 +113,7 @@ func newDimensions(cfgDims []Dimension) (dimensionList, error) {
 	var dims dimensionList
 	for i := range cfgDims {
 		if cfgDims[i].Glob != "" {
-			g, err := glob.Compile(cfgDims[i].Glob)
+			g, err := glob.Compile(cfgDims[i].Glob, '.')
 			if err != nil {
 				return dims, err
 			}
@@ -629,6 +629,7 @@ func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs p
 		for _, g := range dimensions.globDimensions {
 			if g.Match(n) {
 				f(n, v)
+				break
 			}
 		}
 	}
@@ -639,6 +640,7 @@ func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs p
 		for _, g := range dimensions.globDimensions {
 			if g.Match(n) {
 				f(n, v)
+				break
 			}
 		}
 	}

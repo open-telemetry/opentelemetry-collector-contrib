@@ -658,12 +658,6 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock(), instanceID)
 	require.NoError(t, err)
 
-	mustGlob := func(p string) glob.Glob {
-		g, err := glob.Compile(p)
-		require.NoError(t, err)
-		return g
-	}
-
 	defaultFoo := pcommon.NewValueStr("bar")
 	for _, tc := range []struct {
 		name            string
@@ -727,7 +721,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			name: "name and glob dimensions match attributes at both span and resource",
 			optionalDims: dimensionList{
 				nameDimensions: []pdatautil.Dimension{{Name: "http.method"}},
-				globDimensions: []glob.Glob{mustGlob("db.*")},
+				globDimensions: []glob.Glob{glob.MustCompile("db.*")},
 			},
 			spanAttrMap: map[string]any{
 				"http.method": "GET",
@@ -741,7 +735,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name:         "span attribute wins over resource attribute on the same glob-matched key",
-			optionalDims: dimensionList{globDimensions: []glob.Glob{mustGlob("env")}},
+			optionalDims: dimensionList{globDimensions: []glob.Glob{glob.MustCompile("env")}},
 			spanAttrMap: map[string]any{
 				"env": "prod",
 			},
@@ -752,11 +746,24 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name:         "no matching attribute: glob contributes nothing",
-			optionalDims: dimensionList{globDimensions: []glob.Glob{mustGlob("db.*")}},
+			optionalDims: dimensionList{globDimensions: []glob.Glob{glob.MustCompile("db.*")}},
 			spanAttrMap: map[string]any{
 				"http.method": "GET",
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
+		},
+		{
+			name: "two globs match signle attribute, single value added",
+			optionalDims: dimensionList{
+				globDimensions: []glob.Glob{
+					glob.MustCompile("db.*"),
+					glob.MustCompile("*.name"),
+				},
+			},
+			spanAttrMap: map[string]any{
+				"db.name": "users",
+			},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000users",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -772,12 +779,6 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 }
 
 func TestBuildAttributesWithDimensions(t *testing.T) {
-	mustGlob := func(p string) glob.Glob {
-		g, err := glob.Compile(p)
-		require.NoError(t, err)
-		return g
-	}
-
 	tests := []struct {
 		name               string
 		spanAttrMap        map[string]any
@@ -841,7 +842,7 @@ func TestBuildAttributesWithDimensions(t *testing.T) {
 			},
 			dimensions: dimensionList{
 				nameDimensions: []pdatautil.Dimension{{Name: "http.method"}},
-				globDimensions: []glob.Glob{mustGlob("db.*")},
+				globDimensions: []glob.Glob{glob.MustCompile("db.*")},
 			},
 			optionalDimensions: dimensionList{},
 			want: map[string]string{
@@ -867,11 +868,11 @@ func TestBuildAttributesWithDimensions(t *testing.T) {
 			},
 			dimensions: dimensionList{
 				nameDimensions: []pdatautil.Dimension{{Name: "http.method"}},
-				globDimensions: []glob.Glob{mustGlob("db.*")},
+				globDimensions: []glob.Glob{glob.MustCompile("db.*")},
 			},
 			optionalDimensions: dimensionList{
 				nameDimensions: []pdatautil.Dimension{{Name: "http.status"}},
-				globDimensions: []glob.Glob{mustGlob("env")},
+				globDimensions: []glob.Glob{glob.MustCompile("env")},
 			},
 			want: map[string]string{
 				serviceNameKey:       "test_service",

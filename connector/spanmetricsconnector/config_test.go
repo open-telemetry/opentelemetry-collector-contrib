@@ -283,7 +283,7 @@ func TestValidateDimensions(t *testing.T) {
 			dimensions: []Dimension{
 				{Name: "service.name"},
 			},
-			expectedErr: "duplicate dimension name service.name",
+			expectedErr: "duplicate dimension name \"service.name\"",
 		},
 		{
 			name: "duplicate additional dimensions",
@@ -291,7 +291,7 @@ func TestValidateDimensions(t *testing.T) {
 				{Name: "service_name"},
 				{Name: "service_name"},
 			},
-			expectedErr: "duplicate dimension name service_name",
+			expectedErr: "duplicate dimension name \"service_name\"",
 		},
 		{
 			name: "name and glob mixed",
@@ -315,19 +315,11 @@ func TestValidateDimensions(t *testing.T) {
 			expectedErr: "dimension entry must set one of `name` or `glob`",
 		},
 		{
-			name: "duplicate globs",
-			dimensions: []Dimension{
-				{Glob: "db.*"},
-				{Glob: "db.*"},
-			},
-			expectedErr: "duplicate dimension glob \"db.*\"",
-		},
-		{
 			name: "default on glob",
 			dimensions: []Dimension{
 				{Glob: "db.*", Default: stringp("x")},
 			},
-			expectedErr: "`default` is not supported on glob dimension \"db.*\"",
+			expectedErr: "`default` is not supported on `glob` dimension \"db.*\"",
 		},
 		{
 			name: "invalid glob pattern",
@@ -341,7 +333,7 @@ func TestValidateDimensions(t *testing.T) {
 			dimensions: []Dimension{
 				{Glob: "service.*"},
 			},
-			expectedErr: "duplicate dimension name service.name conflicting with glob \"service.*\"",
+			expectedErr: "duplicate dimension name \"service.name\" conflicting with glob \"service.*\"",
 		},
 		{
 			name: "glob conflicts with configured name dimension",
@@ -349,7 +341,7 @@ func TestValidateDimensions(t *testing.T) {
 				{Name: "http.method"},
 				{Glob: "http.*"},
 			},
-			expectedErr: "duplicate dimension name http.method conflicting with glob \"http.*\"",
+			expectedErr: "duplicate dimension name \"http.method\" conflicting with glob \"http.*\"",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -393,7 +385,7 @@ func TestValidateEventDimensions(t *testing.T) {
 				{Name: "exception_type"},
 				{Name: "exception_type"},
 			},
-			expectedErr: "duplicate dimension name exception_type",
+			expectedErr: "duplicate dimension name \"exception_type\"",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -486,7 +478,7 @@ func TestConfigValidate(t *testing.T) {
 					{Name: "service.name"},
 				},
 			},
-			expectedErr: "failed validating dimensions: duplicate dimension name service.name",
+			expectedErr: "failed validating dimensions: duplicate dimension name \"service.name\"",
 		},
 		{
 			name: "events enabled with no dimensions",
