@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -34,27 +35,37 @@ var (
 )
 
 const (
-	namespaceKey             = "ns"
-	commandKey               = "command"
-	opKey                    = "op"
-	activeKey                = "active"
-	durationMicrosKey        = "microsecs_running"
-	clientKey                = "client"
-	applicationNameKey       = "appName"
-	effectiveUsersKey        = "effectiveUsers"
-	lsidKey                  = "lsid"
-	operationIDKey           = "opid"
-	planSummaryKey           = "planSummary"
-	queryFrameworkKey        = "queryFramework"
-	prepareReadConflictsKey  = "prepareReadConflicts"
-	writeConflictsKey        = "writeConflicts"
-	numYieldsKey             = "numYields"
-	waitingForLockKey        = "waitingForLock"
-	locksKey                 = "locks"
-	lockStatsKey             = "lockStats"
-	waitingForFlowControlKey = "waitingForFlowControl"
-	flowControlStatsKey      = "flowControlStats"
-	waitingForLatchKey       = "waitingForLatch"
+	namespaceKey                    = "ns"
+	commandKey                      = "command"
+	opKey                           = "op"
+	activeKey                       = "active"
+	durationMicrosKey               = "microsecs_running"
+	clientKey                       = "client"
+	applicationNameKey              = "appName"
+	effectiveUsersKey               = "effectiveUsers"
+	cursorKey                       = "cursor"
+	cursorAwaitDataKey              = "awaitData"
+	cursorIDKey                     = "cursorId"
+	cursorNBatchesReturnedKey       = "nBatchesReturned"
+	cursorNDocsReturnedKey          = "nDocsReturned"
+	cursorNoCursorTimeoutKey        = "noCursorTimeout"
+	cursorOperationUsingCursorIDKey = "operationUsingCursorId"
+	cursorOriginatingCommandKey     = "originatingCommand"
+	cursorTailableKey               = "tailable"
+	idKey                           = "id"
+	lsidKey                         = "lsid"
+	operationIDKey                  = "opid"
+	planSummaryKey                  = "planSummary"
+	queryFrameworkKey               = "queryFramework"
+	prepareReadConflictsKey         = "prepareReadConflicts"
+	writeConflictsKey               = "writeConflicts"
+	numYieldsKey                    = "numYields"
+	waitingForLockKey               = "waitingForLock"
+	locksKey                        = "locks"
+	lockStatsKey                    = "lockStats"
+	waitingForFlowControlKey        = "waitingForFlowControl"
+	flowControlStatsKey             = "flowControlStats"
+	waitingForLatchKey              = "waitingForLatch"
 )
 
 // generateInstanceID generates a deterministic UUID v5 from server address and port.
@@ -191,27 +202,25 @@ func (s *mongodbScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 }
 
 func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now pcommon.Timestamp) error {
-	operations, err := c.CurrentOp(ctx)
-	if err != nil {
-		s.logger.Error("Failed to get current operations", zap.Error(err))
-		return err
-	}
-
-	s.processCurrentOp(ctx, operations, now)
-
 	serverStatus, err := c.ServerStatus(ctx, "admin")
 	if err != nil {
 		s.logger.Debug("Failed to get server status for logs", zap.Error(err))
-		s.lb.EmitForResource()
 		return nil
 	}
 
 	serverAddress, serverPort, err := serverAddressAndPort(serverStatus)
 	if err != nil {
 		s.logger.Debug("Failed to extract server address and port for logs", zap.Error(err))
-		s.lb.EmitForResource()
 		return nil
 	}
+
+	operations, err := c.CurrentOp(ctx)
+	if err != nil {
+		s.logger.Error("Failed to get current operations", zap.Error(err))
+		return nil
+	}
+
+	s.processCurrentOp(ctx, operations, now)
 
 	rb := s.lb.NewResourceBuilder()
 	rb.SetServerAddress(serverAddress)
@@ -224,6 +233,9 @@ func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now
 func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson.M, now pcommon.Timestamp) {
 	emitted := uint64(0)
 	for _, op := range operations {
+		if emitted >= s.config.QuerySampleCollection.MaxRowsPerQuery {
+			break
+		}
 		if !s.shouldIncludeOperation(op) {
 			continue
 		}
@@ -235,37 +247,49 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		prepareReadConflictCount := getInt64Value(op, prepareReadConflictsKey)
 		writeConflictCount := getInt64Value(op, writeConflictsKey)
 		yieldCount := getInt64Value(op, numYieldsKey)
-		lsid := getJSONValue(op, lsidKey)
+		lsid := ""
+		if lsidLookup, ok := newLookup(op[lsidKey]); ok {
+			if lsidValue, ok := lsidLookup(idKey); ok {
+				lsid = formatLsidID(lsidValue)
+			}
+		}
+		cursor := getValue[bson.D](op, cursorKey)
+		cursorAwaitData := getValueFromBSOND[bool](cursor, cursorAwaitDataKey)
+		cursorBatchesReturnedCount := getInt64ValueFromBSOND(cursor, cursorNBatchesReturnedKey)
+		cursorDocumentsReturnedCount := getInt64ValueFromBSOND(cursor, cursorNDocsReturnedKey)
+		cursorID := getFormattedValueFromBSOND(cursor, cursorIDKey)
+		cursorNoTimeout := getValueFromBSOND[bool](cursor, cursorNoCursorTimeoutKey)
+		cursorOperationUsingCursorID := getFormattedValueFromBSOND(cursor, cursorOperationUsingCursorIDKey)
+		cursorOriginatingCommand := getValueFromBSOND[bson.D](cursor, cursorOriginatingCommandKey)
+		obfuscatedCursorOriginatingCommand := ""
+		if len(cursorOriginatingCommand) > 0 {
+			cleanedCursorOriginatingCommand := cleanCommand(cursorOriginatingCommand)
+			obfuscatedCursorOriginatingCommand = s.obfuscator.obfuscateMongoDBString(cleanedCursorOriginatingCommand.String())
+		}
+		cursorTailable := getValueFromBSOND[bool](cursor, cursorTailableKey)
 		planSummary := getValue[string](op, planSummaryKey)
 		queryFramework := getValue[string](op, queryFrameworkKey)
-		waitingForLock := getBoolValue(op, waitingForLockKey)
+		waitingForLock := getValue[bool](op, waitingForLockKey)
 		locks := getJSONValue(op, locksKey)
 		lockStats := getJSONValue(op, lockStatsKey)
-		waitingForFlowControl := getBoolValue(op, waitingForFlowControlKey)
+		waitingForFlowControl := getValue[bool](op, waitingForFlowControlKey)
 		flowControlStats := getJSONValue(op, flowControlStatsKey)
-		waitingForLatchDetails := getJSONValue(op, waitingForLatchKey)
-		waitingForLatch := waitingForLatchDetails != ""
+		waitingForLatch := hasNonEmptyDocumentValue(op[waitingForLatchKey])
+		waitingForLatchDetails := ""
+		if waitingForLatch {
+			waitingForLatchDetails = getJSONValue(op, waitingForLatchKey)
+		}
 		operationStatus, ok := deriveOperationStatus(op, waitingForLock, waitingForFlowControl, waitingForLatch)
 		if !ok {
 			s.logger.Debug("Skipping operation without supported status", zap.Any("operation", op))
 			continue
 		}
-		durationSeconds := float64(getValue[int64](op, durationMicrosKey)) / 1_000_000.0
+		durationSeconds := float64(getInt64Value(op, durationMicrosKey)) / 1_000_000.0
 		clientAddr := getValue[string](op, clientKey)
 		applicationName := getValue[string](op, applicationNameKey)
 		userName := extractEffectiveUserName(op)
 		operationID := extractOperationID(op)
-		port := 0
-		server := ""
-		if clientAddr != "" {
-			clientSplit := strings.Split(clientAddr, ":")
-			server = clientSplit[0]
-			if len(clientSplit) > 1 {
-				if p, err := strconv.Atoi(clientSplit[1]); err == nil {
-					port = p
-				}
-			}
-		}
+		clientAddress, clientPort := clientAddressAndPort(clientAddr)
 		collectionName := getCollectionFromNamespace(namespace)
 		cleanedCommand := cleanCommand(command)
 		obfuscatedStatement := s.obfuscator.obfuscateMongoDBString(cleanedCommand.String())
@@ -273,18 +297,27 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		s.lb.RecordDbServerQuerySampleEvent(
 			ctx,
 			now,
-			server,
-			int64(port),
+			clientAddress,
+			clientPort,
 			metadata.AttributeDbSystemNameMongodb,
-			namespace,
+			databaseName,
 			collectionName,
 			commandType,
 			obfuscatedStatement,
 			queryTruncated,
 			userName,
 			applicationName,
+			cursorAwaitData,
+			cursorBatchesReturnedCount,
+			cursorDocumentsReturnedCount,
+			cursorID,
+			cursorNoTimeout,
+			cursorOperationUsingCursorID,
+			obfuscatedCursorOriginatingCommand,
+			cursorTailable,
 			databaseName,
 			lsid,
+			namespace,
 			operationID,
 			planSummary,
 			queryFramework,
@@ -303,9 +336,6 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 			waitingForLatchDetails,
 		)
 		emitted++
-		if s.config.QuerySampleCollection.MaxRowsPerQuery > 0 && emitted >= s.config.QuerySampleCollection.MaxRowsPerQuery {
-			break
-		}
 	}
 	s.logger.Debug("Processed MongoDB current operations", zap.Int("total_operations", len(operations)))
 }
@@ -409,33 +439,134 @@ func getCommandDetails(command bson.D) (string, metadata.AttributeMongodbQueryTr
 	return commandType, metadata.AttributeMongodbQueryTruncatedNotTruncated
 }
 
-// getValue extracts a value from a BSON document with type assertion
-func getValue[T any](doc bson.M, key string) T {
-	var zero T
-	if val, ok := doc[key]; ok {
-		if typedVal, ok := val.(T); ok {
-			return typedVal
+type valueLookup func(string) (any, bool)
+
+func newBSONDLookup(doc bson.D) valueLookup {
+	return func(key string) (any, bool) {
+		for _, elem := range doc {
+			if elem.Key == key {
+				return elem.Value, true
+			}
 		}
+		return nil, false
 	}
-	return zero
 }
 
-func getBoolValue(doc bson.M, key string) bool {
-	val, ok := doc[key]
+func newBSONMLookup(doc bson.M) valueLookup {
+	return func(key string) (any, bool) {
+		value, ok := doc[key]
+		return value, ok
+	}
+}
+
+func newLookup(doc any) (valueLookup, bool) {
+	switch typedValue := doc.(type) {
+	case bson.D:
+		return newBSONDLookup(typedValue), true
+	case bson.M:
+		return newBSONMLookup(typedValue), true
+	case map[string]any:
+		return func(key string) (any, bool) {
+			value, ok := typedValue[key]
+			return value, ok
+		}, true
+	default:
+		return nil, false
+	}
+}
+
+func getLookupValue[T any](lookup valueLookup, key string) T {
+	var zero T
+	value, ok := lookup(key)
 	if !ok {
-		return false
+		return zero
 	}
-	typedVal, _ := val.(bool)
-	return typedVal
+	typedValue, ok := value.(T)
+	if !ok {
+		return zero
+	}
+	return typedValue
 }
 
-func getInt64Value(doc bson.M, key string) int64 {
-	val, ok := doc[key]
+func getLookupInt64Value(lookup valueLookup, key string) int64 {
+	value, ok := lookup(key)
 	if !ok {
 		return 0
 	}
-	intVal, _ := toInt64(val)
-	return intVal
+	intValue, _ := toInt64(value)
+	return intValue
+}
+
+func getLookupFormattedValue(lookup valueLookup, key string) string {
+	value, ok := lookup(key)
+	if !ok {
+		return ""
+	}
+	return fmt.Sprintf("%v", value)
+}
+
+func formatLsidID(value any) string {
+	if binaryValue, ok := value.(bson.Binary); ok && binaryValue.Subtype == 0x04 && len(binaryValue.Data) == 16 {
+		u, err := uuid.FromBytes(binaryValue.Data)
+		if err == nil {
+			return u.String()
+		}
+	}
+	return fmt.Sprintf("%v", value)
+}
+
+func getLookupJSONValue(lookup valueLookup, key string) string {
+	value, ok := lookup(key)
+	if !ok {
+		return ""
+	}
+	jsonValue, err := bson.MarshalExtJSON(value, false, false)
+	if err != nil {
+		return fmt.Sprint(value)
+	}
+	return string(jsonValue)
+}
+
+func getValueFromBSOND[T any](doc bson.D, key string) T {
+	return getLookupValue[T](newBSONDLookup(doc), key)
+}
+
+func getInt64ValueFromBSOND(doc bson.D, key string) int64 {
+	return getLookupInt64Value(newBSONDLookup(doc), key)
+}
+
+func getFormattedValueFromBSOND(doc bson.D, key string) string {
+	return getLookupFormattedValue(newBSONDLookup(doc), key)
+}
+
+func getFormattedValue(doc any, key string) string {
+	lookup, ok := newLookup(doc)
+	if !ok {
+		return ""
+	}
+	return getLookupFormattedValue(lookup, key)
+}
+
+func hasNonEmptyDocumentValue(value any) bool {
+	switch typedValue := value.(type) {
+	case bson.D:
+		return len(typedValue) > 0
+	case bson.M:
+		return len(typedValue) > 0
+	case map[string]any:
+		return len(typedValue) > 0
+	default:
+		return false
+	}
+}
+
+// getValue extracts a value from a BSON document with type assertion
+func getValue[T any](doc bson.M, key string) T {
+	return getLookupValue[T](newBSONMLookup(doc), key)
+}
+
+func getInt64Value(doc bson.M, key string) int64 {
+	return getLookupInt64Value(newBSONMLookup(doc), key)
 }
 
 func toInt64(val any) (int64, bool) {
@@ -472,15 +603,36 @@ func toInt64(val any) (int64, bool) {
 }
 
 func getJSONValue(doc bson.M, key string) string {
-	val, ok := doc[key]
-	if !ok {
-		return ""
+	return getLookupJSONValue(newBSONMLookup(doc), key)
+}
+
+func clientAddressAndPort(clientAddr string) (string, int64) {
+	if clientAddr == "" {
+		return "", 0
 	}
-	jsonVal, err := bson.MarshalExtJSON(val, false, false)
-	if err != nil {
-		return fmt.Sprint(val)
+
+	host, port, err := net.SplitHostPort(clientAddr)
+	if err == nil {
+		parsedPort, parseErr := strconv.ParseInt(port, 10, 64)
+		if parseErr != nil {
+			return host, 0
+		}
+		return host, parsedPort
 	}
-	return string(jsonVal)
+
+	if strings.Count(clientAddr, ":") == 1 {
+		host, port, found := strings.Cut(clientAddr, ":")
+		if !found {
+			return clientAddr, 0
+		}
+		parsedPort, parseErr := strconv.ParseInt(port, 10, 64)
+		if parseErr != nil {
+			return host, 0
+		}
+		return host, parsedPort
+	}
+
+	return clientAddr, 0
 }
 
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {

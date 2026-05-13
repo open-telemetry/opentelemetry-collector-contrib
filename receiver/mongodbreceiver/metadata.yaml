@@ -52,7 +52,7 @@ attributes:
       - available
       - current
   db.collection.name:
-    description: The namespace of the MongoDB operation (database.collection).
+    description: The MongoDB collection being accessed within the database stated in db.namespace.
     type: string
   db.namespace:
     description: The name of a database.
@@ -102,11 +102,38 @@ attributes:
   mongodb.application.name:
     description: The identifier of the client application which ran the operation
     type: string
+  mongodb.cursor.await_data:
+    description: Whether the tailable cursor waits for new data instead of returning immediately.
+    type: bool
+  mongodb.cursor.batches_returned.count:
+    description: The cumulative number of batches returned by the cursor.
+    type: int
+  mongodb.cursor.documents_returned.count:
+    description: The cumulative number of documents returned by the cursor.
+    type: int
+  mongodb.cursor.id:
+    description: The identifier of the cursor.
+    type: string
+  mongodb.cursor.no_timeout:
+    description: Whether the cursor is configured not to time out when idle.
+    type: bool
+  mongodb.cursor.operation_using_cursor_id:
+    description: The identifier of the operation currently using the cursor.
+    type: string
+  mongodb.cursor.originating_command:
+    description: The obfuscated command that originally created the cursor.
+    type: string
+  mongodb.cursor.tailable:
+    description: Whether the cursor is a tailable cursor.
+    type: bool
   mongodb.database.name:
     description: The name of the MongoDB database.
     type: string
-  mongodb.lsid:
-    description: The logical session identifier associated with the MongoDB operation, encoded as JSON.
+  mongodb.lsid.id:
+    description: The UUID portion of the logical session identifier associated with the MongoDB operation.
+    type: string
+  mongodb.namespace:
+    description: The MongoDB namespace reported by the server, typically <database>.<collection>.
     type: string
   mongodb.operation.duration:
     description: The duration of the MongoDB operation in seconds.
@@ -211,8 +238,17 @@ events:
       - mongodb.query_truncated
       - user.name
       - mongodb.application.name
+      - mongodb.cursor.await_data
+      - mongodb.cursor.batches_returned.count
+      - mongodb.cursor.documents_returned.count
+      - mongodb.cursor.id
+      - mongodb.cursor.no_timeout
+      - mongodb.cursor.operation_using_cursor_id
+      - mongodb.cursor.originating_command
+      - mongodb.cursor.tailable
       - mongodb.database.name
-      - mongodb.lsid
+      - mongodb.lsid.id
+      - mongodb.namespace
       - mongodb.operation.id
       - mongodb.operation.plan_summary
       - mongodb.operation.query_framework

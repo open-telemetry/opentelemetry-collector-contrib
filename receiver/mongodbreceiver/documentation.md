@@ -566,14 +566,23 @@ query sample
 | client.port | TCP port used by the client. | Any Int | - |
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``mongodb`` | - |
 | db.namespace | The name of a database. | Any Str | - |
-| db.collection.name | The namespace of the MongoDB operation (database.collection). | Any Str | - |
+| db.collection.name | The MongoDB collection being accessed within the database stated in db.namespace. | Any Str | - |
 | db.operation.name | The name of the MongoDB command being executed. | Any Str | - |
 | db.query.text | The obfuscated MongoDB command statement. | Any Str | - |
 | mongodb.query_truncated | Whether the MongoDB command returned by currentOp was truncated. | Str: ``truncated``, ``not_truncated`` | - |
 | user.name | Name of the user associated with the operation. | Any Str | - |
 | mongodb.application.name | The identifier of the client application which ran the operation | Any Str | - |
+| mongodb.cursor.await_data | Whether the tailable cursor waits for new data instead of returning immediately. | Any Bool | - |
+| mongodb.cursor.batches_returned.count | The cumulative number of batches returned by the cursor. | Any Int | - |
+| mongodb.cursor.documents_returned.count | The cumulative number of documents returned by the cursor. | Any Int | - |
+| mongodb.cursor.id | The identifier of the cursor. | Any Str | - |
+| mongodb.cursor.no_timeout | Whether the cursor is configured not to time out when idle. | Any Bool | - |
+| mongodb.cursor.operation_using_cursor_id | The identifier of the operation currently using the cursor. | Any Str | - |
+| mongodb.cursor.originating_command | The obfuscated command that originally created the cursor. | Any Str | - |
+| mongodb.cursor.tailable | Whether the cursor is a tailable cursor. | Any Bool | - |
 | mongodb.database.name | The name of the MongoDB database. | Any Str | - |
-| mongodb.lsid | The logical session identifier associated with the MongoDB operation, encoded as JSON. | Any Str | - |
+| mongodb.lsid.id | The UUID portion of the logical session identifier associated with the MongoDB operation. | Any Str | - |
+| mongodb.namespace | The MongoDB namespace reported by the server, typically <database>.<collection>. | Any Str | - |
 | mongodb.operation.id | Identifier of the MongoDB operation. | Any Str | - |
 | mongodb.operation.plan_summary | Summary of the execution plan for the MongoDB operation. | Any Str | - |
 | mongodb.operation.query_framework | Query framework used by the MongoDB operation. | Any Str | - |

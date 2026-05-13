@@ -102,6 +102,18 @@ func TestDeriveOperationStatus(t *testing.T) {
 			ok:       true,
 		},
 		{
+			name:     "null waitingForLatch does not count as waiting",
+			op:       bson.M{"active": true, "waitingForLatch": nil},
+			expected: metadata.AttributeMongodbOperationStatusActive,
+			ok:       true,
+		},
+		{
+			name:     "empty waitingForLatch document does not count as waiting",
+			op:       bson.M{"active": true, "waitingForLatch": bson.M{}},
+			expected: metadata.AttributeMongodbOperationStatusActive,
+			ok:       true,
+		},
+		{
 			name: "unsupported status",
 			op:   bson.M{"active": false},
 			ok:   false,
@@ -112,9 +124,9 @@ func TestDeriveOperationStatus(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			actual, ok := deriveOperationStatus(
 				tc.op,
-				getBoolValue(tc.op, waitingForLockKey),
-				getBoolValue(tc.op, waitingForFlowControlKey),
-				getJSONValue(tc.op, waitingForLatchKey) != "",
+				getValue[bool](tc.op, waitingForLockKey),
+				getValue[bool](tc.op, waitingForFlowControlKey),
+				hasNonEmptyDocumentValue(tc.op[waitingForLatchKey]),
 			)
 			require.Equal(t, tc.ok, ok)
 			require.Equal(t, tc.expected, actual)
@@ -592,10 +604,10 @@ func TestScrapeLogs(t *testing.T) {
 			desc: "CurrentOp returns error",
 			setupMockClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
+				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "mongohost:27017"}, nil)
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{}, errors.New("currentOp failed"))
 				return fc
 			},
-			expectedErr: "currentOp failed",
 			validateLogs: func(t *testing.T, logs plog.Logs) {
 				require.Equal(t, 0, logs.LogRecordCount())
 			},
@@ -604,7 +616,14 @@ func TestScrapeLogs(t *testing.T) {
 			desc: "ServerStatus returns error",
 			setupMockClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
-				fc.On("CurrentOp", mock.Anything).Return([]bson.M{}, nil)
+				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
+					{
+						"ns":      "mydb.mycol",
+						"op":      "query",
+						"command": bson.D{{Key: "find", Value: "mycol"}},
+						"active":  true,
+					},
+				}, nil)
 				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{}, errors.New("server status failed"))
 				return fc
 			},
@@ -616,7 +635,14 @@ func TestScrapeLogs(t *testing.T) {
 			desc: "Missing host in ServerStatus",
 			setupMockClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
-				fc.On("CurrentOp", mock.Anything).Return([]bson.M{}, nil)
+				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
+					{
+						"ns":      "mydb.mycol",
+						"op":      "query",
+						"command": bson.D{{Key: "find", Value: "mycol"}},
+						"active":  true,
+					},
+				}, nil)
 				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"version": "4.4"}, nil)
 				return fc
 			},
@@ -628,6 +654,7 @@ func TestScrapeLogs(t *testing.T) {
 			desc: "Successful scrape with operations",
 			setupMockClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
+				sessionID := uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
 					{
 						"ns":                "mydb.mycol",
@@ -640,7 +667,7 @@ func TestScrapeLogs(t *testing.T) {
 						"opid":              int32(123),
 						"planSummary":       "IXSCAN { x: 1 }",
 						"queryFramework":    "classic",
-						"lsid":              bson.M{"id": "session-1"},
+						"lsid":              bson.M{"id": bson.Binary{Subtype: 0x04, Data: sessionID[:]}},
 						"effectiveUsers":    bson.A{bson.M{"user": "admin"}},
 					},
 				}, nil)
@@ -659,18 +686,159 @@ func TestScrapeLogs(t *testing.T) {
 				require.NotEmpty(t, instanceID.Str())
 				lr := rl.ScopeLogs().At(0).LogRecords().At(0)
 				logAttrs := lr.Attributes()
+				dbNamespace, ok := logAttrs.Get("db.namespace")
+				require.True(t, ok)
+				require.Equal(t, "mydb", dbNamespace.Str())
+				collectionName, ok := logAttrs.Get("db.collection.name")
+				require.True(t, ok)
+				require.Equal(t, "mycol", collectionName.Str())
 				queryTruncated, ok := logAttrs.Get("mongodb.query_truncated")
 				require.True(t, ok)
 				require.Equal(t, "truncated", queryTruncated.Str())
-				lsid, ok := logAttrs.Get("mongodb.lsid")
+				mongodbNamespace, ok := logAttrs.Get("mongodb.namespace")
 				require.True(t, ok)
-				require.Equal(t, `{"id":"session-1"}`, lsid.Str())
+				require.Equal(t, "mydb.mycol", mongodbNamespace.Str())
+				mongodbDatabaseName, ok := logAttrs.Get("mongodb.database.name")
+				require.True(t, ok)
+				require.Equal(t, "mydb", mongodbDatabaseName.Str())
+				lsid, ok := logAttrs.Get("mongodb.lsid.id")
+				require.True(t, ok)
+				require.Equal(t, "4d63009a-8d0f-11ee-aad7-4c796ed8e320", lsid.Str())
 				planSummary, ok := logAttrs.Get("mongodb.operation.plan_summary")
 				require.True(t, ok)
 				require.Equal(t, "IXSCAN { x: 1 }", planSummary.Str())
 				queryFramework, ok := logAttrs.Get("mongodb.operation.query_framework")
 				require.True(t, ok)
 				require.Equal(t, "classic", queryFramework.Str())
+				cursorAwaitData, ok := logAttrs.Get("mongodb.cursor.await_data")
+				require.True(t, ok)
+				require.False(t, cursorAwaitData.Bool())
+				cursorBatchesReturned, ok := logAttrs.Get("mongodb.cursor.batches_returned.count")
+				require.True(t, ok)
+				require.Zero(t, cursorBatchesReturned.Int())
+				cursorDocumentsReturned, ok := logAttrs.Get("mongodb.cursor.documents_returned.count")
+				require.True(t, ok)
+				require.Zero(t, cursorDocumentsReturned.Int())
+				cursorID, ok := logAttrs.Get("mongodb.cursor.id")
+				require.True(t, ok)
+				require.Empty(t, cursorID.Str())
+				cursorNoTimeout, ok := logAttrs.Get("mongodb.cursor.no_timeout")
+				require.True(t, ok)
+				require.False(t, cursorNoTimeout.Bool())
+				cursorOperationUsingCursorID, ok := logAttrs.Get("mongodb.cursor.operation_using_cursor_id")
+				require.True(t, ok)
+				require.Empty(t, cursorOperationUsingCursorID.Str())
+				cursorOriginatingCommand, ok := logAttrs.Get("mongodb.cursor.originating_command")
+				require.True(t, ok)
+				require.Empty(t, cursorOriginatingCommand.Str())
+				cursorTailable, ok := logAttrs.Get("mongodb.cursor.tailable")
+				require.True(t, ok)
+				require.False(t, cursorTailable.Bool())
+			},
+		},
+		{
+			desc: "Successful scrape with IPv6 client address",
+			setupMockClient: func(t *testing.T) *fakeClient {
+				fc := &fakeClient{}
+				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
+					{
+						"ns":                "mydb.mycol",
+						"op":                "query",
+						"command":           bson.D{{Key: "find", Value: "mycol"}},
+						"active":            true,
+						"microsecs_running": int64(5000),
+						"client":            "[2001:db8::1]:12345",
+					},
+				}, nil)
+				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "mongohost:27017"}, nil)
+				return fc
+			},
+			validateLogs: func(t *testing.T, logs plog.Logs) {
+				require.Equal(t, 1, logs.LogRecordCount())
+				logAttrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+
+				clientAddress, ok := logAttrs.Get("client.address")
+				require.True(t, ok)
+				require.Equal(t, "2001:db8::1", clientAddress.Str())
+
+				clientPort, ok := logAttrs.Get("client.port")
+				require.True(t, ok)
+				require.Equal(t, int64(12345), clientPort.Int())
+			},
+		},
+		{
+			desc: "Successful scrape with cursor details",
+			setupMockClient: func(t *testing.T) *fakeClient {
+				fc := &fakeClient{}
+				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
+					{
+						"ns":                "mydb.mycol",
+						"op":                "getmore",
+						"command":           bson.D{{Key: "getMore", Value: int64(99)}, {Key: "collection", Value: "mycol"}},
+						"active":            true,
+						"microsecs_running": int64(5000),
+						"client":            "192.168.1.1:12345",
+						"appName":           "testApp",
+						"cursor": bson.D{
+							{Key: "awaitData", Value: true},
+							{Key: "cursorId", Value: int64(99)},
+							{Key: "nBatchesReturned", Value: int64(2)},
+							{Key: "nDocsReturned", Value: int64(10)},
+							{Key: "noCursorTimeout", Value: true},
+							{Key: "operationUsingCursorId", Value: int64(321)},
+							{Key: "originatingCommand", Value: bson.D{
+								{Key: "aggregate", Value: "mycol"},
+								{Key: "pipeline", Value: bson.A{
+									bson.D{{Key: "$match", Value: bson.D{{Key: "secret", Value: "sensitive-value"}}}},
+								}},
+								{Key: "comment", Value: "cursor comment"},
+							}},
+							{Key: "tailable", Value: true},
+						},
+						"effectiveUsers": bson.A{bson.M{"user": "admin"}},
+					},
+				}, nil)
+				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "mongohost:27017"}, nil)
+				return fc
+			},
+			validateLogs: func(t *testing.T, logs plog.Logs) {
+				require.Equal(t, 1, logs.LogRecordCount())
+				logAttrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+
+				awaitData, ok := logAttrs.Get("mongodb.cursor.await_data")
+				require.True(t, ok)
+				require.True(t, awaitData.Bool())
+
+				batchesReturned, ok := logAttrs.Get("mongodb.cursor.batches_returned.count")
+				require.True(t, ok)
+				require.Equal(t, int64(2), batchesReturned.Int())
+
+				documentsReturned, ok := logAttrs.Get("mongodb.cursor.documents_returned.count")
+				require.True(t, ok)
+				require.Equal(t, int64(10), documentsReturned.Int())
+
+				cursorID, ok := logAttrs.Get("mongodb.cursor.id")
+				require.True(t, ok)
+				require.Equal(t, "99", cursorID.Str())
+
+				noTimeout, ok := logAttrs.Get("mongodb.cursor.no_timeout")
+				require.True(t, ok)
+				require.True(t, noTimeout.Bool())
+
+				operationUsingCursorID, ok := logAttrs.Get("mongodb.cursor.operation_using_cursor_id")
+				require.True(t, ok)
+				require.Equal(t, "321", operationUsingCursorID.Str())
+
+				originatingCommand, ok := logAttrs.Get("mongodb.cursor.originating_command")
+				require.True(t, ok)
+				require.Contains(t, originatingCommand.Str(), "aggregate")
+				require.NotContains(t, originatingCommand.Str(), "mycol")
+				require.NotContains(t, originatingCommand.Str(), "sensitive-value")
+				require.NotContains(t, originatingCommand.Str(), "cursor comment")
+
+				tailable, ok := logAttrs.Get("mongodb.cursor.tailable")
+				require.True(t, ok)
+				require.True(t, tailable.Bool())
 			},
 		},
 		{
@@ -749,6 +917,7 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 			},
 			setupSecondaryClients: func(t *testing.T) []*fakeClient {
 				fc := &fakeClient{}
+				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "secondary1:27017"}, nil)
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{}, errors.New("secondary unreachable"))
 				return []*fakeClient{fc}
 			},
@@ -773,6 +942,7 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 				fc1.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "secondary1:27017"}, nil)
 
 				fc2 := &fakeClient{}
+				fc2.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "secondary2:27017"}, nil)
 				fc2.On("CurrentOp", mock.Anything).Return([]bson.M{}, errors.New("secondary2 down"))
 
 				fc3 := &fakeClient{}
@@ -787,9 +957,10 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 			expectedResourceCount: 3,
 		},
 		{
-			desc: "Primary fails returns error even with healthy secondaries",
+			desc: "Primary CurrentOp failure does not block healthy secondaries",
 			setupPrimaryClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
+				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "primary:27017"}, nil)
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{}, errors.New("primary unreachable"))
 				return fc
 			},
@@ -801,7 +972,8 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "secondary1:27017"}, nil)
 				return []*fakeClient{fc}
 			},
-			expectedErr: "primary unreachable",
+			expectedLogCount:      1,
+			expectedResourceCount: 1,
 		},
 		{
 			desc: "No secondaries configured",
@@ -1238,10 +1410,49 @@ func TestProcessCurrentOpMaxRowsPerQueryAppliesAfterSkipping(t *testing.T) {
 	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	namespace, ok := records.At(0).Attributes().Get("db.namespace")
 	require.True(t, ok)
-	require.Equal(t, "mydb.first", namespace.Str())
+	require.Equal(t, "mydb", namespace.Str())
+	mongodbNamespace, ok := records.At(0).Attributes().Get("mongodb.namespace")
+	require.True(t, ok)
+	require.Equal(t, "mydb.first", mongodbNamespace.Str())
 	namespace, ok = records.At(1).Attributes().Get("db.namespace")
 	require.True(t, ok)
-	require.Equal(t, "mydb.second", namespace.Str())
+	require.Equal(t, "mydb", namespace.Str())
+	mongodbNamespace, ok = records.At(1).Attributes().Get("mongodb.namespace")
+	require.True(t, ok)
+	require.Equal(t, "mydb.second", mongodbNamespace.Str())
+}
+
+func TestProcessCurrentOpMaxRowsPerQueryZeroMeansNoRows(t *testing.T) {
+	scraperCfg := createDefaultConfig().(*Config)
+	scraperCfg.Events.DbServerQuerySample.Enabled = true
+	scraperCfg.QuerySampleCollection.MaxRowsPerQuery = 0
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
+
+	operations := []bson.M{
+		{
+			"ns":      "mydb.first",
+			"op":      "query",
+			"command": bson.D{{Key: "find", Value: "first"}},
+			"active":  true,
+		},
+		{
+			"ns":      "mydb.second",
+			"op":      "query",
+			"command": bson.D{{Key: "find", Value: "second"}},
+			"active":  true,
+		},
+		{
+			"ns":      "mydb.third",
+			"op":      "query",
+			"command": bson.D{{Key: "find", Value: "third"}},
+			"active":  true,
+		},
+	}
+
+	scraper.processCurrentOp(t.Context(), operations, pcommon.NewTimestampFromTime(time.Now()))
+
+	logs := scraper.lb.Emit()
+	require.Equal(t, 0, logs.LogRecordCount(), "max_rows_per_query=0 should emit no query samples")
 }
 
 func TestDependentMetricsWhenDisabled(t *testing.T) {

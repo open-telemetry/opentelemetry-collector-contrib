@@ -29,9 +29,7 @@ func (o *obfuscator) obfuscateMongoDBString(command string) string {
 }
 
 func cleanCommand(command bson.D) bson.D {
-	commandCopied := make(bson.D, len(command))
-
-	finalLen := 0
+	cleaned := make(bson.D, 0, len(command))
 	for _, v := range command {
 		if v.Key == "" {
 			continue
@@ -39,10 +37,7 @@ func cleanCommand(command bson.D) bson.D {
 		if _, ok := keysToCleanFromCommand[v.Key]; ok {
 			continue
 		}
-		commandCopied[finalLen] = v
-		finalLen++
+		cleaned = append(cleaned, v)
 	}
-	cleaned := make(bson.D, finalLen)
-	copy(cleaned, commandCopied)
 	return cleaned
 }
