@@ -23,7 +23,7 @@ feature_gates:
     description: "When enabled, a new metric stat_count_bytes_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of bytes sampled or not per sampling policy, where the original counts traces."
     stage: alpha
     from_version: v0.152.0
-    reference_url: TODO
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48348
 
   - id: "processor.tailsamplingprocessor.metricstatcountspanssampled"
     description: "When enabled, a new metric stat_count_spans_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of spans sampled or not per sampling policy, where the original counts traces."

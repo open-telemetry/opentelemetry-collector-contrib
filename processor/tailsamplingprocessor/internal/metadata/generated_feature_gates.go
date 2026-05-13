@@ -19,7 +19,7 @@ var ProcessorTailsamplingprocessorMetricstatcountbytessampledFeatureGate = featu
 	"processor.tailsamplingprocessor.metricstatcountbytessampled",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, a new metric stat_count_bytes_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of bytes sampled or not per sampling policy, where the original counts traces."),
-	featuregate.WithRegisterReferenceURL("TODO"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48348"),
 	featuregate.WithRegisterFromVersion("v0.152.0"),
 )
 
