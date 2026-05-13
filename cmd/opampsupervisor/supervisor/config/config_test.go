@@ -629,6 +629,16 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
 		},
 		{
+			name: "Package capabilities are reported",
+			capabilities: Capabilities{
+				AcceptsPackages:        true,
+				ReportsPackageStatuses: true,
+			},
+			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses,
+		},
+		{
 			name: "Many capabilities",
 			capabilities: Capabilities{
 				AcceptsRemoteConfig:            true,
@@ -642,6 +652,8 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				ReportsRemoteConfig:            true,
 				ReportsAvailableComponents:     true,
 				ReportsHeartbeat:               true,
+				AcceptsPackages:                true,
+				ReportsPackageStatuses:         true,
 			},
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
@@ -654,7 +666,9 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents |
-				protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat,
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat |
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses,
 		},
 	}
 
