@@ -74,7 +74,7 @@ func TestEventHubEventHandler_ProcessBlobCreated_DoesNotDeleteOnConsumeError(t *
 	blobClient := newMockBlobClient()
 
 	logsConsumer := &mockLogsDataConsumer{}
-	logsConsumer.On("consumeLogsJSON", mock.Anything, mock.Anything).Return(errors.New("consume failed"))
+	logsConsumer.On("consumeLogs", mock.Anything, mock.Anything).Return(errors.New("consume failed"))
 
 	handler := getEventHubEventHandler(t, blobClient)
 	handler.setLogsDataConsumer(logsConsumer)
@@ -91,7 +91,7 @@ func TestEventHubEventHandler_NewMessageHandler_PropagatesConsumeError(t *testin
 	blobClient := newMockBlobClient()
 
 	logsConsumer := &mockLogsDataConsumer{}
-	logsConsumer.On("consumeLogsJSON", mock.Anything, mock.Anything).Return(errors.New("consume failed"))
+	logsConsumer.On("consumeLogs", mock.Anything, mock.Anything).Return(errors.New("consume failed"))
 
 	handler := getEventHubEventHandler(t, blobClient)
 	handler.setLogsDataConsumer(logsConsumer)
