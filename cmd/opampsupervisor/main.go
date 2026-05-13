@@ -11,6 +11,8 @@ import (
 	"os"
 	"os/signal"
 
+	"go.opentelemetry.io/collector/featuregate"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
@@ -24,6 +26,7 @@ func main() {
 
 func runInteractive() error {
 	configFlag := flag.String("config", "", "Path to a supervisor configuration file")
+	featuregate.GlobalRegistry().RegisterFlags(flag.CommandLine)
 	flag.Parse()
 
 	cfg, err := config.Load(*configFlag)

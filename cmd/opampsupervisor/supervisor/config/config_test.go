@@ -15,10 +15,13 @@ import (
 
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -31,6 +34,15 @@ func simpleError(err string) func() string {
 func TestValidate(t *testing.T) {
 	tlsConfig := configtls.NewDefaultClientConfig()
 	tlsConfig.InsecureSkipVerify = true
+
+	// Cases that exercise a non-HealthCheck failure path still need a
+	// HealthCheck with a valid transport so confmap.Validate doesn't trip on
+	// the empty default before reaching the field under test.
+	defaultHealthCheck := HealthCheck{
+		ServerConfig: confighttp.ServerConfig{
+			NetAddr: confignet.AddrConfig{Transport: confignet.TransportTypeTCP},
+		},
+	}
 
 	testCases := []struct {
 		name              string
@@ -60,6 +72,7 @@ func TestValidate(t *testing.T) {
 				Storage: Storage{
 					Directory: "/etc/opamp-supervisor/storage",
 				},
+				HealthCheck: defaultHealthCheck,
 			},
 		},
 		{
@@ -259,6 +272,7 @@ func TestValidate(t *testing.T) {
 				Storage: Storage{
 					Directory: "/etc/opamp-supervisor/storage",
 				},
+				HealthCheck: defaultHealthCheck,
 			},
 		},
 		{
@@ -283,6 +297,7 @@ func TestValidate(t *testing.T) {
 				Storage: Storage{
 					Directory: "/etc/opamp-supervisor/storage",
 				},
+				HealthCheck: defaultHealthCheck,
 			},
 		},
 		{
@@ -357,6 +372,7 @@ func TestValidate(t *testing.T) {
 				Storage: Storage{
 					Directory: "/etc/opamp-supervisor/storage",
 				},
+				HealthCheck: defaultHealthCheck,
 			},
 		},
 		{
@@ -407,6 +423,7 @@ func TestValidate(t *testing.T) {
 				Storage: Storage{
 					Directory: "/etc/opamp-supervisor/storage",
 				},
+				HealthCheck: defaultHealthCheck,
 			},
 			expectedErrorFunc: func() string {
 				if runtime.GOOS != "windows" {
@@ -438,6 +455,7 @@ func TestValidate(t *testing.T) {
 				Storage: Storage{
 					Directory: "/etc/opamp-supervisor/storage",
 				},
+				HealthCheck: defaultHealthCheck,
 			},
 		},
 		{
@@ -547,7 +565,7 @@ func TestValidate(t *testing.T) {
 					return ""
 				})
 
-			err := tc.config.Validate()
+			err := confmap.Validate(tc.config)
 
 			if tc.expectedErrorFunc != nil && tc.expectedErrorFunc() != "" {
 				require.ErrorContains(t, err, tc.expectedErrorFunc())
@@ -556,6 +574,54 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSupervisor_UnmarshalExtensions(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"extensions": map[string]any{
+			"nop":          map[string]any{},
+			"nop/instance": map[string]any{},
+		},
+	})
+
+	cfg := DefaultSupervisor()
+	require.NoError(t, conf.Unmarshal(&cfg))
+
+	defaultCfg := extensiontest.NewNopFactory().CreateDefaultConfig()
+	require.Equal(t, defaultCfg, cfg.Extensions[component.NewID(extensiontest.NopType)])
+	require.Equal(t, defaultCfg, cfg.Extensions[component.MustNewIDWithName(extensiontest.NopType.String(), "instance")])
+	require.Len(t, cfg.Extensions, 2)
+}
+
+func TestSupervisor_UnmarshalExtensionsUnknownType(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"extensions": map[string]any{
+			"doesnotexist": map[string]any{},
+		},
+	})
+
+	cfg := DefaultSupervisor()
+	err := conf.Unmarshal(&cfg)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unknown extension type")
+}
+
+// TestSupervisor_TopLevelValidate confirms that confmap.Validate produces
+// path-prefixed errors when called at the supervisor-config root, which is
+// what NewSupervisor relies on for actionable validation messages.
+func TestSupervisor_TopLevelValidate(t *testing.T) {
+	cfg := DefaultSupervisor()
+	// HealthCheck endpoint with an invalid port produces a Validate() error
+	// from the HealthCheck substruct via reflection.
+	cfg.HealthCheck = HealthCheck{
+		ServerConfig: confighttp.ServerConfig{
+			NetAddr: confignet.AddrConfig{Endpoint: "localhost:99999"},
+		},
+	}
+
+	err := confmap.Validate(cfg)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "healthcheck")
 }
 
 func TestOpAMPServer_OpaqueHeaders(t *testing.T) {
@@ -879,20 +945,6 @@ agent:
 				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
 				require.NoError(t, os.Remove(cfgPath))
 				runSupervisorConfigLoadTest(t, cfgPath, Supervisor{}, errors.New("cannot retrieve the configuration: unable to read the file"))
-			},
-		},
-		{
-			desc: "Failed Validation Supervisor",
-			testFunc: func(t *testing.T) {
-				config := `
-server:
-
-agent:
-  executable: %s
-`
-				config = fmt.Sprintf(config, executablePath)
-				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
-				runSupervisorConfigLoadTest(t, cfgPath, Supervisor{}, errors.New("cannot validate supervisor config"))
 			},
 		},
 	}
