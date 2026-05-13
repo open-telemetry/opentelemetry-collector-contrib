@@ -5,11 +5,8 @@ package prometheusremotewritereceiver // import "github.com/open-telemetry/opent
 
 import (
 	"encoding/hex"
-	"fmt"
-	"strings"
 	"time"
 
-	"github.com/cespare/xxhash/v2"
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/schema"
@@ -19,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
@@ -153,12 +151,18 @@ type exemplarKey struct {
 	MetricType   writev2.Metadata_MetricType
 }
 
+// sep is a byte that is not valid UTF-8, used as a field separator to prevent
+// hash collisions between different field boundary combinations (e.g. "ab"+"c" vs "a"+"bc").
+var sep = []byte{0xff}
+
 func (k exemplarKey) hash() uint64 {
-	const sep = "\xff"
-	return xxhash.Sum64String(strings.Join([]string{
-		k.ScopeName,
-		k.ScopeVersion,
-		k.MetricName,
-		fmt.Sprintf("%d", k.MetricType),
-	}, sep))
+	h := identity.Resource{}.Hash()
+	h.Write([]byte(k.ScopeName))
+	h.Write(sep)
+	h.Write([]byte(k.ScopeVersion))
+	h.Write(sep)
+	h.Write([]byte(k.MetricName))
+	h.Write(sep)
+	h.Write([]byte(k.MetricType.String()))
+	return h.Sum64()
 }
