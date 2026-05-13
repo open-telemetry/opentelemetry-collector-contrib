@@ -1074,8 +1074,8 @@ func TestExporterLogs(t *testing.T) {
 
 		mustSendLogs(t, exporter, logs)
 		rec.WaitItems(1)
-		// Brief settle to ensure the _noindex record didn't sneak through asynchronously.
-		time.Sleep(200 * time.Millisecond)
+		// Drain the pipeline so the recorder reflects the final state.
+		require.NoError(t, exporter.Shutdown(t.Context()))
 
 		items := rec.Items()
 		require.Len(t, items, 1, "only the non-noindex log record should reach the bulk indexer")
@@ -1910,7 +1910,7 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 		rec.WaitItems(1)
-		time.Sleep(200 * time.Millisecond)
+		require.NoError(t, exporter.Shutdown(t.Context()))
 
 		items := rec.Items()
 		require.Len(t, items, 1, "noindex datapoint should be skipped; only the kept series should index")
@@ -2914,7 +2914,7 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, traces)
 		rec.WaitItems(1)
-		time.Sleep(200 * time.Millisecond)
+		require.NoError(t, exporter.Shutdown(t.Context()))
 
 		items := rec.Items()
 		require.Len(t, items, 1, "only the non-noindex span should reach the bulk indexer")
@@ -2941,7 +2941,7 @@ func TestExporterTraces(t *testing.T) {
 		mustSendTraces(t, exporter, traces)
 		// One span doc + one (non-noindex) span event doc = 2 items expected.
 		rec.WaitItems(2)
-		time.Sleep(200 * time.Millisecond)
+		require.NoError(t, exporter.Shutdown(t.Context()))
 
 		items := rec.Items()
 		require.Len(t, items, 2, "noindex span event should be skipped; one span + one event expected")
