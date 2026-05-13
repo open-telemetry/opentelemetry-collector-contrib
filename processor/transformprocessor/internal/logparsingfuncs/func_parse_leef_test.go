@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package logs
+package logparsingfuncs
 
 import (
 	"context"
@@ -709,7 +709,7 @@ func Test_parseLEEF_target_error(t *testing.T) {
 }
 
 func Test_createParseLEEFFunction(t *testing.T) {
-	factory := newParseLEEFFactory()
+	factory := NewParseLEEFFactory()
 	assert.Equal(t, "parse_leef", factory.Name())
 
 	args := &parseLEEFArguments{
@@ -729,7 +729,7 @@ func Test_createParseLEEFFunction(t *testing.T) {
 }
 
 func Test_createParseLEEFFunction_wrongArgs(t *testing.T) {
-	factory := newParseLEEFFactory()
+	factory := NewParseLEEFFactory()
 
 	_, err := factory.CreateFunction(ottl.FunctionContext{}, nil)
 	require.Error(t, err)

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
+package logparsingfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logparsingfuncs"
 
 import (
 	"context"
@@ -20,7 +20,7 @@ type parseLEEFArguments struct {
 	Target ottl.StringGetter[*ottllog.TransformContext]
 }
 
-func newParseLEEFFactory() ottl.Factory[*ottllog.TransformContext] {
+func NewParseLEEFFactory() ottl.Factory[*ottllog.TransformContext] {
 	return ottl.NewFactory("parse_leef", &parseLEEFArguments{}, createParseLEEFFunction)
 }
 
