@@ -576,6 +576,7 @@ query sample
 | mongodb.lsid | The logical session identifier associated with the MongoDB operation, encoded as JSON. | Any Str | - |
 | mongodb.operation.id | Identifier of the MongoDB operation. | Any Str | - |
 | mongodb.operation.plan_summary | Summary of the execution plan for the MongoDB operation. | Any Str | - |
+| mongodb.operation.query_framework | Query framework used by the MongoDB operation. | Any Str | - |
 | mongodb.operation.status | Simplified status of the MongoDB operation. | Str: ``active``, ``waiting`` | - |
 | mongodb.operation.type | The low-level MongoDB operation type (e.g. query, insert, update, remove, getmore, command). | Any Str | - |
 | mongodb.operation.duration | The duration of the MongoDB operation in seconds. | Any Double | - |

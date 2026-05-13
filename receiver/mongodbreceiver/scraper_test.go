@@ -639,6 +639,7 @@ func TestScrapeLogs(t *testing.T) {
 						"appName":           "testApp",
 						"opid":              int32(123),
 						"planSummary":       "IXSCAN { x: 1 }",
+						"queryFramework":    "classic",
 						"lsid":              bson.M{"id": "session-1"},
 						"effectiveUsers":    bson.A{bson.M{"user": "admin"}},
 					},
@@ -667,6 +668,9 @@ func TestScrapeLogs(t *testing.T) {
 				planSummary, ok := logAttrs.Get("mongodb.operation.plan_summary")
 				require.True(t, ok)
 				require.Equal(t, "IXSCAN { x: 1 }", planSummary.Str())
+				queryFramework, ok := logAttrs.Get("mongodb.operation.query_framework")
+				require.True(t, ok)
+				require.Equal(t, "classic", queryFramework.Str())
 			},
 		},
 		{

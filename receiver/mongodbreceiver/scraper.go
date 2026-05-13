@@ -45,6 +45,7 @@ const (
 	lsidKey                  = "lsid"
 	operationIDKey           = "opid"
 	planSummaryKey           = "planSummary"
+	queryFrameworkKey        = "queryFramework"
 	prepareReadConflictsKey  = "prepareReadConflicts"
 	writeConflictsKey        = "writeConflicts"
 	numYieldsKey             = "numYields"
@@ -230,13 +231,13 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		databaseName := getDBFromNamespace(namespace)
 		command := getValue[bson.D](op, commandKey)
 		opType := getValue[string](op, opKey)
-		commandType := command[0].Key
-		queryTruncated := getQueryTruncated(command)
+		commandType, queryTruncated := getCommandDetails(command)
 		prepareReadConflictCount := getInt64Value(op, prepareReadConflictsKey)
 		writeConflictCount := getInt64Value(op, writeConflictsKey)
 		yieldCount := getInt64Value(op, numYieldsKey)
 		lsid := getJSONValue(op, lsidKey)
 		planSummary := getValue[string](op, planSummaryKey)
+		queryFramework := getValue[string](op, queryFrameworkKey)
 		waitingForLock := getBoolValue(op, waitingForLockKey)
 		locks := getJSONValue(op, locksKey)
 		lockStats := getJSONValue(op, lockStatsKey)
@@ -286,6 +287,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 			lsid,
 			operationID,
 			planSummary,
+			queryFramework,
 			operationStatus,
 			opType,
 			durationSeconds,
@@ -393,13 +395,18 @@ func getCollectionFromNamespace(namespace string) string {
 	return ""
 }
 
-func getQueryTruncated(command bson.D) metadata.AttributeMongodbQueryTruncated {
+func getCommandDetails(command bson.D) (string, metadata.AttributeMongodbQueryTruncated) {
+	if len(command) == 0 {
+		return "", metadata.AttributeMongodbQueryTruncatedNotTruncated
+	}
+
+	commandType := command[0].Key
 	for _, elem := range command {
 		if elem.Key == "$truncated" {
-			return metadata.AttributeMongodbQueryTruncatedTruncated
+			return commandType, metadata.AttributeMongodbQueryTruncatedTruncated
 		}
 	}
-	return metadata.AttributeMongodbQueryTruncatedNotTruncated
+	return commandType, metadata.AttributeMongodbQueryTruncatedNotTruncated
 }
 
 // getValue extracts a value from a BSON document with type assertion

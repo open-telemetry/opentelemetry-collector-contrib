@@ -130,7 +130,7 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
-			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "client.address-val", 11, AttributeDbSystemNameMongodb, "db.namespace-val", "db.collection.name-val", "db.operation.name-val", "db.query.text-val", AttributeMongodbQueryTruncatedTruncated, "user.name-val", "mongodb.application.name-val", "mongodb.database.name-val", "mongodb.lsid-val", "mongodb.operation.id-val", "mongodb.operation.plan_summary-val", AttributeMongodbOperationStatusActive, "mongodb.operation.type-val", 26.100000, 45, 38, 29, true, "mongodb.operation.locks-val", "mongodb.operation.lock_stats-val", true, "mongodb.operation.flow_control_stats-val", false, "mongodb.operation.waiting_for_latch.details-val")
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "client.address-val", 11, AttributeDbSystemNameMongodb, "db.namespace-val", "db.collection.name-val", "db.operation.name-val", "db.query.text-val", AttributeMongodbQueryTruncatedTruncated, "user.name-val", "mongodb.application.name-val", "mongodb.database.name-val", "mongodb.lsid-val", "mongodb.operation.id-val", "mongodb.operation.plan_summary-val", "mongodb.operation.query_framework-val", AttributeMongodbOperationStatusActive, "mongodb.operation.type-val", 26.100000, 45, 38, 29, true, "mongodb.operation.locks-val", "mongodb.operation.lock_stats-val", true, "mongodb.operation.flow_control_stats-val", false, "mongodb.operation.waiting_for_latch.details-val")
 
 			rb := lb.NewResourceBuilder()
 			rb.SetServerAddress("server.address-val")
@@ -207,6 +207,9 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("mongodb.operation.plan_summary")
 					assert.True(t, ok)
 					assert.Equal(t, "mongodb.operation.plan_summary-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("mongodb.operation.query_framework")
+					assert.True(t, ok)
+					assert.Equal(t, "mongodb.operation.query_framework-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("mongodb.operation.status")
 					assert.True(t, ok)
 					assert.Equal(t, "active", attrVal.Str())

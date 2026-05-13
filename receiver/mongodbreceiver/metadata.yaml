@@ -129,6 +129,9 @@ attributes:
   mongodb.operation.prepare_read_conflict.count:
     description: The number of times the MongoDB operation had to wait for a prepared transaction with a write to commit or abort.
     type: int
+  mongodb.operation.query_framework:
+    description: Query framework used by the MongoDB operation.
+    type: string
   mongodb.operation.status:
     description: Simplified status of the MongoDB operation.
     type: string
@@ -212,6 +215,7 @@ events:
       - mongodb.lsid
       - mongodb.operation.id
       - mongodb.operation.plan_summary
+      - mongodb.operation.query_framework
       - mongodb.operation.status
       - mongodb.operation.type
       - mongodb.operation.duration
