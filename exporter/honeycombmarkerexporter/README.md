@@ -6,7 +6,8 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fhoneycombmarker%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fhoneycombmarker) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fhoneycombmarker%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fhoneycombmarker) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_honeycombmarker)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_honeycombmarker&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@fchikwekwe](https://www.github.com/fchikwekwe) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@VinozzZ](https://www.github.com/VinozzZ), [@codeboten](https://www.github.com/codeboten) |
+| Emeritus      | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@fchikwekwe](https://www.github.com/fchikwekwe) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -31,6 +32,8 @@ The following configuration options are supported:
   * `message_key` (Optional): The key of the attribute whose value will be used as the marker's message. If necessary the value will be converted to a string.
   * `url_key` (Optional): The key of the attribute whose value will be used as the marker's url. If necessary the value will be converted to a string.
 
+`log_conditions` accept both the legacy un-prefixed form (`body == "x"`) and the new OTTL path-context form (`log.body == "x"`). Resource and scope paths are also reachable via `resource.attributes["..."]`, `scope.name`, etc. Un-prefixed paths continue to work for now; the parser logs the rewritten statements on startup. It is recommended to switch to the new syntax to avoid breaking changes in the future.
+
 Example:
 ```yaml
 exporters:
@@ -41,5 +44,10 @@ exporters:
       - type: k8s-backoff-events
         rules:
           log_conditions:
-            - IsMap(body) and IsMap(body["object"]) and body["object"]["reason"] == "Backoff"
+            - IsMap(log.body) and IsMap(log.body["object"]) and log.body["object"]["reason"] == "Backoff"
+      # Path-context syntax allows referencing resource and scope fields directly
+      - type: deployment-events
+        rules:
+          log_conditions:
+            - log.body["event"] == "deploy" and resource.attributes["service.name"] == "checkout"
 ```

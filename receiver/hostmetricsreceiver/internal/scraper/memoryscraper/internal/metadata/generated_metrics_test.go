@@ -58,10 +58,10 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemMemoryLinuxHugepagesUsage"] = mb.metricSystemMemoryLinuxHugepagesUsage.config.AggregationStrategy
-			aggMap["SystemMemoryLinuxHugepagesUtilization"] = mb.metricSystemMemoryLinuxHugepagesUtilization.config.AggregationStrategy
-			aggMap["SystemMemoryUsage"] = mb.metricSystemMemoryUsage.config.AggregationStrategy
-			aggMap["SystemMemoryUtilization"] = mb.metricSystemMemoryUtilization.config.AggregationStrategy
+			aggMap["system.memory.linux.hugepages.usage"] = mb.metricSystemMemoryLinuxHugepagesUsage.config.AggregationStrategy
+			aggMap["system.memory.linux.hugepages.utilization"] = mb.metricSystemMemoryLinuxHugepagesUtilization.config.AggregationStrategy
+			aggMap["system.memory.usage"] = mb.metricSystemMemoryUsage.config.AggregationStrategy
+			aggMap["system.memory.utilization"] = mb.metricSystemMemoryUtilization.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
