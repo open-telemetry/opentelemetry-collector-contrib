@@ -139,7 +139,7 @@ func newLogsReceiver(cfg *Config, settings receiver.Settings, consumer consumer.
 	}
 
 	if cfg.Logs.InitialLookback != 0 {
-		startTime = nowFunc().Add(cfg.Logs.InitialLookback)
+		startTime = nowFunc().Add(-cfg.Logs.InitialLookback)
 	}
 
 	return &logsReceiver{

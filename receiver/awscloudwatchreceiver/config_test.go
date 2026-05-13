@@ -154,13 +154,13 @@ func TestValidate(t *testing.T) {
 						},
 					},
 					StartFrom:       "2020-01-01T00:00:00Z",
-					InitialLookback: -time.Hour,
+					InitialLookback: time.Hour,
 				},
 			},
 			expectedErr: errInitialLookbackAndStartFrom,
 		},
 		{
-			name: "Positive Initial Lookback",
+			name: "Negative Initial Lookback",
 			config: Config{
 				Region: "us-east-1",
 				Logs: LogsConfig{
@@ -171,7 +171,7 @@ func TestValidate(t *testing.T) {
 							Limit: defaultLogGroupLimit,
 						},
 					},
-					InitialLookback: time.Hour,
+					InitialLookback: -time.Hour,
 				},
 			},
 			expectedErr: errInvalidInitialLookback,
@@ -319,7 +319,7 @@ func TestLoadLogsConfig(t *testing.T) {
 							Limit: defaultLogGroupLimit,
 						},
 					},
-					InitialLookback: -time.Hour,
+					InitialLookback: time.Hour,
 				},
 			},
 		},

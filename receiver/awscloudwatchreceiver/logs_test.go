@@ -59,7 +59,7 @@ func TestInitialLookback(t *testing.T) {
 			"my-log-group": {},
 		},
 	}
-	cfg.Logs.InitialLookback = -time.Hour
+	cfg.Logs.InitialLookback = time.Hour
 
 	mc := &mockClient{}
 	expectedStart := fixedNow.Add(-time.Hour).UnixMilli()
@@ -95,7 +95,7 @@ func TestInitialLookbackOverriddenByCheckpoint(t *testing.T) {
 			groupName: {},
 		},
 	}
-	cfg.Logs.InitialLookback = -time.Hour
+	cfg.Logs.InitialLookback = time.Hour
 
 	checkpointTime := fixedNow.Add(-30 * time.Minute)
 
@@ -135,7 +135,7 @@ func TestInitialLookbackSlidesAcrossPolls(t *testing.T) {
 			"my-log-group": {},
 		},
 	}
-	cfg.Logs.InitialLookback = -time.Hour
+	cfg.Logs.InitialLookback = time.Hour
 
 	mc := &mockClient{}
 	mc.On("FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
