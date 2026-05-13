@@ -1,0 +1,41 @@
+name: Elasticsearch Golden Files Validation
+
+on:
+  pull_request:
+    paths:
+      - 'exporter/elasticsearchexporter/**'
+      - '!exporter/elasticsearchexporter/**.md'
+      - '!exporter/elasticsearchexporter/testdata/golden/**'
+
+jobs:
+  validate-golden-files:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache-dependency-path: 'exporter/elasticsearchexporter/go.sum'
+
+      - name: Validate golden files match current code
+        run: |
+          cd exporter/elasticsearchexporter
+          go test -tags=integration -run TestDocumentStructureGolden -v
+
+      - name: Provide update instructions on failure
+        if: failure()
+        run: |
+          echo "::error::Golden files are out of date with current document structure."
+          echo ""
+          echo "The document structure has changed. If this is intentional:"
+          echo "1. Run: cd exporter/elasticsearchexporter && make golden-update"
+          echo "2. Review the changes in testdata/golden/"
+          echo "3. Commit the updated golden files"
+          echo ""
+          echo "See DOCUMENT_STRUCTURE.md for more information."
+          exit 1
+
+
