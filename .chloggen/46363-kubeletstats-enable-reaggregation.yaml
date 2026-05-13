@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/kubelet_stats
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Enables dynamic metric reaggregation in the Kubelet Stats receiver. This does not break existing configuration files.
+note: Enables dynamic metric reaggregation capability
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [46363]
