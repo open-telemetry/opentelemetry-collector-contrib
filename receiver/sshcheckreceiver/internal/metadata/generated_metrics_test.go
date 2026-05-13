@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,14 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["sshcheck.error"] = mb.metricSshcheckError.config.AggregationStrategy
+			aggMap["sshcheck.sftp_error"] = mb.metricSshcheckSftpError.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -74,12 +85,18 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSshcheckErrorDataPoint(ts, 1, "error.message-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSshcheckErrorDataPoint(ts, 3, "error.message-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSshcheckSftpDurationDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordSshcheckSftpErrorDataPoint(ts, 1, "error.message-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSshcheckSftpErrorDataPoint(ts, 3, "error.message-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSshcheckSftpStatusDataPoint(ts, 1)
@@ -92,6 +109,10 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetSSHEndpoint("ssh.endpoint-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricSshcheckError.aggDataPoints)
+				assert.Empty(t, mb.metricSshcheckSftpError.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -131,22 +152,49 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "sshcheck.error":
-					assert.False(t, validatedMetrics["sshcheck.error"], "Found a duplicate in the metrics slice: sshcheck.error")
-					validatedMetrics["sshcheck.error"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Records errors occurring during SSH check.", mi.Description())
-					assert.Equal(t, "{error}", mi.Unit())
-					assert.False(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					errorMessageAttrVal, ok := dp.Attributes().Get("error.message")
-					assert.True(t, ok)
-					assert.Equal(t, "error.message-val", errorMessageAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sshcheck.error"], "Found a duplicate in the metrics slice: sshcheck.error")
+						validatedMetrics["sshcheck.error"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Records errors occurring during SSH check.", mi.Description())
+						assert.Equal(t, "{error}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						errorMessageAttrVal, ok := dp.Attributes().Get("error.message")
+						assert.True(t, ok)
+						assert.Equal(t, "error.message-val", errorMessageAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sshcheck.error"], "Found a duplicate in the metrics slice: sshcheck.error")
+						validatedMetrics["sshcheck.error"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Records errors occurring during SSH check.", mi.Description())
+						assert.Equal(t, "{error}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sshcheck.error"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("error.message")
+						assert.False(t, ok)
+					}
 				case "sshcheck.sftp_duration":
 					assert.False(t, validatedMetrics["sshcheck.sftp_duration"], "Found a duplicate in the metrics slice: sshcheck.sftp_duration")
 					validatedMetrics["sshcheck.sftp_duration"] = true
@@ -160,22 +208,49 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "sshcheck.sftp_error":
-					assert.False(t, validatedMetrics["sshcheck.sftp_error"], "Found a duplicate in the metrics slice: sshcheck.sftp_error")
-					validatedMetrics["sshcheck.sftp_error"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Records errors occurring during SFTP check.", mi.Description())
-					assert.Equal(t, "{error}", mi.Unit())
-					assert.False(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					errorMessageAttrVal, ok := dp.Attributes().Get("error.message")
-					assert.True(t, ok)
-					assert.Equal(t, "error.message-val", errorMessageAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sshcheck.sftp_error"], "Found a duplicate in the metrics slice: sshcheck.sftp_error")
+						validatedMetrics["sshcheck.sftp_error"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Records errors occurring during SFTP check.", mi.Description())
+						assert.Equal(t, "{error}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						errorMessageAttrVal, ok := dp.Attributes().Get("error.message")
+						assert.True(t, ok)
+						assert.Equal(t, "error.message-val", errorMessageAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sshcheck.sftp_error"], "Found a duplicate in the metrics slice: sshcheck.sftp_error")
+						validatedMetrics["sshcheck.sftp_error"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Records errors occurring during SFTP check.", mi.Description())
+						assert.Equal(t, "{error}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sshcheck.sftp_error"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("error.message")
+						assert.False(t, ok)
+					}
 				case "sshcheck.sftp_status":
 					assert.False(t, validatedMetrics["sshcheck.sftp_status"], "Found a duplicate in the metrics slice: sshcheck.sftp_status")
 					validatedMetrics["sshcheck.sftp_status"] = true

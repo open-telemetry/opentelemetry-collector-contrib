@@ -58,13 +58,13 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemDiskIo"] = mb.metricSystemDiskIo.config.AggregationStrategy
-			aggMap["SystemDiskIoTime"] = mb.metricSystemDiskIoTime.config.AggregationStrategy
-			aggMap["SystemDiskMerged"] = mb.metricSystemDiskMerged.config.AggregationStrategy
-			aggMap["SystemDiskOperationTime"] = mb.metricSystemDiskOperationTime.config.AggregationStrategy
-			aggMap["SystemDiskOperations"] = mb.metricSystemDiskOperations.config.AggregationStrategy
-			aggMap["SystemDiskPendingOperations"] = mb.metricSystemDiskPendingOperations.config.AggregationStrategy
-			aggMap["SystemDiskWeightedIoTime"] = mb.metricSystemDiskWeightedIoTime.config.AggregationStrategy
+			aggMap["system.disk.io"] = mb.metricSystemDiskIo.config.AggregationStrategy
+			aggMap["system.disk.io_time"] = mb.metricSystemDiskIoTime.config.AggregationStrategy
+			aggMap["system.disk.merged"] = mb.metricSystemDiskMerged.config.AggregationStrategy
+			aggMap["system.disk.operation_time"] = mb.metricSystemDiskOperationTime.config.AggregationStrategy
+			aggMap["system.disk.operations"] = mb.metricSystemDiskOperations.config.AggregationStrategy
+			aggMap["system.disk.pending_operations"] = mb.metricSystemDiskPendingOperations.config.AggregationStrategy
+			aggMap["system.disk.weighted_io_time"] = mb.metricSystemDiskWeightedIoTime.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
