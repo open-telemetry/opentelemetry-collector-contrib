@@ -60,8 +60,8 @@ jobs:
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
-      matrix: ${{ steps.scope.outputs.matrix }}
-      mode: ${{ steps.mode.outputs.mode }}
+      matrix: ${{ steps.post.outputs.matrix }}
+      mode: ${{ steps.post.outputs.mode }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -107,22 +107,34 @@ jobs:
             "other"
           ]'
         run: ./.github/workflows/scripts/compute-ci-scope.sh
-      - name: Derive mode
-        id: mode
+      - name: Filter matrix and derive mode
+        id: post
         shell: bash
         env:
-          MATRIX: ${{ steps.scope.outputs.matrix }}
+          RAW_MATRIX: ${{ steps.scope.outputs.matrix }}
         run: |
-          # Scoped runs emit bucketed module paths (contain `/`); full runs emit
-          # named groups like "receiver-0" (no slashes). [] is skip.
-          if [[ "$MATRIX" == "[]" ]]; then
-            echo "mode=skip" >> "$GITHUB_OUTPUT"
-          elif [[ "$MATRIX" == *"/"* ]]; then
-            echo "mode=scoped" >> "$GITHUB_OUTPUT"
+          # The script maps top-level files (Makefile, .github/, etc.) to "."
+          # the root module. Strip "." entries from buckets and drop buckets
+          # that become empty -- the Makefile's per-module delegation rules
+          # don't define a target for ".", so `make TARGET GROUP="."` would
+          # fail with "No rule to make target 'for-.-target'". Top-level paths
+          # that should force a full run belong in CRITICAL_FILES instead.
+          matrix=$(echo "$RAW_MATRIX" | jq -c '[.[] | split(" ") | map(select(. != ".")) | join(" ") | select(. != "")]')
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+          # Scoped buckets contain "/" (module paths); full mode emits named
+          # groups like "receiver-0" (no slashes). [] is skip.
+          if [[ "$matrix" == "[]" ]]; then
+            mode=skip
+          elif [[ "$matrix" == *"/"* ]]; then
+            mode=scoped
           else
-            echo "mode=full" >> "$GITHUB_OUTPUT"
+            mode=full
           fi
-          echo "Derived mode for matrix: $(cat "$GITHUB_OUTPUT" | tail -1)"
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "Raw matrix:      $RAW_MATRIX"
+          echo "Filtered matrix: $matrix"
+          echo "Mode:            $mode"
 
   exp-lint-matrix:
     needs: [exp-setup-environment, exp-ci-scope]
