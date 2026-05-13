@@ -43,6 +43,7 @@ func TestLoadConfig(t *testing.T) {
 			"https://opentelemetry.io/schemas/1.4.2",
 			"https://example.com/otel/schemas/1.2.0",
 		},
+		Migration: []MigrationEntry{{Target: "https://opentelemetry.io/schemas/1.4.2", From: "https://opentelemetry.io/schemas/1.0.0"}},
 	}, cfg)
 }
 
@@ -85,6 +86,62 @@ func TestConfigurationValidation(t *testing.T) {
 	for _, tc := range tests {
 		cfg := &Config{
 			Targets: tc.target,
+		}
+
+		assert.ErrorIs(t, xconfmap.Validate(cfg), tc.expectError, tc.scenario)
+	}
+}
+
+func TestMigrationConfigValidation(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		scenario    string
+		migration   []MigrationEntry
+		expectError error
+	}{
+		{
+			scenario:  "nil migration config",
+			migration: nil,
+		},
+		{
+			scenario:    "empty from",
+			migration:   []MigrationEntry{{Target: "https://opentelemetry.io/schemas/1.9.0"}},
+			expectError: errMigrationRequiresFrom,
+		},
+		{
+			scenario:  "valid from matching target family",
+			migration: []MigrationEntry{{Target: "https://opentelemetry.io/schemas/1.9.0", From: "https://opentelemetry.io/schemas/1.8.0"}},
+		},
+		{
+			scenario:    "invalid from URL",
+			migration:   []MigrationEntry{{Target: "https://opentelemetry.io/schemas/1.9.0", From: "not-a-valid-url"}},
+			expectError: translation.ErrInvalidVersion,
+		},
+		{
+			scenario:    "from and target family mismatch",
+			migration:   []MigrationEntry{{Target: "https://opentelemetry.io/schemas/1.9.0", From: "https://example.com/schemas/1.0.0"}},
+			expectError: errMigrationFamilyMismatch,
+		},
+		{
+			scenario:    "target not in configured targets",
+			migration:   []MigrationEntry{{Target: "https://opentelemetry.io/schemas/1.8.0", From: "https://opentelemetry.io/schemas/1.7.0"}},
+			expectError: errMigrationTargetNotFound,
+		},
+		{
+			scenario: "duplicate migration target",
+			migration: []MigrationEntry{
+				{Target: "https://opentelemetry.io/schemas/1.9.0", From: "https://opentelemetry.io/schemas/1.8.0"},
+				{Target: "https://opentelemetry.io/schemas/1.9.0", From: "https://opentelemetry.io/schemas/1.7.0"},
+			},
+			expectError: errMigrationDuplicateTarget,
+		},
+	}
+
+	for _, tc := range tests {
+		cfg := &Config{
+			Targets:   []string{"https://opentelemetry.io/schemas/1.9.0"},
+			Migration: tc.migration,
 		}
 
 		assert.ErrorIs(t, xconfmap.Validate(cfg), tc.expectError, tc.scenario)

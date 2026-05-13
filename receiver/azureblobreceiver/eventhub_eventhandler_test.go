@@ -4,10 +4,13 @@
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
+	"bytes"
+	"errors"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 )
@@ -49,6 +52,68 @@ func TestNewEventHubMessageHandler(t *testing.T) {
 	logsDataConsumer.AssertNumberOfCalls(t, "consumeLogsJSON", 1)
 	tracesDataConsumer.AssertNumberOfCalls(t, "consumeTracesJSON", 1)
 	blobClient.AssertNumberOfCalls(t, "readBlob", 2)
+	blobClient.AssertNumberOfCalls(t, "deleteBlob", 2)
+}
+
+func TestEventHubEventHandler_ProcessBlobCreated_DoesNotDeleteOnReadError(t *testing.T) {
+	blobClient := &mockBlobClient{}
+	blobClient.On("readBlob", mock.Anything, mock.Anything, mock.Anything).Return((*bytes.Buffer)(nil), errors.New("read failed"))
+
+	handler := getEventHubEventHandler(t, blobClient)
+	handler.setLogsDataConsumer(newMockLogsDataConsumer())
+	handler.setTracesDataConsumer(newMockTracesDataConsumer())
+
+	err := handler.processBlobCreatedEventType(t.Context(), logsContainerName, "logs-1")
+	require.Error(t, err)
+
+	blobClient.AssertCalled(t, "readBlob", mock.Anything, logsContainerName, "logs-1")
+	blobClient.AssertNotCalled(t, "deleteBlob", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestEventHubEventHandler_ProcessBlobCreated_DoesNotDeleteOnConsumeError(t *testing.T) {
+	blobClient := newMockBlobClient()
+
+	logsConsumer := &mockLogsDataConsumer{}
+	logsConsumer.On("consumeLogsJSON", mock.Anything, mock.Anything).Return(errors.New("consume failed"))
+
+	handler := getEventHubEventHandler(t, blobClient)
+	handler.setLogsDataConsumer(logsConsumer)
+	handler.setTracesDataConsumer(newMockTracesDataConsumer())
+
+	err := handler.processBlobCreatedEventType(t.Context(), logsContainerName, "logs-1")
+	require.Error(t, err)
+
+	blobClient.AssertCalled(t, "readBlob", mock.Anything, logsContainerName, "logs-1")
+	blobClient.AssertNotCalled(t, "deleteBlob", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestEventHubEventHandler_NewMessageHandler_PropagatesConsumeError(t *testing.T) {
+	blobClient := newMockBlobClient()
+
+	logsConsumer := &mockLogsDataConsumer{}
+	logsConsumer.On("consumeLogsJSON", mock.Anything, mock.Anything).Return(errors.New("consume failed"))
+
+	handler := getEventHubEventHandler(t, blobClient)
+	handler.setLogsDataConsumer(logsConsumer)
+	handler.setTracesDataConsumer(newMockTracesDataConsumer())
+
+	err := handler.newMessageHandler(t.Context(), getEventHubEvent(logEventData))
+	require.Error(t, err)
+
+	blobClient.AssertNotCalled(t, "deleteBlob", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestEventHubEventHandler_ProcessBlobCreated_DeletesAfterSuccessfulConsume(t *testing.T) {
+	blobClient := newMockBlobClient()
+	handler := getEventHubEventHandler(t, blobClient)
+	handler.setLogsDataConsumer(newMockLogsDataConsumer())
+	handler.setTracesDataConsumer(newMockTracesDataConsumer())
+
+	err := handler.processBlobCreatedEventType(t.Context(), logsContainerName, "logs-1")
+	require.NoError(t, err)
+
+	blobClient.AssertCalled(t, "readBlob", mock.Anything, logsContainerName, "logs-1")
+	blobClient.AssertCalled(t, "deleteBlob", mock.Anything, logsContainerName, "logs-1")
 }
 
 func getEventHubEvent(eventData []byte) *azeventhubs.ReceivedEventData {
