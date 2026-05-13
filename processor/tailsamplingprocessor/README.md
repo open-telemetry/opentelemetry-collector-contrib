@@ -6,8 +6,8 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftailsampling%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ftailsampling) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftailsampling%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ftailsampling) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_tailsampling)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_tailsampling&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech), [@Logiraptor](https://www.github.com/Logiraptor), [@jmacd](https://www.github.com/jmacd) \| Seeking more code owners! |
-| Emeritus      | [@jpkrohling](https://www.github.com/jpkrohling) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech), [@jmacd](https://www.github.com/jmacd), [@csmarchbanks](https://www.github.com/csmarchbanks), [@carsonip](https://www.github.com/carsonip) \| Seeking more code owners! |
+| Emeritus      | [@jpkrohling](https://www.github.com/jpkrohling), [@Logiraptor](https://www.github.com/Logiraptor) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -33,11 +33,11 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `string_attribute`: Sample based on string attributes (resource and record) value matches, both exact and regex value matches are supported
 - `trace_state`: Sample based on [TraceState](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#tracestate) value matches
 - `trace_flags`: Sample if the [sampled trace flag](https://www.w3.org/TR/trace-context-2/#sampled-flag) was set on any span in the trace
-- `rate_limiting`: Sample based on the rate of spans per second.
+- `rate_limiting`: Sample based on the rate of spans per second using a token bucket algorithm implemented by golang.org/x/time/rate. This allows for burst traffic up to a configurable capacity while maintaining the average rate over time. The bucket is refilled continuously at the specified rate and has a maximum capacity for burst handling.
 - `bytes_limiting`: Sample based on the rate of bytes per second using a token bucket algorithm implemented by golang.org/x/time/rate. This allows for burst traffic up to a configurable capacity while maintaining the average rate over time. The bucket is refilled continuously at the specified rate and has a maximum capacity for burst handling.
 - `span_count`: Sample based on the minimum and/or maximum number of spans, inclusive. If the sum of all spans in the trace is outside the range threshold, the trace will not be sampled.
 - `boolean_attribute`: Sample based on boolean attribute (resource and record).
-- `ottl_condition`: Sample based on given boolean OTTL condition (span and span event).
+- `ottl_condition`: Sample based on given boolean OTTL condition (span and span event). Conditions may use OTTL path-based context names (e.g. `span.attributes["http.status_code"]`, `resource.attributes["service.name"]`, `spanevent.name`, `scope.name`). It is highly recommended to use this new syntax to avoid breaking changes in the future.
 - `and`: Sample based on multiple policies, creates an AND policy
 - `not`: Sample based on the opposite result a single policy, creates a NOT policy
 - `drop`: Drop (not sample) based on multiple policies, creates a DROP policy
@@ -48,8 +48,9 @@ Multiple policies exist today and it is straight forward to add more. These incl
   3. To ensure remaining capacity is filled use always_sample as one of the policies
 
 The following configuration options can also be modified:
-- `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
-- `decision_wait_after_root_received` (default = 0s): Wait time after the root span of a trace is received before making a sampling decision. 0s means disabled (only use `decision_wait`).
+- `sampling_strategy` (default = `trace-complete`): Controls decision timing and evaluation scope. `trace-complete` evaluates accumulated trace data on timer handling; `span-ingest` evaluates each incoming batch on ingest, finalizing terminal outcomes immediately and non-terminal traces on cleanup. See [Sampling Strategies](#sampling-strategies) for details.
+- `decision_wait` (default = 30s): Time before timer handling for a trace. When `sampling_strategy` is `trace-complete`, this controls decision timing. When `sampling_strategy` is `span-ingest`, this controls pending cleanup finalization timing.
+- `decision_wait_after_root_received` (default = 0s): Additional root-span-based acceleration for timer handling. When `sampling_strategy` is `trace-complete`, this can make decisions earlier. When `sampling_strategy` is `span-ingest`, this can finalize pending traces earlier on cleanup. `0s` disables it.
 - `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 - `decision_cache`: Options for configuring caches for sampling decisions. You may want to vary the size of these caches
@@ -68,6 +69,20 @@ The following configuration options can also be modified:
   already ingested.
 - `maximum_trace_size_bytes`: The maximum size a trace can reach in bytes, traces larger than this size will be immediately dropped from the tail sampling processor in order to protect the system.
 
+## Sampling Strategies
+
+The `sampling_strategy` setting controls both decision timing and what data evaluators use:
+
+- `trace-complete` (default): evaluates on the timer path using accumulated trace data (after `decision_wait`, or earlier after root arrival when `decision_wait_after_root_received` is set). This is the most flexible mode for policies, but with later decisions and higher in-memory/storage pressure.
+- `span-ingest`: evaluates each incoming batch at ingest time without re-evaluating previously ingested batches. Terminal outcomes (`sampled`/`dropped`) finalize immediately; non-terminal outcomes stay pending and are finalized as `not sampled` during cleanup without policy re-evaluation.
+
+Quick comparison:
+
+- Policy compatibility: `trace-complete` supports stateful policies; `span-ingest` rejects them.
+- Timer controls: in `trace-complete`, `decision_wait` and `decision_wait_after_root_received` affect decision timing; in `span-ingest`, they affect pending cleanup/finalization timing.
+- Late spans: decision caches remain important in both modes for spans that arrive after in-memory trace data is gone.
+
+## Policy Decision Flow
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
 
@@ -131,7 +146,7 @@ processors:
           {
             name: test-policy-8,
             type: rate_limiting,
-            rate_limiting: {spans_per_second: 35}
+            rate_limiting: {spans_per_second: 35, burst_capacity: 70}
          },
          {
             name: test-policy-9,
@@ -165,6 +180,20 @@ processors:
                    spanevent: [
                         "name != \"test_span_event_name\"",
                         "attributes[\"test_event_attr_key_2\"] != \"test_event_attr_val_1\"",
+                   ]
+              }
+         },
+         {
+              name: test-policy-14,
+              type: ottl_condition,
+              ottl_condition: {
+                   error_mode: ignore,
+                   span: [
+                        "resource.attributes[\"service.name\"] == \"checkout\"",
+                        "span.attributes[\"http.status_code\"] >= 500",
+                   ],
+                   spanevent: [
+                        "spanevent.name == \"exception\"",
                    ]
               }
          },
@@ -637,6 +666,16 @@ When this feature gate is set, this will add additional attributes on each sampl
 | `tailsampling.policy`           | Records the configured name of the policy that sampled a trace            | Always, unless trace was sampled by the decision cache |
 | `tailsampling.composite_policy` | Records the configured name of a composite subpolicy that sampled a trace | When composite policy used                             |
 | `tailsampling.cached_decision`  | Records whether a trace was sampled by the decision cache                 | When decision cache used                               |
+
+### Tail storage extension
+
+To configure `tail_storage` on the tailsampling processor, you must enable the `processor.tailsamplingprocessor.tailstorageextension` feature gate. 
+When a storage extension implements the experimental `TailStorage` extension, it
+will be used instead of the default in-memory approach.
+
+Tail storage extension support is under active development. This feature gate is used to guard users from potential breaking changes and unstable behavior while the interface and implementation mature.
+
+By default, this feature gate is disabled. If `tail_storage` is set while the gate is disabled, configuration validation fails and the collector returns an error.
 
 ### Disable invert decisions
 

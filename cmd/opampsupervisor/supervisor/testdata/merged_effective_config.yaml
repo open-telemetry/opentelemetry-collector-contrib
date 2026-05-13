@@ -17,7 +17,7 @@ extensions:
         tls:
           insecure: true
 receivers:
-  filelog:
+  file_log:
     include:
       - /test/logs/input.log
     start_at: beginning
@@ -40,11 +40,12 @@ service:
       exporters:
         - file
       receivers:
-        - filelog
+        - file_log
   telemetry:
     logs:
       encoding: json
       error_output_paths: ["stderr"]
       output_paths: ["stdout"]
     resource:
+      service.instance.id: 00000000-0000-0000-0000-000000000000
       service.name: otelcol

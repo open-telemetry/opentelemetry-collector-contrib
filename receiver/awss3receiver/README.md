@@ -51,6 +51,8 @@ The following exporter configuration parameters are supported.
 | `suffix`                | Key suffix to match against.                                                                                                               |             | Required |
 | `notifications:`        |                                                                                                                                            |             |          |
 | `opampextension`        | Name of the OpAMP Extension to use to send ingest progress notifications.                                                                  |             |          |
+| `tag_object_after_ingestion`        | If enabled the receiver will attempt to tag the object after successfully ingesting it.                                                                  | false       | Optional |
+| `skip_ingesting_tagged_objects`        | If enabled the receiver will skip objects tagged by `tag_object_after_ingestion`. This can be used as a checkpointing mechanism, and requires an additional `s3:GetObjectTagging` permission                                                                  | false       | Optional |
 
 There are two modes of operation:
 
@@ -64,7 +66,7 @@ The receiver can subscribe to an SQS queue that receives S3 event notifications:
 ```yaml
 sqs:
   # Required: The ARN of the SQS queue that receives S3 bucket notifications
-  queue_url: "https:https://sqs.us-east-1.amazonaws.com/123456789012/test-queue" 
+  queue_url: "https:https://sqs.us-east-1.amazonaws.com/123456789012/test-queue"
   # Required: The AWS region of the SQS queue
   region: "us-east-1"
 ```
@@ -73,7 +75,7 @@ sqs:
 Time-based configuration (`starttime`/`endtime`) and SQS configuration cannot be used together.
 
 ### Time format for `starttime` and `endtime`
-The `starttime` and `endtime` fields are used to specify the time range for which to retrieve data. 
+The `starttime` and `endtime` fields are used to specify the time range for which to retrieve data.
 The time format is either RFC3339,`YYYY-MM-DD HH:MM` or simply `YYYY-MM-DD`, in which case the time is assumed to be `00:00`.
 
 ### Encodings
@@ -81,7 +83,7 @@ By default, the receiver understands the following encodings:
 - otlp_json (OpenTelemetry Protocol format represented as json) with a suffix of `.json`
 - otlp_proto (OpenTelemetry Protocol format represented as Protocol Buffers) with a suffix of `.binpb`
 
-The `encodings` options allows you to specify Encoding Extensions to use to decode keys with matching suffixes. 
+The `encodings` options allows you to specify Encoding Extensions to use to decode keys with matching suffixes.
 
 
 ### Example Configuration
@@ -93,7 +95,7 @@ extension:
     encoding: utf8
     marshaling_separator: "\n"
     unmarshaling_separator: "\r?\n"
-    
+
 receivers:
   awss3:
     starttime: "2024-01-01 01:00"
@@ -128,17 +130,17 @@ service:
     traces:
       receivers: [awss3/traces]
       exporters: [otlp_grpc]
-      
+
     traces/sqs:
       receivers: [awss3/sqs_traces]
       exporters: [otlp_grpc]
 ```
 
 ## Notifications
-The receiver can send notifications of ingest progress to an OpAmp server using the custom message capability of 
+The receiver can send notifications of ingest progress to an OpAmp server using the custom message capability of
 "org.opentelemetry.collector.receiver.awss3" and message type "TimeBasedIngestStatus".
-The format of the notifications is a ProtoBuf formatted OLTP logs message with a single Log Record. The `body` of the 
-record is set to `status` and the timestamp of the record is used to hold the ingest time. The record also has the 
+The format of the notifications is a ProtoBuf formatted OLTP logs message with a single Log Record. The `body` of the
+record is set to `status` and the timestamp of the record is used to hold the ingest time. The record also has the
 following attributes:
 
 | Attribute         | Description                                                                     |
@@ -150,6 +152,10 @@ following attributes:
 | `failure_message` | Error message if `ingest_status` is "failed".                                   |
 
 The "ingesting" status is sent at the beginning of the ingest process before data has been retrieved for the specified time.
-If during the processing of the data an error occurs a status message with `ingest_status` set to "failed" status with 
+If during the processing of the data an error occurs a status message with `ingest_status` set to "failed" status with
 the time of the data being ingested when the failure occurred.
 If the ingest process completes successfully a status message with `ingest_status` set to "completed" is sent.
+
+## Object Lifecycle Management
+If the `tag_object_after_ingestion` is enabled the receiver will make a best-effort attempt to tag objects with `otel-collector:status = ingested` after they are processed by the pipeline. This requires an additional `s3:PutObjectTagging` permission.
+This tag can then be used with a lifecycle policy to expire ingested objects or transition them to cheaper storage classes.

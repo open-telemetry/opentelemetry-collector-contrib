@@ -31,21 +31,20 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("host.name")
+			hostNameAttrVal, ok := res.Attributes().Get("host.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "host.name-val", val.Str())
+				assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("oracledb.instance.name")
+			oracledbInstanceNameAttrVal, ok := res.Attributes().Get("oracledb.instance.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "oracledb.instance.name-val", val.Str())
+				assert.Equal(t, "oracledb.instance.name-val", oracledbInstanceNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("service.instance.id")
+			serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "service.instance.id-val", val.Str())
+				assert.Equal(t, "service.instance.id-val", serviceInstanceIDAttrVal.Str())
 			}
 		})
 	}

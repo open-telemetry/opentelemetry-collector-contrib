@@ -58,11 +58,11 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemNetworkConnections"] = mb.metricSystemNetworkConnections.config.AggregationStrategy
-			aggMap["SystemNetworkDropped"] = mb.metricSystemNetworkDropped.config.AggregationStrategy
-			aggMap["SystemNetworkErrors"] = mb.metricSystemNetworkErrors.config.AggregationStrategy
-			aggMap["SystemNetworkIo"] = mb.metricSystemNetworkIo.config.AggregationStrategy
-			aggMap["SystemNetworkPackets"] = mb.metricSystemNetworkPackets.config.AggregationStrategy
+			aggMap["system.network.connections"] = mb.metricSystemNetworkConnections.config.AggregationStrategy
+			aggMap["system.network.dropped"] = mb.metricSystemNetworkDropped.config.AggregationStrategy
+			aggMap["system.network.errors"] = mb.metricSystemNetworkErrors.config.AggregationStrategy
+			aggMap["system.network.io"] = mb.metricSystemNetworkIo.config.AggregationStrategy
+			aggMap["system.network.packets"] = mb.metricSystemNetworkPackets.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -163,12 +163,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("protocol")
+						protocolAttrVal, ok := dp.Attributes().Get("protocol")
 						assert.True(t, ok)
-						assert.Equal(t, "tcp", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("state")
+						assert.Equal(t, "tcp", protocolAttrVal.Str())
+						stateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.Equal(t, "state-val", attrVal.Str())
+						assert.Equal(t, "state-val", stateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.network.connections"], "Found a duplicate in the metrics slice: system.network.connections")
 						validatedMetrics["system.network.connections"] = true
@@ -240,12 +240,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device")
+						deviceAttrVal, ok := dp.Attributes().Get("device")
 						assert.True(t, ok)
-						assert.Equal(t, "device-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("direction")
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "receive", attrVal.Str())
+						assert.Equal(t, "receive", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.network.dropped"], "Found a duplicate in the metrics slice: system.network.dropped")
 						validatedMetrics["system.network.dropped"] = true
@@ -289,12 +289,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device")
+						deviceAttrVal, ok := dp.Attributes().Get("device")
 						assert.True(t, ok)
-						assert.Equal(t, "device-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("direction")
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "receive", attrVal.Str())
+						assert.Equal(t, "receive", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.network.errors"], "Found a duplicate in the metrics slice: system.network.errors")
 						validatedMetrics["system.network.errors"] = true
@@ -338,12 +338,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device")
+						deviceAttrVal, ok := dp.Attributes().Get("device")
 						assert.True(t, ok)
-						assert.Equal(t, "device-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("direction")
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "receive", attrVal.Str())
+						assert.Equal(t, "receive", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.network.io"], "Found a duplicate in the metrics slice: system.network.io")
 						validatedMetrics["system.network.io"] = true
@@ -387,12 +387,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device")
+						deviceAttrVal, ok := dp.Attributes().Get("device")
 						assert.True(t, ok)
-						assert.Equal(t, "device-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("direction")
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "receive", attrVal.Str())
+						assert.Equal(t, "receive", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.network.packets"], "Found a duplicate in the metrics slice: system.network.packets")
 						validatedMetrics["system.network.packets"] = true

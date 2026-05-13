@@ -67,9 +67,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["IisNetworkFileCount"] = mb.metricIisNetworkFileCount.config.AggregationStrategy
-			aggMap["IisNetworkIo"] = mb.metricIisNetworkIo.config.AggregationStrategy
-			aggMap["IisRequestCount"] = mb.metricIisRequestCount.config.AggregationStrategy
+			aggMap["iis.network.file.count"] = mb.metricIisNetworkFileCount.config.AggregationStrategy
+			aggMap["iis.network.io"] = mb.metricIisNetworkIo.config.AggregationStrategy
+			aggMap["iis.request.count"] = mb.metricIisRequestCount.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -275,9 +275,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("direction")
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "sent", attrVal.Str())
+						assert.Equal(t, "sent", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["iis.network.file.count"], "Found a duplicate in the metrics slice: iis.network.file.count")
 						validatedMetrics["iis.network.file.count"] = true
@@ -319,9 +319,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("direction")
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "sent", attrVal.Str())
+						assert.Equal(t, "sent", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["iis.network.io"], "Found a duplicate in the metrics slice: iis.network.io")
 						validatedMetrics["iis.network.io"] = true
@@ -363,9 +363,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("request")
+						requestAttrVal, ok := dp.Attributes().Get("request")
 						assert.True(t, ok)
-						assert.Equal(t, "delete", attrVal.Str())
+						assert.Equal(t, "delete", requestAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["iis.request.count"], "Found a duplicate in the metrics slice: iis.request.count")
 						validatedMetrics["iis.request.count"] = true

@@ -38,10 +38,10 @@ type Dimension struct {
 type Config struct {
 	// Dimensions defines the list of additional dimensions on top of the provided:
 	// - service.name
-	// - span.kind
+	// - span.name
 	// - span.kind
 	// - status.code
-	// - collector.instance.id This dimensions never added unless enable feature-gate connector.spanmetrics.includeCollectorInstanceID
+	// - collector.instance.id
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
 	Dimensions        []Dimension `mapstructure:"dimensions"`
@@ -78,6 +78,10 @@ type Config struct {
 	// MetricsExpiration is the time period after which, if no new spans are received, metrics are considered stale and will no longer be exported.
 	// Default value (0) means that the metrics will never expire.
 	MetricsExpiration time.Duration `mapstructure:"metrics_expiration"`
+
+	// SeriesExpiration is the time period after which individual metric series are considered stale and will no longer be exported.
+	// Default value (0) means that individual metric series will never expire.
+	SeriesExpiration time.Duration `mapstructure:"series_expiration"`
 
 	// TimestampCacheSize controls the size of the cache used to keep track of delta metrics' TimestampUnixNano the last time it was flushed
 	TimestampCacheSize *int `mapstructure:"metric_timestamp_cache_size"`
@@ -165,6 +169,10 @@ func (c Config) Validate() error {
 
 	if c.MetricsExpiration < 0 {
 		return fmt.Errorf("invalid metrics_expiration: %v, the duration should be positive", c.MetricsExpiration)
+	}
+
+	if c.SeriesExpiration < 0 {
+		return fmt.Errorf("invalid series_expiration: %v, the duration should be positive", c.SeriesExpiration)
 	}
 
 	if c.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta && c.GetDeltaTimestampCacheSize() <= 0 {

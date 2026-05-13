@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
 import (
@@ -415,4 +417,61 @@ func TestConfig_DeploymentTypeValidValues(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConfig_GatewayTopologyFields(t *testing.T) {
+	baseConfig := func() Config {
+		return Config{
+			API: datadogconfig.APIConfig{
+				Site: datadogconfig.DefaultSite,
+				Key:  "1234567890abcdef1234567890abcdef",
+			},
+			HTTPConfig: &httpserver.Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:8080",
+					},
+				},
+				Path: "/metadata",
+			},
+		}
+	}
+
+	t.Run("empty gateway fields are valid", func(t *testing.T) {
+		cfg := baseConfig()
+		assert.NoError(t, cfg.Validate())
+		assert.Empty(t, cfg.GatewayService)
+		assert.Empty(t, cfg.GatewayDestination)
+	})
+
+	t.Run("gateway_service set by gateway collector", func(t *testing.T) {
+		cfg := baseConfig()
+		cfg.GatewayService = "monitoring/otelcol-gateway"
+		assert.NoError(t, cfg.Validate())
+		assert.Equal(t, "monitoring/otelcol-gateway", cfg.GatewayService)
+	})
+
+	t.Run("gateway_destination set by daemonset collector", func(t *testing.T) {
+		cfg := baseConfig()
+		cfg.GatewayDestination = "monitoring/otelcol-gateway"
+		assert.NoError(t, cfg.Validate())
+		assert.Equal(t, "monitoring/otelcol-gateway", cfg.GatewayDestination)
+	})
+
+	t.Run("both fields set for intermediate gateway", func(t *testing.T) {
+		cfg := baseConfig()
+		cfg.GatewayService = "monitoring/otelcol-gateway-l2"
+		cfg.GatewayDestination = "monitoring/otelcol-gateway-l1"
+		assert.NoError(t, cfg.Validate())
+		assert.Equal(t, "monitoring/otelcol-gateway-l2", cfg.GatewayService)
+		assert.Equal(t, "monitoring/otelcol-gateway-l1", cfg.GatewayDestination)
+	})
+
+	t.Run("simple service name without namespace", func(t *testing.T) {
+		cfg := baseConfig()
+		cfg.GatewayService = "otelcol-gateway"
+		cfg.GatewayDestination = "otelcol-gateway"
+		assert.NoError(t, cfg.Validate())
+	})
 }

@@ -51,11 +51,37 @@ const (
 	InvertNotSampled
 )
 
+// String returns a string representation of the Decision.
+func (d Decision) String() string {
+	switch d {
+	case Unspecified:
+		return "unspecified"
+	case Pending:
+		return "pending"
+	case Sampled:
+		return "sampled"
+	case NotSampled:
+		return "not_sampled"
+	case Dropped:
+		return "dropped"
+	case Error:
+		return "error"
+	case InvertSampled:
+		return "invert_sampled"
+	case InvertNotSampled:
+		return "invert_not_sampled"
+	default:
+		return "unknown"
+	}
+}
+
 // Evaluator implements a tail-based sampling policy evaluator,
 // which makes a sampling decision for a given trace when requested.
 type Evaluator interface {
 	// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 	Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error)
+	// IsStateful reports whether decisions can depend on prior evaluations/state.
+	IsStateful() bool
 }
 
 type Extension interface {

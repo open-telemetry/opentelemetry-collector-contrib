@@ -252,6 +252,98 @@ func TestEncodeMetric(t *testing.T) {
 	assert.Equal(t, expectedMetricsEncoded, allDocsSorted)
 }
 
+func TestEncodeMetricDocCountHint(t *testing.T) {
+	encoder, err := newEncoder(MappingECS)
+	require.NoError(t, err)
+
+	ec := encodingContext{
+		resource:          pcommon.NewResource(),
+		resourceSchemaURL: "",
+		scope:             pcommon.NewInstrumentationScope(),
+		scopeSchemaURL:    "",
+	}
+	idx := elasticsearch.Index{}
+	ts := pcommon.NewTimestampFromTime(time.Unix(0, 0))
+
+	tests := []struct {
+		name              string
+		buildDataPoints   func() []datapoints.DataPoint
+		wantDocCountInDoc bool
+		wantDocCountValue uint64
+	}{
+		{
+			name: "doc count hint absent",
+			buildDataPoints: func() []datapoints.DataPoint {
+				m := pmetric.NewMetric()
+				m.SetName("gauge")
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+				dp.SetDoubleValue(1.0)
+				return []datapoints.DataPoint{datapoints.NewNumber(m, dp)}
+			},
+			wantDocCountInDoc: false,
+		},
+		{
+			name: "doc count hint present with zero doc count",
+			buildDataPoints: func() []datapoints.DataPoint {
+				m := pmetric.NewMetric()
+				m.SetName("summary")
+				summaryDp := m.SetEmptySummary().DataPoints().AppendEmpty()
+				summaryDp.SetTimestamp(ts)
+				summaryDp.SetSum(0)
+				summaryDp.SetCount(0)
+
+				hints := summaryDp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				hints.AppendEmpty().SetStr(string(elasticsearch.HintDocCount))
+
+				return []datapoints.DataPoint{datapoints.NewSummary(m, summaryDp)}
+			},
+			wantDocCountInDoc: false,
+		},
+		{
+			name: "doc count hint with positive doc count",
+			buildDataPoints: func() []datapoints.DataPoint {
+				m := pmetric.NewMetric()
+				m.SetName("gauge")
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+				dp.SetDoubleValue(2.5)
+
+				hints := dp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				hints.AppendEmpty().SetStr(string(elasticsearch.HintDocCount))
+
+				return []datapoints.DataPoint{datapoints.NewNumber(m, dp)}
+			},
+			wantDocCountInDoc: true,
+			wantDocCountValue: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dataPoints := tt.buildDataPoints()
+
+			var buf bytes.Buffer
+			validationErrors := make([]error, 0)
+			_, err := encoder.encodeMetrics(ec, dataPoints, &validationErrors, idx, &buf)
+			require.NoError(t, err)
+			require.Empty(t, validationErrors)
+
+			if !tt.wantDocCountInDoc {
+				var doc map[string]any
+				require.NoError(t, json.Unmarshal(buf.Bytes(), &doc))
+				_, hasDocCount := doc["_doc_count"]
+				assert.False(t, hasDocCount, "expected no _doc_count in document")
+				return
+			}
+
+			docCount := gjson.GetBytes(buf.Bytes(), "_doc_count")
+			require.True(t, docCount.Exists(), "expected _doc_count in document")
+			assert.Equal(t, tt.wantDocCountValue, docCount.Uint(), "_doc_count value")
+		})
+	}
+}
+
 func docBytesToSortedString(docsBytes [][]byte) string {
 	// Convert the byte arrays to strings and sort the docs to make the test deterministic.
 	docs := make([]string, len(docsBytes))

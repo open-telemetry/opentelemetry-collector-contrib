@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
@@ -479,6 +479,7 @@ func (ecsDataPointsEncoder) encodeMetrics(
 	document.AddTimestamp("@timestamp", dp0.Timestamp())
 	document.AddAttributes("", dp0.Attributes())
 	addDataStreamAttributes(&document, "", idx)
+	var docCount uint64
 
 	for _, dp := range dataPoints {
 		value, err := dp.Value()
@@ -492,8 +493,15 @@ func (ecsDataPointsEncoder) encodeMetrics(
 		if name := dp.DynamicTemplate(metric, datapoints.DynamicTemplateModeECS); name != "" {
 			document.AddDynamicTemplate(metricName, name)
 		}
+
+		if dp.HasMappingHint(elasticsearch.HintDocCount) {
+			docCount = dp.DocCount()
+		}
 	}
 
+	if docCount != 0 {
+		document.AddUInt("_doc_count", docCount)
+	}
 	err := document.Serialize(buf, true, metricsProtectedFields)
 
 	return document.DynamicTemplates(), err

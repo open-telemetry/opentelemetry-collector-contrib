@@ -94,6 +94,10 @@ func (s Supervisor) Validate() error {
 		return err
 	}
 
+	if err := s.Telemetry.Resource.Validate(); err != nil {
+		return fmt.Errorf("invalid telemetry::resource settings: %w", err)
+	}
+
 	return nil
 }
 
@@ -117,6 +121,8 @@ type Capabilities struct {
 	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
 	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
 	ReportsHeartbeat               bool `mapstructure:"reports_heartbeat"`
+	AcceptsPackages                bool `mapstructure:"accepts_packages"`
+	ReportsPackageStatuses         bool `mapstructure:"reports_package_statuses"`
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -163,6 +169,16 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 	}
 	if c.ReportsHeartbeat {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
+	}
+
+	// AcceptsPackages and ReportsPackageStatuses are not yet fully implemented.
+	// They are included here for completeness.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272
+	if c.AcceptsPackages {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages
+	}
+	if c.ReportsPackageStatuses {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
 	}
 
 	return supportedCapabilities
@@ -223,6 +239,7 @@ type Agent struct {
 	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
 	UseHUPConfigReload      bool              `mapstructure:"use_hup_config_reload"`
+	ValidateConfig          bool              `mapstructure:"validate_config"`
 	ConfigFiles             []string          `mapstructure:"config_files"`
 	Arguments               []string          `mapstructure:"args"`
 	Env                     map[string]string `mapstructure:"env"`
@@ -304,10 +321,12 @@ type Telemetry struct {
 	Metrics Metrics                        `mapstructure:"metrics"`
 	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
-	Resource map[string]*string `mapstructure:"resource"`
+	Resource otelconftelemetry.ResourceConfig `mapstructure:"resource"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
+
+type ResourceConfig = otelconftelemetry.ResourceConfig
 
 type HealthCheck struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
@@ -379,6 +398,8 @@ func DefaultSupervisor() Supervisor {
 			ReportsRemoteConfig:            false,
 			ReportsAvailableComponents:     false,
 			ReportsHeartbeat:               true,
+			AcceptsPackages:                false,
+			ReportsPackageStatuses:         false,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,
@@ -388,6 +409,7 @@ func DefaultSupervisor() Supervisor {
 			ConfigApplyTimeout:      5 * time.Second,
 			BootstrapTimeout:        3 * time.Second,
 			PassthroughLogs:         false,
+			ValidateConfig:          false,
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{

@@ -314,8 +314,8 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 				if ok {
 					// The effective config may be structurally different compared to what was sent,
 					// and will also have some data redacted,
-					// so just check that it includes the filelog receiver
-					return strings.Contains(cfg, "filelog")
+					// so just check that it includes the file_log receiver
+					return strings.Contains(cfg, "file_log")
 				}
 
 				return false
@@ -660,7 +660,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 		}, 3*time.Second, 100*time.Millisecond)
 	}
 
-	// check that collector uses filelog receiver and file exporter from config passed via config_files param
+	// check that collector uses file_log receiver and file exporter from config passed via config_files param
 	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
 	require.NotZero(t, n, "Could not write to input file")
 	require.NoError(t, err)
@@ -883,6 +883,42 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 
 		return caps == uint64(protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus|protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat)
 	}, 5*time.Second, 250*time.Millisecond)
+}
+
+func TestSupervisorPackageCapabilitiesReturnError(t *testing.T) {
+	// Verifies that when accepts_packages or reports_package_statuses are enabled,
+	// the supervisor fails to start and never connects to the server.
+	if runtime.GOOS == "windows" {
+		t.Skip("Zap does not close the log file and Windows disallows removing files that are still opened.")
+	}
+
+	connected := atomic.Bool{}
+	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
+		OnConnected: func(ctx context.Context, conn types.Connection) {
+			connected.Store(true)
+		},
+	})
+	defer server.shutdown()
+	server.start()
+
+	storageDir := t.TempDir()
+	supervisorLogFilePath := filepath.Join(storageDir, "supervisor_log.log")
+	cfgFile := getSupervisorConfig(t, "packages_cap", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+		"log_level":   "0",
+		"log_file":    supervisorLogFilePath,
+	})
+	cfg, err := config.Load(cfgFile.Name())
+	require.NoError(t, err)
+	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
+	require.NoError(t, err)
+
+	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
+	require.NoError(t, err)
+	err = s.Start(t.Context())
+	require.ErrorContains(t, err, "accepts_packages and reports_package_statuses capabilities are not yet fully implemented")
+	require.False(t, connected.Load(), "Supervisor should not have connected to the server")
 }
 
 func TestSupervisorBootstrapsCollector(t *testing.T) {
@@ -1234,36 +1270,32 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 		t.Fatal("Failed to get agent description after 5 seconds")
 	}
 
-	expectedDescription := &protobufs.AgentDescription{
-		IdentifyingAttributes: []*protobufs.KeyValue{
-			stringKeyValue("client.id", "my-client-id"),
-			stringKeyValue("service.instance.id", uuid.UUID(ad.InstanceUid).String()),
-			stringKeyValue("service.name", command),
-			stringKeyValue("service.version", version),
-		},
-		NonIdentifyingAttributes: []*protobufs.KeyValue{
-			stringKeyValue("env", "prod"),
-			stringKeyValue("host.arch", runtime.GOARCH),
-			stringKeyValue("host.name", host),
-			stringKeyValue("os.type", runtime.GOOS),
-		},
+	expectedIdentifyingAttributes := map[string]string{
+		"client.id":           "my-client-id",
+		"service.instance.id": uuid.UUID(ad.InstanceUid).String(),
+		"service.name":        command,
+		"service.version":     version,
 	}
-
-	require.Subset(t, ad.AgentDescription.IdentifyingAttributes, expectedDescription.IdentifyingAttributes)
-	require.Subset(t, ad.AgentDescription.NonIdentifyingAttributes, expectedDescription.NonIdentifyingAttributes)
+	expectedNonIdentifyingAttributes := map[string]string{
+		"env":       "prod",
+		"host.arch": runtime.GOARCH,
+		"host.name": host,
+		"os.type":   runtime.GOOS,
+	}
+	actualIdentifyingAttributes := keyValuesToStringMap(ad.AgentDescription.IdentifyingAttributes)
+	require.Subset(t, actualIdentifyingAttributes, expectedIdentifyingAttributes)
+	actualNonIdentifyingAttributes := keyValuesToStringMap(ad.AgentDescription.NonIdentifyingAttributes)
+	require.Subset(t, actualNonIdentifyingAttributes, expectedNonIdentifyingAttributes)
 
 	time.Sleep(250 * time.Millisecond)
 }
 
-func stringKeyValue(key, val string) *protobufs.KeyValue {
-	return &protobufs.KeyValue{
-		Key: key,
-		Value: &protobufs.AnyValue{
-			Value: &protobufs.AnyValue_StringValue{
-				StringValue: val,
-			},
-		},
+func keyValuesToStringMap(kvs []*protobufs.KeyValue) map[string]string {
+	out := make(map[string]string, len(kvs))
+	for _, kv := range kvs {
+		out[kv.Key] = kv.Value.GetStringValue()
 	}
+	return out
 }
 
 // Creates a Collector config that reads and writes logs to files and provides
@@ -1692,7 +1724,7 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 					return false
 				}
 
-				return strings.Contains(loadedConfig, "filelog")
+				return strings.Contains(loadedConfig, "file_log")
 			}, 10*time.Second, 500*time.Millisecond, "Collector was not started with the last received remote config")
 		})
 	}
@@ -2179,8 +2211,8 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 				if ok {
 					// The effective config may be structurally different compared to what was sent,
 					// and will also have some data redacted,
-					// so just check that it includes the filelog receiver
-					return strings.Contains(cfg, "filelog")
+					// so just check that it includes the file_log receiver
+					return strings.Contains(cfg, "file_log")
 				}
 
 				return false
@@ -2306,8 +2338,8 @@ func TestSupervisorOpAmpServerPort(t *testing.T) {
 		if ok {
 			// The effective config may be structurally different compared to what was sent,
 			// and will also have some data redacted,
-			// so just check that it includes the filelog receiver
-			return strings.Contains(cfg, "filelog")
+			// so just check that it includes the file_log receiver
+			return strings.Contains(cfg, "file_log")
 		}
 
 		return false
@@ -2594,4 +2626,103 @@ func isHeartbeatMessage(message *protobufs.AgentToServer) bool {
 	empty = empty && message.Flags == 0
 
 	return empty
+}
+
+func TestSupervisorValidatesConfigBeforeApplying(t *testing.T) {
+	modes := getTestModes()
+
+	for _, mode := range modes {
+		t.Run(mode.name, func(t *testing.T) {
+			var remoteConfigStatus atomic.Value
+			var agentConfig atomic.Value
+			server := newOpAMPServer(
+				t,
+				defaultConnectingHandler,
+				types.ConnectionCallbacks{
+					OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+						if message.RemoteConfigStatus != nil {
+							remoteConfigStatus.Store(message.RemoteConfigStatus)
+						}
+						if message.EffectiveConfig != nil {
+							config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+							if config != nil {
+								agentConfig.Store(string(config.Body))
+							}
+						}
+
+						return &protobufs.ServerToAgent{}
+					},
+				})
+
+			extraConfigData := map[string]string{
+				"url":             server.addr,
+				"validate_config": "true",
+			}
+			if mode.UseHUPConfigReload {
+				extraConfigData["use_hup_config_reload"] = "true"
+			}
+
+			s, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
+			require.True(t, supervisorCfg.Agent.ValidateConfig, "ValidateConfig should be enabled for this test")
+
+			require.Nil(t, s.Start(t.Context()))
+			defer s.Shutdown()
+
+			waitForSupervisorConnection(server.supervisorConnected, true)
+
+			// First, send a valid config
+			goodCfg, goodHash, _, _ := createSimplePipelineCollectorConf(t)
+
+			server.sendToSupervisor(&protobufs.ServerToAgent{
+				RemoteConfig: &protobufs.AgentRemoteConfig{
+					Config: &protobufs.AgentConfigMap{
+						ConfigMap: map[string]*protobufs.AgentConfigFile{
+							"": {Body: goodCfg.Bytes()},
+						},
+					},
+					ConfigHash: goodHash,
+				},
+			})
+
+			require.Eventually(t, func() bool {
+				cfg, ok := agentConfig.Load().(string)
+				return ok && cfg != ""
+			}, 5*time.Second, 500*time.Millisecond, "Collector was not started with valid config")
+
+			// Now send an invalid config that should fail validation
+			invalidCfg, err := os.ReadFile(path.Join("testdata", "collector", "invalid_component_config.yaml"))
+			require.NoError(t, err)
+
+			h := sha256.Sum256(invalidCfg)
+			invalidHash := h[:]
+
+			server.sendToSupervisor(&protobufs.ServerToAgent{
+				RemoteConfig: &protobufs.AgentRemoteConfig{
+					Config: &protobufs.AgentConfigMap{
+						ConfigMap: map[string]*protobufs.AgentConfigFile{
+							"": {Body: invalidCfg},
+						},
+					},
+					ConfigHash: invalidHash,
+				},
+			})
+
+			// The config should be rejected with a FAILED status
+			require.Eventually(t, func() bool {
+				status := remoteConfigStatus.Load()
+				if status != nil {
+					remoteStatus := status.(*protobufs.RemoteConfigStatus)
+					return remoteStatus.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
+				}
+				return false
+			}, 5*time.Second, 250*time.Millisecond, "Invalid config was not rejected")
+
+			// Verify that the collector is still running with the old (valid) config
+			currentCfg := agentConfig.Load().(string)
+			require.NotContains(t, currentCfg, "nonexistent_exporter", "Config should not have been updated to invalid config")
+		})
+	}
 }

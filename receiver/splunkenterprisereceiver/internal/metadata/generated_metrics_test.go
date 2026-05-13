@@ -58,57 +58,57 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SplunkAggregationQueueRatio"] = mb.metricSplunkAggregationQueueRatio.config.AggregationStrategy
-			aggMap["SplunkBucketsSearchableStatus"] = mb.metricSplunkBucketsSearchableStatus.config.AggregationStrategy
-			aggMap["SplunkDataIndexesExtendedBucketCount"] = mb.metricSplunkDataIndexesExtendedBucketCount.config.AggregationStrategy
-			aggMap["SplunkDataIndexesExtendedBucketEventCount"] = mb.metricSplunkDataIndexesExtendedBucketEventCount.config.AggregationStrategy
-			aggMap["SplunkDataIndexesExtendedBucketHotCount"] = mb.metricSplunkDataIndexesExtendedBucketHotCount.config.AggregationStrategy
-			aggMap["SplunkDataIndexesExtendedBucketWarmCount"] = mb.metricSplunkDataIndexesExtendedBucketWarmCount.config.AggregationStrategy
-			aggMap["SplunkDataIndexesExtendedEventCount"] = mb.metricSplunkDataIndexesExtendedEventCount.config.AggregationStrategy
-			aggMap["SplunkDataIndexesExtendedRawSize"] = mb.metricSplunkDataIndexesExtendedRawSize.config.AggregationStrategy
-			aggMap["SplunkDataIndexesExtendedTotalSize"] = mb.metricSplunkDataIndexesExtendedTotalSize.config.AggregationStrategy
-			aggMap["SplunkHealth"] = mb.metricSplunkHealth.config.AggregationStrategy
-			aggMap["SplunkIndexerAvgRate"] = mb.metricSplunkIndexerAvgRate.config.AggregationStrategy
-			aggMap["SplunkIndexerCPUTime"] = mb.metricSplunkIndexerCPUTime.config.AggregationStrategy
-			aggMap["SplunkIndexerQueueRatio"] = mb.metricSplunkIndexerQueueRatio.config.AggregationStrategy
-			aggMap["SplunkIndexerRawWriteTime"] = mb.metricSplunkIndexerRawWriteTime.config.AggregationStrategy
-			aggMap["SplunkIndexerRollingrestartStatus"] = mb.metricSplunkIndexerRollingrestartStatus.config.AggregationStrategy
-			aggMap["SplunkIndexerThroughput"] = mb.metricSplunkIndexerThroughput.config.AggregationStrategy
-			aggMap["SplunkIndexesAvgSize"] = mb.metricSplunkIndexesAvgSize.config.AggregationStrategy
-			aggMap["SplunkIndexesAvgUsage"] = mb.metricSplunkIndexesAvgUsage.config.AggregationStrategy
-			aggMap["SplunkIndexesBucketCount"] = mb.metricSplunkIndexesBucketCount.config.AggregationStrategy
-			aggMap["SplunkIndexesMedianDataAge"] = mb.metricSplunkIndexesMedianDataAge.config.AggregationStrategy
-			aggMap["SplunkIndexesSize"] = mb.metricSplunkIndexesSize.config.AggregationStrategy
-			aggMap["SplunkIoAvgIops"] = mb.metricSplunkIoAvgIops.config.AggregationStrategy
-			aggMap["SplunkKvstoreBackupStatus"] = mb.metricSplunkKvstoreBackupStatus.config.AggregationStrategy
-			aggMap["SplunkKvstoreReplicationStatus"] = mb.metricSplunkKvstoreReplicationStatus.config.AggregationStrategy
-			aggMap["SplunkKvstoreStatus"] = mb.metricSplunkKvstoreStatus.config.AggregationStrategy
-			aggMap["SplunkLicenseExpirationSecondsRemaining"] = mb.metricSplunkLicenseExpirationSecondsRemaining.config.AggregationStrategy
-			aggMap["SplunkLicenseIndexUsage"] = mb.metricSplunkLicenseIndexUsage.config.AggregationStrategy
-			aggMap["SplunkParseQueueRatio"] = mb.metricSplunkParseQueueRatio.config.AggregationStrategy
-			aggMap["SplunkPipelineSetCount"] = mb.metricSplunkPipelineSetCount.config.AggregationStrategy
-			aggMap["SplunkSchedulerAvgExecutionLatency"] = mb.metricSplunkSchedulerAvgExecutionLatency.config.AggregationStrategy
-			aggMap["SplunkSchedulerAvgRunTime"] = mb.metricSplunkSchedulerAvgRunTime.config.AggregationStrategy
-			aggMap["SplunkSchedulerCompletionRatio"] = mb.metricSplunkSchedulerCompletionRatio.config.AggregationStrategy
-			aggMap["SplunkSearchDuration"] = mb.metricSplunkSearchDuration.config.AggregationStrategy
-			aggMap["SplunkSearchInitiation"] = mb.metricSplunkSearchInitiation.config.AggregationStrategy
-			aggMap["SplunkSearchStatus"] = mb.metricSplunkSearchStatus.config.AggregationStrategy
-			aggMap["SplunkSearchSuccess"] = mb.metricSplunkSearchSuccess.config.AggregationStrategy
-			aggMap["SplunkServerIntrospectionQueuesCurrent"] = mb.metricSplunkServerIntrospectionQueuesCurrent.config.AggregationStrategy
-			aggMap["SplunkServerIntrospectionQueuesCurrentBytes"] = mb.metricSplunkServerIntrospectionQueuesCurrentBytes.config.AggregationStrategy
-			aggMap["SplunkServerSearchartifactsAdhoc"] = mb.metricSplunkServerSearchartifactsAdhoc.config.AggregationStrategy
-			aggMap["SplunkServerSearchartifactsAdhocSize"] = mb.metricSplunkServerSearchartifactsAdhocSize.config.AggregationStrategy
-			aggMap["SplunkServerSearchartifactsCompleted"] = mb.metricSplunkServerSearchartifactsCompleted.config.AggregationStrategy
-			aggMap["SplunkServerSearchartifactsCompletedSize"] = mb.metricSplunkServerSearchartifactsCompletedSize.config.AggregationStrategy
-			aggMap["SplunkServerSearchartifactsIncomplete"] = mb.metricSplunkServerSearchartifactsIncomplete.config.AggregationStrategy
-			aggMap["SplunkServerSearchartifactsIncompleteSize"] = mb.metricSplunkServerSearchartifactsIncompleteSize.config.AggregationStrategy
-			aggMap["SplunkServerSearchartifactsInvalid"] = mb.metricSplunkServerSearchartifactsInvalid.config.AggregationStrategy
-			aggMap["SplunkServerSearchartifactsJobCacheCount"] = mb.metricSplunkServerSearchartifactsJobCacheCount.config.AggregationStrategy
-			aggMap["SplunkServerSearchartifactsJobCacheSize"] = mb.metricSplunkServerSearchartifactsJobCacheSize.config.AggregationStrategy
-			aggMap["SplunkServerSearchartifactsSavedsearches"] = mb.metricSplunkServerSearchartifactsSavedsearches.config.AggregationStrategy
-			aggMap["SplunkServerSearchartifactsScheduled"] = mb.metricSplunkServerSearchartifactsScheduled.config.AggregationStrategy
-			aggMap["SplunkServerSearchartifactsScheduledSize"] = mb.metricSplunkServerSearchartifactsScheduledSize.config.AggregationStrategy
-			aggMap["SplunkTypingQueueRatio"] = mb.metricSplunkTypingQueueRatio.config.AggregationStrategy
+			aggMap["splunk.aggregation.queue.ratio"] = mb.metricSplunkAggregationQueueRatio.config.AggregationStrategy
+			aggMap["splunk.buckets.searchable.status"] = mb.metricSplunkBucketsSearchableStatus.config.AggregationStrategy
+			aggMap["splunk.data.indexes.extended.bucket.count"] = mb.metricSplunkDataIndexesExtendedBucketCount.config.AggregationStrategy
+			aggMap["splunk.data.indexes.extended.bucket.event.count"] = mb.metricSplunkDataIndexesExtendedBucketEventCount.config.AggregationStrategy
+			aggMap["splunk.data.indexes.extended.bucket.hot.count"] = mb.metricSplunkDataIndexesExtendedBucketHotCount.config.AggregationStrategy
+			aggMap["splunk.data.indexes.extended.bucket.warm.count"] = mb.metricSplunkDataIndexesExtendedBucketWarmCount.config.AggregationStrategy
+			aggMap["splunk.data.indexes.extended.event.count"] = mb.metricSplunkDataIndexesExtendedEventCount.config.AggregationStrategy
+			aggMap["splunk.data.indexes.extended.raw.size"] = mb.metricSplunkDataIndexesExtendedRawSize.config.AggregationStrategy
+			aggMap["splunk.data.indexes.extended.total.size"] = mb.metricSplunkDataIndexesExtendedTotalSize.config.AggregationStrategy
+			aggMap["splunk.health"] = mb.metricSplunkHealth.config.AggregationStrategy
+			aggMap["splunk.indexer.avg.rate"] = mb.metricSplunkIndexerAvgRate.config.AggregationStrategy
+			aggMap["splunk.indexer.cpu.time"] = mb.metricSplunkIndexerCPUTime.config.AggregationStrategy
+			aggMap["splunk.indexer.queue.ratio"] = mb.metricSplunkIndexerQueueRatio.config.AggregationStrategy
+			aggMap["splunk.indexer.raw.write.time"] = mb.metricSplunkIndexerRawWriteTime.config.AggregationStrategy
+			aggMap["splunk.indexer.rollingrestart.status"] = mb.metricSplunkIndexerRollingrestartStatus.config.AggregationStrategy
+			aggMap["splunk.indexer.throughput"] = mb.metricSplunkIndexerThroughput.config.AggregationStrategy
+			aggMap["splunk.indexes.avg.size"] = mb.metricSplunkIndexesAvgSize.config.AggregationStrategy
+			aggMap["splunk.indexes.avg.usage"] = mb.metricSplunkIndexesAvgUsage.config.AggregationStrategy
+			aggMap["splunk.indexes.bucket.count"] = mb.metricSplunkIndexesBucketCount.config.AggregationStrategy
+			aggMap["splunk.indexes.median.data.age"] = mb.metricSplunkIndexesMedianDataAge.config.AggregationStrategy
+			aggMap["splunk.indexes.size"] = mb.metricSplunkIndexesSize.config.AggregationStrategy
+			aggMap["splunk.io.avg.iops"] = mb.metricSplunkIoAvgIops.config.AggregationStrategy
+			aggMap["splunk.kvstore.backup.status"] = mb.metricSplunkKvstoreBackupStatus.config.AggregationStrategy
+			aggMap["splunk.kvstore.replication.status"] = mb.metricSplunkKvstoreReplicationStatus.config.AggregationStrategy
+			aggMap["splunk.kvstore.status"] = mb.metricSplunkKvstoreStatus.config.AggregationStrategy
+			aggMap["splunk.license.expiration.seconds_remaining"] = mb.metricSplunkLicenseExpirationSecondsRemaining.config.AggregationStrategy
+			aggMap["splunk.license.index.usage"] = mb.metricSplunkLicenseIndexUsage.config.AggregationStrategy
+			aggMap["splunk.parse.queue.ratio"] = mb.metricSplunkParseQueueRatio.config.AggregationStrategy
+			aggMap["splunk.pipeline.set.count"] = mb.metricSplunkPipelineSetCount.config.AggregationStrategy
+			aggMap["splunk.scheduler.avg.execution.latency"] = mb.metricSplunkSchedulerAvgExecutionLatency.config.AggregationStrategy
+			aggMap["splunk.scheduler.avg.run.time"] = mb.metricSplunkSchedulerAvgRunTime.config.AggregationStrategy
+			aggMap["splunk.scheduler.completion.ratio"] = mb.metricSplunkSchedulerCompletionRatio.config.AggregationStrategy
+			aggMap["splunk.search.duration"] = mb.metricSplunkSearchDuration.config.AggregationStrategy
+			aggMap["splunk.search.initiation"] = mb.metricSplunkSearchInitiation.config.AggregationStrategy
+			aggMap["splunk.search.status"] = mb.metricSplunkSearchStatus.config.AggregationStrategy
+			aggMap["splunk.search.success"] = mb.metricSplunkSearchSuccess.config.AggregationStrategy
+			aggMap["splunk.server.introspection.queues.current"] = mb.metricSplunkServerIntrospectionQueuesCurrent.config.AggregationStrategy
+			aggMap["splunk.server.introspection.queues.current.bytes"] = mb.metricSplunkServerIntrospectionQueuesCurrentBytes.config.AggregationStrategy
+			aggMap["splunk.server.searchartifacts.adhoc"] = mb.metricSplunkServerSearchartifactsAdhoc.config.AggregationStrategy
+			aggMap["splunk.server.searchartifacts.adhoc.size"] = mb.metricSplunkServerSearchartifactsAdhocSize.config.AggregationStrategy
+			aggMap["splunk.server.searchartifacts.completed"] = mb.metricSplunkServerSearchartifactsCompleted.config.AggregationStrategy
+			aggMap["splunk.server.searchartifacts.completed.size"] = mb.metricSplunkServerSearchartifactsCompletedSize.config.AggregationStrategy
+			aggMap["splunk.server.searchartifacts.incomplete"] = mb.metricSplunkServerSearchartifactsIncomplete.config.AggregationStrategy
+			aggMap["splunk.server.searchartifacts.incomplete.size"] = mb.metricSplunkServerSearchartifactsIncompleteSize.config.AggregationStrategy
+			aggMap["splunk.server.searchartifacts.invalid"] = mb.metricSplunkServerSearchartifactsInvalid.config.AggregationStrategy
+			aggMap["splunk.server.searchartifacts.job.cache.count"] = mb.metricSplunkServerSearchartifactsJobCacheCount.config.AggregationStrategy
+			aggMap["splunk.server.searchartifacts.job.cache.size"] = mb.metricSplunkServerSearchartifactsJobCacheSize.config.AggregationStrategy
+			aggMap["splunk.server.searchartifacts.savedsearches"] = mb.metricSplunkServerSearchartifactsSavedsearches.config.AggregationStrategy
+			aggMap["splunk.server.searchartifacts.scheduled"] = mb.metricSplunkServerSearchartifactsScheduled.config.AggregationStrategy
+			aggMap["splunk.server.searchartifacts.scheduled.size"] = mb.metricSplunkServerSearchartifactsScheduledSize.config.AggregationStrategy
+			aggMap["splunk.typing.queue.ratio"] = mb.metricSplunkTypingQueueRatio.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -519,15 +519,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.aggregation.queue.ratio"], "Found a duplicate in the metrics slice: splunk.aggregation.queue.ratio")
 						validatedMetrics["splunk.aggregation.queue.ratio"] = true
@@ -569,18 +569,18 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.indexer.searchable")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkIndexerSearchableAttrVal, ok := dp.Attributes().Get("splunk.indexer.searchable")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.indexer.searchable-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.indexer.searchable-val", splunkIndexerSearchableAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.buckets.searchable.status"], "Found a duplicate in the metrics slice: splunk.buckets.searchable.status")
 						validatedMetrics["splunk.buckets.searchable.status"] = true
@@ -624,15 +624,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						splunkIndexNameAttrVal, ok := dp.Attributes().Get("splunk.index.name")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.index.name-val", splunkIndexNameAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.count")
 						validatedMetrics["splunk.data.indexes.extended.bucket.count"] = true
@@ -674,18 +674,18 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						splunkIndexNameAttrVal, ok := dp.Attributes().Get("splunk.index.name")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.bucket.dir")
+						assert.Equal(t, "splunk.index.name-val", splunkIndexNameAttrVal.Str())
+						splunkBucketDirAttrVal, ok := dp.Attributes().Get("splunk.bucket.dir")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.bucket.dir-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.bucket.dir-val", splunkBucketDirAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.event.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.event.count")
 						validatedMetrics["splunk.data.indexes.extended.bucket.event.count"] = true
@@ -729,18 +729,18 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						splunkIndexNameAttrVal, ok := dp.Attributes().Get("splunk.index.name")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.bucket.dir")
+						assert.Equal(t, "splunk.index.name-val", splunkIndexNameAttrVal.Str())
+						splunkBucketDirAttrVal, ok := dp.Attributes().Get("splunk.bucket.dir")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.bucket.dir-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.bucket.dir-val", splunkBucketDirAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.hot.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.hot.count")
 						validatedMetrics["splunk.data.indexes.extended.bucket.hot.count"] = true
@@ -784,18 +784,18 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						splunkIndexNameAttrVal, ok := dp.Attributes().Get("splunk.index.name")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.bucket.dir")
+						assert.Equal(t, "splunk.index.name-val", splunkIndexNameAttrVal.Str())
+						splunkBucketDirAttrVal, ok := dp.Attributes().Get("splunk.bucket.dir")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.bucket.dir-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.bucket.dir-val", splunkBucketDirAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.warm.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.warm.count")
 						validatedMetrics["splunk.data.indexes.extended.bucket.warm.count"] = true
@@ -839,15 +839,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						splunkIndexNameAttrVal, ok := dp.Attributes().Get("splunk.index.name")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.index.name-val", splunkIndexNameAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.data.indexes.extended.event.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.event.count")
 						validatedMetrics["splunk.data.indexes.extended.event.count"] = true
@@ -889,15 +889,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						splunkIndexNameAttrVal, ok := dp.Attributes().Get("splunk.index.name")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.index.name-val", splunkIndexNameAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.data.indexes.extended.raw.size"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.raw.size")
 						validatedMetrics["splunk.data.indexes.extended.raw.size"] = true
@@ -939,15 +939,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						splunkIndexNameAttrVal, ok := dp.Attributes().Get("splunk.index.name")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.index.name-val", splunkIndexNameAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.data.indexes.extended.total.size"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.total.size")
 						validatedMetrics["splunk.data.indexes.extended.total.size"] = true
@@ -989,18 +989,18 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.feature")
+						splunkFeatureAttrVal, ok := dp.Attributes().Get("splunk.feature")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.feature-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.feature.health")
+						assert.Equal(t, "splunk.feature-val", splunkFeatureAttrVal.Str())
+						splunkFeatureHealthAttrVal, ok := dp.Attributes().Get("splunk.feature.health")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.feature.health-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.feature.health-val", splunkFeatureHealthAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.health"], "Found a duplicate in the metrics slice: splunk.health")
 						validatedMetrics["splunk.health"] = true
@@ -1044,15 +1044,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.indexer.avg.rate"], "Found a duplicate in the metrics slice: splunk.indexer.avg.rate")
 						validatedMetrics["splunk.indexer.avg.rate"] = true
@@ -1094,15 +1094,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.indexer.cpu.time"], "Found a duplicate in the metrics slice: splunk.indexer.cpu.time")
 						validatedMetrics["splunk.indexer.cpu.time"] = true
@@ -1144,15 +1144,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.indexer.queue.ratio"], "Found a duplicate in the metrics slice: splunk.indexer.queue.ratio")
 						validatedMetrics["splunk.indexer.queue.ratio"] = true
@@ -1194,15 +1194,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.indexer.raw.write.time"], "Found a duplicate in the metrics slice: splunk.indexer.raw.write.time")
 						validatedMetrics["splunk.indexer.raw.write.time"] = true
@@ -1244,18 +1244,18 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.searchable.restart")
+						splunkSearchableRestartAttrVal, ok := dp.Attributes().Get("splunk.searchable.restart")
 						assert.True(t, ok)
-						assert.False(t, attrVal.Bool())
-						attrVal, ok = dp.Attributes().Get("splunk.rollingorrestart")
+						assert.False(t, splunkSearchableRestartAttrVal.Bool())
+						splunkRollingorrestartAttrVal, ok := dp.Attributes().Get("splunk.rollingorrestart")
 						assert.True(t, ok)
-						assert.False(t, attrVal.Bool())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, splunkRollingorrestartAttrVal.Bool())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.indexer.rollingrestart.status"], "Found a duplicate in the metrics slice: splunk.indexer.rollingrestart.status")
 						validatedMetrics["splunk.indexer.rollingrestart.status"] = true
@@ -1299,15 +1299,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("splunk.indexer.status")
+						splunkIndexerStatusAttrVal, ok := dp.Attributes().Get("splunk.indexer.status")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.indexer.status-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.indexer.status-val", splunkIndexerStatusAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.indexer.throughput"], "Found a duplicate in the metrics slice: splunk.indexer.throughput")
 						validatedMetrics["splunk.indexer.throughput"] = true
@@ -1349,15 +1349,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						splunkIndexNameAttrVal, ok := dp.Attributes().Get("splunk.index.name")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.index.name-val", splunkIndexNameAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.indexes.avg.size"], "Found a duplicate in the metrics slice: splunk.indexes.avg.size")
 						validatedMetrics["splunk.indexes.avg.size"] = true
@@ -1399,15 +1399,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						splunkIndexNameAttrVal, ok := dp.Attributes().Get("splunk.index.name")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.index.name-val", splunkIndexNameAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.indexes.avg.usage"], "Found a duplicate in the metrics slice: splunk.indexes.avg.usage")
 						validatedMetrics["splunk.indexes.avg.usage"] = true
@@ -1449,15 +1449,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						splunkIndexNameAttrVal, ok := dp.Attributes().Get("splunk.index.name")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.index.name-val", splunkIndexNameAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.indexes.bucket.count"], "Found a duplicate in the metrics slice: splunk.indexes.bucket.count")
 						validatedMetrics["splunk.indexes.bucket.count"] = true
@@ -1499,15 +1499,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						splunkIndexNameAttrVal, ok := dp.Attributes().Get("splunk.index.name")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.index.name-val", splunkIndexNameAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.indexes.median.data.age"], "Found a duplicate in the metrics slice: splunk.indexes.median.data.age")
 						validatedMetrics["splunk.indexes.median.data.age"] = true
@@ -1549,15 +1549,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						splunkIndexNameAttrVal, ok := dp.Attributes().Get("splunk.index.name")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.index.name-val", splunkIndexNameAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.indexes.size"], "Found a duplicate in the metrics slice: splunk.indexes.size")
 						validatedMetrics["splunk.indexes.size"] = true
@@ -1599,15 +1599,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.io.avg.iops"], "Found a duplicate in the metrics slice: splunk.io.avg.iops")
 						validatedMetrics["splunk.io.avg.iops"] = true
@@ -1649,15 +1649,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
+						splunkKvstoreStatusValueAttrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.kvstore.status.value-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.kvstore.status.value-val", splunkKvstoreStatusValueAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.kvstore.backup.status"], "Found a duplicate in the metrics slice: splunk.kvstore.backup.status")
 						validatedMetrics["splunk.kvstore.backup.status"] = true
@@ -1699,15 +1699,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
+						splunkKvstoreStatusValueAttrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.kvstore.status.value-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.kvstore.status.value-val", splunkKvstoreStatusValueAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.kvstore.replication.status"], "Found a duplicate in the metrics slice: splunk.kvstore.replication.status")
 						validatedMetrics["splunk.kvstore.replication.status"] = true
@@ -1749,21 +1749,21 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.kvstore.storage.engine")
+						splunkKvstoreStorageEngineAttrVal, ok := dp.Attributes().Get("splunk.kvstore.storage.engine")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.kvstore.storage.engine-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.kvstore.external")
+						assert.Equal(t, "splunk.kvstore.storage.engine-val", splunkKvstoreStorageEngineAttrVal.Str())
+						splunkKvstoreExternalAttrVal, ok := dp.Attributes().Get("splunk.kvstore.external")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.kvstore.external-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.kvstore.status.value")
+						assert.Equal(t, "splunk.kvstore.external-val", splunkKvstoreExternalAttrVal.Str())
+						splunkKvstoreStatusValueAttrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.kvstore.status.value-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.kvstore.status.value-val", splunkKvstoreStatusValueAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.kvstore.status"], "Found a duplicate in the metrics slice: splunk.kvstore.status")
 						validatedMetrics["splunk.kvstore.status"] = true
@@ -1809,21 +1809,21 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.license.status")
+						splunkLicenseStatusAttrVal, ok := dp.Attributes().Get("splunk.license.status")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.license.status-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.license.label")
+						assert.Equal(t, "splunk.license.status-val", splunkLicenseStatusAttrVal.Str())
+						splunkLicenseLabelAttrVal, ok := dp.Attributes().Get("splunk.license.label")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.license.label-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.license.type")
+						assert.Equal(t, "splunk.license.label-val", splunkLicenseLabelAttrVal.Str())
+						splunkLicenseTypeAttrVal, ok := dp.Attributes().Get("splunk.license.type")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.license.type-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.license.type-val", splunkLicenseTypeAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.license.expiration.seconds_remaining"], "Found a duplicate in the metrics slice: splunk.license.expiration.seconds_remaining")
 						validatedMetrics["splunk.license.expiration.seconds_remaining"] = true
@@ -1869,15 +1869,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.index.name")
+						splunkIndexNameAttrVal, ok := dp.Attributes().Get("splunk.index.name")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.index.name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.index.name-val", splunkIndexNameAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.license.index.usage"], "Found a duplicate in the metrics slice: splunk.license.index.usage")
 						validatedMetrics["splunk.license.index.usage"] = true
@@ -1919,15 +1919,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.parse.queue.ratio"], "Found a duplicate in the metrics slice: splunk.parse.queue.ratio")
 						validatedMetrics["splunk.parse.queue.ratio"] = true
@@ -1969,15 +1969,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.pipeline.set.count"], "Found a duplicate in the metrics slice: splunk.pipeline.set.count")
 						validatedMetrics["splunk.pipeline.set.count"] = true
@@ -2019,15 +2019,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.scheduler.avg.execution.latency"], "Found a duplicate in the metrics slice: splunk.scheduler.avg.execution.latency")
 						validatedMetrics["splunk.scheduler.avg.execution.latency"] = true
@@ -2069,15 +2069,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.scheduler.avg.run.time"], "Found a duplicate in the metrics slice: splunk.scheduler.avg.run.time")
 						validatedMetrics["splunk.scheduler.avg.run.time"] = true
@@ -2119,15 +2119,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.scheduler.completion.ratio"], "Found a duplicate in the metrics slice: splunk.scheduler.completion.ratio")
 						validatedMetrics["splunk.scheduler.completion.ratio"] = true
@@ -2169,12 +2169,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.search.duration"], "Found a duplicate in the metrics slice: splunk.search.duration")
 						validatedMetrics["splunk.search.duration"] = true
@@ -2214,12 +2214,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.search.initiation"], "Found a duplicate in the metrics slice: splunk.search.initiation")
 						validatedMetrics["splunk.search.initiation"] = true
@@ -2259,15 +2259,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.search.state")
+						splunkSearchStateAttrVal, ok := dp.Attributes().Get("splunk.search.state")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.search.state-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.search.state-val", splunkSearchStateAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.search.status"], "Found a duplicate in the metrics slice: splunk.search.status")
 						validatedMetrics["splunk.search.status"] = true
@@ -2309,12 +2309,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.search.success"], "Found a duplicate in the metrics slice: splunk.search.success")
 						validatedMetrics["splunk.search.success"] = true
@@ -2354,15 +2354,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.queue.name")
+						splunkQueueNameAttrVal, ok := dp.Attributes().Get("splunk.queue.name")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.queue.name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.queue.name-val", splunkQueueNameAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.server.introspection.queues.current"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current")
 						validatedMetrics["splunk.server.introspection.queues.current"] = true
@@ -2404,15 +2404,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.queue.name")
+						splunkQueueNameAttrVal, ok := dp.Attributes().Get("splunk.queue.name")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.queue.name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.queue.name-val", splunkQueueNameAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.server.introspection.queues.current.bytes"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current.bytes")
 						validatedMetrics["splunk.server.introspection.queues.current.bytes"] = true
@@ -2454,15 +2454,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.adhoc"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.adhoc")
 						validatedMetrics["splunk.server.searchartifacts.adhoc"] = true
@@ -2504,15 +2504,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.adhoc.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.adhoc.size")
 						validatedMetrics["splunk.server.searchartifacts.adhoc.size"] = true
@@ -2554,15 +2554,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.completed"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.completed")
 						validatedMetrics["splunk.server.searchartifacts.completed"] = true
@@ -2604,15 +2604,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.completed.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.completed.size")
 						validatedMetrics["splunk.server.searchartifacts.completed.size"] = true
@@ -2654,15 +2654,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.incomplete"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.incomplete")
 						validatedMetrics["splunk.server.searchartifacts.incomplete"] = true
@@ -2704,15 +2704,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.incomplete.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.incomplete.size")
 						validatedMetrics["splunk.server.searchartifacts.incomplete.size"] = true
@@ -2754,15 +2754,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.invalid"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.invalid")
 						validatedMetrics["splunk.server.searchartifacts.invalid"] = true
@@ -2804,15 +2804,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.job.cache.count"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.job.cache.count")
 						validatedMetrics["splunk.server.searchartifacts.job.cache.count"] = true
@@ -2854,18 +2854,18 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.searchartifacts.cache.type")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSearchartifactsCacheTypeAttrVal, ok := dp.Attributes().Get("splunk.searchartifacts.cache.type")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.searchartifacts.cache.type-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.searchartifacts.cache.type-val", splunkSearchartifactsCacheTypeAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.job.cache.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.job.cache.size")
 						validatedMetrics["splunk.server.searchartifacts.job.cache.size"] = true
@@ -2909,15 +2909,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.savedsearches"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.savedsearches")
 						validatedMetrics["splunk.server.searchartifacts.savedsearches"] = true
@@ -2959,15 +2959,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.scheduled"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.scheduled")
 						validatedMetrics["splunk.server.searchartifacts.scheduled"] = true
@@ -3009,15 +3009,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.scheduled.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.scheduled.size")
 						validatedMetrics["splunk.server.searchartifacts.scheduled.size"] = true
@@ -3059,15 +3059,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("splunk.host")
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.host-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
 						assert.True(t, ok)
-						assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.typing.queue.ratio"], "Found a duplicate in the metrics slice: splunk.typing.queue.ratio")
 						validatedMetrics["splunk.typing.queue.ratio"] = true

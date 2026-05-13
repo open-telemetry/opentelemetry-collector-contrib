@@ -8,10 +8,10 @@ description: |
 status:
   class: receiver
   stability:
-    alpha: [logs]
+    alpha: [logs, metrics]
   distributions: [contrib]
   codeowners:
-    active: [schmikei]
+    active: [schmikei, dyl10s]
     emeritus: [djaglowski]
     seeking_new: true
 

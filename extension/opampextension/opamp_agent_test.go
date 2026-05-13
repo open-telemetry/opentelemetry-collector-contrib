@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
@@ -41,9 +42,9 @@ func TestNewOpampAgent(t *testing.T) {
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
-	assert.Equal(t, "otelcoltest", o.agentType)
-	assert.Equal(t, "test version", o.agentVersion)
-	assert.NotEmpty(t, o.instanceID.String())
+	assert.Equal(t, "otelcoltest", o.serviceName)
+	assert.Equal(t, "test version", o.serviceVersion)
+	assert.NotEmpty(t, o.instanceUID.String())
 	assert.True(t, o.capabilities.ReportsEffectiveConfig)
 	assert.True(t, o.capabilities.ReportsHealth)
 	assert.Empty(t, o.effectiveConfig)
@@ -60,9 +61,9 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 	set.Resource.Attributes().PutStr("service.instance.id", "f8999bc1-4c9b-4619-9bae-7f009d2411ec")
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
-	assert.Equal(t, "otelcol-distro", o.agentType)
-	assert.Equal(t, "distro.0", o.agentVersion)
-	assert.Equal(t, "f8999bc1-4c9b-4619-9bae-7f009d2411ec", o.instanceID.String())
+	assert.Equal(t, "otelcol-distro", o.serviceName)
+	assert.Equal(t, "distro.0", o.serviceVersion)
+	assert.Equal(t, "f8999bc1-4c9b-4619-9bae-7f009d2411ec", o.serviceInstanceID)
 	assert.NoError(t, o.Shutdown(t.Context()))
 }
 
@@ -196,14 +197,14 @@ func TestUpdateAgentIdentity(t *testing.T) {
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 
-	olduid := o.instanceID
+	olduid := o.instanceUID
 	assert.NotEmpty(t, olduid.String())
 
 	uid := uuid.Must(uuid.NewV7())
 	assert.NotEqual(t, uid, olduid)
 
 	o.updateAgentIdentity(uid)
-	assert.Equal(t, o.instanceID, uid)
+	assert.Equal(t, o.instanceUID, uid)
 	assert.NoError(t, o.Shutdown(t.Context()))
 }
 
@@ -985,14 +986,18 @@ func (m mockStatusEvent) Timestamp() time.Time {
 	return m.timestamp
 }
 
+func (mockStatusEvent) Attributes() pcommon.Map {
+	return pcommon.NewMap()
+}
+
 func newTestOpampAgent(cfg *Config, set extension.Settings, mockOpampClient *mockOpAMPClient, sa *mockStatusAggregator) *opampAgent {
 	uid := uuid.New()
 	o := &opampAgent{
 		cfg:                      cfg,
 		logger:                   set.Logger,
-		agentType:                set.BuildInfo.Command,
-		agentVersion:             set.BuildInfo.Version,
-		instanceID:               uid,
+		serviceName:              set.BuildInfo.Command,
+		serviceVersion:           set.BuildInfo.Version,
+		instanceUID:              uid,
 		capabilities:             cfg.Capabilities,
 		opampClient:              mockOpampClient,
 		statusSubscriptionWg:     &sync.WaitGroup{},

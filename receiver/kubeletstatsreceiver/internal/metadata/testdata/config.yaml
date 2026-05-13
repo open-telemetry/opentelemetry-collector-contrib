@@ -31,6 +31,8 @@ all_set:
       enabled: true
     k8s.container.cpu_request_utilization:
       enabled: true
+    k8s.container.ephemeral_storage.usage:
+      enabled: true
     k8s.container.memory.node.utilization:
       enabled: true
     k8s.container.memory_limit_utilization:
@@ -62,6 +64,14 @@ all_set:
     k8s.node.network.errors:
       enabled: true
     k8s.node.network.io:
+      enabled: true
+    k8s.node.system_container.cpu.time:
+      enabled: true
+    k8s.node.system_container.cpu.usage:
+      enabled: true
+    k8s.node.system_container.memory.usage:
+      enabled: true
+    k8s.node.system_container.memory.working_set:
       enabled: true
     k8s.node.uptime:
       enabled: true
@@ -135,6 +145,8 @@ all_set:
     k8s.namespace.name:
       enabled: true
     k8s.node.name:
+      enabled: true
+    k8s.node.system_container.name:
       enabled: true
     k8s.persistentvolumeclaim.name:
       enabled: true
@@ -180,6 +192,8 @@ none_set:
       enabled: false
     k8s.container.cpu_request_utilization:
       enabled: false
+    k8s.container.ephemeral_storage.usage:
+      enabled: false
     k8s.container.memory.node.utilization:
       enabled: false
     k8s.container.memory_limit_utilization:
@@ -211,6 +225,14 @@ none_set:
     k8s.node.network.errors:
       enabled: false
     k8s.node.network.io:
+      enabled: false
+    k8s.node.system_container.cpu.time:
+      enabled: false
+    k8s.node.system_container.cpu.usage:
+      enabled: false
+    k8s.node.system_container.memory.usage:
+      enabled: false
+    k8s.node.system_container.memory.working_set:
       enabled: false
     k8s.node.uptime:
       enabled: false
@@ -284,6 +306,8 @@ none_set:
     k8s.namespace.name:
       enabled: false
     k8s.node.name:
+      enabled: false
+    k8s.node.system_container.name:
       enabled: false
     k8s.persistentvolumeclaim.name:
       enabled: false
@@ -332,6 +356,10 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     k8s.node.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.node.system_container.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -397,6 +425,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.node.name-val"
+    k8s.node.system_container.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.node.system_container.name-val"
     k8s.persistentvolumeclaim.name:
       enabled: true
       metrics_exclude:

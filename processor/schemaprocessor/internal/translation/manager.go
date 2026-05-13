@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
 )
 
 var errNilValueProvided = errors.New("nil value provided")
@@ -28,7 +30,11 @@ type Manager interface {
 }
 
 type manager struct {
-	log *zap.Logger
+	log              *zap.Logger
+	telemetryBuilder *metadata.TelemetryBuilder
+	migrationMap     map[string]*Version // target schema URL → copyFromVersion
+	cooldown         time.Duration
+	limit            int
 
 	rw            sync.RWMutex
 	providers     []Provider
@@ -40,7 +46,7 @@ var _ Manager = (*manager)(nil)
 
 // NewManager creates a manager that will allow for management
 // of schema
-func NewManager(targetSchemaURLS []string, log *zap.Logger, providers ...Provider) (Manager, error) {
+func NewManager(targetSchemaURLS []string, log *zap.Logger, cooldown time.Duration, limit int, telemetryBuilder *metadata.TelemetryBuilder, migrationMap map[string]*Version, providers ...Provider) (Manager, error) {
 	if log == nil {
 		return nil, fmt.Errorf("logger: %w", errNilValueProvided)
 	}
@@ -54,19 +60,27 @@ func NewManager(targetSchemaURLS []string, log *zap.Logger, providers ...Provide
 		match[family] = version
 	}
 
-	// wrap provider with cacheable provider
-	var prs []Provider
-	for _, p := range providers {
-		// TODO make cache configurable
-		prs = append(prs, NewCacheableProvider(p, 5*time.Minute, 5))
+	m := &manager{
+		log:              log,
+		telemetryBuilder: telemetryBuilder,
+		migrationMap:     migrationMap,
+		cooldown:         cooldown,
+		limit:            limit,
+		match:            match,
+		translatorMap:    make(map[string]*translator),
 	}
 
-	return &manager{
-		log:           log,
-		match:         match,
-		translatorMap: make(map[string]*translator),
-		providers:     prs,
-	}, nil
+	// wrap providers with cacheable provider
+	for _, p := range providers {
+		m.providers = append(m.providers, m.newCacheableProvider(p))
+	}
+
+	return m, nil
+}
+
+// newCacheableProvider wraps p with a CacheableProvider wired to the manager's telemetry.
+func (m *manager) newCacheableProvider(p Provider) Provider {
+	return NewCacheableProvider(p, m.cooldown, m.limit, m.telemetryBuilder)
 }
 
 func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) (Translation, error) {
@@ -95,24 +109,35 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) (Tra
 		return t, nil
 	}
 
+	// Always fetch the schema file for the higher version, since it contains the complete
+	// migration history. For upgrades (signal older than target), fetch the target URL.
+	// For downgrades (signal newer than target), fetch the signal URL.
+	fetchURL := schemaURL
+	if version.Compare(targetTranslation) == Update {
+		fetchURL = joinSchemaFamilyAndVersion(family, targetTranslation)
+	}
+
 	for _, p := range m.providers {
-		content, err := p.Retrieve(ctx, schemaURL)
+		content, err := p.Retrieve(ctx, fetchURL)
 		if err != nil {
 			m.log.Error("Failed to lookup schemaURL",
 				zap.Error(err),
-				zap.String("schemaURL", schemaURL),
+				zap.String("schemaURL", fetchURL),
 			)
 			// If we fail to retrieve the schema, we should
 			// try the next provider
 			continue
 		}
+		targetSchemaURL := joinSchemaFamilyAndVersion(family, targetTranslation)
+		copyFromVersion := m.migrationMap[targetSchemaURL]
 		t, err := newTranslator(
 			m.log.Named("translator").With(
 				zap.String("family", family),
 				zap.Stringer("target", targetTranslation),
 			),
-			joinSchemaFamilyAndVersion(family, targetTranslation),
+			targetSchemaURL,
 			content,
+			copyFromVersion,
 		)
 		if err != nil {
 			m.log.Error("Failed to create translator", zap.Error(err))
@@ -134,7 +159,7 @@ func (m *manager) AddProvider(p Provider) {
 		return
 	}
 	if _, ok := p.(*CacheableProvider); !ok {
-		p = NewCacheableProvider(p, 5*time.Minute, 5)
+		p = m.newCacheableProvider(p)
 	}
 	m.providers = append(m.providers, p)
 }
