@@ -51,22 +51,6 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
-<<<<<<< Updated upstream
-=======
-			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["httpcheck.client.connection.duration"] = mb.metricHttpcheckClientConnectionDuration.config.AggregationStrategy
-			aggMap["httpcheck.client.request.duration"] = mb.metricHttpcheckClientRequestDuration.config.AggregationStrategy
-			aggMap["httpcheck.dns.lookup.duration"] = mb.metricHttpcheckDNSLookupDuration.config.AggregationStrategy
-			aggMap["httpcheck.duration"] = mb.metricHttpcheckDuration.config.AggregationStrategy
-			aggMap["httpcheck.error"] = mb.metricHttpcheckError.config.AggregationStrategy
-			aggMap["httpcheck.response.duration"] = mb.metricHttpcheckResponseDuration.config.AggregationStrategy
-			aggMap["httpcheck.response.size"] = mb.metricHttpcheckResponseSize.config.AggregationStrategy
-			aggMap["httpcheck.status"] = mb.metricHttpcheckStatus.config.AggregationStrategy
-			aggMap["httpcheck.tls.cert_remaining"] = mb.metricHttpcheckTLSCertRemaining.config.AggregationStrategy
-			aggMap["httpcheck.tls.handshake.duration"] = mb.metricHttpcheckTLSHandshakeDuration.config.AggregationStrategy
-			aggMap["httpcheck.validation.failed"] = mb.metricHttpcheckValidationFailed.config.AggregationStrategy
-			aggMap["httpcheck.validation.passed"] = mb.metricHttpcheckValidationPassed.config.AggregationStrategy
->>>>>>> Stashed changes
 
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
