@@ -76,7 +76,7 @@ func Test_newProcessor(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tc.expected.emitInterval, actual.emitInterval)
-				require.NotNil(t, actual.batcher)
+				require.NotNil(t, actual.aggregator)
 				require.NotNil(t, actual.remover)
 				require.Equal(t, tc.expected.nextConsumer, actual.nextConsumer)
 			}
@@ -394,18 +394,34 @@ func TestProcessorIncludeFields(t *testing.T) {
 	}
 }
 
-// contextCapturingLogsSink captures both the logs and contexts passed to ConsumeLogs.
+// contextCapturingLogsSink implements consumer.Logs and captures both the logs
+// and contexts passed to ConsumeLogs.
 type contextCapturingLogsSink struct {
-	consumertest.LogsSink
 	mu       sync.Mutex
+	logs     []plog.Logs
 	contexts []context.Context
+}
+
+func (*contextCapturingLogsSink) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (c *contextCapturingLogsSink) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	c.mu.Lock()
+	c.logs = append(c.logs, ld)
 	c.contexts = append(c.contexts, ctx)
 	c.mu.Unlock()
-	return c.LogsSink.ConsumeLogs(ctx, ld)
+	return nil
+}
+
+func (c *contextCapturingLogsSink) logRecordCount() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	count := 0
+	for _, ld := range c.logs {
+		count += ld.LogRecordCount()
+	}
+	return count
 }
 
 func (c *contextCapturingLogsSink) capturedContexts() []context.Context {
@@ -451,7 +467,7 @@ func TestMetadataKeysSeparateShards(t *testing.T) {
 	require.NoError(t, p.Shutdown(t.Context()))
 
 	// Each tenant should produce a separate export call.
-	require.Equal(t, 2, sink.LogRecordCount())
+	require.Equal(t, 2, sink.logRecordCount())
 	ctxs := sink.capturedContexts()
 	require.Len(t, ctxs, 2)
 
@@ -486,7 +502,7 @@ func TestMetadataKeysSameTenantAggregated(t *testing.T) {
 
 	require.NoError(t, p.Shutdown(t.Context()))
 
-	require.Equal(t, 1, sink.LogRecordCount())
+	require.Equal(t, 1, sink.logRecordCount())
 	ctxs := sink.capturedContexts()
 	require.Len(t, ctxs, 1)
 	assert.Equal(t, []string{"tenant-a"}, client.FromContext(ctxs[0]).Metadata.Get("x-scope-orgid"))
@@ -539,7 +555,7 @@ func TestMetadataKeysCaseInsensitive(t *testing.T) {
 	require.NoError(t, p.Shutdown(t.Context()))
 
 	// Same tenant, same key (normalised) — should be one shard, one export.
-	require.Equal(t, 1, sink.LogRecordCount())
+	require.Equal(t, 1, sink.logRecordCount())
 }
 
 func TestMetadataKeysDuplicateValidation(t *testing.T) {

@@ -31,7 +31,7 @@ import (
 // single bucket or as multiple buckets keyed by metadata combination.
 type shardedAggregator interface {
 	add(ctx context.Context, logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource) error
-	exportAll(ctx context.Context, nextConsumer consumer.Logs, logger *zap.Logger)
+	flush(ctx context.Context, nextConsumer consumer.Logs, logger *zap.Logger)
 }
 
 // singleShardAggregator is used when no metadata_keys are configured.
@@ -45,20 +45,20 @@ func (s *singleShardAggregator) add(_ context.Context, logRecord plog.LogRecord,
 	return nil
 }
 
-func (s *singleShardAggregator) exportAll(ctx context.Context, nextConsumer consumer.Logs, logger *zap.Logger) {
+func (s *singleShardAggregator) flush(ctx context.Context, nextConsumer consumer.Logs, logger *zap.Logger) {
 	logs := s.aggregator.Export(ctx)
 	if logs.LogRecordCount() > 0 {
 		if err := nextConsumer.ConsumeLogs(ctx, logs); err != nil {
 			logger.Error("failed to consume logs", zap.Error(err))
 		}
+		s.aggregator.Reset()
 	}
-	s.aggregator.Reset()
 }
 
-// aggregatorShard holds a logAggregator and the export context for one metadata combination.
+// aggregatorShard holds a logAggregator and the client metadata for one metadata combination.
 type aggregatorShard struct {
 	aggregator *logAggregator
-	exportCtx  context.Context
+	clientInfo client.Info
 }
 
 // multiShardAggregator is used when metadata_keys are configured.
@@ -66,13 +66,16 @@ type aggregatorShard struct {
 type multiShardAggregator struct {
 	metadataKeys             []string
 	metadataCardinalityLimit int
-	logCountAttribute        string
-	timezone                 *time.Location
-	telemetryBuilder         *metadata.TelemetryBuilder
-	includeFields            []string
+
+	// Fields below are passed through to newLogAggregator for on-demand shard creation.
+	logCountAttribute string
+	timezone          *time.Location
+	telemetryBuilder  *metadata.TelemetryBuilder
+	includeFields     []string
 
 	shards map[attribute.Set]*aggregatorShard
-	lock   sync.Mutex
+	// lock protects the shards map during concurrent lookups and creation.
+	lock sync.Mutex
 }
 
 func (m *multiShardAggregator) add(ctx context.Context, logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource) error {
@@ -88,32 +91,43 @@ func (m *multiShardAggregator) add(ctx context.Context, logRecord plog.LogRecord
 	}
 	aset := attribute.NewSet(attrs...)
 
-	m.lock.Lock()
-	shard, ok := m.shards[aset]
-	if !ok {
-		if m.metadataCardinalityLimit > 0 && len(m.shards) >= m.metadataCardinalityLimit {
-			m.lock.Unlock()
-			return consumererror.NewPermanent(errors.New("too many batcher metadata-value combinations"))
-		}
-		md := make(map[string][]string, len(m.metadataKeys))
-		for _, k := range m.metadataKeys {
-			md[k] = info.Metadata.Get(k)
-		}
-		shard = &aggregatorShard{
-			aggregator: newLogAggregator(m.logCountAttribute, m.timezone, m.telemetryBuilder, m.includeFields),
-			exportCtx: client.NewContext(context.Background(), client.Info{
-				Metadata: client.NewMetadata(md),
-			}),
-		}
-		m.shards[aset] = shard
+	shard, err := m.getOrCreateShard(info, aset)
+	if err != nil {
+		return err
 	}
-	m.lock.Unlock()
 
 	shard.aggregator.Add(resource, scope, logRecord)
 	return nil
 }
 
-func (m *multiShardAggregator) exportAll(_ context.Context, nextConsumer consumer.Logs, logger *zap.Logger) {
+func (m *multiShardAggregator) getOrCreateShard(info client.Info, aset attribute.Set) (*aggregatorShard, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	shard, ok := m.shards[aset]
+	if ok {
+		return shard, nil
+	}
+
+	if m.metadataCardinalityLimit > 0 && len(m.shards) >= m.metadataCardinalityLimit {
+		return nil, consumererror.NewPermanent(errors.New("too many batcher metadata-value combinations"))
+	}
+
+	md := make(map[string][]string, len(m.metadataKeys))
+	for _, k := range m.metadataKeys {
+		md[k] = info.Metadata.Get(k)
+	}
+	shard = &aggregatorShard{
+		aggregator: newLogAggregator(m.logCountAttribute, m.timezone, m.telemetryBuilder, m.includeFields),
+		clientInfo: client.Info{
+			Metadata: client.NewMetadata(md),
+		},
+	}
+	m.shards[aset] = shard
+	return shard, nil
+}
+
+func (m *multiShardAggregator) flush(_ context.Context, nextConsumer consumer.Logs, logger *zap.Logger) {
 	m.lock.Lock()
 	shards := make([]*aggregatorShard, 0, len(m.shards))
 	for _, s := range m.shards {
@@ -122,13 +136,14 @@ func (m *multiShardAggregator) exportAll(_ context.Context, nextConsumer consume
 	m.lock.Unlock()
 
 	for _, shard := range shards {
-		logs := shard.aggregator.Export(shard.exportCtx)
+		exportCtx := client.NewContext(context.Background(), shard.clientInfo)
+		logs := shard.aggregator.Export(exportCtx)
 		if logs.LogRecordCount() > 0 {
-			if err := nextConsumer.ConsumeLogs(shard.exportCtx, logs); err != nil {
+			if err := nextConsumer.ConsumeLogs(exportCtx, logs); err != nil {
 				logger.Error("failed to consume logs", zap.Error(err))
 			}
+			shard.aggregator.Reset()
 		}
-		shard.aggregator.Reset()
 	}
 }
 
@@ -136,7 +151,7 @@ func (m *multiShardAggregator) exportAll(_ context.Context, nextConsumer consume
 type logDedupProcessor struct {
 	emitInterval time.Duration
 	conditions   *ottl.ConditionSequence[*ottllog.TransformContext]
-	batcher      shardedAggregator
+	aggregator   shardedAggregator
 	remover      *fieldRemover
 	nextConsumer consumer.Logs
 	logger       *zap.Logger
@@ -157,20 +172,22 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 		return nil, fmt.Errorf("invalid timezone: %w", err)
 	}
 
-	// Normalise metadata keys: lowercase and sort for deterministic attribute sets.
+	// Normalize metadata keys to lowercase. HTTP/2 headers are case-insensitive,
+	// but attribute.Set key lookup is case-sensitive — normalizing avoids
+	// duplicate shards for the same logical key.
 	metadataKeys := make([]string, len(cfg.MetadataKeys))
 	for i, k := range cfg.MetadataKeys {
 		metadataKeys[i] = strings.ToLower(k)
 	}
 	sort.Strings(metadataKeys)
 
-	var batcher shardedAggregator
+	var agg shardedAggregator
 	if len(metadataKeys) == 0 {
-		batcher = &singleShardAggregator{
+		agg = &singleShardAggregator{
 			aggregator: newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder, cfg.IncludeFields),
 		}
 	} else {
-		batcher = &multiShardAggregator{
+		agg = &multiShardAggregator{
 			metadataKeys:             metadataKeys,
 			metadataCardinalityLimit: int(cfg.MetadataCardinalityLimit),
 			logCountAttribute:        cfg.LogCountAttribute,
@@ -183,7 +200,7 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 
 	return &logDedupProcessor{
 		emitInterval: cfg.Interval,
-		batcher:      batcher,
+		aggregator:   agg,
 		remover:      newFieldRemover(cfg.ExcludeFields),
 		nextConsumer: nextConsumer,
 		logger:       settings.Logger,
@@ -272,7 +289,7 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 
 func (p *logDedupProcessor) aggregateLog(ctx context.Context, logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	p.remover.RemoveFields(logRecord)
-	return p.batcher.add(ctx, logRecord, scope, resource)
+	return p.aggregator.add(ctx, logRecord, scope, resource)
 }
 
 // handleExportInterval sends metrics at the configured interval.
@@ -302,5 +319,5 @@ func (p *logDedupProcessor) exportLogs(ctx context.Context) {
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
-	p.batcher.exportAll(ctx, p.nextConsumer, p.logger)
+	p.aggregator.flush(ctx, p.nextConsumer, p.logger)
 }

@@ -41,14 +41,16 @@ var (
 
 // Config is the config of the processor.
 type Config struct {
-	LogCountAttribute        string        `mapstructure:"log_count_attribute"`
-	Interval                 time.Duration `mapstructure:"interval"`
-	Timezone                 string        `mapstructure:"timezone"`
-	ExcludeFields            []string      `mapstructure:"exclude_fields"`
-	IncludeFields            []string      `mapstructure:"include_fields"`
-	Conditions               []string      `mapstructure:"conditions"`
-	MetadataKeys             []string      `mapstructure:"metadata_keys"`
-	MetadataCardinalityLimit uint32        `mapstructure:"metadata_cardinality_limit"`
+	LogCountAttribute string        `mapstructure:"log_count_attribute"`
+	Interval          time.Duration `mapstructure:"interval"`
+	Timezone          string        `mapstructure:"timezone"`
+	ExcludeFields     []string      `mapstructure:"exclude_fields"`
+	IncludeFields     []string      `mapstructure:"include_fields"`
+	Conditions        []string      `mapstructure:"conditions"`
+	MetadataKeys      []string      `mapstructure:"metadata_keys"`
+	// MetadataCardinalityLimit limits the number of unique metadata combinations
+	// tracked simultaneously. 0 (default) means unbounded.
+	MetadataCardinalityLimit uint32 `mapstructure:"metadata_cardinality_limit"`
 }
 
 // createDefaultConfig returns the default config for the processor.
