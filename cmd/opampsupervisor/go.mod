@@ -372,3 +372,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/basi
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth => ../../extension/internal/basicauth
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension => ../../extension/oauth2clientauthextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile => ../../extension/internal/credentialsfile
