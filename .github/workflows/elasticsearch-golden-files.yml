@@ -37,5 +37,3 @@ jobs:
           echo ""
           echo "See DOCUMENT_STRUCTURE.md for more information."
           exit 1
-
-# Made with Bob
