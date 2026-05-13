@@ -8,7 +8,7 @@ description: |
 status:
   class: receiver
   stability:
-    alpha: [logs]
+    alpha: [logs, metrics]
   distributions: [contrib]
   codeowners:
     active: [schmikei, dyl10s]
