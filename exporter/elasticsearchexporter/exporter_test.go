@@ -937,6 +937,48 @@ func TestExporterLogs(t *testing.T) {
 		}
 	})
 
+	t.Run("dynamic id disabled ignores document_id attribute", func(t *testing.T) {
+		t.Parallel()
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			assert.NotContains(t, string(docs[0].Action), "_id", "_id must not be set when LogsDynamicID is disabled")
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsDynamicID.Enabled = false
+		})
+		logs := newLogsWithAttributes(
+			map[string]any{elasticsearch.DocumentIDAttributeName: "should-be-ignored"},
+			nil, nil,
+		)
+		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("body")
+		mustSendLogs(t, exporter, logs)
+		rec.WaitItems(1)
+	})
+
+	t.Run("dynamic pipeline disabled ignores ingest_pipeline attribute", func(t *testing.T) {
+		t.Parallel()
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			assert.NotContains(t, string(docs[0].Action), "pipeline", "pipeline must not be set when LogsDynamicPipeline is disabled")
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsDynamicPipeline.Enabled = false
+		})
+		logs := newLogsWithAttributes(
+			map[string]any{elasticsearch.DocumentPipelineAttributeName: "should-be-ignored"},
+			nil, nil,
+		)
+		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("body")
+		mustSendLogs(t, exporter, logs)
+		rec.WaitItems(1)
+	})
+
 	t.Run("publish with dynamic pipeline", func(t *testing.T) {
 		t.Parallel()
 		examplePipeline := "abc123"
@@ -2761,6 +2803,51 @@ func TestExporterTraces(t *testing.T) {
 				assert.NotContains(t, string(spanEventDoc.Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
 			})
 		}
+	})
+
+	t.Run("traces dynamic id disabled ignores document_id attribute on span", func(t *testing.T) {
+		t.Parallel()
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			assert.NotContains(t, string(docs[0].Action), "_id", "_id must not be set when TracesDynamicID is disabled")
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesDynamicID.Enabled = false
+		})
+		traces := newTracesWithAttributes(
+			map[string]any{elasticsearch.DocumentIDAttributeName: "should-be-ignored"},
+			nil, nil,
+		)
+		mustSendTraces(t, exporter, traces)
+		rec.WaitItems(1)
+	})
+
+	t.Run("traces dynamic id disabled ignores document_id attribute on span event", func(t *testing.T) {
+		t.Parallel()
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			// Two items expected: 1 span + 1 span event. Neither should carry _id.
+			for _, doc := range docs {
+				assert.NotContains(t, string(doc.Action), "_id", "_id must not be set when TracesDynamicID is disabled")
+			}
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesDynamicID.Enabled = false
+		})
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("parent")
+		event := span.Events().AppendEmpty()
+		event.SetName("evt")
+		event.Attributes().PutStr(elasticsearch.DocumentIDAttributeName, "should-be-ignored")
+		mustSendTraces(t, exporter, traces)
+		rec.WaitItems(2)
 	})
 
 	t.Run("publish with dynamic id in ecs mode", func(t *testing.T) {
