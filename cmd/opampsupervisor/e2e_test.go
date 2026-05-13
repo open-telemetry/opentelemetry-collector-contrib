@@ -924,7 +924,7 @@ func TestSupervisorPackageCapabilitiesReturnError(t *testing.T) {
 	require.False(t, connected.Load(), "Supervisor should not have connected to the server")
 }
 
-func TestReproReportsRemoteConfigDisabledStillReportsStatus(t *testing.T) {
+func TestSupervisorDoesNotReportRemoteConfigStatusWhenCapabilityDisabled(t *testing.T) {
 	storageDir := t.TempDir()
 	server := newOpAMPServer(
 		t,
@@ -965,14 +965,14 @@ func TestReproReportsRemoteConfigDisabledStillReportsStatus(t *testing.T) {
 		},
 	})
 
+	// Wait until the supervisor has received and processed the remote config message.
 	require.Eventually(t, func() bool {
-		entries := logs.FilterMessage("Could not report OpAMP remote config status").All()
-		return len(entries) > 0
-	}, 10*time.Second, 250*time.Millisecond, "expected supervisor to attempt remote config status reporting even though reports_remote_config is disabled")
+		return len(logs.FilterMessage("Received remote config from server").All()) > 0
+	}, 10*time.Second, 250*time.Millisecond, "supervisor did not receive remote config")
 
-	entries := logs.FilterMessage("Could not report OpAMP remote config status").All()
-	require.NotEmpty(t, entries)
-	assert.Contains(t, entries[0].ContextMap()["error"], "ReportsRemoteConfig capability is not set")
+	// The supervisor must NOT call SetRemoteConfigStatus when reports_remote_config is disabled.
+	assert.Empty(t, logs.FilterMessage("Could not report OpAMP remote config status").All(),
+		"supervisor should not attempt to report remote config status when the capability is disabled")
 }
 
 func TestSupervisorBootstrapsCollector(t *testing.T) {
