@@ -2301,6 +2301,46 @@
   },
   {
     "computer_name": "abcde",
+    "counter": "Total Latch Wait Time (ms)",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Latches",
+    "sql_instance": "d26d40521426",
+    "value": "48250"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Number of SuperLatches",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Latches",
+    "sql_instance": "d26d40521426",
+    "value": "12"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "SuperLatch Promotions/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Latches",
+    "sql_instance": "d26d40521426",
+    "value": "5"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "SuperLatch Demotions/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Latches",
+    "sql_instance": "d26d40521426",
+    "value": "3"
+  },
+  {
+    "computer_name": "abcde",
     "counter": "Lock Timeouts (timeout > 0)/sec",
     "counter_type": "272696576",
     "instance": "Total",

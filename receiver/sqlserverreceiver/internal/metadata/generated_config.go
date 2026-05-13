@@ -478,6 +478,134 @@ func (ms *SqlserverIndexSearchRateMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
+// SqlserverLatchSuperlatchCountMetricConfig provides config for the sqlserver.latch.superlatch.count metric.
+type SqlserverLatchSuperlatchCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverLatchSuperlatchCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverLatchSuperlatchTransitionRateMetricAttributeKey specifies the key of an attribute for the sqlserver.latch.superlatch.transition.rate metric.
+type SqlserverLatchSuperlatchTransitionRateMetricAttributeKey string
+
+const (
+	SqlserverLatchSuperlatchTransitionRateMetricAttributeKeyTransitionDirection SqlserverLatchSuperlatchTransitionRateMetricAttributeKey = "transition.direction"
+)
+
+// SqlserverLatchSuperlatchTransitionRateMetricConfig provides config for the sqlserver.latch.superlatch.transition.rate metric.
+type SqlserverLatchSuperlatchTransitionRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverLatchSuperlatchTransitionRateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverLatchSuperlatchTransitionRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverLatchSuperlatchTransitionRateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverLatchSuperlatchTransitionRateMetricAttributeKeyTransitionDirection:
+		default:
+			return fmt.Errorf("metric sqlserver.latch.superlatch.transition.rate doesn't have an attribute %v, valid attributes: [transition.direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverLatchWaitRateMetricConfig provides config for the sqlserver.latch.wait.rate metric.
+type SqlserverLatchWaitRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverLatchWaitRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverLatchWaitTimeAvgMetricConfig provides config for the sqlserver.latch.wait_time.avg metric.
+type SqlserverLatchWaitTimeAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverLatchWaitTimeAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverLatchWaitTimeTotalMetricConfig provides config for the sqlserver.latch.wait_time.total metric.
+type SqlserverLatchWaitTimeTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverLatchWaitTimeTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverLockTimeoutRateMetricConfig provides config for the sqlserver.lock.timeout.rate metric.
 type SqlserverLockTimeoutRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1490,6 +1618,11 @@ type MetricsConfig struct {
 	SqlserverDatabaseTempdbVersionStoreSize     SqlserverDatabaseTempdbVersionStoreSizeMetricConfig     `mapstructure:"sqlserver.database.tempdb.version_store.size"`
 	SqlserverDeadlockRate                       SqlserverDeadlockRateMetricConfig                       `mapstructure:"sqlserver.deadlock.rate"`
 	SqlserverIndexSearchRate                    SqlserverIndexSearchRateMetricConfig                    `mapstructure:"sqlserver.index.search.rate"`
+	SqlserverLatchSuperlatchCount               SqlserverLatchSuperlatchCountMetricConfig               `mapstructure:"sqlserver.latch.superlatch.count"`
+	SqlserverLatchSuperlatchTransitionRate      SqlserverLatchSuperlatchTransitionRateMetricConfig      `mapstructure:"sqlserver.latch.superlatch.transition.rate"`
+	SqlserverLatchWaitRate                      SqlserverLatchWaitRateMetricConfig                      `mapstructure:"sqlserver.latch.wait.rate"`
+	SqlserverLatchWaitTimeAvg                   SqlserverLatchWaitTimeAvgMetricConfig                   `mapstructure:"sqlserver.latch.wait_time.avg"`
+	SqlserverLatchWaitTimeTotal                 SqlserverLatchWaitTimeTotalMetricConfig                 `mapstructure:"sqlserver.latch.wait_time.total"`
 	SqlserverLockTimeoutRate                    SqlserverLockTimeoutRateMetricConfig                    `mapstructure:"sqlserver.lock.timeout.rate"`
 	SqlserverLockWaitCount                      SqlserverLockWaitCountMetricConfig                      `mapstructure:"sqlserver.lock.wait.count"`
 	SqlserverLockWaitRate                       SqlserverLockWaitRateMetricConfig                       `mapstructure:"sqlserver.lock.wait.rate"`
@@ -1587,6 +1720,23 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SqlserverIndexSearchRate: SqlserverIndexSearchRateMetricConfig{
+			Enabled: false,
+		},
+		SqlserverLatchSuperlatchCount: SqlserverLatchSuperlatchCountMetricConfig{
+			Enabled: false,
+		},
+		SqlserverLatchSuperlatchTransitionRate: SqlserverLatchSuperlatchTransitionRateMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverLatchSuperlatchTransitionRateMetricAttributeKey{SqlserverLatchSuperlatchTransitionRateMetricAttributeKeyTransitionDirection},
+		},
+		SqlserverLatchWaitRate: SqlserverLatchWaitRateMetricConfig{
+			Enabled: false,
+		},
+		SqlserverLatchWaitTimeAvg: SqlserverLatchWaitTimeAvgMetricConfig{
+			Enabled: false,
+		},
+		SqlserverLatchWaitTimeTotal: SqlserverLatchWaitTimeTotalMetricConfig{
 			Enabled: false,
 		},
 		SqlserverLockTimeoutRate: SqlserverLockTimeoutRateMetricConfig{

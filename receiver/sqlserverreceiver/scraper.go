@@ -455,6 +455,12 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const freePages = "Free Pages"
 	const cacheObjectCounts = "Cache Object Counts"
 	const cacheObjectsInUse = "Cache Objects in use"
+	const latchWaitsPerSec = "Latch Waits/sec"
+	const averageLatchWaitTime = "Average Latch Wait Time (ms)"
+	const totalLatchWaitTime = "Total Latch Wait Time (ms)"
+	const numberOfSuperLatches = "Number of SuperLatches"
+	const superLatchPromotionsPerSec = "SuperLatch Promotions/sec"
+	const superLatchDemotionsPerSec = "SuperLatch Demotions/sec"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -836,6 +842,54 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverMemoryCacheObjectCountDataPoint(now, val.(int64), metadata.AttributeCacheStateInUse)
+			}
+		case latchWaitsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, latchWaitsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverLatchWaitRateDataPoint(now, val.(float64))
+			}
+		case averageLatchWaitTime:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, averageLatchWaitTime)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverLatchWaitTimeAvgDataPoint(now, val.(float64))
+			}
+		case totalLatchWaitTime:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, totalLatchWaitTime)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverLatchWaitTimeTotalDataPoint(now, val.(int64))
+			}
+		case numberOfSuperLatches:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, numberOfSuperLatches)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverLatchSuperlatchCountDataPoint(now, val.(int64))
+			}
+		case superLatchPromotionsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, superLatchPromotionsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverLatchSuperlatchTransitionRateDataPoint(now, val.(float64), metadata.AttributeTransitionDirectionPromotion)
+			}
+		case superLatchDemotionsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, superLatchDemotionsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverLatchSuperlatchTransitionRateDataPoint(now, val.(float64), metadata.AttributeTransitionDirectionDemotion)
 			}
 		}
 

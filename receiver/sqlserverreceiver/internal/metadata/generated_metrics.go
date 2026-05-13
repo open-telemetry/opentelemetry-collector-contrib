@@ -338,6 +338,32 @@ var MapAttributeTempdbState = map[string]AttributeTempdbState{
 	"used": AttributeTempdbStateUsed,
 }
 
+// AttributeTransitionDirection specifies the value transition.direction attribute.
+type AttributeTransitionDirection int
+
+const (
+	_ AttributeTransitionDirection = iota
+	AttributeTransitionDirectionPromotion
+	AttributeTransitionDirectionDemotion
+)
+
+// String returns the string representation of the AttributeTransitionDirection.
+func (av AttributeTransitionDirection) String() string {
+	switch av {
+	case AttributeTransitionDirectionPromotion:
+		return "promotion"
+	case AttributeTransitionDirectionDemotion:
+		return "demotion"
+	}
+	return ""
+}
+
+// MapAttributeTransitionDirection is a helper map of string to AttributeTransitionDirection attribute value.
+var MapAttributeTransitionDirection = map[string]AttributeTransitionDirection{
+	"promotion": AttributeTransitionDirectionPromotion,
+	"demotion":  AttributeTransitionDirectionDemotion,
+}
+
 var MetricsInfo = metricsInfo{
 	SqlserverBatchRequestRate: metricInfo{
 		Name: "sqlserver.batch.request.rate",
@@ -386,6 +412,21 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverIndexSearchRate: metricInfo{
 		Name: "sqlserver.index.search.rate",
+	},
+	SqlserverLatchSuperlatchCount: metricInfo{
+		Name: "sqlserver.latch.superlatch.count",
+	},
+	SqlserverLatchSuperlatchTransitionRate: metricInfo{
+		Name: "sqlserver.latch.superlatch.transition.rate",
+	},
+	SqlserverLatchWaitRate: metricInfo{
+		Name: "sqlserver.latch.wait.rate",
+	},
+	SqlserverLatchWaitTimeAvg: metricInfo{
+		Name: "sqlserver.latch.wait_time.avg",
+	},
+	SqlserverLatchWaitTimeTotal: metricInfo{
+		Name: "sqlserver.latch.wait_time.total",
 	},
 	SqlserverLockTimeoutRate: metricInfo{
 		Name: "sqlserver.lock.timeout.rate",
@@ -517,6 +558,11 @@ type metricsInfo struct {
 	SqlserverDatabaseTempdbVersionStoreSize     metricInfo
 	SqlserverDeadlockRate                       metricInfo
 	SqlserverIndexSearchRate                    metricInfo
+	SqlserverLatchSuperlatchCount               metricInfo
+	SqlserverLatchSuperlatchTransitionRate      metricInfo
+	SqlserverLatchWaitRate                      metricInfo
+	SqlserverLatchWaitTimeAvg                   metricInfo
+	SqlserverLatchWaitTimeTotal                 metricInfo
 	SqlserverLockTimeoutRate                    metricInfo
 	SqlserverLockWaitCount                      metricInfo
 	SqlserverLockWaitRate                       metricInfo
@@ -1582,6 +1628,297 @@ func (m *metricSqlserverIndexSearchRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSqlserverIndexSearchRate(cfg SqlserverIndexSearchRateMetricConfig) metricSqlserverIndexSearchRate {
 	m := metricSqlserverIndexSearchRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverLatchSuperlatchCount struct {
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   SqlserverLatchSuperlatchCountMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.latch.superlatch.count metric with initial data.
+func (m *metricSqlserverLatchSuperlatchCount) init() {
+	m.data.SetName("sqlserver.latch.superlatch.count")
+	m.data.SetDescription("Number of superlatches currently active.")
+	m.data.SetUnit("“{superlatches}”")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverLatchSuperlatchCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverLatchSuperlatchCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverLatchSuperlatchCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverLatchSuperlatchCount(cfg SqlserverLatchSuperlatchCountMetricConfig) metricSqlserverLatchSuperlatchCount {
+	m := metricSqlserverLatchSuperlatchCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverLatchSuperlatchTransitionRate struct {
+	data          pmetric.Metric                                     // data buffer for generated metric.
+	config        SqlserverLatchSuperlatchTransitionRateMetricConfig // metric config provided by user.
+	capacity      int                                                // max observed number of data points added to the metric.
+	aggDataPoints []float64                                          // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.latch.superlatch.transition.rate metric with initial data.
+func (m *metricSqlserverLatchSuperlatchTransitionRate) init() {
+	m.data.SetName("sqlserver.latch.superlatch.transition.rate")
+	m.data.SetDescription("Rate of superlatch promotions or demotions.")
+	m.data.SetUnit("“{transitions}/s”")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverLatchSuperlatchTransitionRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, transitionDirectionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverLatchSuperlatchTransitionRateMetricAttributeKeyTransitionDirection) {
+		dp.Attributes().PutStr("transition.direction", transitionDirectionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverLatchSuperlatchTransitionRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverLatchSuperlatchTransitionRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverLatchSuperlatchTransitionRate(cfg SqlserverLatchSuperlatchTransitionRateMetricConfig) metricSqlserverLatchSuperlatchTransitionRate {
+	m := metricSqlserverLatchSuperlatchTransitionRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverLatchWaitRate struct {
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   SqlserverLatchWaitRateMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.latch.wait.rate metric with initial data.
+func (m *metricSqlserverLatchWaitRate) init() {
+	m.data.SetName("sqlserver.latch.wait.rate")
+	m.data.SetDescription("Number of latch waits per second.")
+	m.data.SetUnit("“{waits}/s”")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverLatchWaitRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverLatchWaitRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverLatchWaitRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverLatchWaitRate(cfg SqlserverLatchWaitRateMetricConfig) metricSqlserverLatchWaitRate {
+	m := metricSqlserverLatchWaitRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverLatchWaitTimeAvg struct {
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   SqlserverLatchWaitTimeAvgMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.latch.wait_time.avg metric with initial data.
+func (m *metricSqlserverLatchWaitTimeAvg) init() {
+	m.data.SetName("sqlserver.latch.wait_time.avg")
+	m.data.SetDescription("Average latch wait time.")
+	m.data.SetUnit("ms")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverLatchWaitTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverLatchWaitTimeAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverLatchWaitTimeAvg) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverLatchWaitTimeAvg(cfg SqlserverLatchWaitTimeAvgMetricConfig) metricSqlserverLatchWaitTimeAvg {
+	m := metricSqlserverLatchWaitTimeAvg{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverLatchWaitTimeTotal struct {
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   SqlserverLatchWaitTimeTotalMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.latch.wait_time.total metric with initial data.
+func (m *metricSqlserverLatchWaitTimeTotal) init() {
+	m.data.SetName("sqlserver.latch.wait_time.total")
+	m.data.SetDescription("Total latch wait time.")
+	m.data.SetUnit("ms")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSqlserverLatchWaitTimeTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverLatchWaitTimeTotal) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverLatchWaitTimeTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverLatchWaitTimeTotal(cfg SqlserverLatchWaitTimeTotalMetricConfig) metricSqlserverLatchWaitTimeTotal {
+	m := metricSqlserverLatchWaitTimeTotal{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3835,6 +4172,11 @@ type MetricsBuilder struct {
 	metricSqlserverDatabaseTempdbVersionStoreSize     metricSqlserverDatabaseTempdbVersionStoreSize
 	metricSqlserverDeadlockRate                       metricSqlserverDeadlockRate
 	metricSqlserverIndexSearchRate                    metricSqlserverIndexSearchRate
+	metricSqlserverLatchSuperlatchCount               metricSqlserverLatchSuperlatchCount
+	metricSqlserverLatchSuperlatchTransitionRate      metricSqlserverLatchSuperlatchTransitionRate
+	metricSqlserverLatchWaitRate                      metricSqlserverLatchWaitRate
+	metricSqlserverLatchWaitTimeAvg                   metricSqlserverLatchWaitTimeAvg
+	metricSqlserverLatchWaitTimeTotal                 metricSqlserverLatchWaitTimeTotal
 	metricSqlserverLockTimeoutRate                    metricSqlserverLockTimeoutRate
 	metricSqlserverLockWaitCount                      metricSqlserverLockWaitCount
 	metricSqlserverLockWaitRate                       metricSqlserverLockWaitRate
@@ -3913,6 +4255,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverDatabaseTempdbVersionStoreSize:     newMetricSqlserverDatabaseTempdbVersionStoreSize(mbc.Metrics.SqlserverDatabaseTempdbVersionStoreSize),
 		metricSqlserverDeadlockRate:                       newMetricSqlserverDeadlockRate(mbc.Metrics.SqlserverDeadlockRate),
 		metricSqlserverIndexSearchRate:                    newMetricSqlserverIndexSearchRate(mbc.Metrics.SqlserverIndexSearchRate),
+		metricSqlserverLatchSuperlatchCount:               newMetricSqlserverLatchSuperlatchCount(mbc.Metrics.SqlserverLatchSuperlatchCount),
+		metricSqlserverLatchSuperlatchTransitionRate:      newMetricSqlserverLatchSuperlatchTransitionRate(mbc.Metrics.SqlserverLatchSuperlatchTransitionRate),
+		metricSqlserverLatchWaitRate:                      newMetricSqlserverLatchWaitRate(mbc.Metrics.SqlserverLatchWaitRate),
+		metricSqlserverLatchWaitTimeAvg:                   newMetricSqlserverLatchWaitTimeAvg(mbc.Metrics.SqlserverLatchWaitTimeAvg),
+		metricSqlserverLatchWaitTimeTotal:                 newMetricSqlserverLatchWaitTimeTotal(mbc.Metrics.SqlserverLatchWaitTimeTotal),
 		metricSqlserverLockTimeoutRate:                    newMetricSqlserverLockTimeoutRate(mbc.Metrics.SqlserverLockTimeoutRate),
 		metricSqlserverLockWaitCount:                      newMetricSqlserverLockWaitCount(mbc.Metrics.SqlserverLockWaitCount),
 		metricSqlserverLockWaitRate:                       newMetricSqlserverLockWaitRate(mbc.Metrics.SqlserverLockWaitRate),
@@ -4080,6 +4427,11 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverDatabaseTempdbVersionStoreSize.emit(ils.Metrics())
 	mb.metricSqlserverDeadlockRate.emit(ils.Metrics())
 	mb.metricSqlserverIndexSearchRate.emit(ils.Metrics())
+	mb.metricSqlserverLatchSuperlatchCount.emit(ils.Metrics())
+	mb.metricSqlserverLatchSuperlatchTransitionRate.emit(ils.Metrics())
+	mb.metricSqlserverLatchWaitRate.emit(ils.Metrics())
+	mb.metricSqlserverLatchWaitTimeAvg.emit(ils.Metrics())
+	mb.metricSqlserverLatchWaitTimeTotal.emit(ils.Metrics())
 	mb.metricSqlserverLockTimeoutRate.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitCount.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitRate.emit(ils.Metrics())
@@ -4251,6 +4603,31 @@ func (mb *MetricsBuilder) RecordSqlserverDeadlockRateDataPoint(ts pcommon.Timest
 // RecordSqlserverIndexSearchRateDataPoint adds a data point to sqlserver.index.search.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverIndexSearchRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverIndexSearchRate.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverLatchSuperlatchCountDataPoint adds a data point to sqlserver.latch.superlatch.count metric.
+func (mb *MetricsBuilder) RecordSqlserverLatchSuperlatchCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSqlserverLatchSuperlatchCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverLatchSuperlatchTransitionRateDataPoint adds a data point to sqlserver.latch.superlatch.transition.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverLatchSuperlatchTransitionRateDataPoint(ts pcommon.Timestamp, val float64, transitionDirectionAttributeValue AttributeTransitionDirection) {
+	mb.metricSqlserverLatchSuperlatchTransitionRate.recordDataPoint(mb.startTime, ts, val, transitionDirectionAttributeValue.String())
+}
+
+// RecordSqlserverLatchWaitRateDataPoint adds a data point to sqlserver.latch.wait.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverLatchWaitRateDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverLatchWaitRate.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverLatchWaitTimeAvgDataPoint adds a data point to sqlserver.latch.wait_time.avg metric.
+func (mb *MetricsBuilder) RecordSqlserverLatchWaitTimeAvgDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverLatchWaitTimeAvg.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverLatchWaitTimeTotalDataPoint adds a data point to sqlserver.latch.wait_time.total metric.
+func (mb *MetricsBuilder) RecordSqlserverLatchWaitTimeTotalDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSqlserverLatchWaitTimeTotal.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSqlserverLockTimeoutRateDataPoint adds a data point to sqlserver.lock.timeout.rate metric.

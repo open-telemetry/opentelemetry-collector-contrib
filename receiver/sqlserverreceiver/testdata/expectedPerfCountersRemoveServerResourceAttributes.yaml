@@ -693,6 +693,160 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
+          - description: Average latch wait time.
+            gauge:
+              dataPoints:
+                - asDouble: 162
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.latch.wait_time.avg
+            unit: ms
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of latch waits per second.
+            gauge:
+              dataPoints:
+                - asDouble: 935
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.latch.wait.rate
+            unit: “{waits}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Total latch wait time.
+            name: sqlserver.latch.wait_time.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "48250"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: ms
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of superlatches currently active.
+            gauge:
+              dataPoints:
+                - asInt: "12"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.latch.superlatch.count
+            unit: “{superlatches}”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of superlatch promotions or demotions.
+            gauge:
+              dataPoints:
+                - asDouble: 5
+                  attributes:
+                    - key: transition.direction
+                      value:
+                        stringValue: promotion
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.latch.superlatch.transition.rate
+            unit: “{transitions}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate of superlatch promotions or demotions.
+            gauge:
+              dataPoints:
+                - asDouble: 3
+                  attributes:
+                    - key: transition.direction
+                      value:
+                        stringValue: demotion
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.latch.superlatch.transition.rate
+            unit: “{transitions}/s”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
           - description: Total number of lock timeouts.
             gauge:
               dataPoints:
@@ -766,12 +920,12 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - description: Total number of memory grants pending.
-            name: sqlserver.memory.grants.pending.count
             gauge:
               dataPoints:
                 - asInt: "0"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+            name: sqlserver.memory.grants.pending.count
             unit: '{grant}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -846,12 +1000,12 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - description: Total amount of dynamic memory the server is currently consuming.
-            name: sqlserver.memory.usage
             gauge:
               dataPoints:
                 - asInt: "24944"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+            name: sqlserver.memory.usage
             unit: kBy
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -1078,12 +1232,12 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - description: Total amount of dynamic memory the server is currently consuming.
-            name: sqlserver.memory.usage
             gauge:
               dataPoints:
                 - asInt: "234720"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+            name: sqlserver.memory.usage
             unit: kBy
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver

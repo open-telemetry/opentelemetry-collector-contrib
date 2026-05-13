@@ -313,6 +313,11 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [free, used]
+  transition.direction:
+    description: The direction of a superlatch transition.
+    type: string
+    requirement_level: recommended
+    enum: [promotion, demotion]
   user.name:
     description: Login name associated with the SQL Server session.
     type: string
@@ -536,6 +541,53 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.latch.superlatch.count:
+    enabled: false
+    description: Number of superlatches currently active.
+    stability: development
+    unit: “{superlatches}”
+    gauge:
+      value_type: int
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.latch.superlatch.transition.rate:
+    enabled: false
+    description: Rate of superlatch promotions or demotions.
+    stability: development
+    unit: “{transitions}/s”
+    gauge:
+      value_type: double
+    attributes: [transition.direction]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.latch.wait.rate:
+    enabled: false
+    description: Number of latch waits per second.
+    stability: development
+    unit: “{waits}/s”
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.latch.wait_time.avg:
+    enabled: false
+    description: Average latch wait time.
+    stability: development
+    unit: ms
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.latch.wait_time.total:
+    enabled: false
+    description: Total latch wait time.
+    stability: development
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.timeout.rate:
     enabled: false
     description: Total number of lock timeouts.

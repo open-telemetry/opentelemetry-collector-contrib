@@ -214,6 +214,57 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.latch.superlatch.count:
+        description: "SqlserverLatchSuperlatchCountMetricConfig provides config for the sqlserver.latch.superlatch.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.latch.superlatch.transition.rate:
+        description: "SqlserverLatchSuperlatchTransitionRateMetricConfig provides config for the sqlserver.latch.superlatch.transition.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "transition.direction"
+            default:
+              - "transition.direction"
+      sqlserver.latch.wait.rate:
+        description: "SqlserverLatchWaitRateMetricConfig provides config for the sqlserver.latch.wait.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.latch.wait_time.avg:
+        description: "SqlserverLatchWaitTimeAvgMetricConfig provides config for the sqlserver.latch.wait_time.avg metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.latch.wait_time.total:
+        description: "SqlserverLatchWaitTimeTotalMetricConfig provides config for the sqlserver.latch.wait_time.total metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       sqlserver.lock.timeout.rate:
         description: "SqlserverLockTimeoutRateMetricConfig provides config for the sqlserver.lock.timeout.rate metric."
         type: object

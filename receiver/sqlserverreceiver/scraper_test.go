@@ -50,6 +50,11 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
 	cfg.Metrics.SqlserverDeadlockRate.Enabled = enabled
 	cfg.Metrics.SqlserverIndexSearchRate.Enabled = enabled
+	cfg.Metrics.SqlserverLatchSuperlatchCount.Enabled = enabled
+	cfg.Metrics.SqlserverLatchSuperlatchTransitionRate.Enabled = enabled
+	cfg.Metrics.SqlserverLatchWaitRate.Enabled = enabled
+	cfg.Metrics.SqlserverLatchWaitTimeAvg.Enabled = enabled
+	cfg.Metrics.SqlserverLatchWaitTimeTotal.Enabled = enabled
 	cfg.Metrics.SqlserverLockTimeoutRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitCount.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitRate.Enabled = enabled

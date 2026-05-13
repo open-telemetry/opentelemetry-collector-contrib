@@ -269,6 +269,11 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled ||
 		metrics.SqlserverDeadlockRate.Enabled ||
 		metrics.SqlserverIndexSearchRate.Enabled ||
+		metrics.SqlserverLatchSuperlatchCount.Enabled ||
+		metrics.SqlserverLatchSuperlatchTransitionRate.Enabled ||
+		metrics.SqlserverLatchWaitRate.Enabled ||
+		metrics.SqlserverLatchWaitTimeAvg.Enabled ||
+		metrics.SqlserverLatchWaitTimeTotal.Enabled ||
 		metrics.SqlserverLockTimeoutRate.Enabled ||
 		metrics.SqlserverLockWaitCount.Enabled ||
 		metrics.SqlserverLockWaitRate.Enabled ||

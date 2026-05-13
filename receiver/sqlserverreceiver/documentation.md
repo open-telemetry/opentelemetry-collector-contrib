@@ -371,6 +371,62 @@ Total number of index searches.
 | ---- | ----------- | ---------- | --------- |
 | “{searches}/s” | Gauge | Double | Development |
 
+### sqlserver.latch.superlatch.count
+
+Number of superlatches currently active.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| “{superlatches}” | Gauge | Int | Development |
+
+### sqlserver.latch.superlatch.transition.rate
+
+Rate of superlatch promotions or demotions.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| “{transitions}/s” | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| transition.direction | The direction of a superlatch transition. | Str: ``promotion``, ``demotion`` | Recommended | - |
+
+### sqlserver.latch.wait.rate
+
+Number of latch waits per second.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| “{waits}/s” | Gauge | Double | Development |
+
+### sqlserver.latch.wait_time.avg
+
+Average latch wait time.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Gauge | Double | Development |
+
+### sqlserver.latch.wait_time.total
+
+Total latch wait time.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| ms | Sum | Int | Cumulative | true | Development |
+
 ### sqlserver.lock.timeout.rate
 
 Total number of lock timeouts.

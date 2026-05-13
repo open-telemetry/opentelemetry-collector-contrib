@@ -38,6 +38,17 @@ all_set:
       enabled: true
     sqlserver.index.search.rate:
       enabled: true
+    sqlserver.latch.superlatch.count:
+      enabled: true
+    sqlserver.latch.superlatch.transition.rate:
+      enabled: true
+      attributes: ["transition.direction"]
+    sqlserver.latch.wait.rate:
+      enabled: true
+    sqlserver.latch.wait_time.avg:
+      enabled: true
+    sqlserver.latch.wait_time.total:
+      enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
     sqlserver.lock.wait.count:
@@ -180,6 +191,17 @@ reaggregate_set:
       enabled: true
     sqlserver.index.search.rate:
       enabled: true
+    sqlserver.latch.superlatch.count:
+      enabled: true
+    sqlserver.latch.superlatch.transition.rate:
+      enabled: true
+      attributes: []
+    sqlserver.latch.wait.rate:
+      enabled: true
+    sqlserver.latch.wait_time.avg:
+      enabled: true
+    sqlserver.latch.wait_time.total:
+      enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
     sqlserver.lock.wait.count:
@@ -321,6 +343,17 @@ none_set:
     sqlserver.deadlock.rate:
       enabled: false
     sqlserver.index.search.rate:
+      enabled: false
+    sqlserver.latch.superlatch.count:
+      enabled: false
+    sqlserver.latch.superlatch.transition.rate:
+      enabled: false
+      attributes: ["transition.direction"]
+    sqlserver.latch.wait.rate:
+      enabled: false
+    sqlserver.latch.wait_time.avg:
+      enabled: false
+    sqlserver.latch.wait_time.total:
       enabled: false
     sqlserver.lock.timeout.rate:
       enabled: false

@@ -72,6 +72,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.database.latency"] = mb.metricSqlserverDatabaseLatency.config.AggregationStrategy
 			aggMap["sqlserver.database.operations"] = mb.metricSqlserverDatabaseOperations.config.AggregationStrategy
 			aggMap["sqlserver.database.tempdb.space"] = mb.metricSqlserverDatabaseTempdbSpace.config.AggregationStrategy
+			aggMap["sqlserver.latch.superlatch.transition.rate"] = mb.metricSqlserverLatchSuperlatchTransitionRate.config.AggregationStrategy
 			aggMap["sqlserver.memory.area"] = mb.metricSqlserverMemoryArea.config.AggregationStrategy
 			aggMap["sqlserver.memory.cache.object.count"] = mb.metricSqlserverMemoryCacheObjectCount.config.AggregationStrategy
 			aggMap["sqlserver.memory.page.count"] = mb.metricSqlserverMemoryPageCount.config.AggregationStrategy
@@ -155,6 +156,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSqlserverIndexSearchRateDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverLatchSuperlatchCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverLatchSuperlatchTransitionRateDataPoint(ts, 1, AttributeTransitionDirectionPromotion)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverLatchSuperlatchTransitionRateDataPoint(ts, 3, AttributeTransitionDirectionDemotion)
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverLatchWaitRateDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverLatchWaitTimeAvgDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverLatchWaitTimeTotalDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordSqlserverLockTimeoutRateDataPoint(ts, 1)
@@ -327,6 +346,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverDatabaseLatency.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseOperations.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseTempdbSpace.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverLatchSuperlatchTransitionRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryArea.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryCacheObjectCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverMemoryPageCount.aggDataPoints)
@@ -756,6 +776,96 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.latch.superlatch.count":
+					assert.False(t, validatedMetrics["sqlserver.latch.superlatch.count"], "Found a duplicate in the metrics slice: sqlserver.latch.superlatch.count")
+					validatedMetrics["sqlserver.latch.superlatch.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of superlatches currently active.", mi.Description())
+					assert.Equal(t, "“{superlatches}”", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.latch.superlatch.transition.rate":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.latch.superlatch.transition.rate"], "Found a duplicate in the metrics slice: sqlserver.latch.superlatch.transition.rate")
+						validatedMetrics["sqlserver.latch.superlatch.transition.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rate of superlatch promotions or demotions.", mi.Description())
+						assert.Equal(t, "“{transitions}/s”", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						transitionDirectionAttrVal, ok := dp.Attributes().Get("transition.direction")
+						assert.True(t, ok)
+						assert.Equal(t, "promotion", transitionDirectionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.latch.superlatch.transition.rate"], "Found a duplicate in the metrics slice: sqlserver.latch.superlatch.transition.rate")
+						validatedMetrics["sqlserver.latch.superlatch.transition.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Rate of superlatch promotions or demotions.", mi.Description())
+						assert.Equal(t, "“{transitions}/s”", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["sqlserver.latch.superlatch.transition.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("transition.direction")
+						assert.False(t, ok)
+					}
+				case "sqlserver.latch.wait.rate":
+					assert.False(t, validatedMetrics["sqlserver.latch.wait.rate"], "Found a duplicate in the metrics slice: sqlserver.latch.wait.rate")
+					validatedMetrics["sqlserver.latch.wait.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of latch waits per second.", mi.Description())
+					assert.Equal(t, "“{waits}/s”", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.latch.wait_time.avg":
+					assert.False(t, validatedMetrics["sqlserver.latch.wait_time.avg"], "Found a duplicate in the metrics slice: sqlserver.latch.wait_time.avg")
+					validatedMetrics["sqlserver.latch.wait_time.avg"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Average latch wait time.", mi.Description())
+					assert.Equal(t, "ms", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.latch.wait_time.total":
+					assert.False(t, validatedMetrics["sqlserver.latch.wait_time.total"], "Found a duplicate in the metrics slice: sqlserver.latch.wait_time.total")
+					validatedMetrics["sqlserver.latch.wait_time.total"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total latch wait time.", mi.Description())
+					assert.Equal(t, "ms", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "sqlserver.lock.timeout.rate":
 					assert.False(t, validatedMetrics["sqlserver.lock.timeout.rate"], "Found a duplicate in the metrics slice: sqlserver.lock.timeout.rate")
 					validatedMetrics["sqlserver.lock.timeout.rate"] = true
