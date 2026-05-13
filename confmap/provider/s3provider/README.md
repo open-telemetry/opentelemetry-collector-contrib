@@ -15,18 +15,50 @@
 
 ## Summary
 
-This package provides a `ConfigMapProvider` implementation for Amazon S3 (`s3provider`) that allows the Collector the ability to load configuration by fetching and reading config objects stored in Amazon S3.
+This package provides a `ConfigMapProvider` implementation for Amazon S3 (`s3provider`) that allows the Collector to load configuration by fetching config objects from Amazon S3 or any Amazon S3-compatible storage service.
 
 ## How it works
 
 - It will be called by `ConfigMapResolver` to load configuration for the Collector.
 - By giving a config URI starting with prefix `s3://`, this `s3provider` will be used to download config objects from the given S3 URIs, and then use the downloaded configuration during Collector initialization.
 
-Expected URI format:
+## URI formats
 
-- s3://[BUCKET].s3.[REGION].amazonaws.com/[KEY]
+### Amazon S3 (virtual-hosted-style)
 
-Prerequistes:
+```
+s3://[BUCKET].s3.[REGION].amazonaws.com/[KEY]
+```
 
-- Need to setup access keys from IAM console (aws_access_key_id and aws_secret_access_key) with permission to access Amazon S3
-- For details, can take a look at https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/
+Example:
+
+```
+s3://doc-example-bucket.s3.us-west-2.amazonaws.com/config.yaml
+```
+
+### Amazon S3-compatible services (path-style)
+
+For Amazon S3-compatible services such as MinIO or DigitalOcean Spaces:
+
+```
+s3://[ENDPOINT_HOST]/[BUCKET]/[KEY]?region=[REGION]
+```
+
+- `ENDPOINT_HOST` — the hostname (and optional port) of the Amazon S3-compatible service
+- `region` — optional query parameter, depends on the provider
+
+Examples:
+
+```
+s3://minio.example.com/my-bucket/config.yaml
+s3://localhost:9000/my-bucket/config.yaml
+```
+
+## Prerequisites
+
+- Need to setup access keys with permission to access the bucket (aws_access_key_id and aws_secret_access_key for AWS, or equivalent credentials for other providers)
+- For AWS SDK configuration details, see https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-gosdk.html
+
+## Limitations
+
+Authentication is handled through a single set of credentials (environment variables or workload identity). As a result, all S3 URIs in a given configuration must be accessible with the same credentials — mixing different providers or authentication methods in the same configuration is not supported.
