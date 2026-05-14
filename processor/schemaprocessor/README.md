@@ -104,8 +104,16 @@ processor retries up to `cache_retry_limit` times before entering a cooldown
 period of `cache_cooldown` during which further attempts for the same key
 return an error immediately.
 
+By default, successfully fetched schemas are cached indefinitely for the
+process lifetime. Set `cache_ttl` to a positive duration to evict entries after
+that period; the next access triggers a fresh fetch from the upstream provider.
+This is useful when a schema URL may return incorrect content initially, or when
+schema files are updated on the server. A value of `0` (the default) keeps the
+previous no-expiration behaviour.
+
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
+| `cache_ttl` | duration | `0` (no expiration) | How long a successfully fetched schema is cached before being re-fetched |
 | `cache_cooldown` | duration | `5m` | Wait time after retry limit is reached |
 | `cache_retry_limit` | int | `5` | Consecutive failures before cooldown |
 
