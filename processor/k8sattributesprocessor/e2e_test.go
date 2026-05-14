@@ -703,7 +703,7 @@ func TestE2E_ClusterRBACHeuristic(t *testing.T) {
 		k8stest.WaitForTelemetryGenToStart(t, k8sClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
 	}
 
-	wantEntries := 128 // Minimal number of metrics/traces/logs/profiles to wait for.
+	wantEntries := 128 // Minimal number of metrics/traces/logs to wait for
 	waitForData(t, wantEntries, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
 
 	tcs := []struct {
@@ -712,6 +712,81 @@ func TestE2E_ClusterRBACHeuristic(t *testing.T) {
 		service  string
 		attrs    map[string]*expectedValue
 	}{
+		{
+			name:     "traces-cronjob",
+			dataType: pipeline.SignalTraces,
+			service:  "test-traces-cronjob",
+			attrs: map[string]*expectedValue{
+				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-traces-cronjob-[a-z0-9-]*"),
+				"k8s.pod.uid":                  newExpectedValue(regex, uidRe),
+				"k8s.pod.start_time":           newExpectedValue(exist, ""),
+				"k8s.node.name":                newExpectedValue(exist, ""),
+				"k8s.namespace.name":           newExpectedValue(equal, testNs),
+				"k8s.cronjob.name":             newExpectedValue(equal, "telemetrygen-"+testID+"-traces-cronjob"),
+				"k8s.cronjob.uid":              newExpectedValue(shouldnotexist, ""),
+				"k8s.job.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-traces-cronjob-[0-9]*"),
+				"k8s.job.uid":                  newExpectedValue(exist, ""),
+				"k8s.annotations.workload":     newExpectedValue(equal, "cronjob"),
+				"k8s.labels.app":               newExpectedValue(equal, "telemetrygen-"+testID+"-traces-cronjob"),
+				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
+				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
+				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
+				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
+				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.id":                 newExpectedValue(exist, ""),
+				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+			},
+		},
+		{
+			name:     "metrics-cronjob",
+			dataType: pipeline.SignalMetrics,
+			service:  "test-metrics-cronjob",
+			attrs: map[string]*expectedValue{
+				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-cronjob-[a-z0-9-]*"),
+				"k8s.pod.uid":                  newExpectedValue(regex, uidRe),
+				"k8s.pod.start_time":           newExpectedValue(exist, ""),
+				"k8s.node.name":                newExpectedValue(exist, ""),
+				"k8s.namespace.name":           newExpectedValue(equal, testNs),
+				"k8s.cronjob.name":             newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-cronjob"),
+				"k8s.cronjob.uid":              newExpectedValue(shouldnotexist, ""),
+				"k8s.job.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-cronjob-[0-9]*"),
+				"k8s.job.uid":                  newExpectedValue(exist, ""),
+				"k8s.annotations.workload":     newExpectedValue(equal, "cronjob"),
+				"k8s.labels.app":               newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-cronjob"),
+				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
+				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
+				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
+				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
+				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.id":                 newExpectedValue(exist, ""),
+				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+			},
+		},
+		{
+			name:     "logs-cronjob",
+			dataType: pipeline.SignalLogs,
+			service:  "test-logs-cronjob",
+			attrs: map[string]*expectedValue{
+				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-logs-cronjob-[a-z0-9-]*"),
+				"k8s.pod.uid":                  newExpectedValue(regex, uidRe),
+				"k8s.pod.start_time":           newExpectedValue(exist, ""),
+				"k8s.node.name":                newExpectedValue(exist, ""),
+				"k8s.namespace.name":           newExpectedValue(equal, testNs),
+				"k8s.cronjob.name":             newExpectedValue(equal, "telemetrygen-"+testID+"-logs-cronjob"),
+				"k8s.cronjob.uid":              newExpectedValue(shouldnotexist, ""),
+				"k8s.job.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-logs-cronjob-[0-9]*"),
+				"k8s.job.uid":                  newExpectedValue(exist, ""),
+				"k8s.annotations.workload":     newExpectedValue(equal, "cronjob"),
+				"k8s.labels.app":               newExpectedValue(equal, "telemetrygen-"+testID+"-logs-cronjob"),
+				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
+				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
+				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
+				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
+				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.id":                 newExpectedValue(exist, ""),
+				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+			},
+		},
 		{
 			name:     "traces-deployment",
 			dataType: pipeline.SignalTraces,
