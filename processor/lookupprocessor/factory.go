@@ -10,9 +10,6 @@ import (
 	"github.com/go-viper/mapstructure/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
@@ -136,16 +133,14 @@ func (f *lookupProcessorFactory) createLogsProcessor(
 		return nil, err
 	}
 
-	proc := newLookupProcessor[*ottllog.TransformContext](source, lookups, set.Logger)
+	proc := &logsLookupProcessor{newLookupProcessor[*ottllog.TransformContext](source, lookups, set.Logger)}
 
 	return processorhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
 		next,
-		func(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
-			return processLogs(ctx, proc, ld)
-		},
+		proc.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(proc.Start),
 		processorhelper.WithShutdown(proc.Shutdown),
@@ -179,16 +174,14 @@ func (f *lookupProcessorFactory) createTracesProcessor(
 		return nil, err
 	}
 
-	proc := newLookupProcessor[*ottlspan.TransformContext](source, lookups, set.Logger)
+	proc := &tracesLookupProcessor{newLookupProcessor[*ottlspan.TransformContext](source, lookups, set.Logger)}
 
 	return processorhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
 		next,
-		func(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-			return processTraces(ctx, proc, td)
-		},
+		proc.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(proc.Start),
 		processorhelper.WithShutdown(proc.Shutdown),
@@ -222,16 +215,14 @@ func (f *lookupProcessorFactory) createMetricsProcessor(
 		return nil, err
 	}
 
-	proc := newLookupProcessor[*ottldatapoint.TransformContext](source, lookups, set.Logger)
+	proc := &metricsLookupProcessor{newLookupProcessor[*ottldatapoint.TransformContext](source, lookups, set.Logger)}
 
 	return processorhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
 		next,
-		func(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
-			return processMetrics(ctx, proc, md)
-		},
+		proc.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(proc.Start),
 		processorhelper.WithShutdown(proc.Shutdown),

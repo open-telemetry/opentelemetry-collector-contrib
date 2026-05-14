@@ -104,7 +104,11 @@ func processLookupResult(
 	}
 }
 
-func processLogs(ctx context.Context, p *lookupProcessor[*ottllog.TransformContext], ld plog.Logs) (plog.Logs, error) {
+type logsLookupProcessor struct {
+	*lookupProcessor[*ottllog.TransformContext]
+}
+
+func (p *logsLookupProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rl := ld.ResourceLogs().At(i)
 		resourceAttrs := rl.Resource().Attributes()
@@ -121,7 +125,11 @@ func processLogs(ctx context.Context, p *lookupProcessor[*ottllog.TransformConte
 	return ld, nil
 }
 
-func processTraces(ctx context.Context, p *lookupProcessor[*ottlspan.TransformContext], td ptrace.Traces) (ptrace.Traces, error) {
+type tracesLookupProcessor struct {
+	*lookupProcessor[*ottlspan.TransformContext]
+}
+
+func (p *tracesLookupProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rs := td.ResourceSpans().At(i)
 		resourceAttrs := rs.Resource().Attributes()
@@ -138,7 +146,11 @@ func processTraces(ctx context.Context, p *lookupProcessor[*ottlspan.TransformCo
 	return td, nil
 }
 
-func processMetrics(ctx context.Context, p *lookupProcessor[*ottldatapoint.TransformContext], md pmetric.Metrics) (pmetric.Metrics, error) {
+type metricsLookupProcessor struct {
+	*lookupProcessor[*ottldatapoint.TransformContext]
+}
+
+func (p *metricsLookupProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rm := md.ResourceMetrics().At(i)
 		resourceAttrs := rm.Resource().Attributes()
@@ -148,15 +160,15 @@ func processMetrics(ctx context.Context, p *lookupProcessor[*ottldatapoint.Trans
 				m := sm.Metrics().At(k)
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
-					processDataPoints(ctx, p, m.Gauge().DataPoints(), rm, sm, m, resourceAttrs)
+					processDataPoints(ctx, p.lookupProcessor, m.Gauge().DataPoints(), rm, sm, m, resourceAttrs)
 				case pmetric.MetricTypeSum:
-					processDataPoints(ctx, p, m.Sum().DataPoints(), rm, sm, m, resourceAttrs)
+					processDataPoints(ctx, p.lookupProcessor, m.Sum().DataPoints(), rm, sm, m, resourceAttrs)
 				case pmetric.MetricTypeHistogram:
-					processDataPoints(ctx, p, m.Histogram().DataPoints(), rm, sm, m, resourceAttrs)
+					processDataPoints(ctx, p.lookupProcessor, m.Histogram().DataPoints(), rm, sm, m, resourceAttrs)
 				case pmetric.MetricTypeExponentialHistogram:
-					processDataPoints(ctx, p, m.ExponentialHistogram().DataPoints(), rm, sm, m, resourceAttrs)
+					processDataPoints(ctx, p.lookupProcessor, m.ExponentialHistogram().DataPoints(), rm, sm, m, resourceAttrs)
 				case pmetric.MetricTypeSummary:
-					processDataPoints(ctx, p, m.Summary().DataPoints(), rm, sm, m, resourceAttrs)
+					processDataPoints(ctx, p.lookupProcessor, m.Summary().DataPoints(), rm, sm, m, resourceAttrs)
 				}
 			}
 		}
