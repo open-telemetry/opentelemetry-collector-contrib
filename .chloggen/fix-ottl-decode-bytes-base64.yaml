@@ -1,0 +1,16 @@
+change_type: bug_fix
+
+component: pkg/ottl
+
+note: Fix `Decode` function failing with "illegal base64 data at input byte 0" when `log.body` is a byte-array (`pcommon.ValueTypeBytes`) whose content has leading or trailing whitespace such as a newline.
+
+issues: [48372]
+
+subtext: |
+  `base64.StdEncoding` has zero whitespace tolerance. Event-streaming systems
+  (e.g. Azure Event Hub with `format: raw`) commonly append a trailing newline
+  to message payloads, causing the first or last byte to be rejected as invalid
+  base64. The fix trims leading/trailing whitespace from the input before
+  decoding, matching common real-world usage without affecting any other decoder.
+
+change_logs: [user]
