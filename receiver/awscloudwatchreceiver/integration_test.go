@@ -11,17 +11,24 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
+	cwtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/goccy/go-json"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver/internal/metadata"
 )
 
@@ -67,6 +74,100 @@ func TestLoggingIntegration(t *testing.T) {
 	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "golden", "autodiscovered.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
+}
+
+// TestMetricsIntegration_Summary verifies that the metrics scraper produces the expected
+// pdata structure in summary mode (no explicit Stats → Summary metric type) against a
+// golden file so that format changes are caught on subsequent PRs.
+func TestMetricsIntegration_Summary(t *testing.T) {
+	mc := &mockMetricsClient{}
+	ts := time.Unix(1_700_000_000, 0).UTC()
+
+	mc.On("GetMetricData", mock.Anything, mock.Anything, mock.Anything).
+		Return(&cloudwatch.GetMetricDataOutput{
+			MetricDataResults: []cwtypes.MetricDataResult{
+				{Id: aws.String("q0_0"), Values: []float64{80.0}, Timestamps: []time.Time{ts}}, // Sum
+				{Id: aws.String("q0_1"), Values: []float64{4.0}, Timestamps: []time.Time{ts}},  // SampleCount
+				{Id: aws.String("q0_2"), Values: []float64{10.0}, Timestamps: []time.Time{ts}}, // Minimum
+				{Id: aws.String("q0_3"), Values: []float64{30.0}, Timestamps: []time.Time{ts}}, // Maximum
+			},
+		}, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-east-1"
+	cfg.Metrics.Queries = []MetricQuery{
+		{
+			Namespace:  "AWS/EC2",
+			MetricName: "CPUUtilization",
+			Dimensions: map[string]string{"InstanceId": "i-1234567890abcdef0"},
+		},
+	}
+
+	scr := newCloudWatchMetricsScraper(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
+	})
+	scr.client = mc
+
+	md, err := scr.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+
+	goldenPath := filepath.Join("testdata", "golden", "metrics-summary.yaml")
+	if os.Getenv("UPDATE_GOLDEN") != "" {
+		require.NoError(t, golden.WriteMetricsToFile(goldenPath, md))
+	}
+	expected, err := golden.ReadMetrics(goldenPath)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, md,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+	))
+}
+
+// TestMetricsIntegration_Gauge verifies the gauge mode output (explicit Stats list →
+// one Gauge data point per stat, tagged with a "stat" attribute) against a golden file.
+func TestMetricsIntegration_Gauge(t *testing.T) {
+	mc := &mockMetricsClient{}
+	ts := time.Unix(1_700_000_000, 0).UTC()
+
+	mc.On("GetMetricData", mock.Anything, mock.Anything, mock.Anything).
+		Return(&cloudwatch.GetMetricDataOutput{
+			MetricDataResults: []cwtypes.MetricDataResult{
+				{Id: aws.String("q0_0"), Values: []float64{85.5}, Timestamps: []time.Time{ts}}, // Average
+				{Id: aws.String("q0_1"), Values: []float64{95.2}, Timestamps: []time.Time{ts}}, // p99
+			},
+		}, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-east-1"
+	cfg.Metrics.Queries = []MetricQuery{
+		{
+			Namespace:  "AWS/EC2",
+			MetricName: "CPUUtilization",
+			Dimensions: map[string]string{"InstanceId": "i-1234567890abcdef0"},
+			Stats:      []string{"Average", "p99"},
+		},
+	}
+
+	scr := newCloudWatchMetricsScraper(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
+	})
+	scr.client = mc
+
+	md, err := scr.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+
+	goldenPath := filepath.Join("testdata", "golden", "metrics-gauge.yaml")
+	if os.Getenv("UPDATE_GOLDEN") != "" {
+		require.NoError(t, golden.WriteMetricsToFile(goldenPath, md))
+	}
+	expected, err := golden.ReadMetrics(goldenPath)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, md,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+	))
 }
 
 var (

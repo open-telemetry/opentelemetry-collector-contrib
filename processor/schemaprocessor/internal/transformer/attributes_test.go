@@ -20,7 +20,7 @@ func TestMetricAttributesEmptyType(t *testing.T) {
 	transformer := MetricAttributes{
 		AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 			"old": "new",
-		}),
+		}, false),
 	}
 	metric := pmetric.NewMetric() // MetricTypeEmpty by default
 	err := transformer.Do(migrate.StateSelectorApply, metric)
@@ -30,7 +30,7 @@ func TestMetricAttributesEmptyType(t *testing.T) {
 func TestAttributeTransformers(t *testing.T) {
 	attrChange := migrate.NewAttributeChangeSet(map[string]string{
 		"service_version": "service.version",
-	})
+	}, false)
 	allTransformer := AllAttributes{
 		MetricAttributes:    MetricAttributes{attrChange},
 		LogAttributes:       LogAttributes{attrChange},

@@ -14,6 +14,7 @@ import (
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -40,6 +41,7 @@ const (
 var (
 	_ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
 	_ encoding.LogsDecoderExtension     = (*encodingExtension)(nil)
+	_ extensioncapabilities.Dependent   = (*encodingExtension)(nil)
 )
 
 var (
@@ -66,33 +68,27 @@ type encodingExtension struct {
 	cfg *Config
 
 	unmarshaler             awsunmarshaler.AWSUnmarshaler
+	subscriptionFilter      *subscriptionfilter.SubscriptionFilterUnmarshaler
 	format                  string
 	gzipPool                sync.Pool
 	logger                  *zap.Logger
 	warnGzipDeprecationOnce sync.Once
+	selfID                  component.ID
 }
 
 func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension, error) {
 	switch cfg.Format {
-	case constants.FormatCloudWatchLogsSubscriptionFilter, constants.FormatCloudWatchLogsSubscriptionFilterV1:
-		if cfg.Format == constants.FormatCloudWatchLogsSubscriptionFilterV1 {
-			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", constants.FormatCloudWatchLogsSubscriptionFilterV1),
-				zap.String("new_format", constants.FormatCloudWatchLogsSubscriptionFilter),
-			)
-		}
+	case constants.FormatCloudWatchLogsSubscriptionFilter:
+		sub := subscriptionfilter.NewSubscriptionFilterUnmarshaler(settings.BuildInfo)
 		return &encodingExtension{
-			unmarshaler: subscriptionfilter.NewSubscriptionFilterUnmarshaler(settings.BuildInfo),
-			format:      constants.FormatCloudWatchLogsSubscriptionFilter,
-			logger:      settings.Logger,
+			cfg:                cfg,
+			unmarshaler:        sub,
+			subscriptionFilter: sub,
+			format:             constants.FormatCloudWatchLogsSubscriptionFilter,
+			logger:             settings.Logger,
+			selfID:             settings.ID,
 		}, nil
-	case constants.FormatVPCFlowLog, constants.FormatVPCFlowLogV1:
-		if cfg.Format == constants.FormatVPCFlowLogV1 {
-			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", constants.FormatVPCFlowLogV1),
-				zap.String("new_format", constants.FormatVPCFlowLog),
-			)
-		}
+	case constants.FormatVPCFlowLog:
 		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
 			cfg.VPCFlowLogConfig,
 			settings.BuildInfo,
@@ -105,37 +101,19 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			format:      constants.FormatVPCFlowLog,
 			logger:      settings.Logger,
 		}, err
-	case constants.FormatS3AccessLog, constants.FormatS3AccessLogV1:
-		if cfg.Format == constants.FormatS3AccessLogV1 {
-			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", constants.FormatS3AccessLogV1),
-				zap.String("new_format", constants.FormatS3AccessLog),
-			)
-		}
+	case constants.FormatS3AccessLog:
 		return &encodingExtension{
 			unmarshaler: s3accesslog.NewS3AccessLogUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatS3AccessLog,
 			logger:      settings.Logger,
 		}, nil
-	case constants.FormatWAFLog, constants.FormatWAFLogV1:
-		if cfg.Format == constants.FormatWAFLogV1 {
-			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", constants.FormatWAFLogV1),
-				zap.String("new_format", constants.FormatWAFLog),
-			)
-		}
+	case constants.FormatWAFLog:
 		return &encodingExtension{
 			unmarshaler: waf.NewWAFLogUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatWAFLog,
 			logger:      settings.Logger,
 		}, nil
-	case constants.FormatCloudTrailLog, constants.FormatCloudTrailLogV1:
-		if cfg.Format == constants.FormatCloudTrailLogV1 {
-			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", constants.FormatCloudTrailLogV1),
-				zap.String("new_format", constants.FormatCloudTrailLog),
-			)
-		}
+	case constants.FormatCloudTrailLog:
 		if metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.IsEnabled() &&
 			!metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.IsEnabled() {
 			return nil, errors.New("extension.encoding.awslogsencoding.DontEmitV0RPCConventions requires extension.encoding.awslogsencoding.EmitV1RPCConventions to be enabled")
@@ -147,13 +125,7 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			format: constants.FormatCloudTrailLog,
 			logger: settings.Logger,
 		}, nil
-	case constants.FormatELBAccessLog, constants.FormatELBAccessLogV1:
-		if cfg.Format == constants.FormatELBAccessLogV1 {
-			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", constants.FormatELBAccessLogV1),
-				zap.String("new_format", constants.FormatELBAccessLog),
-			)
-		}
+	case constants.FormatELBAccessLog:
 		return &encodingExtension{
 			unmarshaler: elbaccesslogs.NewELBAccessLogUnmarshaler(
 				settings.BuildInfo,
@@ -176,8 +148,29 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	}
 }
 
-func (*encodingExtension) Start(_ context.Context, _ component.Host) error {
-	return nil
+// Dependencies declares the inner encoding extensions referenced by the
+// CloudWatch routing config so the framework starts them before this one.
+func (e *encodingExtension) Dependencies() []component.ID {
+	if e.format != constants.FormatCloudWatchLogsSubscriptionFilter || len(e.cfg.CloudWatch.Streams) == 0 {
+		return nil
+	}
+	seen := make(map[component.ID]bool, len(e.cfg.CloudWatch.Streams))
+	deps := make([]component.ID, 0, len(e.cfg.CloudWatch.Streams))
+	for _, s := range e.cfg.CloudWatch.Streams {
+		if seen[s.Encoding] {
+			continue
+		}
+		seen[s.Encoding] = true
+		deps = append(deps, s.Encoding)
+	}
+	return deps
+}
+
+func (e *encodingExtension) Start(_ context.Context, host component.Host) error {
+	if e.subscriptionFilter == nil || len(e.cfg.CloudWatch.Streams) == 0 {
+		return nil
+	}
+	return e.subscriptionFilter.ConfigureRoutes(e.cfg.CloudWatch.Streams, host, e.selfID)
 }
 
 func (*encodingExtension) Shutdown(_ context.Context) error {

@@ -1,5 +1,6 @@
 display_name: SAP HANA Receiver
 type: saphana
+reaggregation_enabled: true
 
 description: |
   This receiver can fetch stats from a SAP HANA instance. It leverages the [driver](https://github.com/SAP/go-hdb)
@@ -34,6 +35,7 @@ attributes:
     name_override: state
     description: The state of network request.
     type: string
+    requirement_level: recommended
     enum:
       - active
       - pending
@@ -41,10 +43,12 @@ attributes:
     name_override: rating
     description: The alert rating.
     type: string
+    requirement_level: recommended
   column_memory_subtype:
     name_override: subtype
     description: The subtype of column store memory.
     type: string
+    requirement_level: recommended
     enum:
       - data
       - dict
@@ -54,16 +58,19 @@ attributes:
     name_override: type
     description: The type of column store memory.
     type: string
+    requirement_level: recommended
     enum:
       - main
       - delta
   component:
     description: The SAP HANA component.
     type: string
+    requirement_level: recommended
   connection_status:
     name_override: status
     description: The connection status.
     type: string
+    requirement_level: recommended
     enum:
       - running
       - idle
@@ -72,6 +79,7 @@ attributes:
     name_override: type
     description: The type of cpu.
     type: string
+    requirement_level: recommended
     enum:
       - user
       - system
@@ -80,10 +88,12 @@ attributes:
   database:
     description: The SAP HANA database.
     type: string
+    requirement_level: required
   disk_state_used_free:
     name_override: state
     description: The state of the disk storage.
     type: string
+    requirement_level: recommended
     enum:
       - used
       - free
@@ -91,10 +101,12 @@ attributes:
     name_override: usage_type
     description: The SAP HANA disk & volume usage type.
     type: string
+    requirement_level: recommended
   host_swap_state:
     name_override: state
     description: The state of swap data.
     type: string
+    requirement_level: recommended
     enum:
       - used
       - free
@@ -102,6 +114,7 @@ attributes:
     name_override: type
     description: The type of network request.
     type: string
+    requirement_level: recommended
     enum:
       - internal
       - external
@@ -110,40 +123,49 @@ attributes:
     name_override: state
     description: The state of memory.
     type: string
+    requirement_level: recommended
     enum:
       - used
       - free
   path:
     description: The SAP HANA disk path.
     type: string
+    requirement_level: recommended
   port:
     description: The SAP HANA port.
     type: string
+    requirement_level: recommended
   primary_host:
     name_override: primary
     description: The primary SAP HANA host in replication.
     type: string
+    requirement_level: recommended
   product:
     description: The SAP HANA product.
     type: string
+    requirement_level: required
   replication_mode:
     name_override: mode
     description: The replication mode.
     type: string
+    requirement_level: recommended
   row_memory_type:
     name_override: type
     description: The type of row store memory.
     type: string
+    requirement_level: recommended
     enum:
       - fixed
       - variable
   schema:
     description: The SAP HANA schema.
     type: string
+    requirement_level: recommended
   schema_memory_type:
     name_override: type
     description: The type of schema memory.
     type: string
+    requirement_level: recommended
     enum:
       - main
       - delta
@@ -153,6 +175,7 @@ attributes:
     name_override: type
     description: The type of operation.
     type: string
+    requirement_level: recommended
     enum:
       - read
       - write
@@ -161,6 +184,7 @@ attributes:
     name_override: type
     description: The type of schema record.
     type: string
+    requirement_level: recommended
     enum:
       - main
       - delta
@@ -170,13 +194,16 @@ attributes:
     name_override: secondary
     description: The secondary SAP HANA host in replication.
     type: string
+    requirement_level: recommended
   service:
     description: The SAP HANA service.
     type: string
+    requirement_level: recommended
   service_memory_used_type:
     name_override: type
     description: The type of service memory.
     type: string
+    requirement_level: required
     enum:
       - logical
       - physical
@@ -184,16 +211,19 @@ attributes:
     name_override: status
     description: The status of services.
     type: string
+    requirement_level: recommended
     enum:
       - active
       - inactive
   system:
     description: The SAP HANA system.
     type: string
+    requirement_level: required
   thread_status:
     name_override: status
     description: The status of threads.
     type: string
+    requirement_level: recommended
     enum:
       - active
       - inactive
@@ -201,6 +231,7 @@ attributes:
     name_override: type
     description: The transaction type.
     type: string
+    requirement_level: recommended
     enum:
       - update
       - commit
@@ -209,6 +240,7 @@ attributes:
     name_override: type
     description: The type of operation.
     type: string
+    requirement_level: recommended
     enum:
       - read
       - write

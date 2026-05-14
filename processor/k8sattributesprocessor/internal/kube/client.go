@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"maps"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -95,7 +96,16 @@ type WatchClient struct {
 
 // Extract CronJob name from the Job name. Job name is created using
 // format: [cronjob-name]-[time-hash-int]
-var cronJobRegex = regexp.MustCompile(`^(.*)-\d+$`)
+// time-hash-int is the unix timestamp in minutes of the job creation time
+// 8 digits will last until 2160, we are safe for a while
+var cronJobRegex = regexp.MustCompile(`^(.*)-(\d{8})$`)
+
+// cronJobSuffixTimeSkewMinutes is the maximum allowed difference
+// in minutes between pod creation time and the timestamp suffix
+// in the job name (created by cronjob)
+// If the suffix falls outside of the range, it is assumed that it's not a cronjob
+// (i.e. the suffix is human generated, like a date 20260407)
+const cronJobSuffixTimeSkewMinutes int64 = 60 * 24 // 1 day
 
 // podTemplateHashLabel contains the label that K8s Deployment
 // controller adds to ReplicaSets to ensure that child ReplicaSets
@@ -1007,15 +1017,24 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 				if c.Rules.CronJobName || c.Rules.ServiceName {
-					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
-					if len(parts) == 2 {
-						name := parts[1]
+					var cronjobName string
+					// Attempt to use the Job informer when it is running (e.g. k8s.cronjob.uid or from: job
+					// label/annotation extraction). Otherwise fall back to heuristics on the Job name suffix.
+					if job, ok := c.GetJob(string(ref.UID)); ok {
+						cronjobName = job.CronJob.Name
+						c.logger.Debug("used CronJob informer to get CronJob name", zap.String("cronjob", cronjobName))
+					} else {
+						cronjobName = c.extractCronJobNameFromJobOwner(ref, pod)
+						c.logger.Debug("used heuristics for cronjob name", zap.String("cronjob", cronjobName))
+					}
+
+					if cronjobName != "" {
 						if c.Rules.CronJobName {
-							tags[string(conventions.K8SCronJobNameKey)] = name
+							tags[string(conventions.K8SCronJobNameKey)] = cronjobName
 						}
 						if c.Rules.ServiceName {
 							// cronjob name wins over job name
-							tags[string(conventions.ServiceNameKey)] = name
+							tags[string(conventions.ServiceNameKey)] = cronjobName
 						}
 					}
 				}
@@ -1104,7 +1123,9 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		},
 	}
 
-	if rules.StartTime {
+	// Creation time is required for k8s.pod.start_time and for CronJob name heuristics
+	// (Job name suffix vs pod creation) when k8s.pod.start_time is not extracted.
+	if rules.StartTime || rules.CronJobName || rules.ServiceName {
 		transformedPod.SetCreationTimestamp(pod.GetCreationTimestamp())
 	}
 
@@ -2019,4 +2040,33 @@ func extractDeploymentNameFromReplicaSet(replicasetName, podTemplateHash string)
 	}
 	// Remove the pod template hash suffix and the hyphen
 	return replicasetName[:len(replicasetName)-len(podTemplateHash)-1]
+}
+
+// extractCronJobNameFromJobOwner returns the CronJob name for a Job owner reference using
+// a heuristic that checks if the job name suffix is a valid timestamp closely matching the pod creation time.
+// If it matches, then the suffix is assumed to be the job creation time, and the prefix is then the CronJob name.
+func (c *WatchClient) extractCronJobNameFromJobOwner(ref meta_v1.OwnerReference, pod *api_v1.Pod) string {
+	// Regex checks specifically for 8 digits at the end (Kubernetes CronJob job suffix is a
+	// time value in minutes).
+	parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
+	if len(parts) != 3 {
+		return ""
+	}
+	suffixMinutes, err := strconv.ParseInt(parts[2], 10, 64)
+	if err != nil {
+		c.logger.Debug("failed to parse cronjob timestamp", zap.Error(err))
+		// assume not a cronjob
+		return ""
+	}
+	podMinutes := pod.GetCreationTimestamp().Unix() / 60
+	diff := podMinutes - suffixMinutes
+	if diff < 0 {
+		diff = -diff
+	}
+	if diff > cronJobSuffixTimeSkewMinutes {
+		// assume not a cronjob
+		return ""
+	}
+
+	return parts[1]
 }

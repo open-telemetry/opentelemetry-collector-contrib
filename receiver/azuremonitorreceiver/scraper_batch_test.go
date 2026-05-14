@@ -259,3 +259,62 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 		})
 	}
 }
+
+// TestAzureScraperBatchScrape_NoDuplicateOnRescrape is a regression test for the
+// "duplicate sample for timestamp" 409 errors emitted by Prometheus-compatible
+// backends (Thanos/Mimir/Cortex) when the batch scraper was re-emitting the
+// same Azure timestamps on every scrape.
+//
+// The batch scraper emits points using the original Azure timestamp
+// (cf. processQueryTimeseriesData). Without a per-(resourceType, compositeKey)
+// temporal guard, calling scrape() faster than the metric's timeGrain would
+// republish the exact same (labels, ts) tuples. This test calls scrape()
+// twice back-to-back; with the guard in place the second call must not emit
+// any data point because the configured timeGrains (PT1M / PT1H in the mocks)
+// are far larger than the wall-clock interval between the two calls.
+func TestAzureScraperBatchScrape_NoDuplicateOnRescrape(t *testing.T) {
+	cfg := createDefaultTestConfig()
+	cfg.MaximumNumberOfMetricsInACall = 2
+	cfg.AppendTagsAsAttributes = []string{}
+	cfg.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	optionsResolver := newMockClientOptionsResolver(
+		getSubscriptionByIDMockData(),
+		getSubscriptionsMockData(),
+		getResourcesMockData(),
+		getMetricsDefinitionsMockData(),
+		nil,
+		getMetricsQueryResponseMockData(),
+	)
+
+	s := &azureBatchScraper{
+		cfg:                          cfg,
+		mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
+		mutex:                        &sync.Mutex{},
+		time:                         getTimeMock(),
+		clientOptionsResolver:        optionsResolver,
+		receiverSettings:             settings,
+		settings:                     settings.TelemetrySettings,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+
+		subscriptions: map[string]*azureSubscription{},
+		resources:     map[string]map[string]*azureResource{},
+		regions:       map[string]map[string]struct{}{},
+		resourceTypes: map[string]map[string]*azureType{},
+	}
+
+	// First scrape: must produce data.
+	first, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Positive(t, first.DataPointCount(), "first scrape should emit at least one data point")
+
+	// Second scrape immediately after: the temporal guard must prevent
+	// re-querying Azure for the same compositeKey, so no new data point
+	// should be emitted (which is what avoids the 409 duplicates downstream).
+	second, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 0, second.DataPointCount(),
+		"second scrape must not re-emit Azure data points (would cause 409 duplicate sample for timestamp on Prometheus remote write backends)")
+}

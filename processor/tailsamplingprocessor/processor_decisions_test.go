@@ -1213,6 +1213,7 @@ func TestRateLimiter(t *testing.T) {
 					Type: "rate_limiting",
 					RateLimitingCfg: RateLimitingCfg{
 						SpansPerSecond: 2,
+						BurstCapacity:  2,
 					},
 				},
 			},

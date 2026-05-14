@@ -85,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 					sharedPolicyCfg: sharedPolicyCfg{
 						Name:            "test-policy-7",
 						Type:            RateLimiting,
-						RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35},
+						RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35, BurstCapacity: 70},
 					},
 				},
 				{

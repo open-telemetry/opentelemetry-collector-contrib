@@ -61,6 +61,7 @@ func TestConnectorWithTraces(t *testing.T) {
 				"x-dynamic-attrs": {"db.system"},
 			},
 		},
+		{name: "path_context"},
 	}
 
 	for _, tc := range testCases {
@@ -526,7 +527,7 @@ func TestErrorMode(t *testing.T) {
 							Description: "Test sum",
 							Sum: configoptional.Some(config.Sum{
 								// Will fail on invalid attribute
-								Value: `Int(attributes["invalid_numeric"])`,
+								Value: `Int(span.attributes["invalid_numeric"])`,
 							}),
 						},
 					},
@@ -578,7 +579,7 @@ func TestErrorMode(t *testing.T) {
 							Name:        "test.sum",
 							Description: "Test sum",
 							Sum: configoptional.Some(config.Sum{
-								Value: `Int(attributes["invalid_numeric"])`,
+								Value: `Int(log.attributes["invalid_numeric"])`,
 							}),
 						},
 					},

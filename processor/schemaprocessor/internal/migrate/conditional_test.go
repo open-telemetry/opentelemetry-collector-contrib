@@ -22,7 +22,7 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 	}{
 		{
 			name:  "No changes defined",
-			cond:  NewConditionalAttributeSet[string](map[string]string{}),
+			cond:  NewConditionalAttributeSet[string](map[string]string{}, false),
 			check: "database operation",
 			attr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("service.version", "v0.0.0")
@@ -37,6 +37,7 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 				map[string]string{
 					"service.version": "application.version",
 				},
+				false,
 				"application start",
 			),
 			check: "database operation",
@@ -53,6 +54,7 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 				map[string]string{
 					"service.version": "application.version",
 				},
+				false,
 			),
 			check: "database operation",
 			attr: testHelperBuildMap(func(m pcommon.Map) {
@@ -68,6 +70,7 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 				map[string]string{
 					"service.version": "application.version",
 				},
+				false,
 				"application start",
 				"application stop",
 			),
@@ -101,7 +104,7 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 	}{
 		{
 			name:  "No changes defined",
-			cond:  NewConditionalAttributeSet[string](map[string]string{}),
+			cond:  NewConditionalAttributeSet[string](map[string]string{}, false),
 			check: "database operation",
 			attr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("service.version", "v0.0.0")
@@ -116,6 +119,7 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 				map[string]string{
 					"service.version": "application.version",
 				},
+				false,
 				"application start",
 			),
 			check: "database operation",
@@ -132,6 +136,7 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 				map[string]string{
 					"service.version": "application.version",
 				},
+				false,
 			),
 			check: "database operation",
 			attr: testHelperBuildMap(func(m pcommon.Map) {
@@ -147,6 +152,7 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 				map[string]string{
 					"service.version": "application.version",
 				},
+				false,
 				"application start",
 				"application stop",
 			),

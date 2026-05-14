@@ -90,7 +90,7 @@ are then also available for the use within association rules. Available attribut
   - k8s.statefulset.uid
   - k8s.statefulset.name
   - k8s.cronjob.uid
-  - k8s.cronjob.name
+  - k8s.cronjob.name (by default uses a Job-name heuristic when only the name is needed; the Job informer is used when `k8s.cronjob.uid` is enabled and/or labels or annotations are extracted with `from: job`)
   - k8s.job.uid
   - k8s.job.name
   - k8s.node.name
@@ -296,6 +296,8 @@ The processor can be configured to set the
 The Extracted deployment name is: `opentelemetry-collector`.
 
 **Note:** When using `deployment_name_from_replicaset: true`, in rare cases where deployment names are between 247 and 253 characters, Kubernetes may truncate the name in the ReplicaSet to fit the pod template hash suffix within the DNS subdomain limit (253 chars), causing the extracted `k8s.deployment.name` to be slightly truncated. If this affects your workloads, you can disable `deployment_name_from_replicaset` or enable the `k8s.deployment.uid` attribute for accurate retrieval from the Kubernetes API, but at an extra cost in memory.
+
+Also note that for **CronJob names (`k8s.cronjob.name`)** a similar pattern applies, but it uses the **Job** informer (not ReplicaSet) and there is **no** `deployment_name_from_replicaset`-style flag. With only `k8s.cronjob.name` in `extract.metadata`, the processor derives the CronJob name from the Job's name using a heuristic (8-digit time suffix aligned with pod creation time) and does **not** start a Job informer. The Job informer is started when `k8s.cronjob.uid` is enabled, or when labels or annotations are extracted with `from: job`, in which case the CronJob name can be resolved from the API when available. That reduces RBAC needs and memory use when you only need the CronJob name (no `jobs` watch for that attribute alone).
 
 Example:
 
@@ -508,7 +510,9 @@ If you'd like to set up the k8sattributesprocessor to receive telemetry from acr
 
 When using `k8s.node.uid` or extracting metadata from `node`, the processor needs `get`, `watch` and `list` permissions for `nodes` resources.
 
-When using `k8s.cronjob.uid` the processor also needs `get`, `watch` and `list` permissions for `jobs` resources.
+With only `k8s.cronjob.name` (and no `k8s.cronjob.uid`, and no label or annotation extraction with `from: job`), the processor does not need `get`, `watch` and `list` permissions for `jobs` resources.
+
+When using `k8s.cronjob.uid`, or when extracting labels or annotations with `from: job`, the processor also needs `get`, `watch` and `list` permissions for `jobs` resources.
 
 Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods, nodes, and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
 

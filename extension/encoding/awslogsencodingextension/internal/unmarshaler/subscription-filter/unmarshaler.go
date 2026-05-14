@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	gojson "github.com/goccy/go-json"
@@ -32,14 +33,37 @@ var (
 
 var _ unmarshaler.StreamingLogsUnmarshaler = (*SubscriptionFilterUnmarshaler)(nil)
 
+// route is a resolved CloudWatchStream: patterns are pre-split, the inner
+// encoding extension is already type-asserted, and payload is non-empty.
+type route struct {
+	name           string
+	inner          plog.Unmarshaler
+	logGroupParts  []string
+	logStreamParts []string
+	payload        PayloadMode
+}
+
 type SubscriptionFilterUnmarshaler struct {
 	buildInfo component.BuildInfo
+	routes    []route
 }
 
 func NewSubscriptionFilterUnmarshaler(buildInfo component.BuildInfo) *SubscriptionFilterUnmarshaler {
 	return &SubscriptionFilterUnmarshaler{
 		buildInfo: buildInfo,
 	}
+}
+
+// ConfigureRoutes resolves the user's CloudWatchStream config against the
+// host's loaded extensions and installs the resulting route table for
+// per-envelope dispatch. Called from the extension's Start.
+func (f *SubscriptionFilterUnmarshaler) ConfigureRoutes(streams []CloudWatchStream, host component.Host, selfID component.ID) error {
+	routes, err := resolveStreams(streams, host, selfID)
+	if err != nil {
+		return err
+	}
+	f.routes = routes
+	return nil
 }
 
 // UnmarshalAWSLogs deserializes the given reader as CloudWatch Logs events
@@ -99,23 +123,12 @@ func (f *SubscriptionFilterUnmarshaler) NewLogsDecoder(reader io.Reader, options
 			resourceLogsByKey := make(map[resourceGroupKey]plog.LogRecordSlice)
 
 			for decoder.More() {
-				var cwLog cloudwatchLogsData
-				if err := decoder.Decode(&cwLog); err != nil {
-					return plog.Logs{}, fmt.Errorf("failed to decode decompressed reader: %w", err)
+				if err := f.decodeOne(decoder, logs, resourceLogsByKey); err != nil {
+					return plog.Logs{}, err
 				}
 
 				offset++
 				batchHelper.IncrementItems(1)
-
-				if cwLog.MessageType == ctrlMessageType {
-					continue
-				}
-
-				if err := validateLog(cwLog); err != nil {
-					return plog.Logs{}, fmt.Errorf("invalid cloudwatch log: %w", err)
-				}
-
-				f.appendLogs(logs, resourceLogsByKey, cwLog)
 
 				if batchHelper.ShouldFlush() {
 					batchHelper.Reset()
@@ -132,6 +145,162 @@ func (f *SubscriptionFilterUnmarshaler) NewLogsDecoder(reader io.Reader, options
 			return offset
 		},
 	), nil
+}
+
+// decodeOne reads one CloudWatch envelope from decoder. With no routes
+// configured, the envelope is decoded once into cloudwatchLogsData and
+// merged via appendLogs (existing behavior). With routes, the envelope is
+// captured as raw bytes, the header is peeked to drive route selection, and
+// dispatch happens per envelope.
+func (f *SubscriptionFilterUnmarshaler) decodeOne(
+	decoder *gojson.Decoder,
+	logs plog.Logs,
+	resourceLogsByKey map[resourceGroupKey]plog.LogRecordSlice,
+) error {
+	if len(f.routes) == 0 {
+		var cwLog cloudwatchLogsData
+		if err := decoder.Decode(&cwLog); err != nil {
+			return fmt.Errorf("failed to decode decompressed reader: %w", err)
+		}
+		if cwLog.MessageType == ctrlMessageType {
+			return nil
+		}
+		if err := validateLog(cwLog); err != nil {
+			return fmt.Errorf("invalid cloudwatch log: %w", err)
+		}
+		f.appendLogs(logs, resourceLogsByKey, cwLog)
+		return nil
+	}
+
+	var raw gojson.RawMessage
+	if err := decoder.Decode(&raw); err != nil {
+		return fmt.Errorf("failed to decode decompressed reader: %w", err)
+	}
+
+	var hdr cloudwatchLogsHeader
+	if err := gojson.Unmarshal(raw, &hdr); err != nil {
+		return fmt.Errorf("failed to decode decompressed reader: %w", err)
+	}
+	if hdr.MessageType == ctrlMessageType {
+		return nil
+	}
+	if err := validateLogFields(hdr.MessageType, hdr.Owner, hdr.LogGroup, hdr.LogStream); err != nil {
+		return fmt.Errorf("invalid cloudwatch log: %w", err)
+	}
+
+	r := f.matchRoute(hdr.LogGroup, hdr.LogStream)
+
+	// Envelope dispatch hands the raw bytes directly to the inner encoding; no full parse needed.
+	if r != nil && r.payload == PayloadEnvelope {
+		return f.dispatchEnvelope(logs, []byte(raw), hdr.LogGroup, *r)
+	}
+
+	// Both the no-route fallback and message dispatch need the parsed envelope.
+	var cwLog cloudwatchLogsData
+	if err := gojson.Unmarshal(raw, &cwLog); err != nil {
+		return fmt.Errorf("failed to decode decompressed reader: %w", err)
+	}
+	if r == nil {
+		f.appendLogs(logs, resourceLogsByKey, cwLog)
+		return nil
+	}
+	return f.dispatchMessage(logs, cwLog, *r)
+}
+
+func (f *SubscriptionFilterUnmarshaler) matchRoute(logGroup, logStream string) *route {
+	var groupParts, streamParts []string
+	for i := range f.routes {
+		r := &f.routes[i]
+		if r.logGroupParts != nil {
+			if groupParts == nil {
+				groupParts = strings.Split(logGroup, "/")
+			}
+			if matchPrefixWithWildcard(groupParts, r.logGroupParts) {
+				return r
+			}
+		}
+		if r.logStreamParts != nil {
+			if streamParts == nil {
+				streamParts = strings.Split(logStream, "/")
+			}
+			if matchPrefixWithWildcard(streamParts, r.logStreamParts) {
+				return r
+			}
+		}
+	}
+	return nil
+}
+
+// dispatchEnvelope hands the raw CloudWatch envelope bytes to the inner
+// encoding once. The inner is responsible for parsing and resource attrs.
+func (*SubscriptionFilterUnmarshaler) dispatchEnvelope(logs plog.Logs, raw []byte, logGroup string, r route) error {
+	innerLogs, err := r.inner.UnmarshalLogs(raw)
+	if err != nil {
+		return fmt.Errorf("stream %q: inner encoding failed for log group %q: %w", r.name, logGroup, err)
+	}
+	innerLogs.ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
+	return nil
+}
+
+// dispatchMessage hands each event's message bytes to the inner encoding,
+// then attaches CloudWatch resource attrs and back-fills the event timestamp.
+func (*SubscriptionFilterUnmarshaler) dispatchMessage(logs plog.Logs, cwLog cloudwatchLogsData, r route) error {
+	for _, event := range cwLog.LogEvents {
+		innerLogs, err := r.inner.UnmarshalLogs([]byte(event.Message))
+		if err != nil {
+			return fmt.Errorf("stream %q: inner encoding failed on event %q: %w", r.name, event.ID, err)
+		}
+		eventTS := pcommon.Timestamp(event.Timestamp * int64(time.Millisecond))
+		accountID, region := resolveAccountAndRegion(event, cwLog.Owner)
+		for i := 0; i < innerLogs.ResourceLogs().Len(); i++ {
+			rl := innerLogs.ResourceLogs().At(i)
+			addCloudWatchResourceAttrs(rl.Resource().Attributes(), accountID, region, cwLog.LogGroup, cwLog.LogStream)
+			backfillTimestamps(rl, eventTS)
+		}
+		innerLogs.ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
+	}
+	return nil
+}
+
+func addCloudWatchResourceAttrs(attrs pcommon.Map, accountID, region, logGroup, logStream string) {
+	if _, ok := attrs.Get(string(conventions.CloudProviderKey)); !ok {
+		attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+	}
+	if accountID != "" {
+		if _, ok := attrs.Get(string(conventions.CloudAccountIDKey)); !ok {
+			attrs.PutStr(string(conventions.CloudAccountIDKey), accountID)
+		}
+	}
+	if region != "" {
+		if _, ok := attrs.Get(string(conventions.CloudRegionKey)); !ok {
+			attrs.PutStr(string(conventions.CloudRegionKey), region)
+		}
+	}
+	attrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(logGroup)
+	attrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(logStream)
+}
+
+func backfillTimestamps(rl plog.ResourceLogs, ts pcommon.Timestamp) {
+	for i := 0; i < rl.ScopeLogs().Len(); i++ {
+		sl := rl.ScopeLogs().At(i)
+		for j := 0; j < sl.LogRecords().Len(); j++ {
+			lr := sl.LogRecords().At(j)
+			if lr.Timestamp() == 0 {
+				lr.SetTimestamp(ts)
+			}
+		}
+	}
+}
+
+func resolveAccountAndRegion(event cloudwatchLogsLogEvent, owner string) (string, string) {
+	if event.ExtractedFields == nil {
+		return owner, ""
+	}
+	accountID := event.ExtractedFields.AccountID
+	if accountID == "" {
+		accountID = owner
+	}
+	return accountID, event.ExtractedFields.Region
 }
 
 // appendLogs appends log records from cwLog into the given plog.Logs, reusing
@@ -191,20 +360,24 @@ func extractResourceKey(event cloudwatchLogsLogEvent, owner, logGroup, logStream
 }
 
 func validateLog(log cloudwatchLogsData) error {
-	switch log.MessageType {
+	return validateLogFields(log.MessageType, log.Owner, log.LogGroup, log.LogStream)
+}
+
+func validateLogFields(messageType, owner, logGroup, logStream string) error {
+	switch messageType {
 	case "DATA_MESSAGE":
-		if log.Owner == "" {
+		if owner == "" {
 			return errEmptyOwner
 		}
-		if log.LogGroup == "" {
+		if logGroup == "" {
 			return errEmptyLogGroup
 		}
-		if log.LogStream == "" {
+		if logStream == "" {
 			return errEmptyLogStream
 		}
 	case ctrlMessageType:
 	default:
-		return fmt.Errorf("cloudwatch log has invalid message type %q", log.MessageType)
+		return fmt.Errorf("cloudwatch log has invalid message type %q", messageType)
 	}
 	return nil
 }

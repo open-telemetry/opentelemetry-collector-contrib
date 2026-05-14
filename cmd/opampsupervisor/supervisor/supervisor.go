@@ -39,6 +39,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
@@ -50,6 +51,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	supervisorTelemetry "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
@@ -212,11 +214,19 @@ func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Superviso
 
 	s.runCtx, s.runCtxCancel = context.WithCancel(ctx)
 
+	// Validate extensions feature gate before continuing
+	if len(cfg.Extensions) > 0 && !metadata.OpampsupervisorExtensionsFeatureGate.IsEnabled() {
+		return nil, fmt.Errorf(
+			"extensions are configured but the %q feature gate is not enabled; enable it with --feature-gates=%s",
+			metadata.OpampsupervisorExtensionsFeatureGate.ID(), metadata.OpampsupervisorExtensionsFeatureGate.ID(),
+		)
+	}
+
 	if err := s.createTemplates(); err != nil {
 		return nil, err
 	}
 
-	if err := cfg.Validate(); err != nil {
+	if err := confmap.Validate(cfg); err != nil {
 		return nil, fmt.Errorf("error validating config: %w", err)
 	}
 	s.config = cfg
@@ -319,6 +329,15 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	if s.config.Capabilities.AcceptsPackages || s.config.Capabilities.ReportsPackageStatuses {
+		s.telemetrySettings.Logger.Error(
+			"accepts_packages and reports_package_statuses capabilities are not yet fully implemented. " +
+				"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272 for progress.",
+		)
+		return errors.New("accepts_packages and reports_package_statuses capabilities are not yet fully implemented")
+	}
+
 	if err = s.getFeatureGates(); err != nil {
 		return fmt.Errorf("could not get feature gates from the Collector: %w", err)
 	}

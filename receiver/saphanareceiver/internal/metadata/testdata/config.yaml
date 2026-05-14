@@ -3,26 +3,35 @@ all_set:
   metrics:
     saphana.alert.count:
       enabled: true
+      attributes: ["rating"]
     saphana.backup.latest:
       enabled: true
     saphana.column.memory.used:
       enabled: true
+      attributes: ["type","subtype"]
     saphana.component.memory.used:
       enabled: true
+      attributes: ["component"]
     saphana.connection.count:
       enabled: true
+      attributes: ["status"]
     saphana.cpu.used:
       enabled: true
+      attributes: ["type"]
     saphana.disk.size.current:
       enabled: true
+      attributes: ["path","usage_type","state"]
     saphana.host.memory.current:
       enabled: true
+      attributes: ["state"]
     saphana.host.swap.current:
       enabled: true
+      attributes: ["state"]
     saphana.instance.code_size:
       enabled: true
     saphana.instance.memory.current:
       enabled: true
+      attributes: ["state"]
     saphana.instance.memory.shared.allocated:
       enabled: true
     saphana.instance.memory.used.peak:
@@ -37,60 +46,218 @@ all_set:
       enabled: true
     saphana.network.request.count:
       enabled: true
+      attributes: ["state"]
     saphana.network.request.finished.count:
       enabled: true
+      attributes: ["type"]
     saphana.replication.average_time:
       enabled: true
+      attributes: ["primary","secondary","port","mode"]
     saphana.replication.backlog.size:
       enabled: true
+      attributes: ["primary","secondary","port","mode"]
     saphana.replication.backlog.time:
       enabled: true
+      attributes: ["primary","secondary","port","mode"]
     saphana.row_store.memory.used:
       enabled: true
+      attributes: ["type"]
     saphana.schema.memory.used.current:
       enabled: true
+      attributes: ["schema","type"]
     saphana.schema.memory.used.max:
       enabled: true
+      attributes: ["schema"]
     saphana.schema.operation.count:
       enabled: true
+      attributes: ["schema","type"]
     saphana.schema.record.compressed.count:
       enabled: true
+      attributes: ["schema"]
     saphana.schema.record.count:
       enabled: true
+      attributes: ["schema","type"]
     saphana.service.code_size:
       enabled: true
+      attributes: ["service"]
     saphana.service.count:
       enabled: true
+      attributes: ["status"]
     saphana.service.memory.compactors.allocated:
       enabled: true
+      attributes: ["service"]
     saphana.service.memory.compactors.freeable:
       enabled: true
+      attributes: ["service"]
     saphana.service.memory.effective_limit:
       enabled: true
+      attributes: ["service"]
     saphana.service.memory.heap.current:
       enabled: true
+      attributes: ["service","state"]
     saphana.service.memory.limit:
       enabled: true
+      attributes: ["service"]
     saphana.service.memory.shared.current:
       enabled: true
+      attributes: ["service","state"]
     saphana.service.memory.used:
       enabled: true
+      attributes: ["service","type"]
     saphana.service.stack_size:
       enabled: true
+      attributes: ["service"]
     saphana.service.thread.count:
       enabled: true
+      attributes: ["status"]
     saphana.transaction.blocked:
       enabled: true
     saphana.transaction.count:
       enabled: true
+      attributes: ["type"]
     saphana.uptime:
       enabled: true
     saphana.volume.operation.count:
       enabled: true
+      attributes: ["path","usage_type","type"]
     saphana.volume.operation.size:
       enabled: true
+      attributes: ["path","usage_type","type"]
     saphana.volume.operation.time:
       enabled: true
+      attributes: ["path","usage_type","type"]
+  resource_attributes:
+    db.system:
+      enabled: true
+    saphana.host:
+      enabled: true
+reaggregate_set:
+  metrics:
+    saphana.alert.count:
+      enabled: true
+      attributes: []
+    saphana.backup.latest:
+      enabled: true
+    saphana.column.memory.used:
+      enabled: true
+      attributes: []
+    saphana.component.memory.used:
+      enabled: true
+      attributes: []
+    saphana.connection.count:
+      enabled: true
+      attributes: []
+    saphana.cpu.used:
+      enabled: true
+      attributes: []
+    saphana.disk.size.current:
+      enabled: true
+      attributes: []
+    saphana.host.memory.current:
+      enabled: true
+      attributes: []
+    saphana.host.swap.current:
+      enabled: true
+      attributes: []
+    saphana.instance.code_size:
+      enabled: true
+    saphana.instance.memory.current:
+      enabled: true
+      attributes: []
+    saphana.instance.memory.shared.allocated:
+      enabled: true
+    saphana.instance.memory.used.peak:
+      enabled: true
+    saphana.license.expiration.time:
+      enabled: true
+    saphana.license.limit:
+      enabled: true
+    saphana.license.peak:
+      enabled: true
+    saphana.network.request.average_time:
+      enabled: true
+    saphana.network.request.count:
+      enabled: true
+      attributes: []
+    saphana.network.request.finished.count:
+      enabled: true
+      attributes: []
+    saphana.replication.average_time:
+      enabled: true
+      attributes: []
+    saphana.replication.backlog.size:
+      enabled: true
+      attributes: []
+    saphana.replication.backlog.time:
+      enabled: true
+      attributes: []
+    saphana.row_store.memory.used:
+      enabled: true
+      attributes: []
+    saphana.schema.memory.used.current:
+      enabled: true
+      attributes: []
+    saphana.schema.memory.used.max:
+      enabled: true
+      attributes: []
+    saphana.schema.operation.count:
+      enabled: true
+      attributes: []
+    saphana.schema.record.compressed.count:
+      enabled: true
+      attributes: []
+    saphana.schema.record.count:
+      enabled: true
+      attributes: []
+    saphana.service.code_size:
+      enabled: true
+      attributes: []
+    saphana.service.count:
+      enabled: true
+      attributes: []
+    saphana.service.memory.compactors.allocated:
+      enabled: true
+      attributes: []
+    saphana.service.memory.compactors.freeable:
+      enabled: true
+      attributes: []
+    saphana.service.memory.effective_limit:
+      enabled: true
+      attributes: []
+    saphana.service.memory.heap.current:
+      enabled: true
+      attributes: []
+    saphana.service.memory.limit:
+      enabled: true
+      attributes: []
+    saphana.service.memory.shared.current:
+      enabled: true
+      attributes: []
+    saphana.service.memory.used:
+      enabled: true
+      attributes: ["type"]
+    saphana.service.stack_size:
+      enabled: true
+      attributes: []
+    saphana.service.thread.count:
+      enabled: true
+      attributes: []
+    saphana.transaction.blocked:
+      enabled: true
+    saphana.transaction.count:
+      enabled: true
+      attributes: []
+    saphana.uptime:
+      enabled: true
+    saphana.volume.operation.count:
+      enabled: true
+      attributes: []
+    saphana.volume.operation.size:
+      enabled: true
+      attributes: []
+    saphana.volume.operation.time:
+      enabled: true
+      attributes: []
   resource_attributes:
     db.system:
       enabled: true
@@ -100,26 +267,35 @@ none_set:
   metrics:
     saphana.alert.count:
       enabled: false
+      attributes: ["rating"]
     saphana.backup.latest:
       enabled: false
     saphana.column.memory.used:
       enabled: false
+      attributes: ["type","subtype"]
     saphana.component.memory.used:
       enabled: false
+      attributes: ["component"]
     saphana.connection.count:
       enabled: false
+      attributes: ["status"]
     saphana.cpu.used:
       enabled: false
+      attributes: ["type"]
     saphana.disk.size.current:
       enabled: false
+      attributes: ["path","usage_type","state"]
     saphana.host.memory.current:
       enabled: false
+      attributes: ["state"]
     saphana.host.swap.current:
       enabled: false
+      attributes: ["state"]
     saphana.instance.code_size:
       enabled: false
     saphana.instance.memory.current:
       enabled: false
+      attributes: ["state"]
     saphana.instance.memory.shared.allocated:
       enabled: false
     saphana.instance.memory.used.peak:
@@ -134,60 +310,86 @@ none_set:
       enabled: false
     saphana.network.request.count:
       enabled: false
+      attributes: ["state"]
     saphana.network.request.finished.count:
       enabled: false
+      attributes: ["type"]
     saphana.replication.average_time:
       enabled: false
+      attributes: ["primary","secondary","port","mode"]
     saphana.replication.backlog.size:
       enabled: false
+      attributes: ["primary","secondary","port","mode"]
     saphana.replication.backlog.time:
       enabled: false
+      attributes: ["primary","secondary","port","mode"]
     saphana.row_store.memory.used:
       enabled: false
+      attributes: ["type"]
     saphana.schema.memory.used.current:
       enabled: false
+      attributes: ["schema","type"]
     saphana.schema.memory.used.max:
       enabled: false
+      attributes: ["schema"]
     saphana.schema.operation.count:
       enabled: false
+      attributes: ["schema","type"]
     saphana.schema.record.compressed.count:
       enabled: false
+      attributes: ["schema"]
     saphana.schema.record.count:
       enabled: false
+      attributes: ["schema","type"]
     saphana.service.code_size:
       enabled: false
+      attributes: ["service"]
     saphana.service.count:
       enabled: false
+      attributes: ["status"]
     saphana.service.memory.compactors.allocated:
       enabled: false
+      attributes: ["service"]
     saphana.service.memory.compactors.freeable:
       enabled: false
+      attributes: ["service"]
     saphana.service.memory.effective_limit:
       enabled: false
+      attributes: ["service"]
     saphana.service.memory.heap.current:
       enabled: false
+      attributes: ["service","state"]
     saphana.service.memory.limit:
       enabled: false
+      attributes: ["service"]
     saphana.service.memory.shared.current:
       enabled: false
+      attributes: ["service","state"]
     saphana.service.memory.used:
       enabled: false
+      attributes: ["service","type"]
     saphana.service.stack_size:
       enabled: false
+      attributes: ["service"]
     saphana.service.thread.count:
       enabled: false
+      attributes: ["status"]
     saphana.transaction.blocked:
       enabled: false
     saphana.transaction.count:
       enabled: false
+      attributes: ["type"]
     saphana.uptime:
       enabled: false
     saphana.volume.operation.count:
       enabled: false
+      attributes: ["path","usage_type","type"]
     saphana.volume.operation.size:
       enabled: false
+      attributes: ["path","usage_type","type"]
     saphana.volume.operation.time:
       enabled: false
+      attributes: ["path","usage_type","type"]
   resource_attributes:
     db.system:
       enabled: false

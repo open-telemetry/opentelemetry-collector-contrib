@@ -33,11 +33,11 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `string_attribute`: Sample based on string attributes (resource and record) value matches, both exact and regex value matches are supported
 - `trace_state`: Sample based on [TraceState](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#tracestate) value matches
 - `trace_flags`: Sample if the [sampled trace flag](https://www.w3.org/TR/trace-context-2/#sampled-flag) was set on any span in the trace
-- `rate_limiting`: Sample based on the rate of spans per second.
+- `rate_limiting`: Sample based on the rate of spans per second using a token bucket algorithm implemented by golang.org/x/time/rate. This allows for burst traffic up to a configurable capacity while maintaining the average rate over time. The bucket is refilled continuously at the specified rate and has a maximum capacity for burst handling.
 - `bytes_limiting`: Sample based on the rate of bytes per second using a token bucket algorithm implemented by golang.org/x/time/rate. This allows for burst traffic up to a configurable capacity while maintaining the average rate over time. The bucket is refilled continuously at the specified rate and has a maximum capacity for burst handling.
 - `span_count`: Sample based on the minimum and/or maximum number of spans, inclusive. If the sum of all spans in the trace is outside the range threshold, the trace will not be sampled.
 - `boolean_attribute`: Sample based on boolean attribute (resource and record).
-- `ottl_condition`: Sample based on given boolean OTTL condition (span and span event).
+- `ottl_condition`: Sample based on given boolean OTTL condition (span and span event). Conditions may use OTTL path-based context names (e.g. `span.attributes["http.status_code"]`, `resource.attributes["service.name"]`, `spanevent.name`, `scope.name`). It is highly recommended to use this new syntax to avoid breaking changes in the future.
 - `and`: Sample based on multiple policies, creates an AND policy
 - `not`: Sample based on the opposite result a single policy, creates a NOT policy
 - `drop`: Drop (not sample) based on multiple policies, creates a DROP policy
@@ -146,7 +146,7 @@ processors:
           {
             name: test-policy-8,
             type: rate_limiting,
-            rate_limiting: {spans_per_second: 35}
+            rate_limiting: {spans_per_second: 35, burst_capacity: 70}
          },
          {
             name: test-policy-9,
@@ -180,6 +180,20 @@ processors:
                    spanevent: [
                         "name != \"test_span_event_name\"",
                         "attributes[\"test_event_attr_key_2\"] != \"test_event_attr_val_1\"",
+                   ]
+              }
+         },
+         {
+              name: test-policy-14,
+              type: ottl_condition,
+              ottl_condition: {
+                   error_mode: ignore,
+                   span: [
+                        "resource.attributes[\"service.name\"] == \"checkout\"",
+                        "span.attributes[\"http.status_code\"] >= 500",
+                   ],
+                   spanevent: [
+                        "spanevent.name == \"exception\"",
                    ]
               }
          },

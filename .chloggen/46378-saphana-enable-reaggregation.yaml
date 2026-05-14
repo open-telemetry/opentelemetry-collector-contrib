@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/saphana
+
+note: Enable the re-aggregation feature for the SAP HANA receiver.
+
+issues: [46378]
+
+subtext:
+
+change_logs: [user]

@@ -7,3 +7,11 @@ status:
     alpha: [metrics]
   codeowners:
     active: [evan-bradley, atoulme, tigrannajaryan]
+
+feature_gates:
+  - id: opampsupervisor.Extensions
+    stage: alpha
+    description: >-
+      When enabled, the opampsupervisor can be configured with and use specific extensions from the collector ecosystem.
+    from_version: v0.153.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47690
