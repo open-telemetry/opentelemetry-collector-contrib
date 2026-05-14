@@ -1646,7 +1646,7 @@ type metricSqlserverLatchSuperlatchCount struct {
 func (m *metricSqlserverLatchSuperlatchCount) init() {
 	m.data.SetName("sqlserver.latch.superlatch.count")
 	m.data.SetDescription("Number of superlatches currently active.")
-	m.data.SetUnit("“{superlatches}”")
+	m.data.SetUnit("{superlatch}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1697,7 +1697,7 @@ type metricSqlserverLatchSuperlatchTransitionRate struct {
 func (m *metricSqlserverLatchSuperlatchTransitionRate) init() {
 	m.data.SetName("sqlserver.latch.superlatch.transition.rate")
 	m.data.SetDescription("Rate of superlatch promotions or demotions.")
-	m.data.SetUnit("“{transitions}/s”")
+	m.data.SetUnit("{transition}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -1785,7 +1785,7 @@ type metricSqlserverLatchWaitRate struct {
 func (m *metricSqlserverLatchWaitRate) init() {
 	m.data.SetName("sqlserver.latch.wait.rate")
 	m.data.SetDescription("Number of latch waits per second.")
-	m.data.SetUnit("“{waits}/s”")
+	m.data.SetUnit("{wait}/s")
 	m.data.SetEmptyGauge()
 }
 
@@ -1835,7 +1835,7 @@ type metricSqlserverLatchWaitTimeAvg struct {
 func (m *metricSqlserverLatchWaitTimeAvg) init() {
 	m.data.SetName("sqlserver.latch.wait_time.avg")
 	m.data.SetDescription("Average latch wait time.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 }
 
@@ -1885,20 +1885,20 @@ type metricSqlserverLatchWaitTimeTotal struct {
 func (m *metricSqlserverLatchWaitTimeTotal) init() {
 	m.data.SetName("sqlserver.latch.wait_time.total")
 	m.data.SetDescription("Total latch wait time.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricSqlserverLatchWaitTimeTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSqlserverLatchWaitTimeTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4626,7 +4626,7 @@ func (mb *MetricsBuilder) RecordSqlserverLatchWaitTimeAvgDataPoint(ts pcommon.Ti
 }
 
 // RecordSqlserverLatchWaitTimeTotalDataPoint adds a data point to sqlserver.latch.wait_time.total metric.
-func (mb *MetricsBuilder) RecordSqlserverLatchWaitTimeTotalDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordSqlserverLatchWaitTimeTotalDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverLatchWaitTimeTotal.recordDataPoint(mb.startTime, ts, val)
 }
 

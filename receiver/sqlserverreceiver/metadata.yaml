@@ -545,7 +545,7 @@ metrics:
     enabled: false
     description: Number of superlatches currently active.
     stability: development
-    unit: “{superlatches}”
+    unit: "{superlatch}"
     gauge:
       value_type: int
     attributes: []
@@ -554,7 +554,7 @@ metrics:
     enabled: false
     description: Rate of superlatch promotions or demotions.
     stability: development
-    unit: “{transitions}/s”
+    unit: "{transition}/s"
     gauge:
       value_type: double
     attributes: [transition.direction]
@@ -563,7 +563,7 @@ metrics:
     enabled: false
     description: Number of latch waits per second.
     stability: development
-    unit: “{waits}/s”
+    unit: "{wait}/s"
     gauge:
       value_type: double
     attributes: []
@@ -572,7 +572,7 @@ metrics:
     enabled: false
     description: Average latch wait time.
     stability: development
-    unit: ms
+    unit: s
     gauge:
       value_type: double
     attributes: []
@@ -581,11 +581,11 @@ metrics:
     enabled: false
     description: Total latch wait time.
     stability: development
-    unit: ms
+    unit: s
     sum:
       monotonic: true
       aggregation_temporality: cumulative
-      value_type: int
+      value_type: double
     attributes: []
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.timeout.rate:

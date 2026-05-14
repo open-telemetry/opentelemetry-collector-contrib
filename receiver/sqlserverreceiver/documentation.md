@@ -379,7 +379,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “{superlatches}” | Gauge | Int | Development |
+| {superlatch} | Gauge | Int | Development |
 
 ### sqlserver.latch.superlatch.transition.rate
 
@@ -389,7 +389,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “{transitions}/s” | Gauge | Double | Development |
+| {transition}/s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -405,7 +405,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “{waits}/s” | Gauge | Double | Development |
+| {wait}/s | Gauge | Double | Development |
 
 ### sqlserver.latch.wait_time.avg
 
@@ -415,7 +415,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Double | Development |
+| s | Gauge | Double | Development |
 
 ### sqlserver.latch.wait_time.total
 
@@ -425,7 +425,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| ms | Sum | Int | Cumulative | true | Development |
+| s | Sum | Double | Cumulative | true | Development |
 
 ### sqlserver.lock.timeout.rate
 

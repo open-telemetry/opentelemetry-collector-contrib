@@ -696,11 +696,11 @@ resourceMetrics:
           - description: Average latch wait time.
             gauge:
               dataPoints:
-                - asDouble: 162
+                - asDouble: 0.162
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.latch.wait_time.avg
-            unit: ms
+            unit: s
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -724,7 +724,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.latch.wait.rate
-            unit: “{waits}/s”
+            unit: '{wait}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -746,11 +746,11 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "48250"
+                - asDouble: 48.25
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: ms
+            unit: s
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -774,7 +774,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.latch.superlatch.count
-            unit: “{superlatches}”
+            unit: '{superlatch}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -802,7 +802,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.latch.superlatch.transition.rate
-            unit: “{transitions}/s”
+            unit: '{transition}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -830,7 +830,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.latch.superlatch.transition.rate
-            unit: “{transitions}/s”
+            unit: '{transition}/s'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

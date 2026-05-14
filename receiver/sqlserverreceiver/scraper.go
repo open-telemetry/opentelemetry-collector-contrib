@@ -857,15 +857,15 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, averageLatchWaitTime)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLatchWaitTimeAvgDataPoint(now, val.(float64))
+				s.mb.RecordSqlserverLatchWaitTimeAvgDataPoint(now, val.(float64)/1000.0)
 			}
 		case totalLatchWaitTime:
-			val, err := retrieveInt(row, valueKey)
+			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, totalLatchWaitTime)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLatchWaitTimeTotalDataPoint(now, val.(int64))
+				s.mb.RecordSqlserverLatchWaitTimeTotalDataPoint(now, val.(float64)/1000.0)
 			}
 		case numberOfSuperLatches:
 			val, err := retrieveInt(row, valueKey)
