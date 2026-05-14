@@ -78,6 +78,17 @@ func TestHasHint(t *testing.T) {
 			hint: HintAggregateMetricDouble,
 			want: false,
 		},
+		{
+			name: "noindex hit",
+			attrsFunc: func() pcommon.Map {
+				m := pcommon.NewMap()
+				s := m.PutEmptySlice(MappingHintsAttrKey)
+				s.AppendEmpty().SetStr(string(HintNoIndex))
+				return m
+			},
+			hint: HintNoIndex,
+			want: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
