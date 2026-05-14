@@ -67,9 +67,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["K8sServiceEndpointCount"] = mb.metricK8sServiceEndpointCount.config.AggregationStrategy
-			aggMap["OpenshiftAppliedclusterquotaLimit"] = mb.metricOpenshiftAppliedclusterquotaLimit.config.AggregationStrategy
-			aggMap["OpenshiftAppliedclusterquotaUsed"] = mb.metricOpenshiftAppliedclusterquotaUsed.config.AggregationStrategy
+			aggMap["k8s.service.endpoint.count"] = mb.metricK8sServiceEndpointCount.config.AggregationStrategy
+			aggMap["openshift.appliedclusterquota.limit"] = mb.metricOpenshiftAppliedclusterquotaLimit.config.AggregationStrategy
+			aggMap["openshift.appliedclusterquota.used"] = mb.metricOpenshiftAppliedclusterquotaUsed.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {

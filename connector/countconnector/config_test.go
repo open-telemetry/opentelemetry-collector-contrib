@@ -537,7 +537,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("spans condition: metric %q: unable to parse OTTL condition", defaultMetricNameSpans),
+			expect: fmt.Sprintf("spans condition: metric %q: condition has invalid syntax", defaultMetricNameSpans),
 		},
 		{
 			name: "invalid_condition_spanevent",
@@ -549,7 +549,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("spanevents condition: metric %q: unable to parse OTTL condition", defaultMetricNameSpanEvents),
+			expect: fmt.Sprintf("spanevents condition: metric %q: condition has invalid syntax", defaultMetricNameSpanEvents),
 		},
 		{
 			name: "invalid_condition_metric",
@@ -561,7 +561,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("metrics condition: metric %q: unable to parse OTTL condition", defaultMetricNameMetrics),
+			expect: fmt.Sprintf("metrics condition: metric %q: condition has invalid syntax", defaultMetricNameMetrics),
 		},
 		{
 			name: "invalid_condition_datapoint",
@@ -573,7 +573,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("datapoints condition: metric %q: unable to parse OTTL condition", defaultMetricNameDataPoints),
+			expect: fmt.Sprintf("datapoints condition: metric %q: condition has invalid syntax", defaultMetricNameDataPoints),
 		},
 		{
 			name: "invalid_condition_log",
@@ -585,7 +585,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("logs condition: metric %q: unable to parse OTTL condition", defaultMetricNameLogs),
+			expect: fmt.Sprintf("logs condition: metric %q: condition has invalid syntax", defaultMetricNameLogs),
 		},
 		{
 			name: "invalid_condition_profile",
@@ -597,7 +597,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("profiles condition: metric %q: unable to parse OTTL condition", defaultMetricNameProfiles),
+			expect: fmt.Sprintf("profiles condition: metric %q: condition has invalid syntax", defaultMetricNameProfiles),
 		},
 	}
 
@@ -607,4 +607,67 @@ func TestConfigErrors(t *testing.T) {
 			assert.ErrorContains(t, err, tc.expect)
 		})
 	}
+}
+
+func TestValidatePathContextSyntax(t *testing.T) {
+	cfg := &Config{
+		Spans: map[string]MetricInfo{
+			"my.span.count": {
+				Conditions: []string{
+					`span.attributes["foo"] == "bar"`,
+					`resource.attributes["host.name"] == "x"`,
+					`attributes["legacy"] != nil`,
+				},
+			},
+		},
+		SpanEvents: map[string]MetricInfo{
+			"my.spanevent.count": {
+				Conditions: []string{
+					`spanevent.attributes["foo"] == "bar"`,
+				},
+			},
+		},
+		Metrics: map[string]MetricInfo{
+			"my.metric.count": {
+				Conditions: []string{
+					`metric.name == "x"`,
+				},
+			},
+		},
+		DataPoints: map[string]MetricInfo{
+			"my.datapoint.count": {
+				Conditions: []string{
+					`datapoint.attributes["foo"] == "bar"`,
+				},
+			},
+		},
+		Logs: map[string]MetricInfo{
+			"my.logrecord.count": {
+				Conditions: []string{
+					`log.severity_number >= SEVERITY_NUMBER_ERROR`,
+				},
+			},
+		},
+		Profiles: map[string]MetricInfo{
+			"my.profile.count": {
+				Conditions: []string{
+					`profile.duration_unix_nano > 1000`,
+				},
+			},
+		},
+	}
+	require.NoError(t, cfg.Validate())
+}
+
+func TestValidateUnknownContextPrefix(t *testing.T) {
+	cfg := &Config{
+		Spans: map[string]MetricInfo{
+			"my.span.count": {
+				Conditions: []string{
+					`unknown.attributes["foo"] == "bar"`,
+				},
+			},
+		},
+	}
+	assert.Error(t, cfg.Validate())
 }
