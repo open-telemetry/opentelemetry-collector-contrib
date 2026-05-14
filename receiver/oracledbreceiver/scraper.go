@@ -838,6 +838,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	const secondsInWait = "SECONDS_IN_WAIT"
 	const blockingStartTime = "BLOCKING_START_TIME"
 	const lockType = "LOCK_TYPE"
+	const lockMode = "LOCK_MODE"
 	const blockedObject = "BLOCKED_OBJECT"
 
 	var scrapeErrors []error
@@ -899,7 +900,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], objID, row[objectName], row[objectType],
 			row[osUser], queryDuration,
 			row[blockingSession], row[finalBlockingSession], row[blockingSessionStatus], row[blockingStartTime], secondsInWaitVal,
-			row[lockType], row[blockedObject])
+			row[lockType], row[lockMode], row[blockedObject])
 	}
 
 	emittedLogs := s.lb.Emit(metadata.WithLogsResource(rb.Emit()))
@@ -934,6 +935,7 @@ func sanitizeQuerySampleOptionalAttributes(logs plog.Logs) {
 					attrs.Remove("oracledb.blocker.session_relationship.state")
 					attrs.Remove("oracledb.blocking.start_time")
 					attrs.Remove("oracledb.lock.type")
+					attrs.Remove("oracledb.lock.mode")
 					attrs.Remove("oracledb.blocked_object")
 				}
 			}

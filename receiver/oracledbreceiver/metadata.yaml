@@ -118,6 +118,9 @@ attributes:
   oracledb.lock.type:
     description: The type of enqueue lock the session is waiting on, extracted from the wait event (e.g., TX for row lock, TM for table lock). Empty when not waiting on a lock.
     type: string
+  oracledb.lock.mode:
+    description: The lock mode being requested by the blocked session (e.g., ROW SHARE, ROW EXCLUSIVE, SHARE, SHARE ROW EXCLUSIVE, EXCLUSIVE). Empty when not waiting on a lock.
+    type: string
   oracledb.module:
     description: Logical module name of the client application that initiated a query or session.
     type: string
@@ -246,6 +249,7 @@ events:
       - oracledb.blocking.start_time
       - oracledb.wait.duration
       - oracledb.lock.type
+      - oracledb.lock.mode
       - oracledb.blocked_object
   db.server.top_query:
     enabled: false

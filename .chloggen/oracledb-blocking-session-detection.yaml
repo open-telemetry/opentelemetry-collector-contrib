@@ -17,7 +17,7 @@ issues: [48143]
 # Use pipe (|) for multiline entries.
 subtext: |
   New attributes: oracledb.blocker.session.id, oracledb.blocker.root_session.id, oracledb.blocker.session_relationship.state,
-  oracledb.blocking.start_time, oracledb.wait.duration, oracledb.lock.type, oracledb.blocked_object.
+  oracledb.blocking.start_time, oracledb.wait.duration, oracledb.lock.type, oracledb.lock.mode, oracledb.blocked_object.
   oracledb.blocking.start_time provides an estimated UTC timestamp (RFC3339) of when blocking began.
   Filters to S.TYPE = 'USER' to exclude SYS/background sessions.
   Idle blockers (INACTIVE sessions holding locks) are captured.

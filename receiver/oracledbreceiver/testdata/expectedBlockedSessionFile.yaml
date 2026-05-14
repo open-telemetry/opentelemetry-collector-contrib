@@ -112,6 +112,9 @@ resourceLogs:
               - key: oracledb.lock.type
                 value:
                   stringValue: TX
+              - key: oracledb.lock.mode
+                value:
+                  stringValue: EXCLUSIVE
               - key: oracledb.blocked_object
                 value:
                   stringValue: APP_USER.ORDERS
