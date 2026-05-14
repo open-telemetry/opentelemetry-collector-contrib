@@ -145,16 +145,7 @@ linters:
         path: extension/encoding/awslogsencodingextension/
       - linters:
           - forbidigo
-        path: extension/opampextension/
-      - linters:
-          - forbidigo
         path: internal/filter/
-      - linters:
-          - forbidigo
-        path: pkg/ottl/
-      - linters:
-          - forbidigo
-        path: pkg/translator/prometheus/
       - linters:
           - forbidigo
         path: receiver/awscontainerinsightreceiver/

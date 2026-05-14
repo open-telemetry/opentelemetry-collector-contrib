@@ -27,7 +27,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for kubeletstats metrics.
+// MetricsConfig provides config for kubelet_stats metrics.
 type MetricsConfig struct {
 	ContainerCPUTime                       MetricConfig `mapstructure:"container.cpu.time"`
 	ContainerCPUUsage                      MetricConfig `mapstructure:"container.cpu.usage"`
@@ -44,6 +44,7 @@ type MetricsConfig struct {
 	K8sContainerCPUNodeUtilization         MetricConfig `mapstructure:"k8s.container.cpu.node.utilization"`
 	K8sContainerCPULimitUtilization        MetricConfig `mapstructure:"k8s.container.cpu_limit_utilization"`
 	K8sContainerCPURequestUtilization      MetricConfig `mapstructure:"k8s.container.cpu_request_utilization"`
+	K8sContainerEphemeralStorageUsage      MetricConfig `mapstructure:"k8s.container.ephemeral_storage.usage"`
 	K8sContainerMemoryNodeUtilization      MetricConfig `mapstructure:"k8s.container.memory.node.utilization"`
 	K8sContainerMemoryLimitUtilization     MetricConfig `mapstructure:"k8s.container.memory_limit_utilization"`
 	K8sContainerMemoryRequestUtilization   MetricConfig `mapstructure:"k8s.container.memory_request_utilization"`
@@ -138,6 +139,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		K8sContainerCPURequestUtilization: MetricConfig{
+			Enabled: false,
+		},
+		K8sContainerEphemeralStorageUsage: MetricConfig{
 			Enabled: false,
 		},
 		K8sContainerMemoryNodeUtilization: MetricConfig{
@@ -310,7 +314,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for kubeletstats resource attributes.
+// ResourceAttributesConfig provides config for kubelet_stats resource attributes.
 type ResourceAttributesConfig struct {
 	AwsVolumeID                  ResourceAttributeConfig `mapstructure:"aws.volume.id"`
 	ContainerID                  ResourceAttributeConfig `mapstructure:"container.id"`
@@ -383,7 +387,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for kubeletstats metrics builder.
+// MetricsBuilderConfig is a configuration for kubelet_stats metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
