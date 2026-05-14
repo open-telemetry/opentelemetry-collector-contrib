@@ -235,15 +235,13 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 			}
 			exporters := strings.Join(pipelineNames, ", ")
 			r.logger.Warn(fmt.Sprintf(`Statement %q already exists in the routing table, the route with target pipeline(s) %q will be ignored.`, item.Statement, exporters))
-			// Without this continue, the duplicate's pipelines would overwrite the original
-			// route's consumer, contradicting the warning message above.
 			continue
 		}
 
 		route.statementContext = item.Context
 		if item.Context == "request" {
-			r.logger.Warn("The 'request' context is deprecated. Use 'otelcol.client.metadata[\"key\"][0]' "+
-				"(HTTP/client metadata) or 'otelcol.grpc.metadata[\"key\"][0]' (gRPC metadata) instead.",
+			r.logger.Warn("The 'request' context is deprecated. Use 'otelcol.client.metadata[\"key\"]' "+
+				"(HTTP/client metadata) or 'otelcol.grpc.metadata[\"key\"]' (gRPC metadata) instead.",
 				zap.String("condition", item.Condition))
 			route.requestCondition, err = parseRequestCondition(item.Condition)
 			if err != nil {
