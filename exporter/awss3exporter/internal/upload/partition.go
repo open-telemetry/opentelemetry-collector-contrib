@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"text/template/parse"
 	"time"
 
 	"github.com/google/uuid"
@@ -125,11 +126,93 @@ func buildLegacyTemplateKey(prefix string, tmpl *template.Template, ts time.Time
 		return ""
 	}
 
-	return rendered.String()
+	key := rendered.String()
+
+	// SAW-7554: legacy-template mode must honor s3_prefix as an invariant,
+	// symmetric with default mode (which always joins the prefix via
+	// bucketKeyPrefix). When the template author forgot to reference
+	// {{.Prefix}}, the configured prefix would otherwise be silently
+	// dropped. Auto-prepend it; templates that already reference .Prefix
+	// stay unchanged (no double-prepend).
+	if prefix != "" && !templateReferencesPrefix(tmpl) {
+		return path.Join(prefix, key)
+	}
+
+	return key
 }
 
 func parseLegacyTemplate(templateText string) (*template.Template, error) {
 	return template.New("legacy-s3-key").Funcs(legacyTemplateFuncs).Option("missingkey=error").Parse(templateText)
+}
+
+// templateReferencesPrefix reports whether tmpl reads the .Prefix field of
+// legacyTemplateData anywhere in its body. Used by buildLegacyTemplateKey
+// to decide whether to auto-prepend the configured prefix (SAW-7554).
+func templateReferencesPrefix(tmpl *template.Template) bool {
+	if tmpl == nil || tmpl.Tree == nil {
+		return false
+	}
+	return walkForPrefix(tmpl.Tree.Root)
+}
+
+func walkForPrefix(n parse.Node) bool {
+	switch node := n.(type) {
+	case nil:
+		return false
+	case *parse.ListNode:
+		if node == nil {
+			return false
+		}
+		for _, child := range node.Nodes {
+			if walkForPrefix(child) {
+				return true
+			}
+		}
+	case *parse.ActionNode:
+		return walkForPrefix(node.Pipe)
+	case *parse.IfNode:
+		return walkForPrefix(node.Pipe) ||
+			walkForPrefix(node.List) ||
+			walkForPrefix(node.ElseList)
+	case *parse.RangeNode:
+		return walkForPrefix(node.Pipe) ||
+			walkForPrefix(node.List) ||
+			walkForPrefix(node.ElseList)
+	case *parse.WithNode:
+		return walkForPrefix(node.Pipe) ||
+			walkForPrefix(node.List) ||
+			walkForPrefix(node.ElseList)
+	case *parse.PipeNode:
+		if node == nil {
+			return false
+		}
+		for _, cmd := range node.Cmds {
+			if cmd == nil {
+				continue
+			}
+			for _, arg := range cmd.Args {
+				if walkForPrefix(arg) {
+					return true
+				}
+			}
+		}
+	case *parse.FieldNode:
+		// `{{.Prefix}}` parses as FieldNode with Ident=["Prefix"].
+		for _, ident := range node.Ident {
+			if ident == "Prefix" {
+				return true
+			}
+		}
+	case *parse.ChainNode:
+		// e.g. `{{$x.Prefix}}` would land here, though our schema doesn't
+		// use it. Cover defensively.
+		for _, ident := range node.Field {
+			if ident == "Prefix" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func ParseLegacyTemplateForValidation(templateText string) (*template.Template, error) {

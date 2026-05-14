@@ -397,6 +397,98 @@ func TestValidateLegacyTemplate_DatadogKeyTemplate(t *testing.T) {
 	assert.NoError(t, ValidateLegacyTemplateForValidation(tmpl))
 }
 
+// SAW-7554: the legacy-template mode must honor the configured s3_prefix as
+// a runtime invariant, symmetric with default mode (which always joins the
+// prefix via bucketKeyPrefix). Before this fix, a template that omitted
+// {{.Prefix}} would silently drop the prefix on the floor, causing every
+// caller (e.g. the collectors-service generator) to bear responsibility for
+// remembering to reference .Prefix — see the bug report for the production
+// impact (~486 active collectors writing to bucket root).
+
+func TestBuildKey_LegacyTemplate_AutoPrependsPrefix_WhenTemplateOmitsPrefix(t *testing.T) {
+	t.Parallel()
+
+	// The exact "datadog archive" template emitted by collectors-service:
+	// authored before {{.Prefix}} was a thing, never referenced it.
+	const tmpl = `dt={{ dateInZone "20060102" (now) "UTC" }}/hour={{ dateInZone "15" (now) "UTC" }}/archive_{{ dateInZone "150405.0000" (now) "UTC" }}.{{ randAlpha 22 }}.json.gz`
+
+	parsed, err := parseLegacyTemplate(tmpl)
+	assert.NoError(t, err)
+
+	key := buildLegacyTemplateKey(
+		"/datadog/hosted/logs",
+		parsed,
+		time.Date(2026, 5, 14, 12, 30, 0, 0, time.UTC),
+	)
+
+	// Prefix must be present at the start. The template uses `(now)`, not
+	// the ts arg, so the date/hour/seconds reflect wall-clock — assert
+	// only the invariant pieces.
+	assert.Regexp(t, `^/datadog/hosted/logs/dt=\d{8}/hour=\d{2}/archive_\d+\.\d+\.[A-Za-z]{22}\.json\.gz$`, key)
+}
+
+func TestBuildKey_LegacyTemplate_PreservesExistingPrefixReference(t *testing.T) {
+	t.Parallel()
+
+	// A template that already references {{.Prefix}} must NOT have the
+	// prefix prepended a second time — back-compat for callers that
+	// learned the original rule.
+	parsed, err := parseLegacyTemplate(`{{.Prefix}}/{{.Date}}/{{.UUID}}.json.gz`)
+	assert.NoError(t, err)
+
+	key := buildLegacyTemplateKey(
+		"/datadog/hosted/logs",
+		parsed,
+		time.Date(2026, 5, 14, 12, 30, 0, 0, time.UTC),
+	)
+
+	assert.Regexp(t, `^/datadog/hosted/logs/2026/05/14/.+\.json\.gz$`, key)
+}
+
+func TestBuildKey_LegacyTemplate_EmptyPrefix_NoLeadingSlash(t *testing.T) {
+	t.Parallel()
+
+	// With no prefix configured, the rendered key must NOT gain a leading
+	// slash — preserves today's behavior for prefix-less destinations
+	// (which currently render starting with "dt=...").
+	parsed, err := parseLegacyTemplate(`dt=20260514/archive.json.gz`)
+	assert.NoError(t, err)
+
+	key := buildLegacyTemplateKey("", parsed, time.Date(2026, 5, 14, 12, 30, 0, 0, time.UTC))
+	assert.Equal(t, "dt=20260514/archive.json.gz", key)
+}
+
+func TestTemplateReferencesPrefix(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		tmpl string
+		want bool
+	}{
+		{"plain prefix ref", `{{.Prefix}}/foo`, true},
+		{"spaced prefix ref", `{{ .Prefix }}/foo`, true},
+		{"prefix inside if", `{{if .Prefix}}{{.Prefix}}/{{end}}foo`, true},
+		{"prefix inside with", `{{with .Prefix}}{{.}}/{{end}}foo`, true},
+		{"no prefix ref", `dt=20260514/archive.gz`, false},
+		{"date ref but no prefix ref", `{{.Date}}/{{.UUID}}.gz`, false},
+		{
+			"datadog template (the buggy one)",
+			`dt={{ dateInZone "20060102" (now) "UTC" }}/hour={{ dateInZone "15" (now) "UTC" }}/archive_{{ dateInZone "150405.0000" (now) "UTC" }}.{{ randAlpha 22 }}.json.gz`,
+			false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			parsed, err := parseLegacyTemplate(tc.tmpl)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.want, templateReferencesPrefix(parsed))
+		})
+	}
+}
+
 func TestPartitionKeyInputsUniqueKey(t *testing.T) {
 	t.Parallel()
 
