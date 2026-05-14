@@ -38,6 +38,32 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"transmit": AttributeDirectionTransmit,
 }
 
+// AttributeFsType specifies the value fs.type attribute.
+type AttributeFsType int
+
+const (
+	_ AttributeFsType = iota
+	AttributeFsTypeRootfs
+	AttributeFsTypeLogs
+)
+
+// String returns the string representation of the AttributeFsType.
+func (av AttributeFsType) String() string {
+	switch av {
+	case AttributeFsTypeRootfs:
+		return "rootfs"
+	case AttributeFsTypeLogs:
+		return "logs"
+	}
+	return ""
+}
+
+// MapAttributeFsType is a helper map of string to AttributeFsType attribute value.
+var MapAttributeFsType = map[string]AttributeFsType{
+	"rootfs": AttributeFsTypeRootfs,
+	"logs":   AttributeFsTypeLogs,
+}
+
 var MetricsInfo = metricsInfo{
 	ContainerCPUTime: metricInfo{
 		Name: "container.cpu.time",
@@ -83,6 +109,9 @@ var MetricsInfo = metricsInfo{
 	},
 	K8sContainerCPURequestUtilization: metricInfo{
 		Name: "k8s.container.cpu_request_utilization",
+	},
+	K8sContainerEphemeralStorageUsage: metricInfo{
+		Name: "k8s.container.ephemeral_storage.usage",
 	},
 	K8sContainerMemoryNodeUtilization: metricInfo{
 		Name: "k8s.container.memory.node.utilization",
@@ -243,6 +272,7 @@ type metricsInfo struct {
 	K8sContainerCPUNodeUtilization         metricInfo
 	K8sContainerCPULimitUtilization        metricInfo
 	K8sContainerCPURequestUtilization      metricInfo
+	K8sContainerEphemeralStorageUsage      metricInfo
 	K8sContainerMemoryNodeUtilization      metricInfo
 	K8sContainerMemoryLimitUtilization     metricInfo
 	K8sContainerMemoryRequestUtilization   metricInfo
@@ -1042,6 +1072,60 @@ func (m *metricK8sContainerCPURequestUtilization) emit(metrics pmetric.MetricSli
 
 func newMetricK8sContainerCPURequestUtilization(cfg MetricConfig) metricK8sContainerCPURequestUtilization {
 	m := metricK8sContainerCPURequestUtilization{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sContainerEphemeralStorageUsage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.container.ephemeral_storage.usage metric with initial data.
+func (m *metricK8sContainerEphemeralStorageUsage) init() {
+	m.data.SetName("k8s.container.ephemeral_storage.usage")
+	m.data.SetDescription("Ephemeral storage used by the container.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricK8sContainerEphemeralStorageUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, fsTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("fs.type", fsTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sContainerEphemeralStorageUsage) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sContainerEphemeralStorageUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sContainerEphemeralStorageUsage(cfg MetricConfig) metricK8sContainerEphemeralStorageUsage {
+	m := metricK8sContainerEphemeralStorageUsage{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3457,6 +3541,7 @@ type MetricsBuilder struct {
 	metricK8sContainerCPUNodeUtilization         metricK8sContainerCPUNodeUtilization
 	metricK8sContainerCPULimitUtilization        metricK8sContainerCPULimitUtilization
 	metricK8sContainerCPURequestUtilization      metricK8sContainerCPURequestUtilization
+	metricK8sContainerEphemeralStorageUsage      metricK8sContainerEphemeralStorageUsage
 	metricK8sContainerMemoryNodeUtilization      metricK8sContainerMemoryNodeUtilization
 	metricK8sContainerMemoryLimitUtilization     metricK8sContainerMemoryLimitUtilization
 	metricK8sContainerMemoryRequestUtilization   metricK8sContainerMemoryRequestUtilization
@@ -3562,6 +3647,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sContainerCPUNodeUtilization:         newMetricK8sContainerCPUNodeUtilization(mbc.Metrics.K8sContainerCPUNodeUtilization),
 		metricK8sContainerCPULimitUtilization:        newMetricK8sContainerCPULimitUtilization(mbc.Metrics.K8sContainerCPULimitUtilization),
 		metricK8sContainerCPURequestUtilization:      newMetricK8sContainerCPURequestUtilization(mbc.Metrics.K8sContainerCPURequestUtilization),
+		metricK8sContainerEphemeralStorageUsage:      newMetricK8sContainerEphemeralStorageUsage(mbc.Metrics.K8sContainerEphemeralStorageUsage),
 		metricK8sContainerMemoryNodeUtilization:      newMetricK8sContainerMemoryNodeUtilization(mbc.Metrics.K8sContainerMemoryNodeUtilization),
 		metricK8sContainerMemoryLimitUtilization:     newMetricK8sContainerMemoryLimitUtilization(mbc.Metrics.K8sContainerMemoryLimitUtilization),
 		metricK8sContainerMemoryRequestUtilization:   newMetricK8sContainerMemoryRequestUtilization(mbc.Metrics.K8sContainerMemoryRequestUtilization),
@@ -3792,6 +3878,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sContainerCPUNodeUtilization.emit(ils.Metrics())
 	mb.metricK8sContainerCPULimitUtilization.emit(ils.Metrics())
 	mb.metricK8sContainerCPURequestUtilization.emit(ils.Metrics())
+	mb.metricK8sContainerEphemeralStorageUsage.emit(ils.Metrics())
 	mb.metricK8sContainerMemoryNodeUtilization.emit(ils.Metrics())
 	mb.metricK8sContainerMemoryLimitUtilization.emit(ils.Metrics())
 	mb.metricK8sContainerMemoryRequestUtilization.emit(ils.Metrics())
@@ -3943,6 +4030,11 @@ func (mb *MetricsBuilder) RecordK8sContainerCPULimitUtilizationDataPoint(ts pcom
 // RecordK8sContainerCPURequestUtilizationDataPoint adds a data point to k8s.container.cpu_request_utilization metric.
 func (mb *MetricsBuilder) RecordK8sContainerCPURequestUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricK8sContainerCPURequestUtilization.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sContainerEphemeralStorageUsageDataPoint adds a data point to k8s.container.ephemeral_storage.usage metric.
+func (mb *MetricsBuilder) RecordK8sContainerEphemeralStorageUsageDataPoint(ts pcommon.Timestamp, val int64, fsTypeAttributeValue AttributeFsType) {
+	mb.metricK8sContainerEphemeralStorageUsage.recordDataPoint(mb.startTime, ts, val, fsTypeAttributeValue.String())
 }
 
 // RecordK8sContainerMemoryNodeUtilizationDataPoint adds a data point to k8s.container.memory.node.utilization metric.

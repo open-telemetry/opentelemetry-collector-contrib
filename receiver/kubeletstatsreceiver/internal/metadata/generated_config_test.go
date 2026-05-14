@@ -71,6 +71,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sContainerCPURequestUtilization: MetricConfig{
 						Enabled: true,
 					},
+					K8sContainerEphemeralStorageUsage: MetricConfig{
+						Enabled: true,
+					},
 					K8sContainerMemoryNodeUtilization: MetricConfig{
 						Enabled: true,
 					},
@@ -280,6 +283,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					K8sContainerCPURequestUtilization: MetricConfig{
+						Enabled: false,
+					},
+					K8sContainerEphemeralStorageUsage: MetricConfig{
 						Enabled: false,
 					},
 					K8sContainerMemoryNodeUtilization: MetricConfig{
