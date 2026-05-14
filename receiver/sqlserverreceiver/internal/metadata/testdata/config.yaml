@@ -1,6 +1,21 @@
 default:
 all_set:
   metrics:
+    sqlserver.availability_group.flow_control_time:
+      enabled: true
+      attributes: ["availability_group.name","availability_group.database.name","availability_group.replica.name"]
+    sqlserver.availability_group.log.received.rate:
+      enabled: true
+      attributes: ["availability_group.name","availability_group.database.name","availability_group.replica.name"]
+    sqlserver.availability_group.log.send_queue:
+      enabled: true
+      attributes: ["availability_group.name","availability_group.database.name","availability_group.replica.name"]
+    sqlserver.availability_group.redo.rate:
+      enabled: true
+      attributes: ["availability_group.name","availability_group.database.name","availability_group.replica.name"]
+    sqlserver.availability_group.redo_queue:
+      enabled: true
+      attributes: ["availability_group.name","availability_group.database.name","availability_group.replica.name"]
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
@@ -134,6 +149,21 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
+    sqlserver.availability_group.flow_control_time:
+      enabled: true
+      attributes: []
+    sqlserver.availability_group.log.received.rate:
+      enabled: true
+      attributes: []
+    sqlserver.availability_group.log.send_queue:
+      enabled: true
+      attributes: []
+    sqlserver.availability_group.redo.rate:
+      enabled: true
+      attributes: []
+    sqlserver.availability_group.redo_queue:
+      enabled: true
+      attributes: []
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
@@ -267,6 +297,21 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
+    sqlserver.availability_group.flow_control_time:
+      enabled: false
+      attributes: ["availability_group.name","availability_group.database.name","availability_group.replica.name"]
+    sqlserver.availability_group.log.received.rate:
+      enabled: false
+      attributes: ["availability_group.name","availability_group.database.name","availability_group.replica.name"]
+    sqlserver.availability_group.log.send_queue:
+      enabled: false
+      attributes: ["availability_group.name","availability_group.database.name","availability_group.replica.name"]
+    sqlserver.availability_group.redo.rate:
+      enabled: false
+      attributes: ["availability_group.name","availability_group.database.name","availability_group.replica.name"]
+    sqlserver.availability_group.redo_queue:
+      enabled: false
+      attributes: ["availability_group.name","availability_group.database.name","availability_group.replica.name"]
     sqlserver.batch.request.rate:
       enabled: false
     sqlserver.batch.sql_compilation.rate:

@@ -50,6 +50,18 @@ resource_attributes:
     type: string
 
 attributes:
+  availability_group.database.name:
+    description: The name of the database participating in the availability group.
+    type: string
+    requirement_level: recommended
+  availability_group.name:
+    description: The name of the SQL Server Always On availability group.
+    type: string
+    requirement_level: recommended
+  availability_group.replica.name:
+    description: The name of the availability replica server.
+    type: string
+    requirement_level: recommended
   # attributes for metrics
   client.address:
     description: Hostname or address of the client.
@@ -381,6 +393,51 @@ events:
       - sqlserver.procedure_name
 
 metrics:
+  sqlserver.availability_group.flow_control_time:
+    enabled: false
+    description: Total flow control time experienced by the availability group database replica, derived from secondary replica lag.
+    stability: development
+    unit: ms
+    gauge:
+      value_type: double
+    attributes: [availability_group.name, availability_group.database.name, availability_group.replica.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server 2016+ with Always On Availability Groups enabled. Reports NULL for primary replicas.
+  sqlserver.availability_group.log.received.rate:
+    enabled: false
+    description: Rate at which log blocks are received by the availability group database replica from the primary replica.
+    stability: development
+    unit: By/s
+    gauge:
+      value_type: double
+    attributes: [availability_group.name, availability_group.database.name, availability_group.replica.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled.
+  sqlserver.availability_group.log.send_queue:
+    enabled: false
+    description: Amount of log records in the log files of the primary database that have not been sent to the secondary replicas.
+    stability: development
+    unit: KB
+    gauge:
+      value_type: int
+    attributes: [availability_group.name, availability_group.database.name, availability_group.replica.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled.
+  sqlserver.availability_group.redo.rate:
+    enabled: false
+    description: Rate at which log records are being redone on the secondary replica.
+    stability: development
+    unit: KB/s
+    gauge:
+      value_type: double
+    attributes: [availability_group.name, availability_group.database.name, availability_group.replica.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled.
+  sqlserver.availability_group.redo_queue:
+    enabled: false
+    description: Amount of log records in the log files of the secondary replica that have not yet been redone.
+    stability: development
+    unit: KB
+    gauge:
+      value_type: int
+    attributes: [availability_group.name, availability_group.database.name, availability_group.replica.name]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled.
   sqlserver.batch.request.rate:
     enabled: true
     description: Number of batch requests received by SQL Server.

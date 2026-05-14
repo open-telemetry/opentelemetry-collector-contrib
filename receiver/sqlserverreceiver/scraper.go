@@ -122,6 +122,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 		err = s.recordDatabaseStatusMetrics(ctx)
 	case getSQLServerWaitStatsQuery(s.config.InstanceName):
 		err = s.recordDatabaseWaitMetrics(ctx)
+	case getSQLServerAvailabilityGroupQuery(s.config.InstanceName):
+		err = s.recordAvailabilityGroupMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -776,6 +778,85 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
+	return errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Context) error {
+	const (
+		availabilityGroupKey   = "availability_group"
+		replicaNameKey         = "replica_name"
+		logSendQueueSizeKey    = "log_send_queue_size"
+		logSendRateKey         = "log_send_rate"
+		redoQueueSizeKey       = "redo_queue_size"
+		redoRateKey            = "redo_rate"
+		secondaryLagSecondsKey = "secondary_lag_seconds"
+		bytesPerKB             = 1024.0
+		msPerSecond            = 1000.0
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	if len(rows) == 0 {
+		s.logger.Info("SQLServerScraperHelper: No rows found by query")
+		return nil
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), rows[0])
+	var val any
+
+	for i, row := range rows {
+		agName := row[availabilityGroupKey]
+		dbName := row[databaseNameKey]
+		replicaName := row[replicaNameKey]
+
+		// secondary_lag_seconds can be NULL for primary replicas; only record when present
+		if row[secondaryLagSecondsKey] != "" {
+			val, err = retrieveFloat(row, secondaryLagSecondsKey)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+			} else {
+				s.mb.RecordSqlserverAvailabilityGroupFlowControlTimeDataPoint(now, val.(float64)*msPerSecond, agName, dbName, replicaName)
+			}
+		}
+
+		val, err = retrieveFloat(row, logSendRateKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+		} else {
+			s.mb.RecordSqlserverAvailabilityGroupLogReceivedRateDataPoint(now, val.(float64)*bytesPerKB, agName, dbName, replicaName)
+		}
+
+		val, err = retrieveInt(row, logSendQueueSizeKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+		} else {
+			s.mb.RecordSqlserverAvailabilityGroupLogSendQueueDataPoint(now, val.(int64), agName, dbName, replicaName)
+		}
+
+		val, err = retrieveInt(row, redoQueueSizeKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+		} else {
+			s.mb.RecordSqlserverAvailabilityGroupRedoQueueDataPoint(now, val.(int64), agName, dbName, replicaName)
+		}
+
+		val, err = retrieveFloat(row, redoRateKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+		} else {
+			s.mb.RecordSqlserverAvailabilityGroupRedoRateDataPoint(now, val.(float64), agName, dbName, replicaName)
+		}
+	}
+
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	return errors.Join(errs...)
 }
 
