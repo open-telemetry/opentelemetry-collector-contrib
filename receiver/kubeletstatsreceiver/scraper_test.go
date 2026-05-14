@@ -228,10 +228,10 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 		options,
 		metadata.MetricsBuilderConfig{
 			Metrics: metadata.MetricsConfig{
-				K8sContainerCPUNodeUtilization: metadata.MetricConfig{
+				K8sContainerCPUNodeUtilization: metadata.K8sContainerCPUNodeUtilizationMetricConfig{
 					Enabled: true,
 				},
-				K8sPodCPUNodeUtilization: metadata.MetricConfig{
+				K8sPodCPUNodeUtilization: metadata.K8sPodCPUNodeUtilizationMetricConfig{
 					Enabled: true,
 				},
 			},
@@ -308,9 +308,9 @@ func TestScraperWithMemoryNodeUtilization(t *testing.T) {
 		options,
 		metadata.MetricsBuilderConfig{
 			Metrics: metadata.MetricsConfig{
-				K8sContainerMemoryNodeUtilization: metadata.MetricConfig{
+				K8sContainerMemoryNodeUtilization: metadata.K8sContainerMemoryNodeUtilizationMetricConfig{
 					Enabled: true,
-				}, K8sPodMemoryNodeUtilization: metadata.MetricConfig{
+				}, K8sPodMemoryNodeUtilization: metadata.K8sPodMemoryNodeUtilizationMetricConfig{
 					Enabled: true,
 				},
 			},
@@ -433,148 +433,148 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 	}
 	metricsConfig := metadata.MetricsBuilderConfig{
 		Metrics: metadata.MetricsConfig{
-			ContainerCPUTime: metadata.MetricConfig{
+			ContainerCPUTime: metadata.ContainerCPUTimeMetricConfig{
 				Enabled: false,
 			},
-			ContainerFilesystemAvailable: metadata.MetricConfig{
+			ContainerFilesystemAvailable: metadata.ContainerFilesystemAvailableMetricConfig{
 				Enabled: false,
 			},
-			ContainerFilesystemCapacity: metadata.MetricConfig{
+			ContainerFilesystemCapacity: metadata.ContainerFilesystemCapacityMetricConfig{
 				Enabled: false,
 			},
-			ContainerFilesystemUsage: metadata.MetricConfig{
+			ContainerFilesystemUsage: metadata.ContainerFilesystemUsageMetricConfig{
 				Enabled: false,
 			},
-			ContainerMemoryAvailable: metadata.MetricConfig{
+			ContainerMemoryAvailable: metadata.ContainerMemoryAvailableMetricConfig{
 				Enabled: false,
 			},
-			ContainerMemoryMajorPageFaults: metadata.MetricConfig{
+			ContainerMemoryMajorPageFaults: metadata.ContainerMemoryMajorPageFaultsMetricConfig{
 				Enabled: false,
 			},
-			ContainerMemoryPageFaults: metadata.MetricConfig{
+			ContainerMemoryPageFaults: metadata.ContainerMemoryPageFaultsMetricConfig{
 				Enabled: false,
 			},
-			ContainerMemoryRss: metadata.MetricConfig{
+			ContainerMemoryRss: metadata.ContainerMemoryRssMetricConfig{
 				Enabled: false,
 			},
-			ContainerMemoryUsage: metadata.MetricConfig{
+			ContainerMemoryUsage: metadata.ContainerMemoryUsageMetricConfig{
 				Enabled: false,
 			},
-			K8sContainerCPULimitUtilization: metadata.MetricConfig{
+			K8sContainerCPULimitUtilization: metadata.K8sContainerCPULimitUtilizationMetricConfig{
 				Enabled: true,
 			},
-			K8sContainerCPURequestUtilization: metadata.MetricConfig{
+			K8sContainerCPURequestUtilization: metadata.K8sContainerCPURequestUtilizationMetricConfig{
 				Enabled: true,
 			},
-			K8sContainerMemoryLimitUtilization: metadata.MetricConfig{
+			K8sContainerMemoryLimitUtilization: metadata.K8sContainerMemoryLimitUtilizationMetricConfig{
 				Enabled: true,
 			},
-			K8sContainerMemoryRequestUtilization: metadata.MetricConfig{
+			K8sContainerMemoryRequestUtilization: metadata.K8sContainerMemoryRequestUtilizationMetricConfig{
 				Enabled: true,
 			},
-			ContainerMemoryWorkingSet: metadata.MetricConfig{
+			ContainerMemoryWorkingSet: metadata.ContainerMemoryWorkingSetMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeCPUTime: metadata.MetricConfig{
+			K8sNodeCPUTime: metadata.K8sNodeCPUTimeMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeFilesystemAvailable: metadata.MetricConfig{
+			K8sNodeFilesystemAvailable: metadata.K8sNodeFilesystemAvailableMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeFilesystemCapacity: metadata.MetricConfig{
+			K8sNodeFilesystemCapacity: metadata.K8sNodeFilesystemCapacityMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeFilesystemUsage: metadata.MetricConfig{
+			K8sNodeFilesystemUsage: metadata.K8sNodeFilesystemUsageMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeMemoryAvailable: metadata.MetricConfig{
+			K8sNodeMemoryAvailable: metadata.K8sNodeMemoryAvailableMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeMemoryMajorPageFaults: metadata.MetricConfig{
+			K8sNodeMemoryMajorPageFaults: metadata.K8sNodeMemoryMajorPageFaultsMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeMemoryPageFaults: metadata.MetricConfig{
+			K8sNodeMemoryPageFaults: metadata.K8sNodeMemoryPageFaultsMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeMemoryRss: metadata.MetricConfig{
+			K8sNodeMemoryRss: metadata.K8sNodeMemoryRssMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeMemoryUsage: metadata.MetricConfig{
+			K8sNodeMemoryUsage: metadata.K8sNodeMemoryUsageMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeMemoryWorkingSet: metadata.MetricConfig{
+			K8sNodeMemoryWorkingSet: metadata.K8sNodeMemoryWorkingSetMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeNetworkErrors: metadata.MetricConfig{
+			K8sNodeNetworkErrors: metadata.K8sNodeNetworkErrorsMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeNetworkIo: metadata.MetricConfig{
+			K8sNodeNetworkIo: metadata.K8sNodeNetworkIoMetricConfig{
 				Enabled: false,
 			},
-			K8sPodCPUTime: metadata.MetricConfig{
+			K8sPodCPUTime: metadata.K8sPodCPUTimeMetricConfig{
 				Enabled: false,
 			},
-			K8sPodFilesystemAvailable: metadata.MetricConfig{
+			K8sPodFilesystemAvailable: metadata.K8sPodFilesystemAvailableMetricConfig{
 				Enabled: false,
 			},
-			K8sPodFilesystemCapacity: metadata.MetricConfig{
+			K8sPodFilesystemCapacity: metadata.K8sPodFilesystemCapacityMetricConfig{
 				Enabled: false,
 			},
-			K8sPodFilesystemUsage: metadata.MetricConfig{
+			K8sPodFilesystemUsage: metadata.K8sPodFilesystemUsageMetricConfig{
 				Enabled: false,
 			},
-			K8sPodMemoryAvailable: metadata.MetricConfig{
+			K8sPodMemoryAvailable: metadata.K8sPodMemoryAvailableMetricConfig{
 				Enabled: false,
 			},
-			K8sPodMemoryMajorPageFaults: metadata.MetricConfig{
+			K8sPodMemoryMajorPageFaults: metadata.K8sPodMemoryMajorPageFaultsMetricConfig{
 				Enabled: false,
 			},
-			K8sPodMemoryPageFaults: metadata.MetricConfig{
+			K8sPodMemoryPageFaults: metadata.K8sPodMemoryPageFaultsMetricConfig{
 				Enabled: false,
 			},
-			K8sPodMemoryRss: metadata.MetricConfig{
+			K8sPodMemoryRss: metadata.K8sPodMemoryRssMetricConfig{
 				Enabled: false,
 			},
-			K8sPodMemoryUsage: metadata.MetricConfig{
+			K8sPodMemoryUsage: metadata.K8sPodMemoryUsageMetricConfig{
 				Enabled: false,
 			},
-			K8sPodCPULimitUtilization: metadata.MetricConfig{
+			K8sPodCPULimitUtilization: metadata.K8sPodCPULimitUtilizationMetricConfig{
 				Enabled: true,
 			},
-			K8sPodCPURequestUtilization: metadata.MetricConfig{
+			K8sPodCPURequestUtilization: metadata.K8sPodCPURequestUtilizationMetricConfig{
 				Enabled: true,
 			},
-			K8sPodMemoryLimitUtilization: metadata.MetricConfig{
+			K8sPodMemoryLimitUtilization: metadata.K8sPodMemoryLimitUtilizationMetricConfig{
 				Enabled: true,
 			},
-			K8sPodMemoryRequestUtilization: metadata.MetricConfig{
+			K8sPodMemoryRequestUtilization: metadata.K8sPodMemoryRequestUtilizationMetricConfig{
 				Enabled: true,
 			},
-			K8sPodMemoryWorkingSet: metadata.MetricConfig{
+			K8sPodMemoryWorkingSet: metadata.K8sPodMemoryWorkingSetMetricConfig{
 				Enabled: false,
 			},
-			K8sPodNetworkErrors: metadata.MetricConfig{
+			K8sPodNetworkErrors: metadata.K8sPodNetworkErrorsMetricConfig{
 				Enabled: false,
 			},
-			K8sPodNetworkIo: metadata.MetricConfig{
+			K8sPodNetworkIo: metadata.K8sPodNetworkIoMetricConfig{
 				Enabled: false,
 			},
-			K8sVolumeAvailable: metadata.MetricConfig{
+			K8sVolumeAvailable: metadata.K8sVolumeAvailableMetricConfig{
 				Enabled: false,
 			},
-			K8sVolumeCapacity: metadata.MetricConfig{
+			K8sVolumeCapacity: metadata.K8sVolumeCapacityMetricConfig{
 				Enabled: false,
 			},
-			K8sPodVolumeUsage: metadata.MetricConfig{
+			K8sPodVolumeUsage: metadata.K8sPodVolumeUsageMetricConfig{
 				Enabled: false,
 			},
-			K8sVolumeInodes: metadata.MetricConfig{
+			K8sVolumeInodes: metadata.K8sVolumeInodesMetricConfig{
 				Enabled: false,
 			},
-			K8sVolumeInodesFree: metadata.MetricConfig{
+			K8sVolumeInodesFree: metadata.K8sVolumeInodesFreeMetricConfig{
 				Enabled: false,
 			},
-			K8sVolumeInodesUsed: metadata.MetricConfig{
+			K8sVolumeInodesUsed: metadata.K8sVolumeInodesUsedMetricConfig{
 				Enabled: false,
 			},
 		},
