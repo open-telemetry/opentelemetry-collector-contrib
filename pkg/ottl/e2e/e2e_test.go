@@ -2270,6 +2270,11 @@ func Test_e2e_lambda_expression(t *testing.T) {
 			wantParseErr: "expression has invalid syntax",
 		},
 		{
+			name:       "argument shadowed",
+			expression: `Eval(($a, $b) => $a == 1 and Eval(($a) => $a == 3, [3]), [1, 1])`,
+			want:       wantValue(true),
+		},
+		{
 			name:      "lambda in conditions",
 			condition: `Eval(($a, $b) => $a == $b, [1, 1]) == true`,
 			want:      wantValue(true),
