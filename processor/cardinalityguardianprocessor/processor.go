@@ -694,7 +694,7 @@ func (p *cardinalityProcessor) rotate() {
 		// not the shard lock, so ConsumeMetrics is never blocked here.
 		// Collect keys of trackers that have been idle for staleSweepEpochs
 		// consecutive rotations.
-		var staleKeys []trackerKey
+		staleKeys := make([]trackerKey, 0, len(entries))
 		for i, e := range entries {
 			idle := e.t.rotate(fresh[i])
 			if idle && e.t.idleEpochs >= staleSweepEpochs {
