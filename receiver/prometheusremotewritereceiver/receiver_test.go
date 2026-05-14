@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -34,6 +35,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	otelattr "go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -3336,4 +3343,180 @@ func TestHandlePRWConsumerResponse(t *testing.T) {
 		require.NoError(t, err)
 		assert.Contains(t, string(body), "permanent failure")
 	})
+}
+
+// TestEndMetricsOpReportsDataPointCount verifies that EndMetricsOp is called with the
+// number of data points, not the number of resource metric groups.
+// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48306
+func TestEndMetricsOpReportsDataPointCount(t *testing.T) {
+	// Build a request with 3 gauge time series all from the same job/instance.
+	// ResourceMetrics().Len() == 1, but DataPointCount() == 3.
+	request := &writev2.Request{
+		Symbols: []string{
+			"",              // 0 - required empty string
+			"__name__",      // 1
+			"gauge_a",       // 2
+			"gauge_b",       // 3
+			"gauge_c",       // 4
+			"job",           // 5
+			"test-job",      // 6
+			"instance",      // 7
+			"test-instance", // 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 1.0, Timestamp: 1000}},
+			},
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 3, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 2.0, Timestamp: 1000}},
+			},
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 3.0, Timestamp: 1000}},
+			},
+		},
+	}
+	pBuf := proto.NewBuffer(nil)
+	err := pBuf.Marshal(request)
+	require.NoError(t, err)
+
+	receiverID := component.NewIDWithName(metadata.Type, "test")
+	tt := componenttest.NewTelemetry()
+	defer func() {
+		require.NoError(t, tt.Shutdown(t.Context()))
+	}()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.TelemetrySettings = tt.NewTelemetrySettings()
+	settings.ID = receiverID
+
+	sink := &consumertest.MetricsSink{}
+	prwReceiver, err := factory.CreateMetrics(t.Context(), settings, cfg, sink)
+	require.NoError(t, err)
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              "http",
+		ReceiverCreateSettings: settings,
+	})
+	require.NoError(t, err)
+	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
+
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(pBuf.Bytes()))
+	req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
+	w := httptest.NewRecorder()
+	writeReceiver.handlePRW(w, req)
+
+	assert.Equal(t, http.StatusNoContent, w.Result().StatusCode)
+
+	// The accepted metric points must equal the data point count (3), not the
+	// resource group count (1). This is the regression check for #48306.
+	got, err := tt.GetMetric("otelcol_receiver_accepted_metric_points")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_accepted_metric_points",
+			Description: "Number of metric points successfully pushed into the pipeline. [Alpha]",
+			Unit:        "{datapoint}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: otelattr.NewSet(
+							otelattr.String("receiver", receiverID.String()),
+							otelattr.String("transport", "http")),
+						Value: 3, // 3 data points, not 1 (resource count)
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+// TestInvalidSchemaLogging verifies that invalid histogram schemas trigger debug logs
+func TestInvalidSchemaLogging(t *testing.T) {
+	core, obs := observer.New(zapcore.DebugLevel)
+	logger := zap.New(core)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = logger
+
+	prwReceiver, err := factory.CreateMetrics(t.Context(), settings, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, prwReceiver)
+
+	receiverID := component.MustNewID("test")
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              "http",
+		ReceiverCreateSettings: settings,
+	})
+	require.NoError(t, err)
+
+	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+	})
+
+	request := &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_invalid_histogram",
+			"job", "test_job",
+			"instance", "test_instance",
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+				Metadata: writev2.Metadata{
+					Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+				},
+				Histograms: []writev2.Histogram{
+					{
+						Timestamp: 123456789,
+						Schema:    -10, // Invalid schema
+						Sum:       100.5,
+						Count:     &writev2.Histogram_CountInt{CountInt: 50},
+						PositiveSpans: []writev2.BucketSpan{
+							{Offset: 0, Length: 2},
+						},
+						PositiveDeltas: []int64{10, 15},
+					},
+				},
+			},
+		},
+	}
+
+	metrics, stats, err := writeReceiver.translateV2(t.Context(), request)
+	require.NoError(t, err)
+	assert.Equal(t, 0, metrics.MetricCount())
+	assert.Equal(t, 0, stats.Histograms)
+
+	// Verify that debug log was emitted for the invalid schema
+	logs := obs.All()
+	require.Len(t, logs, 1, "Expected 1 debug log for invalid schema")
+
+	// Check log entry
+	assert.Equal(t, "Dropping histogram with invalid schema", logs[0].Message)
+	assert.Equal(t, "test_invalid_histogram", logs[0].ContextMap()["metric_name"])
+	assert.Equal(t, int32(-10), logs[0].ContextMap()["schema"])
+	assert.Equal(t, "test_job", logs[0].ContextMap()["job"])
+	assert.Equal(t, "test_instance", logs[0].ContextMap()["instance"])
+	assert.Equal(t, int64(123456789), logs[0].ContextMap()["timestamp"])
 }

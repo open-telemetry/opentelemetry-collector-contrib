@@ -33,19 +33,19 @@ type RevisionV1 struct {
 // Since VersionDef uses custom types for various definitions, it isn't possible
 // to cast those values into the primitives so each has to be processed together.
 // Generics would be handy here.
-func NewRevision(ver *Version, def ast11.VersionDef) (*RevisionV1, error) {
-	spanEvents, err := newSpanEventChangeList(def.SpanEvents)
+func NewRevision(ver *Version, def ast11.VersionDef, copyAttributes bool) (*RevisionV1, error) {
+	spanEvents, err := newSpanEventChangeList(def.SpanEvents, copyAttributes)
 	if err != nil {
 		return nil, fmt.Errorf("version %s span_events: %w", ver, err)
 	}
 	return &RevisionV1{
 		ver:        ver,
-		all:        newAllChangeList(def.All),
-		resources:  newResourceChangeList(def.Resources),
-		spans:      newSpanChangeList(def.Spans),
+		all:        newAllChangeList(def.All, copyAttributes),
+		resources:  newResourceChangeList(def.Resources, copyAttributes),
+		spans:      newSpanChangeList(def.Spans, copyAttributes),
 		spanEvents: spanEvents,
-		metrics:    newMetricChangeList(def.Metrics),
-		logs:       newLogsChangelist(def.Logs),
+		metrics:    newMetricChangeList(def.Metrics, copyAttributes),
+		logs:       newLogsChangelist(def.Logs, copyAttributes),
 	}, nil
 }
 
@@ -53,11 +53,11 @@ func (r RevisionV1) Version() *Version {
 	return r.ver
 }
 
-func newAllChangeList(all ast10.Attributes) *changelist.ChangeList {
+func newAllChangeList(all ast10.Attributes, copyAttributes bool) *changelist.ChangeList {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range all.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
-			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap)
+			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap, copyAttributes)
 			allTransformer := transformer.NewAllAttributesTransformer(attributeChangeSet)
 			values = append(values, allTransformer)
 		}
@@ -65,11 +65,11 @@ func newAllChangeList(all ast10.Attributes) *changelist.ChangeList {
 	return &changelist.ChangeList{Migrators: values}
 }
 
-func newResourceChangeList(resource ast10.Attributes) *changelist.ChangeList {
+func newResourceChangeList(resource ast10.Attributes, copyAttributes bool) *changelist.ChangeList {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range resource.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
-			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap)
+			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap, copyAttributes)
 			resourceTransformer := transformer.ResourceAttributes{AttributeChange: attributeChangeSet}
 			values = append(values, resourceTransformer)
 		}
@@ -77,23 +77,23 @@ func newResourceChangeList(resource ast10.Attributes) *changelist.ChangeList {
 	return &changelist.ChangeList{Migrators: values}
 }
 
-func newSpanChangeList(spans ast10.Spans) *changelist.ChangeList {
+func newSpanChangeList(spans ast10.Spans, copyAttributes bool) *changelist.ChangeList {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range spans.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
-			conditionalAttributesChangeSet := transformer.SpanConditionalAttributes{Migrator: migrate.NewConditionalAttributeSet(renamed.AttributeMap, renamed.ApplyToSpans...)}
+			conditionalAttributesChangeSet := transformer.SpanConditionalAttributes{Migrator: migrate.NewConditionalAttributeSet(renamed.AttributeMap, copyAttributes, renamed.ApplyToSpans...)}
 			values = append(values, conditionalAttributesChangeSet)
 		}
 	}
 	return &changelist.ChangeList{Migrators: values}
 }
 
-func newMetricChangeList(metrics ast11.Metrics) *changelist.ChangeList {
+func newMetricChangeList(metrics ast11.Metrics, copyAttributes bool) *changelist.ChangeList {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range metrics.Changes {
 		if renameAttributes := at.RenameAttributes; renameAttributes != nil {
 			attributeChangeSet := transformer.MetricDataPointAttributes{
-				ConditionalAttributeChange: migrate.NewConditionalAttributeSet(renameAttributes.AttributeMap, renameAttributes.ApplyToMetrics...),
+				ConditionalAttributeChange: migrate.NewConditionalAttributeSet(renameAttributes.AttributeMap, copyAttributes, renameAttributes.ApplyToMetrics...),
 			}
 			values = append(values, attributeChangeSet)
 		}
@@ -109,7 +109,7 @@ func newMetricChangeList(metrics ast11.Metrics) *changelist.ChangeList {
 	return &changelist.ChangeList{Migrators: values}
 }
 
-func newSpanEventChangeList(spanEvents ast10.SpanEvents) (*changelist.ChangeList, error) {
+func newSpanEventChangeList(spanEvents ast10.SpanEvents, copyAttributes bool) (*changelist.ChangeList, error) {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range spanEvents.Changes {
 		if renamedEvent := at.RenameEvents; renamedEvent != nil {
@@ -126,7 +126,7 @@ func newSpanEventChangeList(spanEvents ast10.SpanEvents) (*changelist.ChangeList
 				acceptableEventNames = append(acceptableEventNames, string(eventName))
 			}
 
-			multiConditionalAttributeSet := migrate.NewMultiConditionalAttributeSet(renamedAttribute.AttributeMap, map[string][]string{
+			multiConditionalAttributeSet := migrate.NewMultiConditionalAttributeSet(renamedAttribute.AttributeMap, copyAttributes, map[string][]string{
 				"span.name":  acceptableSpanNames,
 				"event.name": acceptableEventNames,
 			})
@@ -139,11 +139,11 @@ func newSpanEventChangeList(spanEvents ast10.SpanEvents) (*changelist.ChangeList
 	return &changelist.ChangeList{Migrators: values}, nil
 }
 
-func newLogsChangelist(logs ast10.Logs) *changelist.ChangeList {
+func newLogsChangelist(logs ast10.Logs, copyAttributes bool) *changelist.ChangeList {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range logs.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
-			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap)
+			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap, copyAttributes)
 			logTransformer := transformer.LogAttributes{AttributeChange: attributeChangeSet}
 			values = append(values, logTransformer)
 		}

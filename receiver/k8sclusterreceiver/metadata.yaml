@@ -17,6 +17,8 @@ status:
 
 sem_conv_version: 1.18.0
 
+reaggregation_enabled: true
+
 entities:
   - type: k8s.namespace
     brief: A Kubernetes namespace
@@ -479,9 +481,11 @@ attributes:
   condition:
     description: "the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure"
     type: string
+    requirement_level: required
   k8s.container.status.reason:
     description: The reason of the current container status.
     type: string
+    requirement_level: required
     enum:
       - ContainerCreating
       - CrashLoopBackOff
@@ -495,6 +499,7 @@ attributes:
   k8s.container.status.state:
     description: The state of the container (terminated, running, waiting). See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#containerstate-v1-core for details.
     type: string
+    requirement_level: required
     enum:
       - terminated
       - running
@@ -502,9 +507,11 @@ attributes:
   k8s.namespace.name:
     description: The k8s namespace name.
     type: string
+    requirement_level: recommended
   k8s.persistentvolume.status.phase:
     description: The phase of the PersistentVolume.
     type: string
+    requirement_level: required
     enum:
       - Pending
       - Available
@@ -514,6 +521,7 @@ attributes:
   k8s.persistentvolumeclaim.status.phase:
     description: The phase of the PersistentVolumeClaim.
     type: string
+    requirement_level: required
     enum:
       - Pending
       - Bound
@@ -521,6 +529,7 @@ attributes:
   k8s.service.endpoint.address_type:
     description: The address type of the endpoint.
     type: string
+    requirement_level: recommended
     enum:
       - IPv4
       - IPv6
@@ -528,6 +537,7 @@ attributes:
   k8s.service.endpoint.condition:
     description: The condition of the service endpoint.
     type: string
+    requirement_level: recommended
     enum:
       - ready
       - serving
@@ -535,9 +545,11 @@ attributes:
   k8s.service.endpoint.zone:
     description: The zone of the service endpoint, typically corresponding to a failure domain.
     type: string
+    requirement_level: recommended
   resource:
     description: the name of the resource on which the quota is applied
     type: string
+    requirement_level: required
 
 metrics:
   k8s.container.cpu_limit:
