@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -29,33 +30,38 @@ func AssertMetrics(expectedPath string, actual pmetric.Metrics) error {
 func compareDocuments(expected, actual *document) error {
 	var errs []error
 
-	expRes := indexResources(expected.Resources)
-	actRes := indexResources(actual.Resources)
+	matchedActual := make([]bool, len(actual.Resources))
 
-	for key, er := range expRes {
-		ar, ok := actRes[key]
-		if !ok {
+	for _, er := range expected.Resources {
+		actualIndex := findMatchingResource(er, actual.Resources, matchedActual)
+		if actualIndex < 0 {
 			errs = append(errs, fmt.Errorf("missing expected resource: %v", er.Attributes))
 			continue
 		}
+		matchedActual[actualIndex] = true
+		ar := actual.Resources[actualIndex]
 		if err := compareResource(er, ar); err != nil {
 			errs = append(errs, fmt.Errorf("resource %v: %w", er.Attributes, err))
 		}
 	}
-	for key, ar := range actRes {
-		if _, ok := expRes[key]; !ok {
+	for i, ar := range actual.Resources {
+		if !matchedActual[i] {
 			errs = append(errs, fmt.Errorf("unexpected resource: %v", ar.Attributes))
 		}
 	}
 	return errors.Join(errs...)
 }
 
-func indexResources(rs []resourceAssertion) map[string]resourceAssertion {
-	out := make(map[string]resourceAssertion, len(rs))
-	for _, r := range rs {
-		out[canonKey(r.Attributes)] = r
+func findMatchingResource(expected resourceAssertion, actual []resourceAssertion, matched []bool) int {
+	for i, ar := range actual {
+		if matched[i] {
+			continue
+		}
+		if compareAttributes(expected.Attributes, ar.Attributes) == nil {
+			return i
+		}
 	}
-	return out
+	return -1
 }
 
 func compareResource(expected, actual resourceAssertion) error {
@@ -142,18 +148,20 @@ func compareMetric(expected, actual metricAssertion) error {
 }
 
 func compareDatapoints(expected, actual []datapointAssertion) error {
-	expIdx := indexDatapoints(expected)
-	actIdx := indexDatapoints(actual)
-
+	matchedActual := make([]bool, len(actual))
 	var missing, unexpected []string
-	for k := range expIdx {
-		if _, ok := actIdx[k]; !ok {
-			missing = append(missing, k)
+
+	for _, edp := range expected {
+		actualIndex := findMatchingDatapoint(edp, actual, matchedActual)
+		if actualIndex < 0 {
+			missing = append(missing, canonKey(edp.Attributes))
+			continue
 		}
+		matchedActual[actualIndex] = true
 	}
-	for k := range actIdx {
-		if _, ok := expIdx[k]; !ok {
-			unexpected = append(unexpected, k)
+	for i, adp := range actual {
+		if !matchedActual[i] {
+			unexpected = append(unexpected, canonKey(adp.Attributes))
 		}
 	}
 	if len(missing) == 0 && len(unexpected) == 0 {
@@ -171,12 +179,63 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 	return errors.Join(errs...)
 }
 
-func indexDatapoints(dps []datapointAssertion) map[string]datapointAssertion {
-	out := make(map[string]datapointAssertion, len(dps))
-	for _, dp := range dps {
-		out[canonKey(dp.Attributes)] = dp
+func findMatchingDatapoint(expected datapointAssertion, actual []datapointAssertion, matched []bool) int {
+	for i, adp := range actual {
+		if matched[i] {
+			continue
+		}
+		if compareAttributes(expected.Attributes, adp.Attributes) == nil {
+			return i
+		}
 	}
-	return out
+	return -1
+}
+
+func compareAttributes(expected, actual map[string]any) error {
+	var errs []error
+	expectedKeys := map[string]struct{}{}
+	for rawKey, expectedValue := range expected {
+		key, operator := splitAttributeOperator(rawKey)
+		expectedKeys[key] = struct{}{}
+		switch operator {
+		case "":
+			actualValue, ok := actual[key]
+			if !ok {
+				errs = append(errs, fmt.Errorf("missing attribute %q", key))
+				continue
+			}
+			if canonKey(expectedValue) != canonKey(actualValue) {
+				errs = append(errs, fmt.Errorf("attribute %q mismatch: expected %v, got %v", key, expectedValue, actualValue))
+			}
+		case "exists":
+			shouldExist, ok := expectedValue.(bool)
+			if !ok {
+				errs = append(errs, fmt.Errorf("attribute %q/exists must be a boolean", key))
+				continue
+			}
+			_, exists := actual[key]
+			if shouldExist && !exists {
+				errs = append(errs, fmt.Errorf("missing attribute %q required by /exists", key))
+			}
+			if !shouldExist && exists {
+				errs = append(errs, fmt.Errorf("attribute %q is present but /exists is false", key))
+			}
+		}
+	}
+	for key := range actual {
+		if _, ok := expectedKeys[key]; !ok {
+			errs = append(errs, fmt.Errorf("unexpected attribute %q", key))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func splitAttributeOperator(key string) (string, string) {
+	const existsSuffix = "/exists"
+	if strings.HasSuffix(key, existsSuffix) {
+		return strings.TrimSuffix(key, existsSuffix), "exists"
+	}
+	return key, ""
 }
 
 func boolPtrEqual(a, b *bool) bool {

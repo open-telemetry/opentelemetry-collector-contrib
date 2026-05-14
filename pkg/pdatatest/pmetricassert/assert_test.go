@@ -70,6 +70,50 @@ func TestAssertMetrics_DetectsUnexpectedDatapoint(t *testing.T) {
 	require.Contains(t, err.Error(), "unexpected datapoint")
 }
 
+func TestAssertMetrics_AttributeExistsMatcher(t *testing.T) {
+	m := buildSampleMetrics()
+	rm := m.ResourceMetrics().At(0)
+	rm.Resource().Attributes().PutStr("service.instance.id", "generated-1")
+	dps := rm.ScopeMetrics().At(0).Metrics().At(1).Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dps.At(i).Attributes().PutStr("request.id", "request-1")
+	}
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.instance.id/exists: true
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                    request.id/exists: true
+                - attributes:
+                    method: POST
+                    request.id/exists: true
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+
+	rm.Resource().Attributes().PutStr("service.instance.id", "generated-2")
+	dps.At(0).Attributes().PutStr("request.id", "request-2")
+	require.NoError(t, AssertMetrics(path, m))
+}
+
 func TestAssertMetrics_SingleEmptyDatapointShorthand(t *testing.T) {
 	// A YAML snippet that omits `datapoints:` entirely must match a metric
 	// with exactly one datapoint that has no attributes.
