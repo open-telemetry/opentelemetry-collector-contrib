@@ -121,6 +121,7 @@ components:
         - remotetap
         - resource
         - resourcedetection
+        - schema
         - span
         - spanpruning
         - sumologic

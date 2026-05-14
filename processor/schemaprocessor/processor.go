@@ -7,13 +7,17 @@ import (
 	"cmp"
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
@@ -25,14 +29,26 @@ type schemaProcessor struct {
 
 	log *zap.Logger
 
-	manager          translation.Manager
-	telemetryBuilder *metadata.TelemetryBuilder
+	manager           translation.Manager
+	telemetryBuilder  *metadata.TelemetryBuilder
+	migrationFromURLs map[string]string // target schema URL → migration from URL (for metrics)
 }
 
 func newSchemaProcessor(_ context.Context, conf component.Config, set processor.Settings) (*schemaProcessor, error) {
 	cfg, ok := conf.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration provided")
+	}
+
+	migrationMap := make(map[string]*translation.Version)
+	migrationFromURLs := make(map[string]string)
+	for _, entry := range cfg.Migration {
+		_, fromVersion, err := translation.GetFamilyAndVersion(entry.From)
+		if err != nil {
+			return nil, fmt.Errorf("migration.from: %w", err)
+		}
+		migrationMap[entry.Target] = fromVersion
+		migrationFromURLs[entry.Target] = entry.From
 	}
 
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
@@ -46,23 +62,35 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 		cfg.CacheCooldown,
 		cfg.CacheRetryLimit,
 		telemetryBuilder,
+		migrationMap,
 	)
 	if err != nil {
 		return nil, err
 	}
 	return &schemaProcessor{
-		config:           cfg,
-		telemetry:        set.TelemetrySettings,
-		log:              set.Logger,
-		manager:          m,
-		telemetryBuilder: telemetryBuilder,
+		config:            cfg,
+		telemetry:         set.TelemetrySettings,
+		log:               set.Logger,
+		manager:           m,
+		telemetryBuilder:  telemetryBuilder,
+		migrationFromURLs: migrationFromURLs,
 	}, nil
+}
+
+func (t schemaProcessor) recordTranslation(ctx context.Context, fromSchemaURL, toSchemaURL string) {
+	attrs := []attribute.KeyValue{
+		attribute.String("from_schema_url", fromSchemaURL),
+		attribute.String("to_schema_url", toSchemaURL),
+	}
+	if migrationFrom, ok := t.migrationFromURLs[toSchemaURL]; ok {
+		attrs = append(attrs, attribute.String("migration_from_schema_url", migrationFrom))
+	}
+	t.telemetryBuilder.ProcessorSchemaTranslated.Add(ctx, 1, metric.WithAttributes(attrs...))
 }
 
 func (t schemaProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	var skipped, failed int64
-	for rt := 0; rt < ld.ResourceLogs().Len(); rt++ {
-		rLogs := ld.ResourceLogs().At(rt)
+	for _, rLogs := range ld.ResourceLogs().All() {
 		resourceSchemaURL := rLogs.SchemaUrl()
 		if resourceSchemaURL != "" {
 			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
@@ -78,9 +106,9 @@ func (t schemaProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 				t.telemetryBuilder.ProcessorSchemaResourceFailed.Add(ctx, 1)
 				return ld, err
 			}
+			t.recordTranslation(ctx, resourceSchemaURL, tr.TargetSchemaURL())
 		}
-		for ss := 0; ss < rLogs.ScopeLogs().Len(); ss++ {
-			logs := rLogs.ScopeLogs().At(ss)
+		for _, logs := range rLogs.ScopeLogs().All() {
 			schemaURL := cmp.Or(logs.SchemaUrl(), resourceSchemaURL)
 			if schemaURL == "" {
 				skipped++
@@ -110,8 +138,7 @@ func (t schemaProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 
 func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	var skipped, failed int64
-	for mt := 0; mt < md.ResourceMetrics().Len(); mt++ {
-		rMetric := md.ResourceMetrics().At(mt)
+	for _, rMetric := range md.ResourceMetrics().All() {
 		resourceSchemaURL := rMetric.SchemaUrl()
 		if resourceSchemaURL != "" {
 			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
@@ -127,9 +154,9 @@ func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 				t.telemetryBuilder.ProcessorSchemaResourceFailed.Add(ctx, 1)
 				return md, err
 			}
+			t.recordTranslation(ctx, resourceSchemaURL, tr.TargetSchemaURL())
 		}
-		for sm := 0; sm < rMetric.ScopeMetrics().Len(); sm++ {
-			metric := rMetric.ScopeMetrics().At(sm)
+		for _, metric := range rMetric.ScopeMetrics().All() {
 			schemaURL := cmp.Or(metric.SchemaUrl(), resourceSchemaURL)
 			if schemaURL == "" {
 				skipped++
@@ -159,8 +186,7 @@ func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 
 func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	var skipped, failed int64
-	for rt := 0; rt < td.ResourceSpans().Len(); rt++ {
-		rTrace := td.ResourceSpans().At(rt)
+	for _, rTrace := range td.ResourceSpans().All() {
 		resourceSchemaURL := rTrace.SchemaUrl()
 		if resourceSchemaURL != "" {
 			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
@@ -176,9 +202,9 @@ func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 				t.telemetryBuilder.ProcessorSchemaResourceFailed.Add(ctx, 1)
 				return td, err
 			}
+			t.recordTranslation(ctx, resourceSchemaURL, tr.TargetSchemaURL())
 		}
-		for ss := 0; ss < rTrace.ScopeSpans().Len(); ss++ {
-			span := rTrace.ScopeSpans().At(ss)
+		for _, span := range rTrace.ScopeSpans().All() {
 			schemaURL := cmp.Or(span.SchemaUrl(), resourceSchemaURL)
 			if schemaURL == "" {
 				skipped++
@@ -208,20 +234,26 @@ func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 
 // start will add HTTP provider to the manager and prefetch schemas
 func (t *schemaProcessor) start(ctx context.Context, host component.Host) error {
+	for _, entry := range t.config.Migration {
+		t.log.Warn("migration is enabled: attribute renames will preserve original attributes alongside renamed ones; this is a temporary migration aid",
+			zap.String("target", entry.Target), zap.String("from", entry.From))
+	}
 	client, err := t.config.ToClient(ctx, host.GetExtensions(), t.telemetry)
 	if err != nil {
 		return err
 	}
 	t.manager.AddProvider(translation.NewHTTPProvider(client))
 
-	go func(ctx context.Context) {
-		for _, schemaURL := range t.config.Prefetch {
-			t.log.Info("prefetching schema", zap.String("url", schemaURL))
+	wg := new(errgroup.Group)
+	for _, schemaURL := range t.config.Prefetch {
+		t.log.Info("prefetching schema", zap.String("url", schemaURL))
+		wg.Go(func() error {
 			if _, err := t.manager.RequestTranslation(ctx, schemaURL); err != nil {
 				t.log.Warn("failed to prefetch schema", zap.String("url", schemaURL), zap.Error(err))
 			}
-		}
-	}(ctx)
+			return nil
+		})
+	}
 
-	return nil
+	return wg.Wait()
 }
