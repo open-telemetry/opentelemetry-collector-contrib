@@ -24,6 +24,7 @@ type endpointFailureReason string
 const (
 	endpointFailureTimeout           endpointFailureReason = "timeout"
 	endpointFailureUnavailable       endpointFailureReason = "unavailable"
+	endpointFailureResourceExhausted endpointFailureReason = "resource_exhausted"
 	endpointFailureConnectionRefused endpointFailureReason = "connection_refused"
 	endpointFailureConnectionReset   endpointFailureReason = "connection_reset"
 	endpointFailureNoRoute           endpointFailureReason = "no_route"
@@ -524,6 +525,8 @@ func classifyEndpointFailure(err error) (endpointFailureReason, bool) {
 		return endpointFailureTimeout, true
 	case codes.Unavailable:
 		return endpointFailureUnavailable, true
+	case codes.ResourceExhausted:
+		return endpointFailureResourceExhausted, true
 	}
 
 	var netErr net.Error

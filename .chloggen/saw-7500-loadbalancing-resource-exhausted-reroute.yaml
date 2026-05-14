@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: exporter/loadbalancing
+note: Reroute backend `ResourceExhausted` overload responses to another eligible endpoint when endpoint health rerouting is enabled.
+issues: [7500]
+subtext: |-
+  Permanent bad-data errors remain non-rerouteable.

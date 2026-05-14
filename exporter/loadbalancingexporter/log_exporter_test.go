@@ -869,6 +869,84 @@ func TestConsumeLogsReroutesEndpointLocalFailure(t *testing.T) {
 	}, metricdatatest.IgnoreTimestamp())
 }
 
+func TestConsumeLogsReroutesBackendResourceExhausted(t *testing.T) {
+	ts, tb, telemetry := getTelemetryAssetsWithReader(t)
+	cfg := simpleConfig()
+	enableEndpointHealth(cfg)
+
+	calls := map[string]int{}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(context.Context, plog.Logs) error {
+			calls[endpoint]++
+			if endpoint == "endpoint-1:4317" {
+				return status.Error(codes.ResourceExhausted, "backend overloaded")
+			}
+			return nil
+		}), nil
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+	lb.endpointHealth.reconcile([]string{"endpoint-1:4317", "endpoint-2:4317"})
+	lb.ring = newHashRing([]string{"endpoint-1:4317", "endpoint-2:4317"})
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1:4317", "endpoint-2:4317"})
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NoError(t, err)
+	p.loadBalancer = lb
+	p.started.Store(true)
+
+	traceIDForEndpoint1 := findTraceIDForEndpoint(t, lb.ring, "endpoint-1:4317")
+	err = p.ConsumeLogs(t.Context(), simpleLogWithID(traceIDForEndpoint1))
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, calls["endpoint-1:4317"])
+	assert.Equal(t, 1, calls["endpoint-2:4317"])
+	assert.NotContains(t, lb.exporters, "endpoint-1:4317")
+	metadatatest.AssertEqualLoadbalancerBackendRerouteTotal(t, telemetry, []metricdata.DataPoint[int64]{
+		{
+			Attributes: attribute.NewSet(attribute.String("signal", "logs"), attribute.String("result", "success"), attribute.String("reason", "resource_exhausted")),
+			Value:      1,
+		},
+	}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestConsumeLogsDoesNotReroutePermanentFailure(t *testing.T) {
+	ts, tb, telemetry := getTelemetryAssetsWithReader(t)
+	cfg := simpleConfig()
+	enableEndpointHealth(cfg)
+
+	calls := map[string]int{}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(context.Context, plog.Logs) error {
+			calls[endpoint]++
+			if endpoint == "endpoint-1:4317" {
+				return consumererror.NewPermanent(errors.New("bad data"))
+			}
+			return nil
+		}), nil
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+	lb.endpointHealth.reconcile([]string{"endpoint-1:4317", "endpoint-2:4317"})
+	lb.ring = newHashRing([]string{"endpoint-1:4317", "endpoint-2:4317"})
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1:4317", "endpoint-2:4317"})
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NoError(t, err)
+	p.loadBalancer = lb
+	p.started.Store(true)
+
+	traceIDForEndpoint1 := findTraceIDForEndpoint(t, lb.ring, "endpoint-1:4317")
+	err = p.ConsumeLogs(t.Context(), simpleLogWithID(traceIDForEndpoint1))
+	require.Error(t, err)
+
+	assert.Equal(t, 1, calls["endpoint-1:4317"])
+	assert.Zero(t, calls["endpoint-2:4317"])
+	assert.Contains(t, lb.exporters, "endpoint-1:4317")
+	_, metricErr := telemetry.GetMetric("otelcol_loadbalancer_backend_reroute_total")
+	require.Error(t, metricErr)
+}
+
 func TestConsumeLogsReroutePreservesPayloadAfterExporterMutation(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := simpleConfig()

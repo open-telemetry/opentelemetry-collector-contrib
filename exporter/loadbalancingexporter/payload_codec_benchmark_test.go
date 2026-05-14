@@ -150,7 +150,6 @@ func newInitializedBenchmarkQueuePayloadCodec(
 	}
 	encodedBytes := len(encoded)
 	queuePayloadCodecBenchmarkSink = nil
-	encoded = nil
 
 	debug.FreeOSMemory()
 	var after runtime.MemStats

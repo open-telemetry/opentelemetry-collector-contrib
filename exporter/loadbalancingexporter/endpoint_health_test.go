@@ -378,6 +378,12 @@ func TestEndpointFailureClassification(t *testing.T) {
 			ok:     true,
 		},
 		{
+			name:   "grpc resource exhausted",
+			err:    status.Error(codes.ResourceExhausted, "backend overloaded"),
+			reason: endpointFailureReason("resource_exhausted"),
+			ok:     true,
+		},
+		{
 			name:   "grpc unavailable dns lookup",
 			err:    status.Error(codes.Unavailable, "transport: error while dialing: dial tcp: lookup backend.default.svc: no such host"),
 			reason: endpointFailureDNS,
