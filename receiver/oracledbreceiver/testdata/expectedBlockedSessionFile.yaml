@@ -109,12 +109,12 @@ resourceLogs:
               - key: oracledb.wait.duration
                 value:
                   intValue: "15"
-              - key: oracledb.lock.type
-                value:
-                  stringValue: TX
               - key: oracledb.lock.mode
                 value:
                   stringValue: EXCLUSIVE
+              - key: oracledb.lock.type
+                value:
+                  stringValue: TX
               - key: oracledb.blocked_object
                 value:
                   stringValue: APP_USER.ORDERS

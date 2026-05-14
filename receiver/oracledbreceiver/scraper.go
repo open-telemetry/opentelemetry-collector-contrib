@@ -900,7 +900,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], objID, row[objectName], row[objectType],
 			row[osUser], queryDuration,
 			row[blockingSession], row[finalBlockingSession], row[blockingSessionStatus], row[blockingStartTime], secondsInWaitVal,
-			row[lockType], row[lockMode], row[blockedObject])
+			row[lockMode], row[lockType], row[blockedObject])
 	}
 
 	emittedLogs := s.lb.Emit(metadata.WithLogsResource(rb.Emit()))
