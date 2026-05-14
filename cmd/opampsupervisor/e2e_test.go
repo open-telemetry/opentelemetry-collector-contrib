@@ -3047,3 +3047,47 @@ func enableExtensionsFeatureGate(t *testing.T) {
 		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.OpampsupervisorExtensionsFeatureGate.ID(), false))
 	})
 }
+
+// supervisorBinarySizeLimitBytes is the size budget for the supervisor binary,
+// in bytes. 25 MiB.
+const supervisorBinarySizeLimitBytes = 25 * 1024 * 1024
+
+// TestSupervisorBinarySize guards against unintended growth of the supervisor
+// binary. It builds the supervisor with the same flags used for release
+// artifacts into a temp dir, then asserts the resulting file is no larger than
+// supervisorBinarySizeLimitBytes.
+//
+// We intentionally do NOT measure the binary produced by `make opampsupervisor`:
+// that target is unstripped on purpose so contributors can attach a debugger to
+// local builds. The release pipeline applies `-s -w` separately, and that is the
+// artifact this budget governs — so the number reported here will not match
+// `ls -la bin/opampsupervisor_*` after a default `make` build.
+//
+// Reference for the build process of the supervisor during releases:
+// https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/cmd/opampsupervisor/.goreleaser.yaml
+func TestSupervisorBinarySize(t *testing.T) {
+	binName := "opampsupervisor"
+	if runtime.GOOS == "windows" {
+		binName += ".exe"
+	}
+	binPath := filepath.Join(t.TempDir(), binName)
+
+	cmd := exec.CommandContext(t.Context(), "go", "build",
+		"-trimpath",
+		"-ldflags=-s -w -X github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal.version=v1.0.0",
+		"-tags=",
+		"-o", binPath,
+		".",
+	)
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "go build failed: %s", out)
+
+	info, err := os.Stat(binPath)
+	require.NoError(t, err)
+
+	require.LessOrEqualf(t, info.Size(), int64(supervisorBinarySizeLimitBytes),
+		"supervisor binary size %d bytes (%.2f MiB) exceeds limit %d bytes (%d MiB)",
+		info.Size(), float64(info.Size())/(1024*1024),
+		supervisorBinarySizeLimitBytes, supervisorBinarySizeLimitBytes/(1024*1024))
+}
