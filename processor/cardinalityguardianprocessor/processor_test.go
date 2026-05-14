@@ -244,19 +244,15 @@ func TestConcurrency_Sharded(t *testing.T) {
 	)
 
 	var wg sync.WaitGroup
-	wg.Add(goroutines)
-
 	for id := range goroutines {
-		// capture loop variable
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for i := range iterations {
 				// Each goroutine produces a unique value space to exercise
 				// concurrent tracker creation and the double-check lock path.
 				val := fmt.Sprintf("value_%d_%d", id, i)
 				p.shouldDrop("concurrent_metric", "key", val)
 			}
-		}()
+		})
 	}
 
 	wg.Wait()

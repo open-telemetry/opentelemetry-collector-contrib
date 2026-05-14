@@ -839,8 +839,9 @@ func (p *cardinalityProcessor) Start(ctx context.Context, _ component.Host) erro
 		p.logger.Info("Starting cardinality rotation ticker",
 			zap.Int("interval_seconds", p.config.EpochDurationSeconds))
 
-		p.wg.Add(1)
-		go p.rotationLoop(childCtx)
+		p.wg.Go(func() {
+			p.rotationLoop(childCtx)
+		})
 	})
 
 	return nil
@@ -849,7 +850,6 @@ func (p *cardinalityProcessor) Start(ctx context.Context, _ component.Host) erro
 // rotationLoop runs the background epoch-rotation ticker. It runs until
 // the provided context is canceled.
 func (p *cardinalityProcessor) rotationLoop(ctx context.Context) {
-	defer p.wg.Done()
 	ticker := time.NewTicker(time.Duration(p.config.EpochDurationSeconds) * time.Second)
 	defer ticker.Stop()
 
