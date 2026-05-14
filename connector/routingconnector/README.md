@@ -34,9 +34,9 @@ If you are not already familiar with connectors, you may find it helpful to firs
 The following settings are available:
 
 - `table (required)`: the routing table for this connector.
-- `table.condition`: the routing condition provided as the [OTTL] condition. Required if `table.statement` is not provided. It is a best practicte to use context-qualified paths (e.g., `resource.attributes["key"]`, `span.attributes["key"]`) to automatically infer the context vs. relying on conference inference (see [Context Inference](#context-inference)).
-- `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided. May not be used for `request` context. Generally `condition` is preferred since it is more terse.
-- `table.context (optional)`: the [OTTL Context] in which the condition/statement will be evaluated. Only `resource`, `span`, `metric`, `datapoint`, `log`, and `request` (now deprecated) are supported. In most cases, you should omit this field and use context-qualified paths instead, which allows the context to be inferred automatically. If specified, takes precedence over inference. Defaults to `resource` when neither explicit context nor qualified paths are provided.
+- `table.condition`: the routing condition provided as the [OTTL] condition. Required if `table.statement` is not provided. Use context-qualified paths (e.g., `resource.attributes["key"]`, `span.attributes["key"]`) to automatically infer the context (see [Context Inference](#context-inference)).
+- `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided. Generally `condition` is preferred since it is more terse.
+- `table.context (optional)`: the [OTTL Context] in which the condition/statement will be evaluated. Supported values: `resource`, `span`, `metric`, `datapoint`, `log`. **Deprecated:** `request` — use `otelcol.client.metadata` or `otelcol.grpc.metadata` paths instead (see [Limitations](#limitations)). In most cases this field should be omitted; the context is inferred automatically from context-qualified paths. If specified, it takes precedence over inference.
 - `table.action (optional, default: move)`: determines what happens to the data when the routing condition is met. Valid values are `move` and `copy`.
   - `move`: Matched data is moved to the target pipeline(s) and removed from subsequent route evaluation. This is the default behavior.
   - `copy`: Matched data is copied to the target pipeline(s) but remains available for evaluation by subsequent routes. This allows the same data to be routed to multiple pipelines.
@@ -75,7 +75,7 @@ The `otelcol.client.metadata` and `otelcol.grpc.metadata` paths provide access t
 
 ### Limitations
 
-- **Deprecated:** The `request` context is deprecated. Use `otelcol.client.metadata["key"][0]` (HTTP/client metadata) or `otelcol.grpc.metadata["key"][0]` (gRPC metadata) instead. These OTTL paths are supported in all signal contexts and work with context inference. A warning will be logged when the `request` context is used. The `request` context requires use of the `condition` setting, and relies on a very limited grammar. Conditions must be in the form of `request["key"] == "value"` or `request["key"] != "value"`.
+- **Deprecated:** The `request` context is deprecated. Use `otelcol.client.metadata["key"]` (HTTP/client metadata) or `otelcol.grpc.metadata["key"]` (gRPC metadata) paths instead. These are supported in all signal contexts. A warning is logged when the `request` context is used. The `request` context only supports the `condition` field with a very limited grammar: `request["key"] == "value"` or `request["key"] != "value"`.
 - When using context inference without an explicit `context` field, the inferred context must be compatible with the pipeline signal type (e.g., `span` context can only be used in traces pipelines).
 
 ### Supported [OTTL] functions
