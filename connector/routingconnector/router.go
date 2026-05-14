@@ -84,11 +84,6 @@ type routingItem[C any] struct {
 }
 
 func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.TelemetrySettings) error {
-	// Create all parsers upfront. This follows the pattern used by other OTTL-using components
-	// like the transform processor. The OTTL context inferrer needs access to all context
-	// parsers to properly determine which context to use based on paths, functions, and enums.
-	// The one-time initialization cost is minimal compared to the complexity and fragility
-	// of trying to pre-determine which contexts are needed via statement inspection.
 	otelcolParser, err := ottlotelcol.NewParser(
 		standardFunctions[*ottlotelcol.TransformContext](),
 		settings,
@@ -176,12 +171,6 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 }
 
 // singleStatementConverter extracts a single parsed statement from the parser output.
-// Unlike the transform processor which works with statement sequences, the routing connector
-// evaluates one statement per route to determine where data should be routed.
-//
-// The length check is technically redundant since registerRouteConsumers always passes exactly
-// one statement to the parser, and the OTTL parser produces one parsed statement per input.
-// However, it serves as defense-in-depth against future bugs in either this code or the OTTL library.
 func singleStatementConverter[K any]() ottl.ParsedStatementsConverter[K, any] {
 	return func(_ *ottl.ParserCollection[any], _ ottl.StatementsGetter, parsedStatements []*ottl.Statement[K]) (any, error) {
 		if len(parsedStatements) != 1 {
