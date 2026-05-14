@@ -10,7 +10,7 @@ component: connector/signal_to_metrics
 note: Support OTTL context path prefixes in conditions and value expressions.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [48357]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
