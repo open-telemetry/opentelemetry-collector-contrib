@@ -23,6 +23,8 @@ const (
 	// When present on a signal's attributes, the exporter skips bulk-emission
 	// of the resulting document while leaving the signal available to any
 	// upstream connector/processor that may have consumed it.
+	//
+	// Experimental: This hint is experimental and may change or be removed in future releases.
 	HintNoIndex MappingHint = "_noindex"
 )
 
