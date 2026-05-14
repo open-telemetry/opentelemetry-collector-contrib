@@ -418,6 +418,20 @@ Container cpu utilization as a ratio of the container's requests
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
+### k8s.container.ephemeral_storage.usage
+
+Ephemeral storage used by the container.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| fs.type | The type of filesystem component. | Str: ``rootfs``, ``logs`` | Recommended | - |
+
 ### k8s.container.memory.node.utilization
 
 Container memory utilization as a ratio of the node's capacity
