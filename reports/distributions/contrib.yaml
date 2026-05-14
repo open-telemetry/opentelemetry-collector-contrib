@@ -235,8 +235,8 @@ components:
         - wavefront
         - webhookevent
         - windows_event_log
+        - windows_service
         - windowsperfcounters
-        - windowsservice
         - yang_grpc
         - zipkin
         - zookeeper
