@@ -278,7 +278,7 @@ func (ba *basicAuthClient) Start(ctx context.Context, _ component.Host) error {
 func (ba *basicAuthClient) Shutdown(_ context.Context) error {
 	var errs []error
 	if ba.awsSecretsManager != nil {
-		errs = append(errs, ba.awsSecretsManager.shutdown())
+		ba.awsSecretsManager.shutdown()
 	}
 	if ba.usernameResolver != nil {
 		errs = append(errs, ba.usernameResolver.Shutdown())

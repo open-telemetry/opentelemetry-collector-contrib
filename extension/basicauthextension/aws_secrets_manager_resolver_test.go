@@ -61,8 +61,8 @@ func TestAWSSecretsManagerResolver_InitialFetch(t *testing.T) {
 	r := newTestResolver(t, nil, nil)
 	r.client = mock
 
-	require.NoError(t, r.startWithClient(context.Background()))
-	defer r.shutdown() //nolint:errcheck
+	require.NoError(t, r.startWithClient(t.Context()))
+	defer r.shutdown()
 
 	assert.Equal(t, "alice", r.Username())
 	assert.Equal(t, "s3cr3t", r.Password())
@@ -78,14 +78,14 @@ func TestAWSSecretsManagerResolver_CredentialsAreAtomicPair(t *testing.T) {
 	}, nil)
 	r.client = mock
 
-	require.NoError(t, r.startWithClient(context.Background()))
-	defer r.shutdown() //nolint:errcheck
+	require.NoError(t, r.startWithClient(t.Context()))
+	defer r.shutdown()
 
 	// Read many times while rotation is in progress; should never see a split pair.
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		for i := 0; i < 500; i++ {
+		for range 500 {
 			c := r.creds.Load()
 			if c == nil {
 				continue
@@ -114,8 +114,8 @@ func TestAWSSecretsManagerResolver_RotationDetected(t *testing.T) {
 	}, onChange)
 	r.client = mock
 
-	require.NoError(t, r.startWithClient(context.Background()))
-	defer r.shutdown() //nolint:errcheck
+	require.NoError(t, r.startWithClient(t.Context()))
+	defer r.shutdown()
 
 	// onChange fired once on initial fetch
 	assert.Equal(t, int32(1), onChangeCalled.Load())
@@ -140,8 +140,8 @@ func TestAWSSecretsManagerResolver_NoOnChangeWhenUnchanged(t *testing.T) {
 	}, onChange)
 	r.client = mock
 
-	require.NoError(t, r.startWithClient(context.Background()))
-	defer r.shutdown() //nolint:errcheck
+	require.NoError(t, r.startWithClient(t.Context()))
+	defer r.shutdown()
 
 	initialCalls := onChangeCalled.Load()
 
@@ -162,8 +162,8 @@ func TestAWSSecretsManagerResolver_PollErrorKeepsLastValue(t *testing.T) {
 	}, nil)
 	r.client = mock
 
-	require.NoError(t, r.startWithClient(context.Background()))
-	defer r.shutdown() //nolint:errcheck
+	require.NoError(t, r.startWithClient(t.Context()))
+	defer r.shutdown()
 
 	countAfterStart := mock.callCount.Load()
 	mock.setError(errors.New("network error"))
@@ -184,7 +184,7 @@ func TestAWSSecretsManagerResolver_InitialFetchError(t *testing.T) {
 	r := newTestResolver(t, nil, nil)
 	r.client = mock
 
-	err := r.startWithClient(context.Background())
+	err := r.startWithClient(t.Context())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "initial fetch from AWS Secrets Manager failed")
 }
@@ -194,10 +194,10 @@ func TestAWSSecretsManagerResolver_AlreadyStarted(t *testing.T) {
 	r := newTestResolver(t, nil, nil)
 	r.client = mock
 
-	require.NoError(t, r.startWithClient(context.Background()))
-	defer r.shutdown() //nolint:errcheck
+	require.NoError(t, r.startWithClient(t.Context()))
+	defer r.shutdown()
 
-	err := r.startWithClient(context.Background())
+	err := r.startWithClient(t.Context())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "already started")
 }
@@ -210,7 +210,7 @@ func TestAWSSecretsManagerResolver_MissingKey(t *testing.T) {
 	r := newTestResolver(t, nil, nil)
 	r.client = mock
 
-	err := r.startWithClient(context.Background())
+	err := r.startWithClient(t.Context())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `key "username" not found`)
 }
@@ -227,8 +227,8 @@ func TestAWSSecretsManagerResolver_CustomKeys(t *testing.T) {
 	}, nil)
 	r.client = mock
 
-	require.NoError(t, r.startWithClient(context.Background()))
-	defer r.shutdown() //nolint:errcheck
+	require.NoError(t, r.startWithClient(t.Context()))
+	defer r.shutdown()
 
 	assert.Equal(t, "alice", r.Username())
 	assert.Equal(t, "s3cr3t", r.Password())
@@ -243,8 +243,8 @@ func TestAWSSecretsManagerResolver_ShutdownStopsPolling(t *testing.T) {
 	}, nil)
 	r.client = mock
 
-	require.NoError(t, r.startWithClient(context.Background()))
-	require.NoError(t, r.shutdown())
+	require.NoError(t, r.startWithClient(t.Context()))
+	r.shutdown()
 
 	countAfterShutdown := mock.callCount.Load()
 	time.Sleep(30 * time.Millisecond)

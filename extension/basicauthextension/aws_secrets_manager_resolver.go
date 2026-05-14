@@ -76,13 +76,12 @@ func (r *awsSecretsManagerResolver) startWithClient(ctx context.Context) error {
 	return nil
 }
 
-func (r *awsSecretsManagerResolver) shutdown() error {
+func (r *awsSecretsManagerResolver) shutdown() {
 	if r.shutdownCh != nil {
 		close(r.shutdownCh)
 		<-r.doneCh
 		r.shutdownCh = nil
 	}
-	return nil
 }
 
 func (r *awsSecretsManagerResolver) Username() string {
