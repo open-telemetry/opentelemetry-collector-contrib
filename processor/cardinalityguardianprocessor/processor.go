@@ -269,11 +269,6 @@ type cardinalityProcessor struct {
 	// per Go best practices.
 	cancel context.CancelFunc
 
-	// startOnce ensures the background ticker goroutine is launched exactly once
-	// even if Start() is called multiple times (the Collector framework
-	// guarantees single-call semantics, but the guard is cheap insurance).
-	startOnce sync.Once
-
 	// enforcementMode mirrors Config.ResolvedEnforcementMode() and is captured
 	// directly on the struct to avoid an extra pointer dereference + method call
 	// into the Config on every data point.
@@ -827,22 +822,20 @@ func sortOffenders(s []offenderEntry) {
 }
 
 // Start is called by the OTel Collector host when the pipeline is starting.
-// It launches the background epoch-rotation goroutine exactly once (guarded by
-// startOnce) and returns immediately. The goroutine exits when the internal
-// cancel function is called, which happens in Shutdown().
+// It launches the background epoch-rotation goroutine and returns immediately.
+// The goroutine exits when the internal cancel function is called, which
+// happens in Shutdown().
 func (p *cardinalityProcessor) Start(_ context.Context, _ component.Host) error {
-	p.startOnce.Do(func() {
-		// Create a local cancelable context rooted in context.Background()
-		// to ensure it is not affected by the ephemeral startup context.
-		childCtx, cancel := context.WithCancel(context.Background())
-		p.cancel = cancel
+	// Create a local cancelable context rooted in context.Background()
+	// to ensure it is not affected by the ephemeral startup context.
+	childCtx, cancel := context.WithCancel(context.Background())
+	p.cancel = cancel
 
-		p.logger.Info("Starting cardinality rotation ticker",
-			zap.Int("interval_seconds", p.config.EpochDurationSeconds))
+	p.logger.Info("Starting cardinality rotation ticker",
+		zap.Int("interval_seconds", p.config.EpochDurationSeconds))
 
-		p.wg.Go(func() {
-			p.rotationLoop(childCtx)
-		})
+	p.wg.Go(func() {
+		p.rotationLoop(childCtx)
 	})
 
 	return nil
