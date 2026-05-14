@@ -150,11 +150,6 @@ const (
 	EnforcementStripAndReaggregate EnforcementMode = "strip_and_reaggregate"
 )
 
-// overflowSentinel is the value used to replace high-cardinality attribute
-// values when EnforcementOverflowAttribute mode is active. It follows the
-// OTel SDK convention for cardinality overflow handling.
-const overflowSentinel = "otel.cardinality_overflow"
-
 // ResolvedEnforcementMode returns the effective enforcement mode.
 // If EnforcementMode is not explicitly set, it defaults to tag_only.
 func (c *Config) ResolvedEnforcementMode() EnforcementMode {

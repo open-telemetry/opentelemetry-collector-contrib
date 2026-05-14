@@ -41,6 +41,11 @@ const staleSweepEpochs = 2
 //     concurrent goroutines under a uniform metric-name distribution.
 const numShards = 256
 
+// overflowSentinel is the value used to replace high-cardinality attribute
+// values when EnforcementOverflowAttribute mode is active. It follows the
+// OTel SDK convention for cardinality overflow handling.
+const overflowSentinel = "otel.cardinality_overflow"
+
 // mustGetSketch retrieves a fresh HyperLogLog++ sketch.
 // The "14" refers to the precision parameter p=14, which uses
 // 2^14 = 16 384 registers and yields a standard error of ~0.81%. This is
