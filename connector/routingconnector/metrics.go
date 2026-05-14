@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pmetricutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlotelcol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
@@ -74,6 +75,20 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 					md.CopyTo(matched)
 				default:
 					// all metrics are routed
+					md.MoveTo(matched)
+				}
+			}
+		case "otelcol":
+			otx := ottlotelcol.NewTransformContextPtr()
+			defer otx.Close()
+			_, isMatch, err := route.otelcolStatement.Execute(ctx, otx)
+			if err != nil {
+				errs = errors.Join(errs, err)
+			} else if isMatch {
+				switch route.action {
+				case Copy:
+					md.CopyTo(matched)
+				default:
 					md.MoveTo(matched)
 				}
 			}

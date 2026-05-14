@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlotelcol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
@@ -72,6 +73,7 @@ func newRouter[C any](
 type routingItem[C any] struct {
 	consumer           C
 	requestCondition   *requestCondition
+	otelcolStatement   *ottl.Statement[*ottlotelcol.TransformContext]
 	resourceStatement  *ottl.Statement[*ottlresource.TransformContext]
 	spanStatement      *ottl.Statement[*ottlspan.TransformContext]
 	metricStatement    *ottl.Statement[*ottlmetric.TransformContext]
@@ -87,6 +89,14 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 	// parsers to properly determine which context to use based on paths, functions, and enums.
 	// The one-time initialization cost is minimal compared to the complexity and fragility
 	// of trying to pre-determine which contexts are needed via statement inspection.
+	otelcolParser, err := ottlotelcol.NewParser(
+		standardFunctions[*ottlotelcol.TransformContext](),
+		settings,
+		ottlotelcol.EnablePathContextNames(),
+	)
+	if err != nil {
+		return err
+	}
 	resourceParser, err := ottlresource.NewParser(
 		standardFunctions[*ottlresource.TransformContext](),
 		settings,
@@ -131,6 +141,11 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 	r.parserCollection, err = ottl.NewParserCollection(
 		settings,
 		ottl.EnableParserCollectionModifiedPathsLogging[any](true),
+		ottl.WithParserCollectionContext(
+			ottlotelcol.ContextName,
+			&otelcolParser,
+			ottl.WithStatementConverter(singleStatementConverter[*ottlotelcol.TransformContext]()),
+		),
 		ottl.WithParserCollectionContext(
 			ottlresource.ContextName,
 			&resourceParser,
@@ -263,6 +278,9 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 
 			// singleStatementConverter returns the single parsed *ottl.Statement[K]
 			switch s := result.(type) {
+			case *ottl.Statement[*ottlotelcol.TransformContext]:
+				route.otelcolStatement = s
+				route.statementContext = "otelcol"
 			case *ottl.Statement[*ottlresource.TransformContext]:
 				route.resourceStatement = s
 				route.statementContext = "resource"
