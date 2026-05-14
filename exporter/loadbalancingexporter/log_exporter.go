@@ -91,7 +91,7 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 				logs := plog.NewLogs()
 				failedLogs = &logs
 			}
-			batch.ResourceLogs().MoveAndAppendTo(failedLogs.ResourceLogs())
+			failedLogsFromError(err, batch).ResourceLogs().MoveAndAppendTo(failedLogs.ResourceLogs())
 			errs = multierr.Append(errs, err)
 		}
 	}

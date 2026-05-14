@@ -1060,6 +1060,112 @@ func TestRetryPartialFailuresTraces(t *testing.T) {
 	}
 }
 
+func TestRetryPartialFailuresWithinBackendTraces(t *testing.T) {
+	ts, _ := getTelemetryAssets(t)
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", "service-a")
+	ss := rs.ScopeSpans().AppendEmpty()
+	span1 := ss.Spans().AppendEmpty()
+	span1.SetName("span-success")
+	span1.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
+	span2 := ss.Spans().AppendEmpty()
+	span2.SetName("span-failed")
+	span2.SetTraceID(span1.TraceID())
+
+	endpointCalls := atomic.Int32{}
+
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		if endpoint != "endpoint-1:4317" {
+			return nil, fmt.Errorf("unexpected endpoint: %s", endpoint)
+		}
+
+		return newMockTracesExporter(func(_ context.Context, td ptrace.Traces) error {
+			switch endpointCalls.Add(1) {
+			case 1:
+				require.Equal(t, 2, td.SpanCount())
+
+				failed := ptrace.NewTraces()
+				failedRS := failed.ResourceSpans().AppendEmpty()
+				td.ResourceSpans().At(0).Resource().CopyTo(failedRS.Resource())
+				failedSS := failedRS.ScopeSpans().AppendEmpty()
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().CopyTo(failedSS.Scope())
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).CopyTo(failedSS.Spans().AppendEmpty())
+
+				return consumererror.NewTraces(errors.New("partial failure"), failed)
+			case 2:
+				require.Equal(t, 1, td.SpanCount())
+				require.Equal(t, "span-failed", td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+				return nil
+			default:
+				t.Fatalf("unexpected retry count")
+				return nil
+			}
+		}), nil
+	}
+
+	config := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
+		},
+		RoutingKey: svcRoutingStr,
+		BackOffConfig: configretry.BackOffConfig{
+			Enabled:         true,
+			InitialInterval: 10 * time.Millisecond,
+			MaxInterval:     20 * time.Millisecond,
+			MaxElapsedTime:  200 * time.Millisecond,
+		},
+	}
+
+	parentParams := exportertest.NewNopSettings(metadata.Type)
+	parentParams.TelemetrySettings = ts.TelemetrySettings
+
+	exp, err := newTracesExporter(parentParams, config)
+	require.NoError(t, err)
+
+	exp.loadBalancer.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return []string{"endpoint-1"}, nil
+		},
+	}
+
+	exp.loadBalancer.componentFactory = func(ctx context.Context, endpoint string) (component.Component, error) {
+		childCfg := buildExporterConfig(config, endpoint)
+		childParams := buildExporterSettings(otlpexporter.NewFactory().Type(), parentParams, endpoint)
+		childExp, err2 := componentFactory(ctx, endpoint)
+		if err2 != nil {
+			return nil, err2
+		}
+		return exporterhelper.NewTraces(ctx, childParams, &childCfg, childExp.(exporter.Traces).ConsumeTraces)
+	}
+
+	wrappedExporter, err := exporterhelper.NewTraces(
+		t.Context(),
+		parentParams,
+		config,
+		exp.ConsumeTraces,
+		exporterhelper.WithStart(exp.Start),
+		exporterhelper.WithShutdown(exp.Shutdown),
+		exporterhelper.WithCapabilities(exp.Capabilities()),
+		exporterhelper.WithRetry(config.BackOffConfig),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, wrappedExporter.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, wrappedExporter.Shutdown(t.Context()))
+	}()
+
+	require.Eventually(t, func() bool {
+		return len(exp.loadBalancer.exporters) == 1 && exp.loadBalancer.ring != nil
+	}, time.Second, 10*time.Millisecond)
+
+	require.NoError(t, wrappedExporter.ConsumeTraces(t.Context(), traces))
+	require.Equal(t, int32(2), endpointCalls.Load())
+}
+
 func randomTraces() ptrace.Traces {
 	v1 := uint8(rand.IntN(256))
 	v2 := uint8(rand.IntN(256))

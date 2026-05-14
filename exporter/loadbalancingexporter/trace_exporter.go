@@ -163,7 +163,7 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 				traces := ptrace.NewTraces()
 				failedTraces = &traces
 			}
-			res.td.ResourceSpans().MoveAndAppendTo(failedTraces.ResourceSpans())
+			failedTracesFromError(res.err, res.td).ResourceSpans().MoveAndAppendTo(failedTraces.ResourceSpans())
 			errs = multierr.Append(errs, res.err)
 		}
 	}

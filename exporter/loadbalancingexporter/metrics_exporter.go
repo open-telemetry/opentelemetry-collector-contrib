@@ -182,7 +182,7 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 				metrics := pmetric.NewMetrics()
 				failedMetrics = &metrics
 			}
-			res.mds.ResourceMetrics().MoveAndAppendTo(failedMetrics.ResourceMetrics())
+			failedMetricsFromError(res.err, res.mds).ResourceMetrics().MoveAndAppendTo(failedMetrics.ResourceMetrics())
 			errs = multierr.Append(errs, res.err)
 		}
 	}

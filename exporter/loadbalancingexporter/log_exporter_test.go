@@ -785,3 +785,108 @@ func TestRetryPartialFailuresLogs(t *testing.T) {
 		assert.Equal(t, initialEndpoint2Calls, finalEndpoint2Calls, "endpoint-2 should not be retried (successful data)")
 	}
 }
+
+func TestRetryPartialFailuresWithinBackendLogs(t *testing.T) {
+	ts, _ := getTelemetryAssets(t)
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("service.name", "service-a")
+	sl := rl.ScopeLogs().AppendEmpty()
+	log1 := sl.LogRecords().AppendEmpty()
+	log1.Body().SetStr("log-success")
+	log1.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
+	log2 := sl.LogRecords().AppendEmpty()
+	log2.Body().SetStr("log-failed")
+	log2.SetTraceID(log1.TraceID())
+
+	endpointCalls := atomic.Int32{}
+
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		if endpoint != "endpoint-1:4317" {
+			return nil, fmt.Errorf("unexpected endpoint: %s", endpoint)
+		}
+
+		return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+			switch endpointCalls.Add(1) {
+			case 1:
+				require.Equal(t, 2, ld.LogRecordCount())
+
+				failed := plog.NewLogs()
+				failedRL := failed.ResourceLogs().AppendEmpty()
+				ld.ResourceLogs().At(0).Resource().CopyTo(failedRL.Resource())
+				failedSL := failedRL.ScopeLogs().AppendEmpty()
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).Scope().CopyTo(failedSL.Scope())
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).CopyTo(failedSL.LogRecords().AppendEmpty())
+
+				return consumererror.NewLogs(errors.New("partial failure"), failed)
+			case 2:
+				require.Equal(t, 1, ld.LogRecordCount())
+				require.Equal(t, "log-failed", ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+				return nil
+			default:
+				t.Fatalf("unexpected retry count")
+				return nil
+			}
+		}), nil
+	}
+
+	config := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
+		},
+		BackOffConfig: configretry.BackOffConfig{
+			Enabled:         true,
+			InitialInterval: 10 * time.Millisecond,
+			MaxInterval:     20 * time.Millisecond,
+			MaxElapsedTime:  200 * time.Millisecond,
+		},
+	}
+
+	parentParams := exportertest.NewNopSettings(metadata.Type)
+	parentParams.TelemetrySettings = ts.TelemetrySettings
+
+	exp, err := newLogsExporter(parentParams, config)
+	require.NoError(t, err)
+
+	exp.loadBalancer.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return []string{"endpoint-1"}, nil
+		},
+	}
+
+	exp.loadBalancer.componentFactory = func(ctx context.Context, endpoint string) (component.Component, error) {
+		childCfg := buildExporterConfig(config, endpoint)
+		childParams := buildExporterSettings(otlpexporter.NewFactory().Type(), parentParams, endpoint)
+		childExp, err2 := componentFactory(ctx, endpoint)
+		if err2 != nil {
+			return nil, err2
+		}
+		return exporterhelper.NewLogs(ctx, childParams, &childCfg, childExp.(exporter.Logs).ConsumeLogs)
+	}
+
+	wrappedExporter, err := exporterhelper.NewLogs(
+		t.Context(),
+		parentParams,
+		config,
+		exp.ConsumeLogs,
+		exporterhelper.WithStart(exp.Start),
+		exporterhelper.WithShutdown(exp.Shutdown),
+		exporterhelper.WithCapabilities(exp.Capabilities()),
+		exporterhelper.WithRetry(config.BackOffConfig),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, wrappedExporter.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, wrappedExporter.Shutdown(t.Context()))
+	}()
+
+	require.Eventually(t, func() bool {
+		return len(exp.loadBalancer.exporters) == 1 && exp.loadBalancer.ring != nil
+	}, time.Second, 10*time.Millisecond)
+
+	require.NoError(t, wrappedExporter.ConsumeLogs(t.Context(), logs))
+	require.Equal(t, int32(2), endpointCalls.Load())
+}
