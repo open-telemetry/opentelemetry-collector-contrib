@@ -6,6 +6,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/google/go-cmp v0.7.0
 	github.com/lightstep/go-expohisto v1.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.152.0
@@ -47,6 +48,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
@@ -95,3 +97,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
