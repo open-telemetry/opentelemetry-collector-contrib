@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension/internal/metadata"
 )
 
 // Default value for HTTP client's polling interval, set to 30 seconds in
@@ -208,9 +210,9 @@ func (s OpAMPServer) GetPollingInterval() time.Duration {
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
 	switch {
-	case cfg.Capabilities.AcceptsRestartCommand && !RemoteRestartsFeatureGate.IsEnabled():
+	case cfg.Capabilities.AcceptsRestartCommand && !metadata.ExtensionOpampextensionRemoteRestartsFeatureGate.IsEnabled():
 		return errors.New("extension.opampextension.RemoteRestarts feature gate must be enabled to use the accepts_restart_command capability")
-	case cfg.Capabilities.AcceptsRestartCommand && RemoteRestartsFeatureGate.IsEnabled() && runtime.GOOS == "windows":
+	case cfg.Capabilities.AcceptsRestartCommand && metadata.ExtensionOpampextensionRemoteRestartsFeatureGate.IsEnabled() && runtime.GOOS == "windows":
 		return errors.New("remote restart functionality is not available on the windows operating system")
 	case cfg.Server.WS == nil && cfg.Server.HTTP == nil:
 		return errors.New("opamp server must have at least ws or http set")
