@@ -3049,8 +3049,8 @@ func enableExtensionsFeatureGate(t *testing.T) {
 }
 
 // supervisorBinarySizeLimitBytes is the size budget for the supervisor binary,
-// in bytes. 25 MiB.
-const supervisorBinarySizeLimitBytes = 25 * 1024 * 1024
+// in bytes. 24 MiB.
+const supervisorBinarySizeLimitBytes = 24 * 1024 * 1024
 
 // TestSupervisorBinarySize guards against unintended growth of the supervisor
 // binary. It builds the supervisor with the same flags used for release
@@ -3066,11 +3066,10 @@ const supervisorBinarySizeLimitBytes = 25 * 1024 * 1024
 // Reference for the build process of the supervisor during releases:
 // https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/cmd/opampsupervisor/.goreleaser.yaml
 func TestSupervisorBinarySize(t *testing.T) {
-	binName := "opampsupervisor"
-	if runtime.GOOS == "windows" {
-		binName += ".exe"
+	if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
+		t.Skipf("binary size budget is calibrated for linux/amd64; skipping on %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
-	binPath := filepath.Join(t.TempDir(), binName)
+	binPath := filepath.Join(t.TempDir(), "opampsupervisor")
 
 	cmd := exec.CommandContext(t.Context(), "go", "build",
 		"-trimpath",
