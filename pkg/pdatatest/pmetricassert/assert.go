@@ -232,8 +232,8 @@ func compareAttributes(expected, actual map[string]any) error {
 
 func splitAttributeOperator(key string) (string, string) {
 	const existsSuffix = "/exists"
-	if strings.HasSuffix(key, existsSuffix) {
-		return strings.TrimSuffix(key, existsSuffix), "exists"
+	if name, ok := strings.CutSuffix(key, existsSuffix); ok {
+		return name, "exists"
 	}
 	return key, ""
 }
