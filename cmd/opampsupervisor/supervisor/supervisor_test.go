@@ -34,13 +34,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/confmap"
+	collectorconfmap "go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/plog"
+	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -131,7 +134,7 @@ func setupSupervisorConfig(t *testing.T, configuration string) config.Supervisor
 	cfg, err := config.Load(cfgPath)
 	require.NoError(t, err)
 
-	err = confmap.Validate(cfg)
+	err = collectorconfmap.Validate(cfg)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -322,6 +325,267 @@ service:
 			require.Equal(t, string(gotParsed), got)
 		})
 	}
+}
+
+func TestNormalizeTelemetryResourceConfig(t *testing.T) {
+	tests := []struct {
+		name                  string
+		raw                   map[string]any
+		wantAttributes        []otelconf.AttributeNameValue
+		wantSchemaURL         string
+		wantDetectorIncludes  []string
+		wantRemovedLegacyKeys []string
+	}{
+		{
+			name: "converts mixed resource config to declarative attributes",
+			raw: map[string]any{
+				"service": map[string]any{
+					"telemetry": map[string]any{
+						"resource": map[string]any{
+							"attributes": []any{
+								map[string]any{
+									"name":  "otelcol.service.mode",
+									"value": "agent",
+								},
+							},
+							"host.arch": "amd64",
+							"os.type":   "linux",
+						},
+					},
+				},
+			},
+			wantAttributes: []otelconf.AttributeNameValue{
+				{Name: "otelcol.service.mode", Value: "agent"},
+				{Name: "host.arch", Value: "amd64"},
+				{Name: "os.type", Value: "linux"},
+			},
+			wantRemovedLegacyKeys: []string{"host.arch", "os.type"},
+		},
+		{
+			name: "declarative value wins over duplicate legacy key and nil legacy key is skipped",
+			raw: map[string]any{
+				"service": map[string]any{
+					"telemetry": map[string]any{
+						"resource": map[string]any{
+							"attributes": []any{
+								map[string]any{
+									"name":  "service.name",
+									"value": "declarative-name",
+								},
+							},
+							"service.name":           "legacy-name",
+							"service.instance.id":    nil,
+							"deployment.environment": "prod",
+						},
+					},
+				},
+			},
+			wantAttributes: []otelconf.AttributeNameValue{
+				{Name: "service.name", Value: "declarative-name"},
+				{Name: "deployment.environment", Value: "prod"},
+			},
+			wantRemovedLegacyKeys: []string{"service.name", "service.instance.id", "deployment.environment"},
+		},
+		{
+			name: "preserves schema url and detectors",
+			raw: map[string]any{
+				"service": map[string]any{
+					"telemetry": map[string]any{
+						"resource": map[string]any{
+							"schema_url": "https://opentelemetry.io/schemas/1.38.0",
+							"attributes": []any{
+								map[string]any{
+									"name":  "service.namespace",
+									"value": "payments",
+								},
+							},
+							"detectors": map[string]any{
+								"attributes": map[string]any{
+									"included": []any{"host.name", "host.arch"},
+								},
+							},
+							"cloud.region": "us-central1",
+						},
+					},
+				},
+			},
+			wantAttributes: []otelconf.AttributeNameValue{
+				{Name: "service.namespace", Value: "payments"},
+				{Name: "cloud.region", Value: "us-central1"},
+			},
+			wantSchemaURL:         "https://opentelemetry.io/schemas/1.38.0",
+			wantDetectorIncludes:  []string{"host.name", "host.arch"},
+			wantRemovedLegacyKeys: []string{"cloud.region"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, normalizeTelemetryResourceConfig(tt.raw))
+
+			telemetry := tt.raw["service"].(map[string]any)["telemetry"].(map[string]any)
+			resource := telemetry["resource"].(map[string]any)
+			for _, key := range tt.wantRemovedLegacyKeys {
+				assert.NotContains(t, resource, key)
+			}
+
+			var resourceCfg config.ResourceConfig
+			require.NoError(t, collectorconfmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
+			require.NoError(t, xconfmap.Validate(&resourceCfg))
+			require.Empty(t, resourceCfg.LegacyAttributes)
+			require.Equal(t, tt.wantAttributes, resourceCfg.Attributes)
+
+			if tt.wantSchemaURL != "" {
+				require.NotNil(t, resourceCfg.SchemaUrl)
+				assert.Equal(t, tt.wantSchemaURL, *resourceCfg.SchemaUrl)
+			}
+
+			if len(tt.wantDetectorIncludes) > 0 {
+				require.NotNil(t, resourceCfg.Detectors)
+				require.NotNil(t, resourceCfg.Detectors.Attributes)
+				assert.Equal(t, tt.wantDetectorIncludes, resourceCfg.Detectors.Attributes.Included)
+			}
+		})
+	}
+}
+
+func TestNormalizeTelemetryResourceConfigNoopAndErrorBranches(t *testing.T) {
+	tests := []struct {
+		name    string
+		raw     map[string]any
+		wantErr bool
+	}{
+		{
+			name: "missing resource config is ignored",
+			raw: map[string]any{
+				"service": map[string]any{
+					"telemetry": map[string]any{},
+				},
+			},
+		},
+		{
+			name: "non map resource config is ignored",
+			raw: map[string]any{
+				"service": map[string]any{
+					"telemetry": map[string]any{
+						"resource": "invalid-shape",
+					},
+				},
+			},
+		},
+		{
+			name: "declarative only config is unchanged",
+			raw: map[string]any{
+				"service": map[string]any{
+					"telemetry": map[string]any{
+						"resource": map[string]any{
+							"attributes": []any{
+								map[string]any{"name": "service.name", "value": "svc"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "legacy only config is unchanged",
+			raw: map[string]any{
+				"service": map[string]any{
+					"telemetry": map[string]any{
+						"resource": map[string]any{
+							"service.name": "svc",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "invalid declarative attributes returns error",
+			raw: map[string]any{
+				"service": map[string]any{
+					"telemetry": map[string]any{
+						"resource": map[string]any{
+							"attributes":   "bad",
+							"service.name": "svc",
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := normalizeTelemetryResourceConfig(tt.raw)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestComposeAgentConfigFilesBranches(t *testing.T) {
+	t.Run("ignores unreadable and invalid local configs", func(t *testing.T) {
+		validCfg := filepath.Join(t.TempDir(), "valid.yaml")
+		require.NoError(t, os.WriteFile(validCfg, []byte(`
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: service.name
+          value: svc
+`), 0o600))
+
+		invalidCfg := filepath.Join(t.TempDir(), "invalid.yaml")
+		require.NoError(t, os.WriteFile(invalidCfg, []byte("service: ["), 0o600))
+
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{})
+
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			config: config.Supervisor{
+				Agent: config.Agent{
+					ConfigFiles: []string{
+						filepath.Join(t.TempDir(), "missing.yaml"),
+						invalidCfg,
+						validCfg,
+					},
+				},
+			},
+			agentDescription: agentDesc,
+			persistentState:  &persistentState{},
+			cfgState:         &atomic.Value{},
+			pidProvider:      staticPIDProvider(1234),
+		}
+
+		got, err := s.composeAgentConfigFiles(nil)
+		require.NoError(t, err)
+		assert.Contains(t, string(got), "service.name")
+		assert.Contains(t, string(got), "svc")
+	})
+
+	t.Run("invalid special config returns error", func(t *testing.T) {
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
+				Agent:        config.Agent{ConfigFiles: []string{string(config.SpecialConfigFileRemoteConfig)}},
+			},
+		}
+
+		_, err := s.composeAgentConfigFiles(&protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: []byte("service: [")},
+				},
+			},
+		})
+		require.Error(t, err)
+	})
 }
 
 func Test_onMessage(t *testing.T) {
@@ -1680,6 +1944,118 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 		got := s.createEffectiveConfigMsg()
 
 		assert.Equal(t, []byte("merged"), got.ConfigMap.ConfigMap[""].Body)
+	})
+}
+
+func writeValidationExecutable(t *testing.T, exitCode int) string {
+	t.Helper()
+
+	executablePath := filepath.Join(t.TempDir(), "fake-collector")
+	script := fmt.Sprintf(`#!/bin/sh
+if [ "$1" = "validate" ]; then
+  exit %d
+fi
+exit 0
+`, exitCode)
+	require.NoError(t, os.WriteFile(executablePath, []byte(script), 0o700))
+	return executablePath
+}
+
+func newComposeMergedConfigTestSupervisor(t *testing.T, executablePath string, validateConfig bool) *Supervisor {
+	t.Helper()
+
+	s := &Supervisor{
+		telemetrySettings: newNopTelemetrySettings(),
+		persistentState:   &persistentState{},
+		config: config.Supervisor{
+			Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
+			Agent: config.Agent{
+				ConfigFiles:        []string{"testdata/local_config1.yaml"},
+				Executable:         executablePath,
+				ValidateConfig:     validateConfig,
+				ConfigApplyTimeout: time.Second,
+			},
+			Storage: config.Storage{Directory: t.TempDir()},
+		},
+		pidProvider:                    staticPIDProvider(1234),
+		hasNewConfig:                   make(chan struct{}, 1),
+		agentConfigOwnTelemetrySection: &atomic.Value{},
+		cfgState:                       &atomic.Value{},
+		runCtx:                         context.Background(),
+	}
+	agentDesc := &atomic.Value{}
+	agentDesc.Store(&protobufs.AgentDescription{
+		IdentifyingAttributes: []*protobufs.KeyValue{
+			{
+				Key: "service.name",
+				Value: &protobufs.AnyValue{
+					Value: &protobufs.AnyValue_StringValue{StringValue: "otelcol"},
+				},
+			},
+		},
+	})
+	s.agentDescription = agentDesc
+
+	require.NoError(t, s.createTemplates())
+
+	cmdr, err := commander.NewCommander(zap.NewNop(), s.config.Storage.Directory, s.config.Agent)
+	require.NoError(t, err)
+	s.commander = cmdr
+
+	return s
+}
+
+func TestComposeMergedConfigValidationBranches(t *testing.T) {
+	t.Run("validates and stores config when state is unset", func(t *testing.T) {
+		s := newComposeMergedConfigTestSupervisor(t, writeValidationExecutable(t, 0), true)
+
+		changed, err := s.composeMergedConfig(nil)
+		require.NoError(t, err)
+		require.True(t, changed)
+
+		state := s.cfgState.Load().(*configState)
+		require.False(t, state.configMapIsEmpty)
+		require.Contains(t, state.mergedConfig, "journald")
+	})
+
+	t.Run("failed validation keeps previous config state", func(t *testing.T) {
+		s := newComposeMergedConfigTestSupervisor(t, writeValidationExecutable(t, 1), true)
+		s.cfgState.Store(&configState{
+			mergedConfig:     "receivers:\n  nop: {}\n",
+			configMapIsEmpty: false,
+		})
+
+		changed, err := s.composeMergedConfig(&protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: []byte("receivers:\n  debug: {}\n")},
+				},
+			},
+		})
+		require.Error(t, err)
+		require.False(t, changed)
+
+		state := s.cfgState.Load().(*configState)
+		require.Equal(t, "receivers:\n  nop: {}\n", state.mergedConfig)
+		require.False(t, state.configMapIsEmpty)
+	})
+
+	t.Run("skips validation for empty remote config maps", func(t *testing.T) {
+		s := newComposeMergedConfigTestSupervisor(t, writeValidationExecutable(t, 1), true)
+		s.cfgState.Store(&configState{
+			mergedConfig:     "receivers:\n  nop: {}\n",
+			configMapIsEmpty: false,
+		})
+
+		changed, err := s.composeMergedConfig(&protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigFile{}},
+		})
+		require.NoError(t, err)
+		require.True(t, changed)
+
+		state := s.cfgState.Load().(*configState)
+		require.True(t, state.configMapIsEmpty)
+		require.Contains(t, state.mergedConfig, "opamp")
 	})
 }
 

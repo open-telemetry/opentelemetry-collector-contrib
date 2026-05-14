@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/parsers/yaml"
+	koanfconfmap "github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/client"
@@ -39,7 +40,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/confmap"
+	collectorconfmap "go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
@@ -226,7 +227,7 @@ func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Superviso
 		return nil, err
 	}
 
-	if err := confmap.Validate(cfg); err != nil {
+	if err := collectorconfmap.Validate(cfg); err != nil {
 		return nil, fmt.Errorf("error validating config: %w", err)
 	}
 	s.config = cfg
@@ -1250,12 +1251,82 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 		}
 	}
 
-	b, err := conf.Marshal(yaml.Parser())
+	raw := conf.Raw()
+	if err := normalizeTelemetryResourceConfig(raw); err != nil {
+		s.telemetrySettings.Logger.Error("Could not normalize telemetry resource config", zap.Error(err))
+		return []byte(""), err
+	}
+
+	normalizedConf := koanf.New("::")
+	if err := normalizedConf.Load(koanfconfmap.Provider(raw, ""), nil); err != nil {
+		s.telemetrySettings.Logger.Error("Could not reload normalized config", zap.Error(err))
+		return []byte(""), err
+	}
+
+	b, err := normalizedConf.Marshal(yaml.Parser())
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not marshal merged local config files", zap.Error(err))
 		return []byte(""), err
 	}
 	return b, nil
+}
+
+func normalizeTelemetryResourceConfig(raw map[string]any) error {
+	rawResourceCfg := maps.Search(raw, []string{"service", "telemetry", "resource"})
+	if rawResourceCfg == nil {
+		return nil
+	}
+
+	resourceMap, ok := rawResourceCfg.(map[string]any)
+	if !ok {
+		return nil
+	}
+
+	var resourceCfg config.ResourceConfig
+	if err := collectorconfmap.NewFromStringMap(resourceMap).Unmarshal(&resourceCfg); err != nil {
+		return err
+	}
+
+	if len(resourceCfg.Attributes) == 0 || len(resourceCfg.LegacyAttributes) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(resourceCfg.Attributes))
+	for _, attr := range resourceCfg.Attributes {
+		seen[attr.Name] = struct{}{}
+	}
+
+	legacyNames := make([]string, 0, len(resourceCfg.LegacyAttributes))
+	for name, value := range resourceCfg.LegacyAttributes {
+		if value == nil {
+			continue
+		}
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		legacyNames = append(legacyNames, name)
+	}
+	sort.Strings(legacyNames)
+
+	for _, name := range legacyNames {
+		resourceCfg.Attributes = append(resourceCfg.Attributes, telemetryconfig.AttributeNameValue{
+			Name:  name,
+			Value: resourceCfg.LegacyAttributes[name],
+		})
+	}
+	resourceCfg.LegacyAttributes = nil
+
+	normalized := collectorconfmap.New()
+	if err := normalized.Marshal(resourceCfg); err != nil {
+		return err
+	}
+
+	serviceMap, ok := maps.Search(raw, []string{"service", "telemetry"}).(map[string]any)
+	if !ok {
+		return nil
+	}
+	serviceMap["resource"] = normalized.ToStringMap()
+	return nil
 }
 
 // loadAndWriteInitialMergedConfig loads and writes the initial config by

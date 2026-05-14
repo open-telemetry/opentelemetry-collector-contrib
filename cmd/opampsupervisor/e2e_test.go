@@ -41,6 +41,8 @@ import (
 	"github.com/open-telemetry/opamp-go/server/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	collectorconfmap "go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -212,8 +214,11 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 
 func newSupervisor(t *testing.T, configType string, extraConfigData map[string]string) (*supervisor.Supervisor, *config.Supervisor) {
 	cfgFile := getSupervisorConfig(t, configType, extraConfigData)
+	return newSupervisorFromConfigFile(t, cfgFile.Name())
+}
 
-	cfg, err := config.Load(cfgFile.Name())
+func newSupervisorFromConfigFile(t *testing.T, path string) (*supervisor.Supervisor, *config.Supervisor) {
+	cfg, err := config.Load(path)
 	require.NoError(t, err)
 
 	logger, err := zap.NewDevelopment()
@@ -258,6 +263,108 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 	require.NoError(t, err)
 
 	return cfgFile
+}
+
+func writeTempConfigFile(t *testing.T, body string) string {
+	t.Helper()
+
+	f, err := os.CreateTemp(t.TempDir(), "config_*.yaml")
+	require.NoError(t, err)
+	t.Cleanup(func() { f.Close() })
+
+	_, err = f.WriteString(body)
+	require.NoError(t, err)
+
+	return f.Name()
+}
+
+func writeSupervisorConfigFile(t *testing.T, serverAddr, storageDir string, configFiles []string, useHUP bool) string {
+	t.Helper()
+
+	var extension string
+	if runtime.GOOS == "windows" {
+		extension = ".exe"
+	}
+	executablePath, err := filepath.Abs("../../bin/otelcontribcol_" + runtime.GOOS + "_" + runtime.GOARCH + extension)
+	require.NoError(t, err)
+
+	var buf strings.Builder
+	fmt.Fprintf(&buf, "server:\n  endpoint: %q\n\n", "ws://"+serverAddr+"/v1/opamp")
+	buf.WriteString("capabilities:\n")
+	buf.WriteString("  reports_effective_config: true\n")
+	buf.WriteString("  reports_own_metrics: true\n")
+	buf.WriteString("  reports_own_logs: true\n")
+	buf.WriteString("  reports_own_traces: true\n")
+	buf.WriteString("  reports_health: true\n")
+	buf.WriteString("  accepts_remote_config: true\n")
+	buf.WriteString("  reports_remote_config: true\n")
+	buf.WriteString("  accepts_restart_command: true\n\n")
+	fmt.Fprintf(&buf, "storage:\n  directory: %q\n\n", storageDir)
+	fmt.Fprintf(&buf, "agent:\n  executable: %q\n", executablePath)
+	if useHUP {
+		buf.WriteString("  use_hup_config_reload: true\n")
+	}
+	buf.WriteString("  config_files:\n")
+	for _, file := range configFiles {
+		fmt.Fprintf(&buf, "    - %q\n", file)
+	}
+
+	return writeTempConfigFile(t, buf.String())
+}
+
+func loadEffectiveResourceConfig(t *testing.T, storageDir string) config.ResourceConfig {
+	t.Helper()
+
+	effectiveCfg, err := os.ReadFile(filepath.Join(storageDir, "effective.yaml"))
+	require.NoError(t, err)
+
+	return loadResourceConfigFromYAML(t, effectiveCfg)
+}
+
+func loadResourceConfigFromString(t *testing.T, cfg string) config.ResourceConfig {
+	t.Helper()
+
+	return loadResourceConfigFromYAML(t, []byte(cfg))
+}
+
+func loadResourceConfigFromYAML(t *testing.T, effectiveCfg []byte) config.ResourceConfig {
+	t.Helper()
+
+	k := koanf.New("::")
+	require.NoError(t, k.Load(rawbytes.Provider(effectiveCfg), yaml.Parser()))
+
+	resourceRaw, ok := k.Get("service::telemetry::resource").(map[string]any)
+	require.True(t, ok)
+
+	var resourceCfg config.ResourceConfig
+	require.NoError(t, collectorconfmap.NewFromStringMap(resourceRaw).Unmarshal(&resourceCfg))
+	require.NoError(t, xconfmap.Validate(&resourceCfg))
+
+	return resourceCfg
+}
+
+func resourceAttributeValues(resourceCfg config.ResourceConfig) map[string]any {
+	values := make(map[string]any, len(resourceCfg.Attributes))
+	for _, attr := range resourceCfg.Attributes {
+		values[attr.Name] = attr.Value
+	}
+	return values
+}
+
+func waitForEffectiveConfigMessage(t *testing.T, effectiveConfig *atomic.Value) string {
+	t.Helper()
+
+	var cfg string
+	require.Eventually(t, func() bool {
+		value, ok := effectiveConfig.Load().(string)
+		if !ok || value == "" {
+			return false
+		}
+		cfg = value
+		return strings.Contains(cfg, "service:")
+	}, 10*time.Second, 200*time.Millisecond)
+
+	return cfg
 }
 
 func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
@@ -394,6 +501,525 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 
 				return n != 0
 			}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
+		})
+	}
+}
+
+func TestSupervisorNormalizesTelemetryResourceFormatsE2E(t *testing.T) {
+	modes := getTestModes()
+
+	baseConfigForPort := func(port int) string {
+		return fmt.Sprintf(`
+extensions:
+  health_check:
+    endpoint: "localhost:%d"
+
+service:
+  extensions: [health_check]
+`, port)
+	}
+
+	const declarativeConfig = `
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: otelcol.service.mode
+          value: agent
+`
+
+	const legacyConfig = `
+service:
+  telemetry:
+    resource:
+      deployment.environment: prod
+`
+
+	const nilLegacyConfig = `
+service:
+  telemetry:
+    resource:
+      service.namespace:
+      deployment.environment: staging
+`
+
+	const schemaAndDetectorConfig = `
+service:
+  telemetry:
+    resource:
+      schema_url: https://opentelemetry.io/schemas/1.38.0
+      detectors:
+        attributes:
+          included: [host.name, host.arch]
+      attributes:
+        - name: service.namespace
+          value: payments
+`
+
+	const remoteDeclarativeConfig = `
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: k8s.cluster.name
+          value: dev-cluster
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+`
+
+	const remoteLegacyConfig = `
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  telemetry:
+    resource:
+      cloud.region: us-central1
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+`
+
+	tests := []struct {
+		name          string
+		localConfigs  []string
+		configFiles   func(basePath string, localPaths []string) []string
+		remoteConfig  string
+		expectedAttrs map[string]any
+		schemaURL     string
+		detectors     []string
+	}{
+		{
+			name:         "auto inserts own telemetry before local declarative config",
+			localConfigs: []string{declarativeConfig},
+			configFiles: func(basePath string, localPaths []string) []string {
+				return []string{basePath, localPaths[0]}
+			},
+			expectedAttrs: map[string]any{"otelcol.service.mode": "agent"},
+		},
+		{
+			name:         "explicit own telemetry after local declarative config",
+			localConfigs: []string{declarativeConfig},
+			configFiles: func(basePath string, localPaths []string) []string {
+				return []string{
+					basePath,
+					localPaths[0],
+					string(config.SpecialConfigFileOwnTelemetry),
+					string(config.SpecialConfigFileRemoteConfig),
+					string(config.SpecialConfigFileOpAMPExtension),
+				}
+			},
+			expectedAttrs: map[string]any{"otelcol.service.mode": "agent"},
+		},
+		{
+			name:         "multiple local files declarative then legacy",
+			localConfigs: []string{declarativeConfig, legacyConfig},
+			configFiles: func(basePath string, localPaths []string) []string {
+				return []string{basePath, localPaths[0], localPaths[1]}
+			},
+			expectedAttrs: map[string]any{
+				"otelcol.service.mode":   "agent",
+				"deployment.environment": "prod",
+			},
+		},
+		{
+			name:         "multiple local files legacy then declarative",
+			localConfigs: []string{legacyConfig, declarativeConfig},
+			configFiles: func(basePath string, localPaths []string) []string {
+				return []string{basePath, localPaths[0], localPaths[1]}
+			},
+			expectedAttrs: map[string]any{
+				"otelcol.service.mode":   "agent",
+				"deployment.environment": "prod",
+			},
+		},
+		{
+			name: "duplicate key collision keeps declarative value",
+			localConfigs: []string{declarativeConfig, `
+service:
+  telemetry:
+    resource:
+      otelcol.service.mode: gateway
+`},
+			configFiles: func(basePath string, localPaths []string) []string {
+				return []string{basePath, localPaths[0], localPaths[1]}
+			},
+			expectedAttrs: map[string]any{"otelcol.service.mode": "agent"},
+		},
+		{
+			name:         "nil legacy override does not reintroduce removed attr",
+			localConfigs: []string{declarativeConfig, nilLegacyConfig},
+			configFiles: func(basePath string, localPaths []string) []string {
+				return []string{basePath, localPaths[0], localPaths[1]}
+			},
+			expectedAttrs: map[string]any{
+				"otelcol.service.mode":   "agent",
+				"deployment.environment": "staging",
+			},
+		},
+		{
+			name:         "schema url and detectors survive normalization",
+			localConfigs: []string{schemaAndDetectorConfig, legacyConfig},
+			configFiles: func(basePath string, localPaths []string) []string {
+				return []string{basePath, localPaths[0], localPaths[1]}
+			},
+			expectedAttrs: map[string]any{
+				"service.namespace":      "payments",
+				"deployment.environment": "prod",
+			},
+			schemaURL: "https://opentelemetry.io/schemas/1.38.0",
+			detectors: []string{"host.name", "host.arch"},
+		},
+		{
+			name: "remote declarative config before own telemetry",
+			configFiles: func(basePath string, _ []string) []string {
+				return []string{
+					basePath,
+					string(config.SpecialConfigFileRemoteConfig),
+					string(config.SpecialConfigFileOwnTelemetry),
+					string(config.SpecialConfigFileOpAMPExtension),
+				}
+			},
+			remoteConfig:  remoteDeclarativeConfig,
+			expectedAttrs: map[string]any{"k8s.cluster.name": "dev-cluster"},
+		},
+		{
+			name:         "local declarative plus remote legacy config",
+			localConfigs: []string{declarativeConfig},
+			configFiles: func(basePath string, localPaths []string) []string {
+				return []string{
+					basePath,
+					localPaths[0],
+					string(config.SpecialConfigFileRemoteConfig),
+					string(config.SpecialConfigFileOwnTelemetry),
+					string(config.SpecialConfigFileOpAMPExtension),
+				}
+			},
+			remoteConfig: remoteLegacyConfig,
+			expectedAttrs: map[string]any{
+				"otelcol.service.mode": "agent",
+				"cloud.region":         "us-central1",
+			},
+		},
+		{
+			name:         "three way merge local declarative local legacy remote declarative",
+			localConfigs: []string{declarativeConfig, legacyConfig},
+			configFiles: func(basePath string, localPaths []string) []string {
+				return []string{
+					basePath,
+					localPaths[0],
+					localPaths[1],
+					string(config.SpecialConfigFileRemoteConfig),
+					string(config.SpecialConfigFileOwnTelemetry),
+					string(config.SpecialConfigFileOpAMPExtension),
+				}
+			},
+			remoteConfig: remoteDeclarativeConfig,
+			expectedAttrs: map[string]any{
+				"deployment.environment": "prod",
+				"k8s.cluster.name":       "dev-cluster",
+			},
+		},
+		{
+			name: "later remote duplicate declarative attr wins across files",
+			localConfigs: []string{`
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: service.namespace
+          value: local
+`},
+			configFiles: func(basePath string, localPaths []string) []string {
+				return []string{
+					basePath,
+					localPaths[0],
+					string(config.SpecialConfigFileRemoteConfig),
+					string(config.SpecialConfigFileOwnTelemetry),
+					string(config.SpecialConfigFileOpAMPExtension),
+				}
+			},
+			remoteConfig: `
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: service.namespace
+          value: remote
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+`,
+			expectedAttrs: map[string]any{"service.namespace": "remote"},
+		},
+	}
+
+	for _, mode := range modes {
+		for _, tt := range tests {
+			t.Run(mode.name+"/"+tt.name, func(t *testing.T) {
+				storageDir := t.TempDir()
+				healthcheckPort, err := findRandomPort()
+				require.NoError(t, err)
+
+				basePath := writeTempConfigFile(t, baseConfigForPort(healthcheckPort))
+				localPaths := make([]string, 0, len(tt.localConfigs))
+				for _, cfg := range tt.localConfigs {
+					localPaths = append(localPaths, writeTempConfigFile(t, cfg))
+				}
+
+				var effectiveConfig atomic.Value
+				server := newOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
+					OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+						if message.EffectiveConfig != nil {
+							configFile := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+							if configFile != nil {
+								effectiveConfig.Store(string(configFile.Body))
+							}
+						}
+						return &protobufs.ServerToAgent{}
+					},
+				})
+
+				supervisorConfigPath := writeSupervisorConfigFile(t, server.addr, storageDir, tt.configFiles(basePath, localPaths), mode.UseHUPConfigReload)
+
+				s, supervisorCfg := newSupervisorFromConfigFile(t, supervisorConfigPath)
+				if mode.UseHUPConfigReload {
+					require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+				}
+
+				require.NoError(t, s.Start(t.Context()))
+				defer s.Shutdown()
+
+				waitForSupervisorConnection(server.supervisorConnected, true)
+
+				if tt.remoteConfig != "" {
+					cfgHash := sha256.Sum256([]byte(tt.remoteConfig))
+					server.sendToSupervisor(&protobufs.ServerToAgent{
+						RemoteConfig: &protobufs.AgentRemoteConfig{
+							Config: &protobufs.AgentConfigMap{
+								ConfigMap: map[string]*protobufs.AgentConfigFile{
+									"": {Body: []byte(tt.remoteConfig)},
+								},
+							},
+							ConfigHash: cfgHash[:],
+						},
+					})
+				}
+
+				require.Eventually(t, func() bool {
+					resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
+					if err != nil {
+						return false
+					}
+					require.NoError(t, resp.Body.Close())
+					return resp.StatusCode >= 200 && resp.StatusCode < 300
+				}, 10*time.Second, 200*time.Millisecond)
+
+				resourceCfgs := []config.ResourceConfig{
+					loadEffectiveResourceConfig(t, storageDir),
+					loadResourceConfigFromString(t, waitForEffectiveConfigMessage(t, &effectiveConfig)),
+				}
+				for _, resourceCfg := range resourceCfgs {
+					require.Empty(t, resourceCfg.LegacyAttributes)
+					attrValues := resourceAttributeValues(resourceCfg)
+					for name, value := range tt.expectedAttrs {
+						require.Contains(t, attrValues, name)
+						assert.Equal(t, value, attrValues[name])
+					}
+					if tt.schemaURL != "" {
+						require.NotNil(t, resourceCfg.SchemaUrl)
+						assert.Equal(t, tt.schemaURL, *resourceCfg.SchemaUrl)
+					}
+					if len(tt.detectors) > 0 {
+						require.NotNil(t, resourceCfg.Detectors)
+						require.NotNil(t, resourceCfg.Detectors.Attributes)
+						assert.Equal(t, tt.detectors, resourceCfg.Detectors.Attributes.Included)
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestSupervisorNormalizesTelemetryResourceFormatsAcrossRemoteUpdatesE2E(t *testing.T) {
+	modes := getTestModes()
+
+	baseConfigForPort := func(port int) string {
+		return fmt.Sprintf(`
+extensions:
+  health_check:
+    endpoint: "localhost:%d"
+
+service:
+  extensions: [health_check]
+`, port)
+	}
+
+	const firstRemoteConfig = `
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  telemetry:
+    resource:
+      cloud.region: us-central1
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+`
+
+	const secondRemoteConfig = `
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: cloud.region
+          value: eu-west-1
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+`
+
+	for _, mode := range modes {
+		t.Run(mode.name, func(t *testing.T) {
+			storageDir := t.TempDir()
+			healthcheckPort, err := findRandomPort()
+			require.NoError(t, err)
+
+			basePath := writeTempConfigFile(t, baseConfigForPort(healthcheckPort))
+			localPath := writeTempConfigFile(t, `
+receivers:
+  nop/local:
+
+exporters:
+  nop/local:
+
+service:
+  telemetry:
+    resource:
+      attributes:
+        - name: service.namespace
+          value: payments
+  pipelines:
+    logs/local:
+      receivers: [nop/local]
+      exporters: [nop/local]
+`)
+
+			server := newOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{})
+			supervisorConfigPath := writeSupervisorConfigFile(t, server.addr, storageDir, []string{
+				basePath,
+				localPath,
+				string(config.SpecialConfigFileRemoteConfig),
+				string(config.SpecialConfigFileOwnTelemetry),
+				string(config.SpecialConfigFileOpAMPExtension),
+			}, mode.UseHUPConfigReload)
+
+			s, _ := newSupervisorFromConfigFile(t, supervisorConfigPath)
+			require.NoError(t, s.Start(t.Context()))
+			defer s.Shutdown()
+
+			waitForSupervisorConnection(server.supervisorConnected, true)
+			require.Eventually(t, func() bool {
+				resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
+				if err != nil {
+					return false
+				}
+				require.NoError(t, resp.Body.Close())
+				return resp.StatusCode >= 200 && resp.StatusCode < 300
+			}, 10*time.Second, 200*time.Millisecond)
+
+			sendRemoteConfig := func(body string) {
+				cfgHash := sha256.Sum256([]byte(body))
+				server.sendToSupervisor(&protobufs.ServerToAgent{
+					RemoteConfig: &protobufs.AgentRemoteConfig{
+						Config: &protobufs.AgentConfigMap{
+							ConfigMap: map[string]*protobufs.AgentConfigFile{
+								"": {Body: []byte(body)},
+							},
+						},
+						ConfigHash: cfgHash[:],
+					},
+				})
+			}
+
+			assertStorageAttrs := func(expected map[string]any) {
+				resourceCfg := loadEffectiveResourceConfig(t, storageDir)
+				require.Empty(t, resourceCfg.LegacyAttributes)
+				attrValues := resourceAttributeValues(resourceCfg)
+				for name, value := range expected {
+					require.Contains(t, attrValues, name)
+					assert.Equal(t, value, attrValues[name])
+				}
+			}
+
+			sendRemoteConfig(firstRemoteConfig)
+			require.Eventually(t, func() bool {
+				resourceCfg := loadEffectiveResourceConfig(t, storageDir)
+				return resourceAttributeValues(resourceCfg)["cloud.region"] == "us-central1"
+			}, 10*time.Second, 200*time.Millisecond)
+			assertStorageAttrs(map[string]any{
+				"service.namespace": "payments",
+				"cloud.region":      "us-central1",
+			})
+
+			sendRemoteConfig(secondRemoteConfig)
+			require.Eventually(t, func() bool {
+				resourceCfg := loadEffectiveResourceConfig(t, storageDir)
+				return resourceAttributeValues(resourceCfg)["cloud.region"] == "eu-west-1"
+			}, 10*time.Second, 200*time.Millisecond)
+			assertStorageAttrs(map[string]any{
+				"cloud.region": "eu-west-1",
+			})
+
+			emptyHash := sha256.Sum256(nil)
+			server.sendToSupervisor(&protobufs.ServerToAgent{
+				RemoteConfig: &protobufs.AgentRemoteConfig{
+					Config: &protobufs.AgentConfigMap{
+						ConfigMap: map[string]*protobufs.AgentConfigFile{},
+					},
+					ConfigHash: emptyHash[:],
+				},
+			})
+			require.Eventually(t, func() bool {
+				resourceCfg := loadEffectiveResourceConfig(t, storageDir)
+				attrs := resourceAttributeValues(resourceCfg)
+				_, ok := attrs["cloud.region"]
+				return !ok
+			}, 10*time.Second, 200*time.Millisecond)
+			assertStorageAttrs(map[string]any{
+				"service.namespace": "payments",
+			})
 		})
 	}
 }
