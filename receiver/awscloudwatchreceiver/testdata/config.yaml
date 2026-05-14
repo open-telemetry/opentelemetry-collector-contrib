@@ -49,3 +49,55 @@ awscloudwatch/named-prefix:
     groups:
       named:
         /aws/eks/dev-0/cluster:
+
+awscloudwatch/metrics-explicit:
+  region: us-east-1
+  metrics:
+    collection_interval: 1m
+    period: 60s
+    queries:
+      - namespace: AWS/EC2
+        metric_name: CPUUtilization
+        dimensions:
+          InstanceId: i-1234567890abcdef0
+      - namespace: AWS/EC2
+        metric_name: NetworkIn
+
+awscloudwatch/metrics-explicit-gauge:
+  region: us-east-1
+  metrics:
+    collection_interval: 1m
+    period: 60s
+    queries:
+      - namespace: AWS/EC2
+        metric_name: CPUUtilization
+        stats: [Average, p99]
+
+awscloudwatch/metrics-discovery:
+  region: us-east-1
+  metrics:
+    collection_interval: 5m
+    period: 300s
+    discovery:
+      filters:
+        namespace: AWS/EC2
+      limit: 200
+
+awscloudwatch/metrics-discovery-gauge:
+  region: us-east-1
+  metrics:
+    collection_interval: 5m
+    period: 300s
+    discovery:
+      filters:
+        namespace: AWS/EC2
+      limit: 100
+      stats: [Sum, Average]
+
+awscloudwatch/metrics-discovery-no-namespace:
+  region: us-west-2
+  metrics:
+    collection_interval: 2m
+    period: 120s
+    discovery:
+      limit: 50
