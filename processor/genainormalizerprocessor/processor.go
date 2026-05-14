@@ -10,14 +10,17 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/openinference"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/openllmetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
 )
 
-// valueTransformer applies value-level normalization after an attribute is
-// renamed. Sources that do not need value normalization may leave this nil.
-// TODO [kylehounslow]: Review interface vs. typed function
+// valueTransformer writes a normalized representation of src into dst for the
+// given target key. It owns both value-level normalization (e.g. enum folding)
+// and type-level changes (e.g. string -> string[]). Sources that do not need
+// any normalization may leave this nil; the processor falls back to a plain
+// src.CopyTo(dst) in that case.
 type valueTransformer interface {
-	TransformValue(targetKey, value string) string
+	Transform(targetKey string, src, dst pcommon.Value)
 }
 
 // sourceNormalizer holds per-source state used during normalization.
@@ -36,9 +39,13 @@ func newSourceNormalizer(src Source) sourceNormalizer {
 		removeOriginals: src.RemoveOriginals,
 		overwrite:       src.Overwrite,
 	}
-	if src.Name == SourceOpenInference {
+	switch src.Name {
+	case SourceOpenInference:
 		sn.lookupTable = openinference.LookupTable
 		sn.transformValue = openinference.Transformer{}
+	case SourceOpenLLMetry:
+		sn.lookupTable = openllmetry.LookupTable
+		sn.transformValue = openllmetry.Transformer{}
 	}
 	return sn
 }
@@ -111,16 +118,9 @@ func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
 			continue
 		}
 
-		switch val.Type() {
-		case pcommon.ValueTypeStr:
-			dest.SetStr(sn.applyValueTransform(r.to, val.Str()))
-		case pcommon.ValueTypeInt:
-			dest.SetInt(val.Int())
-		case pcommon.ValueTypeDouble:
-			dest.SetDouble(val.Double())
-		case pcommon.ValueTypeBool:
-			dest.SetBool(val.Bool())
-		default:
+		if sn.transformValue != nil {
+			sn.transformValue.Transform(r.to, val, dest)
+		} else {
 			val.CopyTo(dest)
 		}
 		wrote = true
@@ -130,12 +130,4 @@ func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
 		}
 	}
 	return wrote
-}
-
-// applyValueTransform runs the per-source value transformer if one is set.
-func (sn *sourceNormalizer) applyValueTransform(targetKey, value string) string {
-	if sn.transformValue == nil {
-		return value
-	}
-	return sn.transformValue.TransformValue(targetKey, value)
 }

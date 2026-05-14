@@ -362,7 +362,8 @@ func TestProcessTraces_DoesNotModifyResourceSchemaURL(t *testing.T) {
 	_, err := p.processTraces(t.Context(), td)
 	require.NoError(t, err)
 
-	assert.Equal(t,
+	assert.Equal(
+		t,
 		"https://opentelemetry.io/schemas/1.38.0",
 		td.ResourceSpans().At(0).SchemaUrl(),
 		"resource schema_url must not be modified",
@@ -483,4 +484,84 @@ func TestNormalize_OpenInferenceEndToEnd(t *testing.T) {
 		_, ok := out.Get(k)
 		assert.False(t, ok, "expected %s to be removed", k)
 	}
+}
+
+// TestNormalize_OpenLLMetry_FinishReasonWrapsToSlice asserts that OpenLLMetry's
+// string-valued llm.response.finish_reason is wrapped into a single-element
+// string[] at gen_ai.response.finish_reasons, which the OTel GenAI semantic
+// conventions define as string[].
+func TestNormalize_OpenLLMetry_FinishReasonWrapsToSlice(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{Name: SourceOpenLLMetry, RemoveOriginals: true}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	span.Attributes().PutStr("llm.response.finish_reason", "stop")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("gen_ai.response.finish_reasons")
+	require.True(t, ok, "gen_ai.response.finish_reasons must be set")
+	require.Equal(t, pcommon.ValueTypeSlice, v.Type(), "must be a slice")
+	require.Equal(t, 1, v.Slice().Len())
+	assert.Equal(t, "stop", v.Slice().At(0).Str())
+
+	_, ok = out.Get("llm.response.finish_reason")
+	assert.False(t, ok, "original must be removed")
+}
+
+// TestNormalize_OpenLLMetry_OperationNameFolding asserts that OpenLLMetry's
+// traceloop.span.kind value is folded onto the OTel GenAI operation-name enum
+// (workflow -> invoke_workflow) end-to-end through ConsumeTraces.
+func TestNormalize_OpenLLMetry_OperationNameFolding(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{Name: SourceOpenLLMetry, RemoveOriginals: true}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	span.Attributes().PutStr("traceloop.span.kind", "workflow")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("gen_ai.operation.name")
+	require.True(t, ok, "gen_ai.operation.name must be set")
+	require.Equal(t, pcommon.ValueTypeStr, v.Type())
+	assert.Equal(t, "invoke_workflow", v.Str())
+
+	_, ok = out.Get("traceloop.span.kind")
+	assert.False(t, ok, "original must be removed")
+}
+
+// TestNormalize_OpenLLMetry_StructuredMessagesStringified asserts that a
+// structured (slice-of-maps) source value renamed to gen_ai.input.messages
+// lands as a JSON string. Documented in README "Type handling".
+func TestNormalize_OpenLLMetry_StructuredMessagesStringified(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{Name: SourceOpenLLMetry, RemoveOriginals: true}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	s := span.Attributes().PutEmptySlice("traceloop.entity.input")
+	m := s.AppendEmpty().SetEmptyMap()
+	m.PutStr("role", "user")
+	m.PutStr("content", "hi")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("gen_ai.input.messages")
+	require.True(t, ok, "gen_ai.input.messages must be set")
+	require.Equal(t, pcommon.ValueTypeStr, v.Type(), "structured input must be stringified")
+	assert.Equal(t, `[{"content":"hi","role":"user"}]`, v.Str())
 }

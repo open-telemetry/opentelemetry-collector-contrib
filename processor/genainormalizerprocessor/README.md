@@ -18,6 +18,7 @@ The GenAI Normalizer Processor rewrites attributes on spans emitted by non-OTel 
 ### Supported sources:
 
 - `openinference` — [OpenInference](https://github.com/Arize-ai/openinference) instrumentation
+- `openllmetry` — [OpenLLMetry (Traceloop)](https://github.com/traceloop/openllmetry) instrumentation
 
 ### Top-level fields
 
@@ -31,7 +32,7 @@ Each entry in `sources` accepts the following fields:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `name` | string | _required_ | Source convention name. One of `openinference`. |
+| `name` | string | _required_ | Source convention name. One of `openinference`, `openllmetry`. |
 | `remove_originals` | bool | `false` | Delete source attributes after mapping. |
 | `overwrite` | bool | `false` | When `true`, overwrite the target attribute if it already exists. When `false`, skip the mapping. |
 
@@ -51,6 +52,15 @@ The following are not modified:
 ### Schema URL
 
 When a mapping fires on a span, the enclosing `ScopeSpans.schema_url` is set to the OTel semantic-conventions version this processor targets (currently `https://opentelemetry.io/schemas/1.40.0`). An existing `schema_url` is overwritten. `ResourceSpans.schema_url` is never modified.
+
+### Type handling
+
+This processor renames attribute keys and applies the value normalizations listed in [Built-in mappings](#built-in-mappings). The documented value normalizations include type-shape changes:
+
+- `gen_ai.response.finish_reasons`: a string source is wrapped into a single-element `string[]` to match the OTel GenAI spec type.
+- `gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.tool.definitions`: structured source values (slice or map) are JSON-encoded to a string. Existing string sources pass through unchanged. Storage backends like OpenSearch reject documents when a field's type disagrees with the index mapping; emitting a consistent string shape across sources avoids those conflicts at ingest. Downstream consumers parse the JSON on read.
+
+Other type coercion is the user's responsibility. If a source library writes `llm.token_count.prompt` as a string, `gen_ai.usage.input_tokens` will also be a string after normalization. Fix the instrumentation upstream, or pair this processor with the [`transformprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) for OTTL-based coercion.
 
 ## Examples
 
@@ -84,6 +94,18 @@ processors:
         overwrite: true
 ```
 
+Normalize both OpenInference and OpenLLMetry:
+
+```yaml
+processors:
+  genainormalizer:
+    sources:
+      - name: openinference
+        remove_originals: true
+      - name: openllmetry
+        remove_originals: true
+```
+
 ## Built-in mappings
 
 ### `openinference`
@@ -110,20 +132,62 @@ Attribute renames:
 
 Source reference: [OpenInference semantic conventions](https://github.com/Arize-ai/openinference/blob/725d68c0c43778089bc99060efba74d37231f9f1/spec/semantic_conventions.md).
 
+### `openllmetry`
+
+Attribute renames:
+
+| Source attribute | Target attribute | Notes |
+|---|---|---|
+| `llm.usage.prompt_tokens` | `gen_ai.usage.input_tokens` | |
+| `llm.usage.completion_tokens` | `gen_ai.usage.output_tokens` | |
+| `llm.request.model` | `gen_ai.request.model` | |
+| `llm.response.model` | `gen_ai.response.model` | |
+| `llm.request.max_tokens` | `gen_ai.request.max_tokens` | |
+| `llm.request.temperature` | `gen_ai.request.temperature` | |
+| `llm.request.top_p` | `gen_ai.request.top_p` | |
+| `llm.top_k` | `gen_ai.request.top_k` | |
+| `llm.frequency_penalty` | `gen_ai.request.frequency_penalty` | |
+| `llm.presence_penalty` | `gen_ai.request.presence_penalty` | |
+| `llm.chat.stop_sequences` | `gen_ai.request.stop_sequences` | |
+| `llm.request.functions` | `gen_ai.tool.definitions` | structured source values JSON-encoded to string ([Type handling](#type-handling)) |
+| `llm.response.finish_reason` | `gen_ai.response.finish_reasons` | string wrapped into a single-element string[] |
+| `llm.response.stop_reason` | `gen_ai.response.finish_reasons` | string wrapped into a single-element string[] |
+| `llm.request.type` | `gen_ai.operation.name` | with value mapping, see below |
+| `traceloop.span.kind` | `gen_ai.operation.name` | with value mapping, see below |
+| `traceloop.entity.name` | `gen_ai.agent.name` | |
+| `traceloop.entity.input` | `gen_ai.input.messages` | structured source values JSON-encoded to string ([Type handling](#type-handling)) |
+| `traceloop.entity.output` | `gen_ai.output.messages` | structured source values JSON-encoded to string ([Type handling](#type-handling)) |
+
+Coverage: this table covers the most common OpenLLMetry attributes. OpenLLMetry attributes not listed pass through unchanged. Open an issue if a missing attribute is blocking your migration.
+
+OpenLLMetry instrumentation typically emits one of each collision pair (`llm.response.finish_reason` xor `llm.response.stop_reason`; `llm.request.type` xor `traceloop.span.kind`). When both attributes in a pair are present on a span, the resolved value at the target key is undefined.
+
+Source reference: [OpenLLMetry semantic conventions](https://github.com/traceloop/docs/blob/32ea768d16ac2b5cd38493bfbcfac7baa32e0c96/openllmetry/contributing/semantic-conventions.mdx).
+
 ### Value transformations
 
 When a mapped attribute lands on `gen_ai.operation.name`, the string value is normalized to the OTel GenAI enum. Lookup is case-insensitive.
 
-| Source attribute | Source value | Target value |
-|---|---|---|
-| `openinference.span.kind` | `LLM` | `chat` |
-| `openinference.span.kind` | `EMBEDDING` | `embeddings` |
-| `openinference.span.kind` | `CHAIN` | `invoke_agent` |
-| `openinference.span.kind` | `RETRIEVER` | `retrieval` |
-| `openinference.span.kind` | `RERANKER` | `retrieval` |
-| `openinference.span.kind` | `TOOL` | `execute_tool` |
-| `openinference.span.kind` | `AGENT` | `invoke_agent` |
-| `openinference.span.kind` | `PROMPT` | `text_completion` |
+| Source | Source attribute | Source value | Target value |
+|---|---|---|---|
+| `openinference` | `openinference.span.kind` | `LLM` | `chat` |
+| `openinference` | `openinference.span.kind` | `EMBEDDING` | `embeddings` |
+| `openinference` | `openinference.span.kind` | `CHAIN` | `invoke_agent` |
+| `openinference` | `openinference.span.kind` | `RETRIEVER` | `retrieval` |
+| `openinference` | `openinference.span.kind` | `RERANKER` | `retrieval` |
+| `openinference` | `openinference.span.kind` | `TOOL` | `execute_tool` |
+| `openinference` | `openinference.span.kind` | `AGENT` | `invoke_agent` |
+| `openinference` | `openinference.span.kind` | `PROMPT` | `text_completion` |
+| `openllmetry` | `traceloop.span.kind` | `workflow` | `invoke_workflow` |
+| `openllmetry` | `traceloop.span.kind` | `task` | `invoke_agent` |
+| `openllmetry` | `traceloop.span.kind` | `agent` | `invoke_agent` |
+| `openllmetry` | `traceloop.span.kind` | `tool` | `execute_tool` |
+| `openllmetry` | `llm.request.type` | `completion` | `text_completion` |
+| `openllmetry` | `llm.request.type` | `chat` | `chat` |
+| `openllmetry` | `llm.request.type` | `rerank` | `retrieval` |
+| `openllmetry` | `llm.request.type` | `embedding` | `embeddings` |
+
+When a mapped attribute lands on `gen_ai.response.finish_reasons` with a string source value, the value is wrapped into a single-element `string[]` to match the OTel GenAI spec type.
 
 Target reference: [OTel GenAI operation names](https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/).
 

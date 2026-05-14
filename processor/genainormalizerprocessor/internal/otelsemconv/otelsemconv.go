@@ -13,18 +13,48 @@ import conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 const SchemaURL = conventions.SchemaURL
 
 // GenAI attribute keys as plain strings for use as pdata keys.
+// Grouped by top-level subnamespace (gen_ai.<group>.*), alphabetical within group.
 var (
-	GenAIOperationName     = string(conventions.GenAIOperationNameKey)
-	GenAIUsageInputTokens  = string(conventions.GenAIUsageInputTokensKey)
-	GenAIUsageOutputTokens = string(conventions.GenAIUsageOutputTokensKey)
-	GenAIRequestModel      = string(conventions.GenAIRequestModelKey)
-	GenAIProviderName      = string(conventions.GenAIProviderNameKey)
-	GenAIInputMessages     = string(conventions.GenAIInputMessagesKey)
-	GenAIOutputMessages    = string(conventions.GenAIOutputMessagesKey)
-	GenAIToolName          = string(conventions.GenAIToolNameKey)
-	GenAIToolDescription   = string(conventions.GenAIToolDescriptionKey)
+	// gen_ai.agent.*
+	GenAIAgentName = string(conventions.GenAIAgentNameKey)
+
+	// gen_ai.conversation.*
+	GenAIConversationID = string(conventions.GenAIConversationIDKey)
+
+	// gen_ai.input.*
+	GenAIInputMessages = string(conventions.GenAIInputMessagesKey)
+
+	// gen_ai.operation.*
+	GenAIOperationName = string(conventions.GenAIOperationNameKey)
+
+	// gen_ai.output.*
+	GenAIOutputMessages = string(conventions.GenAIOutputMessagesKey)
+
+	// gen_ai.provider.*
+	GenAIProviderName = string(conventions.GenAIProviderNameKey)
+
+	// gen_ai.request.*
+	GenAIRequestFrequencyPenalty = string(conventions.GenAIRequestFrequencyPenaltyKey)
+	GenAIRequestMaxTokens        = string(conventions.GenAIRequestMaxTokensKey)
+	GenAIRequestModel            = string(conventions.GenAIRequestModelKey)
+	GenAIRequestPresencePenalty  = string(conventions.GenAIRequestPresencePenaltyKey)
+	GenAIRequestStopSequences    = string(conventions.GenAIRequestStopSequencesKey)
+	GenAIRequestTemperature      = string(conventions.GenAIRequestTemperatureKey)
+	GenAIRequestTopK             = string(conventions.GenAIRequestTopKKey)
+	GenAIRequestTopP             = string(conventions.GenAIRequestTopPKey)
+
+	// gen_ai.response.*
+	GenAIResponseFinishReasons = string(conventions.GenAIResponseFinishReasonsKey)
+	GenAIResponseModel         = string(conventions.GenAIResponseModelKey)
+
+	// gen_ai.tool.*
 	GenAIToolCallArguments = string(conventions.GenAIToolCallArgumentsKey)
 	GenAIToolCallID        = string(conventions.GenAIToolCallIDKey)
-	GenAIAgentName         = string(conventions.GenAIAgentNameKey)
-	GenAIConversationID    = string(conventions.GenAIConversationIDKey)
+	GenAIToolDefinitions   = string(conventions.GenAIToolDefinitionsKey)
+	GenAIToolDescription   = string(conventions.GenAIToolDescriptionKey)
+	GenAIToolName          = string(conventions.GenAIToolNameKey)
+
+	// gen_ai.usage.*
+	GenAIUsageInputTokens  = string(conventions.GenAIUsageInputTokensKey)
+	GenAIUsageOutputTokens = string(conventions.GenAIUsageOutputTokensKey)
 )

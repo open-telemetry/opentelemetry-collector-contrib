@@ -42,6 +42,6 @@ var LookupTable = map[string]string{
 	"agent.name": otelsemconv.GenAIAgentName,
 	"session.id": otelsemconv.GenAIConversationID,
 
-	// Span kind -> operation name (value normalization handled by TransformValue)
+	// Span kind -> operation name (value normalization handled by Transformer)
 	"openinference.span.kind": otelsemconv.GenAIOperationName,
 }

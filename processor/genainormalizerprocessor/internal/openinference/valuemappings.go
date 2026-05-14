@@ -6,12 +6,14 @@ package openinference // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"strings"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
 )
 
 // operationNameValues maps OpenInference openinference.span.kind values to
-// OTel GenAI operation names. Keys are lowercased; TransformValue lowercases
-// the input before lookup.
+// OTel GenAI operation names. Keys are lowercased; Transform lowercases the
+// input before lookup.
 var operationNameValues = map[string]string{
 	"llm":       "chat",
 	"embedding": "embeddings",
@@ -23,19 +25,20 @@ var operationNameValues = map[string]string{
 	"prompt":    "text_completion",
 }
 
-// Transformer adapts the package-level TransformValue function to the
-// processor's valueTransformer interface.
+// Transformer implements the processor's valueTransformer interface for the
+// OpenInference source.
 type Transformer struct{}
 
-// TransformValue applies OpenInference-specific value normalization when the
-// target attribute is gen_ai.operation.name. Returns the original value if no
-// mapping applies.
-func (Transformer) TransformValue(targetKey, value string) string {
-	if targetKey != otelsemconv.GenAIOperationName {
-		return value
+// Transform writes a normalized representation of src into dst. For
+// gen_ai.operation.name it folds the string value against operationNameValues
+// (case-insensitive). All other keys and types fall through to a plain
+// src.CopyTo(dst).
+func (Transformer) Transform(targetKey string, src, dst pcommon.Value) {
+	if targetKey == otelsemconv.GenAIOperationName && src.Type() == pcommon.ValueTypeStr {
+		if mapped, ok := operationNameValues[strings.ToLower(src.Str())]; ok {
+			dst.SetStr(mapped)
+			return
+		}
 	}
-	if mapped, ok := operationNameValues[strings.ToLower(value)]; ok {
-		return mapped
-	}
-	return value
+	src.CopyTo(dst)
 }

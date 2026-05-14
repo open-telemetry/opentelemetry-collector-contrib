@@ -13,6 +13,19 @@ gen_ai_normalizer/openinference_only:
   sources:
     - name: openinference
 
+# Sources with only openllmetry defaults.
+gen_ai_normalizer/openllmetry_only:
+  sources:
+    - name: openllmetry
+
+# Both sources, applied in listed order.
+gen_ai_normalizer/openinference_and_openllmetry:
+  sources:
+    - name: openinference
+      remove_originals: true
+    - name: openllmetry
+      remove_originals: true
+
 # Explicit empty sources list: validation error.
 gen_ai_normalizer/empty_sources:
   sources: []
