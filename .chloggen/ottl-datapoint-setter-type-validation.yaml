@@ -1,8 +1,8 @@
 change_type: breaking
 component: pkg/ottl
 note: Return errors when OTTL datapoint context setters are used on an incompatible data point type
-issues: []
-Ω: |
+issues: [48384]
+subtext: |
   For example, `set(explicit_bounds, [1.0])` against a `NumberDataPoint` now returns an error
   rather than silently no-opping. Statements that were previously failing silently due to data
   point type mismatches will now surface as errors.
