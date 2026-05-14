@@ -11,9 +11,9 @@ components:
         - otlpjson
         - roundrobin
         - routing
-        - servicegraph
+        - service_graph
         - signal_to_metrics
-        - spanmetrics
+        - span_metrics
         - sum
     exporter:
         - alibabacloud_logservice
@@ -35,11 +35,11 @@ components:
         - elasticsearch
         - faro
         - file
+        - google_cloud_storage
         - googlecloud
         - googlecloudpubsub
-        - googlecloudstorage
         - googlemanagedprometheus
-        - honeycombmarker
+        - honeycomb_marker
         - influxdb
         - kafka
         - loadbalancing
@@ -68,6 +68,7 @@ components:
         - awscloudwatchmetricstreams_encoding
         - awsproxy
         - azure_auth
+        - azure_encoding
         - basicauth
         - bearertokenauth
         - cgroup_runtime
@@ -103,6 +104,7 @@ components:
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
+        - drain
         - filter
         - geoip
         - groupbyattrs
@@ -110,7 +112,7 @@ components:
         - interval
         - isolationforest
         - k8s_attributes
-        - logdedup
+        - log_dedup
         - metric_start_time
         - metricsgeneration
         - metricstransform
@@ -120,6 +122,7 @@ components:
         - resource
         - resourcedetection
         - span
+        - spanpruning
         - sumologic
         - tail_sampling
         - transform
@@ -138,6 +141,7 @@ components:
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
+        - awslambda
         - awss3
         - awsxray
         - azure_blob
@@ -145,6 +149,7 @@ components:
         - azure_monitor
         - carbon
         - chrony
+        - cisco_os
         - cloudflare
         - cloudfoundry
         - collectd
@@ -155,18 +160,18 @@ components:
         - envoyals
         - expvar
         - faro
-        - filelog
-        - filestats
+        - file_log
+        - file_stats
         - flinkmetrics
-        - fluentforward
+        - fluent_forward
         - github
         - gitlab
         - googlecloudmonitoring
         - googlecloudpubsub
         - googlecloudspanner
         - haproxy
-        - hostmetrics
-        - httpcheck
+        - host_metrics
+        - http_check
         - iis
         - influxdb
         - jaeger
@@ -174,7 +179,7 @@ components:
         - journald
         - k8s_cluster
         - k8s_events
-        - k8sobjects
+        - k8s_objects
         - kafka
         - kafkametrics
         - kubeletstats
@@ -185,7 +190,7 @@ components:
         - mongodb
         - mongodb_atlas
         - mysql
-        - namedpipe
+        - named_pipe
         - netflow
         - nginx
         - nsxt
@@ -195,6 +200,7 @@ components:
         - otlpjsonfile
         - podman_stats
         - postgresql
+        - pprof
         - prometheus
         - prometheus_remote_write
         - prometheus_simple
@@ -215,19 +221,19 @@ components:
         - splunkenterprise
         - sqlquery
         - sqlserver
-        - sshcheck
+        - ssh_check
         - statsd
         - stef
         - syslog
         - systemd
+        - tcp_log
         - tcpcheck
-        - tcplog
-        - tlscheck
-        - udplog
+        - tls_check
+        - udp_log
         - vcenter
         - wavefront
         - webhookevent
-        - windowseventlog
+        - windows_event_log
         - windowsperfcounters
         - windowsservice
         - yang_grpc

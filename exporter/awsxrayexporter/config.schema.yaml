@@ -15,6 +15,6 @@ properties:
       type: string
   telemetry:
     description: TelemetryConfig contains the options for telemetry collection.
-    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry.config
+    $ref: /internal/aws/xray/telemetry.config
 allOf:
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil.aws_session_settings
+  - $ref: /internal/aws/awsutil.aws_session_settings

@@ -35,7 +35,7 @@ description: Config defines configuration for Remote Write exporter.
 type: object
 properties:
   add_metric_suffixes:
-    description: AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export
+    description: 'AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export Deprecated: Use TranslationStrategy instead. It will be removed in v0.153.0.'
     type: boolean
   disable_scope_info:
     description: DisableScopeInfo allows disabling the export of the scope info labels
@@ -63,13 +63,16 @@ properties:
     $ref: remote_write_queue
   resource_to_telemetry_conversion:
     description: ResourceToTelemetrySettings is the option for converting resource attributes to telemetry attributes. "Enabled" - A boolean field to enable/disable this option. Default is `false`. If enabled, all the resource attributes will be converted to metric labels by default. "ExcludeServiceAttributes" - If set to `true`, the `service.name`, `service.instance.id` and `service.namespace` resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics.
-    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry.settings
+    $ref: /pkg/resourcetotelemetry.settings
   send_metadata:
     description: SendMetadata controls whether prometheus metadata will be generated and sent, this option is ignored when using PRW 2.0, which always includes metadata.
     type: boolean
   target_info:
     description: TargetInfo allows customizing the target_info metric
     $ref: target_info
+  translation_strategy:
+    description: TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names. When set, this takes precedence over AddMetricSuffixes.
+    type: string
   wal:
     description: WAL enables persisting metrics to a write-ahead-log before sending to the remote storage.
     x-optional: true

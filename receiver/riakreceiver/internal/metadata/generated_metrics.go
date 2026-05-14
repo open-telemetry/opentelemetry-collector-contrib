@@ -111,9 +111,9 @@ type metricInfo struct {
 }
 
 type metricRiakMemoryLimit struct {
-	data     pmetric.Metric        // data buffer for generated metric.
-	config   RiakMemoryLimitConfig // metric config provided by user.
-	capacity int                   // max observed number of data points added to the metric.
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   RiakMemoryLimitMetricConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
 }
 
 // init fills riak.memory.limit metric with initial data.
@@ -152,7 +152,7 @@ func (m *metricRiakMemoryLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRiakMemoryLimit(cfg RiakMemoryLimitConfig) metricRiakMemoryLimit {
+func newMetricRiakMemoryLimit(cfg RiakMemoryLimitMetricConfig) metricRiakMemoryLimit {
 	m := metricRiakMemoryLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -163,10 +163,10 @@ func newMetricRiakMemoryLimit(cfg RiakMemoryLimitConfig) metricRiakMemoryLimit {
 }
 
 type metricRiakNodeOperationCount struct {
-	data          pmetric.Metric               // data buffer for generated metric.
-	config        RiakNodeOperationCountConfig // metric config provided by user.
-	capacity      int                          // max observed number of data points added to the metric.
-	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        RiakNodeOperationCountMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills riak.node.operation.count metric with initial data.
@@ -189,7 +189,7 @@ func (m *metricRiakNodeOperationCount) recordDataPoint(start pcommon.Timestamp, 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, RiakNodeOperationCountAttributeKeyRequest) {
+	if slices.Contains(m.config.EnabledAttributes, RiakNodeOperationCountMetricAttributeKeyRequest) {
 		dp.Attributes().PutStr("request", requestAttributeValue)
 	}
 
@@ -243,7 +243,7 @@ func (m *metricRiakNodeOperationCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRiakNodeOperationCount(cfg RiakNodeOperationCountConfig) metricRiakNodeOperationCount {
+func newMetricRiakNodeOperationCount(cfg RiakNodeOperationCountMetricConfig) metricRiakNodeOperationCount {
 	m := metricRiakNodeOperationCount{config: cfg}
 
 	if cfg.Enabled {
@@ -254,10 +254,10 @@ func newMetricRiakNodeOperationCount(cfg RiakNodeOperationCountConfig) metricRia
 }
 
 type metricRiakNodeOperationTimeMean struct {
-	data          pmetric.Metric                  // data buffer for generated metric.
-	config        RiakNodeOperationTimeMeanConfig // metric config provided by user.
-	capacity      int                             // max observed number of data points added to the metric.
-	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        RiakNodeOperationTimeMeanMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills riak.node.operation.time.mean metric with initial data.
@@ -278,7 +278,7 @@ func (m *metricRiakNodeOperationTimeMean) recordDataPoint(start pcommon.Timestam
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, RiakNodeOperationTimeMeanAttributeKeyRequest) {
+	if slices.Contains(m.config.EnabledAttributes, RiakNodeOperationTimeMeanMetricAttributeKeyRequest) {
 		dp.Attributes().PutStr("request", requestAttributeValue)
 	}
 
@@ -332,7 +332,7 @@ func (m *metricRiakNodeOperationTimeMean) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRiakNodeOperationTimeMean(cfg RiakNodeOperationTimeMeanConfig) metricRiakNodeOperationTimeMean {
+func newMetricRiakNodeOperationTimeMean(cfg RiakNodeOperationTimeMeanMetricConfig) metricRiakNodeOperationTimeMean {
 	m := metricRiakNodeOperationTimeMean{config: cfg}
 
 	if cfg.Enabled {
@@ -343,9 +343,9 @@ func newMetricRiakNodeOperationTimeMean(cfg RiakNodeOperationTimeMeanConfig) met
 }
 
 type metricRiakNodeReadRepairCount struct {
-	data     pmetric.Metric                // data buffer for generated metric.
-	config   RiakNodeReadRepairCountConfig // metric config provided by user.
-	capacity int                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   RiakNodeReadRepairCountMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills riak.node.read_repair.count metric with initial data.
@@ -384,7 +384,7 @@ func (m *metricRiakNodeReadRepairCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRiakNodeReadRepairCount(cfg RiakNodeReadRepairCountConfig) metricRiakNodeReadRepairCount {
+func newMetricRiakNodeReadRepairCount(cfg RiakNodeReadRepairCountMetricConfig) metricRiakNodeReadRepairCount {
 	m := metricRiakNodeReadRepairCount{config: cfg}
 
 	if cfg.Enabled {
@@ -395,10 +395,10 @@ func newMetricRiakNodeReadRepairCount(cfg RiakNodeReadRepairCountConfig) metricR
 }
 
 type metricRiakVnodeIndexOperationCount struct {
-	data          pmetric.Metric                     // data buffer for generated metric.
-	config        RiakVnodeIndexOperationCountConfig // metric config provided by user.
-	capacity      int                                // max observed number of data points added to the metric.
-	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        RiakVnodeIndexOperationCountMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills riak.vnode.index.operation.count metric with initial data.
@@ -421,7 +421,7 @@ func (m *metricRiakVnodeIndexOperationCount) recordDataPoint(start pcommon.Times
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, RiakVnodeIndexOperationCountAttributeKeyOperation) {
+	if slices.Contains(m.config.EnabledAttributes, RiakVnodeIndexOperationCountMetricAttributeKeyOperation) {
 		dp.Attributes().PutStr("operation", operationAttributeValue)
 	}
 
@@ -475,7 +475,7 @@ func (m *metricRiakVnodeIndexOperationCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRiakVnodeIndexOperationCount(cfg RiakVnodeIndexOperationCountConfig) metricRiakVnodeIndexOperationCount {
+func newMetricRiakVnodeIndexOperationCount(cfg RiakVnodeIndexOperationCountMetricConfig) metricRiakVnodeIndexOperationCount {
 	m := metricRiakVnodeIndexOperationCount{config: cfg}
 
 	if cfg.Enabled {
@@ -486,10 +486,10 @@ func newMetricRiakVnodeIndexOperationCount(cfg RiakVnodeIndexOperationCountConfi
 }
 
 type metricRiakVnodeOperationCount struct {
-	data          pmetric.Metric                // data buffer for generated metric.
-	config        RiakVnodeOperationCountConfig // metric config provided by user.
-	capacity      int                           // max observed number of data points added to the metric.
-	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        RiakVnodeOperationCountMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills riak.vnode.operation.count metric with initial data.
@@ -512,7 +512,7 @@ func (m *metricRiakVnodeOperationCount) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, RiakVnodeOperationCountAttributeKeyRequest) {
+	if slices.Contains(m.config.EnabledAttributes, RiakVnodeOperationCountMetricAttributeKeyRequest) {
 		dp.Attributes().PutStr("request", requestAttributeValue)
 	}
 
@@ -566,7 +566,7 @@ func (m *metricRiakVnodeOperationCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRiakVnodeOperationCount(cfg RiakVnodeOperationCountConfig) metricRiakVnodeOperationCount {
+func newMetricRiakVnodeOperationCount(cfg RiakVnodeOperationCountMetricConfig) metricRiakVnodeOperationCount {
 	m := metricRiakVnodeOperationCount{config: cfg}
 
 	if cfg.Enabled {

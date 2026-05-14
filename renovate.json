@@ -107,7 +107,6 @@
       "matchPaths": [
         "exporter/datadogexporter/**",
         "connector/datadogconnector/**",
-        "processor/datadogsemanticsprocessor/**",
         "internal/datadog/**",
         "pkg/datadog/**"
       ],
@@ -239,6 +238,15 @@
       "groupName": "All github.com/splunk/stef packages",
       "matchPackageNames": [
         "github.com/splunk/stef{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All github.com/twmb/franz-go packages",
+      "matchPackageNames": [
+        "github.com/twmb/franz-go{/,}**"
       ]
     },
     {

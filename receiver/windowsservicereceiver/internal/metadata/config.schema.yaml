@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       windows.service.status:
-        description: "WindowsServiceStatusConfig provides config for the windows.service.status metric."
+        description: "WindowsServiceStatusMetricConfig provides config for the windows.service.status metric."
         type: object
         properties:
           enabled:

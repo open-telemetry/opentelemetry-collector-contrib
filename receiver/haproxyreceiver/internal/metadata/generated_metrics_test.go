@@ -199,6 +199,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb := mb.NewResourceBuilder()
 			rb.SetHaproxyAddr("haproxy.addr-val")
 			rb.SetHaproxyProxyName("haproxy.proxy_name-val")
+			rb.SetHaproxyServerState("haproxy.server.state-val")
 			rb.SetHaproxyServiceName("haproxy.service_name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
@@ -542,9 +543,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("status_code")
+						statusCodeAttrVal, ok := dp.Attributes().Get("status_code")
 						assert.True(t, ok)
-						assert.Equal(t, "1xx", attrVal.Str())
+						assert.Equal(t, "1xx", statusCodeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["haproxy.requests.total"], "Found a duplicate in the metrics slice: haproxy.requests.total")
 						validatedMetrics["haproxy.requests.total"] = true

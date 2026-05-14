@@ -25,7 +25,7 @@ properties:
     description: Logs defines the Logs exporter specific configuration
     $ref: logs_config
   resource_to_telemetry_conversion:
-    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry.settings
+    $ref: /pkg/resourcetotelemetry.settings
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config

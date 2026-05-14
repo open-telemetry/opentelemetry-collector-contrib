@@ -31,8 +31,6 @@ and please don't use it if the following limitations are a concern:
   scrape the targets multiple times.
 * Users need to configure each replica with different scraping configuration
   if they want to manually shard the scraping.
-* The Prometheus receiver is a stateful component.
-
 ## Unsupported features
 The Prometheus receiver is meant to minimally be a drop-in replacement for Prometheus. However,
 there are advanced features of Prometheus that we don't support and thus explicitly will return
@@ -261,6 +259,17 @@ Feature gates can be enabled using the `--feature-gates` flag:
 ```shell
 "--feature-gates=<feature-gate>"
 ```
+
+## Benchmark Results
+
+Current Prometheus receiver benchmark results are published on the [Collector Benchmarks page](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/). The table below links directly to the current Prometheus receiver charts by scenario and metric type.
+
+| Scenario | CPU | Memory |
+| --- | --- | --- |
+| Baseline, 1k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-baseline-1k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-baseline-1k-ram-mib) |
+| Baseline, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-baseline-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-baseline-10k-ram-mib) |
+| Native histograms, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-nativehistogram-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-nativehistogram-10k-ram-mib) |
+| `target_info` enabled, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-withtargetinfo-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-withtargetinfo-10k-ram-mib) |
 
 ## Troubleshooting and Best Practices
 

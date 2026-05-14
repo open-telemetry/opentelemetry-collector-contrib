@@ -21,5 +21,5 @@ properties:
     type: string
 allOf:
   - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka.client_config
+  - $ref: /pkg/kafka/configkafka.client_config
   - $ref: ./internal/metadata.metrics_builder_config

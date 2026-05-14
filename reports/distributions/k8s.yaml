@@ -9,7 +9,7 @@ components:
         - otlpjson
         - roundrobin
         - routing
-        - servicegraph
+        - service_graph
     exporter:
         - file
         - loadbalancing
@@ -39,7 +39,7 @@ components:
         - groupbytrace
         - interval
         - k8s_attributes
-        - logdedup
+        - log_dedup
         - metricstransform
         - probabilistic_sampler
         - redaction
@@ -49,15 +49,15 @@ components:
         - tail_sampling
         - transform
     receiver:
-        - filelog
-        - fluentforward
-        - hostmetrics
-        - httpcheck
+        - file_log
+        - fluent_forward
+        - host_metrics
+        - http_check
         - jaeger
         - journald
         - k8s_cluster
         - k8s_events
-        - k8sobjects
+        - k8s_objects
         - kubeletstats
         - otelarrow
         - prometheus
