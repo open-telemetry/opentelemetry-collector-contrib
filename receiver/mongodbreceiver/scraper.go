@@ -43,6 +43,7 @@ const (
 	clientKey                       = "client"
 	applicationNameKey              = "appName"
 	effectiveUsersKey               = "effectiveUsers"
+	userKey                         = "user"
 	cursorKey                       = "cursor"
 	cursorAwaitDataKey              = "awaitData"
 	cursorIDKey                     = "cursorId"
@@ -248,25 +249,23 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		writeConflictCount := getInt64Value(op, writeConflictsKey)
 		yieldCount := getInt64Value(op, numYieldsKey)
 		lsid := ""
-		if lsidLookup, ok := newLookup(op[lsidKey]); ok {
-			if lsidValue, ok := lsidLookup(idKey); ok {
-				lsid = formatLsidID(lsidValue)
-			}
+		if v, ok := lookup(op[lsidKey], idKey); ok {
+			lsid = formatLsidID(v)
 		}
 		cursor := getValue[bson.D](op, cursorKey)
-		cursorAwaitData := getValueFromBSOND[bool](cursor, cursorAwaitDataKey)
-		cursorBatchesReturnedCount := getInt64ValueFromBSOND(cursor, cursorNBatchesReturnedKey)
-		cursorDocumentsReturnedCount := getInt64ValueFromBSOND(cursor, cursorNDocsReturnedKey)
-		cursorID := getFormattedValueFromBSOND(cursor, cursorIDKey)
-		cursorNoTimeout := getValueFromBSOND[bool](cursor, cursorNoCursorTimeoutKey)
-		cursorOperationUsingCursorID := getFormattedValueFromBSOND(cursor, cursorOperationUsingCursorIDKey)
-		cursorOriginatingCommand := getValueFromBSOND[bson.D](cursor, cursorOriginatingCommandKey)
+		cursorAwaitData := getValue[bool](cursor, cursorAwaitDataKey)
+		cursorBatchesReturnedCount := getInt64Value(cursor, cursorNBatchesReturnedKey)
+		cursorDocumentsReturnedCount := getInt64Value(cursor, cursorNDocsReturnedKey)
+		cursorID := getFormattedValue(cursor, cursorIDKey)
+		cursorNoTimeout := getValue[bool](cursor, cursorNoCursorTimeoutKey)
+		cursorOperationUsingCursorID := getFormattedValue(cursor, cursorOperationUsingCursorIDKey)
+		cursorOriginatingCommand := getValue[bson.D](cursor, cursorOriginatingCommandKey)
 		obfuscatedCursorOriginatingCommand := ""
 		if len(cursorOriginatingCommand) > 0 {
 			cleanedCursorOriginatingCommand := cleanCommand(cursorOriginatingCommand)
 			obfuscatedCursorOriginatingCommand = s.obfuscator.obfuscateMongoDBString(cleanedCursorOriginatingCommand.String())
 		}
-		cursorTailable := getValueFromBSOND[bool](cursor, cursorTailableKey)
+		cursorTailable := getValue[bool](cursor, cursorTailableKey)
 		planSummary := getValue[string](op, planSummaryKey)
 		queryFramework := getValue[string](op, queryFrameworkKey)
 		waitingForLock := getValue[bool](op, waitingForLockKey)
@@ -358,28 +357,11 @@ func deriveOperationStatus(op bson.M, waitingForLock, waitingForFlowControl, wai
 }
 
 func extractEffectiveUserName(op bson.M) string {
-	effectiveUsers, ok := op[effectiveUsersKey].(bson.A)
-	if !ok || len(effectiveUsers) == 0 {
+	users, ok := op[effectiveUsersKey].(bson.A)
+	if !ok || len(users) == 0 {
 		return ""
 	}
-
-	switch first := effectiveUsers[0].(type) {
-	case bson.M:
-		user, _ := first["user"].(string)
-		return user
-	case bson.D:
-		for _, e := range first {
-			if e.Key == "user" {
-				user, _ := e.Value.(string)
-				return user
-			}
-		}
-	case map[string]any:
-		user, _ := first["user"].(string)
-		return user
-	}
-
-	return ""
+	return getValue[string](users[0], userKey)
 }
 
 func (s *mongodbScraper) shouldIncludeOperation(op bson.M) bool {
@@ -439,171 +421,110 @@ func getCommandDetails(command bson.D) (string, metadata.AttributeMongodbQueryTr
 	return commandType, metadata.AttributeMongodbQueryTruncatedNotTruncated
 }
 
-type valueLookup func(string) (any, bool)
-
-func newBSONDLookup(doc bson.D) valueLookup {
-	return func(key string) (any, bool) {
-		for _, elem := range doc {
+// lookup returns the value for key from a BSON document. It accepts bson.M,
+// bson.D, or map[string]any so callers do not need to know which container
+// the driver returned.
+func lookup(doc any, key string) (any, bool) {
+	switch d := doc.(type) {
+	case bson.M:
+		v, ok := d[key]
+		return v, ok
+	case bson.D:
+		for _, elem := range d {
 			if elem.Key == key {
 				return elem.Value, true
 			}
 		}
 		return nil, false
-	}
-}
-
-func newBSONMLookup(doc bson.M) valueLookup {
-	return func(key string) (any, bool) {
-		value, ok := doc[key]
-		return value, ok
-	}
-}
-
-func newLookup(doc any) (valueLookup, bool) {
-	switch typedValue := doc.(type) {
-	case bson.D:
-		return newBSONDLookup(typedValue), true
-	case bson.M:
-		return newBSONMLookup(typedValue), true
 	case map[string]any:
-		return func(key string) (any, bool) {
-			value, ok := typedValue[key]
-			return value, ok
-		}, true
+		v, ok := d[key]
+		return v, ok
 	default:
 		return nil, false
 	}
 }
 
-func getLookupValue[T any](lookup valueLookup, key string) T {
+// getValue returns the value for key cast to T, or T's zero value if the key
+// is missing or the value is not of type T.
+func getValue[T any](doc any, key string) T {
 	var zero T
-	value, ok := lookup(key)
+	v, ok := lookup(doc, key)
 	if !ok {
 		return zero
 	}
-	typedValue, ok := value.(T)
-	if !ok {
-		return zero
-	}
-	return typedValue
+	typed, _ := v.(T)
+	return typed
 }
 
-func getLookupInt64Value(lookup valueLookup, key string) int64 {
-	value, ok := lookup(key)
+// getInt64Value returns the value for key coerced to int64 via parseInt
+// (shared with metrics.go), or 0 when the key is missing or the value is
+// not a supported numeric type.
+func getInt64Value(doc any, key string) int64 {
+	v, ok := lookup(doc, key)
 	if !ok {
 		return 0
 	}
-	intValue, _ := toInt64(value)
-	return intValue
+	n, _ := parseInt(v)
+	return n
 }
 
-func getLookupFormattedValue(lookup valueLookup, key string) string {
-	value, ok := lookup(key)
+// getFormattedValue returns fmt.Sprintf("%v", value) for the key, or "" when
+// the key is missing.
+func getFormattedValue(doc any, key string) string {
+	v, ok := lookup(doc, key)
 	if !ok {
 		return ""
 	}
-	return fmt.Sprintf("%v", value)
+	return fmt.Sprintf("%v", v)
 }
 
+// getJSONValue returns the value for key encoded as MongoDB Extended JSON.
+// It returns "" when the key is missing or when the value encodes to an empty
+// document ("{}"), so attributes are omitted instead of carrying a placeholder.
+func getJSONValue(doc any, key string) string {
+	v, ok := lookup(doc, key)
+	if !ok {
+		return ""
+	}
+	j, err := bson.MarshalExtJSON(v, false, false)
+	if err != nil {
+		return fmt.Sprint(v)
+	}
+	// An empty document ("{}") carries no information for downstream consumers;
+	// treat it the same as a missing key so the attribute is omitted rather than
+	// surfacing a misleading placeholder.
+	s := string(j)
+	if s == "{}" {
+		return ""
+	}
+	return s
+}
+
+// formatLsidID renders a logical-session UUID. MongoDB returns lsid.id as a
+// bson.Binary with the standard UUID subtype, which fmt.Sprintf would print
+// as a raw byte slice; convert to the canonical hex form when possible.
 func formatLsidID(value any) string {
-	if binaryValue, ok := value.(bson.Binary); ok && binaryValue.Subtype == 0x04 && len(binaryValue.Data) == 16 {
-		u, err := uuid.FromBytes(binaryValue.Data)
-		if err == nil {
+	if b, ok := value.(bson.Binary); ok && b.Subtype == 0x04 && len(b.Data) == 16 {
+		if u, err := uuid.FromBytes(b.Data); err == nil {
 			return u.String()
 		}
 	}
 	return fmt.Sprintf("%v", value)
 }
 
-func getLookupJSONValue(lookup valueLookup, key string) string {
-	value, ok := lookup(key)
-	if !ok {
-		return ""
-	}
-	jsonValue, err := bson.MarshalExtJSON(value, false, false)
-	if err != nil {
-		return fmt.Sprint(value)
-	}
-	return string(jsonValue)
-}
-
-func getValueFromBSOND[T any](doc bson.D, key string) T {
-	return getLookupValue[T](newBSONDLookup(doc), key)
-}
-
-func getInt64ValueFromBSOND(doc bson.D, key string) int64 {
-	return getLookupInt64Value(newBSONDLookup(doc), key)
-}
-
-func getFormattedValueFromBSOND(doc bson.D, key string) string {
-	return getLookupFormattedValue(newBSONDLookup(doc), key)
-}
-
-func getFormattedValue(doc any, key string) string {
-	lookup, ok := newLookup(doc)
-	if !ok {
-		return ""
-	}
-	return getLookupFormattedValue(lookup, key)
-}
-
+// hasNonEmptyDocumentValue reports whether value is a non-empty BSON document.
+// Used to distinguish an absent/null waitingForLatch from one with details.
 func hasNonEmptyDocumentValue(value any) bool {
-	switch typedValue := value.(type) {
-	case bson.D:
-		return len(typedValue) > 0
+	switch d := value.(type) {
 	case bson.M:
-		return len(typedValue) > 0
+		return len(d) > 0
+	case bson.D:
+		return len(d) > 0
 	case map[string]any:
-		return len(typedValue) > 0
+		return len(d) > 0
 	default:
 		return false
 	}
-}
-
-// getValue extracts a value from a BSON document with type assertion
-func getValue[T any](doc bson.M, key string) T {
-	return getLookupValue[T](newBSONMLookup(doc), key)
-}
-
-func getInt64Value(doc bson.M, key string) int64 {
-	return getLookupInt64Value(newBSONMLookup(doc), key)
-}
-
-func toInt64(val any) (int64, bool) {
-	switch typedVal := val.(type) {
-	case int:
-		return int64(typedVal), true
-	case int8:
-		return int64(typedVal), true
-	case int16:
-		return int64(typedVal), true
-	case int32:
-		return int64(typedVal), true
-	case int64:
-		return typedVal, true
-	case uint:
-		if uint64(typedVal) > uint64(^uint64(0)>>1) {
-			return 0, false
-		}
-		return int64(typedVal), true
-	case uint8:
-		return int64(typedVal), true
-	case uint16:
-		return int64(typedVal), true
-	case uint32:
-		return int64(typedVal), true
-	case uint64:
-		if typedVal > uint64(^uint64(0)>>1) {
-			return 0, false
-		}
-		return int64(typedVal), true
-	default:
-		return 0, false
-	}
-}
-
-func getJSONValue(doc bson.M, key string) string {
-	return getLookupJSONValue(newBSONMLookup(doc), key)
 }
 
 func clientAddressAndPort(clientAddr string) (string, int64) {

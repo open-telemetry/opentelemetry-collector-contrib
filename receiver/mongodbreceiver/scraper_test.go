@@ -1455,6 +1455,58 @@ func TestProcessCurrentOpMaxRowsPerQueryZeroMeansNoRows(t *testing.T) {
 	require.Equal(t, 0, logs.LogRecordCount(), "max_rows_per_query=0 should emit no query samples")
 }
 
+func TestGetJSONValue(t *testing.T) {
+	tests := []struct {
+		name string
+		doc  any
+		key  string
+		want string
+	}{
+		{
+			name: "missing key returns empty string",
+			doc:  bson.M{"other": "value"},
+			key:  "missing",
+			want: "",
+		},
+		{
+			name: "empty bson.M returns empty string",
+			doc:  bson.M{"locks": bson.M{}},
+			key:  "locks",
+			want: "",
+		},
+		{
+			name: "empty bson.D returns empty string",
+			doc:  bson.M{"locks": bson.D{}},
+			key:  "locks",
+			want: "",
+		},
+		{
+			name: "empty map[string]any returns empty string",
+			doc:  bson.M{"locks": map[string]any{}},
+			key:  "locks",
+			want: "",
+		},
+		{
+			name: "non-empty bson.M returns canonical extended JSON",
+			doc:  bson.M{"locks": bson.M{"Global": "r"}},
+			key:  "locks",
+			want: `{"Global":"r"}`,
+		},
+		{
+			name: "non-empty bson.D returns canonical extended JSON",
+			doc:  bson.M{"locks": bson.D{{Key: "Global", Value: "r"}}},
+			key:  "locks",
+			want: `{"Global":"r"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, getJSONValue(tt.doc, tt.key))
+		})
+	}
+}
+
 func TestDependentMetricsWhenDisabled(t *testing.T) {
 	tests := []struct {
 		name              string
