@@ -462,13 +462,12 @@ func TestScrape(t *testing.T) {
 				assertFileSystemUsageMetricHasUnixSpecificStateLabels(t, m)
 				m, err = findMetricByName(metrics, "system.filesystem.inodes.usage")
 				assert.NoError(t, err)
-				minDataPoints := 2 // we have 2 states for inodes, free and used
 				assertFileSystemUsageMetricValid(
 					t,
 					m,
 					test.expectedDeviceDataPoints*2,
 					test.expectedDeviceAttributes,
-					minDataPoints,
+					inodeStatesLen,
 				)
 			}
 

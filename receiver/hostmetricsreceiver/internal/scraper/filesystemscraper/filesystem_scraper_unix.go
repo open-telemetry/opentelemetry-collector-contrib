@@ -12,7 +12,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
 
-const fileSystemStatesLen = 3
+const (
+	fileSystemStatesLen = 3
+	inodeStatesLen      = 2 // we have 2 states for inodes, free and used
+)
 
 func (s *filesystemsScraper) recordFileSystemUsageMetric(now pcommon.Timestamp, deviceUsages []*deviceUsage) {
 	for _, deviceUsage := range deviceUsages {
