@@ -171,6 +171,9 @@ func (inputLogEvents ByTimestamp) Swap(i, j int) {
 }
 
 func (inputLogEvents ByTimestamp) Less(i, j int) bool {
+	if inputLogEvents[i].Timestamp == nil || inputLogEvents[j].Timestamp == nil {
+		return inputLogEvents[i].Timestamp != nil
+	}
 	return *inputLogEvents[i].Timestamp < *inputLogEvents[j].Timestamp
 }
 
@@ -182,6 +185,7 @@ type Pusher interface {
 
 // Struct of logPusher implemented Pusher interface.
 type logPusher struct {
+	mu     sync.Mutex
 	logger *zap.Logger
 	// log group name of the current logPusher
 	logGroupName *string
@@ -236,7 +240,9 @@ func (p *logPusher) AddLogEntry(ctx context.Context, logEvent *Event) error {
 		if err != nil {
 			return err
 		}
+		p.mu.Lock()
 		prevBatch := p.addLogEvent(logEvent)
+		p.mu.Unlock()
 		if prevBatch != nil {
 			err = p.pushEventBatch(ctx, prevBatch)
 		}
@@ -245,7 +251,9 @@ func (p *logPusher) AddLogEntry(ctx context.Context, logEvent *Event) error {
 }
 
 func (p *logPusher) ForceFlush(ctx context.Context) error {
+	p.mu.Lock()
 	prevBatch := p.renewEventBatch()
+	p.mu.Unlock()
 	if prevBatch != nil {
 		return p.pushEventBatch(ctx, prevBatch)
 	}

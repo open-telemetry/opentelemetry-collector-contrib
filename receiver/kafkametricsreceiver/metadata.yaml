@@ -1,5 +1,6 @@
 display_name: Kafka Metrics Receiver
-type: kafkametrics
+type: kafka_metrics
+deprecated_type: kafkametrics
 
 description: |
   The Kafka Metrics Receiver collects kafka metrics (brokers, topics, partitions, consumer groups) from a kafka server,
@@ -15,10 +16,11 @@ status:
 
 feature_gates:
   - id: receiver.kafkametricsreceiver.UseFranzGo
-    stage: beta
+    stage: stable
     description: >-
-      When enabled, the Kafka Metrics receiver will use the franz-go client to connect to Kafka.
+      The Kafka Metrics receiver now uses the franz-go client to connect to Kafka.
     from_version: v0.137.0
+    to_version: v0.154.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41480
 
 reaggregation_enabled: true

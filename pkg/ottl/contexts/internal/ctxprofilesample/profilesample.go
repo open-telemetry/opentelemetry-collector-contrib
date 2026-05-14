@@ -17,10 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 )
 
-var (
-	errMaxValueExceed   = errors.New("exceeded max value")
-	errInvalidValueType = errors.New("invalid value type")
-)
+var errMaxValueExceed = errors.New("exceeded max value")
 
 func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
@@ -78,14 +75,15 @@ func accessLinkIndex[K Context]() ottl.StandardGetSetter[K] {
 			return int64(tCtx.GetProfileSample().LinkIndex()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.(int64); ok {
-				if v >= math.MaxInt32 {
-					return errMaxValueExceed
-				}
-				tCtx.GetProfileSample().SetLinkIndex(int32(v))
-				return nil
+			v, err := ctxutil.ExpectType[int64](val)
+			if err != nil {
+				return err
 			}
-			return errInvalidValueType
+			if v >= math.MaxInt32 {
+				return errMaxValueExceed
+			}
+			tCtx.GetProfileSample().SetLinkIndex(int32(v))
+			return nil
 		},
 	}
 }
@@ -111,11 +109,13 @@ func accessTimestamps[K Context]() ottl.StandardGetSetter[K] {
 			return ts, nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if ts, ok := val.([]time.Time); ok {
-				tCtx.GetProfileSample().TimestampsUnixNano().FromRaw([]uint64{})
-				for _, t := range ts {
-					tCtx.GetProfileSample().TimestampsUnixNano().Append(uint64(t.UTC().UnixNano()))
-				}
+			ts, err := ctxutil.ExpectType[[]time.Time](val)
+			if err != nil {
+				return err
+			}
+			tCtx.GetProfileSample().TimestampsUnixNano().FromRaw([]uint64{})
+			for _, t := range ts {
+				tCtx.GetProfileSample().TimestampsUnixNano().Append(uint64(t.UTC().UnixNano()))
 			}
 			return nil
 		},

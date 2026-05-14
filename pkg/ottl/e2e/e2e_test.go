@@ -615,6 +615,24 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], Coalesce([attributes["http.method"], attributes["http.path"], "fallback"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "get")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Coalesce([attributes["nonexistent"], attributes["http.method"], "fallback"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "get")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Coalesce([attributes["nonexistent"], attributes["also.missing"], "fallback"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "fallback")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Concat(["A","B"], ":"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "A:B")
@@ -1459,8 +1477,8 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(
-	attributes["test"], 
-	ParseSeverity(severity_number, 
+	attributes["test"],
+	ParseSeverity(severity_number,
 		{
 			"error":[
 				{"equals": ["err"]},

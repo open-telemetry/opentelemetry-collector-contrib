@@ -14,7 +14,7 @@ import (
 func TestSpanEventConditionalAttributeTransformer(t *testing.T) {
 	migrator := migrate.NewMultiConditionalAttributeSet(map[string]string{
 		"event.name": "event_name",
-	}, map[string][]string{
+	}, false, map[string][]string{
 		"span.name":  {"sqlquery.start", "sqlquery.end"},
 		"event.name": {"sqlquery"},
 	})

@@ -60,6 +60,28 @@ func TestProcessItemFailure(t *testing.T) {
 	}
 }
 
+func TestNewLogBulkIndexerWithPipeline(t *testing.T) {
+	tests := []struct {
+		name     string
+		pipeline string
+	}{
+		{"empty pipeline", ""},
+		{"with pipeline", "my-pipeline"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lbi := newLogBulkIndexer("create", nil, tt.pipeline)
+			if lbi.pipeline != tt.pipeline {
+				t.Errorf("expected pipeline %q, got %q", tt.pipeline, lbi.pipeline)
+			}
+			if lbi.bulkAction != "create" {
+				t.Errorf("expected bulkAction 'create', got %s", lbi.bulkAction)
+			}
+		})
+	}
+}
+
 func TestNewBulkIndexerItem(t *testing.T) {
 	lbi := &logBulkIndexer{bulkAction: "index"}
 	payload := []byte(`{"test": "data"}`)

@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sys/windows"
@@ -68,6 +69,7 @@ func (ws *windowsService) Execute(args []string, requests <-chan svc.ChangeReque
 
 func (ws *windowsService) start(elog *eventlog.Log) error {
 	configFlag := flag.String("config", "", "Path to a supervisor configuration file")
+	featuregate.GlobalRegistry().RegisterFlags(flag.CommandLine)
 	flag.Parse()
 
 	logger, _ := zap.NewDevelopment(zap.WrapCore(withWindowsCore(elog)))

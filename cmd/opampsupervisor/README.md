@@ -160,7 +160,7 @@ For a list of open issues related to the Supervisor, see [these issues](https://
 | AcceptsRestartCommand          | ✅                                                                               |
 | ReportsHealth                  | ⚠️                                                                               |
 | ReportsStatus                  | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38729> |
-| ReportsRemoteConfig            | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079> |
+| ReportsRemoteConfig            | ✅                                                                               |
 | ReportsAvailableComponents     | ✅                                                                               |
 
 ### Supervisor specification features

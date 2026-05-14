@@ -6,6 +6,7 @@ package namedpipereceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -14,8 +15,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver/internal/metadata"
 )
 
+// NewFactory creates a factory for the named_pipe receiver.
 func NewFactory() receiver.Factory {
-	return adapter.NewFactory(&ReceiverType{}, metadata.LogsStability)
+	return adapter.NewFactory(&ReceiverType{}, metadata.LogsStability,
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 type ReceiverType struct{}
@@ -50,7 +54,7 @@ func (ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*NamedPipeConfig).BaseConfig
 }
 
-// NamedPipeConfig defines configuration for the namedpipe receiver
+// NamedPipeConfig defines configuration for the named_pipe receiver
 type NamedPipeConfig struct {
 	InputConfig        namedpipe.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`

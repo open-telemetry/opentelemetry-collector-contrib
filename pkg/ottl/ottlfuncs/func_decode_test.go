@@ -19,10 +19,11 @@ func TestDecode(t *testing.T) {
 	testByteSliceB64 := pcommon.NewByteSlice()
 	testByteSliceB64.FromRaw([]byte("aGVsbG8gd29ybGQ="))
 
-	testValue := pcommon.NewValueEmpty()
-	_ = testValue.FromRaw("test string")
-	testValueB64 := pcommon.NewValueEmpty()
-	_ = testValueB64.FromRaw("aGVsbG8gd29ybGQ=")
+	testValue := pcommon.NewValueStr("test string")
+	testValueB64 := pcommon.NewValueStr("aGVsbG8gd29ybGQ=")
+
+	testValueBytes := pcommon.NewValueBytes()
+	testValueBytes.Bytes().FromRaw([]byte{116, 0, 101, 0, 115, 0, 116, 0, 32, 0, 115, 0, 116, 0, 114, 0, 105, 0, 110, 0, 103, 0})
 
 	type testCase struct {
 		name          string
@@ -141,6 +142,12 @@ func TestDecode(t *testing.T) {
 			want:     "test string",
 		},
 		{
+			name:     "decode UTF-16 encoded value bytes",
+			value:    testValueBytes,
+			encoding: "UTF16",
+			want:     "test string",
+		},
+		{
 			name:          "decode GB2312 encoded string; no decoder available",
 			value:         "test string",
 			encoding:      "GB2312",
@@ -210,7 +217,6 @@ func TestDecode(t *testing.T) {
 					},
 				},
 			})
-
 			require.NoError(t, err)
 
 			result, err := expressionFunc(nil, nil)
@@ -222,5 +228,63 @@ func TestDecode(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tt.want, result)
 		})
+	}
+}
+
+func BenchmarkDecodeBytes(b *testing.B) {
+	val := pcommon.NewValueBytes()
+	val.Bytes().FromRaw([]byte(benchData))
+
+	encGetter, err := ottl.NewTestingLiteralGetter[any, string](true, &ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "utf-8", nil
+		},
+	})
+	require.NoError(b, err)
+
+	dec, err := decode(ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return val, nil
+		},
+	}, encGetter)
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ResetTimer()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err = dec(ctx, nil)
+		if err != nil {
+			b.Fatal(err)
+		}
+		require.NoError(b, err)
+	}
+}
+
+func BenchmarkDecodeString(b *testing.B) {
+	val := pcommon.NewValueStr(benchData)
+	encGetter, err := ottl.NewTestingLiteralGetter[any, string](true, &ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "utf-8", nil
+		},
+	})
+	require.NoError(b, err)
+
+	dec, err := decode(ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return val, nil
+		},
+	}, encGetter)
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ResetTimer()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err = dec(ctx, nil)
+		if err != nil {
+			b.Fatal(err)
+		}
+		require.NoError(b, err)
 	}
 }

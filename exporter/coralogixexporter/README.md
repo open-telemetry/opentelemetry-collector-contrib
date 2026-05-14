@@ -324,7 +324,7 @@ For example:
 
 ```yaml
 receivers:
-  filelog/nginx:
+  file_log/nginx:
     include:
       - '/tmp/tmp.log'
     include_file_path: true
@@ -332,7 +332,7 @@ receivers:
     start_at: end
     resource: 
       cx.subsystem.name: nginx
-  filelog/access-log:
+  file_log/access-log:
     include:
       - '/tmp/access.log'
     include_file_path: true
@@ -348,7 +348,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog/nginx, filelog/access-log]
+      receivers: [file_log/nginx, file_log/access-log]
       exporters: [coralogix]
 ```
 

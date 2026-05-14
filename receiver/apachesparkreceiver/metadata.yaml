@@ -6,6 +6,8 @@ description: |
   the `/metrics/json`, `/api/v1/applications/[app-id]/stages`, `/api/v1/applications/[app-id]/executors`, and
   `/api/v1/applications/[app-id]/jobs` endpoints.
 
+reaggregation_enabled: true
+
 status:
   class: receiver
   stability:
@@ -44,6 +46,7 @@ attributes:
   direction:
     description: Whether the metric is in regards to input or output operations.
     type: string
+    requirement_level: recommended
     enum:
       - in
       - out
@@ -51,12 +54,14 @@ attributes:
     name_override: result
     description: The result of the executor tasks for which the metric was recorded.
     type: string
+    requirement_level: recommended
     enum:
       - completed
       - failed
   gc_type:
     description: The type of the garbage collection performed for the metric.
     type: string
+    requirement_level: recommended
     enum:
       - major
       - minor
@@ -64,6 +69,7 @@ attributes:
     name_override: result
     description: The result of the job stages or tasks for which the metric was recorded.
     type: string
+    requirement_level: recommended
     enum:
       - completed
       - failed
@@ -71,6 +77,7 @@ attributes:
   location:
     description: The location of the memory for which the metric was recorded..
     type: string
+    requirement_level: recommended
     enum:
       - on_heap
       - off_heap
@@ -78,6 +85,7 @@ attributes:
     name_override: type
     description: The type of pool memory for which the metric was recorded.
     type: string
+    requirement_level: recommended
     enum:
       - direct
       - mapped
@@ -85,35 +93,42 @@ attributes:
     name_override: status
     description: The status of the DAGScheduler stages for which the metric was recorded.
     type: string
+    requirement_level: recommended
     enum:
       - waiting
       - running
   source:
     description: The source from which data was fetched for the metric.
     type: string
+    requirement_level: recommended
     enum:
       - local
       - remote
   stage_active:
     name_override: active
     description: Whether the stage for which the metric was recorded is active.
+    requirement_level: recommended
     type: bool
   stage_complete:
     name_override: complete
     description: Whether the stage for which the metric was recorded is complete.
+    requirement_level: recommended
     type: bool
   stage_failed:
     name_override: failed
     description: Whether the stage for which the metric was recorded is failed.
+    requirement_level: recommended
     type: bool
   stage_pending:
     name_override: pending
     description: Whether the stage for which the metric was recorded is pending.
+    requirement_level: recommended
     type: bool
   stage_task_result:
     name_override: result
     description: The result of the stage tasks for which the metric was recorded.
     type: string
+    requirement_level: recommended
     enum:
       - completed
       - failed
@@ -121,6 +136,7 @@ attributes:
   state:
     description: The state of the memory for which the metric was recorded.
     type: string
+    requirement_level: recommended
     enum:
       - used
       - free

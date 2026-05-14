@@ -14,6 +14,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/endpointslice"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/jobs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/persistentvolume"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/persistentvolumeclaim"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicaset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/service"
@@ -42,6 +44,10 @@ func transformObject(object any) (any, error) {
 		return service.Transform(o), nil
 	case *discoveryv1.EndpointSlice:
 		return endpointslice.Transform(o), nil
+	case *corev1.PersistentVolume:
+		return persistentvolume.Transform(o), nil
+	case *corev1.PersistentVolumeClaim:
+		return persistentvolumeclaim.Transform(o), nil
 	}
 	return object, nil
 }

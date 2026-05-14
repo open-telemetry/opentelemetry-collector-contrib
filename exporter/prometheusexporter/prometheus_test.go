@@ -8,8 +8,10 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"testing/synctest"
 	"time"
 
+	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -20,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -672,9 +676,9 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set feature gate state for this test
-			originalState := disableAddMetricSuffixesFeatureGate.IsEnabled()
-			testutil.SetFeatureGateForTest(t, disableAddMetricSuffixesFeatureGate, tt.featureGateEnabled)
-			defer testutil.SetFeatureGateForTest(t, disableAddMetricSuffixesFeatureGate, originalState)
+			originalState := metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate.IsEnabled()
+			testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, tt.featureGateEnabled)
+			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, originalState)
 
 			// Configure the exporter
 			addr := testutil.GetAvailableLocalAddress(t)
@@ -719,4 +723,76 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 			assert.Equal(t, tt.want, output)
 		})
 	}
+}
+
+func TestPrometheusExporter_BackgroundCleanup(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		expiration := 5 * time.Minute
+		c := newCollector(&Config{MetricExpiration: expiration}, zap.NewNop())
+		a := c.accumulator.(*lastValueAccumulator)
+
+		staleMetric := pmetric.NewMetric()
+		staleMetric.SetName("stale_accumulated")
+		a.registeredMetrics.Store("stale_acc_key", &accumulatedValue{
+			value:           staleMetric,
+			resourceAttrs:   pcommon.NewMap(),
+			scopeAttributes: pcommon.NewMap(),
+			updated:         time.Now().Add(-10 * time.Minute),
+		})
+		freshMetric := pmetric.NewMetric()
+		freshMetric.SetName("fresh_accumulated")
+		a.registeredMetrics.Store("fresh_acc_key", &accumulatedValue{
+			value:           freshMetric,
+			resourceAttrs:   pcommon.NewMap(),
+			scopeAttributes: pcommon.NewMap(),
+			updated:         time.Now().Add(time.Hour),
+		})
+
+		gaugeType := io_prometheus_client.MetricType_GAUGE
+		c.metricFamilies.Store("stale_metric", metricFamily{
+			lastSeen: time.Now().Add(-10 * time.Minute),
+			mf: &io_prometheus_client.MetricFamily{
+				Name: proto.String("stale_metric"),
+				Help: proto.String("should be cleaned up"),
+				Type: &gaugeType,
+			},
+		})
+		c.metricFamilies.Store("fresh_metric", metricFamily{
+			lastSeen: time.Now().Add(time.Hour),
+			mf: &io_prometheus_client.MetricFamily{
+				Name: proto.String("fresh_metric"),
+				Help: proto.String("should remain"),
+				Type: &gaugeType,
+			},
+		})
+
+		stopCh := make(chan struct{})
+		go func() {
+			ticker := time.NewTicker(expiration)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					a.cleanupExpired()
+					c.cleanupMetricFamilies()
+				case <-stopCh:
+					return
+				}
+			}
+		}()
+		defer close(stopCh)
+
+		time.Sleep(expiration + time.Second)
+		synctest.Wait()
+
+		_, mfFound := c.metricFamilies.Load("stale_metric")
+		assert.False(t, mfFound, "stale_metric should have been evicted")
+		_, accFound := a.registeredMetrics.Load("stale_acc_key")
+		assert.False(t, accFound, "stale_accumulated should have been evicted")
+
+		_, ok := c.metricFamilies.Load("fresh_metric")
+		assert.True(t, ok, "fresh_metric should not have been evicted")
+		_, ok = a.registeredMetrics.Load("fresh_acc_key")
+		assert.True(t, ok, "fresh_accumulated should not have been evicted")
+	})
 }

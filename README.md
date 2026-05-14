@@ -90,11 +90,11 @@ For more information about the maintainer role, see the [community repository](h
 - [Braydon Kains](https://github.com/braydonk), Google
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
+- [Israel Blancas](https://github.com/iblancasa), Coralogix
 - [Joshua MacDonald](https://github.com/jmacd), Microsoft
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
-- [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
 For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver).
 
@@ -104,7 +104,6 @@ For more information about the approver role, see the [community repository](htt
 - [Bogdan Stancu](https://github.com/bogdan-st), Adobe
 - [Constança Manteigas](https://github.com/constanca-m), Elastic
 - [Douglas Camata](https://github.com/douglascamata), Coralogix
-- [Israel Blancas](https://github.com/iblancasa), Coralogix
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
@@ -115,32 +114,23 @@ For more information about the approver role, see the [community repository](htt
 
 For more information about the triager role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#triager).
 
-### Emeritus Maintainers
+### Emeritus
 
-- [Daniel Jaglowski](https://github.com/djaglowski)
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling)
-- [Tigran Najaryan](https://github.com/tigrannajaryan)
-
-For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
-
-### Emeritus Approvers
-
-- [Anthony Mirabella](https://github.com/Aneurysm9)
-- [Bryan Aguilar](https://github.com/bryan-aguilar)
-- [Matt Wear](https://github.com/mwear)
-- [Przemek Maciolek](https://github.com/pmm-sumo)
-- [Ruslan Kovalov](https://github.com/kovrus)
-
-For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
-
-### Emeritus Triagers
-
-- [Alolita Sharma](https://github.com/alolita)
-- [Gabriel Aszalos](https://github.com/gbbr)
-- [Goutham Veeramachaneni](https://github.com/gouthamve)
-- [Punya Biswal](https://github.com/punya)
-- [Steve Flanders](https://github.com/flands)
-- [Florian Bacher](https://github.com/bacherfl), Dynatrace
+- [Alolita Sharma](https://github.com/alolita), Triager
+- [Anthony Mirabella](https://github.com/Aneurysm9), Approver
+- [Bryan Aguilar](https://github.com/bryan-aguilar), Approver
+- [Daniel Jaglowski](https://github.com/djaglowski), Maintainer
+- [Florian Bacher](https://github.com/bacherfl), Triager
+- [Gabriel Aszalos](https://github.com/gbbr), Triager
+- [Goutham Veeramachaneni](https://github.com/gouthamve), Triager
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Maintainer
+- [Matt Wear](https://github.com/mwear), Approver
+- [Przemek Maciolek](https://github.com/pmm-sumo), Approver
+- [Punya Biswal](https://github.com/punya), Triager
+- [Ruslan Kovalov](https://github.com/kovrus), Approver
+- [Steve Flanders](https://github.com/flands), Triager
+- [Tigran Najaryan](https://github.com/tigrannajaryan), Maintainer
+- [Ziqi Zhao](https://github.com/fatsheep9146), Approver
 
 For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
 

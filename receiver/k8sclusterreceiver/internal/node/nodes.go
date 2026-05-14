@@ -16,7 +16,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
@@ -52,14 +51,14 @@ func Transform(node *corev1.Node) *corev1.Node {
 }
 
 func RecordMetrics(mb *metadata.MetricsBuilder, node *corev1.Node, ts pcommon.Timestamp) {
+	e := metadata.NewK8sNodeEntity(string(node.UID))
+	e.SetK8sNodeName(node.Name)
+	e.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
+	eb := mb.ForK8sNode(e)
 	for _, c := range node.Status.Conditions {
-		mb.RecordK8sNodeConditionDataPoint(ts, nodeConditionValues[c.Status], string(c.Type)) //nolint:staticcheck
+		eb.RecordK8sNodeConditionDataPoint(ts, nodeConditionValues[c.Status], string(c.Type))
 	}
-	rb := mb.NewResourceBuilder()
-	rb.SetK8sNodeUID(string(node.UID))
-	rb.SetK8sNodeName(node.Name)
-	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
-	mb.EmitForResource(metadata.WithResource(rb.Emit())) //nolint:staticcheck
+	eb.Emit()
 }
 
 func CustomMetrics(set receiver.Settings, rb *metadata.ResourceBuilder, node *corev1.Node, nodeConditionTypesToReport,
@@ -145,7 +144,10 @@ func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) in
 }
 
 func GetMetadata(node *corev1.Node) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
-	meta := maps.MergeStringMaps(map[string]string{}, node.Labels)
+	meta := map[string]string{}
+	for k, v := range node.Labels {
+		meta[fmt.Sprintf("k8s.node.label.%s", k)] = v
+	}
 
 	meta[string(conventions.K8SNodeNameKey)] = node.Name
 	meta[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)

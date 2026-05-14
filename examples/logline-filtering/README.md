@@ -1,6 +1,6 @@
 ## Filtering log messages based on content
 
-Filelog receiver provides support for filtering logs based on their content. This can be achieved by using
+File Log receiver provides support for filtering logs based on their content. This can be achieved by using
 the [filter operator](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/filter.md),
 configured with matching regular expressions.
 

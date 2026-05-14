@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -85,11 +84,4 @@ const (
 
 	// noTranslation bypasses all metric and label name translation, passing them through unaltered
 	noTranslation translationStrategy = "NoTranslation"
-)
-
-var disableAddMetricSuffixesFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusexporter.DisableAddMetricSuffixes",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the deprecated add_metric_suffixes configuration option is ignored and translation_strategy is always used"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-specification/pull/4533"),
 )

@@ -29,7 +29,7 @@ func createDefaultConfig() component.Config {
 	return healthcheck.NewDefaultConfig()
 }
 
-func createExtension(ctx context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	config := cfg.(*Config)
-	return healthcheck.NewHealthCheckExtension(ctx, *config, set), nil
+	return healthcheck.NewHealthCheckExtension(*config, set), nil
 }

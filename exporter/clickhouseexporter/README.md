@@ -50,18 +50,25 @@ If the official plugin doesn't meet your needs, you can try the [Altinity plugin
 ```sql
 SELECT toDateTime(toStartOfInterval(Timestamp, INTERVAL 60 second)) as time, SeverityText, count() as count
 FROM otel_logs
-WHERE time >= NOW() - INTERVAL 1 HOUR
+WHERE toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
+  AND Timestamp >= NOW() - INTERVAL 1 HOUR
 GROUP BY SeverityText, time
 ORDER BY time;
 ```
+
+The default logs table is ordered by `(toStartOfFiveMinutes(Timestamp), ServiceName, Timestamp)`.
+For time range queries, filter on both `toStartOfFiveMinutes(Timestamp)` and `Timestamp`, and order by the tuple `(toStartOfFiveMinutes(Timestamp), Timestamp)` to use the primary key's read-in-order optimization.
+Apply `toStartOfFiveMinutes` to the range bound as well (e.g. `toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)`) so the time bucket bounds are not truncated off the scan.
 
 - Find any log.
 
 ```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
-WHERE Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+WHERE toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
+  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with specific service.
@@ -70,8 +77,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE ServiceName = 'clickhouse-exporter'
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with specific attribute.
@@ -80,8 +89,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE LogAttributes['container_name'] = '/example_flog_1'
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with body contain string token.
@@ -90,8 +101,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE hasToken(Body, 'http')
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with body contain string.
@@ -100,8 +113,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE Body like '%http%'
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with body regexp match string.
@@ -110,8 +125,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE match(Body, 'http')
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with body json extract.
@@ -120,8 +137,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE JSONExtractFloat(Body, 'bytes') > 1000
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 ### Traces
@@ -278,7 +297,9 @@ The following settings are required:
   - http protocol `http://addr1:port,addr2:port` or https `https://addr1:port,addr2:port`
   - clickhouse protocol `clickhouse://addr1:port,addr2:port` or TLS `clickhouse://addr1:port,addr2:port?secure=true`
 
-Many other ClickHouse specific options can be configured through query parameters e.g. `addr?dial_timeout=5s&compress=lz4`. For a full list of options see the [ClickHouse driver documentation](https://github.com/ClickHouse/clickhouse-go/blob/b2f9409ba1c7bb239a4f6553a6da347f3f5f1330/clickhouse_options.go#L174)
+  When multiple endpoints are provided, the driver handles load balancing and automatic failover. By default, it uses `in_order` strategy (tries endpoints in the order specified). Alternatively, use `connection_open_strategy=round_robin` (distributes connections evenly) or `connection_open_strategy=random` (randomly selects endpoints) in `connection_params`. See [connection_open_strategy documentation](https://pkg.go.dev/github.com/ClickHouse/clickhouse-go/v2#readme-connection-strategy).
+
+Many other ClickHouse specific options can be configured through query parameters e.g. `addr?dial_timeout=5s&compress=lz4`. For a full list of options see the [ClickHouse driver documentation](https://pkg.go.dev/github.com/ClickHouse/clickhouse-go/v2#readme-connection-settings-reference)
 
 Connection options:
 
@@ -286,7 +307,7 @@ Connection options:
 - `password` (default = ): The authentication password.
 - `ttl` (default = 0): The data time-to-live example 30m, 48h. Also, 0 means no ttl.
 - `database` (default = default): The database name. Overrides the database defined in `endpoint` when this setting is not equal to `default`.
-- `connection_params` (default = {}). Params is the extra connection parameters with map format. Query parameters provided in `endpoint` will be individually overwritten if present in this map.
+- `connection_params` (default = {}). Extra connection parameters with map format. Query parameters provided in `endpoint` will be individually overwritten if present in this map. Parameters can be either driver parameters (e.g., `connection_open_strategy`, `max_open_conns`) that control client-side behavior, or ClickHouse session settings (e.g., `max_execution_time`) that are passed to the server. See the [driver parameters list](https://pkg.go.dev/github.com/ClickHouse/clickhouse-go/v2#Options) for recognized driver options; all others are treated as session settings.
 - `create_schema` (default = true): When set to true, will run DDL to create the database and tables. (See [schema management](#schema-management))
 - `compress` (default = lz4): Controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4). Ignored if `compress` is set in the `endpoint` or `connection_params`.
 - `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/en/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
@@ -399,7 +420,10 @@ As mentioned in the previous section, the exporter is able to detect which colum
 Here are some columns you can add to your table to update the schema:
 
 ```sql
--- These 3 columns are part of one feature, you must add all 3 at once.
+-- EventName
+ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1));
+
+-- JSON tables only. These 3 columns are part of one feature, you must add all 3 at once.
 ALTER TABLE otel.otel_logs
   ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
   ADD COLUMN IF NOT EXISTS ScopeAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
@@ -409,10 +433,7 @@ ALTER TABLE otel.otel_logs
   ADD INDEX IF NOT EXISTS idx_scope_attr_keys ScopeAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
   ADD INDEX IF NOT EXISTS idx_log_attr_keys LogAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1;
 
--- EventName
-ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1)),
-
--- These 2 columns are part of one feature, you must add all 2 at once.
+-- JSON tables only. These 2 columns are part of one feature, you must add all 2 at once.
 ALTER TABLE otel.otel_traces
   ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
   ADD COLUMN IF NOT EXISTS SpanAttributesKeys  Array(LowCardinality(String)) CODEC(ZSTD(1)),

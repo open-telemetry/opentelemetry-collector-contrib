@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -70,7 +71,7 @@ func TestAggregation(t *testing.T) {
 			processor := mgp.(*intervalProcessor)
 
 			// Pretend we hit the interval timer and call export
-			processor.exportMetrics()
+			processor.exportMetrics(ctx)
 
 			// All the lookup tables should now be empty
 			require.Empty(t, processor.rmLookup)
@@ -82,7 +83,7 @@ func TestAggregation(t *testing.T) {
 			require.Empty(t, processor.summaryLookup)
 
 			// Exporting again should return nothing
-			processor.exportMetrics()
+			processor.exportMetrics(ctx)
 
 			// Next should have gotten three data sets:
 			// 1. Anything left over from ConsumeMetrics()
@@ -106,4 +107,41 @@ func TestAggregation(t *testing.T) {
 			require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), secondExportData), "the second export data should be empty")
 		})
 	}
+}
+
+func TestFlushOnShutdown(t *testing.T) {
+	t.Parallel()
+
+	// Use a very long interval so the ticker never fires during the test.
+	config := &Config{Interval: time.Hour}
+	next := &consumertest.MetricsSink{}
+
+	factory := NewFactory()
+	mgp, err := factory.CreateMetrics(
+		t.Context(),
+		processortest.NewNopSettings(metadata.Type),
+		config,
+		next,
+	)
+	require.NoError(t, err)
+
+	err = mgp.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	dir := filepath.Join("testdata", "basic_aggregation")
+	md, err := golden.ReadMetrics(filepath.Join(dir, "input.yaml"))
+	require.NoError(t, err)
+
+	err = mgp.ConsumeMetrics(t.Context(), md)
+	require.NoError(t, err)
+
+	err = mgp.Shutdown(t.Context())
+	require.NoError(t, err)
+
+	allMetrics := next.AllMetrics()
+	require.Len(t, allMetrics, 2)
+
+	expectedExportData, err := golden.ReadMetrics(filepath.Join(dir, "output.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedExportData, allMetrics[1]))
 }

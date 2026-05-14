@@ -37,3 +37,11 @@ var StanzaSynchronousLogEmitterFeatureGate = featuregate.GlobalRegistry().MustRe
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35456"),
 	featuregate.WithRegisterFromVersion("v0.122.0"),
 )
+
+var StanzaWindowsEventDrivenScrapingFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"stanza.windows.eventDrivenScraping",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the Stanza windows input wakes on API signals instead of polling on a fixed interval."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47091"),
+	featuregate.WithRegisterFromVersion("v0.148.0"),
+)

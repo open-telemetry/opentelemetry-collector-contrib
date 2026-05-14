@@ -17,6 +17,9 @@ This receiver creates stats by connecting to a TCP server.
 
 ## Configuration
 
+> **Note:** This receiver was renamed from `tcpcheck` to `tcp_check` to match the snake_case naming convention.
+> The deprecated component type `tcpcheck` is still accepted as an alias and will log a deprecation warning.
+
 The following settings are required:
 - `endpoint`
 
@@ -30,7 +33,7 @@ Targets are
 
 ```yaml
 receivers:
-  tcpcheck:
+  tcp_check:
     targets:
       - endpoint: example.com:443
         dialer:

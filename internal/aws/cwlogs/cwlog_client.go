@@ -24,8 +24,7 @@ import (
 
 const (
 	// this is the retry count, the total attempts will be at most retry count + 1.
-	defaultRetryCount          = 1
-	errCodeThrottlingException = "ThrottlingException"
+	defaultRetryCount = 1
 )
 
 var containerInsightsRegexPattern = regexp.MustCompile(`^/aws/.*containerinsights/.*/(performance|prometheus)$`)

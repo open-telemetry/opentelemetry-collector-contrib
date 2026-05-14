@@ -26,8 +26,9 @@ This receiver tails and parses logs from windows event log API using the
 | `ignore_channel_errors`             | false        | If true, Prevents shutdown of collector when failing to open event log channels and instead logs a warning  |
 | `max_reads`                         | 100          | The maximum number of records read into memory, before beginning a new batch                                                                                                                                                                  |
 | `start_at`                          | `end`        | On first startup, where to start reading logs from the API. Options are `beginning` or `end`                                                                                                                                                   |
-| `poll_interval`                     | 1s           | The interval at which the channel is checked for new log entries. This check begins again after all new bodies have been read.                                                                                                                 |
-| `max_events_per_poll`               | 0            | The maximum number of events allowed to be read per polling interval, see `poll_interval`. Zero means that there is no limit and the receiver will consume all events available.                                                               |
+| `poll_interval`                     | 1s           | The interval at which the channel is checked for new log entries. This check begins again after all new bodies have been read. Only used when the `stanza.windows.eventDrivenScraping` feature gate is disabled.                    |
+| `max_events_per_poll`               | 0            | The maximum number of events allowed to be read per polling interval, see `poll_interval`. Zero means that there is no limit and the receiver will consume all events available. Ignored when the `stanza.windows.eventDrivenScraping` feature gate is enabled. |
+| `wait_timeout`                      | 5s           | Maximum duration to wait for new events before performing a safety-net poll. Only used when the `stanza.windows.eventDrivenScraping` feature gate is enabled.                                                                        |
 | `attributes`                        | {}           | A map of `key: value` pairs to add to the entry's attributes.                                                                                                                                                                                  |
 | `resource`                          | {}           | A map of `key: value` pairs to add to the entry's resource.                                                                                                                                                                                    |
 | `operators`                         | []           | An array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). See below for more details                                                            |
@@ -47,6 +48,14 @@ This receiver tails and parses logs from windows event log API using the
 | `resolve_sids.enabled`              | `false`      | If `true`, automatically resolves SIDs to user and group names in Windows event logs.                                                                                                                                          |
 | `resolve_sids.cache_size`           | `10000`      | Maximum number of SID-to-name mappings to cache in memory. Older entries are evicted using LRU policy.                                                                                                                         |
 | `resolve_sids.cache_ttl`            | `15m`        | Time-to-live for cached SID mappings. After this duration, SIDs will be re-resolved from the Windows LSA API.                                                                                                                  |
+| `discover_domain_controllers`       | `false`      | Automatically discover and collect  events from Active Directory domain controllers.                                                                                                                                           |
+
+
+### Feature Gates
+
+| Feature Gate                                          | Stage | Description                                                                                                                                                           |
+|-------------------------------------------------------|-------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `stanza.windows.eventDrivenScraping`        | Alpha | When enabled, the receiver wakes on Windows API signals instead of polling on a fixed interval, reducing latency and avoiding unnecessary wakeups between events. Use `wait_timeout` to configure the safety-net poll interval. |
 
 ### Operators
 
@@ -72,6 +81,14 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 Configuration:
 ```yaml
 receivers:
+    windows_event_log:
+        channel: application
+```
+
+The deprecated component type `windowseventlog` is still accepted:
+
+```yaml
+receivers:
     windowseventlog:
         channel: application
 ```
@@ -91,7 +108,7 @@ Output entry sample:
         "ProcessId": "7924",
         "Application": "app.exe"
     },
-    "keywords": "[Classic]",
+    "keywords": ["Classic"],
     "level": "Information",
     "message": "Test log",
     "opcode": "Info",
@@ -102,6 +119,17 @@ Output entry sample:
         "name": "otel"
     },
     "record_id": 12345,
+    "rendering_info":
+    {
+        "channel": "Application",
+        "culture": "en-US",
+        "keywords": ["Classic"],
+        "level": "Information",
+        "message": "Test log",
+        "opcode": "Info",
+        "provider": "otel",
+        "task": ""
+    },
     "system_time": "2022-04-15T15:28:08.898974100Z",
     "task": ""
 }
@@ -123,6 +151,21 @@ The `event_data` field format is controlled by the `event_data_format` setting:
 }
 ```
 
+The `rendering_info` key is populated when `suppress_rendering_info` is false (the default). It contains the human-readable strings for `level`, `task`, `opcode`, `keywords`, `message`, `channel`, `provider`, and `culture` as rendered by the publisher manifest. The top-level `level`, `task`, `opcode`, and `keywords` fields are derived from `rendering_info` when present, falling back to the raw system values otherwise.
+
+For events that use `UserData` instead of `EventData` (e.g., Security event 1102 — audit log cleared), a `user_data` key is emitted instead of (or alongside) `event_data`:
+```json
+{
+    "user_data": {
+        "name": "LogFileCleared",
+        "data": {
+            "SubjectUserName": "SYSTEM",
+            "SubjectLogonId": "0x3e7"
+        }
+    }
+}
+```
+
 #### Remote Configuration
 
 If collection of the local event log is desired, a separate receiver needs to be created.
@@ -136,7 +179,7 @@ If collection of the local event log is desired, a separate receiver needs to be
 Single server configuration:
 ```yaml
 receivers:
-    windowseventlog:
+    windows_event_log:
         channel: application
         remote:
             server:   "remote-server"
@@ -153,7 +196,7 @@ The following example only forwards logs from the `Application` from `foo` or `b
 
 ```yaml
 receivers:
-  windowseventlog/query:
+  windows_event_log/query:
     query: |
       <QueryList>
         <Query Id="0">
@@ -177,7 +220,7 @@ Windows Event Logs often contain Security Identifiers (SIDs) instead of readable
 **Configuration:**
 ```yaml
 receivers:
-  windowseventlog:
+  windows_event_log:
     channel: Security
     resolve_sids:
       enabled: true        # Enable SID resolution

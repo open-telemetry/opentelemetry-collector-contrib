@@ -75,7 +75,7 @@ service:
 
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: [ "/private/var/log/*.log" ] # MacOs system logs
     include_file_name: false
     include_file_path: true 
@@ -97,7 +97,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       processors: [ resourcedetection/system ]
       exporters: [logzio/logs]
   telemetry:

@@ -23,3 +23,6 @@ agent:
   {{- if .use_hup_config_reload }}
   use_hup_config_reload: {{ .use_hup_config_reload }}
   {{- end }}
+  {{- if .validate_config }}
+  validate_config: {{ .validate_config }}
+  {{- end }}

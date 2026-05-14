@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal"
@@ -225,14 +226,19 @@ func decompress(payload []byte, compression buildInCompression) ([]byte, error) 
 	return payload, nil
 }
 
-func (receiver *pubsubReceiver) handleTrace(ctx context.Context, payload []byte, compression buildInCompression) error {
-	payload, err := decompress(payload, compression)
+func (receiver *pubsubReceiver) handleTrace(ctx context.Context, message *pubsubpb.ReceivedMessage, compression buildInCompression) error {
+	payload, err := decompress(message.Message.Data, compression)
 	if err != nil {
 		return err
 	}
 	otlpData, err := receiver.tracesUnmarshaler.UnmarshalTraces(payload)
 	if err != nil {
 		receiver.increaseEncodingErrorMetric(ctx, "traces")
+		receiver.settings.Logger.Debug("failed to decode pubsub message for traces",
+			zap.String("message_id", message.Message.MessageId),
+			zap.Any("attributes", message.Message.Attributes),
+			zap.Error(err),
+		)
 		if receiver.config.IgnoreEncodingError {
 			return nil
 		}
@@ -245,14 +251,19 @@ func (receiver *pubsubReceiver) handleTrace(ctx context.Context, payload []byte,
 	return nil
 }
 
-func (receiver *pubsubReceiver) handleMetric(ctx context.Context, payload []byte, compression buildInCompression) error {
-	payload, err := decompress(payload, compression)
+func (receiver *pubsubReceiver) handleMetric(ctx context.Context, message *pubsubpb.ReceivedMessage, compression buildInCompression) error {
+	payload, err := decompress(message.Message.Data, compression)
 	if err != nil {
 		return err
 	}
 	otlpData, err := receiver.metricsUnmarshaler.UnmarshalMetrics(payload)
 	if err != nil {
 		receiver.increaseEncodingErrorMetric(ctx, "metrics")
+		receiver.settings.Logger.Debug("failed to decode pubsub message for metrics",
+			zap.String("message_id", message.Message.MessageId),
+			zap.Any("attributes", message.Message.Attributes),
+			zap.Error(err),
+		)
 		if receiver.config.IgnoreEncodingError {
 			return nil
 		}
@@ -265,14 +276,19 @@ func (receiver *pubsubReceiver) handleMetric(ctx context.Context, payload []byte
 	return nil
 }
 
-func (receiver *pubsubReceiver) handleLog(ctx context.Context, payload []byte, compression buildInCompression) error {
-	payload, err := decompress(payload, compression)
+func (receiver *pubsubReceiver) handleLog(ctx context.Context, message *pubsubpb.ReceivedMessage, compression buildInCompression) error {
+	payload, err := decompress(message.Message.Data, compression)
 	if err != nil {
 		return err
 	}
 	otlpData, err := receiver.logsUnmarshaler.UnmarshalLogs(payload)
 	if err != nil {
 		receiver.increaseEncodingErrorMetric(ctx, "logs")
+		receiver.settings.Logger.Debug("failed to decode pubsub message for logs",
+			zap.String("message_id", message.Message.MessageId),
+			zap.Any("attributes", message.Message.Attributes),
+			zap.Error(err),
+		)
 		if receiver.config.IgnoreEncodingError {
 			return nil
 		}
@@ -355,22 +371,22 @@ func (receiver *pubsubReceiver) createMultiplexingReceiverHandler(ctx context.Co
 		receiver.client,
 		receiver.config.ClientID,
 		receiver.config.Subscription,
+		receiver.config.FlowControlConfig.getInternalConfig(),
 		func(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
-			payload := message.Message.Data
 			encoding, compression := receiver.detectEncoding(message.Message.Attributes)
 
 			switch encoding {
 			case otlpProtoTrace:
 				if receiver.tracesConsumer != nil {
-					return receiver.handleTrace(ctx, payload, compression)
+					return receiver.handleTrace(ctx, message, compression)
 				}
 			case otlpProtoMetric:
 				if receiver.metricsConsumer != nil {
-					return receiver.handleMetric(ctx, payload, compression)
+					return receiver.handleMetric(ctx, message, compression)
 				}
 			case otlpProtoLog:
 				if receiver.logsConsumer != nil {
-					return receiver.handleLog(ctx, payload, compression)
+					return receiver.handleLog(ctx, message, compression)
 				}
 			default:
 				return errors.New("unknown encoding")
@@ -393,20 +409,17 @@ func (receiver *pubsubReceiver) createReceiverHandler(ctx context.Context) error
 	}
 	if receiver.tracesConsumer != nil {
 		handlerFn = func(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
-			payload := message.Message.Data
-			return receiver.handleTrace(ctx, payload, compression)
+			return receiver.handleTrace(ctx, message, compression)
 		}
 	}
 	if receiver.logsConsumer != nil {
 		handlerFn = func(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
-			payload := message.Message.Data
-			return receiver.handleLog(ctx, payload, compression)
+			return receiver.handleLog(ctx, message, compression)
 		}
 	}
 	if receiver.metricsConsumer != nil {
 		handlerFn = func(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
-			payload := message.Message.Data
-			return receiver.handleMetric(ctx, payload, compression)
+			return receiver.handleMetric(ctx, message, compression)
 		}
 	}
 
@@ -417,6 +430,7 @@ func (receiver *pubsubReceiver) createReceiverHandler(ctx context.Context) error
 		receiver.client,
 		receiver.config.ClientID,
 		receiver.config.Subscription,
+		receiver.config.FlowControlConfig.getInternalConfig(),
 		handlerFn)
 	if err != nil {
 		return err

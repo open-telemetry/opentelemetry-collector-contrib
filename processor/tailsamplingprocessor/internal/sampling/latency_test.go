@@ -159,6 +159,14 @@ func TestEvaluate_Bounded_Latency(t *testing.T) {
 	}
 }
 
+func TestLatency_IsStateful(t *testing.T) {
+	withoutUpperThreshold := NewLatency(componenttest.NewNopTelemetrySettings(), 5000, 0)
+	assert.False(t, withoutUpperThreshold.IsStateful())
+
+	withUpperThreshold := NewLatency(componenttest.NewNopTelemetrySettings(), 5000, 10000)
+	assert.True(t, withUpperThreshold.IsStateful())
+}
+
 type spanWithTimeAndDuration struct {
 	StartTime time.Time
 	Duration  time.Duration

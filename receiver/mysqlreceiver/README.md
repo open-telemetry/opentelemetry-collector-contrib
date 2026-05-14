@@ -7,7 +7,7 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fmysql%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fmysql) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fmysql%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fmysql) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_mysql)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_mysql&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock), [@ishleenk17](https://www.github.com/ishleenk17) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock), [@ishleenk17](https://www.github.com/ishleenk17), [@cjksplunk](https://www.github.com/cjksplunk) \| Seeking more code owners! |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -22,7 +22,22 @@ There are also optional metrics that you must specify in your configuration to c
 
 ## Prerequisites
 
-This receiver supports MySQL version 8.0 and MariaDB 10.11.
+The receiver detects the database product and version on first connection and adjusts its
+behavior accordingly.
+
+### Supported database versions
+
+| Product | Versions | Query plans on `db.server.top_query` | Traceparent propagation | `client.port` / `network.peer.port` | Replica status syntax |
+|---------|----------|--------------------------------------|-------------------------|--------------------------------------|-----------------------|
+| MySQL | 5.7.x | No | Yes | 0 | `SHOW SLAVE STATUS` |
+| MySQL | 8.0.0–8.0.21 | Yes | Yes | 0 | `SHOW SLAVE STATUS` |
+| MySQL | 8.0.22+ | Yes | Yes | Populated | `SHOW REPLICA STATUS` |
+| MySQL | 8.4.x | Yes | Yes | Populated | `SHOW REPLICA STATUS` |
+| MySQL | 9.x | Yes | Yes | Populated | `SHOW REPLICA STATUS` |
+| MariaDB | 10.5.x–10.11.x | No | Yes | 0 | `SHOW SLAVE STATUS` |
+| MariaDB | 11.x (LTS: 11.4, 11.8) | No | Yes | 0 | `SHOW SLAVE STATUS` |
+
+See [COMPATIBILITY.md](./COMPATIBILITY.md) for full details on version-gated behavior and fallbacks.
 
 Collecting most metrics requires the ability to execute `SHOW GLOBAL STATUS`.
 
@@ -97,6 +112,36 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 ## Logs
 Details about the logs produced by this receiver can be found in [documentation.md](./documentation.md)
 
+**Trace propagation:** Query sample log records carry a TraceID and SpanID only when
+a MySQL session sets the `@traceparent` user variable (W3C TraceContext format,
+lowercase name). The collector extracts the TraceID and SpanID from that value and
+stamps the application's trace context onto the corresponding log record. Log records
+without a `@traceparent` will have empty TraceID and SpanID fields. This allows
+application transactions to be correlated with query samples collected by this receiver.
+
+> **Note:** MySQL stores user variable names in lowercase in
+> `performance_schema.user_variables_by_thread` regardless of how the client
+> spelled them. The JOIN condition `VARIABLE_NAME = 'traceparent'` therefore
+> matches any case variation the client used (e.g. `SET @TraceParent = '...'`
+> works identically to `SET @traceparent = '...'`).
+### Query plan availability by version
+
+EXPLAIN needs a concrete SQL statement. The normalized digest text in
+`events_statements_summary_by_digest` uses placeholders (`SELECT ? FROM t WHERE id = ?`),
+which MySQL will not execute.
+
+MySQL 8.0 added `query_sample_text` to `events_statements_summary_by_digest`. It holds an
+actual statement that was run for each digest, so the top-query scraper can call EXPLAIN
+without needing to catch the query in flight.
+
+MariaDB and MySQL 5.x do not have `query_sample_text`, so the top-query scraper has nothing
+to EXPLAIN. Query plans are not available for these versions.
+
+If a statement is truncated (the stored text ends with `...`), the receiver skips EXPLAIN for
+that statement on all versions. Truncation is controlled by
+[`performance_schema_max_sql_text_length`](https://dev.mysql.com/doc/refman/8.0/en/performance-schema-system-variables.html#sysvar_performance_schema_max_sql_text_length)
+(default 1024). Setting it to `4096` is recommended — see the requirements table below.
+
 ### MySQL Requirements to enable log collection
 
 | Parameter                                | Value                            | Description                                         |
@@ -105,3 +150,44 @@ Details about the logs produced by this receiver can be found in [documentation.
 | `max_digest_length`                      | `4096`  (Recommended)            | Maximum length of digest text                       |
 | `performance_schema_max_digest_length`   | `4096`  (Recommended)            | Maximum length of digest text on performance schema |
 | `performance_schema_max_sql_text_length` | `4096`  (Recommended)            | Maximum length of sql text                          |
+
+### Enabling `events_waits_current` for lock-wait duration
+
+The `mysql.events_waits_current.timer_wait` attribute on `db.server.query_sample` events is
+populated from `performance_schema.events_waits_current`. That consumer is **disabled by default**
+on all supported platforms. Without it, `timer_wait` is always `0`.
+
+#### Required privilege
+
+The database user must have `UPDATE` on `performance_schema.setup_consumers` in addition to the
+`SELECT` grant above:
+
+```sql
+GRANT SELECT ON performance_schema.* TO '<your-user>'@'%';
+GRANT UPDATE ON performance_schema.setup_consumers TO '<your-user>'@'%';
+```
+
+#### Enabling the consumer
+
+**Manual server (MySQL 5.7 / 8.x / MariaDB) — persistent across restarts**
+
+Add to `[mysqld]` in `my.cnf` / `my.ini`:
+
+```ini
+performance-schema-consumer-events-waits-current=ON
+```
+
+**AWS RDS (MySQL 5.7 / 8.x / MariaDB) — runtime only**
+
+AWS RDS does not expose `performance-schema-consumer-events-waits-current` as a parameter group
+setting. The consumer must be enabled at runtime and will reset on instance restart or failover:
+
+```sql
+UPDATE performance_schema.setup_consumers
+SET ENABLED = 'YES'
+WHERE NAME = 'events_waits_current';
+```
+
+Run this statement after each restart, or grant the receiver user `UPDATE` on
+`performance_schema.setup_consumers` so that the receiver can re-enable it automatically on
+reconnect.

@@ -18,12 +18,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.uber.org/zap"
 )
 
 func TestNewS3Manager(t *testing.T) {
 	t.Parallel()
 
 	sm := NewS3Manager(
+		zap.NewNop(),
 		"my-bucket",
 		&PartitionKeyBuilder{},
 		s3.New(s3.Options{}),
@@ -296,6 +298,7 @@ func TestS3ManagerUpload(t *testing.T) {
 			t.Cleanup(s.Close)
 
 			sm := NewS3Manager(
+				zap.NewNop(),
 				"my-bucket",
 				&PartitionKeyBuilder{
 					PartitionPrefix: "telemetry",

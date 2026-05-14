@@ -1,4 +1,4 @@
-filelog:
+file_log:
   include: [ testdata/simple.log ]
   start_at: beginning
   operators:

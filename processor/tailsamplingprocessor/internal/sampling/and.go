@@ -44,3 +44,12 @@ func (c *And) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *samp
 	}
 	return samplingpolicy.Sampled, nil
 }
+
+func (c *And) IsStateful() bool {
+	for _, sub := range c.subpolicies {
+		if sub.IsStateful() {
+			return true
+		}
+	}
+	return false
+}

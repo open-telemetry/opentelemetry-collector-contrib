@@ -25,6 +25,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       mongodb.collection.count:
         description: "MongodbCollectionCountMetricConfig provides config for the mongodb.collection.count metric."
         type: object
@@ -32,6 +48,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       mongodb.commands.rate:
         description: "MongodbCommandsRateMetricConfig provides config for the mongodb.commands.rate metric."
         type: object
@@ -46,6 +78,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+                - "db.namespace"
+            default:
+              - "type"
+              - "db.namespace"
       mongodb.cursor.count:
         description: "MongodbCursorCountMetricConfig provides config for the mongodb.cursor.count metric."
         type: object
@@ -67,6 +117,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       mongodb.database.count:
         description: "MongodbDatabaseCountMetricConfig provides config for the mongodb.database.count metric."
         type: object
@@ -88,6 +154,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+                - "db.namespace"
+            default:
+              - "operation"
+              - "db.namespace"
       mongodb.extent.count:
         description: "MongodbExtentCountMetricConfig provides config for the mongodb.extent.count metric."
         type: object
@@ -95,6 +179,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       mongodb.flushes.rate:
         description: "MongodbFlushesRateMetricConfig provides config for the mongodb.flushes.rate metric."
         type: object
@@ -130,6 +230,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "collection"
+                - "db.namespace"
+            default:
+              - "collection"
+              - "db.namespace"
       mongodb.index.count:
         description: "MongodbIndexCountMetricConfig provides config for the mongodb.index.count metric."
         type: object
@@ -137,6 +255,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       mongodb.index.size:
         description: "MongodbIndexSizeMetricConfig provides config for the mongodb.index.size metric."
         type: object
@@ -144,6 +278,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       mongodb.inserts.rate:
         description: "MongodbInsertsRateMetricConfig provides config for the mongodb.inserts.rate metric."
         type: object
@@ -158,6 +308,26 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "lock_type"
+                - "lock_mode"
+                - "db.namespace"
+            default:
+              - "lock_type"
+              - "lock_mode"
+              - "db.namespace"
       mongodb.lock.acquire.time:
         description: "MongodbLockAcquireTimeMetricConfig provides config for the mongodb.lock.acquire.time metric."
         type: object
@@ -165,6 +335,26 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "lock_type"
+                - "lock_mode"
+                - "db.namespace"
+            default:
+              - "lock_type"
+              - "lock_mode"
+              - "db.namespace"
       mongodb.lock.acquire.wait_count:
         description: "MongodbLockAcquireWaitCountMetricConfig provides config for the mongodb.lock.acquire.wait_count metric."
         type: object
@@ -172,6 +362,26 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "lock_type"
+                - "lock_mode"
+                - "db.namespace"
+            default:
+              - "lock_type"
+              - "lock_mode"
+              - "db.namespace"
       mongodb.lock.deadlock.count:
         description: "MongodbLockDeadlockCountMetricConfig provides config for the mongodb.lock.deadlock.count metric."
         type: object
@@ -179,6 +389,26 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "lock_type"
+                - "lock_mode"
+                - "db.namespace"
+            default:
+              - "lock_type"
+              - "lock_mode"
+              - "db.namespace"
       mongodb.memory.usage:
         description: "MongodbMemoryUsageMetricConfig provides config for the mongodb.memory.usage metric."
         type: object
@@ -186,6 +416,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+                - "db.namespace"
+            default:
+              - "type"
+              - "db.namespace"
       mongodb.network.io.receive:
         description: "MongodbNetworkIoReceiveMetricConfig provides config for the mongodb.network.io.receive metric."
         type: object
@@ -214,6 +462,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       mongodb.operation.count:
         description: "MongodbOperationCountMetricConfig provides config for the mongodb.operation.count metric."
         type: object
@@ -221,6 +485,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
       mongodb.operation.latency.time:
         description: "MongodbOperationLatencyTimeMetricConfig provides config for the mongodb.operation.latency.time metric."
         type: object
@@ -228,6 +508,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
       mongodb.operation.repl.count:
         description: "MongodbOperationReplCountMetricConfig provides config for the mongodb.operation.repl.count metric."
         type: object
@@ -235,6 +531,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
       mongodb.operation.time:
         description: "MongodbOperationTimeMetricConfig provides config for the mongodb.operation.time metric."
         type: object
@@ -242,6 +554,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
       mongodb.page_faults:
         description: "MongodbPageFaultsMetricConfig provides config for the mongodb.page_faults metric."
         type: object
@@ -312,6 +640,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       mongodb.updates.rate:
         description: "MongodbUpdatesRateMetricConfig provides config for the mongodb.updates.rate metric."
         type: object

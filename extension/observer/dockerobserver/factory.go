@@ -7,7 +7,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 

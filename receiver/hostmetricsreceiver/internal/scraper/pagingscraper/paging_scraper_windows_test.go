@@ -103,7 +103,7 @@ func TestScrape_Errors(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			metricsConfig := metadata.DefaultMetricsBuilderConfig()
+			metricsConfig := metadata.NewDefaultMetricsBuilderConfig()
 			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
 			scraper := newPagingScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsConfig})
@@ -208,7 +208,7 @@ func TestScrape_Errors(t *testing.T) {
 
 func TestPagingScrapeWithRealData(t *testing.T) {
 	config := Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	scraper := newPagingScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &config)
 
@@ -250,7 +250,7 @@ func TestStart_Error(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			metricsConfig := metadata.DefaultMetricsBuilderConfig()
+			metricsConfig := metadata.NewDefaultMetricsBuilderConfig()
 			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
 			scraper := newPagingScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsConfig})

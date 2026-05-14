@@ -148,7 +148,7 @@ var evtCreateRenderContext = func(valuePathsCount uint32, valuePaths **uint16, f
 	return handle, nil
 }
 
-// evtUpdateBookmark is the direct syscall implementation of EvtUpdateBookmark (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtcreatebookmark)
+// evtUpdateBookmark is the direct syscall implementation of EvtUpdateBookmark (https://learn.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtupdatebookmark)
 var evtUpdateBookmark = func(bookmark, event uintptr) error {
 	_, _, err := updateBookmarkProc.Call(bookmark, event)
 	if !errors.Is(err, ErrorSuccess) {

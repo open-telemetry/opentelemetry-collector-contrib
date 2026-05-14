@@ -38,7 +38,12 @@ type OtelCollector struct {
 	CollectorResourceAttributes map[string]string  `json:"collector_resource_attributes"`
 	CollectorDeploymentType     string             `json:"collector_deployment_type"`     // deployment type: gateway, daemonset, or unknown
 	CollectorInstallationMethod string             `json:"collector_installation_method"` // installation method: kubernetes, bare-metal, docker, ecs-fargate, eks-fargate, or ""
-	TTL                         int64              `json:"ttl"`
+	// Gateway topology fields (RFC: Gateway Topology View in Fleet Automation)
+	// GatewayService is set by gateway collectors: the k8s Service fronting the gateway pods.
+	GatewayService string `json:"gateway_service,omitempty"`
+	// GatewayDestination is set by agent/daemonset collectors: the k8s Service they forward telemetry to.
+	GatewayDestination string `json:"gateway_destination,omitempty"`
+	TTL                int64  `json:"ttl"`
 }
 
 type CollectorModule struct {
@@ -95,6 +100,8 @@ func PrepareOtelCollectorMetadata(
 	installationMethod string,
 	buildInfo CustomBuildInfo,
 	ttl int64,
+	gatewayService string,
+	gatewayDestination string,
 ) OtelCollector {
 	return OtelCollector{
 		HostKey:                     "",
@@ -108,6 +115,8 @@ func PrepareOtelCollectorMetadata(
 		FullConfiguration:           fullConfig,
 		CollectorDeploymentType:     deploymentType,
 		CollectorInstallationMethod: installationMethod,
+		GatewayService:              gatewayService,
+		GatewayDestination:          gatewayDestination,
 		TTL:                         ttl,
 	}
 }

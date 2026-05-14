@@ -1,4 +1,4 @@
-namedpipe:
+named_pipe:
   path: /tmp/pipe
   mode: 0600
   encoding: utf-8

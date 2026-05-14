@@ -6,9 +6,32 @@ status:
   stability:
     beta: [traces, metrics, logs]
   distributions: [contrib]
+  unsupported_platforms: [aix]
   codeowners:
     active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, jade-guiton-dd, IbraheemA]
     emeritus: [gbbr, jackgopack4, ankitpatel96]
+
+feature_gates:
+  - id: exporter.datadogexporter.DisableAPMStats
+    stage: beta
+    description: >-
+      Datadog Exporter will not compute APM Stats
+    from_version: v0.89.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/28616
+
+  - id: exporter.datadogexporter.TraceExportUseCustomHTTPClient
+    stage: alpha
+    description: >-
+      When enabled, trace export uses the HTTP client from the exporter HTTP configs
+    from_version: v0.105.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/34025
+
+  - id: exporter.datadogexporter.metricexportserializerclient
+    stage: beta
+    description: >-
+      When enabled, metric export in datadogexporter uses the serializer exporter from the Datadog Agent.
+    from_version: v0.122.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/37930
 
 tests:
   config:

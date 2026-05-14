@@ -252,7 +252,7 @@ you can recombine multiline logs into a single one.
 Configuration:
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include:
       - /var/log/pods/*/my-service/*.log
     include_file_path: true       

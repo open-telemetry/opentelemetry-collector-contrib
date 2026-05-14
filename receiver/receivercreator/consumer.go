@@ -9,27 +9,31 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 var (
-	_ consumer.Logs    = (*enhancingConsumer)(nil)
-	_ consumer.Metrics = (*enhancingConsumer)(nil)
-	_ consumer.Traces  = (*enhancingConsumer)(nil)
+	_ consumer.Logs      = (*enhancingConsumer)(nil)
+	_ consumer.Metrics   = (*enhancingConsumer)(nil)
+	_ consumer.Traces    = (*enhancingConsumer)(nil)
+	_ xconsumer.Profiles = (*enhancingConsumer)(nil)
 )
 
 // enhancingConsumer adds additional resource attributes from the given endpoint environment before passing the
 // telemetry to its next consumers. The added attributes vary based on the type of the endpoint.
 type enhancingConsumer struct {
-	logs    consumer.Logs
-	metrics consumer.Metrics
-	traces  consumer.Traces
-	attrs   map[string]string
+	logs     consumer.Logs
+	metrics  consumer.Metrics
+	traces   consumer.Traces
+	profiles xconsumer.Profiles
+	attrs    map[string]string
 }
 
 func newEnhancingConsumer(
@@ -40,6 +44,7 @@ func newEnhancingConsumer(
 	nextLogs consumer.Logs,
 	nextMetrics consumer.Metrics,
 	nextTraces consumer.Traces,
+	nextProfiles xconsumer.Profiles,
 ) (*enhancingConsumer, error) {
 	attrs := map[string]string{}
 
@@ -73,6 +78,9 @@ func newEnhancingConsumer(
 	}
 	if nextTraces != nil {
 		ec.traces = nextTraces
+	}
+	if nextProfiles != nil {
+		ec.profiles = nextProfiles
 	}
 	return ec, nil
 }
@@ -115,6 +123,18 @@ func (ec *enhancingConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces
 	}
 
 	return ec.traces.ConsumeTraces(ctx, td)
+}
+
+func (ec *enhancingConsumer) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
+	if ec.profiles == nil {
+		return errors.New("no profile consumer available")
+	}
+	rp := pd.ResourceProfiles()
+	for i := 0; i < rp.Len(); i++ {
+		ec.putAttrs(rp.At(i).Resource().Attributes())
+	}
+
+	return ec.profiles.ConsumeProfiles(ctx, pd)
 }
 
 func (ec *enhancingConsumer) putAttrs(attrs pcommon.Map) {

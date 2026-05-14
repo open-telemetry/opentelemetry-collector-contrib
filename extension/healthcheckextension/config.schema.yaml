@@ -1,0 +1,4 @@
+description: Config wraps the shared healthcheck.Config to add extension-specific validation.
+type: object
+allOf:
+  - $ref: /internal/healthcheck.config

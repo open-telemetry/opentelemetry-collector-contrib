@@ -61,6 +61,11 @@ type DimensionClient struct {
 	ExcludeProperties []dpfilters.PropertyFilter
 	// dropTags specifies whether tags should be omitted or not. Default value is false.
 	dropTags bool
+	// stripK8sLabelPrefix controls whether the `k8s.<resource>.label.` prefix is stripped
+	// from Kubernetes resource label keys before sending them as dimension property updates.
+	// This applies to all resource types except k8s.service, which already sends labels with
+	// the prefix. Default is true.
+	stripK8sLabelPrefix bool
 }
 
 type queuedDimension struct {
@@ -87,6 +92,7 @@ type DimensionClientOptions struct {
 	IdleConnTimeout         time.Duration
 	Timeout                 time.Duration
 	DropTags                bool
+	StripK8sLabelPrefix     bool
 }
 
 // NewDimensionClient returns a new client
@@ -125,6 +131,7 @@ func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
 		DefaultProperties:       options.DefaultProperties,
 		ExcludeProperties:       options.ExcludeProperties,
 		dropTags:                options.DropTags,
+		stripK8sLabelPrefix:     options.StripK8sLabelPrefix,
 	}
 }
 

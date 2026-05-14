@@ -314,3 +314,13 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 		assert.Equal(t, expected, decision)
 	}
 }
+
+func TestCompositeIsStatefulIfAnySubpolicyIsStateful(t *testing.T) {
+	stateless := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
+	stateful := NewRateLimiting(componenttest.NewNopTelemetrySettings(), 10)
+	c := NewComposite(zap.NewNop(), 100, []SubPolicyEvalParams{
+		{Evaluator: stateless, MaxSpansPerSecond: 50, Name: "stateless"},
+		{Evaluator: stateful, MaxSpansPerSecond: 50, Name: "stateful"},
+	}, FakeTimeProvider{}, false)
+	assert.True(t, c.IsStateful())
+}

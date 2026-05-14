@@ -62,7 +62,7 @@ transformations or operations.
 
 ```yaml
 processors:
-  metricstransform:
+  metrics_transform:
   # transforms is a list of transformations with each element transforming a metric selected by metric name
     transforms:
     

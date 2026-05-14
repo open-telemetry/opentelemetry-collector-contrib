@@ -6,14 +6,14 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| aws.log.group.names | The aws.log.group.names | Any Slice | true |
-| aws.log.stream.names | The aws.log.stream.names | Any Slice | true |
-| cloud.platform | The cloud.platform | Any Str | true |
-| cloud.provider | The cloud.provider | Any Str | true |
-| cloud.region | The cloud.region | Any Str | true |
-| faas.instance | The faas.instance | Any Str | true |
-| faas.max_memory | The faas.max_memory | Any Str | true |
-| faas.name | faas.name | Any Str | true |
-| faas.version | The faas.version | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| aws.log.group.names | The aws.log.group.names | Any Slice | true | - |
+| aws.log.stream.names | The aws.log.stream.names | Any Slice | true | - |
+| cloud.platform | The cloud.platform | Any Str | true | - |
+| cloud.provider | The cloud.provider | Any Str | true | - |
+| cloud.region | The cloud.region | Any Str | true | - |
+| faas.instance | The faas.instance | Any Str | true | - |
+| faas.max_memory | The faas.max_memory | Any Str | true | - |
+| faas.name | faas.name | Any Str | true | - |
+| faas.version | The faas.version | Any Str | true | - |

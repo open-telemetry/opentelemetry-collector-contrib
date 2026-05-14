@@ -22,16 +22,16 @@ Measures the power state of a chassis (-1 unknown, 0 off, 1 on).
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| chassis.id | Chassis id. | Any Str | Recommended |
-| chassis.asset_tag | Chassis asset tag. | Any Str | Recommended |
-| chassis.model | Chassis model. | Any Str | Recommended |
-| chassis.name | Chassis name. | Any Str | Recommended |
-| chassis.manufacturer | Chassis manufacturer. | Any Str | Recommended |
-| chassis.serial_number | Chassis serial number. | Any Str | Recommended |
-| chassis.sku | Chassis sku. | Any Str | Recommended |
-| chassis.chassis_type | Chassis type. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| chassis.id | Chassis id. | Any Str | Recommended | - |
+| chassis.asset_tag | Chassis asset tag. | Any Str | Recommended | - |
+| chassis.model | Chassis model. | Any Str | Recommended | - |
+| chassis.name | Chassis name. | Any Str | Recommended | - |
+| chassis.manufacturer | Chassis manufacturer. | Any Str | Recommended | - |
+| chassis.serial_number | Chassis serial number. | Any Str | Recommended | - |
+| chassis.sku | Chassis sku. | Any Str | Recommended | - |
+| chassis.chassis_type | Chassis type. | Any Str | Recommended | - |
 
 ### chassis.status.health
 
@@ -43,16 +43,16 @@ Measures the health of a chassis (-1 unknown, 0 critical, 1 ok, 2 warning).
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| chassis.id | Chassis id. | Any Str | Recommended |
-| chassis.asset_tag | Chassis asset tag. | Any Str | Recommended |
-| chassis.model | Chassis model. | Any Str | Recommended |
-| chassis.name | Chassis name. | Any Str | Recommended |
-| chassis.manufacturer | Chassis manufacturer. | Any Str | Recommended |
-| chassis.serial_number | Chassis serial number. | Any Str | Recommended |
-| chassis.sku | Chassis sku. | Any Str | Recommended |
-| chassis.chassis_type | Chassis type. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| chassis.id | Chassis id. | Any Str | Recommended | - |
+| chassis.asset_tag | Chassis asset tag. | Any Str | Recommended | - |
+| chassis.model | Chassis model. | Any Str | Recommended | - |
+| chassis.name | Chassis name. | Any Str | Recommended | - |
+| chassis.manufacturer | Chassis manufacturer. | Any Str | Recommended | - |
+| chassis.serial_number | Chassis serial number. | Any Str | Recommended | - |
+| chassis.sku | Chassis sku. | Any Str | Recommended | - |
+| chassis.chassis_type | Chassis type. | Any Str | Recommended | - |
 
 ### chassis.status.state
 
@@ -64,16 +64,16 @@ Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| chassis.id | Chassis id. | Any Str | Recommended |
-| chassis.asset_tag | Chassis asset tag. | Any Str | Recommended |
-| chassis.model | Chassis model. | Any Str | Recommended |
-| chassis.name | Chassis name. | Any Str | Recommended |
-| chassis.manufacturer | Chassis manufacturer. | Any Str | Recommended |
-| chassis.serial_number | Chassis serial number. | Any Str | Recommended |
-| chassis.sku | Chassis sku. | Any Str | Recommended |
-| chassis.chassis_type | Chassis type. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| chassis.id | Chassis id. | Any Str | Recommended | - |
+| chassis.asset_tag | Chassis asset tag. | Any Str | Recommended | - |
+| chassis.model | Chassis model. | Any Str | Recommended | - |
+| chassis.name | Chassis name. | Any Str | Recommended | - |
+| chassis.manufacturer | Chassis manufacturer. | Any Str | Recommended | - |
+| chassis.serial_number | Chassis serial number. | Any Str | Recommended | - |
+| chassis.sku | Chassis sku. | Any Str | Recommended | - |
+| chassis.chassis_type | Chassis type. | Any Str | Recommended | - |
 
 ### fan.reading
 
@@ -85,11 +85,11 @@ Measures the reading of a chassis fan.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| chassis.id | Chassis id. | Any Str | Recommended |
-| fan.name | Fan name. | Any Str | Recommended |
-| fan.reading_units | Fan reading units. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| chassis.id | Chassis id. | Any Str | Recommended | - |
+| fan.name | Fan name. | Any Str | Recommended | - |
+| fan.reading_units | Fan reading units. | Any Str | Recommended | - |
 
 ### fan.status.health
 
@@ -101,10 +101,10 @@ Measures the health of a chassis fan (-1 unknown, 0 critical, 1 ok, 2 warning).
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| chassis.id | Chassis id. | Any Str | Recommended |
-| fan.name | Fan name. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| chassis.id | Chassis id. | Any Str | Recommended | - |
+| fan.name | Fan name. | Any Str | Recommended | - |
 
 ### fan.status.state
 
@@ -116,10 +116,10 @@ Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| chassis.id | Chassis id. | Any Str | Recommended |
-| fan.name | Fan name. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| chassis.id | Chassis id. | Any Str | Recommended | - |
+| fan.name | Fan name. | Any Str | Recommended | - |
 
 ### system.powerstate
 
@@ -131,17 +131,17 @@ Measures the power state of a system (-1 unknown, 0 off, 1 on).
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| system.id | System id. | Any Str | Recommended |
-| system.asset_tag | System asset tag. | Any Str | Recommended |
-| system.bios_version | System bios version. | Any Str | Recommended |
-| system.model | System model. | Any Str | Recommended |
-| system.name | System name. | Any Str | Recommended |
-| system.manufacturer | System manufacturer. | Any Str | Recommended |
-| system.serial_number | System serial number. | Any Str | Recommended |
-| system.sku | System sku. | Any Str | Recommended |
-| system.system_type | System type. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| system.id | System id. | Any Str | Recommended | - |
+| system.asset_tag | System asset tag. | Any Str | Recommended | - |
+| system.bios_version | System bios version. | Any Str | Recommended | - |
+| system.model | System model. | Any Str | Recommended | - |
+| system.name | System name. | Any Str | Recommended | - |
+| system.manufacturer | System manufacturer. | Any Str | Recommended | - |
+| system.serial_number | System serial number. | Any Str | Recommended | - |
+| system.sku | System sku. | Any Str | Recommended | - |
+| system.system_type | System type. | Any Str | Recommended | - |
 
 ### system.status.health
 
@@ -153,17 +153,17 @@ Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| system.id | System id. | Any Str | Recommended |
-| system.asset_tag | System asset tag. | Any Str | Recommended |
-| system.bios_version | System bios version. | Any Str | Recommended |
-| system.model | System model. | Any Str | Recommended |
-| system.name | System name. | Any Str | Recommended |
-| system.manufacturer | System manufacturer. | Any Str | Recommended |
-| system.serial_number | System serial number. | Any Str | Recommended |
-| system.sku | System sku. | Any Str | Recommended |
-| system.system_type | System type. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| system.id | System id. | Any Str | Recommended | - |
+| system.asset_tag | System asset tag. | Any Str | Recommended | - |
+| system.bios_version | System bios version. | Any Str | Recommended | - |
+| system.model | System model. | Any Str | Recommended | - |
+| system.name | System name. | Any Str | Recommended | - |
+| system.manufacturer | System manufacturer. | Any Str | Recommended | - |
+| system.serial_number | System serial number. | Any Str | Recommended | - |
+| system.sku | System sku. | Any Str | Recommended | - |
+| system.system_type | System type. | Any Str | Recommended | - |
 
 ### system.status.state
 
@@ -175,17 +175,17 @@ Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| system.id | System id. | Any Str | Recommended |
-| system.asset_tag | System asset tag. | Any Str | Recommended |
-| system.bios_version | System bios version. | Any Str | Recommended |
-| system.model | System model. | Any Str | Recommended |
-| system.name | System name. | Any Str | Recommended |
-| system.manufacturer | System manufacturer. | Any Str | Recommended |
-| system.serial_number | System serial number. | Any Str | Recommended |
-| system.sku | System sku. | Any Str | Recommended |
-| system.system_type | System type. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| system.id | System id. | Any Str | Recommended | - |
+| system.asset_tag | System asset tag. | Any Str | Recommended | - |
+| system.bios_version | System bios version. | Any Str | Recommended | - |
+| system.model | System model. | Any Str | Recommended | - |
+| system.name | System name. | Any Str | Recommended | - |
+| system.manufacturer | System manufacturer. | Any Str | Recommended | - |
+| system.serial_number | System serial number. | Any Str | Recommended | - |
+| system.sku | System sku. | Any Str | Recommended | - |
+| system.system_type | System type. | Any Str | Recommended | - |
 
 ### temperature.reading
 
@@ -197,10 +197,10 @@ Measures the reading of a chassis temperature.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| chassis.id | Chassis id. | Any Str | Recommended |
-| temperature.name | Temperature name. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| chassis.id | Chassis id. | Any Str | Recommended | - |
+| temperature.name | Temperature name. | Any Str | Recommended | - |
 
 ### temperature.status.health
 
@@ -212,10 +212,10 @@ Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 wa
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| chassis.id | Chassis id. | Any Str | Recommended |
-| temperature.name | Temperature name. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| chassis.id | Chassis id. | Any Str | Recommended | - |
+| temperature.name | Temperature name. | Any Str | Recommended | - |
 
 ### temperature.status.state
 
@@ -227,14 +227,14 @@ Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| chassis.id | Chassis id. | Any Str | Recommended |
-| temperature.name | Temperature name. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| chassis.id | Chassis id. | Any Str | Recommended | - |
+| temperature.name | Temperature name. | Any Str | Recommended | - |
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| host.name | System host name. | Any Str | true |
-| url.full | Full URL of Redfish API endpoint. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| host.name | System host name. | Any Str | true | - |
+| url.full | Full URL of Redfish API endpoint. | Any Str | true | - |

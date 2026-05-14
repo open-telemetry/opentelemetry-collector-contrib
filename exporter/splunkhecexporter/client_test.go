@@ -954,6 +954,24 @@ func TestReceiveLogEvent(t *testing.T) {
 	compareWithTestData(t, actual[0].body, "testdata/hec_log_event.json")
 }
 
+func TestLogEventTimestampMicrosecondPrecision(t *testing.T) {
+	// Verify that nanosecond timestamp precision is turned to microseconds in the HEC payload
+	logs := plog.NewLogs()
+	logRecord := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	logRecord.Body().SetStr("test log")
+	logRecord.SetTimestamp(pcommon.Timestamp(1574092046011123456))
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.DisableCompression = true
+
+	actual, err := runLogExport(t, cfg, logs, 1)
+	assert.NoError(t, err)
+	assert.Len(t, actual, 1)
+
+	// time field in raw JSON should preserve microsecond precision
+	assert.Contains(t, string(actual[0].body), "1574092046.011123")
+}
+
 func TestReceiveMetricEvent(t *testing.T) {
 	metrics := createMetricsData(1, 1)
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
@@ -2143,6 +2161,108 @@ func TestPushLogsRetryableFailureMultipleResources(t *testing.T) {
 	require.ErrorContains(t, err, "503")
 	require.ErrorAs(t, err, &expectedErr)
 	assert.Equal(t, logs, expectedErr.Data())
+}
+
+// runBatchedLogExport is a variant of runLogExport that enables the
+// exporterhelper batcher and collects all requests received until n have
+// arrived or a 10-second timeout.  Shutdown is used to force-flush pending
+// batcher items before waiting.
+func runBatchedLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatchesNum int) []receivedRequest {
+	t.Helper()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Token = "1234-1234"
+
+	// Buffered channel so the async handler goroutines never block.
+	rr := make(chan receivedRequest, 64)
+	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
+	s := &http.Server{
+		Handler:           &capture,
+		ReadHeaderTimeout: 20 * time.Second,
+	}
+	go func() {
+		if e := s.Serve(listener); e != http.ErrServerClosed {
+			assert.NoError(t, e)
+		}
+	}()
+	defer s.Close()
+
+	params := exportertest.NewNopSettings(metadata.Type)
+	exp, err := NewFactory().CreateLogs(t.Context(), params, cfg)
+	require.NoError(t, err)
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+
+	require.NoError(t, exp.ConsumeLogs(t.Context(), ld))
+
+	// Shutdown flushes all pending batcher items before returning.
+	require.NoError(t, exp.Shutdown(t.Context()))
+
+	// Collect exactly expectedBatchesNum requests, with a generous timeout to
+	// account for the async handler goroutine scheduling.
+	var requests []receivedRequest
+	deadline := time.After(10 * time.Second)
+	for len(requests) < expectedBatchesNum {
+		select {
+		case req := <-rr:
+			requests = append(requests, req)
+		case <-deadline:
+			require.Len(t, requests, expectedBatchesNum, "timed out waiting for HTTP requests")
+			return requests
+		}
+	}
+	return requests
+}
+
+// TestBatcherPartitionsByHecToken verifies that when the exporterhelper batcher
+// is enabled, log resources with different HEC tokens are sent as separate HTTP
+// requests (different Authorization headers), while resources sharing the same
+// token are batched into a single request.
+func TestBatcherPartitionsByHecToken(t *testing.T) {
+	makeCfg := func() *Config {
+		cfg := createDefaultConfig().(*Config)
+		cfg.QueueSettings.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
+			FlushTimeout: 200 * time.Millisecond,
+			Sizer:        exporterhelper.RequestSizerTypeItems,
+			MinSize:      2,
+		})
+		return cfg
+	}
+
+	t.Run("different tokens produce separate HTTP requests", func(t *testing.T) {
+		ld := plog.NewLogs()
+
+		rl0 := ld.ResourceLogs().AppendEmpty()
+		rl0.Resource().Attributes().PutStr(splunk.HecTokenLabel, "token-A")
+		rl0.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log from A")
+
+		rl1 := ld.ResourceLogs().AppendEmpty()
+		rl1.Resource().Attributes().PutStr(splunk.HecTokenLabel, "token-B")
+		rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log from B")
+
+		requests := runBatchedLogExport(t, makeCfg(), ld, 2)
+
+		authHeaders := []string{
+			requests[0].headers.Get("Authorization"),
+			requests[1].headers.Get("Authorization"),
+		}
+		sort.Strings(authHeaders)
+		assert.Equal(t, []string{"Splunk token-A", "Splunk token-B"}, authHeaders)
+	})
+
+	t.Run("same token resources are batched into one request", func(t *testing.T) {
+		ld := plog.NewLogs()
+		for range 2 {
+			rl := ld.ResourceLogs().AppendEmpty()
+			rl.Resource().Attributes().PutStr(splunk.HecTokenLabel, "token-same")
+			rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log")
+		}
+
+		requests := runBatchedLogExport(t, makeCfg(), ld, 1)
+		assert.Equal(t, "Splunk token-same", requests[0].headers.Get("Authorization"))
+	})
 }
 
 // validateCompressedContains validates that GZipped `got` contains `expected` strings

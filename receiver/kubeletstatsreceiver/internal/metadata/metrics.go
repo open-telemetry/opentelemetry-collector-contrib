@@ -11,6 +11,8 @@ type RecordIntDataPointFunc func(*MetricsBuilder, pcommon.Timestamp, int64)
 
 type RecordIntDataPointWithDirectionFunc func(*MetricsBuilder, pcommon.Timestamp, int64, string, AttributeDirection)
 
+type RecordIntDataPointWithFsTypeFunc func(*MetricsBuilder, pcommon.Timestamp, int64, AttributeFsType)
+
 type MetricsBuilders struct {
 	NodeMetricsBuilder      *MetricsBuilder
 	PodMetricsBuilder       *MetricsBuilder
@@ -45,6 +47,11 @@ var ContainerCPUMetrics = CPUMetrics{
 	NodeUtilization:    (*MetricsBuilder).RecordK8sContainerCPUNodeUtilizationDataPoint,
 	LimitUtilization:   (*MetricsBuilder).RecordK8sContainerCPULimitUtilizationDataPoint,
 	RequestUtilization: (*MetricsBuilder).RecordK8sContainerCPURequestUtilizationDataPoint,
+}
+
+var SystemContainerCPUMetrics = CPUMetrics{
+	Time:  (*MetricsBuilder).RecordK8sNodeSystemContainerCPUTimeDataPoint,
+	Usage: (*MetricsBuilder).RecordK8sNodeSystemContainerCPUUsageDataPoint,
 }
 
 type MemoryMetrics struct {
@@ -92,10 +99,19 @@ var ContainerMemoryMetrics = MemoryMetrics{
 	MajorPageFaults:    (*MetricsBuilder).RecordContainerMemoryMajorPageFaultsDataPoint,
 }
 
+var SystemContainerMemoryMetrics = MemoryMetrics{
+	Usage:      (*MetricsBuilder).RecordK8sNodeSystemContainerMemoryUsageDataPoint,
+	WorkingSet: (*MetricsBuilder).RecordK8sNodeSystemContainerMemoryWorkingSetDataPoint,
+}
+
 type FilesystemMetrics struct {
 	Available RecordIntDataPointFunc
 	Capacity  RecordIntDataPointFunc
 	Usage     RecordIntDataPointFunc
+}
+
+type EphemeralStorageMetrics struct {
+	Usage RecordIntDataPointWithFsTypeFunc
 }
 
 var NodeFilesystemMetrics = FilesystemMetrics{
@@ -114,6 +130,10 @@ var ContainerFilesystemMetrics = FilesystemMetrics{
 	Available: (*MetricsBuilder).RecordContainerFilesystemAvailableDataPoint,
 	Capacity:  (*MetricsBuilder).RecordContainerFilesystemCapacityDataPoint,
 	Usage:     (*MetricsBuilder).RecordContainerFilesystemUsageDataPoint,
+}
+
+var ContainerEphemeralStorageMetrics = EphemeralStorageMetrics{
+	Usage: (*MetricsBuilder).RecordK8sContainerEphemeralStorageUsageDataPoint,
 }
 
 type NetworkMetrics struct {

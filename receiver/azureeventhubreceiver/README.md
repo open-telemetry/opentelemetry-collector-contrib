@@ -50,12 +50,25 @@ Either `connection` or `auth` must be specified.
 | `offset` | string | No | `""` | Starting offset. Only applicable when `partition` is set. |
 | `storage` | string | No | | ID of a [storage extension] for checkpoint persistence. |
 
+### Distributed Consumption Settings
+
+When `blob_checkpoint_store` is set, the receiver uses the Azure SDK [Processor](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2#Processor) to coordinate partition ownership across multiple collector instances via Azure Blob Storage. This is mutually exclusive with `partition`, `offset`, and `storage`.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `blob_checkpoint_store.connection` | string | * | | Azure Blob Storage connection string. Required when not using `auth`. |
+| `blob_checkpoint_store.storage_account_url` | string | * | | Blob service URL (e.g., `https://myaccount.blob.core.windows.net`). Required when using `auth`. |
+| `blob_checkpoint_store.container_name` | string | Yes | | Blob container for checkpoint data. Must already exist before starting the collector. |
+
+\* One of `connection` or `storage_account_url` is required.
+
 ### Polling Settings
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `max_poll_events` | int | No | `100` | Maximum events to retrieve per poll. |
 | `poll_rate` | int | No | `5` | Maximum seconds to wait before returning fewer than `max_poll_events`. |
+| `prefetch_count` | int | No | `0` | Size of the SDK's per-partition prefetch buffer. The SDK fills this buffer asynchronously so `ReceiveEvents` calls return from a local cache instead of waiting on the network. `0` uses the SDK default (300). A negative value disables prefetch. Increase this when poll batches are draining the buffer faster than the SDK refills it. |
 
 ### Data Transformation Settings
 
@@ -118,6 +131,40 @@ extensions:
     directory: /var/lib/otelcol/eventhub
 ```
 
+#### Distributed Consumption with Blob Checkpoint Store
+
+When `blob_checkpoint_store` is configured, the receiver automatically:
+- Coordinates partition ownership across collector instances via blob leases
+- Checkpoints progress to Azure Blob Storage
+- Rebalances partitions when instances are added or removed
+
+**Prerequisites:**
+- The blob container must already exist before starting the collector
+- All collector instances must use the same consumer group and container
+
+```yaml
+# With connection strings
+receivers:
+  azure_event_hub:
+    connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+    blob_checkpoint_store:
+      connection: DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey=mykey;EndpointSuffix=core.windows.net
+      container_name: eventhub-checkpoints
+```
+
+```yaml
+# With auth extension
+receivers:
+  azure_event_hub:
+    event_hub:
+      name: hubName
+      namespace: namespace.servicebus.windows.net
+    auth: azureauth
+    blob_checkpoint_store:
+      storage_account_url: https://myaccount.blob.core.windows.net
+      container_name: eventhub-checkpoints
+```
+
 #### Custom Time Formats and Partitioning
 
 ```yaml
@@ -132,16 +179,6 @@ receivers:
       logs: ["01/02/2006 15:04:05", "2006-01-02 15:04:05"]
       metrics: ["01/02/2006 15:04:05"]
 ```
-
-## Feature Gates
-
-The following feature gates are available for this receiver:
-
-### `receiver.azureeventhubreceiver.UseAzeventhubs`
-
-| Status | Default | From Version | To Version |
-|--------|---------|--------------|------------|
-| Stable | `true`  | v0.129.0     | v0.144.0   |
 
 ## Known Limitations
 

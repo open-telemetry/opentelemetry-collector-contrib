@@ -27,7 +27,7 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	factory := NewFactory()
-	metricCfg := metadata.DefaultMetricsBuilderConfig()
+	metricCfg := metadata.NewDefaultMetricsBuilderConfig()
 	metricCfg.Metrics.ProcessRuntimeMemstatsTotalAlloc.Enabled = true
 	metricCfg.Metrics.ProcessRuntimeMemstatsMallocs.Enabled = false
 	clientConfig := confighttp.NewDefaultClientConfig()

@@ -13,6 +13,7 @@ otlpjsonfile/all:
   max_log_size: 10000
   max_concurrent_files: 4
   encoding: "UTF-8"
+  on_truncate: "ignore"
   multiline:
     line_start_pattern: "<"
     line_end_pattern: ">"

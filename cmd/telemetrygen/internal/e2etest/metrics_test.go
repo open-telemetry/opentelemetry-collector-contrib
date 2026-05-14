@@ -24,7 +24,7 @@ func TestGenerateMetrics(t *testing.T) {
 	sink := &consumertest.MetricsSink{}
 	rCfg := f.CreateDefaultConfig()
 	endpoint := testutil.GetAvailableLocalAddress(t)
-	getOrInsertDefault(t, &rCfg.(*otlpreceiver.Config).GRPC).NetAddr.Endpoint = endpoint
+	getOrInsertDefault(t, &rCfg.(*otlpreceiver.Config).Protocols.GRPC).NetAddr.Endpoint = endpoint
 	r, err := f.CreateMetrics(t.Context(), receivertest.NewNopSettings(f.Type()), rCfg, sink)
 	require.NoError(t, err)
 	err = r.Start(t.Context(), componenttest.NewNopHost())

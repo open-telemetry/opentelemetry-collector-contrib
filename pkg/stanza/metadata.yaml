@@ -35,3 +35,9 @@ feature_gates:
       Prevents possible data loss in Stanza-based receivers by emitting logs synchronously.
     from_version: v0.122.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35456
+  - id: stanza.windows.eventDrivenScraping
+    stage: alpha
+    description: >-
+      When enabled, the Stanza windows input wakes on API signals instead of polling on a fixed interval.
+    from_version: v0.148.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47091

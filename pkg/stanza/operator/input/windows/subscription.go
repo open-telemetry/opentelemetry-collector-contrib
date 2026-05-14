@@ -10,18 +10,22 @@ import (
 	"fmt"
 	"syscall"
 
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
 )
 
 // Subscription is a subscription to a windows eventlog channel.
 type Subscription struct {
 	handle        uintptr
+	signalEvent   windows.Handle
 	Server        string
 	startAt       string
 	sessionHandle uintptr
 	channel       string
 	query         *string
 	bookmark      Bookmark
+	logger        *zap.Logger
 }
 
 // Open will open the subscription handle.
@@ -36,8 +40,14 @@ func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel strin
 	if err != nil {
 		return fmt.Errorf("failed to create signal handle: %w", err)
 	}
+	// Close the signal handle on any failure path below.
+	closeSignalOnErr := true
 	defer func() {
-		_ = windows.CloseHandle(signalEvent)
+		if closeSignalOnErr {
+			if closeErr := windows.CloseHandle(signalEvent); closeErr != nil && s.logger != nil {
+				s.logger.Error("Failed to close signal event handle during subscription open failure", zap.Error(closeErr))
+			}
+		}
 	}()
 
 	if channel != "" && query != nil {
@@ -62,7 +72,10 @@ func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel strin
 		return fmt.Errorf("failed to subscribe to %s channel: %w", channel, err)
 	}
 
+	closeSignalOnErr = false // success — handle is now owned by the Subscription
+
 	s.handle = subscriptionHandle
+	s.signalEvent = signalEvent
 	s.startAt = startAt
 	s.sessionHandle = sessionHandle
 	s.channel = channel
@@ -77,15 +90,48 @@ func (s *Subscription) Close() error {
 		return nil
 	}
 
+	var errs error
 	if err := evtClose(s.handle); err != nil {
-		return fmt.Errorf("failed to close subscription handle: %w", err)
+		errs = multierr.Append(errs, fmt.Errorf("failed to close subscription handle: %w", err))
+	} else {
+		s.handle = 0
 	}
 
-	s.handle = 0
-	return nil
+	if s.signalEvent != 0 {
+		if err := windows.CloseHandle(s.signalEvent); err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("failed to close signal event handle: %w", err))
+		} else {
+			s.signalEvent = 0
+		}
+	}
+
+	return errs
 }
 
 var errSubscriptionHandleNotOpen = errors.New("subscription handle is not open")
+
+// Wait blocks until the subscription has new events, the cancel event is signaled, or the timeout
+// elapses. Returns true if events may be available (subscription signal fired or timeout elapsed),
+// false if the cancel event was signaled (caller should stop).
+func (s *Subscription) Wait(cancelEvent windows.Handle, timeoutMs uint32) (bool, error) {
+	if s.signalEvent == 0 {
+		return false, errors.New("subscription signal handle is not open")
+	}
+
+	handles := []windows.Handle{s.signalEvent, cancelEvent}
+	event, err := windows.WaitForMultipleObjects(handles, false, timeoutMs)
+	if err != nil {
+		return false, fmt.Errorf("failed to wait for subscription signal: %w", err)
+	}
+
+	// WAIT_OBJECT_0+1 means the cancel event (index 1) fired — caller should stop.
+	if event == windows.WAIT_OBJECT_0+1 {
+		return false, nil
+	}
+
+	// WAIT_OBJECT_0 (subscription signal) or WAIT_TIMEOUT (safety-net poll) — events may be available.
+	return true, nil
+}
 
 func (s *Subscription) Read(maxReads int) ([]Event, int, error) {
 	if s.handle == 0 {
@@ -158,17 +204,19 @@ func (*Subscription) createFlags(startAt string, bookmark Bookmark) uint32 {
 }
 
 // NewRemoteSubscription will create a new remote subscription with an empty handle.
-func NewRemoteSubscription(server string) Subscription {
+func NewRemoteSubscription(server string, logger *zap.Logger) Subscription {
 	return Subscription{
 		Server: server,
 		handle: 0,
+		logger: logger,
 	}
 }
 
 // NewLocalSubscription will create a new local subscription with an empty handle.
-func NewLocalSubscription() Subscription {
+func NewLocalSubscription(logger *zap.Logger) Subscription {
 	return Subscription{
 		Server: "",
 		handle: 0,
+		logger: logger,
 	}
 }

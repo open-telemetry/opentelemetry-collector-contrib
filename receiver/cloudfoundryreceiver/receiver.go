@@ -242,7 +242,7 @@ func setupMetricsScope(resourceMetrics pmetric.ResourceMetrics) {
 }
 
 func getResourceMetrics(metrics pmetric.Metrics, envelope *loggregator_v2.Envelope) pmetric.ResourceMetrics {
-	if !allowResourceAttributes.IsEnabled() {
+	if !metadata.CloudfoundryResourceAttributesAllowFeatureGate.IsEnabled() {
 		return metrics.ResourceMetrics().AppendEmpty()
 	}
 
@@ -265,7 +265,7 @@ func setupLogsScope(resourceLogs plog.ResourceLogs) {
 }
 
 func getResourceLogs(logs plog.Logs, envelope *loggregator_v2.Envelope) plog.ResourceLogs {
-	if !allowResourceAttributes.IsEnabled() {
+	if !metadata.CloudfoundryResourceAttributesAllowFeatureGate.IsEnabled() {
 		return logs.ResourceLogs().AppendEmpty()
 	}
 

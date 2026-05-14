@@ -1,0 +1,37 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: signal_to_metrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+    scopeMetrics:
+      - metrics:
+          - description: Test that static key defined after keys_expression overrides dynamic resolution
+            name: with_priority_override
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                # 3 spans have db.system=mysql. Both the dynamic entry and
+                # the static entry resolve to the actual value "mysql"
+                # (default_value is only used when the key is absent).
+                - asInt: "3"
+                  attributes:
+                    - key: db.system
+                      value:
+                        stringValue: mysql
+                  timeUnixNano: "1000000"
+                # 4 spans do not have db.system. The dynamic entry finds
+                # nothing; the static entry applies default_value.
+                - asInt: "4"
+                  attributes:
+                    - key: db.system
+                      value:
+                        stringValue: static_override
+                  timeUnixNano: "1000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector

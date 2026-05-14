@@ -9,17 +9,21 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
@@ -340,6 +344,63 @@ func readFile(fname string) ([]sqlquery.StringMap, error) {
 	return metrics, nil
 }
 
+func TestParseWaitResource(t *testing.T) {
+	testCases := map[string]struct {
+		input        string
+		expectedType string
+		expectedID   string
+	}{
+		"empty": {
+			input:        "",
+			expectedType: "",
+			expectedID:   "",
+		},
+		"invalid": {
+			input:        "not-a-wait-resource",
+			expectedType: "",
+			expectedID:   "",
+		},
+		"key": {
+			input:        "KEY: 5:72057594043359232 (abc)",
+			expectedType: "KEY",
+			expectedID:   "72057594043359232",
+		},
+		"page": {
+			input:        "PAGE: 7:1:232",
+			expectedType: "PAGE",
+			expectedID:   "1:232",
+		},
+		"rid": {
+			input:        "RID: 7:1:232:3",
+			expectedType: "RID",
+			expectedID:   "1:232:3",
+		},
+		"object": {
+			input:        "OBJECT: 9:245575913:0",
+			expectedType: "OBJECT",
+			expectedID:   "245575913:0",
+		},
+		"database": {
+			input:        "DATABASE: 5",
+			expectedType: "DATABASE",
+			expectedID:   "5",
+		},
+		"file": {
+			input:        "FILE: 5:2",
+			expectedType: "FILE",
+			expectedID:   "2",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			resourceType, resourceID := parseWaitResource(tc.input)
+			assert.Equal(t, tc.expectedType, resourceType)
+			assert.Equal(t, tc.expectedID, resourceID)
+		})
+	}
+}
+
 func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
 	var queryResults []sqlquery.StringMap
 	var err error
@@ -655,15 +716,220 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
+			logRecord := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+			blockingSessionIDAttr, ok := logRecord.Attributes().Get("sqlserver.blocking_session_id")
+			assert.True(t, ok)
+			blockingStartTimeAttr, hasBlockingStartTime := logRecord.Attributes().Get("sqlserver.blocking.start_time")
+			assert.Equal(t, blockingSessionIDAttr.Int() > 0, hasBlockingStartTime)
+			if hasBlockingStartTime {
+				_, parseErr := time.Parse(time.RFC3339, blockingStartTimeAttr.Str())
+				assert.NoError(t, parseErr)
+			}
+
 			// Uncomment line below to re-generate expected logs.
 			// golden.WriteLogs(t, filepath.Join("testdata", tc.expectedFile), actualLogs)
 			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", tc.expectedFile))
 			assert.NoError(t, err)
+			removeAttributeFromAllLogRecords(expectedLogs, "sqlserver.blocking.start_time")
+			removeAttributeFromAllLogRecords(actualLogs, "sqlserver.blocking.start_time")
 			errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
-			assert.Equal(t, "db.server.query_sample", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
+			assert.Equal(t, "db.server.query_sample", logRecord.EventName())
 			assert.NoError(t, errs)
 		})
 	}
+}
+
+func removeAttributeFromAllLogRecords(logs plog.Logs, key string) {
+	resourceLogs := logs.ResourceLogs()
+	for i := 0; i < resourceLogs.Len(); i++ {
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logRecords := scopeLogs.At(j).LogRecords()
+			for k := 0; k < logRecords.Len(); k++ {
+				logRecords.At(k).Attributes().Remove(key)
+			}
+		}
+	}
+}
+
+type queryRowsFuncClient struct {
+	queryRowsFunc func(context.Context, ...any) ([]sqlquery.StringMap, error)
+}
+
+func (c queryRowsFuncClient) QueryRows(ctx context.Context, args ...any) ([]sqlquery.StringMap, error) {
+	return c.queryRowsFunc(ctx, args...)
+}
+
+func setupQuerySampleScraper(t *testing.T, logger *zap.Logger) *sqlServerScraperHelper {
+	t.Helper()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.Events.DbServerQuerySample.Enabled = true
+	assert.NoError(t, cfg.Validate())
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	if logger != nil {
+		settings.Logger = logger
+	}
+
+	scrapers := setupSQLServerLogsScrapers(settings, cfg)
+	assert.Len(t, scrapers, 1)
+	return scrapers[0]
+}
+
+func buildQuerySampleRow(sessionID, blockingSessionID, command, statement string) sqlquery.StringMap {
+	return sqlquery.StringMap{
+		"sql_instance":                "sqlserver",
+		"computer_name":               "DESKTOP-GHAEGRD",
+		"db_name":                     "master",
+		"client_address":              "172.19.0.1",
+		"client_port":                 "59286",
+		"query_start":                 "2025-02-12T16:37:54.843+08:00",
+		"session_id":                  sessionID,
+		"session_status":              "running",
+		"request_status":              "running",
+		"host_name":                   "DESKTOP-GHAEGRD",
+		"command":                     command,
+		"statement_text":              statement,
+		"blocking_session_id":         blockingSessionID,
+		"wait_type":                   "",
+		"wait_time":                   "0",
+		"wait_resource":               "",
+		"open_transaction_count":      "0",
+		"transaction_id":              "11089",
+		"percent_complete":            "0",
+		"estimated_completion_time":   "0",
+		"cpu_time":                    "6",
+		"total_elapsed_time":          "6",
+		"reads":                       "0",
+		"writes":                      "0",
+		"logical_reads":               "38",
+		"transaction_isolation_level": "2",
+		"lock_timeout":                "-1",
+		"deadlock_priority":           "0",
+		"row_count":                   "1",
+		"query_hash":                  "0x70A3B130B1048D4D",
+		"query_plan_hash":             "0x140210F64B788CB9",
+		"context_info":                "",
+		"username":                    "sa",
+		"procedure_id":                "0",
+		"procedure_name":              "",
+		"blocking_start_time":         "",
+	}
+}
+
+func buildIdleBlockerRow(sessionID string) sqlquery.StringMap {
+	row := buildQuerySampleRow(sessionID, "0", "IDLE_BLOCKER", "SELECT 1")
+	row["session_status"] = "sleeping"
+	row["request_status"] = ""
+	return row
+}
+
+func TestRecordDatabaseSampleQueryFetchesIdleBlockers(t *testing.T) {
+	scraper := setupQuerySampleScraper(t, nil)
+	scraper.db = &sql.DB{}
+
+	mainRows := []sqlquery.StringMap{buildQuerySampleRow("60", "77", "SELECT", "SELECT 2")}
+	idleRows := []sqlquery.StringMap{buildIdleBlockerRow("77")}
+
+	idleQueryCalls := 0
+	scraper.client = queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+		return mainRows, nil
+	}}
+	scraper.clientProviderFunc = func(_ sqlquery.Db, query string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient {
+		expectedQuery := fmt.Sprintf(getSQLServerIdleBlockingSessionsQuery(), "77")
+		assert.Equal(t, expectedQuery, query)
+		return queryRowsFuncClient{queryRowsFunc: func(_ context.Context, args ...any) ([]sqlquery.StringMap, error) {
+			idleQueryCalls++
+			assert.Equal(t, []any{
+				sql.Named("top", scraper.config.MaxRowsPerQuery),
+			}, args)
+			return idleRows, nil
+		}}
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 2, actualLogs.LogRecordCount())
+	assert.Equal(t, 1, idleQueryCalls)
+
+	foundIdleBlocker := false
+	records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	for i := 0; i < records.Len(); i++ {
+		attrs := records.At(i).Attributes()
+		command, ok := attrs.Get("sqlserver.command")
+		if ok && command.Str() == "IDLE_BLOCKER" {
+			foundIdleBlocker = true
+			sessionID, hasSessionID := attrs.Get("sqlserver.session_id")
+			assert.True(t, hasSessionID)
+			assert.Equal(t, int64(77), sessionID.Int())
+			_, hasBlockingStartTime := attrs.Get("sqlserver.blocking.start_time")
+			assert.False(t, hasBlockingStartTime)
+		}
+	}
+	assert.True(t, foundIdleBlocker)
+}
+
+func TestRecordDatabaseSampleQueryDoesNotFetchIdleBlockersWhenNoneMissing(t *testing.T) {
+	scraper := setupQuerySampleScraper(t, nil)
+	scraper.db = &sql.DB{}
+
+	mainRows := []sqlquery.StringMap{
+		buildQuerySampleRow("60", "61", "SELECT", "SELECT 2"),
+		buildQuerySampleRow("61", "0", "SELECT", "SELECT 3"),
+	}
+
+	providerCalls := 0
+	scraper.client = queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+		return mainRows, nil
+	}}
+	scraper.clientProviderFunc = func(_ sqlquery.Db, _ string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient {
+		providerCalls++
+		return queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			return nil, nil
+		}}
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 2, actualLogs.LogRecordCount())
+	assert.Equal(t, 0, providerCalls)
+}
+
+func TestRecordDatabaseSampleQueryIdleBlockerQueryFailureDoesNotFailScrape(t *testing.T) {
+	core, observedLogs := observer.New(zap.WarnLevel)
+	scraper := setupQuerySampleScraper(t, zap.New(core))
+	scraper.db = &sql.DB{}
+
+	mainRows := []sqlquery.StringMap{buildQuerySampleRow("60", "77", "SELECT", "SELECT 2")}
+
+	idleQueryCalls := 0
+	scraper.client = queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+		return mainRows, nil
+	}}
+	scraper.clientProviderFunc = func(_ sqlquery.Db, query string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient {
+		expectedQuery := fmt.Sprintf(getSQLServerIdleBlockingSessionsQuery(), "77")
+		assert.Equal(t, expectedQuery, query)
+		return queryRowsFuncClient{queryRowsFunc: func(_ context.Context, args ...any) ([]sqlquery.StringMap, error) {
+			idleQueryCalls++
+			assert.Equal(t, []any{
+				sql.Named("top", scraper.config.MaxRowsPerQuery),
+			}, args)
+			return nil, errors.New("idle blocker query failed")
+		}}
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 1, actualLogs.LogRecordCount())
+	assert.Equal(t, 1, idleQueryCalls)
+	assert.Equal(t, 1, observedLogs.FilterMessageSnippet("problems encountered getting idle blocker log rows").Len())
 }
 
 // TestMultiStatementProcNoDuplicateRows validates that a stored procedure

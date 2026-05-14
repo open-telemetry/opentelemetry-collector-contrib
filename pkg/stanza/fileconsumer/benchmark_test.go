@@ -158,10 +158,11 @@ func BenchmarkFileInput(b *testing.B) {
 	// to avoid measuring the time it takes to generate them
 	// and to reduce the amount of syscalls in the benchmark.
 	uniqueLines := 10
-	severalLines := ""
+	var severalLinesBuilder strings.Builder
 	for range uniqueLines {
-		severalLines += string(filetest.TokenWithLength(999)) + "\n"
+		severalLinesBuilder.WriteString(string(filetest.TokenWithLength(999)) + "\n")
 	}
+	severalLines := severalLinesBuilder.String()
 
 	for _, bench := range cases {
 		b.Run(bench.name, func(b *testing.B) {

@@ -28,14 +28,15 @@ import (
 const gzipExtension = ".gz"
 
 type Metadata struct {
-	Fingerprint     *fingerprint.Fingerprint
-	Offset          int64
-	RecordNum       int64
-	FileAttributes  map[string]any
-	HeaderFinalized bool
-	FlushState      flush.State
-	TokenLenState   tokenlen.State
-	FileType        string
+	Fingerprint      *fingerprint.Fingerprint
+	Offset           int64
+	RecordNum        int64
+	FileAttributes   map[string]any
+	HeaderFinalized  bool
+	FlushState       flush.State
+	TokenLenState    tokenlen.State
+	FileType         string
+	TruncateSkipping bool
 }
 
 // Reader manages a single file
@@ -59,6 +60,11 @@ type Reader struct {
 	compression            string
 	acquireFSLock          bool
 	maxBatchSize           int
+	// decompressedBytesToSkip tracks the number of bytes in a decompressed stream
+	// that have already been consumed. When a plaintext file is compressed,
+	// the gzip file must be decompressed from byte 0, and this value is used to skip
+	// past previously processed content so only new lines are emitted.
+	decompressedBytesToSkip int64
 }
 
 // ReadToEnd will read until the end of the file
@@ -129,14 +135,33 @@ func (r *Reader) createGzipReader() (int64, error) {
 		return 0, err
 	}
 	currentEOF := info.Size()
+
+	// Determine starting position of compressed file. When a plaintext file has been
+	// compressed, the entire .gz file is a new byte stream and must be
+	// decompressed from byte 0. decompressedBytesToSkip holds the number of bytes
+	// already-consumed in the uncompressed stream to discard.
+	compressedStart := r.Offset
+	if r.decompressedBytesToSkip > 0 {
+		compressedStart = 0
+	}
+
 	// use a gzip Reader with an underlying SectionReader to pick up at the last
 	// offset of a gzip compressed file
-	gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, r.Offset, currentEOF))
+	gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, compressedStart, currentEOF-compressedStart))
 	if err != nil {
 		if !errors.Is(err, io.EOF) {
 			r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
 		}
 		return 0, err
+	}
+
+	// Skip past already-consumed decompressed bytes so only new lines are processed.
+	if r.decompressedBytesToSkip > 0 {
+		if _, err := io.CopyN(io.Discard, gzipReader, r.decompressedBytesToSkip); err != nil {
+			r.set.Logger.Error("failed to skip already-consumed decompressed bytes", zap.Error(err))
+			return 0, err
+		}
+		r.decompressedBytesToSkip = 0
 	}
 	r.reader = gzipReader
 	return currentEOF, nil
@@ -145,7 +170,7 @@ func (r *Reader) createGzipReader() (int64, error) {
 func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 	bufPtr := r.getBufPtrFromPool()
 	defer r.bufPool.Put(bufPtr)
-	s := scanner.New(r, r.maxLogSize, *bufPtr, r.Offset, r.headerSplitFunc)
+	s := scanner.New(r, r.maxLogSize, *bufPtr, r.Offset, r.headerSplitFunc, r.FileType == gzipExtension)
 
 	// Read the tokens from the file until no more header tokens are found or the end of file is reached.
 	for {
@@ -216,7 +241,7 @@ func (r *Reader) readContents(ctx context.Context) {
 		// Usually, expect this to be a rare event so that we don't bother pooling this special buffer size.
 		buf = make([]byte, 0, r.TokenLenState.MinimumLength+1)
 	}
-	s := scanner.New(r, r.maxLogSize, buf, r.Offset, r.contentSplitFunc)
+	s := scanner.New(r, r.maxLogSize, buf, r.Offset, r.contentSplitFunc, r.FileType == gzipExtension)
 
 	tokenBodies := make([][]byte, r.maxBatchSize)
 	tokenOffsets := make([]int64, r.maxBatchSize+1)

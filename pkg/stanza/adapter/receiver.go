@@ -54,6 +54,9 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 func (r *receiver) consumeEntries(ctx context.Context, entries []*entry.Entry) {
 	obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
 	pLogs := ConvertEntries(entries)
+	for _, e := range entries {
+		entry.Put(e)
+	}
 	logRecordCount := pLogs.LogRecordCount()
 
 	cErr := r.consumer.ConsumeLogs(ctx, pLogs)

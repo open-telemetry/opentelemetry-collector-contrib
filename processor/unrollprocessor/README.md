@@ -69,7 +69,7 @@ service:
     logs:
       receivers: [otlp]
       processors: [unroll]
-      exporters: [logging]
+      exporters: [debug]
 ```
 
 ### Split a log record into multiple via a delimiter
@@ -78,7 +78,7 @@ The following configuration utilizes the [transform processor](https://github.co
 
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: [ ./test.txt ]
     start_at: beginning
 
@@ -98,7 +98,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       processors: [transform, unroll]
       exporters: [file]
 ```
@@ -189,7 +189,7 @@ service:
     logs:
       receivers: [otlp]
       processors: [unroll]
-      exporters: [logging]
+      exporters: [debug]
 ```
 
 This configuration will unroll nested slices within slice elements, creating individual log records for all nested elements.

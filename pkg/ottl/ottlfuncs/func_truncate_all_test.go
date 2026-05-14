@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -83,7 +84,7 @@ func Test_truncateAll(t *testing.T) {
 				},
 			}
 
-			exprFunc, err := TruncateAll(target, tt.limit, ottl.Optional[bool]{})
+			exprFunc, err := TruncateAll(target, tt.limit, ottl.Optional[bool]{}, zap.NewNop())
 			require.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
@@ -155,7 +156,7 @@ func Test_truncateAll_UTF8(t *testing.T) {
 			}
 
 			utf8SafeOpt := ottl.NewTestingOptional(true)
-			exprFunc, err := TruncateAll(target, tt.limit, utf8SafeOpt)
+			exprFunc, err := TruncateAll(target, tt.limit, utf8SafeOpt, zap.NewNop())
 			require.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
@@ -169,7 +170,7 @@ func Test_truncateAll_UTF8(t *testing.T) {
 }
 
 func Test_truncateAll_validation(t *testing.T) {
-	_, err := TruncateAll[any](&ottl.StandardPMapGetSetter[any]{}, -1, ottl.Optional[bool]{})
+	_, err := TruncateAll[any](&ottl.StandardPMapGetSetter[any]{}, -1, ottl.Optional[bool]{}, zap.NewNop())
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "invalid limit for truncate_all function, -1 cannot be negative")
 }
@@ -185,7 +186,7 @@ func Test_truncateAll_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := TruncateAll[any](target, 1, ottl.Optional[bool]{})
+	exprFunc, err := TruncateAll[any](target, 1, ottl.Optional[bool]{}, zap.NewNop())
 	require.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
@@ -202,7 +203,7 @@ func Test_truncateAll_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := TruncateAll[any](target, 1, ottl.Optional[bool]{})
+	exprFunc, err := TruncateAll[any](target, 1, ottl.Optional[bool]{}, zap.NewNop())
 	require.NoError(t, err)
 
 	_, err = exprFunc(nil, nil)

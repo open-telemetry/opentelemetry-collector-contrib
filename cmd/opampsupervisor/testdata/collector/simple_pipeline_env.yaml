@@ -1,5 +1,5 @@
 receivers:
-  filelog:
+  file_log:
     include: 
       - ${IN_FILE}
     start_at: "beginning"
@@ -16,5 +16,5 @@ service:
   extensions: [health_check/e2e]
   pipelines:
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       exporters: [file]

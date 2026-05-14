@@ -22,9 +22,9 @@ The average amount of CPU being used by the node.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| class | The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes. | Str: ``datapath``, ``services`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| class | The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes. | Str: ``datapath``, ``services`` | Recommended | - |
 
 ### nsxt.node.filesystem.usage
 
@@ -36,9 +36,9 @@ The amount of storage space used by the node.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| state | The state of storage space. | Str: ``used``, ``available`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| state | The state of storage space. | Str: ``used``, ``available`` | Recommended | - |
 
 ### nsxt.node.filesystem.utilization
 
@@ -74,9 +74,9 @@ The number of bytes which have flowed through the network interface.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction of network flow. | Str: ``received``, ``transmitted`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of network flow. | Str: ``received``, ``transmitted`` | Recommended | - |
 
 ### nsxt.node.network.packet.count
 
@@ -88,16 +88,16 @@ The number of packets which have flowed through the network interface on the nod
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction of network flow. | Str: ``received``, ``transmitted`` | Recommended |
-| type | The type of packet counter. | Str: ``dropped``, ``errored``, ``success`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of network flow. | Str: ``received``, ``transmitted`` | Recommended | - |
+| type | The type of packet counter. | Str: ``dropped``, ``errored``, ``success`` | Recommended | - |
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| device.id | The name of the network interface. | Any Str | true |
-| nsxt.node.id | The ID of the NSX Node. | Any Str | true |
-| nsxt.node.name | The name of the NSX Node. | Any Str | true |
-| nsxt.node.type | The type of NSX Node. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| device.id | The name of the network interface. | Any Str | true | - |
+| nsxt.node.id | The ID of the NSX Node. | Any Str | true | - |
+| nsxt.node.name | The name of the NSX Node. | Any Str | true | - |
+| nsxt.node.type | The type of NSX Node. | Any Str | true | - |

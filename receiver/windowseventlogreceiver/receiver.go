@@ -26,13 +26,16 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-// WindowsLogConfig defines configuration for the windowseventlog receiver
+// WindowsLogConfig defines configuration for the Windows Event Log receiver.
 type WindowsLogConfig struct {
 	InputConfig        windows.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`
 
 	// ResolveSIDs contains configuration for SID-to-username resolution
 	ResolveSIDs ResolveSIDsConfig `mapstructure:"resolve_sids"`
+
+	// DiscoverDomainControllers controls whether to attempt auto-discovery of domain controllers for joined machines with remote credentials
+	DiscoverDomainControllers bool `mapstructure:"discover_domain_controllers"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

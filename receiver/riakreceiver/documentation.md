@@ -30,9 +30,9 @@ The number of operations performed by the node.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| request | The request operation type. | Str: ``put``, ``get`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| request | The request operation type. | Str: ``put``, ``get`` | Recommended | - |
 
 ### riak.node.operation.time.mean
 
@@ -44,9 +44,9 @@ The mean time between request and response for operations performed by the node 
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| request | The request operation type. | Str: ``put``, ``get`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| request | The request operation type. | Str: ``put``, ``get`` | Recommended | - |
 
 ### riak.node.read_repair.count
 
@@ -66,9 +66,9 @@ The number of index operations performed by vnodes on the node.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| operation | The operation type for index operations. | Str: ``read``, ``write``, ``delete`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The operation type for index operations. | Str: ``read``, ``write``, ``delete`` | Recommended | - |
 
 ### riak.vnode.operation.count
 
@@ -80,12 +80,12 @@ The number of operations performed by vnodes on the node.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| request | The request operation type. | Str: ``put``, ``get`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| request | The request operation type. | Str: ``put``, ``get`` | Recommended | - |
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| riak.node.name | The name this node uses to identify itself. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| riak.node.name | The name this node uses to identify itself. | Any Str | true | - |

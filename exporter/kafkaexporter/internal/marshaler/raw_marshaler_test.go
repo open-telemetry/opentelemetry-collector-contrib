@@ -117,7 +117,10 @@ func Test_RawMarshaler(t *testing.T) {
 			logs := plog.NewLogs()
 			lr := test.logRecord()
 			lr.MoveTo(logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty())
-			messages, err := r.MarshalLogs(logs)
+			var values [][]byte
+			err := r.MarshalLogs(logs, func(_, value []byte) {
+				values = append(values, value)
+			})
 			if test.errorExpected {
 				require.Error(t, err)
 			} else {
@@ -127,9 +130,9 @@ func Test_RawMarshaler(t *testing.T) {
 			if test.countExpected != nil {
 				countExpected = *test.countExpected
 			}
-			assert.Len(t, messages, countExpected)
+			assert.Len(t, values, countExpected)
 			if countExpected > 0 {
-				assert.Equal(t, test.marshaled, messages[0].Value)
+				assert.Equal(t, test.marshaled, values[0])
 			}
 		})
 	}

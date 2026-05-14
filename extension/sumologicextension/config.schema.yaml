@@ -1,0 +1,66 @@
+description: Config has the configuration for the sumologic extension.
+type: object
+properties:
+  api_base_url:
+    type: string
+  backoff:
+    description: 'BackOff defines configuration of collector registration backoff algorithm Exponential algorithm is being used. Please see following link for details: https://github.com/cenkalti/backoff'
+    type: object
+    properties:
+      initial_interval:
+        type: string
+        format: duration
+      max_elapsed_time:
+        type: string
+        format: duration
+      max_interval:
+        type: string
+        format: duration
+  clobber:
+    description: Clobber defines whether to delete any existing collector with the same name and create a new one upon registration. By default this is false.
+    type: boolean
+  collector_category:
+    description: CollectorCategory is the collector category which will be used when the collector is being registered.
+    type: string
+  collector_credentials_directory:
+    description: CollectorCredentialsDirectory is the directory where state files with collector credentials will be stored after successful collector registration. Default value is $HOME/.sumologic-otel-collector
+    type: string
+  collector_description:
+    description: CollectorDescription is the description which will be used when the collector is being registered.
+    type: string
+  collector_environment:
+    description: CollectorEnvironment is the environment which will be used when updating the collector metadata.
+    type: string
+  collector_fields:
+    description: 'CollectorFields defines the collector fields. For more information on this subject visit: https://help.sumologic.com/docs/manage/fields'
+    type: object
+    additionalProperties:
+      x-customType: any
+  collector_name:
+    description: CollectorName is the name under which collector will be registered. Please note that registering a collector under a name which is already used is not allowed.
+    type: string
+  discover_collector_tags:
+    description: DiscoverCollectorTags enables collector metadata tag auto-discovery.
+    type: boolean
+  ephemeral:
+    description: Ephemeral defines whether the collector will be deleted after 12 hours of inactivity. By default this is false.
+    type: boolean
+  force_registration:
+    description: 'ForceRegistration defines whether to force registration every time the collector starts. This will cause the collector to not look at the locally stored credentials and to always reach out to API to register itself. NOTE: if clobber is unset (default) then setting this to true will create a new collector on Sumo UI on every collector start. By default this is false.'
+    type: boolean
+  heartbeat_interval:
+    type: string
+    format: duration
+  installation_token:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  sticky_session_enabled:
+    description: StickySessionEnabled defines if sticky session support is enable. By default this is false.
+    type: boolean
+  time_zone:
+    description: TimeZone defines the time zone of the Collector. For a list of possible values, refer to the "TZ" column in https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List.
+    type: string
+  update_metadata:
+    description: UpdateMetadata defines whether the collector will update its metadata on startup. This includes host details, collector details, network details, and optionally discovered tags. By default this is true.
+    type: boolean
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config

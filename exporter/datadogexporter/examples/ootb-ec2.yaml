@@ -42,7 +42,7 @@ receivers:
         static_configs:
         - targets: ['0.0.0.0:8888']
 
-  filelog:
+  file_log:
     include_file_path: true
     poll_interval: 500ms
     include:
@@ -113,6 +113,6 @@ service:
       processors: [memory_limiter, resourcedetection]
       exporters: [datadog]
     logs:
-      receivers: [otlp, filelog]
+      receivers: [otlp, file_log]
       processors: [memory_limiter, resourcedetection]
       exporters: [datadog]

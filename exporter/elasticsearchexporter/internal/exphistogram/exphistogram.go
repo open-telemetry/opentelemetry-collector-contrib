@@ -28,8 +28,33 @@ func LowerBoundaryNegativeScale(index, scale int) float64 {
 	return math.Ldexp(1, index<<-scale)
 }
 
+// bucketValueFunc computes the representative value for a bucket given its
+// lower and upper boundaries.
+type bucketValueFunc func(lb, ub float64) float64
+
+// midpointBucketValue returns the midpoint (centroid) of the bucket boundaries.
+func midpointBucketValue(lb, ub float64) float64 {
+	return lb + (ub-lb)/2
+}
+
+// rawBucketValue returns the upper boundary of the bucket directly.
+func rawBucketValue(_, ub float64) float64 {
+	return ub
+}
+
+// ToRaw converts an OTLP exponential histogram data point to counts and
+// boundary values without any midpoint approximation. Each bucket's
+// representative value is the upper boundary of the bucket.
+func ToRaw(dp pmetric.ExponentialHistogramDataPoint) (counts []int64, values []float64) {
+	return toHistogram(dp, rawBucketValue)
+}
+
 // ToTDigest converts an OTLP exponential histogram data point to T-Digest counts and mean centroid values.
 func ToTDigest(dp pmetric.ExponentialHistogramDataPoint) (counts []int64, values []float64) {
+	return toHistogram(dp, midpointBucketValue)
+}
+
+func toHistogram(dp pmetric.ExponentialHistogramDataPoint, valueFn bucketValueFunc) (counts []int64, values []float64) {
 	scale := int(dp.Scale())
 
 	offset := int(dp.Negative().Offset())
@@ -42,7 +67,7 @@ func ToTDigest(dp pmetric.ExponentialHistogramDataPoint) (counts []int64, values
 		lb := -LowerBoundary(offset+i+1, scale)
 		ub := -LowerBoundary(offset+i, scale)
 		counts = append(counts, safeUint64ToInt64(count))
-		values = append(values, lb+(ub-lb)/2)
+		values = append(values, valueFn(lb, ub))
 	}
 
 	if zeroCount := dp.ZeroCount(); zeroCount != 0 {
@@ -58,7 +83,7 @@ func ToTDigest(dp pmetric.ExponentialHistogramDataPoint) (counts []int64, values
 		lb := LowerBoundary(offset+i, scale)
 		ub := LowerBoundary(offset+i+1, scale)
 		counts = append(counts, safeUint64ToInt64(count))
-		values = append(values, lb+(ub-lb)/2)
+		values = append(values, valueFn(lb, ub))
 	}
 	return counts, values
 }

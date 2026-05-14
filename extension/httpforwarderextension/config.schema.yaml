@@ -1,0 +1,9 @@
+description: Config defines configuration for http forwarder extension.
+type: object
+properties:
+  egress:
+    description: Egress holds config settings to use for forwarded requests.
+    $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  ingress:
+    description: Ingress holds config settings for HTTP server listening for requests.
+    $ref: go.opentelemetry.io/collector/config/confighttp.server_config

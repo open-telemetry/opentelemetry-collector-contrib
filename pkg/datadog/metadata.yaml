@@ -1,5 +1,53 @@
+type: datadog
+
 status:
+  class: pkg
+  stability:
+    beta: [traces, metrics, logs]
   disable_codecov_badge: true
   codeowners:
     active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, jade-guiton-dd, IbraheemA]
     emeritus: [jackgopack4, ankitpatel96]
+
+feature_gates:
+  - id: datadog.EnableOperationAndResourceNameV2
+    stage: beta
+    description: >-
+      When enabled, datadogexporter and datadogconnector use improved logic to compute operation name and resource name.
+    from_version: v0.118.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/36419
+
+  - id: datadog.EnableReceiveResourceSpansV2
+    stage: beta
+    description: >-
+      When enabled, use a refactored implementation of the span receiver which improves performance by 10% and deprecates some not-to-spec functionality.
+    from_version: v0.118.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/37171
+
+  - id: exporter.datadogexporter.DisableAllMetricRemapping
+    stage: beta
+    description: >-
+      When enabled the Datadog Exporter stops mapping OpenTelemetry semantic conventions to Datadog semantic conventions for all locally mapped conventions including system and runtime metrics.
+    from_version: v0.146.0
+    reference_url: https://docs.datadoghq.com/opentelemetry/schema_semantics/metrics_mapping/
+
+  - id: exporter.datadogexporter.EnableAttributeSliceMultiTagExporting
+    stage: alpha
+    description: >-
+      When enabled, attributes with slice values will have their elements turned into individual `key:value` Datadog tags.
+    from_version: v0.142.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44859
+
+  - id: exporter.datadogexporter.InferIntervalForDeltaMetrics
+    stage: alpha
+    description: >-
+      When enabled, the exporter will infer the metrics interval for OTLP delta sums using a heuristic.
+    from_version: v0.148.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/46851
+
+  - id: exporter.datadogexporter.metricremappingdisabled
+    stage: beta
+    description: >-
+      When enabled the Datadog Exporter stops mapping OpenTelemetry semantic conventions to Datadog semantic conventions. This feature gate is only for internal use. [DEPRECATED] Use 'exporter.datadogexporter.DisableAllMetricRemapping' instead.
+    from_version: v0.110.0
+    reference_url: https://docs.datadoghq.com/opentelemetry/schema_semantics/metrics_mapping/

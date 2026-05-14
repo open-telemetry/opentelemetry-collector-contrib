@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/hetzner"
+	ibmcloudclassic "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/classic"
 	ibmcloudvpc "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/vpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm"
@@ -99,6 +100,9 @@ type DetectorConfig struct {
 	// HetznerConfig contains user-specified configurations for the hetzner detector
 	HetznerConfig hetzner.Config `mapstructure:"hetzner"`
 
+	// IBMCloudClassicConfig contains user-specified configurations for the IBM Cloud Classic detector
+	IBMCloudClassicConfig ibmcloudclassic.Config `mapstructure:"ibmcloud_classic"`
+
 	// IBMCloudVPCConfig contains user-specified configurations for the IBM Cloud VPC detector
 	IBMCloudVPCConfig ibmcloudvpc.Config `mapstructure:"ibmcloud_vpc"`
 
@@ -152,6 +156,7 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		GcpConfig:              gcp.CreateDefaultConfig(),
 		HerokuConfig:           heroku.CreateDefaultConfig(),
 		HetznerConfig:          hetzner.CreateDefaultConfig(),
+		IBMCloudClassicConfig:  ibmcloudclassic.CreateDefaultConfig(),
 		IBMCloudVPCConfig:      ibmcloudvpc.CreateDefaultConfig(),
 		SystemConfig:           system.CreateDefaultConfig(),
 		OpenShiftConfig:        openshift.CreateDefaultConfig(),
@@ -197,6 +202,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.HerokuConfig
 	case hetzner.TypeStr:
 		return d.HetznerConfig
+	case ibmcloudclassic.TypeStr:
+		return d.IBMCloudClassicConfig
 	case ibmcloudvpc.TypeStr:
 		return d.IBMCloudVPCConfig
 	case system.TypeStr:

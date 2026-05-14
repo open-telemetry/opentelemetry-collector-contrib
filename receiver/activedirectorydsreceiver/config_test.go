@@ -26,7 +26,7 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	overriddenMetricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+	overriddenMetricsBuilderConfig := metadata.NewDefaultMetricsBuilderConfig()
 	overriddenMetricsBuilderConfig.Metrics.ActiveDirectoryDsReplicationObjectRate.Enabled = false
 	tests := []struct {
 		id       component.ID
@@ -58,7 +58,31 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
-			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricsBuilderConfig{}), cmpopts.IgnoreUnexported(metadata.MetricConfig{})); diff != "" {
+			if diff := cmp.Diff(
+				tt.expected,
+				cfg,
+				cmpopts.IgnoreUnexported(
+					metadata.MetricsBuilderConfig{},
+					metadata.ActiveDirectoryDsBindRateMetricConfig{},
+					metadata.ActiveDirectoryDsLdapBindLastSuccessfulTimeMetricConfig{},
+					metadata.ActiveDirectoryDsLdapBindRateMetricConfig{},
+					metadata.ActiveDirectoryDsLdapClientSessionCountMetricConfig{},
+					metadata.ActiveDirectoryDsLdapSearchRateMetricConfig{},
+					metadata.ActiveDirectoryDsNameCacheHitRateMetricConfig{},
+					metadata.ActiveDirectoryDsNotificationQueuedMetricConfig{},
+					metadata.ActiveDirectoryDsOperationRateMetricConfig{},
+					metadata.ActiveDirectoryDsReplicationNetworkIoMetricConfig{},
+					metadata.ActiveDirectoryDsReplicationObjectRateMetricConfig{},
+					metadata.ActiveDirectoryDsReplicationOperationPendingMetricConfig{},
+					metadata.ActiveDirectoryDsReplicationPropertyRateMetricConfig{},
+					metadata.ActiveDirectoryDsReplicationSyncObjectPendingMetricConfig{},
+					metadata.ActiveDirectoryDsReplicationSyncRequestCountMetricConfig{},
+					metadata.ActiveDirectoryDsReplicationValueRateMetricConfig{},
+					metadata.ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedMetricConfig{},
+					metadata.ActiveDirectoryDsSuboperationRateMetricConfig{},
+					metadata.ActiveDirectoryDsThreadCountMetricConfig{},
+				),
+			); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})

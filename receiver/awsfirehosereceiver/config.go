@@ -19,8 +19,12 @@ type Config struct {
 	// endpoint, so TLSs must be used to enable that.
 	confighttp.ServerConfig `mapstructure:",squash"`
 	// Encoding identifies the encoding of records received from
-	// Firehose. Defaults to telemetry-specific encodings: "cwlog"
-	// for logs, and "cwmetrics" for metrics.
+	// Firehose.
+	//
+	// Defaults to telemetry-specific encodings: "cwlog" for logs,
+	// and "cwmetrics" for metrics. This default behavior is
+	// deprecated as of v0.149.0, and in the future it will be
+	// required to specify the encoding explicitly.
 	Encoding string `mapstructure:"encoding"`
 	// RecordType is an alias for Encoding for backwards compatibility.
 	// It is an error to specify both encoding and record_type.

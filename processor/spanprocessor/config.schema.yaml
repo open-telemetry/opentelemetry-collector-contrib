@@ -50,4 +50,4 @@ properties:
     x-pointer: true
     $ref: status
 allOf:
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig.match_config
+  - $ref: /internal/filter/filterconfig.match_config

@@ -21,3 +21,16 @@ func Test_SetIndexableValue_InvalidValue(t *testing.T) {
 	err := ctxutil.SetIndexableValue[any](t.Context(), nil, pcommon.NewValueStr("str"), nil, keys)
 	assert.Error(t, err)
 }
+
+func Test_SetValue_NilIsNoop(t *testing.T) {
+	value := pcommon.NewValueStr("original")
+	err := ctxutil.SetValue(value, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, "original", value.Str())
+}
+
+func Test_SetValue_UnsupportedType(t *testing.T) {
+	value := pcommon.NewValueStr("test")
+	err := ctxutil.SetValue(value, struct{}{})
+	assert.EqualError(t, err, "unsupported type struct {} for set operation; current value type is Str")
+}

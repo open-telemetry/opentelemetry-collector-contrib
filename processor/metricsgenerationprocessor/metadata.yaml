@@ -8,5 +8,12 @@ status:
   distributions: [contrib]
   codeowners:
     active: [Aneurysm9, crobert-1]
+feature_gates:
+  - id: metricsgeneration.MatchAttributes
+    description: >-
+      When enabled, the metric calculations will only be done between data points whose attributes match.
+    stage: alpha
+    from_version: "v0.112.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35425
 tests:
   config:

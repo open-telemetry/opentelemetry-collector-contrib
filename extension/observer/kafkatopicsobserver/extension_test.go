@@ -5,104 +5,60 @@ package kafkatopicsobserver
 
 import (
 	"cmp"
-	"context"
 	"slices"
 	"testing"
+	"time"
 
-	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kfake"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/kafkatopicsobserver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 )
 
-type mockClusterAdmin struct {
-	sarama.ClusterAdmin
-	mock.Mock
-}
+func TestStartShutdown(t *testing.T) {
+	_, clientCfg := kafkatest.NewCluster(t)
 
-func (m *mockClusterAdmin) ListTopics() (map[string]sarama.TopicDetail, error) {
-	args := m.Called()
-	return args.Get(0).(map[string]sarama.TopicDetail), args.Error(1)
-}
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.ClientConfig = clientCfg
+	cfg.TopicRegex = ".*"
 
-func (m *mockClusterAdmin) Close() error {
-	return m.Called().Error(0)
-}
-
-func TestCollectEndpointsDefaultConfig(t *testing.T) {
-	factory := NewFactory()
-	mockAdmin := &mockClusterAdmin{}
-	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{"abc": {}, "def": {}}, nil)
-	mockAdmin.On("Close").Return(nil).Once()
-
-	ext, err := newObserver(
-		zap.NewNop(),
-		factory.CreateDefaultConfig().(*Config),
-		func(context.Context, configkafka.ClientConfig) (sarama.ClusterAdmin, error) {
-			return mockAdmin, nil
-		},
-	)
+	ext, err := newObserver(zap.NewNop(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
-	err = ext.Start(t.Context(), componenttest.NewNopHost())
-	assert.NoError(t, err)
-
-	err = ext.Shutdown(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, ext.Shutdown(t.Context()))
 }
 
-func TestCollectEndpointsAllConfigSettings(t *testing.T) {
-	mockAdmin := &mockClusterAdmin{}
-
-	// During first check new topics matching the regex are detected
-	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
-		"topic1": {},
-		"topic2": {},
-	}, nil).Once()
-
-	// During the second check only one new topic which doesn't match a regex is detected
-	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
-		"topic1": {},
-		"topic2": {},
-		"topics": {},
-	}, nil).Once()
-
-	// During the third check one topic matching a regex is detected
-	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
-		"topic1": {},
-		"topics": {},
-	}, nil)
-	mockAdmin.On("Close").Return(nil).Once()
-
-	// Override the createKafkaClusterAdmin function to return the mock admin
-	extAllSettings := loadConfig(t, component.NewIDWithName(metadata.Type, "all_settings"))
-	ext, err := newObserver(
-		zap.NewNop(), extAllSettings,
-		func(context.Context, configkafka.ClientConfig) (sarama.ClusterAdmin, error) {
-			return mockAdmin, nil
-		},
+func TestObserveTopics(t *testing.T) {
+	cluster, clientCfg := kafkatest.NewCluster(t,
+		kfake.SeedTopics(1, "topic1", "topic2", "topics"),
 	)
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.ClientConfig = clientCfg
+	cfg.TopicRegex = "^topic[0-9]$"
+	cfg.TopicsSyncInterval = 100 * time.Millisecond
+
+	ext, err := newObserver(zap.NewNop(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
-	err = ext.Start(t.Context(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	defer func() {
-		err := ext.Shutdown(t.Context())
-		assert.NoError(t, err)
-	}()
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ext.Shutdown(t.Context()))
+	})
 
 	ops := make(channelNotifier, 1) // buffer for the initial op
 	ext.(*kafkaTopicsObserver).ListAndWatch(ops)
 
+	// First sync detects the two seeded topics matching the regex.
 	assert.Equal(t, notifyOp{
 		op: "add",
 		endpoints: []observer.Endpoint{{
@@ -115,6 +71,13 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 			Details: &observer.KafkaTopic{},
 		}},
 	}, <-ops)
+
+	// Delete topic2 from the cluster; the next sync should report its removal.
+	adminCl, err := kgo.NewClient(kgo.SeedBrokers(cluster.ListenAddrs()...))
+	require.NoError(t, err)
+	t.Cleanup(adminCl.Close)
+	_, err = kadm.NewClient(adminCl).DeleteTopics(t.Context(), "topic2")
+	require.NoError(t, err)
 
 	assert.Equal(t, notifyOp{
 		op: "remove",

@@ -1,9 +1,0 @@
-change_type: bug_fix
-component: internal/aws
-note: Respect NO_PROXY/no_proxy environment variables when using env-based proxy configuration in awsutil
-issues: [46892]
-subtext: |
-  When no explicit proxy_address was configured, the HTTP client manually read HTTPS_PROXY
-  and used http.ProxyURL which ignores NO_PROXY. Now delegates to http.ProxyFromEnvironment
-  which correctly handles all proxy environment variables.
-change_logs: [user]

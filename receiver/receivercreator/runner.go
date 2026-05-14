@@ -14,8 +14,10 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -99,6 +101,16 @@ func (run *receiverRunner) start(
 			if errors.Is(err, pipeline.ErrSignalNotSupported) {
 				run.logger.Info("instantiated receiver doesn't support traces", zap.String("receiver", receiver.id.String()), zap.Error(err))
 				wr.traces = nil
+			} else {
+				createError = multierr.Combine(createError, err)
+			}
+		}
+	}
+	if consumer.profiles != nil {
+		if wr.profiles, err = run.createProfilesRuntimeReceiver(receiverFactory, id, cfg, consumer); err != nil {
+			if errors.Is(err, pipeline.ErrSignalNotSupported) {
+				run.logger.Info("instantiated receiver doesn't support profiles", zap.String("receiver", receiver.id.String()), zap.Error(err))
+				wr.profiles = nil
 			} else {
 				createError = multierr.Combine(createError, err)
 			}
@@ -211,17 +223,35 @@ func (run *receiverRunner) createTracesRuntimeReceiver(
 	return factory.CreateTraces(context.Background(), runParams, cfg, nextConsumer)
 }
 
+// createProfilesRuntimeReceiver creates a receiver that is discovered at runtime.
+func (run *receiverRunner) createProfilesRuntimeReceiver(
+	factory rcvr.Factory,
+	id component.ID,
+	cfg component.Config,
+	nextConsumer xconsumer.Profiles,
+) (xreceiver.Profiles, error) {
+	xFactory, ok := factory.(xreceiver.Factory)
+	if !ok {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	runParams := run.params
+	runParams.Logger = runParams.Logger.With(zap.String("name", id.String()))
+	runParams.ID = id
+	return xFactory.CreateProfiles(context.Background(), runParams, cfg, nextConsumer)
+}
+
 var _ component.Component = (*wrappedReceiver)(nil)
 
 type wrappedReceiver struct {
-	logs    rcvr.Logs
-	metrics rcvr.Metrics
-	traces  rcvr.Traces
+	logs     rcvr.Logs
+	metrics  rcvr.Metrics
+	traces   rcvr.Traces
+	profiles xreceiver.Profiles
 }
 
 func (w *wrappedReceiver) Start(ctx context.Context, host component.Host) error {
 	var err error
-	for _, r := range []component.Component{w.logs, w.metrics, w.traces} {
+	for _, r := range []component.Component{w.logs, w.metrics, w.traces, w.profiles} {
 		if r != nil {
 			if e := r.Start(ctx, host); e != nil {
 				err = multierr.Combine(err, e)
@@ -233,7 +263,7 @@ func (w *wrappedReceiver) Start(ctx context.Context, host component.Host) error 
 
 func (w *wrappedReceiver) Shutdown(ctx context.Context) error {
 	var err error
-	for _, r := range []component.Component{w.logs, w.metrics, w.traces} {
+	for _, r := range []component.Component{w.logs, w.metrics, w.traces, w.profiles} {
 		if r != nil {
 			if e := r.Shutdown(ctx); e != nil {
 				err = multierr.Combine(err, e)

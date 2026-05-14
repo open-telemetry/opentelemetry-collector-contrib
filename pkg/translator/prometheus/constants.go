@@ -20,6 +20,10 @@ const (
 	// attributes in Prometheus format:
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/e6eccba97ebaffbbfad6d4358408a2cead0ec2df/specification/compatibility/prometheus_and_openmetrics.md#instrumentation-scope
 	ScopeInfoMetricName = "otel_scope_info"
+	// ScopeLabelPrefix prefixes instrumentation scope labels in Prometheus
+	// format:
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/fd43145dde7e5192ebc59a20992d98a3e6af5553/specification/compatibility/prometheus_and_openmetrics.md#instrumentation-scope
+	ScopeLabelPrefix = "otel_scope_"
 	// ScopeNameLabelKey is the name of the label key used to identify the name
 	// of the OpenTelemetry scope which produced the metric:
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/e6eccba97ebaffbbfad6d4358408a2cead0ec2df/specification/compatibility/prometheus_and_openmetrics.md#instrumentation-scope

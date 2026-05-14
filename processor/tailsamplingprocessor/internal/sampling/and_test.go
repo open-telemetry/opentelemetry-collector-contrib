@@ -117,3 +117,11 @@ func TestAndEvaluatorStringInvertNotSampled(t *testing.T) {
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
 	assert.Equal(t, samplingpolicy.NotSampled, decision)
 }
+
+func TestAndIsStatefulIfAnySubpolicyIsStateful(t *testing.T) {
+	stateless := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
+	stateful := NewRateLimiting(componenttest.NewNopTelemetrySettings(), 10)
+
+	and := NewAnd(zap.NewNop(), []samplingpolicy.Evaluator{stateless, stateful})
+	assert.True(t, and.IsStateful())
+}

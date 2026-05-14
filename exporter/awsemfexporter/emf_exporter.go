@@ -33,15 +33,14 @@ const (
 )
 
 type emfExporter struct {
-	pusherMap        map[cwlogs.StreamKey]cwlogs.Pusher
+	pusherMap        sync.Map
 	svcStructuredLog *cwlogs.Client
 	config           *Config
 
 	metricTranslator metricTranslator
 
-	pusherMapLock sync.Mutex
-	retryCnt      int
-	collectorID   string
+	retryCnt    int
+	collectorID string
 }
 
 // newEmfExporter creates a new exporter using exporterhelper
@@ -83,7 +82,6 @@ func newEmfExporter(ctx context.Context, config *Config, set exporter.Settings) 
 		metricTranslator: newMetricTranslator(*config),
 		retryCnt:         awsConfig.RetryMaxAttempts,
 		collectorID:      collectorIdentifier.String(),
-		pusherMap:        map[cwlogs.StreamKey]cwlogs.Pusher{},
 	}
 
 	config.logger.Warn("the default value for DimensionRollupOption will be changing to NoDimensionRollup" +
@@ -131,11 +129,9 @@ func (emf *emfExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics)
 			}
 		} else if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
 			emfPusher := emf.getPusher(putLogEvent.StreamKey)
-			if emfPusher != nil {
-				returnError := emfPusher.AddLogEntry(ctx, putLogEvent)
-				if returnError != nil {
-					return wrapErrorIfBadRequest(returnError)
-				}
+			returnError := emfPusher.AddLogEntry(ctx, putLogEvent)
+			if returnError != nil {
+				return wrapErrorIfBadRequest(returnError)
 			}
 		}
 	}
@@ -160,21 +156,20 @@ func (emf *emfExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics)
 }
 
 func (emf *emfExporter) getPusher(key cwlogs.StreamKey) cwlogs.Pusher {
-	var ok bool
-	if _, ok = emf.pusherMap[key]; !ok {
-		emf.pusherMap[key] = cwlogs.NewPusher(key, emf.retryCnt, *emf.svcStructuredLog, emf.config.logger)
+	p, loaded := emf.pusherMap.Load(key)
+	if !loaded {
+		p, _ = emf.pusherMap.LoadOrStore(key,
+			cwlogs.NewPusher(key, emf.retryCnt, *emf.svcStructuredLog, emf.config.logger))
 	}
-	return emf.pusherMap[key]
+	return p.(cwlogs.Pusher)
 }
 
 func (emf *emfExporter) listPushers() []cwlogs.Pusher {
-	emf.pusherMapLock.Lock()
-	defer emf.pusherMapLock.Unlock()
-
 	var pushers []cwlogs.Pusher
-	for _, pusher := range emf.pusherMap {
-		pushers = append(pushers, pusher)
-	}
+	emf.pusherMap.Range(func(_, value any) bool {
+		pushers = append(pushers, value.(cwlogs.Pusher))
+		return true
+	})
 	return pushers
 }
 

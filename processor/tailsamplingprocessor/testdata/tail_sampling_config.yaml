@@ -39,7 +39,7 @@ tail_sampling:
         {
           name: test-policy-7,
           type: rate_limiting,
-          rate_limiting: {spans_per_second: 35}
+          rate_limiting: {spans_per_second: 35, burst_capacity: 70}
        },
        {
           name: test-policy-8,

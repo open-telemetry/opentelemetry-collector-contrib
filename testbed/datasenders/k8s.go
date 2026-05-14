@@ -40,7 +40,7 @@ var _ testbed.LogDataSender = (*FileLogK8sWriter)(nil)
 //
 // Example config:
 // |`
-// |  filelog:
+// |  file_log:
 // |    include: [ %s ]
 // |    start_at: beginning
 // |    operators:
@@ -135,13 +135,13 @@ func (f *FileLogK8sWriter) Flush() {
 
 func (f *FileLogK8sWriter) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
-	// We are testing filelog receiver here.
+	// We are testing file_log receiver here.
 
 	return fmt.Sprintf(f.config, f.file.Name())
 }
 
 func (*FileLogK8sWriter) ProtocolName() string {
-	return "filelog"
+	return "file_log"
 }
 
 func (*FileLogK8sWriter) GetEndpoint() net.Addr {
@@ -152,7 +152,7 @@ func (*FileLogK8sWriter) GetEndpoint() net.Addr {
 // to recognize and parse kubernetes container logs
 func NewKubernetesContainerWriter() *FileLogK8sWriter {
 	return NewFileLogK8sWriter(`
-  filelog:
+  file_log:
     include: [ %s ]
     start_at: beginning
     include_file_path: true
@@ -226,7 +226,7 @@ func NewKubernetesContainerWriter() *FileLogK8sWriter {
 // to recognize and parse kubernetes container logs using the container parser
 func NewKubernetesContainerParserWriter() *FileLogK8sWriter {
 	return NewFileLogK8sWriter(`
-  filelog:
+  file_log:
     include: [ %s ]
     start_at: beginning
     include_file_path: true
@@ -241,7 +241,7 @@ func NewKubernetesContainerParserWriter() *FileLogK8sWriter {
 // to parse only CRI-Containerd kubernetes logs
 func NewKubernetesCRIContainerdWriter() *FileLogK8sWriter {
 	return NewFileLogK8sWriter(`
-  filelog:
+  file_log:
     include: [ %s ]
     start_at: beginning
     include_file_path: true
@@ -289,7 +289,7 @@ func NewKubernetesCRIContainerdWriter() *FileLogK8sWriter {
 // to parse only CRI-Containerd kubernetes logs without reformatting attributes
 func NewKubernetesCRIContainerdNoAttributesOpsWriter() *FileLogK8sWriter {
 	return NewFileLogK8sWriter(`
-  filelog:
+  file_log:
     include: [ %s ]
     start_at: beginning
     include_file_path: true
@@ -315,7 +315,7 @@ func NewKubernetesCRIContainerdNoAttributesOpsWriter() *FileLogK8sWriter {
 // to parse only CRI-Containerd logs (no extracting metadata from filename)
 func NewCRIContainerdWriter() *FileLogK8sWriter {
 	return NewFileLogK8sWriter(`
-  filelog:
+  file_log:
     include: [ %s ]
     start_at: beginning
     include_file_path: true

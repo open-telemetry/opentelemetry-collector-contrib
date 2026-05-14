@@ -61,7 +61,6 @@ func NewComposite(
 	recordSubPolicy bool,
 ) samplingpolicy.Evaluator {
 	var subpolicies []*subpolicy
-
 	for i := range subPolicyParams {
 		sub := &subpolicy{}
 		sub.evaluator = subPolicyParams[i].Evaluator
@@ -134,4 +133,13 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 	}
 
 	return samplingpolicy.NotSampled, nil
+}
+
+func (c *Composite) IsStateful() bool {
+	for _, sub := range c.subpolicies {
+		if sub.evaluator.IsStateful() {
+			return true
+		}
+	}
+	return false
 }

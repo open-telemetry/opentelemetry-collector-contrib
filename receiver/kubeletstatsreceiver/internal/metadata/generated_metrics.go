@@ -38,6 +38,32 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"transmit": AttributeDirectionTransmit,
 }
 
+// AttributeFsType specifies the value fs.type attribute.
+type AttributeFsType int
+
+const (
+	_ AttributeFsType = iota
+	AttributeFsTypeRootfs
+	AttributeFsTypeLogs
+)
+
+// String returns the string representation of the AttributeFsType.
+func (av AttributeFsType) String() string {
+	switch av {
+	case AttributeFsTypeRootfs:
+		return "rootfs"
+	case AttributeFsTypeLogs:
+		return "logs"
+	}
+	return ""
+}
+
+// MapAttributeFsType is a helper map of string to AttributeFsType attribute value.
+var MapAttributeFsType = map[string]AttributeFsType{
+	"rootfs": AttributeFsTypeRootfs,
+	"logs":   AttributeFsTypeLogs,
+}
+
 var MetricsInfo = metricsInfo{
 	ContainerCPUTime: metricInfo{
 		Name: "container.cpu.time",
@@ -83,6 +109,9 @@ var MetricsInfo = metricsInfo{
 	},
 	K8sContainerCPURequestUtilization: metricInfo{
 		Name: "k8s.container.cpu_request_utilization",
+	},
+	K8sContainerEphemeralStorageUsage: metricInfo{
+		Name: "k8s.container.ephemeral_storage.usage",
 	},
 	K8sContainerMemoryNodeUtilization: metricInfo{
 		Name: "k8s.container.memory.node.utilization",
@@ -131,6 +160,18 @@ var MetricsInfo = metricsInfo{
 	},
 	K8sNodeNetworkIo: metricInfo{
 		Name: "k8s.node.network.io",
+	},
+	K8sNodeSystemContainerCPUTime: metricInfo{
+		Name: "k8s.node.system_container.cpu.time",
+	},
+	K8sNodeSystemContainerCPUUsage: metricInfo{
+		Name: "k8s.node.system_container.cpu.usage",
+	},
+	K8sNodeSystemContainerMemoryUsage: metricInfo{
+		Name: "k8s.node.system_container.memory.usage",
+	},
+	K8sNodeSystemContainerMemoryWorkingSet: metricInfo{
+		Name: "k8s.node.system_container.memory.working_set",
 	},
 	K8sNodeUptime: metricInfo{
 		Name: "k8s.node.uptime",
@@ -216,64 +257,69 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	ContainerCPUTime                     metricInfo
-	ContainerCPUUsage                    metricInfo
-	ContainerFilesystemAvailable         metricInfo
-	ContainerFilesystemCapacity          metricInfo
-	ContainerFilesystemUsage             metricInfo
-	ContainerMemoryAvailable             metricInfo
-	ContainerMemoryMajorPageFaults       metricInfo
-	ContainerMemoryPageFaults            metricInfo
-	ContainerMemoryRss                   metricInfo
-	ContainerMemoryUsage                 metricInfo
-	ContainerMemoryWorkingSet            metricInfo
-	ContainerUptime                      metricInfo
-	K8sContainerCPUNodeUtilization       metricInfo
-	K8sContainerCPULimitUtilization      metricInfo
-	K8sContainerCPURequestUtilization    metricInfo
-	K8sContainerMemoryNodeUtilization    metricInfo
-	K8sContainerMemoryLimitUtilization   metricInfo
-	K8sContainerMemoryRequestUtilization metricInfo
-	K8sNodeCPUTime                       metricInfo
-	K8sNodeCPUUsage                      metricInfo
-	K8sNodeFilesystemAvailable           metricInfo
-	K8sNodeFilesystemCapacity            metricInfo
-	K8sNodeFilesystemUsage               metricInfo
-	K8sNodeMemoryAvailable               metricInfo
-	K8sNodeMemoryMajorPageFaults         metricInfo
-	K8sNodeMemoryPageFaults              metricInfo
-	K8sNodeMemoryRss                     metricInfo
-	K8sNodeMemoryUsage                   metricInfo
-	K8sNodeMemoryWorkingSet              metricInfo
-	K8sNodeNetworkErrors                 metricInfo
-	K8sNodeNetworkIo                     metricInfo
-	K8sNodeUptime                        metricInfo
-	K8sPodCPUNodeUtilization             metricInfo
-	K8sPodCPUTime                        metricInfo
-	K8sPodCPUUsage                       metricInfo
-	K8sPodCPULimitUtilization            metricInfo
-	K8sPodCPURequestUtilization          metricInfo
-	K8sPodFilesystemAvailable            metricInfo
-	K8sPodFilesystemCapacity             metricInfo
-	K8sPodFilesystemUsage                metricInfo
-	K8sPodMemoryAvailable                metricInfo
-	K8sPodMemoryMajorPageFaults          metricInfo
-	K8sPodMemoryNodeUtilization          metricInfo
-	K8sPodMemoryPageFaults               metricInfo
-	K8sPodMemoryRss                      metricInfo
-	K8sPodMemoryUsage                    metricInfo
-	K8sPodMemoryWorkingSet               metricInfo
-	K8sPodMemoryLimitUtilization         metricInfo
-	K8sPodMemoryRequestUtilization       metricInfo
-	K8sPodNetworkErrors                  metricInfo
-	K8sPodNetworkIo                      metricInfo
-	K8sPodUptime                         metricInfo
-	K8sPodVolumeUsage                    metricInfo
-	K8sVolumeAvailable                   metricInfo
-	K8sVolumeCapacity                    metricInfo
-	K8sVolumeInodes                      metricInfo
-	K8sVolumeInodesFree                  metricInfo
-	K8sVolumeInodesUsed                  metricInfo
+	ContainerCPUTime                       metricInfo
+	ContainerCPUUsage                      metricInfo
+	ContainerFilesystemAvailable           metricInfo
+	ContainerFilesystemCapacity            metricInfo
+	ContainerFilesystemUsage               metricInfo
+	ContainerMemoryAvailable               metricInfo
+	ContainerMemoryMajorPageFaults         metricInfo
+	ContainerMemoryPageFaults              metricInfo
+	ContainerMemoryRss                     metricInfo
+	ContainerMemoryUsage                   metricInfo
+	ContainerMemoryWorkingSet              metricInfo
+	ContainerUptime                        metricInfo
+	K8sContainerCPUNodeUtilization         metricInfo
+	K8sContainerCPULimitUtilization        metricInfo
+	K8sContainerCPURequestUtilization      metricInfo
+	K8sContainerEphemeralStorageUsage      metricInfo
+	K8sContainerMemoryNodeUtilization      metricInfo
+	K8sContainerMemoryLimitUtilization     metricInfo
+	K8sContainerMemoryRequestUtilization   metricInfo
+	K8sNodeCPUTime                         metricInfo
+	K8sNodeCPUUsage                        metricInfo
+	K8sNodeFilesystemAvailable             metricInfo
+	K8sNodeFilesystemCapacity              metricInfo
+	K8sNodeFilesystemUsage                 metricInfo
+	K8sNodeMemoryAvailable                 metricInfo
+	K8sNodeMemoryMajorPageFaults           metricInfo
+	K8sNodeMemoryPageFaults                metricInfo
+	K8sNodeMemoryRss                       metricInfo
+	K8sNodeMemoryUsage                     metricInfo
+	K8sNodeMemoryWorkingSet                metricInfo
+	K8sNodeNetworkErrors                   metricInfo
+	K8sNodeNetworkIo                       metricInfo
+	K8sNodeSystemContainerCPUTime          metricInfo
+	K8sNodeSystemContainerCPUUsage         metricInfo
+	K8sNodeSystemContainerMemoryUsage      metricInfo
+	K8sNodeSystemContainerMemoryWorkingSet metricInfo
+	K8sNodeUptime                          metricInfo
+	K8sPodCPUNodeUtilization               metricInfo
+	K8sPodCPUTime                          metricInfo
+	K8sPodCPUUsage                         metricInfo
+	K8sPodCPULimitUtilization              metricInfo
+	K8sPodCPURequestUtilization            metricInfo
+	K8sPodFilesystemAvailable              metricInfo
+	K8sPodFilesystemCapacity               metricInfo
+	K8sPodFilesystemUsage                  metricInfo
+	K8sPodMemoryAvailable                  metricInfo
+	K8sPodMemoryMajorPageFaults            metricInfo
+	K8sPodMemoryNodeUtilization            metricInfo
+	K8sPodMemoryPageFaults                 metricInfo
+	K8sPodMemoryRss                        metricInfo
+	K8sPodMemoryUsage                      metricInfo
+	K8sPodMemoryWorkingSet                 metricInfo
+	K8sPodMemoryLimitUtilization           metricInfo
+	K8sPodMemoryRequestUtilization         metricInfo
+	K8sPodNetworkErrors                    metricInfo
+	K8sPodNetworkIo                        metricInfo
+	K8sPodUptime                           metricInfo
+	K8sPodVolumeUsage                      metricInfo
+	K8sVolumeAvailable                     metricInfo
+	K8sVolumeCapacity                      metricInfo
+	K8sVolumeInodes                        metricInfo
+	K8sVolumeInodesFree                    metricInfo
+	K8sVolumeInodesUsed                    metricInfo
 }
 
 type metricInfo struct {
@@ -1026,6 +1072,60 @@ func (m *metricK8sContainerCPURequestUtilization) emit(metrics pmetric.MetricSli
 
 func newMetricK8sContainerCPURequestUtilization(cfg MetricConfig) metricK8sContainerCPURequestUtilization {
 	m := metricK8sContainerCPURequestUtilization{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sContainerEphemeralStorageUsage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.container.ephemeral_storage.usage metric with initial data.
+func (m *metricK8sContainerEphemeralStorageUsage) init() {
+	m.data.SetName("k8s.container.ephemeral_storage.usage")
+	m.data.SetDescription("Ephemeral storage used by the container.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricK8sContainerEphemeralStorageUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, fsTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("fs.type", fsTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sContainerEphemeralStorageUsage) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sContainerEphemeralStorageUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sContainerEphemeralStorageUsage(cfg MetricConfig) metricK8sContainerEphemeralStorageUsage {
+	m := metricK8sContainerEphemeralStorageUsage{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -1838,6 +1938,208 @@ func (m *metricK8sNodeNetworkIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNodeNetworkIo(cfg MetricConfig) metricK8sNodeNetworkIo {
 	m := metricK8sNodeNetworkIo{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodeSystemContainerCPUTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.system_container.cpu.time metric with initial data.
+func (m *metricK8sNodeSystemContainerCPUTime) init() {
+	m.data.SetName("k8s.node.system_container.cpu.time")
+	m.data.SetDescription("Total cumulative CPU time (sum of all cores) spent by the system container since its creation")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sNodeSystemContainerCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeSystemContainerCPUTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeSystemContainerCPUTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeSystemContainerCPUTime(cfg MetricConfig) metricK8sNodeSystemContainerCPUTime {
+	m := metricK8sNodeSystemContainerCPUTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodeSystemContainerCPUUsage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.system_container.cpu.usage metric with initial data.
+func (m *metricK8sNodeSystemContainerCPUUsage) init() {
+	m.data.SetName("k8s.node.system_container.cpu.usage")
+	m.data.SetDescription("Total CPU usage (sum of all cores per second) averaged over the sample window for the system container")
+	m.data.SetUnit("{cpu}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sNodeSystemContainerCPUUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeSystemContainerCPUUsage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeSystemContainerCPUUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeSystemContainerCPUUsage(cfg MetricConfig) metricK8sNodeSystemContainerCPUUsage {
+	m := metricK8sNodeSystemContainerCPUUsage{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodeSystemContainerMemoryUsage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.system_container.memory.usage metric with initial data.
+func (m *metricK8sNodeSystemContainerMemoryUsage) init() {
+	m.data.SetName("k8s.node.system_container.memory.usage")
+	m.data.SetDescription("System container memory usage")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sNodeSystemContainerMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeSystemContainerMemoryUsage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeSystemContainerMemoryUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeSystemContainerMemoryUsage(cfg MetricConfig) metricK8sNodeSystemContainerMemoryUsage {
+	m := metricK8sNodeSystemContainerMemoryUsage{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodeSystemContainerMemoryWorkingSet struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.system_container.memory.working_set metric with initial data.
+func (m *metricK8sNodeSystemContainerMemoryWorkingSet) init() {
+	m.data.SetName("k8s.node.system_container.memory.working_set")
+	m.data.SetDescription("System container memory working_set")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sNodeSystemContainerMemoryWorkingSet) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeSystemContainerMemoryWorkingSet) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeSystemContainerMemoryWorkingSet) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeSystemContainerMemoryWorkingSet(cfg MetricConfig) metricK8sNodeSystemContainerMemoryWorkingSet {
+	m := metricK8sNodeSystemContainerMemoryWorkingSet{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3217,71 +3519,76 @@ func newMetricK8sVolumeInodesUsed(cfg MetricConfig) metricK8sVolumeInodesUsed {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                     MetricsBuilderConfig // config of the metrics builder.
-	startTime                                  pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                            int                  // maximum observed number of metrics per resource.
-	metricsBuffer                              pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                  component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter             map[string]filter.Filter
-	resourceAttributeExcludeFilter             map[string]filter.Filter
-	metricContainerCPUTime                     metricContainerCPUTime
-	metricContainerCPUUsage                    metricContainerCPUUsage
-	metricContainerFilesystemAvailable         metricContainerFilesystemAvailable
-	metricContainerFilesystemCapacity          metricContainerFilesystemCapacity
-	metricContainerFilesystemUsage             metricContainerFilesystemUsage
-	metricContainerMemoryAvailable             metricContainerMemoryAvailable
-	metricContainerMemoryMajorPageFaults       metricContainerMemoryMajorPageFaults
-	metricContainerMemoryPageFaults            metricContainerMemoryPageFaults
-	metricContainerMemoryRss                   metricContainerMemoryRss
-	metricContainerMemoryUsage                 metricContainerMemoryUsage
-	metricContainerMemoryWorkingSet            metricContainerMemoryWorkingSet
-	metricContainerUptime                      metricContainerUptime
-	metricK8sContainerCPUNodeUtilization       metricK8sContainerCPUNodeUtilization
-	metricK8sContainerCPULimitUtilization      metricK8sContainerCPULimitUtilization
-	metricK8sContainerCPURequestUtilization    metricK8sContainerCPURequestUtilization
-	metricK8sContainerMemoryNodeUtilization    metricK8sContainerMemoryNodeUtilization
-	metricK8sContainerMemoryLimitUtilization   metricK8sContainerMemoryLimitUtilization
-	metricK8sContainerMemoryRequestUtilization metricK8sContainerMemoryRequestUtilization
-	metricK8sNodeCPUTime                       metricK8sNodeCPUTime
-	metricK8sNodeCPUUsage                      metricK8sNodeCPUUsage
-	metricK8sNodeFilesystemAvailable           metricK8sNodeFilesystemAvailable
-	metricK8sNodeFilesystemCapacity            metricK8sNodeFilesystemCapacity
-	metricK8sNodeFilesystemUsage               metricK8sNodeFilesystemUsage
-	metricK8sNodeMemoryAvailable               metricK8sNodeMemoryAvailable
-	metricK8sNodeMemoryMajorPageFaults         metricK8sNodeMemoryMajorPageFaults
-	metricK8sNodeMemoryPageFaults              metricK8sNodeMemoryPageFaults
-	metricK8sNodeMemoryRss                     metricK8sNodeMemoryRss
-	metricK8sNodeMemoryUsage                   metricK8sNodeMemoryUsage
-	metricK8sNodeMemoryWorkingSet              metricK8sNodeMemoryWorkingSet
-	metricK8sNodeNetworkErrors                 metricK8sNodeNetworkErrors
-	metricK8sNodeNetworkIo                     metricK8sNodeNetworkIo
-	metricK8sNodeUptime                        metricK8sNodeUptime
-	metricK8sPodCPUNodeUtilization             metricK8sPodCPUNodeUtilization
-	metricK8sPodCPUTime                        metricK8sPodCPUTime
-	metricK8sPodCPUUsage                       metricK8sPodCPUUsage
-	metricK8sPodCPULimitUtilization            metricK8sPodCPULimitUtilization
-	metricK8sPodCPURequestUtilization          metricK8sPodCPURequestUtilization
-	metricK8sPodFilesystemAvailable            metricK8sPodFilesystemAvailable
-	metricK8sPodFilesystemCapacity             metricK8sPodFilesystemCapacity
-	metricK8sPodFilesystemUsage                metricK8sPodFilesystemUsage
-	metricK8sPodMemoryAvailable                metricK8sPodMemoryAvailable
-	metricK8sPodMemoryMajorPageFaults          metricK8sPodMemoryMajorPageFaults
-	metricK8sPodMemoryNodeUtilization          metricK8sPodMemoryNodeUtilization
-	metricK8sPodMemoryPageFaults               metricK8sPodMemoryPageFaults
-	metricK8sPodMemoryRss                      metricK8sPodMemoryRss
-	metricK8sPodMemoryUsage                    metricK8sPodMemoryUsage
-	metricK8sPodMemoryWorkingSet               metricK8sPodMemoryWorkingSet
-	metricK8sPodMemoryLimitUtilization         metricK8sPodMemoryLimitUtilization
-	metricK8sPodMemoryRequestUtilization       metricK8sPodMemoryRequestUtilization
-	metricK8sPodNetworkErrors                  metricK8sPodNetworkErrors
-	metricK8sPodNetworkIo                      metricK8sPodNetworkIo
-	metricK8sPodUptime                         metricK8sPodUptime
-	metricK8sPodVolumeUsage                    metricK8sPodVolumeUsage
-	metricK8sVolumeAvailable                   metricK8sVolumeAvailable
-	metricK8sVolumeCapacity                    metricK8sVolumeCapacity
-	metricK8sVolumeInodes                      metricK8sVolumeInodes
-	metricK8sVolumeInodesFree                  metricK8sVolumeInodesFree
-	metricK8sVolumeInodesUsed                  metricK8sVolumeInodesUsed
+	config                                       MetricsBuilderConfig // config of the metrics builder.
+	startTime                                    pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                              int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                    component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter               map[string]filter.Filter
+	resourceAttributeExcludeFilter               map[string]filter.Filter
+	metricContainerCPUTime                       metricContainerCPUTime
+	metricContainerCPUUsage                      metricContainerCPUUsage
+	metricContainerFilesystemAvailable           metricContainerFilesystemAvailable
+	metricContainerFilesystemCapacity            metricContainerFilesystemCapacity
+	metricContainerFilesystemUsage               metricContainerFilesystemUsage
+	metricContainerMemoryAvailable               metricContainerMemoryAvailable
+	metricContainerMemoryMajorPageFaults         metricContainerMemoryMajorPageFaults
+	metricContainerMemoryPageFaults              metricContainerMemoryPageFaults
+	metricContainerMemoryRss                     metricContainerMemoryRss
+	metricContainerMemoryUsage                   metricContainerMemoryUsage
+	metricContainerMemoryWorkingSet              metricContainerMemoryWorkingSet
+	metricContainerUptime                        metricContainerUptime
+	metricK8sContainerCPUNodeUtilization         metricK8sContainerCPUNodeUtilization
+	metricK8sContainerCPULimitUtilization        metricK8sContainerCPULimitUtilization
+	metricK8sContainerCPURequestUtilization      metricK8sContainerCPURequestUtilization
+	metricK8sContainerEphemeralStorageUsage      metricK8sContainerEphemeralStorageUsage
+	metricK8sContainerMemoryNodeUtilization      metricK8sContainerMemoryNodeUtilization
+	metricK8sContainerMemoryLimitUtilization     metricK8sContainerMemoryLimitUtilization
+	metricK8sContainerMemoryRequestUtilization   metricK8sContainerMemoryRequestUtilization
+	metricK8sNodeCPUTime                         metricK8sNodeCPUTime
+	metricK8sNodeCPUUsage                        metricK8sNodeCPUUsage
+	metricK8sNodeFilesystemAvailable             metricK8sNodeFilesystemAvailable
+	metricK8sNodeFilesystemCapacity              metricK8sNodeFilesystemCapacity
+	metricK8sNodeFilesystemUsage                 metricK8sNodeFilesystemUsage
+	metricK8sNodeMemoryAvailable                 metricK8sNodeMemoryAvailable
+	metricK8sNodeMemoryMajorPageFaults           metricK8sNodeMemoryMajorPageFaults
+	metricK8sNodeMemoryPageFaults                metricK8sNodeMemoryPageFaults
+	metricK8sNodeMemoryRss                       metricK8sNodeMemoryRss
+	metricK8sNodeMemoryUsage                     metricK8sNodeMemoryUsage
+	metricK8sNodeMemoryWorkingSet                metricK8sNodeMemoryWorkingSet
+	metricK8sNodeNetworkErrors                   metricK8sNodeNetworkErrors
+	metricK8sNodeNetworkIo                       metricK8sNodeNetworkIo
+	metricK8sNodeSystemContainerCPUTime          metricK8sNodeSystemContainerCPUTime
+	metricK8sNodeSystemContainerCPUUsage         metricK8sNodeSystemContainerCPUUsage
+	metricK8sNodeSystemContainerMemoryUsage      metricK8sNodeSystemContainerMemoryUsage
+	metricK8sNodeSystemContainerMemoryWorkingSet metricK8sNodeSystemContainerMemoryWorkingSet
+	metricK8sNodeUptime                          metricK8sNodeUptime
+	metricK8sPodCPUNodeUtilization               metricK8sPodCPUNodeUtilization
+	metricK8sPodCPUTime                          metricK8sPodCPUTime
+	metricK8sPodCPUUsage                         metricK8sPodCPUUsage
+	metricK8sPodCPULimitUtilization              metricK8sPodCPULimitUtilization
+	metricK8sPodCPURequestUtilization            metricK8sPodCPURequestUtilization
+	metricK8sPodFilesystemAvailable              metricK8sPodFilesystemAvailable
+	metricK8sPodFilesystemCapacity               metricK8sPodFilesystemCapacity
+	metricK8sPodFilesystemUsage                  metricK8sPodFilesystemUsage
+	metricK8sPodMemoryAvailable                  metricK8sPodMemoryAvailable
+	metricK8sPodMemoryMajorPageFaults            metricK8sPodMemoryMajorPageFaults
+	metricK8sPodMemoryNodeUtilization            metricK8sPodMemoryNodeUtilization
+	metricK8sPodMemoryPageFaults                 metricK8sPodMemoryPageFaults
+	metricK8sPodMemoryRss                        metricK8sPodMemoryRss
+	metricK8sPodMemoryUsage                      metricK8sPodMemoryUsage
+	metricK8sPodMemoryWorkingSet                 metricK8sPodMemoryWorkingSet
+	metricK8sPodMemoryLimitUtilization           metricK8sPodMemoryLimitUtilization
+	metricK8sPodMemoryRequestUtilization         metricK8sPodMemoryRequestUtilization
+	metricK8sPodNetworkErrors                    metricK8sPodNetworkErrors
+	metricK8sPodNetworkIo                        metricK8sPodNetworkIo
+	metricK8sPodUptime                           metricK8sPodUptime
+	metricK8sPodVolumeUsage                      metricK8sPodVolumeUsage
+	metricK8sVolumeAvailable                     metricK8sVolumeAvailable
+	metricK8sVolumeCapacity                      metricK8sVolumeCapacity
+	metricK8sVolumeInodes                        metricK8sVolumeInodes
+	metricK8sVolumeInodesFree                    metricK8sVolumeInodesFree
+	metricK8sVolumeInodesUsed                    metricK8sVolumeInodesUsed
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -3321,70 +3628,75 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		settings.Logger.Warn("[WARNING] `partition` should not be enabled: This resource_attribute is deprecated and will be removed soon")
 	}
 	mb := &MetricsBuilder{
-		config:                                     mbc,
-		startTime:                                  pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                              pmetric.NewMetrics(),
-		buildInfo:                                  settings.BuildInfo,
-		metricContainerCPUTime:                     newMetricContainerCPUTime(mbc.Metrics.ContainerCPUTime),
-		metricContainerCPUUsage:                    newMetricContainerCPUUsage(mbc.Metrics.ContainerCPUUsage),
-		metricContainerFilesystemAvailable:         newMetricContainerFilesystemAvailable(mbc.Metrics.ContainerFilesystemAvailable),
-		metricContainerFilesystemCapacity:          newMetricContainerFilesystemCapacity(mbc.Metrics.ContainerFilesystemCapacity),
-		metricContainerFilesystemUsage:             newMetricContainerFilesystemUsage(mbc.Metrics.ContainerFilesystemUsage),
-		metricContainerMemoryAvailable:             newMetricContainerMemoryAvailable(mbc.Metrics.ContainerMemoryAvailable),
-		metricContainerMemoryMajorPageFaults:       newMetricContainerMemoryMajorPageFaults(mbc.Metrics.ContainerMemoryMajorPageFaults),
-		metricContainerMemoryPageFaults:            newMetricContainerMemoryPageFaults(mbc.Metrics.ContainerMemoryPageFaults),
-		metricContainerMemoryRss:                   newMetricContainerMemoryRss(mbc.Metrics.ContainerMemoryRss),
-		metricContainerMemoryUsage:                 newMetricContainerMemoryUsage(mbc.Metrics.ContainerMemoryUsage),
-		metricContainerMemoryWorkingSet:            newMetricContainerMemoryWorkingSet(mbc.Metrics.ContainerMemoryWorkingSet),
-		metricContainerUptime:                      newMetricContainerUptime(mbc.Metrics.ContainerUptime),
-		metricK8sContainerCPUNodeUtilization:       newMetricK8sContainerCPUNodeUtilization(mbc.Metrics.K8sContainerCPUNodeUtilization),
-		metricK8sContainerCPULimitUtilization:      newMetricK8sContainerCPULimitUtilization(mbc.Metrics.K8sContainerCPULimitUtilization),
-		metricK8sContainerCPURequestUtilization:    newMetricK8sContainerCPURequestUtilization(mbc.Metrics.K8sContainerCPURequestUtilization),
-		metricK8sContainerMemoryNodeUtilization:    newMetricK8sContainerMemoryNodeUtilization(mbc.Metrics.K8sContainerMemoryNodeUtilization),
-		metricK8sContainerMemoryLimitUtilization:   newMetricK8sContainerMemoryLimitUtilization(mbc.Metrics.K8sContainerMemoryLimitUtilization),
-		metricK8sContainerMemoryRequestUtilization: newMetricK8sContainerMemoryRequestUtilization(mbc.Metrics.K8sContainerMemoryRequestUtilization),
-		metricK8sNodeCPUTime:                       newMetricK8sNodeCPUTime(mbc.Metrics.K8sNodeCPUTime),
-		metricK8sNodeCPUUsage:                      newMetricK8sNodeCPUUsage(mbc.Metrics.K8sNodeCPUUsage),
-		metricK8sNodeFilesystemAvailable:           newMetricK8sNodeFilesystemAvailable(mbc.Metrics.K8sNodeFilesystemAvailable),
-		metricK8sNodeFilesystemCapacity:            newMetricK8sNodeFilesystemCapacity(mbc.Metrics.K8sNodeFilesystemCapacity),
-		metricK8sNodeFilesystemUsage:               newMetricK8sNodeFilesystemUsage(mbc.Metrics.K8sNodeFilesystemUsage),
-		metricK8sNodeMemoryAvailable:               newMetricK8sNodeMemoryAvailable(mbc.Metrics.K8sNodeMemoryAvailable),
-		metricK8sNodeMemoryMajorPageFaults:         newMetricK8sNodeMemoryMajorPageFaults(mbc.Metrics.K8sNodeMemoryMajorPageFaults),
-		metricK8sNodeMemoryPageFaults:              newMetricK8sNodeMemoryPageFaults(mbc.Metrics.K8sNodeMemoryPageFaults),
-		metricK8sNodeMemoryRss:                     newMetricK8sNodeMemoryRss(mbc.Metrics.K8sNodeMemoryRss),
-		metricK8sNodeMemoryUsage:                   newMetricK8sNodeMemoryUsage(mbc.Metrics.K8sNodeMemoryUsage),
-		metricK8sNodeMemoryWorkingSet:              newMetricK8sNodeMemoryWorkingSet(mbc.Metrics.K8sNodeMemoryWorkingSet),
-		metricK8sNodeNetworkErrors:                 newMetricK8sNodeNetworkErrors(mbc.Metrics.K8sNodeNetworkErrors),
-		metricK8sNodeNetworkIo:                     newMetricK8sNodeNetworkIo(mbc.Metrics.K8sNodeNetworkIo),
-		metricK8sNodeUptime:                        newMetricK8sNodeUptime(mbc.Metrics.K8sNodeUptime),
-		metricK8sPodCPUNodeUtilization:             newMetricK8sPodCPUNodeUtilization(mbc.Metrics.K8sPodCPUNodeUtilization),
-		metricK8sPodCPUTime:                        newMetricK8sPodCPUTime(mbc.Metrics.K8sPodCPUTime),
-		metricK8sPodCPUUsage:                       newMetricK8sPodCPUUsage(mbc.Metrics.K8sPodCPUUsage),
-		metricK8sPodCPULimitUtilization:            newMetricK8sPodCPULimitUtilization(mbc.Metrics.K8sPodCPULimitUtilization),
-		metricK8sPodCPURequestUtilization:          newMetricK8sPodCPURequestUtilization(mbc.Metrics.K8sPodCPURequestUtilization),
-		metricK8sPodFilesystemAvailable:            newMetricK8sPodFilesystemAvailable(mbc.Metrics.K8sPodFilesystemAvailable),
-		metricK8sPodFilesystemCapacity:             newMetricK8sPodFilesystemCapacity(mbc.Metrics.K8sPodFilesystemCapacity),
-		metricK8sPodFilesystemUsage:                newMetricK8sPodFilesystemUsage(mbc.Metrics.K8sPodFilesystemUsage),
-		metricK8sPodMemoryAvailable:                newMetricK8sPodMemoryAvailable(mbc.Metrics.K8sPodMemoryAvailable),
-		metricK8sPodMemoryMajorPageFaults:          newMetricK8sPodMemoryMajorPageFaults(mbc.Metrics.K8sPodMemoryMajorPageFaults),
-		metricK8sPodMemoryNodeUtilization:          newMetricK8sPodMemoryNodeUtilization(mbc.Metrics.K8sPodMemoryNodeUtilization),
-		metricK8sPodMemoryPageFaults:               newMetricK8sPodMemoryPageFaults(mbc.Metrics.K8sPodMemoryPageFaults),
-		metricK8sPodMemoryRss:                      newMetricK8sPodMemoryRss(mbc.Metrics.K8sPodMemoryRss),
-		metricK8sPodMemoryUsage:                    newMetricK8sPodMemoryUsage(mbc.Metrics.K8sPodMemoryUsage),
-		metricK8sPodMemoryWorkingSet:               newMetricK8sPodMemoryWorkingSet(mbc.Metrics.K8sPodMemoryWorkingSet),
-		metricK8sPodMemoryLimitUtilization:         newMetricK8sPodMemoryLimitUtilization(mbc.Metrics.K8sPodMemoryLimitUtilization),
-		metricK8sPodMemoryRequestUtilization:       newMetricK8sPodMemoryRequestUtilization(mbc.Metrics.K8sPodMemoryRequestUtilization),
-		metricK8sPodNetworkErrors:                  newMetricK8sPodNetworkErrors(mbc.Metrics.K8sPodNetworkErrors),
-		metricK8sPodNetworkIo:                      newMetricK8sPodNetworkIo(mbc.Metrics.K8sPodNetworkIo),
-		metricK8sPodUptime:                         newMetricK8sPodUptime(mbc.Metrics.K8sPodUptime),
-		metricK8sPodVolumeUsage:                    newMetricK8sPodVolumeUsage(mbc.Metrics.K8sPodVolumeUsage),
-		metricK8sVolumeAvailable:                   newMetricK8sVolumeAvailable(mbc.Metrics.K8sVolumeAvailable),
-		metricK8sVolumeCapacity:                    newMetricK8sVolumeCapacity(mbc.Metrics.K8sVolumeCapacity),
-		metricK8sVolumeInodes:                      newMetricK8sVolumeInodes(mbc.Metrics.K8sVolumeInodes),
-		metricK8sVolumeInodesFree:                  newMetricK8sVolumeInodesFree(mbc.Metrics.K8sVolumeInodesFree),
-		metricK8sVolumeInodesUsed:                  newMetricK8sVolumeInodesUsed(mbc.Metrics.K8sVolumeInodesUsed),
-		resourceAttributeIncludeFilter:             make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:             make(map[string]filter.Filter),
+		config:                                       mbc,
+		startTime:                                    pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                                pmetric.NewMetrics(),
+		buildInfo:                                    settings.BuildInfo,
+		metricContainerCPUTime:                       newMetricContainerCPUTime(mbc.Metrics.ContainerCPUTime),
+		metricContainerCPUUsage:                      newMetricContainerCPUUsage(mbc.Metrics.ContainerCPUUsage),
+		metricContainerFilesystemAvailable:           newMetricContainerFilesystemAvailable(mbc.Metrics.ContainerFilesystemAvailable),
+		metricContainerFilesystemCapacity:            newMetricContainerFilesystemCapacity(mbc.Metrics.ContainerFilesystemCapacity),
+		metricContainerFilesystemUsage:               newMetricContainerFilesystemUsage(mbc.Metrics.ContainerFilesystemUsage),
+		metricContainerMemoryAvailable:               newMetricContainerMemoryAvailable(mbc.Metrics.ContainerMemoryAvailable),
+		metricContainerMemoryMajorPageFaults:         newMetricContainerMemoryMajorPageFaults(mbc.Metrics.ContainerMemoryMajorPageFaults),
+		metricContainerMemoryPageFaults:              newMetricContainerMemoryPageFaults(mbc.Metrics.ContainerMemoryPageFaults),
+		metricContainerMemoryRss:                     newMetricContainerMemoryRss(mbc.Metrics.ContainerMemoryRss),
+		metricContainerMemoryUsage:                   newMetricContainerMemoryUsage(mbc.Metrics.ContainerMemoryUsage),
+		metricContainerMemoryWorkingSet:              newMetricContainerMemoryWorkingSet(mbc.Metrics.ContainerMemoryWorkingSet),
+		metricContainerUptime:                        newMetricContainerUptime(mbc.Metrics.ContainerUptime),
+		metricK8sContainerCPUNodeUtilization:         newMetricK8sContainerCPUNodeUtilization(mbc.Metrics.K8sContainerCPUNodeUtilization),
+		metricK8sContainerCPULimitUtilization:        newMetricK8sContainerCPULimitUtilization(mbc.Metrics.K8sContainerCPULimitUtilization),
+		metricK8sContainerCPURequestUtilization:      newMetricK8sContainerCPURequestUtilization(mbc.Metrics.K8sContainerCPURequestUtilization),
+		metricK8sContainerEphemeralStorageUsage:      newMetricK8sContainerEphemeralStorageUsage(mbc.Metrics.K8sContainerEphemeralStorageUsage),
+		metricK8sContainerMemoryNodeUtilization:      newMetricK8sContainerMemoryNodeUtilization(mbc.Metrics.K8sContainerMemoryNodeUtilization),
+		metricK8sContainerMemoryLimitUtilization:     newMetricK8sContainerMemoryLimitUtilization(mbc.Metrics.K8sContainerMemoryLimitUtilization),
+		metricK8sContainerMemoryRequestUtilization:   newMetricK8sContainerMemoryRequestUtilization(mbc.Metrics.K8sContainerMemoryRequestUtilization),
+		metricK8sNodeCPUTime:                         newMetricK8sNodeCPUTime(mbc.Metrics.K8sNodeCPUTime),
+		metricK8sNodeCPUUsage:                        newMetricK8sNodeCPUUsage(mbc.Metrics.K8sNodeCPUUsage),
+		metricK8sNodeFilesystemAvailable:             newMetricK8sNodeFilesystemAvailable(mbc.Metrics.K8sNodeFilesystemAvailable),
+		metricK8sNodeFilesystemCapacity:              newMetricK8sNodeFilesystemCapacity(mbc.Metrics.K8sNodeFilesystemCapacity),
+		metricK8sNodeFilesystemUsage:                 newMetricK8sNodeFilesystemUsage(mbc.Metrics.K8sNodeFilesystemUsage),
+		metricK8sNodeMemoryAvailable:                 newMetricK8sNodeMemoryAvailable(mbc.Metrics.K8sNodeMemoryAvailable),
+		metricK8sNodeMemoryMajorPageFaults:           newMetricK8sNodeMemoryMajorPageFaults(mbc.Metrics.K8sNodeMemoryMajorPageFaults),
+		metricK8sNodeMemoryPageFaults:                newMetricK8sNodeMemoryPageFaults(mbc.Metrics.K8sNodeMemoryPageFaults),
+		metricK8sNodeMemoryRss:                       newMetricK8sNodeMemoryRss(mbc.Metrics.K8sNodeMemoryRss),
+		metricK8sNodeMemoryUsage:                     newMetricK8sNodeMemoryUsage(mbc.Metrics.K8sNodeMemoryUsage),
+		metricK8sNodeMemoryWorkingSet:                newMetricK8sNodeMemoryWorkingSet(mbc.Metrics.K8sNodeMemoryWorkingSet),
+		metricK8sNodeNetworkErrors:                   newMetricK8sNodeNetworkErrors(mbc.Metrics.K8sNodeNetworkErrors),
+		metricK8sNodeNetworkIo:                       newMetricK8sNodeNetworkIo(mbc.Metrics.K8sNodeNetworkIo),
+		metricK8sNodeSystemContainerCPUTime:          newMetricK8sNodeSystemContainerCPUTime(mbc.Metrics.K8sNodeSystemContainerCPUTime),
+		metricK8sNodeSystemContainerCPUUsage:         newMetricK8sNodeSystemContainerCPUUsage(mbc.Metrics.K8sNodeSystemContainerCPUUsage),
+		metricK8sNodeSystemContainerMemoryUsage:      newMetricK8sNodeSystemContainerMemoryUsage(mbc.Metrics.K8sNodeSystemContainerMemoryUsage),
+		metricK8sNodeSystemContainerMemoryWorkingSet: newMetricK8sNodeSystemContainerMemoryWorkingSet(mbc.Metrics.K8sNodeSystemContainerMemoryWorkingSet),
+		metricK8sNodeUptime:                          newMetricK8sNodeUptime(mbc.Metrics.K8sNodeUptime),
+		metricK8sPodCPUNodeUtilization:               newMetricK8sPodCPUNodeUtilization(mbc.Metrics.K8sPodCPUNodeUtilization),
+		metricK8sPodCPUTime:                          newMetricK8sPodCPUTime(mbc.Metrics.K8sPodCPUTime),
+		metricK8sPodCPUUsage:                         newMetricK8sPodCPUUsage(mbc.Metrics.K8sPodCPUUsage),
+		metricK8sPodCPULimitUtilization:              newMetricK8sPodCPULimitUtilization(mbc.Metrics.K8sPodCPULimitUtilization),
+		metricK8sPodCPURequestUtilization:            newMetricK8sPodCPURequestUtilization(mbc.Metrics.K8sPodCPURequestUtilization),
+		metricK8sPodFilesystemAvailable:              newMetricK8sPodFilesystemAvailable(mbc.Metrics.K8sPodFilesystemAvailable),
+		metricK8sPodFilesystemCapacity:               newMetricK8sPodFilesystemCapacity(mbc.Metrics.K8sPodFilesystemCapacity),
+		metricK8sPodFilesystemUsage:                  newMetricK8sPodFilesystemUsage(mbc.Metrics.K8sPodFilesystemUsage),
+		metricK8sPodMemoryAvailable:                  newMetricK8sPodMemoryAvailable(mbc.Metrics.K8sPodMemoryAvailable),
+		metricK8sPodMemoryMajorPageFaults:            newMetricK8sPodMemoryMajorPageFaults(mbc.Metrics.K8sPodMemoryMajorPageFaults),
+		metricK8sPodMemoryNodeUtilization:            newMetricK8sPodMemoryNodeUtilization(mbc.Metrics.K8sPodMemoryNodeUtilization),
+		metricK8sPodMemoryPageFaults:                 newMetricK8sPodMemoryPageFaults(mbc.Metrics.K8sPodMemoryPageFaults),
+		metricK8sPodMemoryRss:                        newMetricK8sPodMemoryRss(mbc.Metrics.K8sPodMemoryRss),
+		metricK8sPodMemoryUsage:                      newMetricK8sPodMemoryUsage(mbc.Metrics.K8sPodMemoryUsage),
+		metricK8sPodMemoryWorkingSet:                 newMetricK8sPodMemoryWorkingSet(mbc.Metrics.K8sPodMemoryWorkingSet),
+		metricK8sPodMemoryLimitUtilization:           newMetricK8sPodMemoryLimitUtilization(mbc.Metrics.K8sPodMemoryLimitUtilization),
+		metricK8sPodMemoryRequestUtilization:         newMetricK8sPodMemoryRequestUtilization(mbc.Metrics.K8sPodMemoryRequestUtilization),
+		metricK8sPodNetworkErrors:                    newMetricK8sPodNetworkErrors(mbc.Metrics.K8sPodNetworkErrors),
+		metricK8sPodNetworkIo:                        newMetricK8sPodNetworkIo(mbc.Metrics.K8sPodNetworkIo),
+		metricK8sPodUptime:                           newMetricK8sPodUptime(mbc.Metrics.K8sPodUptime),
+		metricK8sPodVolumeUsage:                      newMetricK8sPodVolumeUsage(mbc.Metrics.K8sPodVolumeUsage),
+		metricK8sVolumeAvailable:                     newMetricK8sVolumeAvailable(mbc.Metrics.K8sVolumeAvailable),
+		metricK8sVolumeCapacity:                      newMetricK8sVolumeCapacity(mbc.Metrics.K8sVolumeCapacity),
+		metricK8sVolumeInodes:                        newMetricK8sVolumeInodes(mbc.Metrics.K8sVolumeInodes),
+		metricK8sVolumeInodesFree:                    newMetricK8sVolumeInodesFree(mbc.Metrics.K8sVolumeInodesFree),
+		metricK8sVolumeInodesUsed:                    newMetricK8sVolumeInodesUsed(mbc.Metrics.K8sVolumeInodesUsed),
+		resourceAttributeIncludeFilter:               make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:               make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.AwsVolumeID.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["aws.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.AwsVolumeID.MetricsInclude)
@@ -3439,6 +3751,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.K8sNodeName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sNodeSystemContainerName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.node.system_container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeSystemContainerName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sNodeSystemContainerName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.node.system_container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeSystemContainerName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.persistentvolumeclaim.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsInclude)
@@ -3560,6 +3878,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sContainerCPUNodeUtilization.emit(ils.Metrics())
 	mb.metricK8sContainerCPULimitUtilization.emit(ils.Metrics())
 	mb.metricK8sContainerCPURequestUtilization.emit(ils.Metrics())
+	mb.metricK8sContainerEphemeralStorageUsage.emit(ils.Metrics())
 	mb.metricK8sContainerMemoryNodeUtilization.emit(ils.Metrics())
 	mb.metricK8sContainerMemoryLimitUtilization.emit(ils.Metrics())
 	mb.metricK8sContainerMemoryRequestUtilization.emit(ils.Metrics())
@@ -3576,6 +3895,10 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sNodeMemoryWorkingSet.emit(ils.Metrics())
 	mb.metricK8sNodeNetworkErrors.emit(ils.Metrics())
 	mb.metricK8sNodeNetworkIo.emit(ils.Metrics())
+	mb.metricK8sNodeSystemContainerCPUTime.emit(ils.Metrics())
+	mb.metricK8sNodeSystemContainerCPUUsage.emit(ils.Metrics())
+	mb.metricK8sNodeSystemContainerMemoryUsage.emit(ils.Metrics())
+	mb.metricK8sNodeSystemContainerMemoryWorkingSet.emit(ils.Metrics())
 	mb.metricK8sNodeUptime.emit(ils.Metrics())
 	mb.metricK8sPodCPUNodeUtilization.emit(ils.Metrics())
 	mb.metricK8sPodCPUTime.emit(ils.Metrics())
@@ -3709,6 +4032,11 @@ func (mb *MetricsBuilder) RecordK8sContainerCPURequestUtilizationDataPoint(ts pc
 	mb.metricK8sContainerCPURequestUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordK8sContainerEphemeralStorageUsageDataPoint adds a data point to k8s.container.ephemeral_storage.usage metric.
+func (mb *MetricsBuilder) RecordK8sContainerEphemeralStorageUsageDataPoint(ts pcommon.Timestamp, val int64, fsTypeAttributeValue AttributeFsType) {
+	mb.metricK8sContainerEphemeralStorageUsage.recordDataPoint(mb.startTime, ts, val, fsTypeAttributeValue.String())
+}
+
 // RecordK8sContainerMemoryNodeUtilizationDataPoint adds a data point to k8s.container.memory.node.utilization metric.
 func (mb *MetricsBuilder) RecordK8sContainerMemoryNodeUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricK8sContainerMemoryNodeUtilization.recordDataPoint(mb.startTime, ts, val)
@@ -3787,6 +4115,26 @@ func (mb *MetricsBuilder) RecordK8sNodeNetworkErrorsDataPoint(ts pcommon.Timesta
 // RecordK8sNodeNetworkIoDataPoint adds a data point to k8s.node.network.io metric.
 func (mb *MetricsBuilder) RecordK8sNodeNetworkIoDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue AttributeDirection) {
 	mb.metricK8sNodeNetworkIo.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
+}
+
+// RecordK8sNodeSystemContainerCPUTimeDataPoint adds a data point to k8s.node.system_container.cpu.time metric.
+func (mb *MetricsBuilder) RecordK8sNodeSystemContainerCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricK8sNodeSystemContainerCPUTime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sNodeSystemContainerCPUUsageDataPoint adds a data point to k8s.node.system_container.cpu.usage metric.
+func (mb *MetricsBuilder) RecordK8sNodeSystemContainerCPUUsageDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricK8sNodeSystemContainerCPUUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sNodeSystemContainerMemoryUsageDataPoint adds a data point to k8s.node.system_container.memory.usage metric.
+func (mb *MetricsBuilder) RecordK8sNodeSystemContainerMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sNodeSystemContainerMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sNodeSystemContainerMemoryWorkingSetDataPoint adds a data point to k8s.node.system_container.memory.working_set metric.
+func (mb *MetricsBuilder) RecordK8sNodeSystemContainerMemoryWorkingSetDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sNodeSystemContainerMemoryWorkingSet.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sNodeUptimeDataPoint adds a data point to k8s.node.uptime metric.

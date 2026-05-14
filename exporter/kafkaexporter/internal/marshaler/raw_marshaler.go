@@ -18,8 +18,7 @@ var (
 
 type RawLogsMarshaler struct{}
 
-func (r RawLogsMarshaler) MarshalLogs(logs plog.Logs) ([]Message, error) {
-	var messages []Message
+func (r RawLogsMarshaler) MarshalLogs(logs plog.Logs, yield func(key, value []byte)) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		rl := logs.ResourceLogs().At(i)
 		for j := 0; j < rl.ScopeLogs().Len(); j++ {
@@ -28,16 +27,16 @@ func (r RawLogsMarshaler) MarshalLogs(logs plog.Logs) ([]Message, error) {
 				lr := sl.LogRecords().At(k)
 				b, err := r.logBodyAsBytes(lr.Body())
 				if err != nil {
-					return nil, err
+					return err
 				}
 				if len(b) == 0 {
 					continue
 				}
-				messages = append(messages, Message{Value: b})
+				yield(nil, b)
 			}
 		}
 	}
-	return messages, nil
+	return nil
 }
 
 func (r RawLogsMarshaler) logBodyAsBytes(value pcommon.Value) ([]byte, error) {

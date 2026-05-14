@@ -1,5 +1,5 @@
 receivers:
-  filelog:
+  file_log:
     include: [{{.inputLogFile}}]
     start_at: "beginning"
 
@@ -15,7 +15,7 @@ service:
   extensions: [health_check]
   pipelines:
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       exporters: [file]
   telemetry:
     logs:
