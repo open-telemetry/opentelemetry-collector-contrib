@@ -69,11 +69,10 @@ This approach makes it immediately clear which attributes you're accessing witho
 | Log | `log.` | `log.body`, `log.attributes["level"]` |
 | Metric | `metric.` | `metric.name` |
 | Datapoint | `datapoint.` | `datapoint.attributes["host"]` |
-| Any (requires explicit context) | `otelcol.` | `otelcol.client.metadata["X-Tenant"][0]`, `otelcol.grpc.metadata["x-tenant"][0]` |
+| Otelcol | `otelcol.` | `otelcol.client.metadata["X-Tenant"][0]`, `otelcol.grpc.metadata["x-tenant"][0]` |
 
-The `otelcol.client.metadata` and `otelcol.grpc.metadata` paths provide access to incoming HTTP and gRPC request metadata respectively, and are valid in all signal contexts. **Important:** Context inference does not work for `otelcol.*` paths — you must set the `context` field explicitly (e.g., `context: resource`). Note that gRPC lowercases all metadata keys.
+The `otelcol.client.metadata` and `otelcol.grpc.metadata` paths provide access to incoming HTTP and gRPC request metadata respectively, and are valid in all signal contexts.
 
-**Using explicit context:** If you prefer, you can still set the `context` field explicitly. This can be useful when working with unqualified paths:
 
 ```yaml
 # Alternative: Explicit context with unqualified paths
