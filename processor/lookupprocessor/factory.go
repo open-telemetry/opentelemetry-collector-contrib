@@ -10,11 +10,16 @@ import (
 	"github.com/go-viper/mapstructure/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/dns"
@@ -91,6 +96,8 @@ func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 		metadata.Type,
 		f.createDefaultConfig,
 		processor.WithLogs(f.createLogsProcessor, metadata.LogsStability),
+		processor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
+		processor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
 	)
 }
 
@@ -129,14 +136,102 @@ func (f *lookupProcessorFactory) createLogsProcessor(
 		return nil, err
 	}
 
-	proc := newLookupProcessor(source, lookups, set.Logger)
+	proc := newLookupProcessor[*ottllog.TransformContext](source, lookups, set.Logger)
 
 	return processorhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
 		next,
-		proc.processLogs,
+		func(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+			return processLogs(ctx, proc, ld)
+		},
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithStart(proc.Start),
+		processorhelper.WithShutdown(proc.Shutdown),
+	)
+}
+
+func (f *lookupProcessorFactory) createTracesProcessor(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	next consumer.Traces,
+) (processor.Traces, error) {
+	processorCfg := cfg.(*Config)
+
+	source, err := f.createSource(ctx, set, processorCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	parser, err := ottlspan.NewParser(
+		ottlfuncs.StandardConverters[*ottlspan.TransformContext](),
+		set.TelemetrySettings,
+		ottlspan.EnablePathContextNames(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create OTTL parser: %w", err)
+	}
+
+	lookups, err := parseLookups(parser, processorCfg.Lookups)
+	if err != nil {
+		return nil, err
+	}
+
+	proc := newLookupProcessor[*ottlspan.TransformContext](source, lookups, set.Logger)
+
+	return processorhelper.NewTraces(
+		ctx,
+		set,
+		cfg,
+		next,
+		func(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+			return processTraces(ctx, proc, td)
+		},
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithStart(proc.Start),
+		processorhelper.WithShutdown(proc.Shutdown),
+	)
+}
+
+func (f *lookupProcessorFactory) createMetricsProcessor(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	next consumer.Metrics,
+) (processor.Metrics, error) {
+	processorCfg := cfg.(*Config)
+
+	source, err := f.createSource(ctx, set, processorCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	parser, err := ottldatapoint.NewParser(
+		ottlfuncs.StandardConverters[*ottldatapoint.TransformContext](),
+		set.TelemetrySettings,
+		ottldatapoint.EnablePathContextNames(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create OTTL parser: %w", err)
+	}
+
+	lookups, err := parseLookups(parser, processorCfg.Lookups)
+	if err != nil {
+		return nil, err
+	}
+
+	proc := newLookupProcessor[*ottldatapoint.TransformContext](source, lookups, set.Logger)
+
+	return processorhelper.NewMetrics(
+		ctx,
+		set,
+		cfg,
+		next,
+		func(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+			return processMetrics(ctx, proc, md)
+		},
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(proc.Start),
 		processorhelper.WithShutdown(proc.Shutdown),
@@ -144,20 +239,20 @@ func (f *lookupProcessorFactory) createLogsProcessor(
 }
 
 // parsedLookup holds a lookup config with its pre-parsed OTTL key expression.
-type parsedLookup struct {
-	keyExpr    *ottl.ValueExpression[*ottllog.TransformContext]
+type parsedLookup[T any] struct {
+	keyExpr    *ottl.ValueExpression[T]
 	context    ContextID
 	attributes []AttributeMapping
 }
 
-func parseLookups(parser ottl.Parser[*ottllog.TransformContext], configs []LookupConfig) ([]parsedLookup, error) {
-	lookups := make([]parsedLookup, len(configs))
+func parseLookups[T any](parser ottl.Parser[T], configs []LookupConfig) ([]parsedLookup[T], error) {
+	lookups := make([]parsedLookup[T], len(configs))
 	for i, cfg := range configs {
 		keyExpr, err := parser.ParseValueExpression(cfg.Key)
 		if err != nil {
 			return nil, fmt.Errorf("lookups[%d]: failed to parse key expression %q: %w", i, cfg.Key, err)
 		}
-		lookups[i] = parsedLookup{
+		lookups[i] = parsedLookup[T]{
 			keyExpr:    keyExpr,
 			context:    cfg.GetContext(),
 			attributes: cfg.Attributes,
