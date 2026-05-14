@@ -494,7 +494,8 @@ func extractControlAttrs(attrs pcommon.Map, captureDocID, capturePipeline bool) 
 			for _, h := range v.Slice().All() {
 				if h.Str() == string(elasticsearch.HintNoIndex) {
 					c.noindex = true
-					break
+					// If _noindex is specified, nothing else matters.
+					return c
 				}
 			}
 		case elasticsearch.DocumentIDAttributeName:
