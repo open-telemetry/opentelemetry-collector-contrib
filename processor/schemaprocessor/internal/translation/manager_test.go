@@ -48,7 +48,7 @@ func TestRequestTranslation(t *testing.T) {
 	m, err := NewManager(
 		[]string{schemaURL},
 		zaptest.NewLogger(t),
-		5*time.Minute, 5,
+		5*time.Minute, 5, 0,
 		telemetryBuilder,
 		nil,
 		NewHTTPProvider(s.Client()),
@@ -118,7 +118,7 @@ versions:
 	m, err := NewManager(
 		[]string{targetURL},
 		zaptest.NewLogger(t),
-		5*time.Minute, 5,
+		5*time.Minute, 5, 0,
 		telemetryBuilder,
 		nil,
 		NewHTTPProvider(s.Client()),
@@ -183,7 +183,7 @@ resolved_registry_uri: %s/resolved/2.0.0.yaml
 	m, err := NewManager(
 		[]string{targetURL},
 		zaptest.NewLogger(t),
-		5*time.Minute, 5,
+		5*time.Minute, 5, 0,
 		telemetryBuilder,
 		nil,
 		NewHTTPProvider(s.Client()),
@@ -223,7 +223,7 @@ func TestManagerError(t *testing.T) {
 	m, err := NewManager(
 		[]string{"http://localhost/1.1.0"},
 		zaptest.NewLogger(t),
-		5*time.Minute, 5,
+		5*time.Minute, 5, 0,
 		telemetryBuilder,
 		nil,
 		&errorProvider{},

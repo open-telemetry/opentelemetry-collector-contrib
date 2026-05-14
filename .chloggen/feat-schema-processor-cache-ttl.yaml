@@ -1,0 +1,20 @@
+change_type: enhancement
+
+component: processor/schema
+
+note: Add `cache_ttl` configuration option to control how long successfully fetched schemas are kept in the in-memory cache before being re-fetched from the upstream provider.
+
+issues: [48342]
+
+subtext: |
+  Previously the in-memory cache used `cache.NoExpiration`, meaning a schema
+  fetched once would live for the entire process lifetime. If a schema URL
+  initially returned incorrect content, or if the file was updated on the
+  server, the collector had to be restarted to pick up the change.
+
+  Setting `cache_ttl` (e.g. `cache_ttl: 24h`) causes entries to expire after
+  the given duration, after which the next access triggers a fresh fetch from
+  the upstream provider. A value of 0 (the default) preserves the previous
+  no-expiration behaviour.
+
+change_logs: [user]
