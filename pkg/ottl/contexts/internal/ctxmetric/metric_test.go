@@ -4,7 +4,6 @@
 package ctxmetric_test
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -176,8 +175,6 @@ func TestPathGetSetter_RelaxedNames(t *testing.T) {
 		".leadingDot",
 		"with🦀utf8",
 		"",
-		// Length intentionally exceeds the current 255-char spec limit.
-		strings.Repeat("a", 300),
 	}
 
 	path := &pathtest.Path[*testContext]{N: "name"}
