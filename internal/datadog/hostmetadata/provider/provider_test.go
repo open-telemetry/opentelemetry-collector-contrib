@@ -55,10 +55,12 @@ func TestChain(t *testing.T) {
 		name         string
 		providers    map[string]source.Provider
 		priorityList []string
+		aliasedList  []string
 
 		buildErr string
 
 		hostname string
+		aliases  []string
 		queryErr string
 		timeout  time.Duration
 	}{
@@ -140,21 +142,60 @@ func TestChain(t *testing.T) {
 			hostname: "p3SourceName",
 			timeout:  10 * time.Millisecond,
 		},
+		{
+			name: "alias from lower-priority provider",
+			providers: map[string]source.Provider{
+				"p1": HostProvider("p1SourceName"),
+				"p2": HostProvider("p2SourceName"),
+			},
+			priorityList: []string{"p1", "p2"},
+			aliasedList:  []string{"p2"},
+
+			hostname: "p1SourceName",
+			aliases:  []string{"p2SourceName"},
+			timeout:  10 * time.Millisecond,
+		},
+		{
+			name: "alias provider wins priority — not included as alias",
+			providers: map[string]source.Provider{
+				"p1": HostProvider("p1SourceName"),
+				"p2": HostProvider("p2SourceName"),
+			},
+			priorityList: []string{"p1", "p2"},
+			aliasedList:  []string{"p1"},
+
+			hostname: "p1SourceName",
+			aliases:  []string{},
+			timeout:  10 * time.Millisecond,
+		},
+		{
+			name: "alias provider fails — no alias",
+			providers: map[string]source.Provider{
+				"p1": HostProvider("p1SourceName"),
+				"p2": ErrorSourceProvider("p2Err"),
+			},
+			priorityList: []string{"p1", "p2"},
+			aliasedList:  []string{"p2"},
+
+			hostname: "p1SourceName",
+			timeout:  10 * time.Millisecond,
+		},
 	}
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			provider, err := Chain(zaptest.NewLogger(t), testInstance.providers, testInstance.priorityList, testInstance.timeout)
+			provider, err := Chain(zaptest.NewLogger(t), testInstance.providers, testInstance.priorityList, testInstance.aliasedList, testInstance.timeout)
 			if err != nil || testInstance.buildErr != "" {
 				assert.EqualError(t, err, testInstance.buildErr)
 				return
 			}
 
-			src, err := provider.Source(t.Context())
+			src, aliases, err := provider.SourceWithAliases(t.Context())
 			if err != nil || testInstance.queryErr != "" {
 				assert.EqualError(t, err, testInstance.queryErr)
 			} else {
 				assert.Equal(t, testInstance.hostname, src.Identifier)
+				assert.Equal(t, testInstance.aliases, aliases)
 			}
 		})
 	}

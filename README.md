@@ -95,7 +95,6 @@ For more information about the maintainer role, see the [community repository](h
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
-- [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
 For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver).
 
@@ -131,6 +130,7 @@ For more information about the triager role, see the [community repository](http
 - [Ruslan Kovalov](https://github.com/kovrus), Approver
 - [Steve Flanders](https://github.com/flands), Triager
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Maintainer
+- [Ziqi Zhao](https://github.com/fatsheep9146), Approver
 
 For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
 

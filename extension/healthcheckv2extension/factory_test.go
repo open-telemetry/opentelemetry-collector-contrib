@@ -67,6 +67,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	ext, err := createExtension(ctx, extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
+	require.NoError(t, ext.Shutdown(ctx))
 }
 
 func TestCreate(t *testing.T) {
@@ -77,4 +78,5 @@ func TestCreate(t *testing.T) {
 	ext, err := createExtension(ctx, extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
+	require.NoError(t, ext.Shutdown(ctx))
 }

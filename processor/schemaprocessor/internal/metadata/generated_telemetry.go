@@ -25,6 +25,7 @@ type TelemetryBuilder struct {
 	meter                         metric.Meter
 	mu                            sync.Mutex
 	registrations                 []metric.Registration
+	ProcessorSchemaTranslated     metric.Int64Counter
 	ProcessorSchemaCacheHits      metric.Int64Counter
 	ProcessorSchemaCacheMisses    metric.Int64Counter
 	ProcessorSchemaLogsFailed     metric.Int64Counter
@@ -65,6 +66,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ProcessorSchemaTranslated, err = builder.meter.Int64Counter(
+		"otelcol_processor_schema.translated",
+		metric.WithDescription("Number of schema translations [Development]"),
+		metric.WithUnit("{translations}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ProcessorSchemaCacheHits, err = builder.meter.Int64Counter(
 		"otelcol_processor_schema_cache.hits",
 		metric.WithDescription("Number of schema cache hits [Development]"),
