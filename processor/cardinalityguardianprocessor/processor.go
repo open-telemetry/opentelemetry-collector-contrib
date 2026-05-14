@@ -830,10 +830,11 @@ func sortOffenders(s []offenderEntry) {
 // It launches the background epoch-rotation goroutine exactly once (guarded by
 // startOnce) and returns immediately. The goroutine exits when the internal
 // cancel function is called, which happens in Shutdown().
-func (p *cardinalityProcessor) Start(ctx context.Context, _ component.Host) error {
+func (p *cardinalityProcessor) Start(_ context.Context, _ component.Host) error {
 	p.startOnce.Do(func() {
-		// Create a local cancelable context derived from the startup context
-		childCtx, cancel := context.WithCancel(ctx)
+		// Create a local cancelable context rooted in context.Background()
+		// to ensure it is not affected by the ephemeral startup context.
+		childCtx, cancel := context.WithCancel(context.Background())
 		p.cancel = cancel
 
 		p.logger.Info("Starting cardinality rotation ticker",
