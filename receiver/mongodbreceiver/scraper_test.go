@@ -126,7 +126,7 @@ func TestDeriveOperationStatus(t *testing.T) {
 				tc.op,
 				getValue[bool](tc.op, waitingForLockKey),
 				getValue[bool](tc.op, waitingForFlowControlKey),
-				hasNonEmptyDocumentValue(tc.op[waitingForLatchKey]),
+				getJSONValue(tc.op, waitingForLatchKey) != "",
 			)
 			require.Equal(t, tc.ok, ok)
 			require.Equal(t, tc.expected, actual)
@@ -1466,6 +1466,12 @@ func TestGetJSONValue(t *testing.T) {
 			name: "missing key returns empty string",
 			doc:  bson.M{"other": "value"},
 			key:  "missing",
+			want: "",
+		},
+		{
+			name: "nil value returns empty string",
+			doc:  bson.M{"locks": nil},
+			key:  "locks",
 			want: "",
 		},
 		{

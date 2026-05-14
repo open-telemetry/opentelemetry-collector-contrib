@@ -273,11 +273,8 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		lockStats := getJSONValue(op, lockStatsKey)
 		waitingForFlowControl := getValue[bool](op, waitingForFlowControlKey)
 		flowControlStats := getJSONValue(op, flowControlStatsKey)
-		waitingForLatch := hasNonEmptyDocumentValue(op[waitingForLatchKey])
-		waitingForLatchDetails := ""
-		if waitingForLatch {
-			waitingForLatchDetails = getJSONValue(op, waitingForLatchKey)
-		}
+		waitingForLatchDetails := getJSONValue(op, waitingForLatchKey)
+		waitingForLatch := waitingForLatchDetails != ""
 		operationStatus, ok := deriveOperationStatus(op, waitingForLock, waitingForFlowControl, waitingForLatch)
 		if !ok {
 			s.logger.Debug("Skipping operation without supported status", zap.Any("operation", op))
@@ -488,16 +485,18 @@ func getJSONValue(doc any, key string) string {
 	}
 	j, err := bson.MarshalExtJSON(v, false, false)
 	if err != nil {
-		return fmt.Sprint(v)
+		// Unmarshalable values (notably explicit nil) carry no useful JSON
+		// payload; treat them like a missing key rather than leaking a Go
+		// debug representation into telemetry.
+		return ""
 	}
 	// An empty document ("{}") carries no information for downstream consumers;
 	// treat it the same as a missing key so the attribute is omitted rather than
 	// surfacing a misleading placeholder.
-	s := string(j)
-	if s == "{}" {
-		return ""
+	if s := string(j); s != "{}" {
+		return s
 	}
-	return s
+	return ""
 }
 
 // formatLsidID renders a logical-session UUID. MongoDB returns lsid.id as a
@@ -510,21 +509,6 @@ func formatLsidID(value any) string {
 		}
 	}
 	return fmt.Sprintf("%v", value)
-}
-
-// hasNonEmptyDocumentValue reports whether value is a non-empty BSON document.
-// Used to distinguish an absent/null waitingForLatch from one with details.
-func hasNonEmptyDocumentValue(value any) bool {
-	switch d := value.(type) {
-	case bson.M:
-		return len(d) > 0
-	case bson.D:
-		return len(d) > 0
-	case map[string]any:
-		return len(d) > 0
-	default:
-		return false
-	}
 }
 
 func clientAddressAndPort(clientAddr string) (string, int64) {
