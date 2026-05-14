@@ -128,7 +128,7 @@ Preserves all attributes and injects `otel.metric.overflow: true` on data points
 enforcement_mode: overflow_attribute
 ```
 
-Replaces the high-cardinality attribute value with the sentinel string `otel.cardinality_overflow`. All overflowed data points for a given (metric, attribute_key) collapse into a single overflow identity, avoiding the Single-Writer violation. This mode is aligned with the OTel SDK cardinality overflow convention.
+Replaces the high-cardinality attribute value with the sentinel string `otel.cardinality_overflow` and performs inline spatial reaggregation to merge data points that now share this identity, resolving the Single-Writer violation. This mode is aligned with the OTel SDK cardinality overflow convention. Supported and unsupported metric types follow the exact same reaggregation rules and fallbacks as `strip_and_reaggregate`.
 
 ### Strip and Reaggregate
 
@@ -136,7 +136,9 @@ Replaces the high-cardinality attribute value with the sentinel string `otel.car
 enforcement_mode: strip_and_reaggregate
 ```
 
-Removes the offending attribute and performs **inline spatial reaggregation** to merge data points that now share the same identity. This resolves the Single-Writer violation for supported metric types:
+Removes the offending attribute entirely and performs **inline spatial reaggregation** to merge data points that now share the same remaining identity.
+
+Both `strip_and_reaggregate` and `overflow_attribute` modes utilize the spatial reaggregation engine to resolve the Single-Writer violation for supported metric types:
 
 | Metric Type | Reaggregation Support | Merge Semantics |
 |---|---|---|
@@ -161,7 +163,7 @@ If `enforcement_mode` is set, the `tag_only` boolean is ignored.
 
 Care needs to be taken when modifying data point attributes using this processor:
 
-- **Single-Writer Conflict**: When using `enforcement_mode: strip_and_reaggregate`, the processor performs inline spatial reaggregation for Delta Sums and Gauges to resolve the Single-Writer violation. For metric types that don't support reaggregation (Cumulative Sums, Histograms), the processor automatically falls back to `tag_only` behavior.
+- **Single-Writer Conflict**: When using `enforcement_mode: strip_and_reaggregate` or `enforcement_mode: overflow_attribute`, the processor performs inline spatial reaggregation for Delta Sums and Gauges to resolve the Single-Writer violation. For metric types that don't support reaggregation (Cumulative Sums, Histograms), the processor automatically falls back to `tag_only` behavior.
 - **Hash Collisions**: The reaggregation logic uses xxhash with null-byte separators to compute attribute identity. While theoretical collisions are possible, the risk is near-zero for typical OTel attribute maps.
 
 ## Troubleshooting
