@@ -264,6 +264,7 @@ func appendFaaSHTTPAttributes(includeStatus bool, attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventionsv119.HTTPFlavorKey), "2")
 	}
 	if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.NetworkProtocolNameKey), "http")
 		attrMap.PutStr(string(conventions.NetworkProtocolVersionKey), "2")
 	}
 	if includeStatus {
@@ -328,6 +329,7 @@ func appendHTTPServerAttributes(includeStatus bool, attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventionsv119.HTTPFlavorKey), "2")
 	}
 	if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.NetworkProtocolNameKey), "http")
 		attrMap.PutStr(string(conventions.NetworkProtocolVersionKey), "2")
 	}
 	if includeStatus {
@@ -438,6 +440,7 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventionsv119.HTTPFlavorKey), "2")
 	}
 	if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.NetworkProtocolNameKey), "http")
 		attrMap.PutStr(string(conventions.NetworkProtocolVersionKey), "2")
 	}
 	if includeStatus {

@@ -32,7 +32,7 @@ func TestGenerateParentSpan(t *testing.T) {
 	fillSpan(traceID, pcommon.SpanID([8]byte{}), "/gotest-parent", spanInputs, random, span)
 	assert.Equal(t, traceID, span.TraceID())
 	assert.True(t, span.ParentSpanID().IsEmpty())
-	assert.Equal(t, 11, span.Attributes().Len())
+	assert.Equal(t, 12, span.Attributes().Len())
 	assert.Equal(t, ptrace.StatusCodeOk, span.Status().Code())
 }
 
@@ -93,6 +93,10 @@ func TestHTTPV1ProtocolVersionAttribute(t *testing.T) {
 
 	_, hasLegacy := span.Attributes().Get("http.flavor")
 	assert.False(t, hasLegacy)
+	nameValue, hasName := span.Attributes().Get("network.protocol.name")
+	if assert.True(t, hasName) {
+		assert.Equal(t, "http", nameValue.AsString())
+	}
 	value, hasV1 := span.Attributes().Get("network.protocol.version")
 	if assert.True(t, hasV1) {
 		assert.Equal(t, "2", value.AsString())
