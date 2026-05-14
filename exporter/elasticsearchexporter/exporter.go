@@ -485,11 +485,19 @@ type controlAttrs struct {
 // corresponding value is left empty even if the attribute is present.
 func extractControlAttrs(attrs pcommon.Map, captureDocID, capturePipeline bool) controlAttrs {
 	var c controlAttrs
+	remaining := 1 // MappingHintsAttrKey is always a candidate
+	if captureDocID {
+		remaining++
+	}
+	if capturePipeline {
+		remaining++
+	}
 	for k, v := range attrs.All() {
 		switch k {
 		case elasticsearch.MappingHintsAttrKey:
+			remaining--
 			if v.Type() != pcommon.ValueTypeSlice {
-				continue
+				break
 			}
 			for _, h := range v.Slice().All() {
 				if h.Str() == string(elasticsearch.HintNoIndex) {
@@ -500,12 +508,17 @@ func extractControlAttrs(attrs pcommon.Map, captureDocID, capturePipeline bool) 
 			}
 		case elasticsearch.DocumentIDAttributeName:
 			if captureDocID {
+				remaining--
 				c.docID = v.AsString()
 			}
 		case elasticsearch.DocumentPipelineAttributeName:
 			if capturePipeline {
+				remaining--
 				c.pipeline = v.AsString()
 			}
+		}
+		if remaining == 0 {
+			break
 		}
 	}
 	return c
