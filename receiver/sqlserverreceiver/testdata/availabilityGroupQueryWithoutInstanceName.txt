@@ -1,7 +1,7 @@
 
 SET DEADLOCK_PRIORITY -10;
-IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN /*NOT IN Standard, Enterprise, Developer, Azure SQL Managed Instance*/
-	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Developer, or Azure SQL Managed Instance. This query is only supported on these editions.';
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,8) BEGIN /*NOT IN Standard, Enterprise/Developer, Azure SQL Managed Instance*/
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise/Developer, or Azure SQL Managed Instance. Always On Availability Groups require one of these editions.';
 	RAISERROR (@ErrorMessage,11,1)
 	RETURN
 END

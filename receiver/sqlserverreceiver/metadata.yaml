@@ -401,7 +401,7 @@ metrics:
     gauge:
       value_type: double
     attributes: [availability_group.name, availability_group.database.name, availability_group.replica.name]
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server 2016+ with Always On Availability Groups enabled. Reports NULL for primary replicas.
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server 2016+ with Always On Availability Groups enabled. The datapoint is omitted for primary replicas where secondary_lag_seconds is NULL.
   sqlserver.availability_group.log.received.rate:
     enabled: false
     description: Rate at which log blocks are received by the availability group database replica from the primary replica.

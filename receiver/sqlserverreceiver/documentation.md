@@ -224,7 +224,7 @@ metrics:
 
 Total flow control time experienced by the availability group database replica, derived from secondary replica lag.
 
-This metric is only available when the receiver is configured to directly connect to SQL Server 2016+ with Always On Availability Groups enabled. Reports NULL for primary replicas.
+This metric is only available when the receiver is configured to directly connect to SQL Server 2016+ with Always On Availability Groups enabled. The datapoint is omitted for primary replicas where secondary_lag_seconds is NULL.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
