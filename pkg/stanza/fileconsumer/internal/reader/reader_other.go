@@ -11,3 +11,5 @@ func (*Reader) tryLockFile() bool {
 
 func (*Reader) unlockFile() {
 }
+
+func (*Reader) fadviseFile(_, _ int64) {}

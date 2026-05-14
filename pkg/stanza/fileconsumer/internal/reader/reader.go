@@ -59,6 +59,7 @@ type Reader struct {
 	needsUpdateFingerprint bool
 	compression            string
 	acquireFSLock          bool
+	fileCacheAdvise        bool
 	maxBatchSize           int
 	// decompressedBytesToSkip tracks the number of bytes in a decompressed stream
 	// that have already been consumed. When a plaintext file is compressed,
@@ -121,8 +122,11 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			return
 		}
 	}
-
+	startOffset := r.Offset
 	r.readContents(ctx)
+	if r.fileCacheAdvise && r.FileType != gzipExtension && r.Offset > startOffset && r.file != nil {
+		r.fadviseFile(startOffset, r.Offset-startOffset)
+	}
 }
 
 // createGzipReader creates gzip reader and returns the file offset
