@@ -52,20 +52,20 @@ func (s *server) Shutdown(ctx context.Context) error {
 
 // NewServer returns a local TCP server that proxies requests to AWS
 // backend using the given credentials.
-func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
+func NewServer(cfg *Config, settings component.TelemetrySettings) (Server, error) {
 	_, err := net.ResolveTCPAddr("tcp", cfg.Endpoint)
 	if err != nil {
 		return nil, err
 	}
 	if cfg.ProxyAddress != "" {
-		logger.Debug("Using remote proxy", zap.String("address", cfg.ProxyAddress))
+		settings.Logger.Debug("Using remote proxy", zap.String("address", cfg.ProxyAddress))
 	}
 	if cfg.ServiceName == "" {
 		cfg.ServiceName = "xray"
 	}
 
 	ctx := context.Background()
-	awsCfg, err := getAWSConfigSession(ctx, cfg, logger)
+	awsCfg, err := getAWSConfigSession(ctx, cfg, settings.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 
 		Rewrite: func(r *httputil.ProxyRequest) {
 			if r.In.URL != nil {
-				logger.Debug("Received request on X-Ray receiver TCP proxy server", zap.String("URL", sanitize.URL(r.In.URL)))
+				settings.Logger.Debug("Received request on X-Ray receiver TCP proxy server", zap.String("URL", sanitize.URL(r.In.URL)))
 			}
 
 			// Set outbound request URL to the AWS endpoint
@@ -114,7 +114,7 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 			// Consume body and calculate payload hash for signing
 			body, payloadHash, bodyErr := consumeBody(r.In.Body)
 			if bodyErr != nil {
-				logger.Error("Unable to consume request body", zap.Error(bodyErr))
+				settings.Logger.Error("Unable to consume request body", zap.Error(bodyErr))
 				return
 			}
 
@@ -126,14 +126,14 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 			// Retrieve credentials for signing
 			creds, credsErr := credentials.Retrieve(r.Out.Context())
 			if credsErr != nil {
-				logger.Error("Unable to retrieve credentials", zap.Error(credsErr))
+				settings.Logger.Error("Unable to retrieve credentials", zap.Error(credsErr))
 				return
 			}
 
 			// Sign request using v4 signer
 			signErr := signer.SignHTTP(r.Out.Context(), creds, r.Out, payloadHash, serviceName, region, time.Now())
 			if signErr != nil {
-				logger.Error("Unable to sign request", zap.Error(signErr))
+				settings.Logger.Error("Unable to sign request", zap.Error(signErr))
 			}
 		},
 	}
@@ -148,8 +148,8 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 
 	httpServer, err := serverConfig.ToServer(
 		ctx,
-		nil,
-		component.TelemetrySettings{Logger: logger},
+		map[component.ID]component.Component{},
+		settings,
 		handler,
 	)
 	if err != nil {

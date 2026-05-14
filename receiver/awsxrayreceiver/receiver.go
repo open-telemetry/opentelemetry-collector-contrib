@@ -56,7 +56,7 @@ func newReceiver(config *Config,
 	set.Logger.Info("Listening on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
 
-	srv, err := proxy.NewServer(config.ProxyServer, set.Logger)
+	srv, err := proxy.NewServer(config.ProxyServer, set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
