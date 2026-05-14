@@ -450,44 +450,46 @@ func (p *cardinalityProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Me
 // Histogram, ExponentialHistogram, and Summary) are fully supported, and
 // attribute cardinality limits are enforced on all of their data points.
 //
-// When enforcement mode is strip_and_reaggregate, inline spatial reaggregation
-// is performed after attribute stripping for supported metric types (Delta Sum
-// and Gauge). Unsupported metric types (Cumulative Sum, Histogram,
-// ExponentialHistogram, Summary) fall back to tag_only behavior.
+// When enforcement mode is strip_and_reaggregate or overflow_attribute, inline
+// spatial reaggregation is performed after attribute mutation for supported
+// metric types (Delta Sum and Gauge). Unsupported metric types (Cumulative Sum,
+// Histogram, ExponentialHistogram, Summary) fall back to tag_only behavior.
 func (p *cardinalityProcessor) processMetric(m pmetric.Metric) {
+	reaggMode := p.enforcementMode == EnforcementStripAndReaggregate || p.enforcementMode == EnforcementOverflowAttribute
+
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:
 		p.processNumberDataPoints(m.Name(), m.Gauge().DataPoints())
-		if p.enforcementMode == EnforcementStripAndReaggregate {
+		if reaggMode {
 			reaggregateNumberDataPoints(m.Gauge().DataPoints(), pmetric.MetricTypeGauge, false)
 		}
 	case pmetric.MetricTypeSum:
 		isDelta := m.Sum().AggregationTemporality() == pmetric.AggregationTemporalityDelta
-		if p.enforcementMode == EnforcementStripAndReaggregate && !isDelta {
+		if reaggMode && !isDelta {
 			// Cumulative Sums are not yet supported for reaggregation.
-			// Fall back to tag_only behavior for this specific metric.
+			// Fall back to tag_only behavior for this specific metric to avoid collisions.
 			p.processNumberDataPointsWithMode(m.Name(), m.Sum().DataPoints(), EnforcementTagOnly)
 		} else {
 			p.processNumberDataPoints(m.Name(), m.Sum().DataPoints())
-			if p.enforcementMode == EnforcementStripAndReaggregate && isDelta {
+			if reaggMode && isDelta {
 				reaggregateNumberDataPoints(m.Sum().DataPoints(), pmetric.MetricTypeSum, true)
 			}
 		}
 	case pmetric.MetricTypeHistogram:
-		if p.enforcementMode == EnforcementStripAndReaggregate {
+		if reaggMode {
 			// Histograms are not yet supported for reaggregation.
 			p.processHistogramDataPointsWithMode(m.Name(), m.Histogram().DataPoints(), EnforcementTagOnly)
 		} else {
 			p.processHistogramDataPoints(m.Name(), m.Histogram().DataPoints())
 		}
 	case pmetric.MetricTypeExponentialHistogram:
-		if p.enforcementMode == EnforcementStripAndReaggregate {
+		if reaggMode {
 			p.processExponentialHistogramDataPointsWithMode(m.Name(), m.ExponentialHistogram().DataPoints(), EnforcementTagOnly)
 		} else {
 			p.processExponentialHistogramDataPoints(m.Name(), m.ExponentialHistogram().DataPoints())
 		}
 	case pmetric.MetricTypeSummary:
-		if p.enforcementMode == EnforcementStripAndReaggregate {
+		if reaggMode {
 			p.processSummaryDataPointsWithMode(m.Name(), m.Summary().DataPoints(), EnforcementTagOnly)
 		} else {
 			p.processSummaryDataPoints(m.Name(), m.Summary().DataPoints())

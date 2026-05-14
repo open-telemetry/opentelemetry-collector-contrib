@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
@@ -1229,6 +1230,7 @@ func TestOverflowAttributeMode(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		dp := m.Gauge().DataPoints().AppendEmpty()
 		dp.SetIntValue(int64(i * 10))
+		dp.SetTimestamp(pcommon.Timestamp(i * 1000)) // Set explicit timestamps to test latest selection
 		dp.Attributes().PutStr("region", "us-east")
 		dp.Attributes().PutStr("user_id", fmt.Sprintf("user_%d", i))
 	}
@@ -1241,8 +1243,9 @@ func TestOverflowAttributeMode(t *testing.T) {
 
 	outDpList := outMetrics[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints()
 
-	// All 3 data points should remain (nothing is removed in overflow mode).
-	require.Equal(t, 3, outDpList.Len())
+	// 2 data points should remain: the 1st valid point, and the 2nd/3rd overflow points
+	// which are successfully reaggregated into a single combined point.
+	require.Equal(t, 2, outDpList.Len())
 
 	overflowCount := 0
 	for i := 0; i < outDpList.Len(); i++ {
@@ -1252,16 +1255,19 @@ func TestOverflowAttributeMode(t *testing.T) {
 
 		if userVal.Str() == overflowSentinel {
 			overflowCount++
+			// For a Gauge, the reaggregated value must come from the data point
+			// with the highest timestamp (point 3 -> value 30).
+			assert.Equal(t, int64(30), dp.IntValue(), "merged overflow Gauge must take latest value (30)")
+			assert.Equal(t, pcommon.Timestamp(3000), dp.Timestamp(), "merged overflow Gauge must have latest timestamp (3000)")
+		} else {
+			assert.Equal(t, "user_1", userVal.Str(), "first data point must keep its original user_id")
+			assert.Equal(t, int64(10), dp.IntValue())
 		}
 	}
 
-	// First data point should keep its original user_id value.
-	// Data points 2 and 3 should have user_id replaced with the sentinel.
-	assert.GreaterOrEqual(t, overflowCount, 1,
-		"at least one data point should have user_id replaced with the overflow sentinel")
+	assert.Equal(t, 1, overflowCount, "exactly one merged data point should hold the overflow sentinel")
 
-	t.Logf("SUCCESS: %d data points have overflow sentinel, %d kept original value",
-		overflowCount, outDpList.Len()-overflowCount)
+	t.Logf("SUCCESS: Overflow points successfully reaggregated into single Sentinel point!")
 }
 
 // TestCumulativeSumFallsBackToTagOnly verifies that when enforcement_mode is
@@ -1455,18 +1461,29 @@ func TestProcessHistogramTypes(t *testing.T) {
 	metrics := outMetrics[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	require.Equal(t, 3, metrics.Len())
 
-	// Verify the attributes were modified according to EnforcementOverflowAttribute
+	// Verify that because spatial reaggregation is not supported for these types,
+	// EnforcementOverflowAttribute falls back to EnforcementTagOnly behavior
+	// to prevent duplicate identity collisions.
 	histDps := metrics.At(0).Histogram().DataPoints()
 	v, _ := histDps.At(1).Attributes().Get("user_id")
-	assert.Equal(t, "otel.cardinality_overflow", v.Str())
+	assert.Equal(t, "hist_user_2", v.Str(), "Histogram must keep original value in fallback")
+	marker, hasMarker := histDps.At(1).Attributes().Get("otel.metric.overflow")
+	assert.True(t, hasMarker)
+	assert.True(t, marker.Bool())
 
 	expDps := metrics.At(1).ExponentialHistogram().DataPoints()
 	v, _ = expDps.At(1).Attributes().Get("user_id")
-	assert.Equal(t, "otel.cardinality_overflow", v.Str())
+	assert.Equal(t, "exp_user_2", v.Str(), "ExpHistogram must keep original value in fallback")
+	marker, hasMarker = expDps.At(1).Attributes().Get("otel.metric.overflow")
+	assert.True(t, hasMarker)
+	assert.True(t, marker.Bool())
 
 	summDps := metrics.At(2).Summary().DataPoints()
 	v, _ = summDps.At(1).Attributes().Get("user_id")
-	assert.Equal(t, "otel.cardinality_overflow", v.Str())
+	assert.Equal(t, "summ_user_2", v.Str(), "Summary must keep original value in fallback")
+	marker, hasMarker = summDps.At(1).Attributes().Get("otel.metric.overflow")
+	assert.True(t, hasMarker)
+	assert.True(t, marker.Bool())
 }
 
 // TestEnforcementModeValidation verifies that invalid enforcement_mode values
