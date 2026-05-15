@@ -1,4 +1,9 @@
-type: filestats
+display_name: File Stats Receiver
+type: file_stats
+deprecated_type: filestats
+reaggregation_enabled: true
+
+description: The File Stats receiver collects metrics from files specified with a glob pattern.
 
 status:
   class: receiver
@@ -23,6 +28,7 @@ resource_attributes:
 attributes:
   file.permissions:
     description: the permissions associated with the file, using an octal format.
+    requirement_level: recommended
     type: string
 
 metrics:

@@ -97,6 +97,18 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}
 
+	jsonCfg := createDefaultConfig()
+	jsonCfg.(*Config).Endpoint = defaultEndpoint
+	jsonCfg.(*Config).JSON = true
+
+	tests = append(tests, struct {
+		id       component.ID
+		expected component.Config
+	}{
+		id:       component.NewIDWithName(metadata.Type, "json"),
+		expected: jsonCfg,
+	})
+
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			factory := NewFactory()
@@ -641,11 +653,19 @@ func TestClusterString(t *testing.T) {
 		},
 		{
 			input:    "cluster_a_b",
-			expected: "ON CLUSTER cluster_a_b",
+			expected: "ON CLUSTER `cluster_a_b`",
 		},
 		{
 			input:    "cluster a b",
-			expected: "ON CLUSTER cluster a b",
+			expected: "ON CLUSTER `cluster a b`",
+		},
+		{
+			input:    "ch-cluster",
+			expected: "ON CLUSTER `ch-cluster`",
+		},
+		{
+			input:    "my`cluster",
+			expected: "ON CLUSTER `my``cluster`",
 		},
 	}
 

@@ -1,4 +1,11 @@
+display_name: NGINX Receiver
 type: nginx
+
+description: |
+  This receiver can fetch stats from a NGINX instance using the `ngx_http_stub_status_module` module's `status`
+  endpoint.
+
+reaggregation_enabled: true
 
 status:
   class: receiver
@@ -13,6 +20,7 @@ attributes:
   state:
     description: The state of a connection
     type: string
+    requirement_level: recommended
     enum:
       - active
       - reading

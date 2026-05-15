@@ -20,16 +20,26 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NginxConnectionsAccepted: MetricConfig{Enabled: true},
-					NginxConnectionsCurrent:  MetricConfig{Enabled: true},
-					NginxConnectionsHandled:  MetricConfig{Enabled: true},
-					NginxRequests:            MetricConfig{Enabled: true},
+					NginxConnectionsAccepted: NginxConnectionsAcceptedMetricConfig{
+						Enabled: true,
+					},
+					NginxConnectionsCurrent: NginxConnectionsCurrentMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NginxConnectionsCurrentMetricAttributeKey{NginxConnectionsCurrentMetricAttributeKeyState},
+					},
+					NginxConnectionsHandled: NginxConnectionsHandledMetricConfig{
+						Enabled: true,
+					},
+					NginxRequests: NginxRequestsMetricConfig{
+						Enabled: true,
+					},
 				},
 			},
 		},
@@ -37,10 +47,20 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NginxConnectionsAccepted: MetricConfig{Enabled: false},
-					NginxConnectionsCurrent:  MetricConfig{Enabled: false},
-					NginxConnectionsHandled:  MetricConfig{Enabled: false},
-					NginxRequests:            MetricConfig{Enabled: false},
+					NginxConnectionsAccepted: NginxConnectionsAcceptedMetricConfig{
+						Enabled: false,
+					},
+					NginxConnectionsCurrent: NginxConnectionsCurrentMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NginxConnectionsCurrentMetricAttributeKey{NginxConnectionsCurrentMetricAttributeKeyState},
+					},
+					NginxConnectionsHandled: NginxConnectionsHandledMetricConfig{
+						Enabled: false,
+					},
+					NginxRequests: NginxRequestsMetricConfig{
+						Enabled: false,
+					},
 				},
 			},
 		},
@@ -48,7 +68,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(NginxConnectionsAcceptedMetricConfig{}, NginxConnectionsCurrentMetricConfig{}, NginxConnectionsHandledMetricConfig{}, NginxRequestsMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -59,7 +79,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

@@ -6,29 +6,35 @@ status:
     beta: [metrics]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [dmitryax, braydonk]
+    active: [dmitryax, braydonk, rogercoll]
 
 sem_conv_version: 1.9.0
+
+reaggregation_enabled: true
 
 attributes:
   device:
     description: Name of the page file.
     type: string
+    requirement_level: recommended
 
   direction:
     description: Page In or Page Out.
     type: string
     enum: [page_in, page_out]
+    requirement_level: recommended
 
   state:
     description: Breakdown of paging usage by type.
     type: string
     enum: [cached, free, used]
+    requirement_level: recommended
 
   type:
     description: Type of fault.
     type: string
     enum: [major, minor]
+    requirement_level: recommended
 
 metrics:
   system.paging.faults:

@@ -83,7 +83,7 @@ func TestE2E(t *testing.T) {
 func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
-	getOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
+	getOrInsertDefault(t, &cfg.Protocols.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
 	rcvr, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, mc)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))

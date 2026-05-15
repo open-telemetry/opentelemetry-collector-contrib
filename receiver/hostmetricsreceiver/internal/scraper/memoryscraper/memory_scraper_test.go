@@ -37,36 +37,22 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Standard",
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 			expectedMetricCount: 1,
 		},
 		{
 			name: "All metrics enabled",
-			config: &Config{
-				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
-					Metrics: metadata.MetricsConfig{
-						SystemMemoryUtilization: metadata.MetricConfig{
-							Enabled: true,
-						},
-						SystemMemoryUsage: metadata.MetricConfig{
-							Enabled: true,
-						},
-						SystemMemoryPageSize: metadata.MetricConfig{
-							Enabled: true,
-						},
-						SystemMemoryLinuxShared: metadata.MetricConfig{
-							Enabled: true,
-						},
-						SystemLinuxMemoryAvailable: metadata.MetricConfig{
-							Enabled: true,
-						},
-						SystemLinuxMemoryDirty: metadata.MetricConfig{
-							Enabled: true,
-						},
-					},
-				},
-			},
+			config: func() *Config {
+				mbc := metadata.NewDefaultMetricsBuilderConfig()
+				mbc.Metrics.SystemMemoryUtilization.Enabled = true
+				mbc.Metrics.SystemMemoryUsage.Enabled = true
+				mbc.Metrics.SystemMemoryPageSize.Enabled = true
+				mbc.Metrics.SystemMemoryLinuxShared.Enabled = true
+				mbc.Metrics.SystemLinuxMemoryAvailable.Enabled = true
+				mbc.Metrics.SystemLinuxMemoryDirty.Enabled = true
+				return &Config{MetricsBuilderConfig: mbc}
+			}(),
 			expectedMetricCount: func() int {
 				if runtime.GOOS == "linux" {
 					return 6
@@ -79,7 +65,7 @@ func TestScrape(t *testing.T) {
 			virtualMemoryFunc: func(context.Context) (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
 			expectedErr:       "err1",
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 			expectedMetricCount: 1,
 		},
@@ -88,7 +74,7 @@ func TestScrape(t *testing.T) {
 			bootTimeFunc:      func(context.Context) (uint64, error) { return 100, errors.New("err1") },
 			initializationErr: "err1",
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 			expectedMetricCount: 1,
 		},
@@ -175,7 +161,7 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			mbc := metadata.DefaultMetricsBuilderConfig()
+			mbc := metadata.NewDefaultMetricsBuilderConfig()
 			mbc.Metrics.SystemMemoryUtilization.Enabled = true
 			mbc.Metrics.SystemMemoryUsage.Enabled = false
 			scraperConfig := Config{

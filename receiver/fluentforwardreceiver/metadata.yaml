@@ -1,4 +1,10 @@
-type: fluentforward
+display_name: Fluent Forward Receiver
+type: fluent_forward
+deprecated_type: fluentforward
+
+description: |
+  This receiver runs a TCP server that accepts events via the
+  [Fluent Forward protocol](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1).
 
 status:
   class: receiver

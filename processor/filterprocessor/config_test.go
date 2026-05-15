@@ -26,19 +26,19 @@ import (
 
 func assertConfigContainsDefaultFunctions(t *testing.T, config Config) {
 	t.Helper()
-	for _, f := range DefaultLogFunctionsNew() {
+	for _, f := range DefaultLogFunctions() {
 		assert.Contains(t, config.logFunctions, f.Name(), "missing log function %v", f.Name())
 	}
-	for _, f := range DefaultDataPointFunctionsNew() {
+	for _, f := range DefaultDataPointFunctions() {
 		assert.Contains(t, config.dataPointFunctions, f.Name(), "missing data point function %v", f.Name())
 	}
-	for _, f := range DefaultMetricFunctionsNew() {
+	for _, f := range DefaultMetricFunctions() {
 		assert.Contains(t, config.metricFunctions, f.Name(), "missing metric function %v", f.Name())
 	}
-	for _, f := range DefaultSpanFunctionsNew() {
+	for _, f := range DefaultSpanFunctions() {
 		assert.Contains(t, config.spanFunctions, f.Name(), "missing span function %v", f.Name())
 	}
-	for _, f := range DefaultSpanEventFunctionsNew() {
+	for _, f := range DefaultSpanEventFunctions() {
 		assert.Contains(t, config.spanEventFunctions, f.Name(), "missing span event function %v", f.Name())
 	}
 	for _, f := range DefaultProfileFunctions() {
@@ -859,6 +859,25 @@ func TestLogSeverity_severityValidate(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestLoadingConfigLogsInvalidSeverity(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_logs_invalid_severity.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	for k := range cm.ToStringMap() {
+		t.Run(k, func(t *testing.T) {
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub(k)
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			err = cfg.(*Config).Validate()
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "not a valid severity")
 		})
 	}
 }

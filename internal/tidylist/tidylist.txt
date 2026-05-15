@@ -7,6 +7,7 @@ internal/coreinternal
 pkg/ottl
 connector/routingconnector
 internal/pdatautil
+pkg/sampling
 connector/spanmetricsconnector
 internal/grpcutil
 internal/sharedcomponent
@@ -78,7 +79,6 @@ connector/metricsaslogsconnector
 connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector
-pkg/sampling
 connector/signaltometricsconnector
 connector/slowsqlconnector
 connector/sumconnector
@@ -117,6 +117,7 @@ exporter/googlecloudexporter
 exporter/googlecloudpubsubexporter
 exporter/googlecloudstorageexporter
 exporter/googlemanagedprometheusexporter
+exporter/googlesecopsexporter
 exporter/honeycombmarkerexporter
 exporter/influxdbexporter
 pkg/kafka/configkafka
@@ -132,7 +133,6 @@ exporter/opensearchexporter
 exporter/pulsarexporter
 internal/rabbitmq
 exporter/rabbitmqexporter
-exporter/sapmexporter
 exporter/sematextexporter
 exporter/sentryexporter
 extension/sumologicextension
@@ -143,11 +143,13 @@ extension/asapauthextension
 internal/aws/proxy
 extension/awsproxy
 extension/azureauthextension
+extension/internal/credentialsfile
 extension/basicauthextension
 extension/bearertokenauthextension
 extension/cgroupruntimeextension
 extension/datadogextension
 extension/encoding/avrologencodingextension
+pkg/xstreamencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension
 extension/encoding/awslogsencodingextension
 extension/encoding/azureencodingextension
@@ -156,7 +158,6 @@ extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
 pkg/translator/skywalking
 extension/encoding/skywalkingencodingextension
-pkg/xstreamencoding
 extension/encoding/textencodingextension
 extension/encoding/zipkinencodingextension
 extension/googleclientauthextension
@@ -168,6 +169,7 @@ extension/healthcheckv2extension
 extension/httpforwarderextension
 extension/jaegerremotesampling
 extension/k8sleaderelector
+extension/mcp
 extension/oauth2clientauthextension
 extension/observer
 extension/observer/cfgardenobserver
@@ -187,6 +189,8 @@ extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
 extension/storage/redisstorageextension
+extension/tailstorage/pebbletailstorageextension
+extension/tailstorage/pebbletailstorageextension/integrationtest
 .
 internal/aws/containerinsight
 internal/aws/k8s
@@ -205,17 +209,19 @@ internal/k8sleaderelectortest
 internal/kubelet
 internal/sqlquery
 internal/tools
+pkg/expohisto
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
 pkg/translator/pprof
 processor/attributesprocessor
+processor/cardinalityguardianprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
-processor/datadogsemanticsprocessor
 processor/deltatorateprocessor
-processor/dnslookupprocessor
+processor/drainprocessor
 processor/filterprocessor
+processor/genainormalizerprocessor
 processor/geoipprocessor
 processor/groupbyattrsprocessor
 processor/groupbytraceprocessor
@@ -232,6 +238,7 @@ processor/remotetapprocessor
 processor/resourceprocessor
 processor/schemaprocessor
 processor/spanprocessor
+processor/spanpruningprocessor
 processor/sumologicprocessor
 processor/unrollprocessor
 receiver/activedirectorydsreceiver
@@ -247,8 +254,8 @@ receiver/awss3receiver
 receiver/awsxrayreceiver
 receiver/azureblobreceiver
 receiver/azureeventhubreceiver
+receiver/azurefunctionsreceiver
 receiver/azuremonitorreceiver
-receiver/bigipreceiver
 receiver/chronyreceiver
 receiver/ciscoosreceiver
 receiver/cloudflarereceiver
@@ -278,7 +285,6 @@ receiver/jmxreceiver
 receiver/journaldreceiver
 receiver/k8sclusterreceiver
 receiver/k8seventsreceiver
-receiver/k8slogreceiver
 receiver/k8sobjectsreceiver
 receiver/kafkametricsreceiver
 receiver/kafkareceiver

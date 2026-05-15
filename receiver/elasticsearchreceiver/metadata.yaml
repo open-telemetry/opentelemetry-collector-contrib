@@ -1,4 +1,13 @@
+display_name: Elasticsearch Receiver
 type: elasticsearch
+
+description: |
+  This receiver queries the Elasticsearch [node stats](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-nodes-stats.html),
+  [cluster health](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-health.html) and
+  [index stats](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-stats.html) endpoints in order
+  to scrape metrics from a running Elasticsearch cluster.
+
+reaggregation_enabled: true
 
 status:
   class: receiver
@@ -32,16 +41,19 @@ attributes:
   cache_name:
     description: The name of cache.
     type: string
+    requirement_level: recommended
     enum:
       - fielddata
       - query
   circuit_breaker_name:
     name_override: name
     description: The name of circuit breaker.
+    requirement_level: recommended
     type: string
   cluster_published_difference_state:
     name_override: state
     description: State of the published differences
+    requirement_level: recommended
     type: string
     enum:
       - incompatible
@@ -49,6 +61,7 @@ attributes:
   cluster_state_queue_state:
     name_override: state
     description: State of the published differences
+    requirement_level: recommended
     type: string
     enum:
       - pending
@@ -56,10 +69,12 @@ attributes:
   cluster_state_update_state:
     name_override: state
     description: State of cluster state update
+    requirement_level: recommended
     type: string
   cluster_state_update_type:
     name_override: type
     description: Type of cluster state update
+    requirement_level: recommended
     type: string
     enum:
       - computation
@@ -71,15 +86,18 @@ attributes:
   collector_name:
     name_override: name
     description: The name of the garbage collector.
+    requirement_level: recommended
     type: string
   direction:
     description: The direction of network data.
+    requirement_level: recommended
     type: string
     enum:
       - received
       - sent
   document_state:
     name_override: state
+    requirement_level: recommended
     description: The state of the document.
     type: string
     enum:
@@ -88,6 +106,7 @@ attributes:
   get_result:
     name_override: result
     description: Result of get operation
+    requirement_level: recommended
     type: string
     enum:
       - hit
@@ -96,6 +115,7 @@ attributes:
   health_status:
     name_override: status
     description: The health status of the cluster.
+    requirement_level: recommended
     type: string
     enum:
       - green
@@ -104,6 +124,7 @@ attributes:
   index_aggregation_type:
     name_override: aggregation
     description: Type of shard aggregation for index statistics
+    requirement_level: recommended
     type: string
     enum:
       - primary_shards
@@ -111,6 +132,7 @@ attributes:
   indexing_pressure_stage:
     name_override: stage
     description: Stage of the indexing pressure
+    requirement_level: recommended
     type: string
     enum:
       - coordinating
@@ -119,14 +141,17 @@ attributes:
   ingest_pipeline_name:
     name_override: name
     description: Name of the ingest pipeline.
+    requirement_level: recommended
     type: string
   memory_pool_name:
     name_override: name
     description: The name of the JVM memory pool.
+    requirement_level: recommended
     type: string
   memory_state:
     name_override: state
     description: State of the memory
+    requirement_level: recommended
     type: string
     enum:
       - free
@@ -134,6 +159,7 @@ attributes:
   operation:
     name_override: operation
     description: The type of operation.
+    requirement_level: recommended
     type: string
     enum:
       - index
@@ -150,6 +176,7 @@ attributes:
   query_cache_count_type:
     name_override: type
     description: Type of query cache count
+    requirement_level: recommended
     type: string
     enum:
       - hit
@@ -157,6 +184,7 @@ attributes:
   segments_memory_object_type:
     name_override: object
     description: Type of object in segment
+    requirement_level: recommended
     type: string
     enum:
       - term
@@ -166,6 +194,7 @@ attributes:
   shard_state:
     name_override: state
     description: The state of the shard.
+    requirement_level: recommended
     type: string
     enum:
       - active
@@ -177,16 +206,19 @@ attributes:
   task_state:
     name_override: state
     description: The state of the task.
+    requirement_level: recommended
     type: string
     enum:
       - rejected
       - completed
   thread_pool_name:
     description: The name of the thread pool.
+    requirement_level: recommended
     type: string
   thread_state:
     name_override: state
     description: The state of the thread.
+    requirement_level: recommended
     type: string
     enum:
       - active

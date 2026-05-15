@@ -110,6 +110,7 @@ func TestMetricsExporterStart(t *testing.T) {
 			"ok",
 			func() *metricExporterImp {
 				p, _ := newMetricsExporter(ts, serviceBasedRoutingConfig())
+				p.loadBalancer.res = &mockResolver{}
 				return p
 			}(),
 			nil,
@@ -284,6 +285,30 @@ func TestSplitMetrics(t *testing.T) {
 			name:      "duplicate_stream_id",
 			splitFunc: splitMetricsByStreamID,
 		},
+		{
+			name: "basic_attributes",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"resource_key", "scope_key", "aaa"})
+			},
+		},
+		{
+			name: "attributes_resource_only",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"resource_key"})
+			},
+		},
+		{
+			name: "attributes_scope_only",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"scope_key"})
+			},
+		},
+		{
+			name: "attributes_datapoint_only",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"aaa"})
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -304,13 +329,94 @@ func TestSplitMetrics(t *testing.T) {
 	}
 }
 
+func TestSplitMetricsByAttributes_StableEncodingAvoidsConcatenationCollisions(t *testing.T) {
+	md := pmetric.NewMetrics()
+
+	buildResourceMetric := func(aValue, bValue string) {
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("a", aValue)
+		rm.Resource().Attributes().PutStr("b", bValue)
+
+		sm := rm.ScopeMetrics().AppendEmpty()
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName("test.metric")
+
+		sum := metric.SetEmptySum()
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		sum.SetIsMonotonic(false)
+
+		dp := sum.DataPoints().AppendEmpty()
+		dp.SetIntValue(1)
+	}
+
+	buildResourceMetric("foo", "bar")
+	buildResourceMetric("foob", "ar")
+
+	out := splitMetricsByAttributes(md, []string{"a", "b"})
+	require.Len(t, out, 2)
+	assert.Contains(t, out, "a=foo|b=bar|")
+	assert.Contains(t, out, "a=foob|b=ar|")
+}
+
+func TestSplitMetricsByAttributes_StableEncodingIncludesMissingAttributes(t *testing.T) {
+	md := pmetric.NewMetrics()
+
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("resource_key", "res1")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("test.metric")
+
+	sum := metric.SetEmptySum()
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	sum.SetIsMonotonic(false)
+
+	dp := sum.DataPoints().AppendEmpty()
+	dp.SetIntValue(1)
+	dp.Attributes().PutStr("aaa", "dp1")
+
+	out := splitMetricsByAttributes(md, []string{"resource_key", "missing", "aaa"})
+	require.Len(t, out, 1)
+	assert.Contains(t, out, "resource_key=res1|missing=|aaa=dp1|")
+}
+
+func TestSplitMetricsByAttributes_NonStringValues(t *testing.T) {
+	md := pmetric.NewMetrics()
+
+	buildResourceMetric := func(shard int64) {
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutInt("shard", shard)
+
+		sm := rm.ScopeMetrics().AppendEmpty()
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName("test.metric")
+
+		sum := metric.SetEmptySum()
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		sum.SetIsMonotonic(false)
+
+		dp := sum.DataPoints().AppendEmpty()
+		dp.SetIntValue(1)
+	}
+
+	buildResourceMetric(1)
+	buildResourceMetric(2)
+
+	out := splitMetricsByAttributes(md, []string{"shard"})
+	require.Len(t, out, 2)
+	assert.Contains(t, out, "shard=1|")
+	assert.Contains(t, out, "shard=2|")
+}
+
 func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	t.Parallel()
 
 	testCases := []struct {
-		name       string
-		routingKey string
+		name              string
+		routingKey        string
+		routingAttributes []string
 	}{
 		{
 			name:       "resource_service_name",
@@ -328,6 +434,11 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 			name:       "stream_id",
 			routingKey: streamIDRoutingStr,
 		},
+		{
+			name:              "attributes",
+			routingKey:        attrRoutingStr,
+			routingAttributes: []string{"resource_key", "scope_key", "aaa"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -339,9 +450,9 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 				Resolver: ResolverSettings{
 					Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
 				},
-				RoutingKey: tc.routingKey,
+				RoutingKey:        tc.routingKey,
+				RoutingAttributes: tc.routingAttributes,
 			}
-
 			p, err := newMetricsExporter(createSettings, config)
 			require.NoError(t, err)
 			require.NotNil(t, p)
@@ -486,8 +597,9 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		name       string
-		routingKey string
+		name              string
+		routingKey        string
+		routingAttributes []string
 	}{
 		{
 			name:       "resource_service_name",
@@ -505,6 +617,11 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 			name:       "stream_id",
 			routingKey: streamIDRoutingStr,
 		},
+		{
+			name:              "attributes",
+			routingKey:        attrRoutingStr,
+			routingAttributes: []string{"resource_key", "scope_key", "aaa"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -516,7 +633,8 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 				Resolver: ResolverSettings{
 					Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2", "endpoint-3"}}),
 				},
-				RoutingKey: tc.routingKey,
+				RoutingKey:        tc.routingKey,
+				RoutingAttributes: tc.routingAttributes,
 			}
 
 			p, err := newMetricsExporter(createSettings, config)

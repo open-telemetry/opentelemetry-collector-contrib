@@ -54,18 +54,17 @@ func (t *EntityEventTransformer) extractPropertiesAndTags(attrs pcommon.Map) (ma
 	}
 
 	attrs.Range(func(k string, v pcommon.Value) bool {
-		key := sanitizeProperty(k)
-		if key == "" {
+		if k == "" {
 			return true
 		}
 
 		valueStr := v.AsString()
 
 		if valueStr == "" {
-			tags[key] = true
+			tags[k] = true
 		} else {
 			propVal := valueStr
-			properties[key] = &propVal
+			properties[k] = &propVal
 		}
 
 		return true
@@ -108,9 +107,21 @@ func extractDimensionKeyValue(entityType string, entityID pcommon.Map) (string, 
 		if v, ok := entityID.Get("k8s.node.uid"); ok {
 			return "k8s.node.uid", v.Str(), nil
 		}
+	case "k8s.persistentvolume":
+		if v, ok := entityID.Get("k8s.persistentvolume.uid"); ok {
+			return "k8s.persistentvolume.uid", v.Str(), nil
+		}
+	case "k8s.persistentvolumeclaim":
+		if v, ok := entityID.Get("k8s.persistentvolumeclaim.uid"); ok {
+			return "k8s.persistentvolumeclaim.uid", v.Str(), nil
+		}
 	case "k8s.pod":
 		if v, ok := entityID.Get("k8s.pod.uid"); ok {
 			return "k8s.pod.uid", v.Str(), nil
+		}
+	case "k8s.service":
+		if v, ok := entityID.Get("k8s.service.uid"); ok {
+			return "k8s.service.uid", v.Str(), nil
 		}
 	case "k8s.replicaset":
 		if v, ok := entityID.Get("k8s.replicaset.uid"); ok {

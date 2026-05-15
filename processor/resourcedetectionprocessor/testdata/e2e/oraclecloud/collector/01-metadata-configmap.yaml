@@ -18,7 +18,8 @@ data:
         "canonicalRegionName": "us-phoenix-1",
         "availabilityDomain": "uyTH:PHX-AD-1",
         "metadata": {
-            "oke-cluster-display-name": "test-oke-cluster"
+            "oke-cluster-display-name": "test-oke-cluster",
+            "realm": "oc999"
         }
     }
 

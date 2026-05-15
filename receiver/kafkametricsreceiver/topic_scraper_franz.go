@@ -24,6 +24,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
+const (
+	minInsyncReplicas = "min.insync.replicas"
+	retentionMs       = "retention.ms"
+	retentionBytes    = "retention.bytes"
+)
+
 type topicScraperFranz struct {
 	adm *kadm.Client
 	cl  *kgo.Client

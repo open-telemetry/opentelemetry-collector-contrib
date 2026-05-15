@@ -14,7 +14,14 @@ COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 GROUP ?= all
-FOR_GROUP_TARGET=for-$(GROUP)-target
+# If GROUP contains a slash (e.g. "receiver/hostmetrics" or a space-separated list
+# of module paths emitted by compute-ci-scope.sh), invoke the per-module delegation
+# targets directly. Otherwise, map the group name to its for-<name>-target rule.
+ifneq ($(findstring /,$(GROUP)),)
+    FOR_GROUP_TARGET=$(GROUP)
+else
+    FOR_GROUP_TARGET=for-$(GROUP)-target
+endif
 
 FIND_MOD_ARGS=-type f -name "go.mod"
 TO_MOD_DIR=dirname {} \; | sort | grep -E '^./'
@@ -393,14 +400,15 @@ docker-golden:
 	cd cmd/golden && docker build --platform linux/$(GOARCH) --build-arg="TARGETOS=$(GOOS)" --build-arg="TARGETARCH=$(GOARCH)" -t golden:latest .
 	rm cmd/golden/golden_*
 
+GITHUBGEN_ARGS ?= -skipgithub
 
 .PHONY: gengithub
 gengithub:
-	$(GITHUBGEN)
+	$(GITHUBGEN) $(GITHUBGEN_ARGS)
 
 .PHONY: gendistributions
 gendistributions:
-	$(GITHUBGEN) distributions
+	$(GITHUBGEN) $(GITHUBGEN_ARGS) distributions
 
 .PHONY: gencodecov
 gencodecov:
@@ -412,15 +420,15 @@ update-codeowners: generate gengithub
 
 .PHONY: gencodeowners
 gencodeowners:
-	$(GITHUBGEN) -skipgithub
+	$(GITHUBGEN) $(GITHUBGEN_ARGS)
 
 .PHONY: codeowners
 codeowners:
-	$(GITHUBGEN) codeowners
+	$(GITHUBGEN) $(GITHUBGEN_ARGS) codeowners
 
 .PHONY: generate-chloggen-components
 generate-chloggen-components:
-	$(GITHUBGEN) chloggen-components
+	$(GITHUBGEN) $(GITHUBGEN_ARGS) chloggen-components
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
@@ -706,7 +714,7 @@ clean:
 generate-gh-issue-templates:
 	$(GITHUBGEN) issue-templates
 
-SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
+SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*internal/metadata/*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
 
 .PHONY: generate-schemas
 generate-schemas:

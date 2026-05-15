@@ -20,6 +20,7 @@ func (*Output) ProcessBatch(context.Context, []*entry.Entry) error {
 }
 
 // Process will drop the incoming entry.
-func (*Output) Process(context.Context, *entry.Entry) error {
+func (*Output) Process(_ context.Context, e *entry.Entry) error {
+	entry.Put(e)
 	return nil
 }

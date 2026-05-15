@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,33 +66,41 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["k8s.container.ephemeral_storage.usage"] = mb.metricK8sContainerEphemeralStorageUsage.config.AggregationStrategy
+			aggMap["k8s.node.network.errors"] = mb.metricK8sNodeNetworkErrors.config.AggregationStrategy
+			aggMap["k8s.node.network.io"] = mb.metricK8sNodeNetworkIo.config.AggregationStrategy
+			aggMap["k8s.pod.network.errors"] = mb.metricK8sPodNetworkErrors.config.AggregationStrategy
+			aggMap["k8s.pod.network.io"] = mb.metricK8sPodNetworkIo.config.AggregationStrategy
 
 			expectedWarnings := 0
-			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+			if tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `aws.volume.id` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+			if tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `fs.type` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+			if tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `gce.pd.name` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+			if tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `glusterfs.endpoints.name` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+			if tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `glusterfs.path` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+			if tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `partition` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -148,6 +162,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sContainerCPURequestUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordK8sContainerEphemeralStorageUsageDataPoint(ts, 1, AttributeFsTypeRootfs)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sContainerEphemeralStorageUsageDataPoint(ts, 3, AttributeFsTypeLogs)
+			}
+
+			allMetricsCount++
 			mb.RecordK8sContainerMemoryNodeUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -203,10 +223,28 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sNodeNetworkIoDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
+			}
+
+			allMetricsCount++
+			mb.RecordK8sNodeSystemContainerCPUTimeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeSystemContainerCPUUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeSystemContainerMemoryUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeSystemContainerMemoryWorkingSetDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordK8sNodeUptimeDataPoint(ts, 1)
@@ -276,10 +314,16 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sPodNetworkErrorsDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
+			if tt.name == "reaggregate_set" {
+				mb.RecordK8sPodNetworkIoDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
+			}
 
 			allMetricsCount++
 			mb.RecordK8sPodUptimeDataPoint(ts, 1)
@@ -317,6 +361,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
+			rb.SetK8sNodeSystemContainerName("k8s.node.system_container.name-val")
 			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
@@ -325,36 +370,49 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetPartition("partition-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricK8sContainerEphemeralStorageUsage.aggDataPoints)
+				assert.Empty(t, mb.metricK8sNodeNetworkErrors.aggDataPoints)
+				assert.Empty(t, mb.metricK8sNodeNetworkIo.aggDataPoints)
+				assert.Empty(t, mb.metricK8sPodNetworkErrors.aggDataPoints)
+				assert.Empty(t, mb.metricK8sPodNetworkIo.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
-			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-			rm := metrics.ResourceMetrics().At(0)
-			assert.Equal(t, res, rm.Resource())
-			assert.Equal(t, 1, rm.ScopeMetrics().Len())
-			ms := rm.ScopeMetrics().At(0).Metrics()
+			var allMetricsList []pmetric.Metric
+			totalMetricsCount := 0
+			for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+				rm := metrics.ResourceMetrics().At(ri)
+				assert.Equal(t, 1, rm.ScopeMetrics().Len())
+				ms := rm.ScopeMetrics().At(0).Metrics()
+				totalMetricsCount += ms.Len()
+				for mi := 0; mi < ms.Len(); mi++ {
+					allMetricsList = append(allMetricsList, ms.At(mi))
+				}
+			}
 			if tt.metricsSet == testDataSetDefault {
-				assert.Equal(t, defaultMetricsCount, ms.Len())
+				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
 			}
 			if tt.metricsSet == testDataSetAll {
-				assert.Equal(t, allMetricsCount, ms.Len())
+				assert.Equal(t, allMetricsCount, totalMetricsCount)
 			}
 			validatedMetrics := make(map[string]bool)
-			for i := 0; i < ms.Len(); i++ {
-				switch ms.At(i).Name() {
+			for _, mi := range allMetricsList {
+				switch mi.Name() {
 				case "container.cpu.time":
 					assert.False(t, validatedMetrics["container.cpu.time"], "Found a duplicate in the metrics slice: container.cpu.time")
 					validatedMetrics["container.cpu.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -362,11 +420,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "container.cpu.usage":
 					assert.False(t, validatedMetrics["container.cpu.usage"], "Found a duplicate in the metrics slice: container.cpu.usage")
 					validatedMetrics["container.cpu.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Total CPU usage (sum of all cores per second) averaged over the sample window", ms.At(i).Description())
-					assert.Equal(t, "{cpu}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Total CPU usage (sum of all cores per second) averaged over the sample window", mi.Description())
+					assert.Equal(t, "{cpu}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -374,11 +432,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "container.filesystem.available":
 					assert.False(t, validatedMetrics["container.filesystem.available"], "Found a duplicate in the metrics slice: container.filesystem.available")
 					validatedMetrics["container.filesystem.available"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container filesystem available", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container filesystem available", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -386,11 +444,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "container.filesystem.capacity":
 					assert.False(t, validatedMetrics["container.filesystem.capacity"], "Found a duplicate in the metrics slice: container.filesystem.capacity")
 					validatedMetrics["container.filesystem.capacity"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container filesystem capacity", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container filesystem capacity", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -398,11 +456,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "container.filesystem.usage":
 					assert.False(t, validatedMetrics["container.filesystem.usage"], "Found a duplicate in the metrics slice: container.filesystem.usage")
 					validatedMetrics["container.filesystem.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container filesystem usage", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container filesystem usage", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -410,11 +468,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "container.memory.available":
 					assert.False(t, validatedMetrics["container.memory.available"], "Found a duplicate in the metrics slice: container.memory.available")
 					validatedMetrics["container.memory.available"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory available", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory available", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -422,11 +480,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "container.memory.major_page_faults":
 					assert.False(t, validatedMetrics["container.memory.major_page_faults"], "Found a duplicate in the metrics slice: container.memory.major_page_faults")
 					validatedMetrics["container.memory.major_page_faults"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory major_page_faults", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory major_page_faults", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -434,11 +492,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "container.memory.page_faults":
 					assert.False(t, validatedMetrics["container.memory.page_faults"], "Found a duplicate in the metrics slice: container.memory.page_faults")
 					validatedMetrics["container.memory.page_faults"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory page_faults", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory page_faults", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -446,11 +504,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "container.memory.rss":
 					assert.False(t, validatedMetrics["container.memory.rss"], "Found a duplicate in the metrics slice: container.memory.rss")
 					validatedMetrics["container.memory.rss"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory rss", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory rss", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -458,11 +516,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "container.memory.usage":
 					assert.False(t, validatedMetrics["container.memory.usage"], "Found a duplicate in the metrics slice: container.memory.usage")
 					validatedMetrics["container.memory.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory usage", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory usage", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -470,11 +528,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "container.memory.working_set":
 					assert.False(t, validatedMetrics["container.memory.working_set"], "Found a duplicate in the metrics slice: container.memory.working_set")
 					validatedMetrics["container.memory.working_set"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory working_set", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory working_set", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -482,13 +540,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "container.uptime":
 					assert.False(t, validatedMetrics["container.uptime"], "Found a duplicate in the metrics slice: container.uptime")
 					validatedMetrics["container.uptime"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The time since the container started", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The time since the container started", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -496,11 +554,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.container.cpu.node.utilization":
 					assert.False(t, validatedMetrics["k8s.container.cpu.node.utilization"], "Found a duplicate in the metrics slice: k8s.container.cpu.node.utilization")
 					validatedMetrics["k8s.container.cpu.node.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container cpu utilization as a ratio of the node's capacity", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container cpu utilization as a ratio of the node's capacity", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -508,11 +566,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.container.cpu_limit_utilization":
 					assert.False(t, validatedMetrics["k8s.container.cpu_limit_utilization"], "Found a duplicate in the metrics slice: k8s.container.cpu_limit_utilization")
 					validatedMetrics["k8s.container.cpu_limit_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container cpu utilization as a ratio of the container's limits", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container cpu utilization as a ratio of the container's limits", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -520,23 +578,67 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.container.cpu_request_utilization":
 					assert.False(t, validatedMetrics["k8s.container.cpu_request_utilization"], "Found a duplicate in the metrics slice: k8s.container.cpu_request_utilization")
 					validatedMetrics["k8s.container.cpu_request_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container cpu utilization as a ratio of the container's requests", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container cpu utilization as a ratio of the container's requests", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "k8s.container.ephemeral_storage.usage":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.container.ephemeral_storage.usage"], "Found a duplicate in the metrics slice: k8s.container.ephemeral_storage.usage")
+						validatedMetrics["k8s.container.ephemeral_storage.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Ephemeral storage used by the container.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						fsTypeAttrVal, ok := dp.Attributes().Get("fs.type")
+						assert.True(t, ok)
+						assert.Equal(t, "rootfs", fsTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.container.ephemeral_storage.usage"], "Found a duplicate in the metrics slice: k8s.container.ephemeral_storage.usage")
+						validatedMetrics["k8s.container.ephemeral_storage.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Ephemeral storage used by the container.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["k8s.container.ephemeral_storage.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("fs.type")
+						assert.False(t, ok)
+					}
 				case "k8s.container.memory.node.utilization":
 					assert.False(t, validatedMetrics["k8s.container.memory.node.utilization"], "Found a duplicate in the metrics slice: k8s.container.memory.node.utilization")
 					validatedMetrics["k8s.container.memory.node.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory utilization as a ratio of the node's capacity", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory utilization as a ratio of the node's capacity", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -544,11 +646,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.container.memory_limit_utilization":
 					assert.False(t, validatedMetrics["k8s.container.memory_limit_utilization"], "Found a duplicate in the metrics slice: k8s.container.memory_limit_utilization")
 					validatedMetrics["k8s.container.memory_limit_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory utilization as a ratio of the container's limits", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory utilization as a ratio of the container's limits", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -556,11 +658,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.container.memory_request_utilization":
 					assert.False(t, validatedMetrics["k8s.container.memory_request_utilization"], "Found a duplicate in the metrics slice: k8s.container.memory_request_utilization")
 					validatedMetrics["k8s.container.memory_request_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory utilization as a ratio of the container's requests", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory utilization as a ratio of the container's requests", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -568,13 +670,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.node.cpu.time":
 					assert.False(t, validatedMetrics["k8s.node.cpu.time"], "Found a duplicate in the metrics slice: k8s.node.cpu.time")
 					validatedMetrics["k8s.node.cpu.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -582,11 +684,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.node.cpu.usage":
 					assert.False(t, validatedMetrics["k8s.node.cpu.usage"], "Found a duplicate in the metrics slice: k8s.node.cpu.usage")
 					validatedMetrics["k8s.node.cpu.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Total CPU usage (sum of all cores per second) averaged over the sample window", ms.At(i).Description())
-					assert.Equal(t, "{cpu}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Total CPU usage (sum of all cores per second) averaged over the sample window", mi.Description())
+					assert.Equal(t, "{cpu}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -594,11 +696,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.node.filesystem.available":
 					assert.False(t, validatedMetrics["k8s.node.filesystem.available"], "Found a duplicate in the metrics slice: k8s.node.filesystem.available")
 					validatedMetrics["k8s.node.filesystem.available"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Node filesystem available", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Node filesystem available", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -606,11 +708,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.node.filesystem.capacity":
 					assert.False(t, validatedMetrics["k8s.node.filesystem.capacity"], "Found a duplicate in the metrics slice: k8s.node.filesystem.capacity")
 					validatedMetrics["k8s.node.filesystem.capacity"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Node filesystem capacity", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Node filesystem capacity", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -618,11 +720,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.node.filesystem.usage":
 					assert.False(t, validatedMetrics["k8s.node.filesystem.usage"], "Found a duplicate in the metrics slice: k8s.node.filesystem.usage")
 					validatedMetrics["k8s.node.filesystem.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Node filesystem usage", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Node filesystem usage", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -630,11 +732,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.node.memory.available":
 					assert.False(t, validatedMetrics["k8s.node.memory.available"], "Found a duplicate in the metrics slice: k8s.node.memory.available")
 					validatedMetrics["k8s.node.memory.available"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Node memory available", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Node memory available", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -642,11 +744,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.node.memory.major_page_faults":
 					assert.False(t, validatedMetrics["k8s.node.memory.major_page_faults"], "Found a duplicate in the metrics slice: k8s.node.memory.major_page_faults")
 					validatedMetrics["k8s.node.memory.major_page_faults"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Node memory major_page_faults", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Node memory major_page_faults", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -654,11 +756,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.node.memory.page_faults":
 					assert.False(t, validatedMetrics["k8s.node.memory.page_faults"], "Found a duplicate in the metrics slice: k8s.node.memory.page_faults")
 					validatedMetrics["k8s.node.memory.page_faults"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Node memory page_faults", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Node memory page_faults", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -666,11 +768,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.node.memory.rss":
 					assert.False(t, validatedMetrics["k8s.node.memory.rss"], "Found a duplicate in the metrics slice: k8s.node.memory.rss")
 					validatedMetrics["k8s.node.memory.rss"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Node memory rss", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Node memory rss", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -678,11 +780,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.node.memory.usage":
 					assert.False(t, validatedMetrics["k8s.node.memory.usage"], "Found a duplicate in the metrics slice: k8s.node.memory.usage")
 					validatedMetrics["k8s.node.memory.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Node memory usage", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Node memory usage", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -690,65 +792,173 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.node.memory.working_set":
 					assert.False(t, validatedMetrics["k8s.node.memory.working_set"], "Found a duplicate in the metrics slice: k8s.node.memory.working_set")
 					validatedMetrics["k8s.node.memory.working_set"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Node memory working_set", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Node memory working_set", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.node.network.errors":
-					assert.False(t, validatedMetrics["k8s.node.network.errors"], "Found a duplicate in the metrics slice: k8s.node.network.errors")
-					validatedMetrics["k8s.node.network.errors"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Node network errors", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("interface")
-					assert.True(t, ok)
-					assert.Equal(t, "interface-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.node.network.errors"], "Found a duplicate in the metrics slice: k8s.node.network.errors")
+						validatedMetrics["k8s.node.network.errors"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Node network errors", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
+						assert.True(t, ok)
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "receive", directionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.node.network.errors"], "Found a duplicate in the metrics slice: k8s.node.network.errors")
+						validatedMetrics["k8s.node.network.errors"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Node network errors", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["k8s.node.network.errors"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("interface")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "k8s.node.network.io":
-					assert.False(t, validatedMetrics["k8s.node.network.io"], "Found a duplicate in the metrics slice: k8s.node.network.io")
-					validatedMetrics["k8s.node.network.io"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Node network IO", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.node.network.io"], "Found a duplicate in the metrics slice: k8s.node.network.io")
+						validatedMetrics["k8s.node.network.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Node network IO", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
+						assert.True(t, ok)
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "receive", directionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.node.network.io"], "Found a duplicate in the metrics slice: k8s.node.network.io")
+						validatedMetrics["k8s.node.network.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Node network IO", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["k8s.node.network.io"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("interface")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
+				case "k8s.node.system_container.cpu.time":
+					assert.False(t, validatedMetrics["k8s.node.system_container.cpu.time"], "Found a duplicate in the metrics slice: k8s.node.system_container.cpu.time")
+					validatedMetrics["k8s.node.system_container.cpu.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total cumulative CPU time (sum of all cores) spent by the system container since its creation", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "k8s.node.system_container.cpu.usage":
+					assert.False(t, validatedMetrics["k8s.node.system_container.cpu.usage"], "Found a duplicate in the metrics slice: k8s.node.system_container.cpu.usage")
+					validatedMetrics["k8s.node.system_container.cpu.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Total CPU usage (sum of all cores per second) averaged over the sample window for the system container", mi.Description())
+					assert.Equal(t, "{cpu}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "k8s.node.system_container.memory.usage":
+					assert.False(t, validatedMetrics["k8s.node.system_container.memory.usage"], "Found a duplicate in the metrics slice: k8s.node.system_container.memory.usage")
+					validatedMetrics["k8s.node.system_container.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "System container memory usage", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("interface")
-					assert.True(t, ok)
-					assert.Equal(t, "interface-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", attrVal.Str())
+				case "k8s.node.system_container.memory.working_set":
+					assert.False(t, validatedMetrics["k8s.node.system_container.memory.working_set"], "Found a duplicate in the metrics slice: k8s.node.system_container.memory.working_set")
+					validatedMetrics["k8s.node.system_container.memory.working_set"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "System container memory working_set", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.node.uptime":
 					assert.False(t, validatedMetrics["k8s.node.uptime"], "Found a duplicate in the metrics slice: k8s.node.uptime")
 					validatedMetrics["k8s.node.uptime"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The time since the node started", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The time since the node started", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -756,11 +966,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.cpu.node.utilization":
 					assert.False(t, validatedMetrics["k8s.pod.cpu.node.utilization"], "Found a duplicate in the metrics slice: k8s.pod.cpu.node.utilization")
 					validatedMetrics["k8s.pod.cpu.node.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod cpu utilization as a ratio of the node's capacity", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod cpu utilization as a ratio of the node's capacity", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -768,13 +978,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.cpu.time":
 					assert.False(t, validatedMetrics["k8s.pod.cpu.time"], "Found a duplicate in the metrics slice: k8s.pod.cpu.time")
 					validatedMetrics["k8s.pod.cpu.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -782,11 +992,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.cpu.usage":
 					assert.False(t, validatedMetrics["k8s.pod.cpu.usage"], "Found a duplicate in the metrics slice: k8s.pod.cpu.usage")
 					validatedMetrics["k8s.pod.cpu.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Total CPU usage (sum of all cores per second) averaged over the sample window", ms.At(i).Description())
-					assert.Equal(t, "{cpu}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Total CPU usage (sum of all cores per second) averaged over the sample window", mi.Description())
+					assert.Equal(t, "{cpu}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -794,11 +1004,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.cpu_limit_utilization":
 					assert.False(t, validatedMetrics["k8s.pod.cpu_limit_utilization"], "Found a duplicate in the metrics slice: k8s.pod.cpu_limit_utilization")
 					validatedMetrics["k8s.pod.cpu_limit_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod cpu utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod cpu utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -806,11 +1016,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.cpu_request_utilization":
 					assert.False(t, validatedMetrics["k8s.pod.cpu_request_utilization"], "Found a duplicate in the metrics slice: k8s.pod.cpu_request_utilization")
 					validatedMetrics["k8s.pod.cpu_request_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod cpu utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod cpu utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -818,11 +1028,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.filesystem.available":
 					assert.False(t, validatedMetrics["k8s.pod.filesystem.available"], "Found a duplicate in the metrics slice: k8s.pod.filesystem.available")
 					validatedMetrics["k8s.pod.filesystem.available"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod filesystem available", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod filesystem available", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -830,11 +1040,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.filesystem.capacity":
 					assert.False(t, validatedMetrics["k8s.pod.filesystem.capacity"], "Found a duplicate in the metrics slice: k8s.pod.filesystem.capacity")
 					validatedMetrics["k8s.pod.filesystem.capacity"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod filesystem capacity", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod filesystem capacity", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -842,11 +1052,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.filesystem.usage":
 					assert.False(t, validatedMetrics["k8s.pod.filesystem.usage"], "Found a duplicate in the metrics slice: k8s.pod.filesystem.usage")
 					validatedMetrics["k8s.pod.filesystem.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod filesystem usage", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod filesystem usage", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -854,11 +1064,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.memory.available":
 					assert.False(t, validatedMetrics["k8s.pod.memory.available"], "Found a duplicate in the metrics slice: k8s.pod.memory.available")
 					validatedMetrics["k8s.pod.memory.available"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod memory available", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory available", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -866,11 +1076,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.memory.major_page_faults":
 					assert.False(t, validatedMetrics["k8s.pod.memory.major_page_faults"], "Found a duplicate in the metrics slice: k8s.pod.memory.major_page_faults")
 					validatedMetrics["k8s.pod.memory.major_page_faults"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod memory major_page_faults", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory major_page_faults", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -878,11 +1088,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.memory.node.utilization":
 					assert.False(t, validatedMetrics["k8s.pod.memory.node.utilization"], "Found a duplicate in the metrics slice: k8s.pod.memory.node.utilization")
 					validatedMetrics["k8s.pod.memory.node.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod memory utilization as a ratio of the node's capacity", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory utilization as a ratio of the node's capacity", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -890,11 +1100,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.memory.page_faults":
 					assert.False(t, validatedMetrics["k8s.pod.memory.page_faults"], "Found a duplicate in the metrics slice: k8s.pod.memory.page_faults")
 					validatedMetrics["k8s.pod.memory.page_faults"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod memory page_faults", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory page_faults", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -902,11 +1112,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.memory.rss":
 					assert.False(t, validatedMetrics["k8s.pod.memory.rss"], "Found a duplicate in the metrics slice: k8s.pod.memory.rss")
 					validatedMetrics["k8s.pod.memory.rss"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod memory rss", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory rss", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -914,11 +1124,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.memory.usage":
 					assert.False(t, validatedMetrics["k8s.pod.memory.usage"], "Found a duplicate in the metrics slice: k8s.pod.memory.usage")
 					validatedMetrics["k8s.pod.memory.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod memory usage", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory usage", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -926,11 +1136,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.memory.working_set":
 					assert.False(t, validatedMetrics["k8s.pod.memory.working_set"], "Found a duplicate in the metrics slice: k8s.pod.memory.working_set")
 					validatedMetrics["k8s.pod.memory.working_set"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod memory working_set", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory working_set", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -938,11 +1148,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.memory_limit_utilization":
 					assert.False(t, validatedMetrics["k8s.pod.memory_limit_utilization"], "Found a duplicate in the metrics slice: k8s.pod.memory_limit_utilization")
 					validatedMetrics["k8s.pod.memory_limit_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod memory utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -950,65 +1160,123 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.memory_request_utilization":
 					assert.False(t, validatedMetrics["k8s.pod.memory_request_utilization"], "Found a duplicate in the metrics slice: k8s.pod.memory_request_utilization")
 					validatedMetrics["k8s.pod.memory_request_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod memory utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "k8s.pod.network.errors":
-					assert.False(t, validatedMetrics["k8s.pod.network.errors"], "Found a duplicate in the metrics slice: k8s.pod.network.errors")
-					validatedMetrics["k8s.pod.network.errors"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Pod network errors", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("interface")
-					assert.True(t, ok)
-					assert.Equal(t, "interface-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.pod.network.errors"], "Found a duplicate in the metrics slice: k8s.pod.network.errors")
+						validatedMetrics["k8s.pod.network.errors"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Pod network errors", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
+						assert.True(t, ok)
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "receive", directionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.pod.network.errors"], "Found a duplicate in the metrics slice: k8s.pod.network.errors")
+						validatedMetrics["k8s.pod.network.errors"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Pod network errors", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["k8s.pod.network.errors"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("interface")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "k8s.pod.network.io":
-					assert.False(t, validatedMetrics["k8s.pod.network.io"], "Found a duplicate in the metrics slice: k8s.pod.network.io")
-					validatedMetrics["k8s.pod.network.io"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Pod network IO", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("interface")
-					assert.True(t, ok)
-					assert.Equal(t, "interface-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.pod.network.io"], "Found a duplicate in the metrics slice: k8s.pod.network.io")
+						validatedMetrics["k8s.pod.network.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Pod network IO", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
+						assert.True(t, ok)
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "receive", directionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.pod.network.io"], "Found a duplicate in the metrics slice: k8s.pod.network.io")
+						validatedMetrics["k8s.pod.network.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Pod network IO", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["k8s.pod.network.io"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("interface")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "k8s.pod.uptime":
 					assert.False(t, validatedMetrics["k8s.pod.uptime"], "Found a duplicate in the metrics slice: k8s.pod.uptime")
 					validatedMetrics["k8s.pod.uptime"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The time since the pod started", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The time since the pod started", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1016,13 +1284,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.pod.volume.usage":
 					assert.False(t, validatedMetrics["k8s.pod.volume.usage"], "Found a duplicate in the metrics slice: k8s.pod.volume.usage")
 					validatedMetrics["k8s.pod.volume.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of used bytes in the pod volume.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of used bytes in the pod volume.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1030,11 +1298,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.volume.available":
 					assert.False(t, validatedMetrics["k8s.volume.available"], "Found a duplicate in the metrics slice: k8s.volume.available")
 					validatedMetrics["k8s.volume.available"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of available bytes in the volume.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of available bytes in the volume.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1042,11 +1310,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.volume.capacity":
 					assert.False(t, validatedMetrics["k8s.volume.capacity"], "Found a duplicate in the metrics slice: k8s.volume.capacity")
 					validatedMetrics["k8s.volume.capacity"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The total capacity in bytes of the volume.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The total capacity in bytes of the volume.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1054,11 +1322,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.volume.inodes":
 					assert.False(t, validatedMetrics["k8s.volume.inodes"], "Found a duplicate in the metrics slice: k8s.volume.inodes")
 					validatedMetrics["k8s.volume.inodes"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The total inodes in the filesystem.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The total inodes in the filesystem.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1066,11 +1334,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.volume.inodes.free":
 					assert.False(t, validatedMetrics["k8s.volume.inodes.free"], "Found a duplicate in the metrics slice: k8s.volume.inodes.free")
 					validatedMetrics["k8s.volume.inodes.free"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The free inodes in the filesystem.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The free inodes in the filesystem.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1078,11 +1346,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.volume.inodes.used":
 					assert.False(t, validatedMetrics["k8s.volume.inodes.used"], "Found a duplicate in the metrics slice: k8s.volume.inodes.used")
 					validatedMetrics["k8s.volume.inodes.used"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
