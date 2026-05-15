@@ -419,8 +419,7 @@ func EnableParserCollectionModifiedPathsLogging[R any](enabled bool) ParserColle
 }
 
 type parseCollectionContextInferenceOptions struct {
-	conditions     []string
-	defaultContext string
+	conditions []string
 }
 
 // ParserCollectionContextInferenceOption allows configuring the context inference and use
@@ -437,17 +436,6 @@ type ParserCollectionContextInferenceOption func(p *parseCollectionContextInfere
 func WithContextInferenceConditions(conditions []string) ParserCollectionContextInferenceOption {
 	return func(p *parseCollectionContextInferenceOptions) {
 		p.conditions = conditions
-	}
-}
-
-// WithContextInferenceDefaultContext sets the default context to be used if inference fails to determine a context.
-// This is useful for backward compatibility when migrating components that previously supported
-// only a single context (e.g., resource) to support multiple contexts via inference.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
-func WithContextInferenceDefaultContext(context string) ParserCollectionContextInferenceOption {
-	return func(p *parseCollectionContextInferenceOptions) {
-		p.defaultContext = context
 	}
 }
 
@@ -486,15 +474,8 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter, opti
 		return *new(R), fmt.Errorf("unable to infer a valid context (%+q) from statements %+q and conditions %+q: %w", pc.supportedContextNames(), statementsValues, conditionsValues, err)
 	}
 
-	// Track whether we're using the default context fallback (requires path prepending)
-	useDefaultContext := false
 	if inferredContext == "" {
-		if parseStatementsOpts.defaultContext == "" {
-			return *new(R), fmt.Errorf("unable to infer context from statements %+q and conditions %+q, path's first segment must be a valid context name %+q, and at least one context must be capable of parsing all statements", pc.supportedContextNames(), statementsValues, conditionsValues)
-		}
-
-		inferredContext = parseStatementsOpts.defaultContext
-		useDefaultContext = true
+		return *new(R), fmt.Errorf("unable to infer context from statements %+q and conditions %+q, path's first segment must be a valid context name %+q, and at least one context must be capable of parsing all statements", pc.supportedContextNames(), statementsValues, conditionsValues)
 	}
 
 	_, ok := pc.contextParsers[inferredContext]
@@ -502,7 +483,7 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter, opti
 		return *new(R), fmt.Errorf(`context "%s" inferred from the statements %+q and conditions %+q is not a supported context: %+q`, inferredContext, statementsValues, conditionsValues, pc.supportedContextNames())
 	}
 
-	return pc.ParseStatementsWithContext(inferredContext, statements, useDefaultContext)
+	return pc.ParseStatementsWithContext(inferredContext, statements, false)
 }
 
 // ParseStatementsWithContext parses the given statements into [R] using the configured

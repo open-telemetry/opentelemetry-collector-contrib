@@ -243,10 +243,15 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 			statementsGetter := ottl.NewStatementsGetter([]string{item.Statement})
 			var result any
 			if item.Context == "" {
-				// Parse using the inferred context. If that fails, retry with the "resource"
-				// context so older configs still work: an empty context used to imply "resource".
+				// Try context inference first. If that fails, fall back to "resource" for
+				// backward compatibility: unqualified paths (e.g. attributes["x"]) previously
+				// implied resource context. Emit a warning so users can migrate to explicit
+				// context-qualified paths (e.g. resource.attributes["x"]).
 				result, err = r.parserCollection.ParseStatements(statementsGetter)
 				if err != nil {
+					r.logger.Warn("Routing condition uses unqualified paths which default to 'resource' context for backward compatibility. "+
+						"Update the condition to use context-qualified paths (e.g. 'resource.attributes[\"x\"]') to silence this warning.",
+						zap.String("statement", item.Statement))
 					result, err = r.parserCollection.ParseStatementsWithContext(ottlresource.ContextName, statementsGetter, true)
 				}
 			} else {
