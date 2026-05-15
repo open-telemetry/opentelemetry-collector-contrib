@@ -91,9 +91,9 @@ For more details on how to configure these specific sections, refer to the [expo
 
 This exporter utilizes two independent layers of retries:
 
-**Google Cloud SDK Retries (Default)**: The underlying Google Cloud Go SDK automatically retries transient errors (like network blips) in the background. By default, the SDK handles its own exponential backoff and idempotency checks.
+**Google Cloud SDK Retries (always on)**: The underlying Google Cloud Go SDK automatically retries transient errors (like network blips) in the background. By default, the SDK handles its own exponential backoff and idempotency checks.
 
-**Exporter Helper Retries (retry_on_failure)**: This is the OpenTelemetry-level retry mechanism. It integrates with the sending queue to ensure data is not dropped during prolonged outages.
+**Exporter Helper Retries (optional via retry_on_failure)**: This is the OpenTelemetry-level retry mechanism. It integrates with the sending queue to ensure data is not dropped during prolonged outages.
 
 **Important Notes on Retries:**
 
