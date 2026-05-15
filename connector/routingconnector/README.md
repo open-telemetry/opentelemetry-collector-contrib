@@ -476,7 +476,14 @@ routing:
     - condition: attributes["region"] == "east"
        pipelines: [ logs/east ]
     - condition: attributes["region"] == "west"
-       pipelines: [ logs/west ]
+    - condition: resource.attributes["env"] == "prod"
+      pipelines: [ logs/prod ]
+    - condition: resource.attributes["env"] == "dev"
+      pipelines: [ logs/dev ]
+    - condition: resource.attributes["region"] == "east"
+      pipelines: [ logs/east ]
+    - condition: resource.attributes["region"] == "west"
+      pipelines: [ logs/west ]
 
 service:
   pipelines:
