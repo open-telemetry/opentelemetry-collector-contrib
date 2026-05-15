@@ -100,6 +100,7 @@ func TestParseStrptime(t *testing.T) {
 			for _, s := range tt.samples {
 				t.Run(s, func(t *testing.T) {
 					parser, err := NewStrptimeParser(tt.format)
+					require.NoError(t, err)
 					got, err := parser.Parse(s, mst)
 					if err != nil {
 						t.Logf("ParseError: %#v", err)

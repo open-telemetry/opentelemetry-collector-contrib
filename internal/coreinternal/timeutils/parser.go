@@ -40,7 +40,7 @@ func (f *StrptimeParser) parse(parseFunc strptime.ParseFunc) (time.Time, error) 
 	lastLayout := f.lastLayout.Load()
 	if lastLayout != nil {
 		if t, err := parseFunc(*lastLayout); err == nil {
-			return t, err
+			return t, nil
 		}
 	}
 	t, layout, err := strptime.Parse(f.format, parseFunc)

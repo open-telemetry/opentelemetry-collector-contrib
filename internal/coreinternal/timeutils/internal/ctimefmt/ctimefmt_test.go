@@ -75,7 +75,7 @@ func TestZulu(t *testing.T) {
 		t.Run(input, func(t *testing.T) {
 			dt, layout, err := Parse(format, func(native string) (time.Time, error) { return time.Parse(native, input) })
 			require.NoError(t, err)
-			assert.NotEqual(t, "", layout)
+			assert.NotEmpty(t, layout)
 			// We compare the unix nanoseconds because Go has a subtle parsing difference between "Z" and "+0000".
 			// The former returns a Time with the UTC timezone, the latter returns a Time with a 0000 time zone offset.
 			// (See Go's documentation for `time.Parse`.)
