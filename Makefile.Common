@@ -254,14 +254,10 @@ MDATAGEN_METADATA_YAML?= metadata.yaml
 mdatagen:
 	@$(MDATAGEN) $(MDATAGEN_METADATA_YAML)
 
-.PHONY: generate-mod
-generate-mod:
-	$(GOCMD) generate ./...
-
 .PHONY: generate
 generate:
 ifeq ($(CURDIR),$(SRC_ROOT))
-	$(MAKE) -j8 for-all-target TARGET=generate-mod
+	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
 	$(MAKE) gogci
 else
