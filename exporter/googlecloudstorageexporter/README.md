@@ -99,7 +99,7 @@ This exporter utilizes two independent layers of retries:
 
 If the Google Cloud SDK determines an error is permanent (e.g., unauthorized access), the exporter will immediately wrap it as a permanent error. This halts the `retry_on_failure` loop and drops the payload to prevent infinite queue blocking.
 
-Because file names are generated dynamically using a UUID and timestamp, a payload that fails at the SDK layer and is subsequently retried by the OpenTelemetry `retry_on_failure` mechanism will generate a brand new filename. This results in duplicate blobs being created in GCS.
+Because file names are generated dynamically using a UUID and timestamp, each retry attempt by the OpenTelemetry `retry_on_failure` mechanism generates a new filename. In rare cases (such as when GCS commits an object but returns a transient error before the client receives acknowledgment) this can result in duplicate blobs in GCS.
 
 ### Compression Example
 
