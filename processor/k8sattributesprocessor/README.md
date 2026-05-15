@@ -94,6 +94,7 @@ are then also available for the use within association rules. Available attribut
   - k8s.job.uid
   - k8s.job.name
   - k8s.node.name
+  - k8s.node.uid
   - k8s.cluster.uid
   - [service.namespace](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicenamespace-should-be-calculated)
   - [service.name](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/#how-servicename-should-be-calculated)
@@ -241,7 +242,7 @@ The config for associating the data passing through the processor (spans, metric
 This config represents a list of annotations/labels that are extracted from pods/namespaces/deployments/statefulsets/daemonsets/jobs/nodes and added to spans, metrics and logs.
 Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
 key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
-The "from" field has only three possible values "pod", "namespace", "deployment", "statefulset", "daemonset", "job" and "node" and defaults to "pod" if none is specified.
+The "from" field has the following possible values: "pod", "namespace", "deployment", "statefulset", "daemonset", "job" and "node" and defaults to "pod" if none is specified.
 
 By default, extracting metadata from `Deployments`, `StatefulSets`, `DaemonSets` and `Jobs` is disabled. Enabling extraction of these metadata comes with an extra memory consumption cost.
 
@@ -689,13 +690,19 @@ k8s_attributes:
   # Default: "serviceAccount"
   auth_type: "serviceAccount"
   
-  # Path to kubeconfig file (only used when auth_type is "kubeConfig")
-  # Default: ""
-  kube_config_path: "~/.kube/config"
-  
   # Kubernetes API server context (only used when auth_type is "kubeConfig")
   # Default: ""
   context: ""
+  
+  # Maximum number of queries per second to the Kubernetes API
+  # Uses client-go's default if unset. Increase if you see client-side throttling warnings.
+  # Default: 5
+  kube_api_qps: 5
+  
+  # Maximum burst of requests to the Kubernetes API
+  # Uses client-go's default if unset. Increase if you see client-side throttling warnings.
+  # Default: 10
+  kube_api_burst: 10
   
   # Passthrough mode - only annotates resources with pod IP without extracting metadata
   # Useful for agents that don't need K8s API access
@@ -881,8 +888,9 @@ k8s_attributes:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `auth_type` | string | `serviceAccount` | Authentication method for K8s API: `none`, `serviceAccount`, or `kubeConfig` |
-| `kube_config_path` | string | `""` | Path to kubeconfig file (only when `auth_type: kubeConfig`) |
 | `context` | string | `""` | K8s context to use (only when `auth_type: kubeConfig`) |
+| `kube_api_qps` | float32 | `5` | Max queries per second to K8s API. Increase if you see client-side throttling warnings |
+| `kube_api_burst` | int | `10` | Max burst of requests to K8s API. Increase if you see client-side throttling warnings |
 | `passthrough` | bool | `false` | Only add pod IP without extracting metadata (no K8s API calls) |
 | `wait_for_metadata` | bool | `false` | Block collector startup until metadata is synced |
 | `wait_for_metadata_timeout` | duration | `10s` | Max wait time for metadata sync on startup |
@@ -1056,32 +1064,6 @@ The processor is **stateless** and requires no special shutdown procedures:
 4. Collector shuts down cleanly
 
 **No persistent storage required** - all metadata is refreshed from K8s API on startup.
-
-### Performance Benchmarks
-
-Based on testing with 1000 pods using the default configuration:
-
-```yaml
-processors:
-  k8s_attributes:
-    extract:
-      metadata:
-        - k8s.namespace.name
-        - k8s.pod.name
-        - k8s.pod.uid
-        - k8s.pod.start_time
-        - k8s.deployment.name
-        - k8s.node.name
-```
-
-| Signal Type | Throughput | Latency | Memory | CPU |
-|-------------|------------|---------|--------|-----|
-| Traces | 50k spans/sec | <1ms added | 800 MB | 400m |
-| Metrics | 100k metrics/sec | <0.5ms added | 750 MB | 350m |
-| Logs | 75k logs/sec | <0.7ms added | 850 MB | 380m |
-| Profiles | 10k profiles/sec | <2ms added | 700 MB | 300m |
-
-*Results may vary based on metadata extraction configuration and cluster size.*
 
 ## Timestamp Format
 

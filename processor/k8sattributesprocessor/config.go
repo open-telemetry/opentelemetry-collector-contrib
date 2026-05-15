@@ -223,7 +223,7 @@ type FieldExtractConfig struct {
 	KeyRegex string `mapstructure:"key_regex"`
 
 	// From represents the source of the labels/annotations.
-	// Allowed values are "pod", "namespace", and "node". The default is pod.
+	// Allowed values are "pod", "namespace", "node", "deployment", "statefulset", "daemonset", and "job". The default is pod.
 	From string `mapstructure:"from"`
 }
 
