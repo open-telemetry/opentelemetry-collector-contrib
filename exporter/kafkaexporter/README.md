@@ -51,7 +51,9 @@ The following settings can be optionally configured:
 - `record_headers` (default = {}): Specifies a map of key/value pairs to set as static headers on every outgoing Kafka record.
 - `partition_traces_by_id` (default = false): configures the exporter to include the trace ID as the message key in trace messages sent to kafka. *Please note:* this setting does not have any effect on Jaeger encoding exporters since Jaeger exporters include trace ID as the message key by default.
 - `partition_metrics_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
+- `partition_metrics_by_resource_attribute_keys` (default = []): when non-empty, restricts the resource-attribute hash to only the listed keys. Requires `partition_metrics_by_resource_attributes: true`. Keys absent from the resource are treated as not present. See [Partitioning by a subset of resource attributes](#partitioning-by-a-subset-of-resource-attributes).
 - `partition_logs_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in log messages sent to kafka.
+- `partition_logs_by_resource_attribute_keys` (default = []): when non-empty, restricts the resource-attribute hash to only the listed keys. Requires `partition_logs_by_resource_attributes: true`. Keys absent from the resource are treated as not present. See [Partitioning by a subset of resource attributes](#partitioning-by-a-subset-of-resource-attributes).
 - `partition_logs_by_trace_id` (default = false): configures the exporter to partition log messages by trace ID, if the log record has one associated. Note: `partition_logs_by_resource_attributes` and `partition_logs_by_trace_id` are mutually exclusive, and enabling both will lead to an error.
 - `record_partitioner`: Configures the Kafka record partitioning strategy. **At most one** option may be set. If multiple partitioners are configured, an error will be returned. If none is configured, the default is `sticky_key` with a Sarama-compatible hasher (preserving previous behavior).
   - `sticky_key`: Uses a sticky-key partitioner.
@@ -172,6 +174,41 @@ The destination topic can be defined in a few different ways and takes priority 
 The exporter supports multiple strategies to control how records are distributed across kafka partitions within a topic. 
 
 Available strategies for partitioning are `sticky_key`, `sticky`, `round_robin`, `least_backup` and `extension`
+
+### Partitioning by a subset of resource attributes
+
+By default, `partition_logs_by_resource_attributes: true` (and the metrics equivalent)
+hashes the *full* sorted set of resource attributes for the partition key. Two
+resources that differ in any attribute — including volatile ones like
+`k8s.pod.name` or `service.instance.id` — therefore land on different
+partitions even if they share a tenant or customer identifier.
+
+`partition_logs_by_resource_attribute_keys` /
+`partition_metrics_by_resource_attribute_keys` restrict the hash to a
+configured list of attribute keys, giving stable affinity by a chosen subset.
+Keys absent from the resource are treated as not present.
+
+```yaml
+exporters:
+  kafka:
+    brokers:
+      - localhost:9092
+    partition_logs_by_resource_attributes: true
+    partition_logs_by_resource_attribute_keys: [customAttr]
+    partition_metrics_by_resource_attributes: true
+    partition_metrics_by_resource_attribute_keys: [customAttr]
+```
+
+With this configuration, every record sharing the same `customAttr` value
+hashes to the same partition regardless of `service.name`, `host.name`, or
+any other resource attribute. This preserves per-key ordering across
+services and simplifies replay-by-key flows, at the cost of partition
+balance when one key's volume dominates the topic.
+
+The listed keys are required to be a non-empty list and the corresponding
+`partition_*_by_resource_attributes` boolean must be `true`. Validation
+fails otherwise. Leaving the list empty preserves the previous full-map
+hashing behavior.
 
 ### Using custom partitioner
 

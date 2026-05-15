@@ -381,3 +381,58 @@ func TestLoadConfigFailed(t *testing.T) {
 		})
 	}
 }
+
+func TestConfig_Validate_PartitionSubsetKeys(t *testing.T) {
+	tests := []struct {
+		name    string
+		mutate  func(*Config)
+		wantErr error
+	}{
+		{
+			name: "logs keys without bool",
+			mutate: func(c *Config) {
+				c.PartitionLogsByResourceAttributeKeys = []string{"customAttr"}
+			},
+			wantErr: errLogsPartitionKeysRequireBool,
+		},
+		{
+			name: "metrics keys without bool",
+			mutate: func(c *Config) {
+				c.PartitionMetricsByResourceAttributeKeys = []string{"customAttr"}
+			},
+			wantErr: errMetricsPartitionKeysRequireBool,
+		},
+		{
+			name: "logs keys with bool ok",
+			mutate: func(c *Config) {
+				c.PartitionLogsByResourceAttributes = true
+				c.PartitionLogsByResourceAttributeKeys = []string{"customAttr"}
+			},
+		},
+		{
+			name: "metrics keys with bool ok",
+			mutate: func(c *Config) {
+				c.PartitionMetricsByResourceAttributes = true
+				c.PartitionMetricsByResourceAttributeKeys = []string{"customAttr"}
+			},
+		},
+		{
+			name:   "empty keys never error",
+			mutate: func(*Config) {},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			tt.mutate(cfg)
+
+			err := cfg.Validate()
+			if tt.wantErr != nil {
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

@@ -31,6 +31,15 @@ var errLogsPartitionExclusive = errors.New(
 )
 
 var (
+	errLogsPartitionKeysRequireBool = errors.New(
+		"partition_logs_by_resource_attribute_keys requires partition_logs_by_resource_attributes to be true",
+	)
+	errMetricsPartitionKeysRequireBool = errors.New(
+		"partition_metrics_by_resource_attribute_keys requires partition_metrics_by_resource_attributes to be true",
+	)
+)
+
+var (
 	errTopicMetadataKeyNotIncluded        = errors.New("topic_from_metadata_key must be present in sending_queue::batch::partition::metadata_keys if batching is enabled")
 	errBatchPartitionMetadataKeysRequired = errors.New("sending_queue::batch::partition::metadata_keys must be configured when include_metadata_keys is set and batching is enabled")
 	errIncludeMetadataKeysNotPartitioned  = errors.New("sending_queue::batch::partition::metadata_keys must include all include_metadata_keys values")
@@ -160,10 +169,24 @@ type Config struct {
 	// identifying attributes.
 	PartitionMetricsByResourceAttributes bool `mapstructure:"partition_metrics_by_resource_attributes"`
 
+	// PartitionMetricsByResourceAttributeKeys, if non-empty, restricts the resource-attribute
+	// hash to only the listed keys. Requires PartitionMetricsByResourceAttributes=true. Missing
+	// keys in a resource are treated as absent (the subset map is built from whatever keys are
+	// present). The behavior is intended for affinity scenarios where messages should be routed
+	// to the same partition based on a subset of identifying attributes — e.g. a tenant id or
+	// a custom attribute — without coupling routing to volatile attributes like pod or instance
+	// names.
+	PartitionMetricsByResourceAttributeKeys []string `mapstructure:"partition_metrics_by_resource_attribute_keys"`
+
 	// PartitionLogsByResourceAttributes controls the partitioning of logs messages by resource.
 	// If this is true, then the message key will be set to a hash of the resource's identifying
 	// attributes.
 	PartitionLogsByResourceAttributes bool `mapstructure:"partition_logs_by_resource_attributes"`
+
+	// PartitionLogsByResourceAttributeKeys, if non-empty, restricts the resource-attribute hash
+	// to only the listed keys. Requires PartitionLogsByResourceAttributes=true. See
+	// PartitionMetricsByResourceAttributeKeys for behavior and use-case notes.
+	PartitionLogsByResourceAttributeKeys []string `mapstructure:"partition_logs_by_resource_attribute_keys"`
 
 	// PartitionLogsByTraceID controls partitioning of log messages by trace ID only.
 	// When enabled, the exporter splits incoming logs per TraceID (using SplitLogs)
@@ -183,6 +206,12 @@ type Config struct {
 func (c *Config) Validate() error {
 	if c.PartitionLogsByResourceAttributes && c.PartitionLogsByTraceID {
 		return errLogsPartitionExclusive
+	}
+	if len(c.PartitionLogsByResourceAttributeKeys) > 0 && !c.PartitionLogsByResourceAttributes {
+		return errLogsPartitionKeysRequireBool
+	}
+	if len(c.PartitionMetricsByResourceAttributeKeys) > 0 && !c.PartitionMetricsByResourceAttributes {
+		return errMetricsPartitionKeysRequireBool
 	}
 	if err := c.RecordPartitioner.Validate(); err != nil {
 		return fmt.Errorf("record_partitioner: %w", err)
