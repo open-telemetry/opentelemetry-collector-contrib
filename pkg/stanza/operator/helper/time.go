@@ -48,8 +48,9 @@ type TimeParser struct {
 	Location          string            `mapstructure:"location"`
 	TimeZoneLocations map[string]string `mapstructure:"time_zone_locations"` // optional: abbreviation → IANA location name
 
-	location    *time.Location
-	locationMap map[string]*time.Location // compiled from TimeZoneLocations at Validate() time
+	strptimeParser *timeutils.StrptimeParser
+	location       *time.Location
+	locationMap    map[string]*time.Location // compiled from TimeZoneLocations at Validate() time
 }
 
 // Unmarshal starting from default settings
@@ -88,9 +89,11 @@ func (t *TimeParser) Validate() error {
 			return fmt.Errorf("invalid gotime layout: %w", err)
 		}
 	case StrptimeKey:
-		if err := timeutils.ValidateStrptime(t.Layout); err != nil {
+		parser, err := timeutils.NewStrptimeParser(t.Layout)
+		if err != nil {
 			return fmt.Errorf("invalid strptime layout: %w", err)
 		}
+		t.strptimeParser = parser
 		timezoneDirective = "%Z"
 	case EpochKey:
 		switch t.Layout {
@@ -201,11 +204,11 @@ func (t *TimeParser) Parse(entry *entry.Entry) error {
 		// timeutils.ParseGotime calls timeutils.SetTimestampYear before returning the timeValue
 		entry.Timestamp = timeValue
 	case StrptimeKey:
-		timeValue, err := timeutils.ParseStrptime(t.Layout, value, t.resolveLocation(value))
+		timeValue, err := t.strptimeParser.Parse(value, t.resolveLocation(value))
 		if err != nil {
 			return err
 		}
-		// timeutils.ParseStrptime calls timeutils.SetTimestampYear before returning the timeValue
+		// Parse calls timeutils.SetTimestampYear before returning the timeValue
 		entry.Timestamp = timeValue
 	case EpochKey:
 		timeValue, err := t.parseEpochTime(value)

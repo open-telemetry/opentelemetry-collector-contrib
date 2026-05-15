@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/elastic/lunes"
@@ -21,16 +22,42 @@ func FormatStrptime(format string, t time.Time) (string, error) {
 	return strptime.Format(format, t)
 }
 
-func ParseStrptime(layout string, value any, location *time.Location) (time.Time, error) {
-	return strptime.Parse(layout, func(format string) (time.Time, error) {
+type StrptimeParser struct {
+	format     string
+	lastLayout atomic.Pointer[string]
+}
+
+func NewStrptimeParser(format string) (*StrptimeParser, error) {
+	if err := ValidateStrptime(format); err != nil {
+		return nil, err
+	}
+	return &StrptimeParser{
+		format: format,
+	}, nil
+}
+
+func (f *StrptimeParser) parse(parseFunc strptime.ParseFunc) (time.Time, error) {
+	lastLayout := f.lastLayout.Load()
+	if lastLayout != nil {
+		if t, err := parseFunc(*lastLayout); err == nil {
+			return t, err
+		}
+	}
+	t, layout, err := strptime.Parse(f.format, parseFunc)
+	if err == nil {
+		f.lastLayout.Store(&layout)
+	}
+	return t, err
+}
+
+func (f *StrptimeParser) Parse(value any, location *time.Location) (time.Time, error) {
+	return f.parse(func(format string) (time.Time, error) {
 		return ParseGotime(format, value, location)
 	})
 }
 
-// ParseLocalizedStrptime is like ParseLocalizedGotime, but instead of using the native Go time layout,
-// it uses the ctime-like format.
-func ParseLocalizedStrptime(layout string, value any, location *time.Location, language string) (time.Time, error) {
-	return strptime.Parse(layout, func(format string) (time.Time, error) {
+func (f *StrptimeParser) ParseLocalized(value any, location *time.Location, language string) (time.Time, error) {
+	return f.parse(func(format string) (time.Time, error) {
 		return ParseLocalizedGotime(format, value, location, language)
 	})
 }

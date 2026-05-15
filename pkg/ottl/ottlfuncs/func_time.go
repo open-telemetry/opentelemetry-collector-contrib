@@ -73,6 +73,11 @@ func Time[K any](inputTime ottl.StringGetter[K], format string, location, locale
 		inputTimeLocale = &l
 	}
 
+	parser, err := timeutils.NewStrptimeParser(format)
+	if err != nil {
+		return nil, err
+	}
+
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := inputTime.Get(ctx, tCtx)
 		if err != nil {
@@ -83,9 +88,9 @@ func Time[K any](inputTime ottl.StringGetter[K], format string, location, locale
 		}
 		var timestamp time.Time
 		if inputTimeLocale != nil {
-			timestamp, err = timeutils.ParseLocalizedStrptime(format, t, loc, *inputTimeLocale)
+			timestamp, err = parser.ParseLocalized(t, loc, *inputTimeLocale)
 		} else {
-			timestamp, err = timeutils.ParseStrptime(format, t, loc)
+			timestamp, err = parser.Parse(t, loc)
 		}
 		if err != nil {
 			var timeErr *time.ParseError

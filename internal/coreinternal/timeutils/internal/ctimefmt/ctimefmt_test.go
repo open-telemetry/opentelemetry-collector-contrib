@@ -27,6 +27,8 @@ var (
 	dt1     = time.Date(2019, 1, 2, 15, 4, 5, 666666000, time.UTC)
 	dt2     = time.Date(2019, 1, 2, 15, 4, 5, 666000000, time.UTC)
 	dt3     = time.Date(2025, 7, 7, 1, 7, 27, 123456789, time.UTC)
+	layout1 = "2006-1-2 15:4:5.999999"
+	layout2 = "2006-1-2 3:4:5.999 pm, Mon"
 )
 
 func TestFormat(t *testing.T) {
@@ -44,13 +46,15 @@ func TestFormat(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	dt, err := Parse(format1, func(native string) (time.Time, error) { return time.Parse(native, value1) })
+	dt, layout, err := Parse(format1, func(native string) (time.Time, error) { return time.Parse(native, value1) })
 	require.NoError(t, err)
-	assert.Equal(t, dt, dt1, "Given: %v, expected: %v", dt, dt1)
+	assert.Equal(t, dt1, dt, "Given: %v, expected: %v", dt, dt1)
+	assert.Equal(t, layout1, layout)
 
-	dt, err = Parse(format2, func(native string) (time.Time, error) { return time.Parse(native, value2) })
+	dt, layout, err = Parse(format2, func(native string) (time.Time, error) { return time.Parse(native, value2) })
 	require.NoError(t, err)
-	assert.Equal(t, dt, dt2, "Given: %v, expected: %v", dt, dt2)
+	assert.Equal(t, dt2, dt, "Given: %v, expected: %v", dt, dt2)
+	assert.Equal(t, layout2, layout)
 }
 
 func TestZulu(t *testing.T) {
@@ -69,8 +73,9 @@ func TestZulu(t *testing.T) {
 		"2019-01-02T15:04:05.666666 +00",
 	} {
 		t.Run(input, func(t *testing.T) {
-			dt, err := Parse(format, func(native string) (time.Time, error) { return time.Parse(native, input) })
+			dt, layout, err := Parse(format, func(native string) (time.Time, error) { return time.Parse(native, input) })
 			require.NoError(t, err)
+			assert.NotEqual(t, "", layout)
 			// We compare the unix nanoseconds because Go has a subtle parsing difference between "Z" and "+0000".
 			// The former returns a Time with the UTC timezone, the latter returns a Time with a 0000 time zone offset.
 			// (See Go's documentation for `time.Parse`.)

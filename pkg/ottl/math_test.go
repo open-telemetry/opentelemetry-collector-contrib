@@ -67,8 +67,12 @@ func testTime[K any](time, format string) (ExprFunc[K], error) {
 	if err != nil {
 		return nil, err
 	}
+	parser, err := timeutils.NewStrptimeParser(format)
+	if err != nil {
+		return nil, err
+	}
 	return func(_ context.Context, _ K) (any, error) {
-		timestamp, err := timeutils.ParseStrptime(format, time, loc)
+		timestamp, err := parser.Parse(time, loc)
 		return timestamp, err
 	}, nil
 }

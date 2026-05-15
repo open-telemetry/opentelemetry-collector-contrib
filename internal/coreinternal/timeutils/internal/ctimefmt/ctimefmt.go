@@ -117,7 +117,8 @@ func Format(format string, t time.Time) (string, error) {
 type ParseFunc func(layout string) (time.Time, error)
 
 // Parse parses a ctime-like formatted string (e.g. "%Y-%m-%d ...")
-// and returns the time value it represents.
+// and returns the time value it represents and the Go layout string
+// that successfully parsed the input.
 //
 // It differs from Format in that it will attempt to parse the string
 // multiple times in order to handle format specifiers that can have
@@ -130,14 +131,14 @@ type ParseFunc func(layout string) (time.Time, error)
 // Refer to strptime(3) and Format() function documentation for possible directives.
 //
 // Note: The returned ParseError will indicate the ctime directive that failed to parse.
-func Parse(format string, parse ParseFunc) (time.Time, error) {
+func Parse(format string, parse ParseFunc) (time.Time, string, error) {
 	indexes := ctimeRegexp.FindAllStringIndex(format, -1)
-	t, err := iterativeParse("", format, 0, indexes, parse)
+	t, layout, err := iterativeParse("", format, 0, indexes, parse)
 	var timeErr *time.ParseError
 	if errors.As(err, &timeErr) {
 		timeErr.Layout = format
 	}
-	return t, err
+	return t, layout, err
 }
 
 // Alternative formats that allow more flexible ctime-compatible parsing.
@@ -162,16 +163,18 @@ var ctimeParseSubstitutes = map[string][]string{
 	"%c": {"Mon", " ", "Jan", " ", "2", " ", "15", ":", "4", ":", "5", " ", "2006"},
 }
 
-func iterativeParse(partialLayout, format string, startIndex int, indexes [][]int, parse ParseFunc) (out time.Time, err error) {
+func iterativeParse(partialLayout, format string, startIndex int, indexes [][]int, parse ParseFunc) (out time.Time, layout string, err error) {
 	if len(indexes) == 0 {
-		return parse(partialLayout + format[startIndex:])
+		layout = partialLayout + format[startIndex:]
+		out, err = parse(layout)
+		return out, layout, err
 	}
 	partialLayout += format[startIndex:indexes[0][0]]
 	directive := format[indexes[0][0]:indexes[0][1]]
 	// tryElements will attempt to match the time with elements.
 	// It returns the index of the failing element and the remaining unparsed input, or -1 if none of the elements were responsible for a failure.
 	tryElements := func(elements ...string) (int, string) {
-		out, err = iterativeParse(partialLayout+strings.Join(elements, ""), format, indexes[0][1], indexes[1:], parse)
+		out, layout, err = iterativeParse(partialLayout+strings.Join(elements, ""), format, indexes[0][1], indexes[1:], parse)
 		var timeErr *time.ParseError
 		if errors.As(err, &timeErr) {
 			if i := slices.Index(elements, timeErr.LayoutElem); i >= 0 {
@@ -216,26 +219,26 @@ func iterativeParse(partialLayout, format string, startIndex int, indexes [][]in
 	}
 	if directive == "%z" {
 		if i, _ := try("Z0700"); i < 0 {
-			return out, err
+			return out, layout, err
 		}
 		if i, _ := try("Z07:00"); i < 0 {
-			return out, err
+			return out, layout, err
 		}
 		if i, _ := try("Z07"); i < 0 {
-			return out, err
+			return out, layout, err
 		}
-		return out, err
+		return out, layout, err
 	}
 	if substs, ok := ctimeParseSubstitutes[directive]; ok {
 		if i, _ := try(substs...); i < 0 {
-			return out, err
+			return out, layout, err
 		}
 	}
 	if subst, ok := ctimeSubstitutes[directive]; ok {
 		try("", subst)
-		return out, err
+		return out, layout, err
 	}
-	return time.Time{}, fmt.Errorf("unsupported ctimefmt.FlexibleParse() directive: %s", directive)
+	return time.Time{}, "", fmt.Errorf("unsupported ctimefmt.FlexibleParse() directive: %s", directive)
 }
 
 // toNative converts ctime-like format string to Go native layout
