@@ -94,6 +94,12 @@ func parseELFMessage(input string) (pcommon.Map, error) {
 		if strings.HasPrefix(line, "#") {
 			key, value, err := parseELFDirective(line)
 			if err != nil {
+				// A malformed #Fields directive would silently poison subsequent data
+				// lines, so treat it as a hard error.
+				if strings.HasPrefix(strings.TrimSpace(line[1:]), "Fields") {
+					return pcommon.Map{}, fmt.Errorf("invalid ELF: malformed #Fields directive %q: %w", line, err)
+				}
+				// Other unrecognised directives (e.g. bare #Remark) are skipped.
 				continue
 			}
 			switch strings.ToLower(key) {
@@ -130,7 +136,7 @@ func parseELFMessage(input string) (pcommon.Map, error) {
 		return pcommon.Map{}, errors.New("invalid ELF: missing #Version directive")
 	}
 
-	return buildELFResult(meta, lastFields, entries)
+	return buildELFResult(meta, lastFields, entries), nil
 }
 
 // parseELFDirective parses a directive line of the form "#Key: value" and returns
@@ -177,7 +183,7 @@ func parseELFDataLine(line string) []string {
 	return values
 }
 
-func buildELFResult(meta elfMeta, lastFields []string, entries []elfDataEntry) (pcommon.Map, error) {
+func buildELFResult(meta elfMeta, lastFields []string, entries []elfDataEntry) pcommon.Map {
 	result := pcommon.NewMap()
 
 	result.PutStr("version", meta.version)
@@ -214,5 +220,5 @@ func buildELFResult(meta elfMeta, lastFields []string, entries []elfDataEntry) (
 		}
 	}
 
-	return result, nil
+	return result
 }
