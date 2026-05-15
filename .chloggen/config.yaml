@@ -19,7 +19,7 @@ components:
     - connector/datadog
     - connector/exceptions
     - connector/failover
-    - connector/grafanacloud
+    - connector/grafana_cloud
     - connector/metrics_as_logs
     - connector/otlp_json
     - connector/round_robin

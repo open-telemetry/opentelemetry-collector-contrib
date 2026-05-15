@@ -7,7 +7,7 @@ components:
         - datadog
         - exceptions
         - failover
-        - grafanacloud
+        - grafana_cloud
         - otlp_json
         - round_robin
         - routing
