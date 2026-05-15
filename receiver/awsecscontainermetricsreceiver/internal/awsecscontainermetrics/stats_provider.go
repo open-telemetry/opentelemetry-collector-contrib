@@ -6,6 +6,7 @@ package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetr
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 
 	"go.uber.org/zap"
 
@@ -48,4 +49,60 @@ func (p *StatsProvider) GetStats() (map[string]*ContainerStats, ecsutil.TaskMeta
 	}
 
 	return stats, metadata, nil
+}
+
+// GetInstanceStats fetches stats and metadata for all tasks on the instance.
+// This uses the /tasks/stats and /tasks endpoints available to Managed Daemon Services.
+func (p *StatsProvider) GetInstanceStats() ([]TaskStatsEntry, error) {
+	metadataResp, err := p.rc.GetResponse(InstanceMetadataPath)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read data from instance metadata endpoint: %w", err)
+	}
+
+	var allTaskMetadata []ecsutil.TaskMetadata
+	err = json.Unmarshal(metadataResp, &allTaskMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("cannot unmarshal instance task metadata: %w", err)
+	}
+
+	statsResp, err := p.rc.GetResponse(InstanceStatsPath)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read data from instance stats endpoint: %w", err)
+	}
+
+	var rawStats []map[string]*ContainerStats
+	err = json.Unmarshal(statsResp, &rawStats)
+	if err != nil {
+		return nil, fmt.Errorf("cannot unmarshal instance stats: %w", err)
+	}
+
+	// Flatten the array of single-entry maps into one map keyed by container ID
+	allStats := make(map[string]*ContainerStats)
+	for _, entry := range rawStats {
+		maps.Copy(allStats, entry)
+	}
+
+	// Build per-task results pairing metadata with its container stats
+	results := make([]TaskStatsEntry, 0, len(allTaskMetadata))
+	for i := range allTaskMetadata {
+		taskStats := make(map[string]*ContainerStats)
+		for j := range allTaskMetadata[i].Containers {
+			id := allTaskMetadata[i].Containers[j].DockerID
+			if s, ok := allStats[id]; ok {
+				taskStats[id] = s
+			}
+		}
+		results = append(results, TaskStatsEntry{
+			Stats:    taskStats,
+			Metadata: allTaskMetadata[i],
+		})
+	}
+
+	return results, nil
+}
+
+// TaskStatsEntry pairs a task's metadata with the container stats for that task.
+type TaskStatsEntry struct {
+	Stats    map[string]*ContainerStats
+	Metadata ecsutil.TaskMetadata
 }

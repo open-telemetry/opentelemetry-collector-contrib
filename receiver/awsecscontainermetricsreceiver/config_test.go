@@ -37,6 +37,13 @@ func TestLoadConfig(t *testing.T) {
 				CollectionInterval: 10 * time.Second,
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "instance_level"),
+			expected: &Config{
+				CollectionInterval:   defaultCollectionInterval,
+				InstanceLevelMetrics: true,
+			},
+		},
 	}
 
 	for _, tt := range tests {

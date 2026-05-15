@@ -34,8 +34,13 @@ func (f testRestClient) GetResponse(path string) ([]byte, error) {
 		return []byte("wrong-json-body"), nil
 	}
 
-	if path == TaskStatsPath {
+	switch path {
+	case TaskStatsPath:
 		return os.ReadFile("../../testdata/task_stats.json")
+	case InstanceMetadataPath:
+		return os.ReadFile("../../testdata/instance_tasks_metadata.json")
+	case InstanceStatsPath:
+		return os.ReadFile("../../testdata/instance_tasks_stats.json")
 	}
 
 	return nil, nil
@@ -71,6 +76,45 @@ func TestGetStats(t *testing.T) {
 				require.NoError(t, err)
 				require.NotEmpty(t, stats)
 				require.Equal(t, "test200", metadata.Cluster)
+			} else {
+				assert.Equal(t, tt.wantError, err.Error())
+			}
+		})
+	}
+}
+
+func TestGetInstanceStats(t *testing.T) {
+	tests := []struct {
+		name      string
+		client    ecsutil.RestClient
+		wantError string
+	}{
+		{
+			name:      "success",
+			client:    &testRestClient{T: t},
+			wantError: "",
+		},
+		{
+			name:      "failure",
+			client:    &testRestClient{T: t, fail: true},
+			wantError: "cannot read data from instance metadata endpoint: failed",
+		},
+		{
+			name:      "invalid-json",
+			client:    &testRestClient{T: t, invalidJSON: true},
+			wantError: "cannot unmarshal instance task metadata: invalid character 'w' looking for beginning of value",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider := NewStatsProvider(tt.client, zap.NewNop())
+			entries, err := provider.GetInstanceStats()
+			if tt.wantError == "" {
+				require.NoError(t, err)
+				require.Len(t, entries, 2)
+				assert.Equal(t, "arn:aws:ecs:eu-west-1:111222333444:cluster/mi-cluster", entries[0].Metadata.Cluster)
+				assert.NotEmpty(t, entries[0].Stats)
+				assert.NotEmpty(t, entries[1].Stats)
 			} else {
 				assert.Equal(t, tt.wantError, err.Error())
 			}

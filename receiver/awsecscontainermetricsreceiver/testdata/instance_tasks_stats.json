@@ -1,0 +1,122 @@
+[
+  {
+    "081d2c75d3a2419d95ab6f8979fb61fb-1547245599": {
+      "read": "2026-05-15T09:57:51.915486061Z",
+      "preread": "2026-05-15T09:57:41.915132341Z",
+      "blkio_stats": {
+        "io_service_bytes_recursive": [
+          {"major": 259, "minor": 0, "op": "read", "value": 0},
+          {"major": 259, "minor": 0, "op": "write", "value": 520192}
+        ]
+      },
+      "cpu_stats": {
+        "cpu_usage": {
+          "total_usage": 9097974000,
+          "usage_in_kernelmode": 3899124000,
+          "usage_in_usermode": 5198849000
+        },
+        "system_cpu_usage": 114725520000000,
+        "online_cpus": 2
+      },
+      "precpu_stats": {
+        "cpu_usage": {
+          "total_usage": 9093768000,
+          "usage_in_kernelmode": 3897322000,
+          "usage_in_usermode": 5196446000
+        },
+        "system_cpu_usage": 114705630000000,
+        "online_cpus": 2
+      },
+      "memory_stats": {
+        "usage": 66203648,
+        "stats": {
+          "active_anon": 16384,
+          "active_file": 479232,
+          "anon": 20643840,
+          "file": 43503616,
+          "pgfault": 47559,
+          "pgmajfault": 87
+        },
+        "limit": 18446744073709551615
+      },
+      "name": "monitor-agent",
+      "id": "081d2c75d3a2419d95ab6f8979fb61fb-1547245599",
+      "networks": {
+        "eth0": {
+          "rx_bytes": 5035147,
+          "rx_packets": 31058,
+          "rx_errors": 0,
+          "rx_dropped": 0,
+          "tx_bytes": 7564495,
+          "tx_packets": 34489,
+          "tx_errors": 0,
+          "tx_dropped": 0
+        }
+      },
+      "network_rate_stats": {
+        "rx_bytes_per_sec": 2300.018641440596,
+        "tx_bytes_per_sec": 1437.9491354252325
+      }
+    }
+  },
+  {
+    "45f36d5449924905a16c3d03c1fba67a-1950351559": {
+      "read": "2026-05-15T09:57:57.943163566Z",
+      "preread": "2026-05-15T09:57:47.943591104Z",
+      "blkio_stats": {
+        "io_service_bytes_recursive": [
+          {"major": 259, "minor": 1, "op": "read", "value": 6328320},
+          {"major": 259, "minor": 0, "op": "write", "value": 593920}
+        ]
+      },
+      "cpu_stats": {
+        "cpu_usage": {
+          "total_usage": 18222054000,
+          "usage_in_kernelmode": 8914741000,
+          "usage_in_usermode": 9307313000
+        },
+        "system_cpu_usage": 114737540000000,
+        "online_cpus": 2
+      },
+      "precpu_stats": {
+        "cpu_usage": {
+          "total_usage": 18219339000,
+          "usage_in_kernelmode": 8914741000,
+          "usage_in_usermode": 9304598000
+        },
+        "system_cpu_usage": 114717640000000,
+        "online_cpus": 2
+      },
+      "memory_stats": {
+        "usage": 46559232,
+        "stats": {
+          "active_anon": 16384,
+          "active_file": 12488704,
+          "anon": 20848640,
+          "file": 23621632,
+          "pgfault": 108315,
+          "pgmajfault": 46
+        },
+        "limit": 18446744073709551615
+      },
+      "name": "nginx-proxy",
+      "id": "45f36d5449924905a16c3d03c1fba67a-1950351559",
+      "networks": {
+        "eth1": {
+          "rx_bytes": 1085576,
+          "rx_packets": 9127,
+          "rx_errors": 0,
+          "rx_dropped": 0,
+          "tx_bytes": 1355438,
+          "tx_packets": 10669,
+          "tx_errors": 0,
+          "tx_dropped": 0
+        }
+      },
+      "network_rate_stats": {
+        "rx_bytes_per_sec": 5.20022233966631,
+        "tx_bytes_per_sec": 6.600282200345702
+      }
+    }
+  }
+]

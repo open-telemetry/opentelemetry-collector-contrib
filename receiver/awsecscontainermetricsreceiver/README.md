@@ -35,6 +35,20 @@ This receiver collects task metadata and container stats at a fixed interval and
 
 default: `20s`
 
+#### instance_level_metrics:
+
+When enabled, the receiver collects metrics for all tasks running on the instance by querying the `/tasks` and `/tasks/stats` endpoints. This requires the receiver to run as a [Managed Daemon Service](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-managed-instances-daemon.html) on ECS Managed Instances, which provides access to instance-wide task metadata and stats.
+
+default: `false`
+
+Example:
+
+```yaml
+receivers:
+  awsecscontainermetrics:
+    collection_interval: 20s
+    instance_level_metrics: true
+```
 
 ## Enabling the AWS ECS Container Metrics Receiver
 

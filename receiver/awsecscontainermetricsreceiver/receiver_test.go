@@ -23,8 +23,13 @@ func (f fakeRestClient) GetResponse(path string) ([]byte, error) {
 	if body, err := ecsutiltest.GetTestdataResponseByPath(f.T, path); body != nil || err != nil {
 		return body, err
 	}
-	if path == awsecscontainermetrics.TaskStatsPath {
+	switch path {
+	case awsecscontainermetrics.TaskStatsPath:
 		return os.ReadFile("testdata/task_stats.json")
+	case awsecscontainermetrics.InstanceMetadataPath:
+		return os.ReadFile("testdata/instance_tasks_metadata.json")
+	case awsecscontainermetrics.InstanceStatsPath:
+		return os.ReadFile("testdata/instance_tasks_stats.json")
 	}
 	return nil, nil
 }
@@ -88,6 +93,28 @@ func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
 
 	err = r.collectDataFromEndpoint(ctx)
 	require.EqualError(t, err, "Test Error for Metrics Consumer")
+}
+
+func TestCollectInstanceLevelMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.InstanceLevelMetrics = true
+	sink := new(consumertest.MetricsSink)
+	metricsReceiver, err := newAWSECSContainermetrics(
+		zap.NewNop(),
+		cfg,
+		sink,
+		&fakeRestClient{t},
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, metricsReceiver)
+
+	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
+	ctx := t.Context()
+
+	err = r.collectDataFromEndpoint(ctx)
+	require.NoError(t, err)
+	require.Positive(t, sink.DataPointCount())
 }
 
 type invalidFakeClient struct{}

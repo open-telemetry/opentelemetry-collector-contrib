@@ -1,0 +1,87 @@
+[
+  {
+    "Cluster": "arn:aws:ecs:eu-west-1:111222333444:cluster/mi-cluster",
+    "TaskARN": "arn:aws:ecs:eu-west-1:111222333444:task/mi-cluster/081d2c75d3a2419d95ab6f8979fb61fb",
+    "Family": "daemon-app-monitor",
+    "Revision": "2",
+    "DesiredStatus": "RUNNING",
+    "KnownStatus": "RUNNING",
+    "Limits": {
+      "CPU": 0.25,
+      "Memory": 512
+    },
+    "PullStartedAt": "2026-05-14T17:56:14.38242749Z",
+    "PullStoppedAt": "2026-05-14T17:56:29.673031691Z",
+    "AvailabilityZone": "eu-west-1b",
+    "LaunchType": "MANAGED_INSTANCES",
+    "Containers": [
+      {
+        "DockerId": "081d2c75d3a2419d95ab6f8979fb61fb-1547245599",
+        "Name": "monitor-agent",
+        "DockerName": "monitor-agent",
+        "Image": "111222333444.dkr.ecr.eu-west-1.amazonaws.com/app-monitor:latest",
+        "ImageID": "sha256:fb9bbacc4f8c120a057a64f84ab8c2dfde29bef164544f9fbcba7406c679e887",
+        "Labels": {
+          "com.amazonaws.ecs.cluster": "arn:aws:ecs:eu-west-1:111222333444:cluster/mi-cluster",
+          "com.amazonaws.ecs.container-name": "monitor-agent",
+          "com.amazonaws.ecs.task-arn": "arn:aws:ecs:eu-west-1:111222333444:task/mi-cluster/081d2c75d3a2419d95ab6f8979fb61fb",
+          "com.amazonaws.ecs.task-definition-family": "daemon-app-monitor",
+          "com.amazonaws.ecs.task-definition-version": "2"
+        },
+        "DesiredStatus": "RUNNING",
+        "KnownStatus": "RUNNING",
+        "Limits": {
+          "CPU": 2
+        },
+        "CreatedAt": "2026-05-14T17:56:31.901628055Z",
+        "StartedAt": "2026-05-14T17:56:31.901628055Z",
+        "Type": "NORMAL",
+        "ContainerARN": "arn:aws:ecs:eu-west-1:111222333444:container/mi-cluster/081d2c75d3a2419d95ab6f8979fb61fb/be452a3e-7694-43fe-ad76-9d91f6a021e1"
+      }
+    ],
+    "Group": "daemon:app-monitor"
+  },
+  {
+    "Cluster": "arn:aws:ecs:eu-west-1:111222333444:cluster/mi-cluster",
+    "TaskARN": "arn:aws:ecs:eu-west-1:111222333444:task/mi-cluster/45f36d5449924905a16c3d03c1fba67a",
+    "Family": "web-frontend",
+    "Revision": "1",
+    "DesiredStatus": "RUNNING",
+    "KnownStatus": "RUNNING",
+    "Limits": {
+      "CPU": 1,
+      "Memory": 2048
+    },
+    "PullStartedAt": "2026-05-14T17:56:45.700683062Z",
+    "PullStoppedAt": "2026-05-14T17:56:47.679100551Z",
+    "AvailabilityZone": "eu-west-1b",
+    "LaunchType": "MANAGED_INSTANCES",
+    "Containers": [
+      {
+        "DockerId": "45f36d5449924905a16c3d03c1fba67a-1950351559",
+        "Name": "nginx-proxy",
+        "DockerName": "nginx-proxy",
+        "Image": "111222333444.dkr.ecr.eu-west-1.amazonaws.com/web-frontend:latest",
+        "ImageID": "sha256:fb9bbacc4f8c120a057a64f84ab8c2dfde29bef164544f9fbcba7406c679e887",
+        "Labels": {
+          "com.amazonaws.ecs.cluster": "arn:aws:ecs:eu-west-1:111222333444:cluster/mi-cluster",
+          "com.amazonaws.ecs.container-name": "nginx-proxy",
+          "com.amazonaws.ecs.task-arn": "arn:aws:ecs:eu-west-1:111222333444:task/mi-cluster/45f36d5449924905a16c3d03c1fba67a",
+          "com.amazonaws.ecs.task-definition-family": "web-frontend",
+          "com.amazonaws.ecs.task-definition-version": "1"
+        },
+        "DesiredStatus": "RUNNING",
+        "KnownStatus": "RUNNING",
+        "Limits": {
+          "CPU": 2
+        },
+        "CreatedAt": "2026-05-14T17:56:47.93414642Z",
+        "StartedAt": "2026-05-14T17:56:47.93414642Z",
+        "Type": "NORMAL",
+        "ContainerARN": "arn:aws:ecs:eu-west-1:111222333444:container/mi-cluster/45f36d5449924905a16c3d03c1fba67a/d6b0a829-c58e-4e99-8069-57385c0ec17e"
+      }
+    ],
+    "ServiceName": "web-frontend-service",
+    "Group": "service:web-frontend-service"
+  }
+]
