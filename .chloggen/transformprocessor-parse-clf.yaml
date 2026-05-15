@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/transform
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `parse_clf` OTTL function for parsing Common Log Format (CLF) HTTP access log entries.
+note: Add `parse_clf` function for parsing Common Log Format (CLF) HTTP access log entries.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48349]
