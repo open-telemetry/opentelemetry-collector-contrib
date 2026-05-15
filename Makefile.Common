@@ -256,9 +256,7 @@ mdatagen:
 
 .PHONY: generate-mod
 generate-mod:
-	@# Clear MAKEFLAGS so `//go:generate make mdatagen` (one level deeper)
-	@# doesn't warn about an unreachable jobserver from the parent -j8.
-	MAKEFLAGS= $(GOCMD) generate ./...
+	$(GOCMD) generate ./...
 
 .PHONY: generate
 generate:
