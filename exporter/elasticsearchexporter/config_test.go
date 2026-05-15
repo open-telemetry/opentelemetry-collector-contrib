@@ -103,7 +103,7 @@ func TestConfig(t *testing.T) {
 					cfg.CompressionParams.Level = gzip.BestSpeed
 				},
 				),
-				Authentication: AuthenticationSettings{
+				Authentication: AuthenticationSettings{ //nolint:gosec // the following triggers G101: Potential hardcoded credentials
 					User:     "elastic",
 					Password: "search",
 					APIKey:   "AvFsEiPs==",
@@ -188,7 +188,7 @@ func TestConfig(t *testing.T) {
 					cfg.Compression = defaultCompression
 					cfg.CompressionParams.Level = gzip.BestSpeed
 				}),
-				Authentication: AuthenticationSettings{
+				Authentication: AuthenticationSettings{ //nolint:gosec // the following triggers G101: Potential hardcoded credentials
 					User:     "elastic",
 					Password: "search",
 					APIKey:   "AvFsEiPs==",
@@ -264,7 +264,7 @@ func TestConfig(t *testing.T) {
 					cfg.Compression = defaultCompression
 					cfg.CompressionParams.Level = gzip.BestSpeed
 				}),
-				Authentication: AuthenticationSettings{
+				Authentication: AuthenticationSettings{ //nolint:gosec // the following triggers G101: Potential hardcoded credentials
 					User:     "elastic",
 					Password: "search",
 					APIKey:   "AvFsEiPs==",

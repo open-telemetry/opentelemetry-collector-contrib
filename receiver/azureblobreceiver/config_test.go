@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 		t,
 		&Config{
 			Authentication: ServicePrincipalAuth,
-			ServicePrincipal: ServicePrincipalConfig{
+			ServicePrincipal: ServicePrincipalConfig{ //nolint:gosec // the following triggers G101: Potential hardcoded credentials
 				TenantID:     "mock-tenant-id",
 				ClientID:     "mock-client-id",
 				ClientSecret: "mock-client-secret",
