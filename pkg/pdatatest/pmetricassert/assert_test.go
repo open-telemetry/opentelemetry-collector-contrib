@@ -114,6 +114,72 @@ resources:
 	require.NoError(t, AssertMetrics(path, m))
 }
 
+func TestAssertMetrics_AttributeExistsMatcherUsesProjectedSortKey(t *testing.T) {
+	m := pmetric.NewMetrics()
+	appendResourceWithKindAndID(m, "zzz", "a")
+	appendResourceWithKindAndID(m, "aaa", "b")
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        id/exists: true
+        kind: a
+      scopes:
+        - name: scope
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+    - attributes:
+        id/exists: true
+        kind: b
+      scopes:
+        - name: scope
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+}
+
+func TestAssertMetrics_AttributeExistsMatcherUsesProjectedDatapointSortKey(t *testing.T) {
+	m := pmetric.NewMetrics()
+	rm := m.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("scope")
+	g := sm.Metrics().AppendEmpty()
+	g.SetName("svc.active")
+	g.SetUnit("1")
+	dps := g.SetEmptyGauge().DataPoints()
+	appendDatapointWithKindAndID(dps, "zzz", "a")
+	appendDatapointWithKindAndID(dps, "aaa", "b")
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - scopes:
+        - name: scope
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+              datapoints:
+                - attributes:
+                    id/exists: true
+                    kind: a
+                - attributes:
+                    id/exists: true
+                    kind: b
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+}
+
 func TestAssertMetrics_SingleEmptyDatapointShorthand(t *testing.T) {
 	// A YAML snippet that omits `datapoints:` entirely must match a metric
 	// with exactly one datapoint that has no attributes.
@@ -169,4 +235,25 @@ func buildSampleMetrics() pmetric.Metrics {
 	}
 
 	return m
+}
+
+func appendResourceWithKindAndID(m pmetric.Metrics, id, kind string) {
+	rm := m.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("id", id)
+	rm.Resource().Attributes().PutStr("kind", kind)
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("scope")
+
+	g := sm.Metrics().AppendEmpty()
+	g.SetName("svc.active")
+	g.SetUnit("1")
+	g.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(1)
+}
+
+func appendDatapointWithKindAndID(dps pmetric.NumberDataPointSlice, id, kind string) {
+	dp := dps.AppendEmpty()
+	dp.Attributes().PutStr("id", id)
+	dp.Attributes().PutStr("kind", kind)
+	dp.SetIntValue(1)
 }

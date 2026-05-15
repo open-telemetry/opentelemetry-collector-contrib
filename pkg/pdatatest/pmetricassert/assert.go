@@ -30,38 +30,72 @@ func AssertMetrics(expectedPath string, actual pmetric.Metrics) error {
 func compareDocuments(expected, actual *document) error {
 	var errs []error
 
-	matchedActual := make([]bool, len(actual.Resources))
-
-	for _, er := range expected.Resources {
-		actualIndex := findMatchingResource(er, actual.Resources, matchedActual)
-		if actualIndex < 0 {
-			errs = append(errs, fmt.Errorf("missing expected resource: %v", er.Attributes))
-			continue
-		}
-		matchedActual[actualIndex] = true
-		ar := actual.Resources[actualIndex]
-		if err := compareResource(er, ar); err != nil {
-			errs = append(errs, fmt.Errorf("resource %v: %w", er.Attributes, err))
-		}
+	projection, err := newAttributeProjection(resourceAttributeMaps(expected.Resources))
+	if err != nil {
+		return err
 	}
-	for i, ar := range actual.Resources {
-		if !matchedActual[i] {
+	expectedResources := sortResources(expected.Resources, projection, true)
+	actualResources := sortResources(actual.Resources, projection, false)
+
+	for ei, ai := 0, 0; ei < len(expectedResources) || ai < len(actualResources); {
+		switch {
+		case ai == len(actualResources):
+			er := expectedResources[ei].resource
+			errs = append(errs, fmt.Errorf("missing expected resource: %v", er.Attributes))
+			ei++
+		case ei == len(expectedResources):
+			ar := actualResources[ai].resource
 			errs = append(errs, fmt.Errorf("unexpected resource: %v", ar.Attributes))
+			ai++
+		case expectedResources[ei].key < actualResources[ai].key:
+			er := expectedResources[ei].resource
+			errs = append(errs, fmt.Errorf("missing expected resource: %v", er.Attributes))
+			ei++
+		case expectedResources[ei].key > actualResources[ai].key:
+			ar := actualResources[ai].resource
+			errs = append(errs, fmt.Errorf("unexpected resource: %v", ar.Attributes))
+			ai++
+		default:
+			er := expectedResources[ei].resource
+			ar := actualResources[ai].resource
+			if err := compareAttributes(er.Attributes, ar.Attributes); err != nil {
+				errs = append(errs, fmt.Errorf("resource %v attributes: %w", er.Attributes, err))
+			}
+			if err := compareResource(er, ar); err != nil {
+				errs = append(errs, fmt.Errorf("resource %v: %w", er.Attributes, err))
+			}
+			ei++
+			ai++
 		}
 	}
 	return errors.Join(errs...)
 }
 
-func findMatchingResource(expected resourceAssertion, actual []resourceAssertion, matched []bool) int {
-	for i, ar := range actual {
-		if matched[i] {
-			continue
-		}
-		if compareAttributes(expected.Attributes, ar.Attributes) == nil {
-			return i
-		}
+type keyedResource struct {
+	key      string
+	resource resourceAssertion
+}
+
+func resourceAttributeMaps(resources []resourceAssertion) []map[string]any {
+	out := make([]map[string]any, 0, len(resources))
+	for _, r := range resources {
+		out = append(out, r.Attributes)
 	}
-	return -1
+	return out
+}
+
+func sortResources(resources []resourceAssertion, projection attributeProjection, expected bool) []keyedResource {
+	out := make([]keyedResource, 0, len(resources))
+	for _, r := range resources {
+		out = append(out, keyedResource{
+			key:      projectedAttributeKey(r.Attributes, projection, expected),
+			resource: r,
+		})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].key < out[j].key
+	})
+	return out
 }
 
 func compareResource(expected, actual resourceAssertion) error {
@@ -148,28 +182,48 @@ func compareMetric(expected, actual metricAssertion) error {
 }
 
 func compareDatapoints(expected, actual []datapointAssertion) error {
-	matchedActual := make([]bool, len(actual))
-	var missing, unexpected []string
-
-	for _, edp := range expected {
-		actualIndex := findMatchingDatapoint(edp, actual, matchedActual)
-		if actualIndex < 0 {
-			missing = append(missing, canonKey(edp.Attributes))
-			continue
-		}
-		matchedActual[actualIndex] = true
+	projection, err := newAttributeProjection(datapointAttributeMaps(expected))
+	if err != nil {
+		return err
 	}
-	for i, adp := range actual {
-		if !matchedActual[i] {
+	expectedDatapoints := sortDatapoints(expected, projection, true)
+	actualDatapoints := sortDatapoints(actual, projection, false)
+	var missing, unexpected []string
+	var errs []error
+
+	for ei, ai := 0, 0; ei < len(expectedDatapoints) || ai < len(actualDatapoints); {
+		switch {
+		case ai == len(actualDatapoints):
+			edp := expectedDatapoints[ei].datapoint
+			missing = append(missing, canonKey(edp.Attributes))
+			ei++
+		case ei == len(expectedDatapoints):
+			adp := actualDatapoints[ai].datapoint
 			unexpected = append(unexpected, canonKey(adp.Attributes))
+			ai++
+		case expectedDatapoints[ei].key < actualDatapoints[ai].key:
+			edp := expectedDatapoints[ei].datapoint
+			missing = append(missing, canonKey(edp.Attributes))
+			ei++
+		case expectedDatapoints[ei].key > actualDatapoints[ai].key:
+			adp := actualDatapoints[ai].datapoint
+			unexpected = append(unexpected, canonKey(adp.Attributes))
+			ai++
+		default:
+			edp := expectedDatapoints[ei].datapoint
+			adp := actualDatapoints[ai].datapoint
+			if err := compareAttributes(edp.Attributes, adp.Attributes); err != nil {
+				errs = append(errs, fmt.Errorf("datapoint attributes %s: %w", canonKey(edp.Attributes), err))
+			}
+			ei++
+			ai++
 		}
 	}
 	if len(missing) == 0 && len(unexpected) == 0 {
-		return nil
+		return errors.Join(errs...)
 	}
 	sort.Strings(missing)
 	sort.Strings(unexpected)
-	var errs []error
 	for _, k := range missing {
 		errs = append(errs, fmt.Errorf("missing datapoint with attributes %s", k))
 	}
@@ -179,16 +233,31 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 	return errors.Join(errs...)
 }
 
-func findMatchingDatapoint(expected datapointAssertion, actual []datapointAssertion, matched []bool) int {
-	for i, adp := range actual {
-		if matched[i] {
-			continue
-		}
-		if compareAttributes(expected.Attributes, adp.Attributes) == nil {
-			return i
-		}
+type keyedDatapoint struct {
+	key       string
+	datapoint datapointAssertion
+}
+
+func datapointAttributeMaps(datapoints []datapointAssertion) []map[string]any {
+	out := make([]map[string]any, 0, len(datapoints))
+	for _, dp := range datapoints {
+		out = append(out, dp.Attributes)
 	}
-	return -1
+	return out
+}
+
+func sortDatapoints(datapoints []datapointAssertion, projection attributeProjection, expected bool) []keyedDatapoint {
+	out := make([]keyedDatapoint, 0, len(datapoints))
+	for _, dp := range datapoints {
+		out = append(out, keyedDatapoint{
+			key:       projectedAttributeKey(dp.Attributes, projection, expected),
+			datapoint: dp,
+		})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].key < out[j].key
+	})
+	return out
 }
 
 func compareAttributes(expected, actual map[string]any) error {
@@ -228,6 +297,80 @@ func compareAttributes(expected, actual map[string]any) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+type attributeProjection struct {
+	operators map[string]string
+}
+
+func newAttributeProjection(attrsList []map[string]any) (attributeProjection, error) {
+	operators := map[string]string{}
+	exactKeys := map[string]struct{}{}
+	for _, attrs := range attrsList {
+		for rawKey := range attrs {
+			key, operator := splitAttributeOperator(rawKey)
+			if operator == "" {
+				exactKeys[key] = struct{}{}
+				continue
+			}
+			if existing, ok := operators[key]; ok && existing != operator {
+				return attributeProjection{}, fmt.Errorf("attribute %q uses conflicting operators %q and %q", key, existing, operator)
+			}
+			operators[key] = operator
+		}
+	}
+	for key := range exactKeys {
+		if operator, ok := operators[key]; ok {
+			return attributeProjection{}, fmt.Errorf("attribute %q mixes exact matching and /%s matching in the same collection", key, operator)
+		}
+	}
+	return attributeProjection{operators: operators}, nil
+}
+
+func projectedAttributeKey(attrs map[string]any, projection attributeProjection, expected bool) string {
+	projected := map[string]any{}
+	for key, operator := range projection.operators {
+		rawKey := key + "/" + operator
+		if expected {
+			if value, ok := attrs[rawKey]; ok {
+				projected[rawKey] = value
+				continue
+			}
+			projected[rawKey] = defaultOperatorProjectionValue(operator)
+			continue
+		}
+		projected[rawKey] = actualOperatorProjectionValue(key, operator, attrs)
+	}
+	for rawKey, value := range attrs {
+		key, operator := splitAttributeOperator(rawKey)
+		if operator != "" {
+			continue
+		}
+		if _, ok := projection.operators[key]; ok {
+			continue
+		}
+		projected[rawKey] = value
+	}
+	return canonKey(projected)
+}
+
+func defaultOperatorProjectionValue(operator string) any {
+	switch operator {
+	case "exists":
+		return false
+	default:
+		return nil
+	}
+}
+
+func actualOperatorProjectionValue(key, operator string, attrs map[string]any) any {
+	switch operator {
+	case "exists":
+		_, ok := attrs[key]
+		return ok
+	default:
+		return nil
+	}
 }
 
 func splitAttributeOperator(key string) (string, string) {
