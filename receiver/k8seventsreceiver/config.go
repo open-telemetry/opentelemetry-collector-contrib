@@ -4,6 +4,9 @@
 package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver"
 
 import (
+	"errors"
+	"time"
+
 	"go.opentelemetry.io/collector/component"
 	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"
@@ -25,13 +28,36 @@ type Config struct {
 
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 
+	// DedupInterval controls throttling of MODIFIED watch events per event UID.
+	//   positive: emit MODIFIED only after interval has elapsed since the last emit for that UID
+	//   0 (default): no throttling — current behavior, backward compatible
+	//   negative: drop all MODIFIED events
+	DedupInterval time.Duration `mapstructure:"dedup_interval"`
+
+	// EntryTTL bounds how long a per-UID dedup entry lives in the cache. The
+	// TTL is reset on every emit, so an entry persists while the UID is being
+	// actively emitted; it is only evicted after EntryTTL of no emits. Must be
+	// >= DedupInterval (validated). Only used when DedupInterval is positive.
+	EntryTTL time.Duration `mapstructure:"entry_ttl"`
+
 	// For mocking
 	makeClient        func(apiConf k8sconfig.APIConfig) (k8s.Interface, error)
 	makeDynamicClient func(apiConf k8sconfig.APIConfig) (dynamic.Interface, error)
 }
 
 func (cfg *Config) Validate() error {
-	return cfg.APIConfig.Validate()
+	if err := cfg.APIConfig.Validate(); err != nil {
+		return err
+	}
+	// EntryTTL is only consulted when DedupInterval > 0, but enforce a sane
+	// non-negative value always so misconfiguration is caught at startup.
+	if cfg.EntryTTL < 0 {
+		return errors.New("entry_ttl must be non-negative")
+	}
+	if cfg.DedupInterval > 0 && cfg.EntryTTL < cfg.DedupInterval {
+		return errors.New("entry_ttl must be greater than or equal to dedup_interval; otherwise dedup state is evicted before the throttle window expires")
+	}
+	return nil
 }
 
 func (cfg *Config) getK8sClient() (k8s.Interface, error) {

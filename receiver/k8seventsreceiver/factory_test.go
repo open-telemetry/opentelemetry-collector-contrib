@@ -33,6 +33,7 @@ func TestDefaultConfig(t *testing.T) {
 			KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
 			KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 		},
+		EntryTTL: defaultEntryTTL,
 	}, rCfg)
 }
 

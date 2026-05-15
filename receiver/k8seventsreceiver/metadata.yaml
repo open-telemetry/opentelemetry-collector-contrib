@@ -16,3 +16,17 @@ status:
 # TODO: Update the receiver to pass the tests
 tests:
   skip_lifecycle: true
+  goleak:
+    skip: true
+
+telemetry:
+  metrics:
+    k8s.events.modified.filtered:
+      prefix: otelcol.
+      enabled: true
+      description: Number of MODIFIED watch events filtered out by dedup_interval. Always 0 when dedup_interval is not set.
+      stability: development
+      unit: "{events}"
+      sum:
+        value_type: int
+        monotonic: true

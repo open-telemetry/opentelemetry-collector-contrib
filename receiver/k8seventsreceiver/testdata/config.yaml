@@ -1,3 +1,8 @@
 k8s_events:
 k8s_events/all_settings:
   namespaces: [ default, my_namespace ]
+k8s_events/with_dedup:
+  dedup_interval: 5m
+k8s_events/with_dedup_and_ttl:
+  dedup_interval: 5m
+  entry_ttl: 2h
