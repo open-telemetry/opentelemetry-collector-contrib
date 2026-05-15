@@ -172,7 +172,7 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 // findMatchingAttributes returns the first unmatched index whose attributes
 // satisfy the expected attribute map, or -1 if none do.
 func findMatchingAttributes(expected map[string]any, matched []bool, n int, attrsAt func(int) map[string]any) int {
-	for i := 0; i < n; i++ {
+	for i := range n {
 		if matched[i] {
 			continue
 		}
