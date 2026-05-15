@@ -5,7 +5,6 @@ package pmetrictest // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"fmt"
-	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -19,8 +18,8 @@ import (
 // Currently it checks:
 //   - No two datapoints within the same metric share identical attribute sets
 //     (duplicate datapoint identity).
-//   - No two metrics with the same name under the same Resource + Scope have
-//     conflicting identifying fields (type, unit, temporality, monotonicity).
+//   - No two metrics share the same name under the same Resource + Scope
+//     (duplicate metric name).
 //
 // It returns nil if no violations are found.
 func ValidateMetrics(md pmetric.Metrics) error {
@@ -42,14 +41,12 @@ func ValidateMetrics(md pmetric.Metrics) error {
 				}
 			}
 
-			// Check for conflicting identifying fields across metrics with the same name.
-			if err := validateMetricIdentityConflicts(ms); err != nil {
+			// Check for duplicate metric names within this scope.
+			if err := validateDuplicateMetricNames(ms); err != nil {
 				errPrefix := fmt.Sprintf(`resource "%v": scope %q`,
 					rm.Resource().Attributes().AsRaw(), sm.Scope().Name())
 				errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, err))
 			}
-
-			// TODO (PR 5): Check for multiple Metric entries with the same name that are mergeable
 		}
 
 		// TODO (PR 4): Check for multiple ScopeMetrics with equal scope under the same resource
@@ -125,81 +122,21 @@ func checkDuplicateDatapointAttrs(attrs []pcommon.Map) error {
 	return errs
 }
 
-type metricIdentity struct {
-	metricType  pmetric.MetricType
-	unit        string
-	temporality pmetric.AggregationTemporality
-	monotonic   bool
-}
-
-// getMetricIdentity extracts the identifying fields from a metric.
-// For metric types that do not support temporality or monotonicity
-// (Gauge, Summary, Empty), those fields remain at their zero values.
-func getMetricIdentity(m pmetric.Metric) metricIdentity {
-	id := metricIdentity{
-		metricType: m.Type(),
-		unit:       m.Unit(),
-	}
-	//exhaustive:enforce
-	switch m.Type() {
-	case pmetric.MetricTypeSum:
-		id.temporality = m.Sum().AggregationTemporality()
-		id.monotonic = m.Sum().IsMonotonic()
-	case pmetric.MetricTypeHistogram:
-		id.temporality = m.Histogram().AggregationTemporality()
-	case pmetric.MetricTypeExponentialHistogram:
-		id.temporality = m.ExponentialHistogram().AggregationTemporality()
-	case pmetric.MetricTypeGauge:
-	case pmetric.MetricTypeSummary:
-	case pmetric.MetricTypeEmpty:
-	}
-	return id
-}
-
-// describeIdentityConflict returns a description of which
-// identifying fields differ between two metric identities.
-func describeIdentityConflict(a, b metricIdentity) string {
-	var parts []string
-	if a.metricType != b.metricType {
-		parts = append(parts, fmt.Sprintf("type: %s vs %s", a.metricType, b.metricType))
-	}
-	if a.unit != b.unit {
-		parts = append(parts, fmt.Sprintf("unit: %q vs %q", a.unit, b.unit))
-	}
-	if a.temporality != b.temporality {
-		parts = append(parts, fmt.Sprintf("temporality: %s vs %s", a.temporality, b.temporality))
-	}
-	if a.monotonic != b.monotonic {
-		parts = append(parts, fmt.Sprintf("monotonic: %v vs %v", a.monotonic, b.monotonic))
-	}
-	return strings.Join(parts, ", ")
-}
-
-// validateMetricIdentityConflicts checks that no two metrics in ms with the
-// same name have different identifying fields (type, unit, temporality,
-// monotonicity).
-func validateMetricIdentityConflicts(ms pmetric.MetricSlice) error {
-	type entry struct {
-		identity metricIdentity
-		index    int
-	}
-	seen := make(map[string]entry) // metric name -> first-seen identity + index
+// validateDuplicateMetricNames checks that no two metrics in ms share the
+// same name. Each metric name must be unique within a single scope.
+func validateDuplicateMetricNames(ms pmetric.MetricSlice) error {
+	seen := make(map[string]int, ms.Len()) // metric name → first-seen index
 	var errs error
 
 	for i := 0; i < ms.Len(); i++ {
-		m := ms.At(i)
-		id := getMetricIdentity(m)
-		name := m.Name()
-
-		if prev, exists := seen[name]; exists {
-			if prev.identity != id {
-				errs = multierr.Append(errs, fmt.Errorf(
-					"metric %q at index %d has conflicting identifying fields with metric at index %d: %s",
-					name, i, prev.index, describeIdentityConflict(prev.identity, id),
-				))
-			}
+		name := ms.At(i).Name()
+		if firstIdx, exists := seen[name]; exists {
+			errs = multierr.Append(errs, fmt.Errorf(
+				"metric %q at index %d is a duplicate of metric at index %d",
+				name, i, firstIdx,
+			))
 		} else {
-			seen[name] = entry{identity: id, index: i}
+			seen[name] = i
 		}
 	}
 
