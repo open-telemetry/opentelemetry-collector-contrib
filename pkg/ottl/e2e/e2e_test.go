@@ -2260,7 +2260,7 @@ func Test_e2e_lambda_expression(t *testing.T) {
 			wantErr:    "lambda expected at least 3 argument(s), got 1",
 		},
 		{
-			name:       "leading arguments are ignored",
+			name:       "extra trailing arguments are dropped",
 			expression: `Eval(($a) => $a, [1, 2, 3])`,
 			want:       wantValue(int64(1)),
 		},
