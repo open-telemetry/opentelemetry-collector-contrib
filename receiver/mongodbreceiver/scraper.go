@@ -244,7 +244,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		databaseName := getDBFromNamespace(namespace)
 		command := getValue[bson.D](op, commandKey)
 		opType := getValue[string](op, opKey)
-		commandType, queryTruncated := getCommandDetails(command)
+		commandType, queryTextTruncated := getCommandDetails(command)
 		prepareReadConflictCount := getInt64Value(op, prepareReadConflictsKey)
 		writeConflictCount := getInt64Value(op, writeConflictsKey)
 		yieldCount := getInt64Value(op, numYieldsKey)
@@ -275,14 +275,14 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		flowControlStats := getJSONValue(op, flowControlStatsKey)
 		waitingForLatchDetails := getJSONValue(op, waitingForLatchKey)
 		waitingForLatch := waitingForLatchDetails != ""
-		operationStatus, ok := deriveOperationStatus(op, waitingForLock, waitingForFlowControl, waitingForLatch)
+		operationState, ok := deriveOperationState(op, waitingForLock, waitingForFlowControl, waitingForLatch)
 		if !ok {
-			s.logger.Debug("Skipping operation without supported status", zap.Any("operation", op))
+			s.logger.Debug("Skipping operation without supported state", zap.Any("operation", op))
 			continue
 		}
 		durationSeconds := float64(getInt64Value(op, durationMicrosKey)) / 1_000_000.0
 		clientAddr := getValue[string](op, clientKey)
-		applicationName := getValue[string](op, applicationNameKey)
+		clientAppName := getValue[string](op, applicationNameKey)
 		userName := extractEffectiveUserName(op)
 		operationID := extractOperationID(op)
 		clientAddress, clientPort := clientAddressAndPort(clientAddr)
@@ -300,9 +300,9 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 			collectionName,
 			commandType,
 			obfuscatedStatement,
-			queryTruncated,
+			queryTextTruncated,
 			userName,
-			applicationName,
+			clientAppName,
 			cursorAwaitData,
 			cursorBatchesReturnedCount,
 			cursorDocumentsReturnedCount,
@@ -311,13 +311,12 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 			cursorOperationUsingCursorID,
 			obfuscatedCursorOriginatingCommand,
 			cursorTailable,
-			databaseName,
 			lsid,
 			namespace,
 			operationID,
 			planSummary,
 			queryFramework,
-			operationStatus,
+			operationState,
 			opType,
 			durationSeconds,
 			prepareReadConflictCount,
@@ -343,12 +342,12 @@ func extractOperationID(op bson.M) string {
 	return ""
 }
 
-func deriveOperationStatus(op bson.M, waitingForLock, waitingForFlowControl, waitingForLatch bool) (metadata.AttributeMongodbOperationStatus, bool) {
+func deriveOperationState(op bson.M, waitingForLock, waitingForFlowControl, waitingForLatch bool) (metadata.AttributeMongodbOperationState, bool) {
 	if waitingForLock || waitingForFlowControl || waitingForLatch {
-		return metadata.AttributeMongodbOperationStatusWaiting, true
+		return metadata.AttributeMongodbOperationStateWaiting, true
 	}
 	if getValue[bool](op, activeKey) {
-		return metadata.AttributeMongodbOperationStatusActive, true
+		return metadata.AttributeMongodbOperationStateActive, true
 	}
 	return 0, false
 }
@@ -404,18 +403,22 @@ func getCollectionFromNamespace(namespace string) string {
 	return ""
 }
 
-func getCommandDetails(command bson.D) (string, metadata.AttributeMongodbQueryTruncated) {
+// getCommandDetails returns the command type (e.g. "find", "insert") and a
+// flag indicating whether MongoDB clipped the command document in $currentOp.
+// MongoDB signals truncation by inserting a "$truncated" key into the command
+// when the rendered form exceeds the per-op size cap; downstream consumers
+// need this so they can tell that db.query.text is not the complete statement.
+func getCommandDetails(command bson.D) (commandType string, truncated bool) {
 	if len(command) == 0 {
-		return "", metadata.AttributeMongodbQueryTruncatedNotTruncated
+		return "", false
 	}
-
-	commandType := command[0].Key
+	commandType = command[0].Key
 	for _, elem := range command {
 		if elem.Key == "$truncated" {
-			return commandType, metadata.AttributeMongodbQueryTruncatedTruncated
+			return commandType, true
 		}
 	}
-	return commandType, metadata.AttributeMongodbQueryTruncatedNotTruncated
+	return commandType, false
 }
 
 // lookup returns the value for key from a BSON document. It accepts bson.M,

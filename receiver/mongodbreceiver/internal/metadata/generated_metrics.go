@@ -182,56 +182,30 @@ var MapAttributeMemoryType = map[string]AttributeMemoryType{
 	"virtual":  AttributeMemoryTypeVirtual,
 }
 
-// AttributeMongodbOperationStatus specifies the value mongodb.operation.status attribute.
-type AttributeMongodbOperationStatus int
+// AttributeMongodbOperationState specifies the value mongodb.operation.state attribute.
+type AttributeMongodbOperationState int
 
 const (
-	_ AttributeMongodbOperationStatus = iota
-	AttributeMongodbOperationStatusActive
-	AttributeMongodbOperationStatusWaiting
+	_ AttributeMongodbOperationState = iota
+	AttributeMongodbOperationStateActive
+	AttributeMongodbOperationStateWaiting
 )
 
-// String returns the string representation of the AttributeMongodbOperationStatus.
-func (av AttributeMongodbOperationStatus) String() string {
+// String returns the string representation of the AttributeMongodbOperationState.
+func (av AttributeMongodbOperationState) String() string {
 	switch av {
-	case AttributeMongodbOperationStatusActive:
+	case AttributeMongodbOperationStateActive:
 		return "active"
-	case AttributeMongodbOperationStatusWaiting:
+	case AttributeMongodbOperationStateWaiting:
 		return "waiting"
 	}
 	return ""
 }
 
-// MapAttributeMongodbOperationStatus is a helper map of string to AttributeMongodbOperationStatus attribute value.
-var MapAttributeMongodbOperationStatus = map[string]AttributeMongodbOperationStatus{
-	"active":  AttributeMongodbOperationStatusActive,
-	"waiting": AttributeMongodbOperationStatusWaiting,
-}
-
-// AttributeMongodbQueryTruncated specifies the value mongodb.query_truncated attribute.
-type AttributeMongodbQueryTruncated int
-
-const (
-	_ AttributeMongodbQueryTruncated = iota
-	AttributeMongodbQueryTruncatedTruncated
-	AttributeMongodbQueryTruncatedNotTruncated
-)
-
-// String returns the string representation of the AttributeMongodbQueryTruncated.
-func (av AttributeMongodbQueryTruncated) String() string {
-	switch av {
-	case AttributeMongodbQueryTruncatedTruncated:
-		return "truncated"
-	case AttributeMongodbQueryTruncatedNotTruncated:
-		return "not_truncated"
-	}
-	return ""
-}
-
-// MapAttributeMongodbQueryTruncated is a helper map of string to AttributeMongodbQueryTruncated attribute value.
-var MapAttributeMongodbQueryTruncated = map[string]AttributeMongodbQueryTruncated{
-	"truncated":     AttributeMongodbQueryTruncatedTruncated,
-	"not_truncated": AttributeMongodbQueryTruncatedNotTruncated,
+// MapAttributeMongodbOperationState is a helper map of string to AttributeMongodbOperationState attribute value.
+var MapAttributeMongodbOperationState = map[string]AttributeMongodbOperationState{
+	"active":  AttributeMongodbOperationStateActive,
+	"waiting": AttributeMongodbOperationStateWaiting,
 }
 
 // AttributeOperation specifies the value operation attribute.

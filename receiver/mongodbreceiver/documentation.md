@@ -569,9 +569,9 @@ query sample
 | db.collection.name | The MongoDB collection being accessed within the database stated in db.namespace. | Any Str | - |
 | db.operation.name | The name of the MongoDB command being executed. | Any Str | - |
 | db.query.text | The obfuscated MongoDB command statement. | Any Str | - |
-| mongodb.query_truncated | Whether the MongoDB command returned by currentOp was truncated. | Str: ``truncated``, ``not_truncated`` | - |
+| mongodb.query.text.truncated | Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output. | Any Bool | - |
 | user.name | Name of the user associated with the operation. | Any Str | - |
-| mongodb.application.name | The identifier of the client application which ran the operation | Any Str | - |
+| mongodb.client.app.name | The identifier of the client application which ran the operation, as set by the driver's `appName` connection option. | Any Str | - |
 | mongodb.cursor.await_data | Whether the tailable cursor waits for new data instead of returning immediately. | Any Bool | - |
 | mongodb.cursor.batches_returned.count | The cumulative number of batches returned by the cursor. | Any Int | - |
 | mongodb.cursor.documents_returned.count | The cumulative number of documents returned by the cursor. | Any Int | - |
@@ -580,13 +580,12 @@ query sample
 | mongodb.cursor.operation_using_cursor_id | The identifier of the operation currently using the cursor. | Any Str | - |
 | mongodb.cursor.originating_command | The obfuscated command that originally created the cursor. | Any Str | - |
 | mongodb.cursor.tailable | Whether the cursor is a tailable cursor. | Any Bool | - |
-| mongodb.database.name | The name of the MongoDB database. | Any Str | - |
 | mongodb.lsid.id | The UUID portion of the logical session identifier associated with the MongoDB operation. | Any Str | - |
 | mongodb.namespace | The MongoDB namespace reported by the server, typically <database>.<collection>. | Any Str | - |
 | mongodb.operation.id | Identifier of the MongoDB operation. | Any Str | - |
 | mongodb.operation.plan_summary | Summary of the execution plan for the MongoDB operation. | Any Str | - |
 | mongodb.operation.query_framework | Query framework used by the MongoDB operation. | Any Str | - |
-| mongodb.operation.status | Simplified status of the MongoDB operation. | Str: ``active``, ``waiting`` | - |
+| mongodb.operation.state | Simplified state of the MongoDB operation. | Str: ``active``, ``waiting`` | - |
 | mongodb.operation.type | The low-level MongoDB operation type (e.g. query, insert, update, remove, getmore, command). | Any Str | - |
 | mongodb.operation.duration | The duration of the MongoDB operation in seconds. | Any Double | - |
 | mongodb.operation.prepare_read_conflict.count | The number of times the MongoDB operation had to wait for a prepared transaction with a write to commit or abort. | Any Int | - |

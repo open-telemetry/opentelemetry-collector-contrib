@@ -99,8 +99,8 @@ attributes:
     enum:
       - resident
       - virtual
-  mongodb.application.name:
-    description: The identifier of the client application which ran the operation
+  mongodb.client.app.name:
+    description: The identifier of the client application which ran the operation, as set by the driver's `appName` connection option.
     type: string
   mongodb.cursor.await_data:
     description: Whether the tailable cursor waits for new data instead of returning immediately.
@@ -126,9 +126,6 @@ attributes:
   mongodb.cursor.tailable:
     description: Whether the cursor is a tailable cursor.
     type: bool
-  mongodb.database.name:
-    description: The name of the MongoDB database.
-    type: string
   mongodb.lsid.id:
     description: The UUID portion of the logical session identifier associated with the MongoDB operation.
     type: string
@@ -159,8 +156,8 @@ attributes:
   mongodb.operation.query_framework:
     description: Query framework used by the MongoDB operation.
     type: string
-  mongodb.operation.status:
-    description: Simplified status of the MongoDB operation.
+  mongodb.operation.state:
+    description: Simplified state of the MongoDB operation.
     type: string
     enum:
       - active
@@ -186,12 +183,9 @@ attributes:
   mongodb.operation.yield.count:
     description: The number of times the MongoDB operation yielded to allow other operations to complete.
     type: int
-  mongodb.query_truncated:
-    description: Whether the MongoDB command returned by currentOp was truncated.
-    type: string
-    enum:
-      - truncated
-      - not_truncated
+  mongodb.query.text.truncated:
+    description: Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output.
+    type: bool
   operation:
     description: The MongoDB operation being counted.
     type: string
@@ -235,9 +229,9 @@ events:
       - db.collection.name
       - db.operation.name
       - db.query.text
-      - mongodb.query_truncated
+      - mongodb.query.text.truncated
       - user.name
-      - mongodb.application.name
+      - mongodb.client.app.name
       - mongodb.cursor.await_data
       - mongodb.cursor.batches_returned.count
       - mongodb.cursor.documents_returned.count
@@ -246,13 +240,12 @@ events:
       - mongodb.cursor.operation_using_cursor_id
       - mongodb.cursor.originating_command
       - mongodb.cursor.tailable
-      - mongodb.database.name
       - mongodb.lsid.id
       - mongodb.namespace
       - mongodb.operation.id
       - mongodb.operation.plan_summary
       - mongodb.operation.query_framework
-      - mongodb.operation.status
+      - mongodb.operation.state
       - mongodb.operation.type
       - mongodb.operation.duration
       - mongodb.operation.prepare_read_conflict.count

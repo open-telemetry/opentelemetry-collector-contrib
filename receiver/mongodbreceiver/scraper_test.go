@@ -70,51 +70,51 @@ func TestGenerateInstanceID(t *testing.T) {
 	})
 }
 
-func TestDeriveOperationStatus(t *testing.T) {
+func TestDeriveOperationState(t *testing.T) {
 	testCases := []struct {
 		name     string
 		op       bson.M
-		expected metadata.AttributeMongodbOperationStatus
+		expected metadata.AttributeMongodbOperationState
 		ok       bool
 	}{
 		{
 			name:     "active operation",
 			op:       bson.M{"active": true},
-			expected: metadata.AttributeMongodbOperationStatusActive,
+			expected: metadata.AttributeMongodbOperationStateActive,
 			ok:       true,
 		},
 		{
 			name:     "waiting for lock takes precedence",
 			op:       bson.M{"active": true, "waitingForLock": true},
-			expected: metadata.AttributeMongodbOperationStatusWaiting,
+			expected: metadata.AttributeMongodbOperationStateWaiting,
 			ok:       true,
 		},
 		{
 			name:     "waiting for flow control",
 			op:       bson.M{"active": true, "waitingForFlowControl": true},
-			expected: metadata.AttributeMongodbOperationStatusWaiting,
+			expected: metadata.AttributeMongodbOperationStateWaiting,
 			ok:       true,
 		},
 		{
 			name:     "waiting for latch",
 			op:       bson.M{"active": true, "waitingForLatch": bson.M{"captureName": "FutureResolution"}},
-			expected: metadata.AttributeMongodbOperationStatusWaiting,
+			expected: metadata.AttributeMongodbOperationStateWaiting,
 			ok:       true,
 		},
 		{
 			name:     "null waitingForLatch does not count as waiting",
 			op:       bson.M{"active": true, "waitingForLatch": nil},
-			expected: metadata.AttributeMongodbOperationStatusActive,
+			expected: metadata.AttributeMongodbOperationStateActive,
 			ok:       true,
 		},
 		{
 			name:     "empty waitingForLatch document does not count as waiting",
 			op:       bson.M{"active": true, "waitingForLatch": bson.M{}},
-			expected: metadata.AttributeMongodbOperationStatusActive,
+			expected: metadata.AttributeMongodbOperationStateActive,
 			ok:       true,
 		},
 		{
-			name: "unsupported status",
+			name: "unsupported state",
 			op:   bson.M{"active": false},
 			ok:   false,
 		},
@@ -122,7 +122,7 @@ func TestDeriveOperationStatus(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, ok := deriveOperationStatus(
+			actual, ok := deriveOperationState(
 				tc.op,
 				getValue[bool](tc.op, waitingForLockKey),
 				getValue[bool](tc.op, waitingForFlowControlKey),
@@ -692,15 +692,12 @@ func TestScrapeLogs(t *testing.T) {
 				collectionName, ok := logAttrs.Get("db.collection.name")
 				require.True(t, ok)
 				require.Equal(t, "mycol", collectionName.Str())
-				queryTruncated, ok := logAttrs.Get("mongodb.query_truncated")
+				queryTextTruncated, ok := logAttrs.Get("mongodb.query.text.truncated")
 				require.True(t, ok)
-				require.Equal(t, "truncated", queryTruncated.Str())
+				require.True(t, queryTextTruncated.Bool())
 				mongodbNamespace, ok := logAttrs.Get("mongodb.namespace")
 				require.True(t, ok)
 				require.Equal(t, "mydb.mycol", mongodbNamespace.Str())
-				mongodbDatabaseName, ok := logAttrs.Get("mongodb.database.name")
-				require.True(t, ok)
-				require.Equal(t, "mydb", mongodbDatabaseName.Str())
 				lsid, ok := logAttrs.Get("mongodb.lsid.id")
 				require.True(t, ok)
 				require.Equal(t, "4d63009a-8d0f-11ee-aad7-4c796ed8e320", lsid.Str())
@@ -1323,7 +1320,7 @@ func TestProcessCurrentOpContentionAttributes(t *testing.T) {
 	requireBoolAttribute(t, attrs, "mongodb.operation.waiting_for_lock", false)
 	requireBoolAttribute(t, attrs, "mongodb.operation.waiting_for_flow_control", true)
 	requireBoolAttribute(t, attrs, "mongodb.operation.waiting_for_latch", true)
-	requireStringAttribute(t, attrs, "mongodb.operation.status", metadata.AttributeMongodbOperationStatusWaiting.String())
+	requireStringAttribute(t, attrs, "mongodb.operation.state", metadata.AttributeMongodbOperationStateWaiting.String())
 
 	locks, ok := attrs.Get("mongodb.operation.locks")
 	require.True(t, ok)
