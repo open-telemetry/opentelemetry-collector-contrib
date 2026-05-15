@@ -25,6 +25,7 @@ type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	Username                       string              `mapstructure:"username,omitempty"`
 	Password                       configopaque.String `mapstructure:"password,omitempty"`
+	PasswordFile                   string              `mapstructure:"password_file,omitempty"` // #nosec G101 - not hardcoded credentials
 	Database                       string              `mapstructure:"database,omitempty"`
 	AllowNativePasswords           bool                `mapstructure:"allow_native_passwords,omitempty"`
 	confignet.AddrConfig           `mapstructure:",squash"`

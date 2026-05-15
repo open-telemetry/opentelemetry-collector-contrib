@@ -24,10 +24,11 @@ type defaultClientFactory struct {
 func newDefaultClientFactory(cfg *Config) *defaultClientFactory {
 	return &defaultClientFactory{
 		baseConfig: postgreSQLConfig{
-			username: cfg.Username,
-			password: string(cfg.Password),
-			address:  cfg.AddrConfig,
-			tls:      cfg.ClientConfig,
+			username:     cfg.Username,
+			password:     string(cfg.Password),
+			passwordFile: cfg.PasswordFile,
+			address:      cfg.AddrConfig,
+			tls:          cfg.ClientConfig,
 		},
 	}
 }
@@ -57,10 +58,11 @@ func newPoolClientFactory(cfg *Config) *poolClientFactory {
 	poolCfg := cfg.ConnectionPool
 	return &poolClientFactory{
 		baseConfig: postgreSQLConfig{
-			username: cfg.Username,
-			password: string(cfg.Password),
-			address:  cfg.AddrConfig,
-			tls:      cfg.ClientConfig,
+			username:     cfg.Username,
+			password:     string(cfg.Password),
+			passwordFile: cfg.PasswordFile,
+			address:      cfg.AddrConfig,
+			tls:          cfg.ClientConfig,
 		},
 		poolConfig: &poolCfg,
 		pool:       make(map[string]*sql.DB),
