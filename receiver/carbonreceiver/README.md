@@ -4,7 +4,6 @@
 The [Carbon](https://github.com/graphite-project/carbon) Receiver supports Carbon's
 [plaintext protocol](https://graphite.readthedocs.io/en/stable/feeding-carbon.html#the-plaintext-protocol).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -68,4 +67,3 @@ receivers:
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
-

@@ -19,7 +19,7 @@ This is accomplished through the processing of GitLab webhook
 events for pipelines. The [`pipeline`](https://docs.gitlab.com/ee/user/project/integrations/webhook_events.html#pipeline-events) event payloads are then constructed into `trace`
 telemetry.
 
-Each GitLab pipeline, along with its jobs, is converted 
+Each GitLab pipeline, along with its jobs, is converted
 into trace spans, allowing the observation of workflow execution times,
 success, and failure rates.
 

@@ -47,7 +47,7 @@ connectors:
   round_robin:
 ```
 
-Preprocess data, then export using multiple exporter instances to scale the throughput if the exporter 
+Preprocess data, then export using multiple exporter instances to scale the throughput if the exporter
 does not support scale well (e.g. prometheusremotewrite).
 
 ```yaml

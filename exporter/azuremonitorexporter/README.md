@@ -123,7 +123,7 @@ This exporter saves log records to Application Insights `traces` table.
 
 #### Custom Events
 
-When `custom_events_enabled` = `true`, azure monitor exporter will export log record to custom events when there's attribute `microsoft.custom_event.name` or `APPLICATION_INSIGHTS_EVENT_MARKER_ATTRIBUTE`. 
+When `custom_events_enabled` = `true`, azure monitor exporter will export log record to custom events when there's attribute `microsoft.custom_event.name` or `APPLICATION_INSIGHTS_EVENT_MARKER_ATTRIBUTE`.
 
 #### Exceptions
 

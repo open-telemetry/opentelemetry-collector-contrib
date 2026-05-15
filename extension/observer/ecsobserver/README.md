@@ -338,23 +338,23 @@ Additional information from ECS and EC2.
 // - FromTargetYAML and ToTargetYAML converts it between prometheus file discovery format in YAML. 
 // - FromTargetJSON and ToTargetJSON converts it between prometheus file discovery format in JSON. 
 type PrometheusECSTarget struct {
-	Address                string            `json:"address"`
-	MetricsPath            string            `json:"metrics_path"`
-	Job                    string            `json:"job"`
-	TaskDefinitionFamily   string            `json:"task_definition_family"`
-	TaskDefinitionRevision int               `json:"task_definition_revision"`
-	TaskLaunchType         string            `json:"task_launch_type"`
-	TaskGroup              string            `json:"task_group"`
-	TaskTags               map[string]string `json:"task_tags"`
-	ContainerName          string            `json:"container_name"`
-	ContainerLabels        map[string]string `json:"container_labels"`
-	HealthStatus           string            `json:"health_status"`
-	EC2InstanceId          string            `json:"ec2_instance_id"`
-	EC2InstanceType        string            `json:"ec2_instance_type"`
-	EC2Tags                map[string]string `json:"ec2_tags"`
-	EC2VPCId               string            `json:"ec2_vpc_id"`
-	EC2PrivateIP           string            `json:"ec2_private_ip"`
-	EC2PublicIP            string            `json:"ec2_public_ip"`
+ Address                string            `json:"address"`
+ MetricsPath            string            `json:"metrics_path"`
+ Job                    string            `json:"job"`
+ TaskDefinitionFamily   string            `json:"task_definition_family"`
+ TaskDefinitionRevision int               `json:"task_definition_revision"`
+ TaskLaunchType         string            `json:"task_launch_type"`
+ TaskGroup              string            `json:"task_group"`
+ TaskTags               map[string]string `json:"task_tags"`
+ ContainerName          string            `json:"container_name"`
+ ContainerLabels        map[string]string `json:"container_labels"`
+ HealthStatus           string            `json:"health_status"`
+ EC2InstanceId          string            `json:"ec2_instance_id"`
+ EC2InstanceType        string            `json:"ec2_instance_type"`
+ EC2Tags                map[string]string `json:"ec2_tags"`
+ EC2VPCId               string            `json:"ec2_vpc_id"`
+ EC2PrivateIP           string            `json:"ec2_private_ip"`
+ EC2PublicIP            string            `json:"ec2_public_ip"`
 }
 ```
 

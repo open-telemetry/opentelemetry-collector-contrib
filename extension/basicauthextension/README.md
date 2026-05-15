@@ -21,7 +21,7 @@ When used as ServerAuthenticator, if the authentication is successful `client.In
 - `username`: The username of the authenticated user.
 - `raw`: Raw base64 encoded credentials.
 
-The configuration should specify only one instance of `basicauth` extension for either client or server authentication. 
+The configuration should specify only one instance of `basicauth` extension for either client or server authentication.
 
 The following are the configuration options:
 

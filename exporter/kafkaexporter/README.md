@@ -169,7 +169,7 @@ The destination topic can be defined in a few different ways and takes priority 
 
 ## Partitioning Kafka Records
 
-The exporter supports multiple strategies to control how records are distributed across kafka partitions within a topic. 
+The exporter supports multiple strategies to control how records are distributed across kafka partitions within a topic.
 
 Available strategies for partitioning are `sticky_key`, `sticky`, `round_robin`, `least_backup` and `extension`
 

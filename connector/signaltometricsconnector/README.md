@@ -150,10 +150,10 @@ gauge:
   value: <ottl_value_expression>
 ```
 
-- [**Required**] `value`represents an OTTL expression to extract a numeric value from 
-  the signal. Only OTTL expressions that return a value are accepted. The returned 
+- [**Required**] `value`represents an OTTL expression to extract a numeric value from
+  the signal. Only OTTL expressions that return a value are accepted. The returned
   value determines the value type of the `gauge` metric (`int` or `double`).
-  - For logs: Use e.g. `ExtractGrokPatterns` with a single key selector (see below). 
+  - For logs: Use e.g. `ExtractGrokPatterns` with a single key selector (see below).
   - For other signals: Use a field such as `value_int`, `value_double`, or a valid OTTL expression.
 
 **Examples:**

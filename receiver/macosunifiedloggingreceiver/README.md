@@ -4,7 +4,6 @@
 The macOS Unified Logging Receiver collects logs from macOS systems using the native `log` command. This receiver
 supports both live system logs and archived log files (`.logarchive`).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |
@@ -77,7 +76,6 @@ receivers:
     format: "ndjson"
 ```
 
-
 ### With Filtering
 
 ```yaml
@@ -96,7 +94,6 @@ receivers:
     max_poll_interval: 30s
     max_log_age: 24h
 ```
-
 
 ## Predicate Examples
 
@@ -179,4 +176,3 @@ service:
       receivers: [macosunifiedlogging]
       exporters: [file]
 ```
-

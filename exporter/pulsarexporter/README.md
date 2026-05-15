@@ -50,7 +50,7 @@ The following settings can be optionally configured:
         - `zts_url`:
 - `producer`
     - `max_reconnect_broker`: specifies the maximum retry number of reconnectToBroker. (default: ultimate)
-    - `hashing_scheme`: used to define the partition on where to publish a particular message. Can be set to `java_string_hash` (default) or `murmur3_32hash`. 
+    - `hashing_scheme`: used to define the partition on where to publish a particular message. Can be set to `java_string_hash` (default) or `murmur3_32hash`.
     - `compression_level`: one of 'default' (default), 'faster', or 'better'.
     - `compression_type`: one of 'none' (default), 'lz4', 'zlib', or 'zstd'.
     - `max_pending_messages`: specifies the max size of the queue holding the messages pending to receive an acknowledgment from the broker.

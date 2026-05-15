@@ -3,7 +3,6 @@
 
 The Solace Receiver receives trace data from a [Solace PubSub+ Event Broker](https://solace.com/products/event-broker/).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: traces   |
@@ -102,4 +101,3 @@ service:
     traces/solace:
       receivers: [solace/primary,solace/backup]
 ```
-

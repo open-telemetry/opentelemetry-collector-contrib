@@ -15,7 +15,7 @@ to `netstats.NewExporterNetworkReporter` or
 `netstats.NewExporterNetworkReporter`, then register with gRPC:
 
 ```
-	dialOpts = append(dialOpts, grpc.WithStatsHandler(netReporter.Handler()))
+ dialOpts = append(dialOpts, grpc.WithStatsHandler(netReporter.Handler()))
 ```
 
 Because OTel-Arrow supports the use of compressed payloads, configured
@@ -27,10 +27,10 @@ compressed and uncompressed sizes.  To report only uncompressed size
 in the exporter case, for example:
 
 ```
-	var sized netstats.SizesStruct
-	sized.Method = s.method
-	sized.Length = int64(uncompressedSize)
-	netReporter.CountSend(ctx, sized)
+ var sized netstats.SizesStruct
+ sized.Method = s.method
+ sized.Length = int64(uncompressedSize)
+ netReporter.CountSend(ctx, sized)
 ```
 
 Likewise, the receiver uses `CountRecv` with `sized.Length` set to

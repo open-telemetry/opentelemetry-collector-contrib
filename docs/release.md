@@ -68,5 +68,4 @@ process.
 See the [opentelemetry-collector release procedure][1] document for the release schedule and release
 manager rotation.
 
-
 [1]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/release.md

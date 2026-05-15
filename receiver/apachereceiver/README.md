@@ -3,7 +3,6 @@
 
 The Apache Web Server Receiver fetches stats from an Apache Web Server instance using the `server-status?auto` endpoint.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -24,7 +23,6 @@ This receiver supports Apache Web Server version 2.4.13+.
 ### mod_status module
 
 In order to receive server statistics, you must configure the server's `httpd.conf` file to [enable status support](https://httpd.apache.org/docs/2.4/mod/mod_status.html).
-
 
 ### Configuration
 

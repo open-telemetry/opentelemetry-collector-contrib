@@ -18,14 +18,13 @@ The following paths are supported.
 | otelcol.grpc.metadata              | incoming gRPC metadata from the context                                                                                   | pcommon.Map                                                             |
 | otelcol.grpc.metadata[""]          | values slice for a specific incoming gRPC metadata key                                                                    | string or nil                                                           |
 
-
 > [!NOTE]
 This context is read-only; any attempt to set these paths returns an error.
 
 ## Security and best practices
 
-The `otelcol` context exposes client and request data that often contains **sensitive information**: authentication tokens (e.g. in `otelcol.client.auth.attributes`), HTTP headers and gRPC metadata (e.g. in `otelcol.client.metadata` and `otelcol.grpc.metadata`), and client address. 
-OTTL can **read** these values and **write** them into span attributes, log body, resource attributes, or metric labels. 
+The `otelcol` context exposes client and request data that often contains **sensitive information**: authentication tokens (e.g. in `otelcol.client.auth.attributes`), HTTP headers and gRPC metadata (e.g. in `otelcol.client.metadata` and `otelcol.grpc.metadata`), and client address.
+OTTL can **read** these values and **write** them into span attributes, log body, resource attributes, or metric labels.
 Copying such data into telemetry can expose secrets to every system that receives it.
 
 ### Do not leak secrets into telemetry
@@ -67,8 +66,8 @@ Treat the following (and similar) keys as sensitive. Do not copy their values in
 | `x-auth-token`, `x-access-token` | Access tokens                         |
 | `proxy-authorization`            | Proxy credentials                     |
 
-This applies to **`otelcol.client.metadata["key"]`** and **`otelcol.grpc.metadata["key"]`**. 
-For **`otelcol.client.auth.attributes`**, treat the **entire** map as sensitive unless you know the auth extension only exposes non-secret attributes. 
+This applies to **`otelcol.client.metadata["key"]`** and **`otelcol.grpc.metadata["key"]`**.
+For **`otelcol.client.auth.attributes`**, treat the **entire** map as sensitive unless you know the auth extension only exposes non-secret attributes.
 HTTP header names are often normalized to lowercase; consider that when allowlisting or blocklisting.
 
 ### Recommended practices
@@ -89,7 +88,6 @@ HTTP header names are often normalized to lowercase; consider that when allowlis
 | Use `otelcol` paths in conditions for routing/filtering | Copy `authorization`, `cookie`, or API key headers into attributes/body/resource |
 | Allowlist and validate keys when copying to telemetry   | Copy `otelcol.client.auth.attributes` or full metadata maps into exported data   |
 | Document and review OTTL that uses `otelcol` context    | Assume all client/metadata values are safe to store in telemetry                 |
-
 
 ## Feature gate
 

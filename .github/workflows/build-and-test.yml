@@ -132,6 +132,10 @@ jobs:
       - run: make genotelcontribcol
       - name: CheckDoc
         run: make checkdoc
+      - name: MarkdownLint
+        run: make markdownlint
+      - name: Misspell
+        run: make misspell
       - name: CheckMetadata
         run: make checkmetadata
       - name: CheckApi

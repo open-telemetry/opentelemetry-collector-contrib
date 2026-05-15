@@ -27,7 +27,6 @@ A “Read Only” user assigned to a vSphere with permissions to the vCenter ser
 
 ## Configuration
 
-
 | Parameter           | Default | Type             | Notes                                                                                                                                                                                                                                           |
 | ------------------- | ------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | endpoint            |         | String           | Endpoint to the vCenter Server or ESXi host that has the sdk path enabled. Required. The expected format is `<protocol>://<hostname>` <br><br> i.e: `https://vcsa.hostname.localnet`                                                            |
@@ -60,7 +59,7 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 **ALPHA**: `receiver.vcenter.resourcePoolMemoryUsageAttribute`
 
-The feature gate `receiver.vcenter.resourcePoolMemoryUsageAttribute` once enabled will enable the memory usage type attribute for 
+The feature gate `receiver.vcenter.resourcePoolMemoryUsageAttribute` once enabled will enable the memory usage type attribute for
 the `vcenter.resource_pool.memory.usage` metric.
 
 This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims

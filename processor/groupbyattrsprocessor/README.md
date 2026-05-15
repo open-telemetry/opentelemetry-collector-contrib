@@ -5,7 +5,6 @@ This processor re-associates spans, log records and metric datapoints to a *Reso
 attributes. As a result, all spans, log records or metric datapoints with the same values for the specified attributes
 are "grouped" under the same *Resource*.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: traces, metrics, logs   |
@@ -133,7 +132,7 @@ Resource {host.name="otherhost"}
     Span {span_id=5, ...}
 ```
 
-With the below configuration, the **groupbyattrs** will re-associate the spans with matching Resource and InstrumentationLibrary. 
+With the below configuration, the **groupbyattrs** will re-associate the spans with matching Resource and InstrumentationLibrary.
 
 ```yaml
 processors:

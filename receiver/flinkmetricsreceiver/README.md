@@ -4,7 +4,6 @@
 This receiver uses Flink's [REST API](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/ops/metrics/#rest-api-integration)
 to collect Jobmanager, Taskmanager, Job, Task and Operator metrics.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
@@ -48,4 +47,3 @@ The full list of settings exposed for this receiver are documented in [config.go
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
-

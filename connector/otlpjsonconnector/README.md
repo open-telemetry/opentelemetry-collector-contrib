@@ -30,7 +30,6 @@
 > The old name `otlpjson` still works but is deprecated and will be removed in a future release.
 > Please update your configuration to use `otlp_json`.
 
-
 Allows to extract otlpjson data from incoming Logs and specifically the `Body` field.
 The data is written in
 [Protobuf JSON

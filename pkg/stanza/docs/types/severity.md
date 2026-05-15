@@ -145,7 +145,6 @@ The following configurations are equivalent:
 
 <sub>Additional built-in presets coming soon</sub>
 
-
 ### How to use severity parsing
 
 All parser operators, such as [`regex_parser`](../operators/regex_parser.md) support these fields inside of a `severity` block.

@@ -4,7 +4,6 @@
 The geoIP processor `geoipprocessor` enhances the attributes of a span, log, or metric by appending information about
 the geographical location of an IP address.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: traces, metrics, logs   |

@@ -4,7 +4,6 @@
 This receiver can receive telemetry data in [Faro format](https://github.com/grafana/faro) that adheres to the
 [Faro OpenAPI schema](https://github.com/grafana/faro/blob/main/spec/gen/faro.gen.yaml).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs, traces   |
@@ -20,7 +19,6 @@ This receiver can receive telemetry data in [Faro format](https://github.com/gra
 ## Receiver Configuration
 
 Faro follows the [confighttp] configuration, some examples are shown below
-
 
 ### Example Configuration
 

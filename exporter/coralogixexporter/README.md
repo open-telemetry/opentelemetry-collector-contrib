@@ -149,7 +149,7 @@ exporters:
 
 ### Application and SubSystem attributes
 
-v0.62.0 release of OpenTelemetry Collector allows you to map Application name and Subsystem name to Resource attributes. 
+v0.62.0 release of OpenTelemetry Collector allows you to map Application name and Subsystem name to Resource attributes.
 You need to set `application_name_attributes` and `subsystem_name_attributes` fields with a list of potential Resource attributes for the AppName and Subsystem values. The first not-empty Resource attribute is going to be used. If multiple resource attributes are available, **the order of the attributes in the list determines their priority.**
 
 ### Kubernetes attributes
@@ -174,7 +174,7 @@ exporters:
 
 OpenTelemetry Collector [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover Host Resource attributes, such as `host.name` and provide Resource attributes using environment variables, which can be used for setting AppName and SubSystem fields in Coralogix.
 
-Example: 
+Example:
 ```yaml
 processors:
   resourcedetection/system:
@@ -203,7 +203,7 @@ exporters:
 
 OpenTelemetry Collector [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover EC2 Resource attributes, such as EC2 tags as resource attributes.
 
-Example: 
+Example:
 ```yaml
 processors:
  resourcedetection/ec2:
@@ -281,7 +281,7 @@ processors:
           - 'attributes["your_label"] != "teamB"'
 ```
 
-This configuration ensures separate processor per each team. Any data points without an attribute for a particular team will be dropped from exporting. 
+This configuration ensures separate processor per each team. Any data points without an attribute for a particular team will be dropped from exporting.
 
 Secondly, set up an individual exporter per each team:
 ```yaml
@@ -372,7 +372,6 @@ coralogix:
 
 This configuration ensures proper authentication with the Coralogix backend.
 Prior versions (v0.126.0 and earlier) and subsequent versions (v0.128.0 and later) are not affected by this authentication issue.
-
 
 ### Need help?
 

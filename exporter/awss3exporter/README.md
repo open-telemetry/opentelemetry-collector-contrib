@@ -87,11 +87,11 @@ See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/
 
 ### resource_attrs_to_s3
 - `s3_bucket`: Defines which resource attribute's value should be used as the S3 bucket.
-  When this option is set, it dynamically overrides `s3uploader/s3_bucket`. 
+  When this option is set, it dynamically overrides `s3uploader/s3_bucket`.
   If the specified resource attribute exists in the data,  
   its value will be used as the bucket; otherwise, `s3uploader/s3_bucket` will serve as the fallback.
 - `s3_prefix`: Defines which resource attribute's value should be used as the S3 prefix.
-  When this option is set, it dynamically overrides `s3uploader/s3_prefix`. 
+  When this option is set, it dynamically overrides `s3uploader/s3_prefix`.
   If the specified resource attribute exists in the data,  
   its value will be used as the prefix; otherwise, `s3uploader/s3_prefix` will serve as the fallback.
 
@@ -144,7 +144,7 @@ In this case, logs and traces would be stored in the following path format.
 metric/YYYY/MM/DD/HH/mm
 ```
 
-Optionally along with `s3_partition_format` you can provide `s3_partition_timezone` as name from IANA Time Zone 
+Optionally along with `s3_partition_format` you can provide `s3_partition_timezone` as name from IANA Time Zone
 database to change default local timezone to custom, for example `UTC` or `Europe/London`.
 
 ## Base Path Configuration

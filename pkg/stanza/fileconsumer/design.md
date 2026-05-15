@@ -4,13 +4,13 @@ The operator searches the file system for files that meet the following requirem
 1. The file's path matches one or more patterns specified in the `include` setting.
 2. The file's path does not match any pattern specified in the `exclude` setting.
 
-The set of files that satisfy these requirements are known in this document as "matched files". 
+The set of files that satisfy these requirements are known in this document as "matched files".
 The effective search space (`include - exclude`) is referred to colloquially as the operator's "matching pattern".
 
 # Fingerprints
 
 Files are identified and tracked using fingerprints. A fingerprint is the first `N` bytes of the file,
-with the default for `N` being `1000`. 
+with the default for `N` being `1000`.
 
 ### Fingerprint Growth
 
@@ -20,7 +20,7 @@ will be updated, until it reaches the full size of `N`.
 
 ### Deduplication of Files
 
-Multiple files with the same fingerprint are handled as if they are the same file. 
+Multiple files with the same fingerprint are handled as if they are the same file.
 
 Most commonly, this circumstance is observed during file rotation that depends on a copy/truncate strategy.
 After copying the file, but before truncating the original, two files with the same content briefly exist.
@@ -50,7 +50,7 @@ pipeline, for example.
 
 # Readers
 
-Readers are a convenience struct, which exist for the purpose of managing files and their associated metadata. 
+Readers are a convenience struct, which exist for the purpose of managing files and their associated metadata.
 
 ### Contents
 
@@ -73,13 +73,12 @@ While a file is shorter than the length of a fingerprint, its Reader will contin
 as it consumes newly written data.
 
 A Reader consumes a file using a `bufio.Scanner`, with the Scanner's buffer size defined by the `max_log_size` setting,
-and the Scanner's split func defined by the `multiline` setting. 
+and the Scanner's split func defined by the `multiline` setting.
 
-As each log is read from the file, it is decoded according to the `encoding` function, and then emitted from 
-the operator. 
+As each log is read from the file, it is decoded according to the `encoding` function, and then emitted from
+the operator.
 
 The Reader's offset is updated accordingly whenever a log is emitted.
-
 
 ### Persistence
 
@@ -94,10 +93,9 @@ When the `file_input` operator makes use of a persistence mechanism to save and 
 Setting and Getting a slice of Readers. These Readers contain all the information necessary to pick up exactly
 where the operator left off.
 
-
 # Polling
 
-The file system is polled on a regular interval, defined by the `poll_interval` setting. 
+The file system is polled on a regular interval, defined by the `poll_interval` setting.
 
 Each poll cycle runs through a series of steps which are presented below.
 
@@ -158,7 +156,7 @@ Each poll cycle runs through a series of steps which are presented below.
             - If the file was moved, the open file handle from the previous poll cycle may be useful.
 10. Consumption
     1. Lost files are consumed. In some cases, such as deletion, this operation will fail. However, if a file
-       was moved, we may be able to consume the remainder of its content. 
+       was moved, we may be able to consume the remainder of its content.
         - We do not expect to match this file again, so the best we can do is finish consuming their current contents.
         - We can reasonably expect in most cases that these files are no longer being written to.
     2. Matched files (from this poll cycle) are consumed.
@@ -181,8 +179,6 @@ Each poll cycle runs through a series of steps which are presented below.
     1. The historical record of readers is synced to whatever persistence mechanism was provided to the operator.
 15. End Poll Cycle
     1. At this point, the operator sits idle until the poll timer fires again.
-
-
 
 # Additional Details
 
@@ -222,7 +218,6 @@ C) When a file it rotated out of pattern via move/create, we detect that
 D) When a file it rotated out of pattern via copy/truncate, we detect that
    our old handle is invalid and we do not attempt to read from it.
 
-
 #### Rotated files that end up within the matching pattern
 
 In both cases of copy/truncate and move/create, if the rotated files match the pattern
@@ -247,7 +242,7 @@ logs from the moved file. This can cause data loss.
 
 The operator may lose a small percentage of logs, if both of the following conditions are true:
 1. The number of files being matched exceeds the maximum degree of concurrency allowed
-   by the `max_concurrent_files` setting. 
+   by the `max_concurrent_files` setting.
 2. Files are being "lost". That is, file rotation is moving files out of the operator's matching pattern,
    such that subsequent polling cycles will not find these files.
 

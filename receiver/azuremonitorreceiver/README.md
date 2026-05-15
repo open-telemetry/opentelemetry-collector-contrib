@@ -61,7 +61,7 @@ Authenticating using managed identities has the following optional settings:
 ### Filtering metrics
 
 The `metrics` configuration setting is designed to **limit** scraping to specific metrics and their particular aggregations.
-It accepts a nested map where 
+It accepts a nested map where
 - the key of the top-level is the Azure Metric Namespace,
 - the key of the nested map is an Azure Metric Name,
 - and the map values are a list of aggregation methods (e.g., Average, Minimum, Maximum, Total, Count).
@@ -73,7 +73,7 @@ It accepts a nested map where
 > - **Case Insensitive**: The letter case of the Namespaces, Metric names, and Aggregations does not affect the functionality.
 
 > [!WARNING]  
-> If you started providing a `metrics` configuration for a namespace, you have to specify all the metrics and their 
+> If you started providing a `metrics` configuration for a namespace, you have to specify all the metrics and their
 > aggregations for that namespace. Otherwise, these metrics will be ignored.
 
 Scraping limited metrics and aggregations:
@@ -217,7 +217,7 @@ Details about the metrics scraped by this receiver can be found in [Supported me
 
 ## Azure API calls summary
 At each collection interval, here are the different Azure API that can be called.
-It can be useful to know that, in order to configure the client permission in Azure or to choose the 
+It can be useful to know that, in order to configure the client permission in Azure or to choose the
 right configuration based on your needs.
 
 ### [Subscriptions - Get](https://learn.microsoft.com/en-us/rest/api/resources/subscriptions/get?view=rest-resources-2022-12-01&tabs=HTTP)
@@ -266,14 +266,14 @@ cardinality: once per res type and **composite key
 
 > *page size has not been clearly identified, reading the documentation. Even Chat Bots lose themselves
 > with the "top"/"$top" filter that doesn't seem related, and give random results from 10 to 1000...
-> 
+>
 > **the composite key is an identifier formed with info retrieved in metric definitions.
 Useful to group and reduce the number of metrics calls.
-It is composed by 
+It is composed by
 > - dimensions,
-> - aggregations, 
+> - aggregations,
 > - minimum timegrain.
-> 
+>
 > It is used to get several metrics in one request.
 
 ## Troubleshooting

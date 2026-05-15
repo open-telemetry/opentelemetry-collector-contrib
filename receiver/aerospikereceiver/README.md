@@ -3,7 +3,6 @@
 
 The Aerospike receiver is designed to collect performance metrics from one or more Aerospike nodes.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
@@ -20,7 +19,6 @@ The Aerospike Receiver uses the [official Go client](https://github.com/aerospik
 connect and collect.
 
 Aerospike versions 4.9, 5.x, and 6.x are supported.
-
 
 ## Configuration
 

@@ -107,7 +107,7 @@ The filter processor also allows configuring an optional field, `error_mode`, wh
 
 ##### `processor.filter.defaultErrorModeIgnore`
 
-The `processor.filter.defaultErrorModeIgnore` feature gate changes the default `error_mode` of the filter processor from `propagate` to `ignore`. 
+The `processor.filter.defaultErrorModeIgnore` feature gate changes the default `error_mode` of the filter processor from `propagate` to `ignore`.
 `ignore` is the recommended mode to improve resiliency, as errors are logged for visibility but valid data is preserved, and processing continues with the next condition.
 This feature gate is currently in Alpha (disabled by default) and must be explicitly enabled.
 
@@ -254,7 +254,7 @@ trace_conditions:
   - IsRootSpan() or spanevent.name == "bar"
 ```
 
-This condition fails because `IsRootSpan()` is only available in the span context, not span events, 
+This condition fails because `IsRootSpan()` is only available in the span context, not span events,
 while the `spanevent` Path prefix requires the condition to evaluate in the span event context.
 
 The solution is to split into separate span and span event conditions:
@@ -268,7 +268,7 @@ trace_conditions:
       - spanevent.name == "bar"
 ```
 
-The advanced configuration is required for `IsRootSpan()` because there is no Path prefix in the condition, 
+The advanced configuration is required for `IsRootSpan()` because there is no Path prefix in the condition,
 so the context must be set explicitly to `span`.
 
 ### Examples

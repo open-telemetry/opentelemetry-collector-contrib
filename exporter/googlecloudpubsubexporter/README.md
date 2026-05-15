@@ -23,7 +23,7 @@ The following configuration options are supported:
   name (eg: `projects/otel-project/topics/otlp`).
 * `compression` (Optional): Set the payload compression, only `gzip` is supported. Default is no compression.
 * `watermark` Behaviour of how the `ce-time` attribute is set (see watermark section for more info)
-  * `behavior` (Optional): `current` sets the `ce-time` attribute to the system clock, `earliest` sets the attribute to 
+  * `behavior` (Optional): `current` sets the `ce-time` attribute to the system clock, `earliest` sets the attribute to
   the smallest timestamp of all the messages.
   * `allow_drift` (Optional): The maximum difference the `ce-time` attribute can be set from the system clock. When the
   drift is set to 0, the maximum drift from the clock is allowed (only applicable to `earliest`).
@@ -31,19 +31,19 @@ The following configuration options are supported:
   or switching between [global and regional service endpoints](https://cloud.google.com/pubsub/docs/reference/service_apis_overview#service_endpoints).
 * `insecure` (Optional): Allows performing “insecure” SSL connections and transfers, useful when connecting to a local
   emulator instance. Only has effect if Endpoint is not ""
-* `ordering`: Configures the [PubSub ordering](https://cloud.google.com/pubsub/docs/ordering) feature, see 
+* `ordering`: Configures the [PubSub ordering](https://cloud.google.com/pubsub/docs/ordering) feature, see
   [ordering](#ordering) section for more info.
   * `enabled` (default = `false`): Enables the ordering. Default is disabled.
   * `from_resource_attribute` (no default): resource attribute that will be used as the ordering key. Required when
     `ordering.enabled` is `true`. If the resource attribute is missing or has an empty value, the messages will not be
     ordered for this resource.
-  * `remove_resource_attribute` (default = `false`): if the ordering key resource attribute specified 
+  * `remove_resource_attribute` (default = `false`): if the ordering key resource attribute specified
     `from_resource_attribute` should be removed from the resource attributes.
-* `traces`, `metrics` and `logs` (Optional): Allows overriding the standard OTLP Protobuf 
-  [encoding and the message attributes](#encoding-and-message-attributes). 
+* `traces`, `metrics` and `logs` (Optional): Allows overriding the standard OTLP Protobuf
+  [encoding and the message attributes](#encoding-and-message-attributes).
   attributes.
   * `encoding` (Optional): An encoding extension, if not specified it uses the default Protobuf marshaller.
-  * `attributes` (Optional): Attributes that will be added to the Pub/Sub message. 
+  * `attributes` (Optional): Attributes that will be added to the Pub/Sub message.
 
 ```yaml
 exporters:
@@ -65,7 +65,7 @@ defined in the
 [Google Cloud Pub/Sub Protocol Binding for CloudEvents](https://github.com/google/knative-gcp/blob/main/docs/spec/pubsub-protocol-binding.md#31-binary-content-mode)
 .
 
-The data field is either a `ExportTraceServiceRequest`, `ExportMetricsServiceRequest` or `ExportLogsServiceRequest` for 
+The data field is either a `ExportTraceServiceRequest`, `ExportMetricsServiceRequest` or `ExportLogsServiceRequest` for
 traces, metrics or logs respectively.  Each message is accompanied by the following attributes:
 
 | attributes       | description                                                                                                                                                       |
@@ -75,11 +75,11 @@ traces, metrics or logs respectively.  Each message is accompanied by the follow
 | ce-id            | a random `UUID` to uniquely define the message                                                                                                                    |
 | ce-time          | a watermark indicating when the events, encapsulated in the OTLP message, where generated. The behavior will depend on the watermark setting in the configuration |
 | ce-type          | depending on the data `org.opentelemetry.otlp.traces.v1`, `org.opentelemetry.otlp.metrics.v1` or `org.opentelemetry.otlp.logs.v1`                                 |
-| content-type     | the content type is `application/protobuf`                                                                                                                        | 
+| content-type     | the content type is `application/protobuf`                                                                                                                        |
 | content-encoding | indicates that payload is compressed. Only gzip compression is supported                                                                                          |
 
 ### Compression
- 
+
 By default, the messages are not compressed. By compressing the messages, the cost of Pubsub can be reduced to
 up to 20% of the cost. This can be done by setting the `compression` to `gzip`.
 
@@ -98,15 +98,15 @@ Only `gzip` is supported.
 
 ### Watermark
 
-A watermark is a threshold that indicates where streaming processing frameworks (like Apache Beam) expects all the 
-data in a window to have arrived. If new data arrives with a timestamp that's in the window but older than the 
+A watermark is a threshold that indicates where streaming processing frameworks (like Apache Beam) expects all the
+data in a window to have arrived. If new data arrives with a timestamp that's in the window but older than the
 watermark, the data is considered late data. The watermark section will change the behaviour of the `ce-time`
-attribute of the message. If you don't use such frameworks you can ignore the section and the `ce-time` will 
+attribute of the message. If you don't use such frameworks you can ignore the section and the `ce-time` will
 be set to the current time, but to have a more reliable watermark behaviour in such streaming it's better to set
 the `ce-time` attribute to the earliest timestamp of the messages embedded in the Pubsub message.
 
 Setting the behaviour to `earliest` will scan all the embedded message before sending the actual Pubsub message to
-figure out what the earliest timestamp is. You have to set `allow_drift`, the allowed maximum for the `ce-time` 
+figure out what the earliest timestamp is. You have to set `allow_drift`, the allowed maximum for the `ce-time`
 timestamp , if you want to behaviour to have effect as the default is `0s`.
 
 ```yaml
@@ -123,14 +123,14 @@ The **default** behavior is that the watermark is set to the current time of the
 that much as the timestamp that is attached to a Pubsub message. Most users that don't do anything outside using Pubsub
 as a global distribution system will not need anything else.
 
-If you use Google Cloud [Dataflow](https://cloud.google.com/dataflow) and want to rely on the advanced streaming 
-feature you may want to change the behavior of the watermark and de-duplication. You can leverage the unique id (`ce-id`) 
-and a timestamp (`ce-time`) attributes on the message. In Apache Beam (the framework used by Dataflow) you can set the 
+If you use Google Cloud [Dataflow](https://cloud.google.com/dataflow) and want to rely on the advanced streaming
+feature you may want to change the behavior of the watermark and de-duplication. You can leverage the unique id (`ce-id`)
+and a timestamp (`ce-time`) attributes on the message. In Apache Beam (the framework used by Dataflow) you can set the
 attributes names on the [Pubsub connector](https://beam.apache.org/releases/javadoc/2.31.0/org/apache/beam/sdk/io/gcp/pubsub/PubsubIO.Read.html#withTimestampAttribute-java.lang.String-)
-via the `.withTimestampAttribute("ce-time")` and `.withIdAttribute("ce-id")` methods.  A good settings for this 
+via the `.withTimestampAttribute("ce-time")` and `.withIdAttribute("ce-id")` methods.  A good settings for this
 scenario is `behavior: earliest` with a reasonable `allow_drift` of `1h`.
 
-Allowed behavior values are `current` or `earliest`. For `allow_drift` the default is `0s`, so make sure to set the 
+Allowed behavior values are `current` or `earliest`. For `allow_drift` the default is `0s`, so make sure to set the
 value.
 
 ## Ordering
@@ -153,7 +153,7 @@ exporters:
 
 ### Notes
 
-While the PubSub topic doesn't require any configuration for ordering, you will need to enable ordering on your 
+While the PubSub topic doesn't require any configuration for ordering, you will need to enable ordering on your
 subscription(s) if you need it. Enabling ordering on a subscription is only possible at creation.
 For composite ordering keys you'd need to compose the resource attribute value before exporting e.g., by using a
 [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor)
@@ -162,7 +162,7 @@ For composite ordering keys you'd need to compose the resource attribute value b
 Empty values in the ordering key are accepted but won't be ordered, see [PubSub ordering documentation](https://cloud.google.com/pubsub/docs/ordering)
 for more details.
 
-PubSub requires one publish request per ordering key value, so this exporter groups the signals per ordering key before 
+PubSub requires one publish request per ordering key value, so this exporter groups the signals per ordering key before
 publishing.
 
 ## Encoding and message attributes

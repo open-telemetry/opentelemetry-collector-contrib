@@ -14,8 +14,8 @@
 
 ## Overview
 
-A receiver for collecting logs & metrics from AWS services via Lambda invocations. 
-AWS Lambda is a popular serverless service used extensively for event-driven architectures. 
+A receiver for collecting logs & metrics from AWS services via Lambda invocations.
+AWS Lambda is a popular serverless service used extensively for event-driven architectures.
 Many AWS services (S3, CloudWatch, SNS, SQS) can trigger Lambda functions, making it an ideal entry point for collecting data from AWS services.
 This receiver is designed to run as part of an OpenTelemetry Collector deployed as an AWS Lambda function.
 
@@ -213,8 +213,8 @@ The following receiver configuration parameters are supported.
 
 | Name                   | Description                                             |
 |:-----------------------|:--------------------------------------------------------|
-| `s3::encoding`         | Optional encoder to use for S3 event processing         | 
-| `cloudwatch::encoding` | Optional encoder to use for CloudWatch event processing | 
+| `s3::encoding`         | Optional encoder to use for S3 event processing         |
+| `cloudwatch::encoding` | Optional encoder to use for CloudWatch event processing |
 
 Consider following notes on default behaviors:
 
@@ -380,8 +380,8 @@ service:
       exporters: [otlp_http]
 ```
 
-For this deployment configuration, when receiver is triggered by a CloudWatch Logs subscription filter, the CloudWatch 
-messages will be extracted and converted to an OpenTelemetry log record. 
+For this deployment configuration, when receiver is triggered by a CloudWatch Logs subscription filter, the CloudWatch
+messages will be extracted and converted to an OpenTelemetry log record.
 These logs then get forwarded to an OTLP listener via the `otlp_http` exporter.
 
 ### Example 4: Arbitrary S3 content (logs or metrics)
@@ -401,7 +401,7 @@ service:
       exporters: [otlp_http]
 ```
 
-For this deployment configuration, when receiver is triggered by an S3 event, 
+For this deployment configuration, when receiver is triggered by an S3 event,
 
 - Logs: Content of the S3 object will be added to an OpenTelemetry log record. If content is string, then it will be added as-is.
 - Metrics: Metrics will be decoded using `awscloudwatchmetricstreams_encoding` extension.
@@ -428,10 +428,10 @@ The Lambda function requires the following IAM permissions:
 ## Error Handling
 
 - Detailed error information is logged for troubleshooting
-   
+
   These logs can be views via the configured CloudWatch Logs group for the Lambda function.
 
-- Error retrying 
+- Error retrying
 
   Error retrying can be configured through the Lambda deployment setting.
   Read more about at [AWS error handling for asynchronous invocations](https://docs.aws.amazon.com/lambda/latest/dg/invocation-async-configuring.html).
@@ -496,7 +496,7 @@ Check the CloudWatch logs for detailed information.
 
 > [!NOTE]
 > Using AWS CLI, you can use `--timeout` option to increase currently configured Lambda timeout for custom invocations.
-> Also note that errors resulting from this manual trigger are not retained back to S3 failure destination. 
+> Also note that errors resulting from this manual trigger are not retained back to S3 failure destination.
 > This is because Lambda only retains errors for asynchronous invocations.
 
 To perform a dry run, use the following command with `dryrun` set to `true`:

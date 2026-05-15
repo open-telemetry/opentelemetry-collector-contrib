@@ -4,7 +4,6 @@
 This receiver fetches stats from a CouchDB server using the `/_node/{node-name}/_stats/couchdb`
 [endpoint](https://docs.couchdb.org/en/latest/api/server/common.html#node-node-name-stats).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -51,4 +50,3 @@ The full list of settings exposed for this receiver are documented in [config.go
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
-

@@ -3,7 +3,6 @@
 
 The Kubernetes Attributes Processor allows adding k8s metadata to resource attributes for spans, metrics and logs.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: profiles   |
@@ -232,7 +231,6 @@ Reprocessing the informer cache periodically (resyncing) enqueues all cached K8s
 Because resource state modifications are already pushed immediately via Kubernetes watch events, a resync period is almost entirely unnecessary.
 
 - `watch_sync_period` (`default: 5m`): The resync period for K8s informers. You may set this to `0s` to disable resyncing completely (recommended for large clusters).
-
 
 ## Extracting attributes from pod labels and annotations
 
@@ -1140,9 +1138,9 @@ are currently in `beta` stability and are actively moving towards `stable` stabi
 ## Available Benchmarks
 
 The component is tested as part of the project's load tests, with the results being publicly
-available at the benchmarks 
+available at the benchmarks
 [page](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests).
-In that page, users can find details such as 
+In that page, users can find details such as
 [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#metrick8sattributesprocessor-5k-workload-cluster-ram-mib)
 and [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#metrick8sattributesprocessor-5k-workload-cluster-cpu-percentage)
 performance when the component is used in K8s Clusters (tests use [KWOK](https://kwok.sigs.k8s.io/))

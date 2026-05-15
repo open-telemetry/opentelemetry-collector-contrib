@@ -19,7 +19,7 @@ of the data accessible to WebSocket clients connecting on a configurable port.
 This functionality resembles that of the Unix `tee` command, which enables data
 to flow through while duplicating and redirecting it for inspection.
 
-To avoid overloading clients, the amount of telemetry duplicated over 
+To avoid overloading clients, the amount of telemetry duplicated over
 any open WebSockets is rate limited by an adjustable amount.
 
 ## Config

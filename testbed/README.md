@@ -1,7 +1,7 @@
 # OpenTelemetry Collector Testbed
 
 Testbed is a controlled environment and tools for conducting end-to-end tests for the Otel Collector,
-including reproducible short-term benchmarks, correctness tests, long-running stability tests and 
+including reproducible short-term benchmarks, correctness tests, long-running stability tests and
 maximum load stress tests.
 
 ## Usage
@@ -68,43 +68,43 @@ Generally, when designing a test for new exporter and receiver components, devel
 
   * ```go
     func TestTrace10kSPS(t *testing.T) {
-    	tests := []struct {
-    		name         string
-    		sender       testbed.DataSender
-    		receiver     testbed.DataReceiver
-    		resourceSpec testbed.ResourceSpec
-    	}{
-    		{
-    			"NewExporterOrReceiver",
-    			testbed.NewXXXDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-    			testbed.NewXXXDataReceiver(testutil.GetAvailablePort(t)),
-    			testbed.ResourceSpec{
-    				ExpectedMaxCPU: XX,
-    				ExpectedMaxRAM: XX,
-    			},
-    		},
-    		...
-    	}
-    	processors := []ProcessorNameAndConfigBody{
-    		{
-    			Name: "batch",
-    			Body: `
-	  batch:
+     tests := []struct {
+      name         string
+      sender       testbed.DataSender
+      receiver     testbed.DataReceiver
+      resourceSpec testbed.ResourceSpec
+     }{
+      {
+       "NewExporterOrReceiver",
+       testbed.NewXXXDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+       testbed.NewXXXDataReceiver(testutil.GetAvailablePort(t)),
+       testbed.ResourceSpec{
+        ExpectedMaxCPU: XX,
+        ExpectedMaxRAM: XX,
+       },
+      },
+      ...
+     }
+     processors := []ProcessorNameAndConfigBody{
+      {
+       Name: "batch",
+       Body: `
+   batch:
     `,
-			},
-    	}
-    	for _, test := range tests {
-    		t.Run(test.name, func(t *testing.T) {
-    			Scenario10kItemsPerSecond(
-    				t,
-    				test.sender,
-    				test.receiver,
-    				test.resourceSpec,
-    				performanceResultsSummary,
-    				processors,
-    			)
-    		})
-    	}
+   },
+     }
+     for _, test := range tests {
+      t.Run(test.name, func(t *testing.T) {
+       Scenario10kItemsPerSecond(
+        t,
+        test.sender,
+        test.receiver,
+        test.resourceSpec,
+        performanceResultsSummary,
+        processors,
+       )
+      })
+     }
     }
     ```
 
@@ -131,4 +131,3 @@ Run the following at the root of the repo:
 ### Advanced usage
 
 A Makefile is also located at [`testbed/Makefile`](./Makefile) that offers targets to directly run certain test suites. Note that these targets will not compile the Collector before running.
-

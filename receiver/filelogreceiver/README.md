@@ -3,7 +3,6 @@
 
 This receiver tails and parses logs from files.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: logs   |
@@ -94,7 +93,7 @@ The `omit_pattern` setting can be used to omit the start/end pattern from each e
 
 ### Supported encodings
 
-| Key         | Description
+| Key         | Description                                                      |
 | ---         | ---                                                              |
 | `nop`       | No encoding validation. Treats the file as a stream of raw bytes |
 | `utf-8`     | UTF-8 encoding                                                   |
@@ -171,7 +170,7 @@ receivers:
 
 - Use `ignore` when you want to avoid duplicate logs and your log rotation strategy ensures that rotated files are properly renamed or moved.
 - Use `read_whole_file` when data completeness is critical and you can tolerate duplicate logs, or when you have deduplication logic downstream.
-- Use `read_new` when files are expected to be deleted after rotation and you want to read only new data written after the truncation point. 
+- Use `read_new` when files are expected to be deleted after rotation and you want to read only new data written after the truncation point.
 
 ## Example - Tailing a simple json file
 

@@ -6,7 +6,6 @@ command](https://github.com/memcached/memcached/wiki/Commands#statistics). A
 detailed description of all the stats available is at
 https://github.com/memcached/memcached/blob/master/doc/protocol.txt#L1159.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -55,4 +54,3 @@ with detailed sample configurations in [testdata/config.yaml](./testdata/config.
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
-

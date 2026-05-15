@@ -184,7 +184,7 @@ for every 4 items input.
 This mode uses the same randomness mechanism as the proportional
 sampling mode, in this case considering how much each item was already
 sampled by preceding samplers.  This mode can be used to lower
-sampling probability to a minimum value across a whole pipeline, 
+sampling probability to a minimum value across a whole pipeline,
 making it possible to conditionally adjust sampling probabilities.
 
 This mode compares a 56 bit threshold against the configured sampling

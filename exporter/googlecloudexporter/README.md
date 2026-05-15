@@ -72,7 +72,6 @@ docker run \
 
 Using [`gcloud auth application-default login`](https://cloud.google.com/docs/authentication/application-default-credentials) to authenticate is not recommended for production use. Instead, it’s best to use a GCP service account through one of the methods listed above. The `gcloud auth` command can be useful for development and testing on a user account, and authenticating with it follows the same approach as the service account key method above.
 
-
 These instructions are to get you up and running quickly with the GCP exporter in a local development environment. We'll also point out alternatives that may be more suitable for CI or production.
 
 1.  **Obtain a Collector binary.** Pull a binary or Docker image for the
@@ -137,7 +136,6 @@ These instructions are to get you up and running quickly with the GCP exporter i
 
     4.  Obtain credentials using one of the methods in the [Authenticating
         section](#prerequisite-authenticating) above.
-
 
 4.  **Run the collector.** The following runs the collector in the foreground, so please execute it in a separate terminal.
 
@@ -309,14 +307,14 @@ the collector config above appropriately.
 
 ### Logging Example
 
-The logging exporter processes OpenTelemetry log entries and exports them to GCP Cloud Logging. Logs can be collected using one 
+The logging exporter processes OpenTelemetry log entries and exports them to GCP Cloud Logging. Logs can be collected using one
 of the opentelemetry-collector-contrib log receivers, such as the [filelogreceiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver).
 
 Log entries must contain any Cloud Logging-specific fields as a matching OpenTelemetry attribute (as shown in examples from the
 [logs data model](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#google-cloud-logging)).
 These attributes can be parsed using the various [log operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available) available upstream.
 
-For example, the following config parses the [HTTPRequest field](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest) from Apache log entries saved in `/var/log/apache.log`. 
+For example, the following config parses the [HTTPRequest field](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest) from Apache log entries saved in `/var/log/apache.log`.
 It also parses out the `timestamp` and inserts a non-default `log_name` attribute and GCP [MonitoredResource](https://cloud.google.com/logging/docs/reference/v2/rest/v2/MonitoredResource) attribute.
 
 ```yaml
@@ -398,9 +396,9 @@ To the following GCP entry structure:
         }
 ```
 
-The logging exporter also supports the full range of [GCP log severity levels](https://cloud.google.com/logging/docs/reference/v2/rpc/google.logging.type#google.logging.type.LogSeverity), 
-which differ from the available [OpenTelemetry log severity levels](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#severity-fields). 
-To accommodate this, the following mapping is used to equate an incoming OpenTelemetry [`SeverityNumber`](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-severitynumber) 
+The logging exporter also supports the full range of [GCP log severity levels](https://cloud.google.com/logging/docs/reference/v2/rpc/google.logging.type#google.logging.type.LogSeverity),
+which differ from the available [OpenTelemetry log severity levels](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#severity-fields).
+To accommodate this, the following mapping is used to equate an incoming OpenTelemetry [`SeverityNumber`](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-severitynumber)
 to a matching GCP log severity:
 
 |OTel `SeverityNumber`/Name|GCP severity level|

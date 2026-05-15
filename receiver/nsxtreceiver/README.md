@@ -4,7 +4,6 @@
 This receiver fetches metrics important to run virtual networking using NSX-T. The receiver ingests metrics via the
 [NSX Rest API](https://docs.vmware.com/en/VMware-NSX-Data-Center-for-vSphere/6.4/nsx_64_api.pdf).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
@@ -79,4 +78,3 @@ The full list of settings exposed for this receiver are documented in [config.go
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
-

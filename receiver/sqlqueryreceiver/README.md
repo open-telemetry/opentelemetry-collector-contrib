@@ -3,7 +3,6 @@
 
 The SQL Query Receiver uses custom SQL queries to generate logs and/or metrics from a database connection.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs   |

@@ -7,7 +7,6 @@ expression to extract a lookup key, queries a lookup source, and writes the resu
 
 Currently supports logs, with metrics and traces support planned.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs   |

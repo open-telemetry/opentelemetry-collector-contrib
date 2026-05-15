@@ -7,7 +7,6 @@ results from ad-hoc searches. Because of this, care must be taken by users when 
 Cloud deployments. The primary purpose of this receiver is to empower those tasked with the maintenance and care of a Splunk Enterprise deployment to leverage opentelemetry and their observability toolset in their
 jobs.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
@@ -24,7 +23,7 @@ jobs.
 
 **By default the Splunk Enterprise receiver is not configured to gather any metrics other than `splunk.health`**
 
-The following settings are required, omitting them will either cause your receiver to fail to compile or result in 4/5xx return codes during scraping. 
+The following settings are required, omitting them will either cause your receiver to fail to compile or result in 4/5xx return codes during scraping.
 
 **NOTE:** These must be set for each Splunk instance type (indexer, search head, or cluster master) from which you wish to pull metrics. At present, only one of each type is accepted, per configured receiver instance. This means, for example, that if you have three different "indexer" type instances that you would like to pull metrics from you will need to configure three different `splunkenterprise` receivers for each indexer node you wish to monitor.
 
@@ -294,10 +293,10 @@ Each custom search requires:
 - `latest` (optional): The latest time for the search. Defaults to `now`. **Ignored if SPL already contains** `latest=`**.**
 - `metrics` (required): A list of metric definitions that map search result columns to OTel metrics.
 
-**Note on time ranges:** 
+**Note on time ranges:**
 
-- For regular searches (like `index=_internal | stats count`), the receiver automatically adds `earliest` and `latest` time modifiers. 
-- For generating commands that start with `|` (other than `| tstats`), no time range is added since these commands handle time differently. 
+- For regular searches (like `index=_internal | stats count`), the receiver automatically adds `earliest` and `latest` time modifiers.
+- For generating commands that start with `|` (other than `| tstats`), no time range is added since these commands handle time differently.
   - Receiver will correctly add a time range to searches that **begin** with `| tstats`
 
 Each metric definition supports:
@@ -405,6 +404,5 @@ receivers:
             static_attributes:
               search_source: "rest_api"
 ```
-
 
 For a full list of settings exposed by this receiver please look in [config.go](./config.go) with a detailed configuration in [testdata/config.yaml](./testdata/config.yaml).

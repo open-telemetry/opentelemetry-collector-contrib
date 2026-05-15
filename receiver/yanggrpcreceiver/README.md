@@ -5,7 +5,6 @@ The YANG/gRPC receiver receives metrics offered using the
 [YANG (Yet Another New Generation) data model](https://en.wikipedia.org/wiki/YANG), expressed over
 [gRPC](https://ciscolearning.github.io/cisco-learning-codelabs/posts/yangsuite-restconf/#0).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
@@ -90,7 +89,7 @@ yang_grpc:
 
 ## YANG Parser Settings (yang)
 * `enable_rfc_parser`: Enable RFC 6020/7950 compliant parsing.
-* `cache_modules`: Local directories containing Cisco/IETF `.yang` files for accurate parsing. Cache discovered YANG modules to reduce CPU overhead. 
+* `cache_modules`: Local directories containing Cisco/IETF `.yang` files for accurate parsing. Cache discovered YANG modules to reduce CPU overhead.
 
 ## Production Deployment Example
 ```YAML

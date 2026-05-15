@@ -47,7 +47,6 @@ service:
       exporters: [alibabacloud_logservice]
 ```
 
-
 ## All Telemetry Data
 If you are using OpenTelemetry Collector to collect different types of telemetry data, you should send to different LogService's store.
 

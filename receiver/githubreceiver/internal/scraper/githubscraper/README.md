@@ -126,7 +126,6 @@ scrapers:
 
 ## Branch Data Limitations
 
-
 Due to the limitations of the GitHub GraphQL and REST APIs, some data retrieved
 may not be as expected. Notably there are spots in the code which link to this
 section that make decisions based on these limitations.
@@ -137,7 +136,7 @@ place of `AheadBy` and vice versa. This is a byproduct of the `getBranchData`
 query which returns all the refs (branches) from a given repository and the
 comparison to the default branch (trunk). Comparing it here reduces the need
 to make a query that gets all the names of the refs (branches), and then queries
-against each branch. 
+against each branch.
 
 Another such byproduct of this method is the skipping of metric creation if the
 branch is the default branch (trunk) or if no changes have been made to the

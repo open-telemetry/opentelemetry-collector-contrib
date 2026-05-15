@@ -15,9 +15,6 @@ The `syslog_input` operator listens for syslog format logs from UDP/TCP packages
 | `resource`   | {}               | A map of `key: value` pairs to add to the entry's resource.                                           |
 | `on_error`   | `send`           | The behavior of the syslog parser if it encounters an error. See [on_error](../types/on_error.md).    |
 
-
-
-
 ### Example Configurations
 
 #### Simple
@@ -41,4 +38,3 @@ UDP Configuration:
      protocol: rfc3164
      location: UTC
 ```
-

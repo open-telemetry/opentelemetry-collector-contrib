@@ -15,12 +15,12 @@
 
 ## Overview
 
-AWS Container Insights Receiver (`awscontainerinsight`) is an AWS specific receiver that supports [CloudWatch Container Insights](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ContainerInsights.html). CloudWatch Container Insights collect, aggregate, 
-and summarize metrics and logs from your containerized applications and microservices. Data are collected as as performance log events 
+AWS Container Insights Receiver (`awscontainerinsight`) is an AWS specific receiver that supports [CloudWatch Container Insights](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ContainerInsights.html). CloudWatch Container Insights collect, aggregate,
+and summarize metrics and logs from your containerized applications and microservices. Data are collected as as performance log events
 using [embedded metric format](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format.html). From the EMF data, Amazon CloudWatch can create the aggregated CloudWatch metrics at the cluster, node, pod, task, and service level.
 
 CloudWatch Container Insights has been supported by [ECS Agent](https://github.com/aws/amazon-ecs-agent) and [CloudWatch Agent](https://github.com/aws/amazon-cloudwatch-agent) to collect infrastructure metrics for many resources such as such as CPU, memory, disk, and network. To migrate existing customers to use OpenTelemetry, AWS Container Insights Receiver (together with CloudWatch EMF Exporter) aims to support the same CloudWatch Container Insights experience for the following platforms:  
-  * Amazon ECS 
+  * Amazon ECS
   * Amazon EKS
   * Kubernetes platforms on Amazon EC2
 
@@ -40,7 +40,7 @@ receivers:
     prefer_full_pod_name: false 
     add_full_pod_name_metric_label: false 
 ```
-There is no need to provide any parameters since they are all optional. 
+There is no need to provide any parameters since they are all optional.
 
 **collection_interval (optional)**
 
@@ -62,7 +62,7 @@ The "PodName" attribute is set based on the name of the relevant controllers lik
 
 The "FullPodName" attribute is the pod name including suffix. If false FullPodName label is not added. The default value is false
 
-## Sample configuration for Container Insights 
+## Sample configuration for Container Insights
 This is a sample configuration for AWS Container Insights using the `awscontainerinsight` and `awsemfexporter` for an EKS cluster:
 ```
 # create namespace
@@ -335,7 +335,7 @@ kubectl apply -f config.yaml
 | cluster_failed_node_count | Count |
 | cluster_node_count        | Count |
 
-<br/><br/> 
+<br/><br/>
 | Resource Attribute |
 |--------------------|
 | ClusterName        |
@@ -344,15 +344,15 @@ kubectl apply -f config.yaml
 | Version            |
 | Sources            |
 
-<br/><br/> 
-<br/><br/> 
+<br/><br/>
+<br/><br/>
 
 ### Cluster Namespace
 | Metric                           | Unit  |
 |----------------------------------|-------|
 | namespace_number_of_running_pods | Count |
 
-<br/><br/> 
+<br/><br/>
 | Resource Attribute |
 |--------------------|
 | ClusterName        |
@@ -363,16 +363,15 @@ kubectl apply -f config.yaml
 | Sources            |
 | kubernete          |
 
-<br/><br/> 
-<br/><br/> 
+<br/><br/>
+<br/><br/>
 
 ### Cluster Service
 | Metric                         | Unit  |
 |--------------------------------|-------|
 | service_number_of_running_pods | Count |
 
-
-<br/><br/> 
+<br/><br/>
 | Resource Attribute |
 |--------------------|
 | ClusterName        |
@@ -384,9 +383,8 @@ kubectl apply -f config.yaml
 | Sources            |
 | kubernete          |
 
-
-<br/><br/> 
-<br/><br/> 
+<br/><br/>
+<br/><br/>
 
 ### Node
 | Metric                              | Unit          |
@@ -426,7 +424,7 @@ kubectl apply -f config.yaml
 | node_number_of_running_containers   | Count         |
 | node_number_of_running_pods         | Count         |
 
-<br/><br/> 
+<br/><br/>
 | Resource Attribute   |
 |----------------------|
 | ClusterName          |
@@ -437,8 +435,8 @@ kubectl apply -f config.yaml
 | Sources              |
 | kubernete            |
 
-<br/><br/> 
-<br/><br/> 
+<br/><br/>
+<br/><br/>
 
 ### Node Disk IO
 | Metric                             | Unit          |
@@ -454,7 +452,7 @@ kubectl apply -f config.yaml
 | node_diskio_io_service_bytes_total | Bytes/Second  |
 | node_diskio_io_service_bytes_write | Bytes/Second  |
 
-<br/><br/> 
+<br/><br/>
 | Resource Attribute   |
 |----------------------|
 | AutoScalingGroupName |
@@ -468,8 +466,9 @@ kubectl apply -f config.yaml
 | Version              |
 | Sources              |
 | kubernete            |
-<br/><br/> 
-<br/><br/> 
+
+<br/><br/>
+<br/><br/>
 
 ### Node Filesystem
 | Metric                      | Unit    |
@@ -481,7 +480,7 @@ kubectl apply -f config.yaml
 | node_filesystem_usage       | Bytes   |
 | node_filesystem_utilization | Percent |
 
-<br/><br/> 
+<br/><br/>
 | Resource Attribute   |
 |----------------------|
 | AutoScalingGroupName |
@@ -496,8 +495,9 @@ kubectl apply -f config.yaml
 | Version              |
 | Sources              |
 | kubernete            |
-<br/><br/> 
-<br/><br/> 
+
+<br/><br/>
+<br/><br/>
 
 ### Node Network
 | Metric                             | Unit         |
@@ -512,7 +512,7 @@ kubectl apply -f config.yaml
 | node_interface_network_tx_errors   | Count/Second |
 | node_interface_network_tx_packets  | Count/Second |
 
-<br/><br/> 
+<br/><br/>
 | Resource Attribute   |
 |----------------------|
 | AutoScalingGroupName |
@@ -525,8 +525,9 @@ kubectl apply -f config.yaml
 | interface            |
 | Sources              |
 | kubernete            |
-<br/><br/> 
-<br/><br/> 
+
+<br/><br/>
+<br/><br/>
 
 ### Pod
 | Metric                                | Unit          |
@@ -565,8 +566,8 @@ kubectl apply -f config.yaml
 | pod_network_tx_dropped                | Count/Second  |
 | pod_network_tx_errors                 | Count/Second  |
 | pod_network_tx_packets                | Count/Second  |
-| pod_number_of_container_restarts      | Count         | 
-| pod_number_of_containers              | Count         |   
+| pod_number_of_container_restarts      | Count         |
+| pod_number_of_containers              | Count         |
 | pod_number_of_running_containers      | Count         |  
 
 | Resource Attribute   |
@@ -585,7 +586,7 @@ kubectl apply -f config.yaml
 | kubernete            |
 | pod_status           |
 
-<br/><br/> 
+<br/><br/>
 
 ### Pod Network
 | Metric                             | Unit         |
@@ -600,7 +601,7 @@ kubectl apply -f config.yaml
 | pod_interface_network_tx_errors    | Count/Second |
 | pod_interface_network_tx_packets   | Count/Second |
 
-<br/><br/> 
+<br/><br/>
 | Resource Attribute   |
 |----------------------|
 | AutoScalingGroupName |
@@ -617,9 +618,9 @@ kubectl apply -f config.yaml
 | Sources              |
 | kubernete            |
 | pod_status           |
-<br/><br/> 
-<br/><br/> 
 
+<br/><br/>
+<br/><br/>
 
 ### Container
 | Metric                                  | Unit          |
@@ -647,7 +648,7 @@ kubectl apply -f config.yaml
 | container_memory_working_set            | Bytes         |
 | number_of_container_restarts            | Count         |
 
-<br/><br/> 
+<br/><br/>
 
 | Resource Attribute                |
 |-----------------------------------|
@@ -667,7 +668,7 @@ kubectl apply -f config.yaml
 | kubernetes                        |
 | container_status                  |
 | container_status_reason           |
-| container_last_termination_reason | 
+| container_last_termination_reason |
 
 The attribute `container_status_reason` is present only when `container_status` is in "Waiting" or "Terminated" State. The attribute `container_last_termination_reason` is present only when `container_status` is in "Terminated" State.
 
@@ -758,6 +759,7 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | instance_network_tx_errors              | Count/Second  |
 | instance_network_tx_packets             | Count/Second  |
 | instance_number_of_running_tasks        | Count         |
+
 <br/><br/>
 
 | Resource Attribute   |
@@ -827,6 +829,7 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | ContainerInstanceId  |
 | InstanceId           |
 | EBSVolumeId          |
+
 <br/><br/>
 <br/><br/>
 
@@ -855,6 +858,7 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | ContainerInstanceId  |
 | InstanceId           |
 | EBSVolumeId          |
+
 <br/><br/>
 <br/><br/>
 

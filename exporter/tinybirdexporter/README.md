@@ -18,7 +18,6 @@ This exporter sends logs, metrics, and traces to [Tinybird](https://www.tinybird
 
 Tinybird is a real-time analytics platform for ingesting, transforming, and serving data with low latency and high throughput. Telemetry data sent to Tinybird can be queried and analyzed in real time using SQL.``
 
-
 ## Quick Start
 
 Looking for a quick start? Check out our [Open Telemetry Template](https://github.com/tinybirdco/tinybird-otel-template), which provides a ready-to-use example for configuring the Tinybird OpenTelemetry Exporter.
@@ -42,7 +41,6 @@ Looking for a quick start? Check out our [Open Telemetry Template](https://githu
 - `wait` (default: `false`): Whether to wait for data to be ingested before returning a response
 - `retry_on_failure`: Configuration for retry behavior on failures
 - `sending_queue`: Configuration for the sending queue
-
 
 ### Basic Configuration
 
@@ -92,7 +90,6 @@ Before using this exporter, you need to create the corresponding data sources in
 
 - Only contain letters, numbers, and underscores
 - Match the data source names specified in your configuration
-
 
 ## Authentication
 

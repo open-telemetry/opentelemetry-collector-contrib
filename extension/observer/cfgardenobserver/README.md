@@ -61,7 +61,6 @@ receivers:
 | cloud_foundry.auth.access_token  | string | none                                                      | Access Token (auth.type: token)                                    |
 | cloud_foundry.auth.refresh_token | string | none                                                      | Refresh Token (auth.type: token)                                   |
 
-
 ### Endpoint Variables
 
 Endpoint variables exposed by this observer are as follows.

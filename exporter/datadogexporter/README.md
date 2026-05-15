@@ -41,7 +41,6 @@ exporters:
         flush_timeout: 10s
 ```
 
-
 If you are using the batch processor instead, try lowering `send_batch_size` and `send_batch_max_size` in your config. You might want to have a separate batch processor dedicated for datadog exporter if other exporters expect a larger batch size, e.g.
 ```
 processors:

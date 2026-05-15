@@ -11,7 +11,6 @@ The `scope_name_parser` operator sets the scope name on an entry by parsing a va
 | `parse_from`             | `body`              | A [field](../types/field.md) that indicates the field to be parsed as the scope name. |
 | `on_error`               | `send`              | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md). |
 
-
 ### Example Configurations
 
 Several detailed examples are available [here](../types/scope_name.md).

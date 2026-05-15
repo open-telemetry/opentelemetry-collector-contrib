@@ -5,7 +5,6 @@ The `sqlserver` receiver grabs metrics/logs about a Microsoft SQL Server instanc
 Windows Performance Counters, or by directly connecting to the instance and querying it. Windows Performance Counters
 are only available when running on Windows.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs   |
@@ -153,7 +152,7 @@ Top query collection enabled:
 
 ## Feature Gate
 
-A new feature gate was added in `v0.129.0` for removing the `server.address` and `server.port` 
+A new feature gate was added in `v0.129.0` for removing the `server.address` and `server.port`
 resource attributes, as they are not identified as resources attributes in the semantic conventions.
 To enable it, pass the following argument to the Collector:
 
@@ -165,8 +164,7 @@ To enable it, pass the following argument to the Collector:
 
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)
 
-
-## Logs 
+## Logs
 
 Details about the logs produced by this receiver can be found in [logs-documentation.md](./logs-documentation.md)
 

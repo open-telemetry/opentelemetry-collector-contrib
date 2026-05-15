@@ -83,7 +83,7 @@ It is recommended that a triager should follow these steps when a new issue is r
    - The enhancement/bugfix has already been addressed in the newer version.
    - The new component has been added to the repository.
 
-#### Triage process flowchart 
+#### Triage process flowchart
 
 ```mermaid
 flowchart TD

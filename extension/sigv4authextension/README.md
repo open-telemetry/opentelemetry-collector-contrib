@@ -4,7 +4,6 @@
 This extension provides Sigv4 authentication for making requests to AWS services. You can read about the
 [Sigv4 process](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]  |
@@ -33,7 +32,6 @@ The configuration fields are as follows:
     * [List of AWS regions](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html)
 * `service`: **Optional**. The AWS service for AWS Sigv4
     * Note for supported services an attempt will be made to obtain a valid service from the endpoint of the service you are exporting to. Supported services include - workspaces, es, logs and traces.
-
 
 ## Assume Role
 
@@ -69,7 +67,6 @@ service:
 ## Notes
 
 * The collector must have valid AWS credentials as used by the [AWS SDK for Go](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-gosdk.html#specifying-credentials)
-
 
 ## Assume Role with Web Identity
 

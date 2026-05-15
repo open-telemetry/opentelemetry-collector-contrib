@@ -34,24 +34,24 @@ Output entry sample:
   "timestamp": "2020-04-30T12:10:17.656726-04:00",
   "severity": 30,
   "body": {
-		"event_id": {
-			"qualifiers": 0,
-			"id": 1000
-		},
-		"provider": {
-			"name": "provider name",
-			"guid": "provider guid",
-			"event_source": "event source"
-		},
-		"system_time": "2020-04-30T12:10:17.656726789Z",
-		"computer": "example computer",
-		"channel": "application",
-		"record_id": 1,
-		"level": "Information",
-		"message": "example message",
-		"task": "example task",
-		"opcode": "example opcode",
-		"keywords": ["example keyword"]
-	}
+  "event_id": {
+   "qualifiers": 0,
+   "id": 1000
+  },
+  "provider": {
+   "name": "provider name",
+   "guid": "provider guid",
+   "event_source": "event source"
+  },
+  "system_time": "2020-04-30T12:10:17.656726789Z",
+  "computer": "example computer",
+  "channel": "application",
+  "record_id": 1,
+  "level": "Information",
+  "message": "example message",
+  "task": "example task",
+  "opcode": "example opcode",
+  "keywords": ["example keyword"]
+ }
 }
 ```

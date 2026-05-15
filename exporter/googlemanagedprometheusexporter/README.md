@@ -173,7 +173,7 @@ to move metric labels to resource labels. This is useful in situations
 where, for example, an exporter monitors multiple namespaces (with
 each namespace exported as a metric label). One such example is kube-state-metrics.
 
-Using `groupbyattrs` will promote that label to a resource label and 
+Using `groupbyattrs` will promote that label to a resource label and
 associate those metrics with the new resource. For example:
 
 ```yaml

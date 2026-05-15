@@ -56,7 +56,7 @@ processors:
 ## Warnings
 
 Care needs to be taken when modifying data point attributes using this processor:
-- **Single-Writer Conflict**: In enforcement mode (`tag_only: false`), the processor strips attributes. This violates the OTel metrics single-writer rule. When multiple data points collapse into the same timeseries identity, backends like Prometheus will interpret the overlapping values as counter resets, producing silently incorrect `rate()` and `increase()` results. This affects all cumulative Sum and Histogram metrics where enforcement fires. 
+- **Single-Writer Conflict**: In enforcement mode (`tag_only: false`), the processor strips attributes. This violates the OTel metrics single-writer rule. When multiple data points collapse into the same timeseries identity, backends like Prometheus will interpret the overlapping values as counter resets, producing silently incorrect `rate()` and `increase()` results. This affects all cumulative Sum and Histogram metrics where enforcement fires.
 Use `tag_only: true` with a routing processor for production safety until a downstream spatial reaggregation processor is available.
 
 ## Troubleshooting

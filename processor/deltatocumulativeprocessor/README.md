@@ -4,7 +4,6 @@
 The Delta to Cumulative Processor (`deltatocumulativeprocessor`) converts metrics from delta temporality to
 cumulative, by accumulating samples in memory.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
@@ -39,4 +38,4 @@ There is no further configuration required. All delta samples are converted to c
 ## Troubleshooting
 
 When [Telemetry is
-enabled](https://opentelemetry.io/docs/collector/configuration/#telemetry), this component exports [several metrics](./documentation.md). 
+enabled](https://opentelemetry.io/docs/collector/configuration/#telemetry), this component exports [several metrics](./documentation.md).

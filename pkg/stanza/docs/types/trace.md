@@ -2,7 +2,6 @@
 
 Traces context fields are defined in the [OpenTelemetry Logs Data Model](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#trace-context-fields).
 
-
 ### `trace` parsing parameters
 
 Parser operators can parse a trace context and attach the resulting values to a log entry.
@@ -12,7 +11,6 @@ Parser operators can parse a trace context and attach the resulting values to a 
 | `trace_id.parse_from`    | `trace_id`    | A [field](../types/field.md) that indicates the field to be parsed as a trace ID. |
 | `span_id.parse_from`     | `span_id`     | A [field](../types/field.md) that indicates the field to be parsed as a span ID. |
 | `trace_flags.parse_from` | `trace_flags` | A [field](../types/field.md) that indicates the field to be parsed as trace flags. |
-
 
 ### How to use trace parsing
 
