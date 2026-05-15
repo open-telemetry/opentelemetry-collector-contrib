@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: cmd/telemetrygen
+note: "Fix --allow-export-failures being ignored: flushBuffer in the batch logs and metrics workers now respects the flag (matching the non-batch path), and the traces subcommand installs an otel global error handler that honors the flag for SpanProcessor export errors."
+issues: [47215]
+change_logs: [user]
