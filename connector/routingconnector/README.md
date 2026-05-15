@@ -123,8 +123,6 @@ connectors:
   routing:
     default_pipelines: [logs/other]
     table:
-      # otelcol.client.metadata accesses HTTP request headers; use otelcol.grpc.metadata for gRPC.
-      # Note: gRPC lowercases all metadata keys.
       - context: resource
         condition: otelcol.client.metadata["X-Tenant"][0] == "acme"
         pipelines: [logs/acme]
