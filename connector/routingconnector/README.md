@@ -104,45 +104,6 @@ The full list of settings exposed for this connector are documented in [config.g
 > [!NOTE]
 > The examples below use context-qualified paths, which is the recommended configuration style. The explicit `context` field is still supported for backward compatibility but is no longer the primary documentation style. See [Context Inference](#context-inference) for details.
 
-### Route traces using context-qualified paths
-
-```yaml
-receivers:
-  otlp:
-
-exporters:
-  file/prod:
-    path: ./prod.json
-  file/debug:
-    path: ./debug.json
-  file/other:
-    path: ./other.json
-
-connectors:
-  routing:
-    default_pipelines: [traces/other]
-    table:
-      - condition: resource.attributes["deployment.environment"] == "production"
-        pipelines: [traces/prod]
-      - condition: span.attributes["debug"] == true
-        pipelines: [traces/debug]
-
-service:
-  pipelines:
-    traces/in:
-      receivers: [otlp]
-      exporters: [routing]
-    traces/prod:
-      receivers: [routing]
-      exporters: [file/prod]
-    traces/debug:
-      receivers: [routing]
-      exporters: [file/debug]
-    traces/other:
-      receivers: [routing]
-      exporters: [file/other]
-```
-
 ### Route logs based on tenant
 
 
