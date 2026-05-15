@@ -43,9 +43,10 @@ func grpcExporterOptions(cfg *Config) ([]otlpmetricgrpc.Option, error) {
 // httpExporterOptions creates the configuration options for an HTTP-based OTLP metric exporter.
 // It configures the exporter with the provided endpoint, URL path, connection security settings, and headers.
 func httpExporterOptions(cfg *Config) ([]otlpmetrichttp.Option, error) {
+	endpoint, urlPath := config.ResolveHTTPEndpoint(cfg.Endpoint(), cfg.HTTPPath)
 	httpExpOpt := []otlpmetrichttp.Option{
-		otlpmetrichttp.WithEndpoint(cfg.Endpoint()),
-		otlpmetrichttp.WithURLPath(cfg.HTTPPath),
+		otlpmetrichttp.WithEndpoint(endpoint),
+		otlpmetrichttp.WithURLPath(urlPath),
 	}
 
 	if cfg.Insecure {

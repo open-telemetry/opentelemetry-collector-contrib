@@ -43,9 +43,10 @@ func grpcExporterOptions(cfg *Config) ([]otlploggrpc.Option, error) {
 // httpExporterOptions creates the configuration options for an HTTP-based OTLP log exporter.
 // It configures the exporter with the provided endpoint, URL path, connection security settings, and headers.
 func httpExporterOptions(cfg *Config) ([]otlploghttp.Option, error) {
+	endpoint, urlPath := config.ResolveHTTPEndpoint(cfg.Endpoint(), cfg.HTTPPath)
 	httpExpOpt := []otlploghttp.Option{
-		otlploghttp.WithEndpoint(cfg.Endpoint()),
-		otlploghttp.WithURLPath(cfg.HTTPPath),
+		otlploghttp.WithEndpoint(endpoint),
+		otlploghttp.WithURLPath(urlPath),
 	}
 
 	if cfg.Insecure {
