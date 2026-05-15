@@ -254,6 +254,35 @@ MDATAGEN_METADATA_YAML?= metadata.yaml
 mdatagen:
 	@$(MDATAGEN) $(MDATAGEN_METADATA_YAML)
 
+# generate-mdatagen-doc creates a doc.go with //go:generate make mdatagen for the current
+# component directory if it has a metadata.yaml and mdatagen-generated files but is missing
+# the directive. Run from the repo root via "make generate-mdatagen-docs" to cover all components.
+.PHONY: generate-mdatagen-doc
+generate-mdatagen-doc:
+	@set -e; \
+	dir=$(CURDIR); \
+	if ! [ -f "$$dir/metadata.yaml" ]; then exit 0; fi; \
+	if ! [ -f "$$dir/Makefile" ]; then exit 0; fi; \
+	if ! find "$$dir" -maxdepth 1 \( -name "generated_*.go" -o -name "generated_*.md" \) 2>/dev/null | grep -q .; then exit 0; fi; \
+	if grep -rql "go:generate make mdatagen" "$$dir"/*.go 2>/dev/null; then exit 0; fi; \
+	pkg=$$(grep -h "^package " "$$dir"/*.go 2>/dev/null | grep -v "_test" | head -1 | awk '{print $$2}'); \
+	if [ -z "$$pkg" ]; then pkg=$$(grep -h "^package " "$$dir"/*.go 2>/dev/null | head -1 | awk '{print $$2}'); fi; \
+	if [ -z "$$pkg" ]; then exit 0; fi; \
+	moddir="$$dir"; importpath=""; \
+	while [ "$$moddir" != "/" ]; do \
+	  if [ -f "$$moddir/go.mod" ]; then \
+	    mod=$$(grep "^module " "$$moddir/go.mod" | awk '{print $$2}'); \
+	    subpath="$${dir#$$moddir}"; subpath="$${subpath#/}"; \
+	    if [ -n "$$subpath" ]; then importpath="$$mod/$$subpath"; else importpath="$$mod"; fi; \
+	    break; \
+	  fi; \
+	  moddir=$$(dirname "$$moddir"); \
+	done; \
+	if [ -z "$$importpath" ]; then exit 0; fi; \
+	if [ -f "$$dir/doc.go" ]; then exit 0; fi; \
+	printf '// Copyright The OpenTelemetry Authors\n// SPDX-License-Identifier: Apache-2.0\n\n//go:generate make mdatagen\n\npackage %s // import "%s"\n' "$$pkg" "$$importpath" > "$$dir/doc.go"; \
+	echo "created: $$dir/doc.go"
+
 .PHONY: generate
 generate:
 ifeq ($(CURDIR),$(SRC_ROOT))
