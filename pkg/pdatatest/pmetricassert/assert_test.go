@@ -114,7 +114,7 @@ resources:
 	require.NoError(t, AssertMetrics(path, m))
 }
 
-func TestAssertMetrics_AttributeExistsMatcherUsesProjectedSortKey(t *testing.T) {
+func TestAssertMetrics_AttributeExistsMatcherIsOrderInsensitive(t *testing.T) {
 	m := pmetric.NewMetrics()
 	appendResourceWithKindAndID(m, "zzz", "a")
 	appendResourceWithKindAndID(m, "aaa", "b")
@@ -146,7 +146,7 @@ resources:
 	require.NoError(t, AssertMetrics(path, m))
 }
 
-func TestAssertMetrics_AttributeExistsMatcherUsesProjectedDatapointSortKey(t *testing.T) {
+func TestAssertMetrics_AttributeExistsMatcherOnDatapointsIsOrderInsensitive(t *testing.T) {
 	m := pmetric.NewMetrics()
 	rm := m.ResourceMetrics().AppendEmpty()
 	sm := rm.ScopeMetrics().AppendEmpty()

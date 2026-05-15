@@ -79,8 +79,8 @@ resources:
 
 ### Attribute presence matcher
 
-Attribute keys can use `/exists` when the attribute must be present but its
-value is volatile:
+Attribute keys can use the `/exists: true` suffix when the attribute must be
+present but its value is volatile:
 
 ```yaml
 attributes:
@@ -89,7 +89,9 @@ attributes:
 ```
 
 The attribute map remains exact: unexpected attributes still fail the
-assertion.
+assertion, so omitting a key is the way to assert that it must not appear.
+`/exists: true` is the only supported value; any other value is a schema
+error.
 
 ### Shorthand: single empty-attribute datapoint
 
