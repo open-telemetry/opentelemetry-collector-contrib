@@ -73,12 +73,11 @@ jobs:
           FORCE_ALL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
           # `^` anchors mean these match files at repo root, not in subdirectories,
           # so a receiver-component Makefile change doesn't trigger the full suite.
-          # TEMP(testing): "^.github/workflows/" and "^.github/actions/" removed
-          # so this PR exercises scoped mode while iterating on the workflow
-          # itself. Restore before merge.
+          # TEMP(testing): "^.github/workflows/", "^.github/actions/",
+          # "^Makefile", and "^Makefile.Common" removed so this PR exercises
+          # scoped mode while iterating on the workflow + Make targets
+          # themselves. Restore before merge.
           CRITICAL_FILES: '[
-            "^Makefile",
-            "^Makefile.Common",
             "^.golangci.yml",
             "^internal/tools/",
             "^versions.yaml",
