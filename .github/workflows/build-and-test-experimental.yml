@@ -235,10 +235,11 @@ jobs:
         with:
           go-version: oldstable
           # read-only-checks only runs checkdoc/checkmetadata/checkapi/
-          # multimod-verify, none of which need every module pre-downloaded.
+          # multimod-verify. genotelcontribcol below still pulls what it
+          # actually needs lazily, but bulk-downloading every module up
+          # front isn't required.
           gomoddownload: ${{ matrix.shard == 'read-only-checks' && 'false' || 'true' }}
-      - if: matrix.shard != 'read-only-checks'
-        run: make genotelcontribcol
+      - run: make genotelcontribcol
       - name: Run shard ${{ matrix.shard }}
         run: ./.github/workflows/scripts/run-checks-shard.sh "${{ matrix.shard }}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
