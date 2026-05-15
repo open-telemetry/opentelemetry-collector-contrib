@@ -502,19 +502,22 @@ func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
 	}
 }
 
+var hostPlatformInformation = host.PlatformInformation
+
 func getOSDescription(logger *zap.Logger) string {
-	info, err := host.Info()
+	platform, _, version, err := hostPlatformInformation()
 	if err != nil {
-		logger.Error("failed getting host info", zap.Error(err))
+		logger.Warn("failed getting host platform info", zap.Error(err))
 		return runtime.GOOS
 	}
+
 	switch runtime.GOOS {
 	case "darwin":
-		return "macOS " + info.PlatformVersion
+		return strings.TrimSpace("macOS " + version)
 	case "linux":
-		return cases.Title(language.English).String(info.Platform) + " " + info.PlatformVersion
+		return strings.TrimSpace(cases.Title(language.English).String(platform) + " " + version)
 	case "windows":
-		return info.Platform + " " + info.PlatformVersion
+		return strings.TrimSpace(platform + " " + version)
 	default:
 		return runtime.GOOS
 	}
