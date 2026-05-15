@@ -16,8 +16,11 @@ issues: [38861]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This avoids reading from the beginning of the file to sniff the magic number, which is important
-  for supporting formats such as Parquet that require random access to the file.
+  S3 objects are now decompressed only when their key ends in `.gz`. Objects without a`.gz` suffix
+  are no longer auto-decompressed, even if their contents are gzip-encoded, and in that case the raw
+  bytes will be passed to the configured decoder. This change avoids reading the file header to sniff
+  the magic number, which is important for supporting formats such as Parquet that require random
+  access.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
