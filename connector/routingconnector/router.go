@@ -227,18 +227,9 @@ func (r *router[C]) normalizeConditions() {
 // registerRouteConsumers registers a consumer for the pipelines configured for each route
 func (r *router[C]) registerRouteConsumers() (err error) {
 	for _, item := range r.table {
-		route, dupeFound := r.routes[key(item)]
-		if dupeFound {
-			var pipelineNames []string
-			for _, pipeline := range item.Pipelines {
-				pipelineNames = append(pipelineNames, pipeline.String())
-			}
-			exporters := strings.Join(pipelineNames, ", ")
-			r.logger.Warn(fmt.Sprintf(`Statement %q already exists in the routing table, the route with target pipeline(s) %q will be ignored.`, item.Statement, exporters))
-			continue
-		}
+		var route routingItem[C]
 
-		route.statementContext = item.Context
+		// Parse first so statementContext is resolved before the duplicate check.
 		if item.Context == "request" {
 			r.logger.Warn("The 'request' context is deprecated. Use 'otelcol.client.metadata[\"key\"]' "+
 				"(HTTP/client metadata) or 'otelcol.grpc.metadata[\"key\"]' (gRPC metadata) instead.",
@@ -247,6 +238,7 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 			if err != nil {
 				return err
 			}
+			route.statementContext = "request"
 		} else {
 			statementsGetter := ottl.NewStatementsGetter([]string{item.Statement})
 			var result any
@@ -290,6 +282,19 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 			}
 		}
 
+		// Use the resolved context for the key so that an explicit context and its
+		// inferred equivalent are treated as the same route.
+		k := key(route.statementContext, item)
+		if _, dupeFound := r.routes[k]; dupeFound {
+			var pipelineNames []string
+			for _, p := range item.Pipelines {
+				pipelineNames = append(pipelineNames, p.String())
+			}
+			exporters := strings.Join(pipelineNames, ", ")
+			r.logger.Warn(fmt.Sprintf(`Statement %q already exists in the routing table, the route with target pipeline(s) %q will be ignored.`, item.Statement, exporters))
+			continue
+		}
+
 		route.action = item.Action
 
 		consumer, err := r.consumerProvider(item.Pipelines...)
@@ -299,18 +304,14 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 		route.consumer = consumer
 		r.routeSlice = append(r.routeSlice, route)
 
-		r.routes[key(item)] = route
+		r.routes[k] = route
 	}
 	return nil
 }
 
-func key(entry RoutingTableItem) string {
-	switch entry.Context {
-	case "", "resource":
-		return entry.Statement
-	case "request":
+func key(resolvedContext string, entry RoutingTableItem) string {
+	if resolvedContext == "request" {
 		return "[request] " + entry.Condition
-	default:
-		return "[" + entry.Context + "] " + entry.Statement
 	}
+	return "[" + resolvedContext + "] " + entry.Statement
 }
