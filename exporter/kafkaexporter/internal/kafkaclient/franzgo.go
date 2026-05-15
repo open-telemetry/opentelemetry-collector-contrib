@@ -7,12 +7,58 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"sync"
+	"time"
 
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
+
+var (
+	_ kgo.HookBrokerConnect    = (*StatusReporter)(nil)
+	_ kgo.HookBrokerDisconnect = (*StatusReporter)(nil)
+)
+
+type StatusReporter struct {
+	host        component.Host
+	connections int
+	mu          sync.Mutex
+}
+
+func (s *StatusReporter) OnBrokerConnect(_ kgo.BrokerMetadata, _ time.Duration, _ net.Conn, err error) {
+	var openConnections int
+	s.mu.Lock()
+	if err == nil {
+		s.connections++
+		s.mu.Unlock()
+		componentstatus.ReportStatus(s.host, componentstatus.NewEvent(componentstatus.StatusOK))
+		return
+	}
+	openConnections = s.connections
+	s.mu.Unlock()
+
+	// only report recoverable errors if none of the brokers are connected
+	if openConnections <= 0 {
+		componentstatus.ReportStatus(s.host, componentstatus.NewRecoverableErrorEvent(err))
+	}
+}
+
+func (s *StatusReporter) OnBrokerDisconnect(_ kgo.BrokerMetadata, _ net.Conn) {
+	s.mu.Lock()
+	if s.connections > 0 {
+		s.connections--
+	}
+	s.mu.Unlock()
+}
+
+func NewStatusReporter(host component.Host) *StatusReporter {
+	return &StatusReporter{host: host, connections: 0}
+}
 
 // MessageTooLargeError wraps a MessageTooLarge Kafka error with the actual
 // record size that caused the rejection. The size is computed the same way as

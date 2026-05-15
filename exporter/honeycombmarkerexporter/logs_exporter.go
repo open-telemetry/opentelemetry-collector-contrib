@@ -55,7 +55,7 @@ func newHoneycombLogsExporter(set exporter.Settings, config *Config) (*honeycomb
 	telemetrySettings := set.TelemetrySettings
 	markers := make([]marker, len(config.Markers))
 	for i, m := range config.Markers {
-		matchLogConditions, err := filterottl.NewBoolExprForLog(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, telemetrySettings)
+		matchLogConditions, err := filterottl.NewBoolExprForLogWithPathContextNames(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, telemetrySettings)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse log conditions: %w", err)
 		}
