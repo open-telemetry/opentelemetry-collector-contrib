@@ -9,6 +9,9 @@ $defs:
         format: duration
       namespace:
         type: string
+      owner_account:
+        x-pointer: true
+        type: string
       port:
         x-pointer: true
         type: integer

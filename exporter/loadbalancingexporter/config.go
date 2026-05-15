@@ -121,4 +121,5 @@ type AWSCloudMapResolver struct {
 	Interval      time.Duration            `mapstructure:"interval"`
 	Timeout       time.Duration            `mapstructure:"timeout"`
 	Port          *uint16                  `mapstructure:"port"`
+	OwnerAccount  *string                  `mapstructure:"owner_account"`
 }
