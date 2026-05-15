@@ -1,0 +1,10 @@
+change_type: breaking
+component: extension/cgroup_runtime
+note: >
+  GoMaxProcs is now disabled by default. Go 1.25+ natively sets GOMAXPROCS
+  from cgroup CPU quotas, making it redundant for Kubernetes and standard
+  Linux container environments. Users on AWS ECS should explicitly set
+  `gomaxprocs.enabled: true` as Go 1.25 does not read ECS task metadata
+  for CPU limits. See https://go.dev/blog/container-aware-gomaxprocs.
+issues: [47487]
+subtext: ""

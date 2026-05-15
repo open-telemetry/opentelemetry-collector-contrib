@@ -28,7 +28,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(metadata.Type),
 			expected: &Config{
-				GoMaxProcs: GoMaxProcsConfig{Enabled: true},
+				GoMaxProcs: GoMaxProcsConfig{Enabled: false},
 				GoMemLimit: GoMemLimitConfig{
 					Enabled: true,
 					Ratio:   0.9,

@@ -9,6 +9,11 @@ import (
 )
 
 type Config struct {
+	// GoMaxProcs configures GOMAXPROCS. Disabled by default as Go 1.25+
+	// natively sets GOMAXPROCS from cgroup CPU quotas on Linux.
+	// Enable this only if running on AWS ECS, where Go 1.25 does not
+	// correctly detect container CPU limits from the ECS task metadata.
+	// See https://github.com/rdforte/gomaxecs?tab=readme-ov-file#go-125
 	GoMaxProcs GoMaxProcsConfig `mapstructure:"gomaxprocs"`
 	GoMemLimit GoMemLimitConfig `mapstructure:"gomemlimit"`
 	// prevent unkeyed literal initialization

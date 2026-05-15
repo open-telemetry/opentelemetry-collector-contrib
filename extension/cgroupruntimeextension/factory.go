@@ -31,7 +31,7 @@ func NewFactory() extension.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		GoMaxProcs: GoMaxProcsConfig{
-			Enabled: true,
+			Enabled: false, // was true — Go 1.25+ handles cgroup CPU natively
 		},
 		GoMemLimit: GoMemLimitConfig{
 			Enabled: true,

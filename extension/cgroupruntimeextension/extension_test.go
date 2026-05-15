@@ -33,6 +33,19 @@ func TestExtension(t *testing.T) {
 			expectedCalls: 4,
 		},
 		{
+			name: "default - only memlimit enabled",
+			config: &Config{
+				GoMaxProcs: GoMaxProcsConfig{
+					Enabled: false,
+				},
+				GoMemLimit: GoMemLimitConfig{
+					Enabled: true,
+					Ratio:   0.5,
+				},
+			},
+			expectedCalls: 2,
+		},
+		{
 			name: "everything disabled",
 			config: &Config{
 				GoMaxProcs: GoMaxProcsConfig{
