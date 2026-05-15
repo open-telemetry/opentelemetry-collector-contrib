@@ -534,6 +534,72 @@ The number of bytes read into the WiredTiger cache.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
 
+## Default Events
+
+The following events are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
+
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
+### db.server.query_sample
+
+query sample
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| client.address | Hostname or address of the client. | Any Str | - |
+| client.port | TCP port used by the client. | Any Int | - |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``mongodb`` | - |
+| db.namespace | The name of a database. | Any Str | - |
+| db.collection.name | The MongoDB collection being accessed within the database stated in db.namespace. | Any Str | - |
+| db.operation.name | The name of the MongoDB command being executed. | Any Str | - |
+| db.query.text | The obfuscated MongoDB command statement. | Any Str | - |
+| mongodb.query_truncated | Whether the MongoDB command returned by currentOp was truncated. | Str: ``truncated``, ``not_truncated`` | - |
+| user.name | Name of the user associated with the operation. | Any Str | - |
+| mongodb.application.name | The identifier of the client application which ran the operation | Any Str | - |
+| mongodb.cursor.await_data | Whether the tailable cursor waits for new data instead of returning immediately. | Any Bool | - |
+| mongodb.cursor.batches_returned.count | The cumulative number of batches returned by the cursor. | Any Int | - |
+| mongodb.cursor.documents_returned.count | The cumulative number of documents returned by the cursor. | Any Int | - |
+| mongodb.cursor.id | The identifier of the cursor. | Any Str | - |
+| mongodb.cursor.no_timeout | Whether the cursor is configured not to time out when idle. | Any Bool | - |
+| mongodb.cursor.operation_using_cursor_id | The identifier of the operation currently using the cursor. | Any Str | - |
+| mongodb.cursor.originating_command | The obfuscated command that originally created the cursor. | Any Str | - |
+| mongodb.cursor.tailable | Whether the cursor is a tailable cursor. | Any Bool | - |
+| mongodb.database.name | The name of the MongoDB database. | Any Str | - |
+| mongodb.lsid.id | The UUID portion of the logical session identifier associated with the MongoDB operation. | Any Str | - |
+| mongodb.namespace | The MongoDB namespace reported by the server, typically <database>.<collection>. | Any Str | - |
+| mongodb.operation.id | Identifier of the MongoDB operation. | Any Str | - |
+| mongodb.operation.plan_summary | Summary of the execution plan for the MongoDB operation. | Any Str | - |
+| mongodb.operation.query_framework | Query framework used by the MongoDB operation. | Any Str | - |
+| mongodb.operation.status | Simplified status of the MongoDB operation. | Str: ``active``, ``waiting`` | - |
+| mongodb.operation.type | The low-level MongoDB operation type (e.g. query, insert, update, remove, getmore, command). | Any Str | - |
+| mongodb.operation.duration | The duration of the MongoDB operation in seconds. | Any Double | - |
+| mongodb.operation.prepare_read_conflict.count | The number of times the MongoDB operation had to wait for a prepared transaction with a write to commit or abort. | Any Int | - |
+| mongodb.operation.write_conflict.count | The number of times the MongoDB operation conflicted with another write operation on the same document. | Any Int | - |
+| mongodb.operation.yield.count | The number of times the MongoDB operation yielded to allow other operations to complete. | Any Int | - |
+| mongodb.operation.waiting_for_lock | Whether the MongoDB operation is waiting for a lock. | Any Bool | - |
+| mongodb.operation.locks | The type and mode of locks the MongoDB operation currently holds. | Any Str | - |
+| mongodb.operation.lock_stats | The lock acquisition statistics for the MongoDB operation. | Any Str | - |
+| mongodb.operation.waiting_for_flow_control | Whether the MongoDB operation had to wait because of flow control. | Any Bool | - |
+| mongodb.operation.flow_control_stats | The flow control statistics for the MongoDB operation. | Any Str | - |
+| mongodb.operation.waiting_for_latch | Whether the MongoDB operation is waiting to acquire an internal latch or for an internal condition to be met. | Any Bool | - |
+| mongodb.operation.waiting_for_latch.details | Details about the MongoDB operation's internal latch wait. | Any Str | - |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled | Semantic Convention |

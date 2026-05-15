@@ -26,6 +26,8 @@ type Config struct {
 	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	metadata.LogsBuilderConfig    `mapstructure:",squash"`
+	QuerySampleCollection         QuerySampleCollection `mapstructure:"query_sample_collection"`
 	// Deprecated - Transport option will be removed in v0.102.0
 	Hosts                   []confignet.TCPAddrConfig `mapstructure:"hosts"`
 	Scheme                  string                    `mapstructure:"scheme"`
@@ -37,6 +39,10 @@ type Config struct {
 	ReplicaSet              string                    `mapstructure:"replica_set,omitempty"`
 	Timeout                 time.Duration             `mapstructure:"timeout"`
 	DirectConnection        bool                      `mapstructure:"direct_connection"`
+}
+
+type QuerySampleCollection struct {
+	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
 }
 
 func (c *Config) Validate() error {

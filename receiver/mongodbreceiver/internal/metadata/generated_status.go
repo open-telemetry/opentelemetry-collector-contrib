@@ -15,4 +15,5 @@ var (
 
 const (
 	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )
