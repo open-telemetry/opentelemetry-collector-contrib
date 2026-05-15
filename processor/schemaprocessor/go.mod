@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/google/go-cmp v0.7.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.152.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -15,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.152.0
 	go.opentelemetry.io/collector/consumer v1.58.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.152.0
+	go.opentelemetry.io/collector/extension/xextension v0.152.0
 	go.opentelemetry.io/collector/pdata v1.58.0
 	go.opentelemetry.io/collector/processor v1.58.0
 	go.opentelemetry.io/collector/processor/processorhelper v0.152.0
@@ -70,6 +72,7 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.58.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.58.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.152.0 // indirect
+	go.opentelemetry.io/collector/extension v1.58.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.58.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.152.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.58.0 // indirect
@@ -103,3 +106,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
