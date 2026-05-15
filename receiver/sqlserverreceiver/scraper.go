@@ -782,15 +782,17 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context) (pcommon.Resource, error) {
 	// Constants are the column names of the database status
 	const (
-		executionCount = "execution_count"
-		logicalReads   = "total_logical_reads"
-		logicalWrites  = "total_logical_writes"
-		physicalReads  = "total_physical_reads"
-		queryHash      = "query_hash"
-		queryPlan      = "query_plan"
-		queryPlanHash  = "query_plan_hash"
-		queryText      = "query_text"
-		rowsReturned   = "total_rows"
+		databaseName      = "database_name"
+		executionCount    = "execution_count"
+		lastExecutionTime = "last_execution_time"
+		logicalReads      = "total_logical_reads"
+		logicalWrites     = "total_logical_writes"
+		physicalReads     = "total_physical_reads"
+		queryHash         = "query_hash"
+		queryPlan         = "query_plan"
+		queryPlanHash     = "query_plan_hash"
+		queryText         = "query_text"
+		rowsReturned      = "total_rows"
 		// the time returned from mssql is in microsecond
 		totalElapsedTime = "total_elapsed_time"
 		totalGrant       = "total_grant_kb"
@@ -867,6 +869,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			return obfuscated, nil
 		})
 
+		databaseNameVal := row[databaseName]
+
 		var cached bool
 
 		executionCountVal := s.retrieveValue(row, executionCount, &errs, retrieveInt)
@@ -922,6 +926,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			procExecCountVal = int64(0)
 		}
 
+		lastExecutionTimeVal := row[lastExecutionTime]
+
 		totalElapsedTimeVal := float64(totalElapsedTimeDiffsMicrosecond[i]) / 1_000_000
 		if count, ok := executionCountVal.(int64); !ok || count == 0 || totalElapsedTimeVal == 0 {
 			continue
@@ -938,6 +944,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			timestamp,
 			totalWorkerTimeInSecVal,
 			queryTextVal.(string),
+			databaseNameVal,
 			executionCountVal.(int64),
 			logicalReadsVal.(int64),
 			logicalWritesVal.(int64),
@@ -954,6 +961,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			procExecCountVal.(int64),
 			row[storedProcedureID],
 			row[storedProcedureName],
+			lastExecutionTimeVal,
 		)
 	}
 	return resources, errors.Join(errs...)
