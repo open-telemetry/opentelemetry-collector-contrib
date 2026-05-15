@@ -1031,7 +1031,7 @@ func mustDBVersion(t *testing.T, rawVersion string) dbVersion {
 	if strings.Contains(rawVersion, "MariaDB") {
 		product = dbProductMariaDB
 	}
-	semverStr := strings.SplitN(rawVersion, "-", 2)[0]
+	semverStr, _, _ := strings.Cut(rawVersion, "-")
 	v, err := version.NewVersion(semverStr)
 	require.NoError(t, err)
 	return dbVersion{product: product, version: v}
