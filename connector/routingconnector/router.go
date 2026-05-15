@@ -251,11 +251,13 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 			statementsGetter := ottl.NewStatementsGetter([]string{item.Statement})
 			var result any
 			if item.Context == "" {
-				// Context is empty, try to infer it
-				// Default to resource context if inference fails or ambiguous (though priorities handle ambiguity)
-				result, err = r.parserCollection.ParseStatements(statementsGetter, ottl.WithContextInferenceDefaultContext(ottlresource.ContextName))
+				// Parse using the inferred context. If that fails, retry with the "resource"
+				// context so older configs still work: an empty context used to imply "resource".
+				result, err = r.parserCollection.ParseStatements(statementsGetter)
+				if err != nil {
+					result, err = r.parserCollection.ParseStatementsWithContext(ottlresource.ContextName, statementsGetter, true)
+				}
 			} else {
-				// Context is explicit
 				result, err = r.parserCollection.ParseStatementsWithContext(item.Context, statementsGetter, true)
 			}
 
