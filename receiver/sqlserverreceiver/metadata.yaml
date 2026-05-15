@@ -50,10 +50,6 @@ resource_attributes:
     type: string
 
 attributes:
-  availability_group.database.name:
-    description: The name of the database participating in the availability group.
-    type: string
-    requirement_level: recommended
   # attributes for metrics
   client.address:
     description: Hostname or address of the client.
@@ -578,7 +574,7 @@ metrics:
     unit: KB/s
     gauge:
       value_type: double
-    attributes: [sqlserver.availability_group.name, availability_group.database.name, sqlserver.replica.name, replica.direction]
+    attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, replica.direction]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled. Direction "receive" reports log blocks received from the primary replica.
   sqlserver.login.rate:
     enabled: false
@@ -716,7 +712,7 @@ metrics:
     unit: s
     gauge:
       value_type: double
-    attributes: [sqlserver.availability_group.name, availability_group.database.name, sqlserver.replica.name]
+    attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server 2016+ with Always On Availability Groups enabled. The datapoint is omitted for primary replicas where secondary_lag_seconds is NULL.
   sqlserver.replica.queue.size:
     enabled: false
@@ -725,7 +721,7 @@ metrics:
     unit: KB
     gauge:
       value_type: int
-    attributes: [sqlserver.availability_group.name, availability_group.database.name, sqlserver.replica.name, sqlserver.replica.queue.type]
+    attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, sqlserver.replica.queue.type]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled. Queue type "send" reports log not yet sent to secondaries; queue type "redo" reports log received but not yet applied on the secondary.
   sqlserver.resource_pool.disk.operations:
     enabled: false

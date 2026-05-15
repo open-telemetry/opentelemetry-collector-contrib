@@ -17,7 +17,7 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 256
                   attributes:
-                    - key: availability_group.database.name
+                    - key: db.namespace
                       value:
                         stringValue: InventoryDB
                     - key: replica.direction
@@ -33,7 +33,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0
                   attributes:
-                    - key: availability_group.database.name
+                    - key: db.namespace
                       value:
                         stringValue: SalesDB
                     - key: replica.direction
@@ -49,7 +49,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 512
                   attributes:
-                    - key: availability_group.database.name
+                    - key: db.namespace
                       value:
                         stringValue: SalesDB
                     - key: replica.direction
@@ -70,7 +70,7 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 2
                   attributes:
-                    - key: availability_group.database.name
+                    - key: db.namespace
                       value:
                         stringValue: InventoryDB
                     - key: sqlserver.availability_group.name
@@ -83,7 +83,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 5
                   attributes:
-                    - key: availability_group.database.name
+                    - key: db.namespace
                       value:
                         stringValue: SalesDB
                     - key: sqlserver.availability_group.name
@@ -101,7 +101,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "512"
                   attributes:
-                    - key: availability_group.database.name
+                    - key: db.namespace
                       value:
                         stringValue: InventoryDB
                     - key: sqlserver.availability_group.name
@@ -117,7 +117,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: availability_group.database.name
+                    - key: db.namespace
                       value:
                         stringValue: SalesDB
                     - key: sqlserver.availability_group.name
@@ -133,7 +133,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1024"
                   attributes:
-                    - key: availability_group.database.name
+                    - key: db.namespace
                       value:
                         stringValue: SalesDB
                     - key: sqlserver.availability_group.name
@@ -149,7 +149,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1024"
                   attributes:
-                    - key: availability_group.database.name
+                    - key: db.namespace
                       value:
                         stringValue: InventoryDB
                     - key: sqlserver.availability_group.name
@@ -165,7 +165,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: availability_group.database.name
+                    - key: db.namespace
                       value:
                         stringValue: SalesDB
                     - key: sqlserver.availability_group.name
@@ -181,7 +181,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "2048"
                   attributes:
-                    - key: availability_group.database.name
+                    - key: db.namespace
                       value:
                         stringValue: SalesDB
                     - key: sqlserver.availability_group.name

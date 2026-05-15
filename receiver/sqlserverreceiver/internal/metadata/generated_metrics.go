@@ -1717,7 +1717,7 @@ func (m *metricSqlserverLogDataIoRate) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverLogDataIoRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, availabilityGroupDatabaseNameAttributeValue string, sqlserverReplicaNameAttributeValue string, replicaDirectionAttributeValue string) {
+func (m *metricSqlserverLogDataIoRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string, replicaDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1728,8 +1728,8 @@ func (m *metricSqlserverLogDataIoRate) recordDataPoint(start pcommon.Timestamp, 
 	if slices.Contains(m.config.EnabledAttributes, SqlserverLogDataIoRateMetricAttributeKeySqlserverAvailabilityGroupName) {
 		dp.Attributes().PutStr("sqlserver.availability_group.name", sqlserverAvailabilityGroupNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverLogDataIoRateMetricAttributeKeyAvailabilityGroupDatabaseName) {
-		dp.Attributes().PutStr("availability_group.database.name", availabilityGroupDatabaseNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverLogDataIoRateMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaName) {
 		dp.Attributes().PutStr("sqlserver.replica.name", sqlserverReplicaNameAttributeValue)
@@ -2730,7 +2730,7 @@ func (m *metricSqlserverReplicaFlowControlTime) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverReplicaFlowControlTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, availabilityGroupDatabaseNameAttributeValue string, sqlserverReplicaNameAttributeValue string) {
+func (m *metricSqlserverReplicaFlowControlTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2741,8 +2741,8 @@ func (m *metricSqlserverReplicaFlowControlTime) recordDataPoint(start pcommon.Ti
 	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverAvailabilityGroupName) {
 		dp.Attributes().PutStr("sqlserver.availability_group.name", sqlserverAvailabilityGroupNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaFlowControlTimeMetricAttributeKeyAvailabilityGroupDatabaseName) {
-		dp.Attributes().PutStr("availability_group.database.name", availabilityGroupDatabaseNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaFlowControlTimeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverReplicaName) {
 		dp.Attributes().PutStr("sqlserver.replica.name", sqlserverReplicaNameAttributeValue)
@@ -2825,7 +2825,7 @@ func (m *metricSqlserverReplicaQueueSize) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverReplicaQueueSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverAvailabilityGroupNameAttributeValue string, availabilityGroupDatabaseNameAttributeValue string, sqlserverReplicaNameAttributeValue string, sqlserverReplicaQueueTypeAttributeValue string) {
+func (m *metricSqlserverReplicaQueueSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string, sqlserverReplicaQueueTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2836,8 +2836,8 @@ func (m *metricSqlserverReplicaQueueSize) recordDataPoint(start pcommon.Timestam
 	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName) {
 		dp.Attributes().PutStr("sqlserver.availability_group.name", sqlserverAvailabilityGroupNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaQueueSizeMetricAttributeKeyAvailabilityGroupDatabaseName) {
-		dp.Attributes().PutStr("availability_group.database.name", availabilityGroupDatabaseNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaQueueSizeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName) {
 		dp.Attributes().PutStr("sqlserver.replica.name", sqlserverReplicaNameAttributeValue)
@@ -4210,8 +4210,8 @@ func (mb *MetricsBuilder) RecordSqlserverLockWaitTimeAvgDataPoint(ts pcommon.Tim
 }
 
 // RecordSqlserverLogDataIoRateDataPoint adds a data point to sqlserver.log_data.io.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverLogDataIoRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, availabilityGroupDatabaseNameAttributeValue string, sqlserverReplicaNameAttributeValue string, replicaDirectionAttributeValue AttributeReplicaDirection) {
-	mb.metricSqlserverLogDataIoRate.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, availabilityGroupDatabaseNameAttributeValue, sqlserverReplicaNameAttributeValue, replicaDirectionAttributeValue.String())
+func (mb *MetricsBuilder) RecordSqlserverLogDataIoRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string, replicaDirectionAttributeValue AttributeReplicaDirection) {
+	mb.metricSqlserverLogDataIoRate.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, dbNamespaceAttributeValue, sqlserverReplicaNameAttributeValue, replicaDirectionAttributeValue.String())
 }
 
 // RecordSqlserverLoginRateDataPoint adds a data point to sqlserver.login.rate metric.
@@ -4295,13 +4295,13 @@ func (mb *MetricsBuilder) RecordSqlserverReplicaDataRateDataPoint(ts pcommon.Tim
 }
 
 // RecordSqlserverReplicaFlowControlTimeDataPoint adds a data point to sqlserver.replica.flow_control.time metric.
-func (mb *MetricsBuilder) RecordSqlserverReplicaFlowControlTimeDataPoint(ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, availabilityGroupDatabaseNameAttributeValue string, sqlserverReplicaNameAttributeValue string) {
-	mb.metricSqlserverReplicaFlowControlTime.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, availabilityGroupDatabaseNameAttributeValue, sqlserverReplicaNameAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverReplicaFlowControlTimeDataPoint(ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string) {
+	mb.metricSqlserverReplicaFlowControlTime.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, dbNamespaceAttributeValue, sqlserverReplicaNameAttributeValue)
 }
 
 // RecordSqlserverReplicaQueueSizeDataPoint adds a data point to sqlserver.replica.queue.size metric.
-func (mb *MetricsBuilder) RecordSqlserverReplicaQueueSizeDataPoint(ts pcommon.Timestamp, val int64, sqlserverAvailabilityGroupNameAttributeValue string, availabilityGroupDatabaseNameAttributeValue string, sqlserverReplicaNameAttributeValue string, sqlserverReplicaQueueTypeAttributeValue AttributeSqlserverReplicaQueueType) {
-	mb.metricSqlserverReplicaQueueSize.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, availabilityGroupDatabaseNameAttributeValue, sqlserverReplicaNameAttributeValue, sqlserverReplicaQueueTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordSqlserverReplicaQueueSizeDataPoint(ts pcommon.Timestamp, val int64, sqlserverAvailabilityGroupNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverReplicaNameAttributeValue string, sqlserverReplicaQueueTypeAttributeValue AttributeSqlserverReplicaQueueType) {
+	mb.metricSqlserverReplicaQueueSize.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, dbNamespaceAttributeValue, sqlserverReplicaNameAttributeValue, sqlserverReplicaQueueTypeAttributeValue.String())
 }
 
 // RecordSqlserverResourcePoolDiskOperationsDataPoint adds a data point to sqlserver.resource_pool.disk.operations metric.

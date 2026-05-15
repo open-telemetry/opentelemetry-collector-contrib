@@ -263,12 +263,12 @@ $defs:
               type: string
               enum:
                 - "sqlserver.availability_group.name"
-                - "availability_group.database.name"
+                - "db.namespace"
                 - "sqlserver.replica.name"
                 - "replica.direction"
             default:
               - "sqlserver.availability_group.name"
-              - "availability_group.database.name"
+              - "db.namespace"
               - "sqlserver.replica.name"
               - "replica.direction"
       sqlserver.login.rate:
@@ -463,11 +463,11 @@ $defs:
               type: string
               enum:
                 - "sqlserver.availability_group.name"
-                - "availability_group.database.name"
+                - "db.namespace"
                 - "sqlserver.replica.name"
             default:
               - "sqlserver.availability_group.name"
-              - "availability_group.database.name"
+              - "db.namespace"
               - "sqlserver.replica.name"
       sqlserver.replica.queue.size:
         description: "SqlserverReplicaQueueSizeMetricConfig provides config for the sqlserver.replica.queue.size metric."
@@ -490,12 +490,12 @@ $defs:
               type: string
               enum:
                 - "sqlserver.availability_group.name"
-                - "availability_group.database.name"
+                - "db.namespace"
                 - "sqlserver.replica.name"
                 - "sqlserver.replica.queue.type"
             default:
               - "sqlserver.availability_group.name"
-              - "availability_group.database.name"
+              - "db.namespace"
               - "sqlserver.replica.name"
               - "sqlserver.replica.queue.type"
       sqlserver.resource_pool.disk.operations:

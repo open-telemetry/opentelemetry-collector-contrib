@@ -99,7 +99,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverLogDataIoRate: SqlserverLogDataIoRateMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverLogDataIoRateMetricAttributeKey{SqlserverLogDataIoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverLogDataIoRateMetricAttributeKeyAvailabilityGroupDatabaseName, SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaName, SqlserverLogDataIoRateMetricAttributeKeyReplicaDirection},
+						EnabledAttributes:   []SqlserverLogDataIoRateMetricAttributeKey{SqlserverLogDataIoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverLogDataIoRateMetricAttributeKeyDbNamespace, SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaName, SqlserverLogDataIoRateMetricAttributeKeyReplicaDirection},
 					},
 					SqlserverLoginRate: SqlserverLoginRateMetricConfig{
 						Enabled: true,
@@ -157,12 +157,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverReplicaFlowControlTime: SqlserverReplicaFlowControlTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverReplicaFlowControlTimeMetricAttributeKey{SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaFlowControlTimeMetricAttributeKeyAvailabilityGroupDatabaseName, SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverReplicaFlowControlTimeMetricAttributeKey{SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaFlowControlTimeMetricAttributeKeyDbNamespace, SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverReplicaName},
 					},
 					SqlserverReplicaQueueSize: SqlserverReplicaQueueSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverReplicaQueueSizeMetricAttributeKey{SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaQueueSizeMetricAttributeKeyAvailabilityGroupDatabaseName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaQueueType},
+						EnabledAttributes:   []SqlserverReplicaQueueSizeMetricAttributeKey{SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaQueueSizeMetricAttributeKeyDbNamespace, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaQueueType},
 					},
 					SqlserverResourcePoolDiskOperations: SqlserverResourcePoolDiskOperationsMetricConfig{
 						Enabled:             true,
@@ -302,7 +302,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverLogDataIoRate: SqlserverLogDataIoRateMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverLogDataIoRateMetricAttributeKey{SqlserverLogDataIoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverLogDataIoRateMetricAttributeKeyAvailabilityGroupDatabaseName, SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaName, SqlserverLogDataIoRateMetricAttributeKeyReplicaDirection},
+						EnabledAttributes:   []SqlserverLogDataIoRateMetricAttributeKey{SqlserverLogDataIoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverLogDataIoRateMetricAttributeKeyDbNamespace, SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaName, SqlserverLogDataIoRateMetricAttributeKeyReplicaDirection},
 					},
 					SqlserverLoginRate: SqlserverLoginRateMetricConfig{
 						Enabled: false,
@@ -360,12 +360,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverReplicaFlowControlTime: SqlserverReplicaFlowControlTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverReplicaFlowControlTimeMetricAttributeKey{SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaFlowControlTimeMetricAttributeKeyAvailabilityGroupDatabaseName, SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverReplicaName},
+						EnabledAttributes:   []SqlserverReplicaFlowControlTimeMetricAttributeKey{SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaFlowControlTimeMetricAttributeKeyDbNamespace, SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverReplicaName},
 					},
 					SqlserverReplicaQueueSize: SqlserverReplicaQueueSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverReplicaQueueSizeMetricAttributeKey{SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaQueueSizeMetricAttributeKeyAvailabilityGroupDatabaseName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaQueueType},
+						EnabledAttributes:   []SqlserverReplicaQueueSizeMetricAttributeKey{SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaQueueSizeMetricAttributeKeyDbNamespace, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaQueueType},
 					},
 					SqlserverResourcePoolDiskOperations: SqlserverResourcePoolDiskOperationsMetricConfig{
 						Enabled:             false,

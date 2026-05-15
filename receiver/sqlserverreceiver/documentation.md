@@ -404,7 +404,7 @@ This metric is only available when the receiver is configured to directly connec
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | sqlserver.availability_group.name | The name of the SQL Server Always On availability group. | Any Str | Recommended | - |
-| availability_group.database.name | The name of the database participating in the availability group. | Any Str | Recommended | - |
+| db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.replica.name | The name of the availability replica server. | Any Str | Recommended | - |
 | replica.direction | The direction of flow of bytes for replica. | Str: ``transmit``, ``receive`` | Recommended | - |
 
@@ -512,7 +512,7 @@ This metric is only available when the receiver is configured to directly connec
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | sqlserver.availability_group.name | The name of the SQL Server Always On availability group. | Any Str | Recommended | - |
-| availability_group.database.name | The name of the database participating in the availability group. | Any Str | Recommended | - |
+| db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.replica.name | The name of the availability replica server. | Any Str | Recommended | - |
 
 ### sqlserver.replica.queue.size
@@ -530,7 +530,7 @@ This metric is only available when the receiver is configured to directly connec
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | sqlserver.availability_group.name | The name of the SQL Server Always On availability group. | Any Str | Recommended | - |
-| availability_group.database.name | The name of the database participating in the availability group. | Any Str | Recommended | - |
+| db.namespace | The database name. | Any Str | Recommended | - |
 | sqlserver.replica.name | The name of the availability replica server. | Any Str | Recommended | - |
 | sqlserver.replica.queue.type | The type of queue in the availability group replica pipeline. | Str: ``send``, ``redo`` | Recommended | - |
 

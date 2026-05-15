@@ -171,9 +171,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverLockWaitTimeAvgDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverLogDataIoRateDataPoint(ts, 1, "sqlserver.availability_group.name-val", "availability_group.database.name-val", "sqlserver.replica.name-val", AttributeReplicaDirectionTransmit)
+			mb.RecordSqlserverLogDataIoRateDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val", AttributeReplicaDirectionTransmit)
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverLogDataIoRateDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "availability_group.database.name-val-2", "sqlserver.replica.name-val-2", AttributeReplicaDirectionReceive)
+				mb.RecordSqlserverLogDataIoRateDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "db.namespace-val-2", "sqlserver.replica.name-val-2", AttributeReplicaDirectionReceive)
 			}
 
 			allMetricsCount++
@@ -240,15 +240,15 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverReplicaFlowControlTimeDataPoint(ts, 1, "sqlserver.availability_group.name-val", "availability_group.database.name-val", "sqlserver.replica.name-val")
+			mb.RecordSqlserverReplicaFlowControlTimeDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverReplicaFlowControlTimeDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "availability_group.database.name-val-2", "sqlserver.replica.name-val-2")
+				mb.RecordSqlserverReplicaFlowControlTimeDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "db.namespace-val-2", "sqlserver.replica.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverReplicaQueueSizeDataPoint(ts, 1, "sqlserver.availability_group.name-val", "availability_group.database.name-val", "sqlserver.replica.name-val", AttributeSqlserverReplicaQueueTypeSend)
+			mb.RecordSqlserverReplicaQueueSizeDataPoint(ts, 1, "sqlserver.availability_group.name-val", "db.namespace-val", "sqlserver.replica.name-val", AttributeSqlserverReplicaQueueTypeSend)
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverReplicaQueueSizeDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "availability_group.database.name-val-2", "sqlserver.replica.name-val-2", AttributeSqlserverReplicaQueueTypeRedo)
+				mb.RecordSqlserverReplicaQueueSizeDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "db.namespace-val-2", "sqlserver.replica.name-val-2", AttributeSqlserverReplicaQueueTypeRedo)
 			}
 
 			allMetricsCount++
@@ -822,9 +822,9 @@ func TestMetricsBuilder(t *testing.T) {
 						sqlserverAvailabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.True(t, ok)
 						assert.Equal(t, "sqlserver.availability_group.name-val", sqlserverAvailabilityGroupNameAttrVal.Str())
-						availabilityGroupDatabaseNameAttrVal, ok := dp.Attributes().Get("availability_group.database.name")
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
-						assert.Equal(t, "availability_group.database.name-val", availabilityGroupDatabaseNameAttrVal.Str())
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 						sqlserverReplicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
 						assert.True(t, ok)
 						assert.Equal(t, "sqlserver.replica.name-val", sqlserverReplicaNameAttrVal.Str())
@@ -854,7 +854,7 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("availability_group.database.name")
+						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("sqlserver.replica.name")
 						assert.False(t, ok)
@@ -1182,9 +1182,9 @@ func TestMetricsBuilder(t *testing.T) {
 						sqlserverAvailabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.True(t, ok)
 						assert.Equal(t, "sqlserver.availability_group.name-val", sqlserverAvailabilityGroupNameAttrVal.Str())
-						availabilityGroupDatabaseNameAttrVal, ok := dp.Attributes().Get("availability_group.database.name")
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
-						assert.Equal(t, "availability_group.database.name-val", availabilityGroupDatabaseNameAttrVal.Str())
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 						sqlserverReplicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
 						assert.True(t, ok)
 						assert.Equal(t, "sqlserver.replica.name-val", sqlserverReplicaNameAttrVal.Str())
@@ -1211,7 +1211,7 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("availability_group.database.name")
+						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("sqlserver.replica.name")
 						assert.False(t, ok)
@@ -1232,9 +1232,9 @@ func TestMetricsBuilder(t *testing.T) {
 						sqlserverAvailabilityGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.True(t, ok)
 						assert.Equal(t, "sqlserver.availability_group.name-val", sqlserverAvailabilityGroupNameAttrVal.Str())
-						availabilityGroupDatabaseNameAttrVal, ok := dp.Attributes().Get("availability_group.database.name")
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
-						assert.Equal(t, "availability_group.database.name-val", availabilityGroupDatabaseNameAttrVal.Str())
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 						sqlserverReplicaNameAttrVal, ok := dp.Attributes().Get("sqlserver.replica.name")
 						assert.True(t, ok)
 						assert.Equal(t, "sqlserver.replica.name-val", sqlserverReplicaNameAttrVal.Str())
@@ -1264,7 +1264,7 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("sqlserver.availability_group.name")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("availability_group.database.name")
+						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("sqlserver.replica.name")
 						assert.False(t, ok)

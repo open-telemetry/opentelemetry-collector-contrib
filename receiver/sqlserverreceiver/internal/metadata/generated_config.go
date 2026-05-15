@@ -563,7 +563,7 @@ type SqlserverLogDataIoRateMetricAttributeKey string
 
 const (
 	SqlserverLogDataIoRateMetricAttributeKeySqlserverAvailabilityGroupName SqlserverLogDataIoRateMetricAttributeKey = "sqlserver.availability_group.name"
-	SqlserverLogDataIoRateMetricAttributeKeyAvailabilityGroupDatabaseName  SqlserverLogDataIoRateMetricAttributeKey = "availability_group.database.name"
+	SqlserverLogDataIoRateMetricAttributeKeyDbNamespace                    SqlserverLogDataIoRateMetricAttributeKey = "db.namespace"
 	SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaName           SqlserverLogDataIoRateMetricAttributeKey = "sqlserver.replica.name"
 	SqlserverLogDataIoRateMetricAttributeKeyReplicaDirection               SqlserverLogDataIoRateMetricAttributeKey = "replica.direction"
 )
@@ -594,9 +594,9 @@ func (ms *SqlserverLogDataIoRateMetricConfig) Unmarshal(parser *confmap.Conf) er
 func (ms *SqlserverLogDataIoRateMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverLogDataIoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverLogDataIoRateMetricAttributeKeyAvailabilityGroupDatabaseName, SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaName, SqlserverLogDataIoRateMetricAttributeKeyReplicaDirection:
+		case SqlserverLogDataIoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverLogDataIoRateMetricAttributeKeyDbNamespace, SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaName, SqlserverLogDataIoRateMetricAttributeKeyReplicaDirection:
 		default:
-			return fmt.Errorf("metric sqlserver.log_data.io.rate doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, availability_group.database.name, sqlserver.replica.name, replica.direction]", val)
+			return fmt.Errorf("metric sqlserver.log_data.io.rate doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, replica.direction]", val)
 		}
 	}
 
@@ -1027,7 +1027,7 @@ type SqlserverReplicaFlowControlTimeMetricAttributeKey string
 
 const (
 	SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverAvailabilityGroupName SqlserverReplicaFlowControlTimeMetricAttributeKey = "sqlserver.availability_group.name"
-	SqlserverReplicaFlowControlTimeMetricAttributeKeyAvailabilityGroupDatabaseName  SqlserverReplicaFlowControlTimeMetricAttributeKey = "availability_group.database.name"
+	SqlserverReplicaFlowControlTimeMetricAttributeKeyDbNamespace                    SqlserverReplicaFlowControlTimeMetricAttributeKey = "db.namespace"
 	SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverReplicaName           SqlserverReplicaFlowControlTimeMetricAttributeKey = "sqlserver.replica.name"
 )
 
@@ -1057,9 +1057,9 @@ func (ms *SqlserverReplicaFlowControlTimeMetricConfig) Unmarshal(parser *confmap
 func (ms *SqlserverReplicaFlowControlTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaFlowControlTimeMetricAttributeKeyAvailabilityGroupDatabaseName, SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverReplicaName:
+		case SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaFlowControlTimeMetricAttributeKeyDbNamespace, SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverReplicaName:
 		default:
-			return fmt.Errorf("metric sqlserver.replica.flow_control.time doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, availability_group.database.name, sqlserver.replica.name]", val)
+			return fmt.Errorf("metric sqlserver.replica.flow_control.time doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name]", val)
 		}
 	}
 
@@ -1077,7 +1077,7 @@ type SqlserverReplicaQueueSizeMetricAttributeKey string
 
 const (
 	SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName SqlserverReplicaQueueSizeMetricAttributeKey = "sqlserver.availability_group.name"
-	SqlserverReplicaQueueSizeMetricAttributeKeyAvailabilityGroupDatabaseName  SqlserverReplicaQueueSizeMetricAttributeKey = "availability_group.database.name"
+	SqlserverReplicaQueueSizeMetricAttributeKeyDbNamespace                    SqlserverReplicaQueueSizeMetricAttributeKey = "db.namespace"
 	SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName           SqlserverReplicaQueueSizeMetricAttributeKey = "sqlserver.replica.name"
 	SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaQueueType      SqlserverReplicaQueueSizeMetricAttributeKey = "sqlserver.replica.queue.type"
 )
@@ -1108,9 +1108,9 @@ func (ms *SqlserverReplicaQueueSizeMetricConfig) Unmarshal(parser *confmap.Conf)
 func (ms *SqlserverReplicaQueueSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaQueueSizeMetricAttributeKeyAvailabilityGroupDatabaseName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaQueueType:
+		case SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaQueueSizeMetricAttributeKeyDbNamespace, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaQueueType:
 		default:
-			return fmt.Errorf("metric sqlserver.replica.queue.size doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, availability_group.database.name, sqlserver.replica.name, sqlserver.replica.queue.type]", val)
+			return fmt.Errorf("metric sqlserver.replica.queue.size doesn't have an attribute %v, valid attributes: [sqlserver.availability_group.name, db.namespace, sqlserver.replica.name, sqlserver.replica.queue.type]", val)
 		}
 	}
 
@@ -1612,7 +1612,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverLogDataIoRate: SqlserverLogDataIoRateMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverLogDataIoRateMetricAttributeKey{SqlserverLogDataIoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverLogDataIoRateMetricAttributeKeyAvailabilityGroupDatabaseName, SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaName, SqlserverLogDataIoRateMetricAttributeKeyReplicaDirection},
+			EnabledAttributes:   []SqlserverLogDataIoRateMetricAttributeKey{SqlserverLogDataIoRateMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverLogDataIoRateMetricAttributeKeyDbNamespace, SqlserverLogDataIoRateMetricAttributeKeySqlserverReplicaName, SqlserverLogDataIoRateMetricAttributeKeyReplicaDirection},
 		},
 		SqlserverLoginRate: SqlserverLoginRateMetricConfig{
 			Enabled: false,
@@ -1670,12 +1670,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverReplicaFlowControlTime: SqlserverReplicaFlowControlTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverReplicaFlowControlTimeMetricAttributeKey{SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaFlowControlTimeMetricAttributeKeyAvailabilityGroupDatabaseName, SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverReplicaName},
+			EnabledAttributes:   []SqlserverReplicaFlowControlTimeMetricAttributeKey{SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaFlowControlTimeMetricAttributeKeyDbNamespace, SqlserverReplicaFlowControlTimeMetricAttributeKeySqlserverReplicaName},
 		},
 		SqlserverReplicaQueueSize: SqlserverReplicaQueueSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverReplicaQueueSizeMetricAttributeKey{SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaQueueSizeMetricAttributeKeyAvailabilityGroupDatabaseName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaQueueType},
+			EnabledAttributes:   []SqlserverReplicaQueueSizeMetricAttributeKey{SqlserverReplicaQueueSizeMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverReplicaQueueSizeMetricAttributeKeyDbNamespace, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaName, SqlserverReplicaQueueSizeMetricAttributeKeySqlserverReplicaQueueType},
 		},
 		SqlserverResourcePoolDiskOperations: SqlserverResourcePoolDiskOperationsMetricConfig{
 			Enabled:             false,
