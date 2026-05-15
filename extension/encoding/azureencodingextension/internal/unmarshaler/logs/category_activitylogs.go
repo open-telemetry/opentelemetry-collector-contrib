@@ -167,6 +167,9 @@ func (r *azureAdministrativeLog) PutProperties(attrs pcommon.Map, _ pcommon.Valu
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureAdministrativeHierarchy, r.Properties.Hierarchy)
 
 	// PIM fields
+	// SubscriptionID is also set as a resource attribute (cloud.account.id) by unmarshaler.go from
+	// the resource ID; setting it here at the log record level mirrors that for PIM events where the
+	// subscription appears in properties but not in the resource ID path (e.g. resource-scoped events).
 	unmarshaler.AttrPutStrPtrIf(attrs, string(conventions.CloudAccountIDKey), r.Properties.SubscriptionID)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureResourceGroupName, r.Properties.ResourceGroupName)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureResourceProviderName, r.Properties.ResourceProviderName)
@@ -189,7 +192,7 @@ func (r *azureAdministrativeLog) PutProperties(attrs pcommon.Map, _ pcommon.Valu
 	// Microsoft are captured automatically.
 	if r.Properties.CallerInfo != "" {
 		var callers []pimCallerIdentity
-		if err := gojson.Unmarshal([]byte(r.Properties.CallerInfo), &callers); err == nil {
+		if err := gojson.Unmarshal([]byte(r.Properties.CallerInfo), &callers); err == nil && len(callers) > 0 {
 			for _, c := range callers {
 				if c.IdentityType == "" {
 					continue
