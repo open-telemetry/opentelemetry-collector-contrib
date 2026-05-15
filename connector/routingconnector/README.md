@@ -35,8 +35,8 @@ The following settings are available:
 
 - `table (required)`: the routing table for this connector.
 - `table.condition`: the routing condition provided as the [OTTL] condition. Required if `table.statement` is not provided. Use context-qualified paths (e.g., `resource.attributes["key"]`, `span.attributes["key"]`) to automatically infer the context (see [Context Inference](#context-inference)).
-- `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided. Generally `condition` is preferred since it is more terse.
-- `table.context (optional)`: the [OTTL Context] in which the condition/statement will be evaluated. Supported values: `resource`, `span`, `metric`, `datapoint`, `log`. **Deprecated:** `request` — use `otelcol.client.metadata` or `otelcol.grpc.metadata` paths instead (see [Limitations](#limitations)). In most cases this field should be omitted; the context is inferred automatically from context-qualified paths. If specified, it takes precedence over inference.
+- `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided. Generally `condition` is preferred since it is more terse. May not be used with the deprecated `request` context.
+- `table.context (optional)`: the [OTTL Context](#supported-contexts) in which the condition/statement will be evaluated. **Deprecated:** `request` — use `otelcol.client.metadata` or `otelcol.grpc.metadata` paths instead (see [Limitations](#limitations)). In most cases this field should be omitted; the context is inferred automatically from context-qualified paths. If specified, it takes precedence over inference.
 - `table.action (optional, default: move)`: determines what happens to the data when the routing condition is met. Valid values are `move` and `copy`.
   - `move`: Matched data is moved to the target pipeline(s) and removed from subsequent route evaluation. This is the default behavior.
   - `copy`: Matched data is copied to the target pipeline(s) but remains available for evaluation by subsequent routes. This allows the same data to be routed to multiple pipelines.
@@ -60,16 +60,23 @@ The routing connector supports OTTL context inference, allowing you to write cle
 
 This approach makes it immediately clear which attributes you're accessing without needing a separate `context` field.
 
-**Supported context-qualified paths:**
+### Supported contexts
 
-| Context | Path prefix | Example |
-|---------|-------------|---------|
-| Resource | `resource.` | `resource.attributes["service.name"]` |
-| Span | `span.` | `span.attributes["http.method"]` |
-| Log | `log.` | `log.body`, `log.attributes["level"]` |
-| Metric | `metric.` | `metric.name` |
-| Datapoint | `datapoint.` | `datapoint.attributes["host"]` |
-| Otelcol | `otelcol.` | `otelcol.client.metadata["X-Tenant"][0]`, `otelcol.grpc.metadata["x-tenant"][0]` |
+| Context     | Path prefix  | Example                                                                          |
+|-------------|--------------|----------------------------------------------------------------------------------|
+| [Resource]  | `resource.`  | `resource.attributes["service.name"]`                                            |
+| [Span]      | `span.`      | `span.attributes["http.method"]`                                                 |
+| [Log]       | `log.`       | `log.body`, `log.attributes["level"]`                                            |
+| [Metric]    | `metric.`    | `metric.name`                                                                    |
+| [Datapoint] | `datapoint.` | `datapoint.attributes["host"]`                                                   |
+| [OtelCol]   | `otelcol.`   | `otelcol.client.metadata["X-Tenant"][0]`, `otelcol.grpc.metadata["x-tenant"][0]` |
+
+[resource]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlresource/README.md
+[span]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspan/README.md
+[metric]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlmetric/README.md
+[datapoint]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottldatapoint/README.md
+[log]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottllog/README.md
+[otelcol]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlotelcol/README.md
 
 The `otelcol.client.metadata` and `otelcol.grpc.metadata` paths provide access to incoming HTTP and gRPC request metadata respectively, and are valid in all signal contexts.
 
@@ -136,9 +143,8 @@ service:
       exporters: [file/other]
 ```
 
-### Route logs based on tenant (explicit context required)
+### Route logs based on tenant
 
-When conditions use `otelcol.client.metadata` or `otelcol.grpc.metadata` paths, the `context` field must be set explicitly because these paths cross-cut all signals and cannot be inferred. This is the primary case where an explicit `context` is needed.
 
 ```yaml
 receivers:
