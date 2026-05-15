@@ -1,0 +1,22 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Gauge value containing service status as an integer value.
+            gauge:
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: EventLog
+                    - key: startup_mode
+                      value:
+                        stringValue: auto_start
+                  startTimeUnixNano: "1700000000000000000"
+                  timeUnixNano: "1700000000000000000"
+            name: windows.service.status
+            unit: "{status}"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver
+          version: latest
