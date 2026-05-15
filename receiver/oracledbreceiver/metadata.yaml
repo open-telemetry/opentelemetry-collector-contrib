@@ -139,6 +139,12 @@ attributes:
   oracledb.program:
     description: Name of the client program or tool that initiated the Oracle database session.
     type: string
+  oracledb.query.started:
+    description: "The timestamp when the SQL statement started execution, in ISO 8601 format (UTC)."
+    type: string
+  oracledb.query.wait_time:
+    description: The wait time in seconds. If the session is currently waiting, the value is the time spent waiting in the current wait. Returns 0 if the session is not currently waiting.
+    type: double
   oracledb.query_plan:
     description: The query execution plan used by the SQL Server.
     type: string
@@ -150,6 +156,12 @@ attributes:
     type: string
   oracledb.serial:
     description: Serial number associated with a session.
+    type: string
+  oracledb.session.duration:
+    description: The total time in seconds that the session has been connected.
+    type: double
+  oracledb.session.started:
+    description: "The timestamp when the session logged on, in ISO 8601 format (UTC)."
     type: string
   oracledb.sid:
     description: ID of the Oracle Server session.
@@ -214,11 +226,15 @@ events:
       - oracledb.state
       - oracledb.wait_class
       - oracledb.event
+      - oracledb.query.wait_time
       - oracledb.procedure_id
       - oracledb.procedure_name
       - oracledb.procedure_type
       - oracledb.osuser
       - oracledb.duration_sec
+      - oracledb.query.started
+      - oracledb.session.started
+      - oracledb.session.duration
   db.server.top_query:
     enabled: false
     description: Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).

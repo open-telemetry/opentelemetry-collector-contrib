@@ -79,6 +79,9 @@ resourceLogs:
               - key: oracledb.event
                 value:
                   stringValue: ""
+              - key: oracledb.query.wait_time
+                value:
+                  doubleValue: 0.5
               - key: oracledb.procedure_id
                 value:
                   intValue: "12345"
@@ -94,6 +97,15 @@ resourceLogs:
               - key: oracledb.duration_sec
                 value:
                   doubleValue: 1
+              - key: oracledb.query.started
+                value:
+                  stringValue: "2026-01-01T12:00:00Z"
+              - key: oracledb.session.started
+                value:
+                  stringValue: "2026-01-01T12:00:00Z"
+              - key: oracledb.session.duration
+                value:
+                  doubleValue: 0
             body: {}
             eventName: db.server.query_sample
             spanId: a7ad6b7169203331
