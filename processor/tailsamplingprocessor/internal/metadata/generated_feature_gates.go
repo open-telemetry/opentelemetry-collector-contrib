@@ -38,3 +38,11 @@ var ProcessorTailsamplingprocessorTailstorageextensionFeatureGate = featuregate.
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/47331"),
 	featuregate.WithRegisterFromVersion("v0.150.0"),
 )
+
+var ProcessorTailsamplingprocessorDefaultottlconditionerrormodeignoreFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.tailsamplingprocessor.defaultottlconditionerrormodeignore",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, OTTL condition policies without an explicit error_mode use ignore instead of propagate."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48420"),
+	featuregate.WithRegisterFromVersion("v0.152.0"),
+)
