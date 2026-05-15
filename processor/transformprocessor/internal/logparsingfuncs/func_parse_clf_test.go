@@ -20,6 +20,7 @@ func Test_parseCLF(t *testing.T) {
 		name     string
 		input    string
 		expected map[string]any
+		absent   []string
 	}{
 		{
 			name:  "canonical example from the W3C spec",
@@ -66,8 +67,8 @@ func Test_parseCLF(t *testing.T) {
 				"request_uri": "/redirect",
 				"protocol":    "HTTP/1.1",
 				"status":      int64(304),
-				// bytes intentionally omitted
 			},
+			absent: []string{"bytes"},
 		},
 		{
 			name:  "IPv6 remote host",
@@ -145,6 +146,7 @@ func Test_parseCLF(t *testing.T) {
 				"status":      int64(400),
 				"bytes":       int64(0),
 			},
+			absent: []string{"method", "request_uri", "protocol"},
 		},
 		{
 			name:  "empty request line",
@@ -158,6 +160,7 @@ func Test_parseCLF(t *testing.T) {
 				"status":      int64(408),
 				"bytes":       int64(0),
 			},
+			absent: []string{"method", "request_uri", "protocol"},
 		},
 		{
 			name:  "large byte counts",
@@ -192,6 +195,10 @@ func Test_parseCLF(t *testing.T) {
 			require.True(t, ok, "result should be pcommon.Map")
 
 			assertCLFMap(t, resultMap, tt.expected)
+			for _, k := range tt.absent {
+				_, ok := resultMap.Get(k)
+				assert.False(t, ok, "key %q should be absent", k)
+			}
 		})
 	}
 }

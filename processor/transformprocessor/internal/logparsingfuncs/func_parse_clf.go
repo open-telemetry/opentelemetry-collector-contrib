@@ -59,7 +59,7 @@ var clfRegex = regexp.MustCompile(`^(\S+) (\S+) (\S+) \[([^\]]+)\] "([^"]*)" (\S
 func parseCLFMessage(message string) (pcommon.Map, error) {
 	matches := clfRegex.FindStringSubmatch(strings.TrimSpace(message))
 	if matches == nil {
-		return pcommon.Map{}, errors.New("invalid CLF message: does not match expected format")
+		return pcommon.NewMap(), errors.New("invalid CLF message: does not match expected format")
 	}
 
 	result := pcommon.NewMap()
@@ -80,7 +80,7 @@ func parseCLFMessage(message string) (pcommon.Map, error) {
 	status := matches[6]
 	statusInt, err := strconv.ParseInt(status, 10, 64)
 	if err != nil {
-		return pcommon.Map{}, fmt.Errorf("invalid status code %q: %w", status, err)
+		return pcommon.NewMap(), fmt.Errorf("invalid status code %q: %w", status, err)
 	}
 	result.PutInt("status", statusInt)
 
@@ -88,7 +88,7 @@ func parseCLFMessage(message string) (pcommon.Map, error) {
 	if bytesStr != "-" {
 		bytesInt, err := strconv.ParseInt(bytesStr, 10, 64)
 		if err != nil {
-			return pcommon.Map{}, fmt.Errorf("invalid bytes value %q: %w", bytesStr, err)
+			return pcommon.NewMap(), fmt.Errorf("invalid bytes value %q: %w", bytesStr, err)
 		}
 		result.PutInt("bytes", bytesInt)
 	}
