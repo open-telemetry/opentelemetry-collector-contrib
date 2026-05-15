@@ -111,7 +111,7 @@ func TestIsEKS(t *testing.T) {
 			k8sHostEnvVar: "",
 			isEKS:         false,
 		},
-		{
+		{ //nolint:gosec // the following triggers G101: Potential hardcoded credentials
 			name:          "IRSA Token Path",
 			k8sHostEnvVar: "1",
 			irsaTokenFile: "/var/run/secrets/eks.amazonaws.com/serviceaccount/token",

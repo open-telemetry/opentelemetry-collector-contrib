@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
 				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				URL:             "https://fakeaccount.blob.core.windows.net/",
-				Auth: Authentication{
+				Auth: Authentication{ //nolint:gosec // the following triggers G101: Potential hardcoded credentials
 					Type:         "service_principal",
 					TenantID:     "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
 					ClientID:     "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
@@ -137,7 +137,7 @@ func TestLoadConfig(t *testing.T) {
 				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
 				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				URL:             "https://fakeaccount.blob.core.windows.net/",
-				Auth: Authentication{
+				Auth: Authentication{ //nolint:gosec // the following triggers G101: Potential hardcoded credentials
 					Type:               "workload_identity",
 					ClientID:           "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
 					TenantID:           "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",

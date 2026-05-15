@@ -286,7 +286,7 @@ func TestMetricQueries(t *testing.T) {
 			}
 
 			actualSliceVal := returnVal[0]
-			if actualSliceVal.Kind() == reflect.Ptr {
+			if actualSliceVal.Kind() == reflect.Pointer {
 				actualSliceVal = actualSliceVal.Elem()
 			}
 
