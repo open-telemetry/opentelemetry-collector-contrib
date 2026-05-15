@@ -220,96 +220,6 @@ metrics:
     enabled: true
 ```
 
-### sqlserver.availability_group.flow_control_time
-
-Total flow control time experienced by the availability group database replica, derived from secondary replica lag.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server 2016+ with Always On Availability Groups enabled. The datapoint is omitted for primary replicas where secondary_lag_seconds is NULL.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Double | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| availability_group.name | The name of the SQL Server Always On availability group. | Any Str | Recommended | - |
-| availability_group.database.name | The name of the database participating in the availability group. | Any Str | Recommended | - |
-| availability_group.replica.name | The name of the availability replica server. | Any Str | Recommended | - |
-
-### sqlserver.availability_group.log.received.rate
-
-Rate at which log blocks are received by the availability group database replica from the primary replica.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By/s | Gauge | Double | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| availability_group.name | The name of the SQL Server Always On availability group. | Any Str | Recommended | - |
-| availability_group.database.name | The name of the database participating in the availability group. | Any Str | Recommended | - |
-| availability_group.replica.name | The name of the availability replica server. | Any Str | Recommended | - |
-
-### sqlserver.availability_group.log.send_queue
-
-Amount of log records in the log files of the primary database that have not been sent to the secondary replicas.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| KB | Gauge | Int | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| availability_group.name | The name of the SQL Server Always On availability group. | Any Str | Recommended | - |
-| availability_group.database.name | The name of the database participating in the availability group. | Any Str | Recommended | - |
-| availability_group.replica.name | The name of the availability replica server. | Any Str | Recommended | - |
-
-### sqlserver.availability_group.redo.rate
-
-Rate at which log records are being redone on the secondary replica.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| KB/s | Gauge | Double | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| availability_group.name | The name of the SQL Server Always On availability group. | Any Str | Recommended | - |
-| availability_group.database.name | The name of the database participating in the availability group. | Any Str | Recommended | - |
-| availability_group.replica.name | The name of the availability replica server. | Any Str | Recommended | - |
-
-### sqlserver.availability_group.redo_queue
-
-Amount of log records in the log files of the secondary replica that have not yet been redone.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| KB | Gauge | Int | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| availability_group.name | The name of the SQL Server Always On availability group. | Any Str | Recommended | - |
-| availability_group.database.name | The name of the database participating in the availability group. | Any Str | Recommended | - |
-| availability_group.replica.name | The name of the availability replica server. | Any Str | Recommended | - |
-
 ### sqlserver.computer.uptime
 
 Computer uptime.
@@ -566,7 +476,63 @@ Throughput rate of replica data.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| replica.direction | The direction of flow of bytes for replica. | Str: ``transmit``, ``receive`` | Recommended | - |
+| replica.direction | The direction of flow of bytes for replica. | Str: ``transmit``, ``receive``, ``redo`` | Recommended | - |
+
+### sqlserver.replica.flow_control.time
+
+Total flow control time experienced by the availability group database replica, derived from secondary replica lag.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server 2016+ with Always On Availability Groups enabled. The datapoint is omitted for primary replicas where secondary_lag_seconds is NULL.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.availability_group.name | The name of the SQL Server Always On availability group. | Any Str | Recommended | - |
+| availability_group.database.name | The name of the database participating in the availability group. | Any Str | Recommended | - |
+| sqlserver.replica.name | The name of the availability replica server. | Any Str | Recommended | - |
+
+### sqlserver.replica.io.rate
+
+Rate of log data flowing through the availability group replica, in the specified direction.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled. Direction "receive" reports log blocks received from primary; direction "redo" reports the redo rate on the secondary.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| KB/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.availability_group.name | The name of the SQL Server Always On availability group. | Any Str | Recommended | - |
+| availability_group.database.name | The name of the database participating in the availability group. | Any Str | Recommended | - |
+| sqlserver.replica.name | The name of the availability replica server. | Any Str | Recommended | - |
+| replica.direction | The direction of flow of bytes for replica. | Str: ``transmit``, ``receive``, ``redo`` | Recommended | - |
+
+### sqlserver.replica.queue.size
+
+Amount of log data queued in the availability group replica pipeline, in the specified direction.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server with Always On Availability Groups enabled. Direction "transmit" reports log not yet sent to secondaries; direction "redo" reports log not yet redone on the secondary.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| KB | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.availability_group.name | The name of the SQL Server Always On availability group. | Any Str | Recommended | - |
+| availability_group.database.name | The name of the database participating in the availability group. | Any Str | Recommended | - |
+| sqlserver.replica.name | The name of the availability replica server. | Any Str | Recommended | - |
+| replica.direction | The direction of flow of bytes for replica. | Str: ``transmit``, ``receive``, ``redo`` | Recommended | - |
 
 ### sqlserver.resource_pool.disk.operations
 

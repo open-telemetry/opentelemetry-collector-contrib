@@ -307,9 +307,7 @@ func isAvailabilityGroupQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		return false
 	}
 
-	return metrics.SqlserverAvailabilityGroupFlowControlTime.Enabled ||
-		metrics.SqlserverAvailabilityGroupLogReceivedRate.Enabled ||
-		metrics.SqlserverAvailabilityGroupLogSendQueue.Enabled ||
-		metrics.SqlserverAvailabilityGroupRedoQueue.Enabled ||
-		metrics.SqlserverAvailabilityGroupRedoRate.Enabled
+	return metrics.SqlserverReplicaFlowControlTime.Enabled ||
+		metrics.SqlserverReplicaIoRate.Enabled ||
+		metrics.SqlserverReplicaQueueSize.Enabled
 }

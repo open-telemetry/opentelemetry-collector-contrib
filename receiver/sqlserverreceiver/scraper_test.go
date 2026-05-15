@@ -36,11 +36,9 @@ import (
 func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	// Some of these metrics are enabled by default, but it's still helpful to include
 	// in the case of using a config that may have previously disabled a metric.
-	cfg.Metrics.SqlserverAvailabilityGroupFlowControlTime.Enabled = enabled
-	cfg.Metrics.SqlserverAvailabilityGroupLogReceivedRate.Enabled = enabled
-	cfg.Metrics.SqlserverAvailabilityGroupLogSendQueue.Enabled = enabled
-	cfg.Metrics.SqlserverAvailabilityGroupRedoQueue.Enabled = enabled
-	cfg.Metrics.SqlserverAvailabilityGroupRedoRate.Enabled = enabled
+	cfg.Metrics.SqlserverReplicaFlowControlTime.Enabled = enabled
+	cfg.Metrics.SqlserverReplicaIoRate.Enabled = enabled
+	cfg.Metrics.SqlserverReplicaQueueSize.Enabled = enabled
 	cfg.Metrics.SqlserverBatchRequestRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchSQLCompilationRate.Enabled = enabled
 	cfg.Metrics.SqlserverBatchSQLRecompilationRate.Enabled = enabled

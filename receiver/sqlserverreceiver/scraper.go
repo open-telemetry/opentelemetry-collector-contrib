@@ -790,8 +790,6 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 		redoQueueSizeKey       = "redo_queue_size"
 		redoRateKey            = "redo_rate"
 		secondaryLagSecondsKey = "secondary_lag_seconds"
-		bytesPerKB             = 1024.0
-		msPerSecond            = 1000.0
 	)
 
 	rows, err := s.client.QueryRows(ctx)
@@ -823,7 +821,8 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 			if err != nil {
 				errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 			} else {
-				s.mb.RecordSqlserverAvailabilityGroupFlowControlTimeDataPoint(now, val.(float64)*msPerSecond, agName, dbName, replicaName)
+				// flow control: val is already in seconds from secondary_lag_seconds column
+				s.mb.RecordSqlserverReplicaFlowControlTimeDataPoint(now, val.(float64), agName, dbName, replicaName)
 			}
 		}
 
@@ -831,28 +830,32 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 		if err != nil {
 			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 		} else {
-			s.mb.RecordSqlserverAvailabilityGroupLogReceivedRateDataPoint(now, val.(float64)*bytesPerKB, agName, dbName, replicaName)
-		}
-
-		val, err = retrieveInt(row, logSendQueueSizeKey)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
-		} else {
-			s.mb.RecordSqlserverAvailabilityGroupLogSendQueueDataPoint(now, val.(int64), agName, dbName, replicaName)
-		}
-
-		val, err = retrieveInt(row, redoQueueSizeKey)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
-		} else {
-			s.mb.RecordSqlserverAvailabilityGroupRedoQueueDataPoint(now, val.(int64), agName, dbName, replicaName)
+			// io.rate receive: logSendRateKey gives KB/s already
+			s.mb.RecordSqlserverReplicaIoRateDataPoint(now, val.(float64), agName, dbName, replicaName, metadata.AttributeReplicaDirectionReceive)
 		}
 
 		val, err = retrieveFloat(row, redoRateKey)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 		} else {
-			s.mb.RecordSqlserverAvailabilityGroupRedoRateDataPoint(now, val.(float64), agName, dbName, replicaName)
+			// io.rate redo: redoRateKey gives KB/s already
+			s.mb.RecordSqlserverReplicaIoRateDataPoint(now, val.(float64), agName, dbName, replicaName, metadata.AttributeReplicaDirectionRedo)
+		}
+
+		val, err = retrieveInt(row, logSendQueueSizeKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+		} else {
+			// queue.size transmit: logSendQueueSizeKey gives KB
+			s.mb.RecordSqlserverReplicaQueueSizeDataPoint(now, val.(int64), agName, dbName, replicaName, metadata.AttributeReplicaDirectionTransmit)
+		}
+
+		val, err = retrieveInt(row, redoQueueSizeKey)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
+		} else {
+			// queue.size redo: redoQueueSizeKey gives KB
+			s.mb.RecordSqlserverReplicaQueueSizeDataPoint(now, val.(int64), agName, dbName, replicaName, metadata.AttributeReplicaDirectionRedo)
 		}
 	}
 

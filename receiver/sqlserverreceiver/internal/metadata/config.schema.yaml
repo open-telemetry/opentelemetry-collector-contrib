@@ -4,141 +4,6 @@ $defs:
     description: MetricsConfig provides config for sqlserver metrics.
     type: object
     properties:
-      sqlserver.availability_group.flow_control_time:
-        description: "SqlserverAvailabilityGroupFlowControlTimeMetricConfig provides config for the sqlserver.availability_group.flow_control_time metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "avg"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "availability_group.name"
-                - "availability_group.database.name"
-                - "availability_group.replica.name"
-            default:
-              - "availability_group.name"
-              - "availability_group.database.name"
-              - "availability_group.replica.name"
-      sqlserver.availability_group.log.received.rate:
-        description: "SqlserverAvailabilityGroupLogReceivedRateMetricConfig provides config for the sqlserver.availability_group.log.received.rate metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "avg"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "availability_group.name"
-                - "availability_group.database.name"
-                - "availability_group.replica.name"
-            default:
-              - "availability_group.name"
-              - "availability_group.database.name"
-              - "availability_group.replica.name"
-      sqlserver.availability_group.log.send_queue:
-        description: "SqlserverAvailabilityGroupLogSendQueueMetricConfig provides config for the sqlserver.availability_group.log.send_queue metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "avg"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "availability_group.name"
-                - "availability_group.database.name"
-                - "availability_group.replica.name"
-            default:
-              - "availability_group.name"
-              - "availability_group.database.name"
-              - "availability_group.replica.name"
-      sqlserver.availability_group.redo.rate:
-        description: "SqlserverAvailabilityGroupRedoRateMetricConfig provides config for the sqlserver.availability_group.redo.rate metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "avg"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "availability_group.name"
-                - "availability_group.database.name"
-                - "availability_group.replica.name"
-            default:
-              - "availability_group.name"
-              - "availability_group.database.name"
-              - "availability_group.replica.name"
-      sqlserver.availability_group.redo_queue:
-        description: "SqlserverAvailabilityGroupRedoQueueMetricConfig provides config for the sqlserver.availability_group.redo_queue metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "avg"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "availability_group.name"
-                - "availability_group.database.name"
-                - "availability_group.replica.name"
-            default:
-              - "availability_group.name"
-              - "availability_group.database.name"
-              - "availability_group.replica.name"
       sqlserver.batch.request.rate:
         description: "SqlserverBatchRequestRateMetricConfig provides config for the sqlserver.batch.request.rate metric."
         type: object
@@ -547,6 +412,91 @@ $defs:
               enum:
                 - "replica.direction"
             default:
+              - "replica.direction"
+      sqlserver.replica.flow_control.time:
+        description: "SqlserverReplicaFlowControlTimeMetricConfig provides config for the sqlserver.replica.flow_control.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "sqlserver.availability_group.name"
+                - "availability_group.database.name"
+                - "sqlserver.replica.name"
+            default:
+              - "sqlserver.availability_group.name"
+              - "availability_group.database.name"
+              - "sqlserver.replica.name"
+      sqlserver.replica.io.rate:
+        description: "SqlserverReplicaIoRateMetricConfig provides config for the sqlserver.replica.io.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "sqlserver.availability_group.name"
+                - "availability_group.database.name"
+                - "sqlserver.replica.name"
+                - "replica.direction"
+            default:
+              - "sqlserver.availability_group.name"
+              - "availability_group.database.name"
+              - "sqlserver.replica.name"
+              - "replica.direction"
+      sqlserver.replica.queue.size:
+        description: "SqlserverReplicaQueueSizeMetricConfig provides config for the sqlserver.replica.queue.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "sqlserver.availability_group.name"
+                - "availability_group.database.name"
+                - "sqlserver.replica.name"
+                - "replica.direction"
+            default:
+              - "sqlserver.availability_group.name"
+              - "availability_group.database.name"
+              - "sqlserver.replica.name"
               - "replica.direction"
       sqlserver.resource_pool.disk.operations:
         description: "SqlserverResourcePoolDiskOperationsMetricConfig provides config for the sqlserver.resource_pool.disk.operations metric."
