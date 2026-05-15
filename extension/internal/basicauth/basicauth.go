@@ -52,12 +52,6 @@ func (*AuthData) GetAttributeNames() []string {
 	return []string{"username", "raw"}
 }
 
-// AuthDataUsername returns the username from AuthData.
-func (a *AuthData) AuthDataUsername() string { return a.username }
-
-// AuthDataPassword returns the password from AuthData.
-func (a *AuthData) AuthDataPassword() string { return a.password }
-
 // GetAuthHeader extracts the Authorization header value from a header map,
 // handling canonical, lowercase, and case-insensitive lookups.
 func GetAuthHeader(h map[string][]string) string {
@@ -182,12 +176,4 @@ func NewPerRPCCredentials(provider CredentialProvider) (creds.PerRPCCredentials,
 		return nil, ErrInvalidFormat
 	}
 	return &PerRPCAuth{Provider: provider}, nil
-}
-
-// EncodeGRPCMetadata returns the "authorization" metadata map for gRPC basic auth.
-func EncodeGRPCMetadata(username, password string) map[string]string {
-	encoded := base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
-	return map[string]string{
-		"authorization": fmt.Sprintf("Basic %s", encoded),
-	}
 }

@@ -61,10 +61,8 @@ func TestParseBasicAuth(t *testing.T) {
 		encoded := base64.StdEncoding.EncodeToString([]byte("user:pass"))
 		ad, err := ParseBasicAuth("Basic " + encoded)
 		require.NoError(t, err)
-		assert.Equal(t, "user", ad.AuthDataUsername())
-		assert.Equal(t, "pass", ad.AuthDataPassword())
-		assert.Equal(t, encoded, ad.GetAttribute("raw"))
 		assert.Equal(t, "user", ad.GetAttribute("username"))
+		assert.Equal(t, encoded, ad.GetAttribute("raw"))
 		assert.Nil(t, ad.GetAttribute("nonexistent"))
 		assert.Equal(t, []string{"username", "raw"}, ad.GetAttributeNames())
 	})
@@ -156,10 +154,4 @@ func TestPerRPCCredentials_ColonInUsername(t *testing.T) {
 	provider := &staticProvider{username: "user:name", password: "pass"}
 	_, err := NewPerRPCCredentials(provider)
 	assert.ErrorIs(t, err, ErrInvalidFormat)
-}
-
-func TestEncodeGRPCMetadata(t *testing.T) {
-	m := EncodeGRPCMetadata("user", "pass")
-	expected := fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte("user:pass")))
-	assert.Equal(t, expected, m["authorization"])
 }
