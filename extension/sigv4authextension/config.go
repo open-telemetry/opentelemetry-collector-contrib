@@ -6,7 +6,8 @@ package sigv4authextension // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"errors"
 	"fmt"
-
+	"time"
+	
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.opentelemetry.io/collector/component"
 )
@@ -26,6 +27,8 @@ type AssumeRole struct {
 	STSRegion            string `mapstructure:"sts_region,omitempty"`
 	WebIdentityTokenFile string `mapstructure:"web_identity_token_file,omitempty"`
 	ExternalID           string `mapstructure:"external_id,omitempty"`
+	ExpiryWindow 		 time.Duration `mapstructure:"expiry_window"`
+	SessionDuration  time.Duration `mapstructure:"session_duration"`
 }
 
 // compile time check that the Config struct satisfies the component.Config interface

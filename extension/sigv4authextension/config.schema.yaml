@@ -7,6 +7,10 @@ $defs:
         type: string
       external_id:
         type: string
+      expiry_window:
+        type: string
+      session_duration:
+        type: string
       session_name:
         type: string
       sts_region:

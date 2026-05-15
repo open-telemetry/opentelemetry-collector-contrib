@@ -78,7 +78,13 @@ func getCredsProviderFromConfig(cfg *Config) (*aws.CredentialsProvider, error) {
 		stsSvc := sts.NewFromConfig(awscfg)
 
 		provider := stscreds.NewAssumeRoleProvider(stsSvc, cfg.AssumeRole.ARN, assumeRoleOptions(cfg))
-		awscfg.Credentials = aws.NewCredentialsCache(provider)
+		if cfg.AssumeRole.ExpiryWindow > 0 {
+			awscfg.Credentials = aws.NewCredentialsCache(provider, func(o *aws.CredentialsCacheOptions) {
+				o.ExpiryWindow = cfg.AssumeRole.ExpiryWindow
+			})
+		} else {
+			awscfg.Credentials = aws.NewCredentialsCache(provider)	
+		}
 	}
 
 	_, err = awscfg.Credentials.Retrieve(context.Background())
@@ -122,6 +128,9 @@ func assumeRoleOptions(cfg *Config) func(*stscreds.AssumeRoleOptions) {
 	return func(o *stscreds.AssumeRoleOptions) {
 		if cfg.AssumeRole.ExternalID != "" {
 			o.ExternalID = &cfg.AssumeRole.ExternalID
+		}
+		if cfg.AssumeRole.SessionDuration > 0 {
+			o.Duration = cfg.AssumeRole.SessionDuration
 		}
 	}
 }
