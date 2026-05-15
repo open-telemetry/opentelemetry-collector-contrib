@@ -4,5 +4,5 @@
 //go:generate make mdatagen
 
 // Package filterprocessor implements a processor for filtering
-// (dropping) metrics, logs, and/or spans by various properties.
+// (dropping) metrics and/or spans by various properties.
 package filterprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
