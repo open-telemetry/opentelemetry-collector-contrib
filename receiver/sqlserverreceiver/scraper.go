@@ -788,7 +788,6 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 		logSendQueueSizeKey    = "log_send_queue_size"
 		logSendRateKey         = "log_send_rate"
 		redoQueueSizeKey       = "redo_queue_size"
-		redoRateKey            = "redo_rate"
 		secondaryLagSecondsKey = "secondary_lag_seconds"
 	)
 
@@ -830,32 +829,21 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 		if err != nil {
 			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 		} else {
-			// io.rate receive: logSendRateKey gives KB/s already
-			s.mb.RecordSqlserverReplicaIoRateDataPoint(now, val.(float64), agName, dbName, replicaName, metadata.AttributeReplicaDirectionReceive)
-		}
-
-		val, err = retrieveFloat(row, redoRateKey)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
-		} else {
-			// io.rate redo: redoRateKey gives KB/s already
-			s.mb.RecordSqlserverReplicaIoRateDataPoint(now, val.(float64), agName, dbName, replicaName, metadata.AttributeReplicaDirectionRedo)
+			s.mb.RecordSqlserverLogDataIoRateDataPoint(now, val.(float64), agName, dbName, replicaName, metadata.AttributeReplicaDirectionReceive)
 		}
 
 		val, err = retrieveInt(row, logSendQueueSizeKey)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 		} else {
-			// queue.size transmit: logSendQueueSizeKey gives KB
-			s.mb.RecordSqlserverReplicaQueueSizeDataPoint(now, val.(int64), agName, dbName, replicaName, metadata.AttributeReplicaDirectionTransmit)
+			s.mb.RecordSqlserverReplicaQueueSizeDataPoint(now, val.(int64), agName, dbName, replicaName, metadata.AttributeSqlserverReplicaQueueTypeSend)
 		}
 
 		val, err = retrieveInt(row, redoQueueSizeKey)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("row %d: %w", i, err))
 		} else {
-			// queue.size redo: redoQueueSizeKey gives KB
-			s.mb.RecordSqlserverReplicaQueueSizeDataPoint(now, val.(int64), agName, dbName, replicaName, metadata.AttributeReplicaDirectionRedo)
+			s.mb.RecordSqlserverReplicaQueueSizeDataPoint(now, val.(int64), agName, dbName, replicaName, metadata.AttributeSqlserverReplicaQueueTypeRedo)
 		}
 	}
 

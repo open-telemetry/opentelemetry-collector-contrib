@@ -12,38 +12,7 @@ resourceMetrics:
             stringValue: sql-node-01
     scopeMetrics:
       - metrics:
-          - description: Total flow control time experienced by the availability group database replica, derived from secondary replica lag.
-            gauge:
-              dataPoints:
-                - asDouble: 2
-                  attributes:
-                    - key: availability_group.database.name
-                      value:
-                        stringValue: InventoryDB
-                    - key: sqlserver.availability_group.name
-                      value:
-                        stringValue: AG_Primary
-                    - key: sqlserver.replica.name
-                      value:
-                        stringValue: sql-node-02
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asDouble: 5
-                  attributes:
-                    - key: availability_group.database.name
-                      value:
-                        stringValue: SalesDB
-                    - key: sqlserver.availability_group.name
-                      value:
-                        stringValue: AG_Primary
-                    - key: sqlserver.replica.name
-                      value:
-                        stringValue: sql-node-02
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: sqlserver.replica.flow_control.time
-            unit: s
-          - description: Rate of log data flowing through the availability group replica, in the specified direction.
+          - description: Rate of log data received by the availability group replica from the primary.
             gauge:
               dataPoints:
                 - asDouble: 256
@@ -94,14 +63,16 @@ resourceMetrics:
                         stringValue: sql-node-02
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asDouble: 128
+            name: sqlserver.log_data.io.rate
+            unit: KB/s
+          - description: Total flow control time experienced by the availability group database replica, derived from secondary replica lag.
+            gauge:
+              dataPoints:
+                - asDouble: 2
                   attributes:
                     - key: availability_group.database.name
                       value:
                         stringValue: InventoryDB
-                    - key: replica.direction
-                      value:
-                        stringValue: redo
                     - key: sqlserver.availability_group.name
                       value:
                         stringValue: AG_Primary
@@ -110,30 +81,11 @@ resourceMetrics:
                         stringValue: sql-node-02
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asDouble: 0
+                - asDouble: 5
                   attributes:
                     - key: availability_group.database.name
                       value:
                         stringValue: SalesDB
-                    - key: replica.direction
-                      value:
-                        stringValue: redo
-                    - key: sqlserver.availability_group.name
-                      value:
-                        stringValue: AG_Primary
-                    - key: sqlserver.replica.name
-                      value:
-                        stringValue: sql-node-01
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asDouble: 256
-                  attributes:
-                    - key: availability_group.database.name
-                      value:
-                        stringValue: SalesDB
-                    - key: replica.direction
-                      value:
-                        stringValue: redo
                     - key: sqlserver.availability_group.name
                       value:
                         stringValue: AG_Primary
@@ -142,9 +94,9 @@ resourceMetrics:
                         stringValue: sql-node-02
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.replica.io.rate
-            unit: KB/s
-          - description: Amount of log data queued in the availability group replica pipeline, in the specified direction.
+            name: sqlserver.replica.flow_control.time
+            unit: s
+          - description: Amount of log data queued in the availability group replica pipeline.
             gauge:
               dataPoints:
                 - asInt: "512"
@@ -152,15 +104,15 @@ resourceMetrics:
                     - key: availability_group.database.name
                       value:
                         stringValue: InventoryDB
-                    - key: replica.direction
-                      value:
-                        stringValue: transmit
                     - key: sqlserver.availability_group.name
                       value:
                         stringValue: AG_Primary
                     - key: sqlserver.replica.name
                       value:
                         stringValue: sql-node-02
+                    - key: sqlserver.replica.queue.type
+                      value:
+                        stringValue: send
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
@@ -168,15 +120,15 @@ resourceMetrics:
                     - key: availability_group.database.name
                       value:
                         stringValue: SalesDB
-                    - key: replica.direction
-                      value:
-                        stringValue: transmit
                     - key: sqlserver.availability_group.name
                       value:
                         stringValue: AG_Primary
                     - key: sqlserver.replica.name
                       value:
                         stringValue: sql-node-01
+                    - key: sqlserver.replica.queue.type
+                      value:
+                        stringValue: send
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "1024"
@@ -184,15 +136,15 @@ resourceMetrics:
                     - key: availability_group.database.name
                       value:
                         stringValue: SalesDB
-                    - key: replica.direction
-                      value:
-                        stringValue: transmit
                     - key: sqlserver.availability_group.name
                       value:
                         stringValue: AG_Primary
                     - key: sqlserver.replica.name
                       value:
                         stringValue: sql-node-02
+                    - key: sqlserver.replica.queue.type
+                      value:
+                        stringValue: send
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "1024"
@@ -200,15 +152,15 @@ resourceMetrics:
                     - key: availability_group.database.name
                       value:
                         stringValue: InventoryDB
-                    - key: replica.direction
-                      value:
-                        stringValue: redo
                     - key: sqlserver.availability_group.name
                       value:
                         stringValue: AG_Primary
                     - key: sqlserver.replica.name
                       value:
                         stringValue: sql-node-02
+                    - key: sqlserver.replica.queue.type
+                      value:
+                        stringValue: redo
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
@@ -216,15 +168,15 @@ resourceMetrics:
                     - key: availability_group.database.name
                       value:
                         stringValue: SalesDB
-                    - key: replica.direction
-                      value:
-                        stringValue: redo
                     - key: sqlserver.availability_group.name
                       value:
                         stringValue: AG_Primary
                     - key: sqlserver.replica.name
                       value:
                         stringValue: sql-node-01
+                    - key: sqlserver.replica.queue.type
+                      value:
+                        stringValue: redo
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "2048"
@@ -232,15 +184,15 @@ resourceMetrics:
                     - key: availability_group.database.name
                       value:
                         stringValue: SalesDB
-                    - key: replica.direction
-                      value:
-                        stringValue: redo
                     - key: sqlserver.availability_group.name
                       value:
                         stringValue: AG_Primary
                     - key: sqlserver.replica.name
                       value:
                         stringValue: sql-node-02
+                    - key: sqlserver.replica.queue.type
+                      value:
+                        stringValue: redo
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.replica.queue.size
