@@ -304,7 +304,6 @@ func TestValidateMetrics(t *testing.T) {
 
 		assert.NoError(t, ValidateMetrics(md))
 	})
-	// --- PR 2: Duplicate metric name tests ---
 
 	t.Run("duplicate-metric-name-same-type", func(t *testing.T) {
 		md := pmetric.NewMetrics()

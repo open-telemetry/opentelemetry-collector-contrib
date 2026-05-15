@@ -14,14 +14,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
-// ValidateMetrics reports semantic errors in md (Metrics Data).
-// Currently it checks:
-//   - No two datapoints within the same metric share identical attribute sets
-//     (duplicate datapoint identity).
-//   - No two metrics share the same name under the same Resource + Scope
-//     (duplicate metric name).
-//
-// It returns nil if no violations are found.
 func ValidateMetrics(md pmetric.Metrics) error {
 	var errs error
 
@@ -125,7 +117,7 @@ func checkDuplicateDatapointAttrs(attrs []pcommon.Map) error {
 // validateDuplicateMetricNames checks that no two metrics in ms share the
 // same name. Each metric name must be unique within a single scope.
 func validateDuplicateMetricNames(ms pmetric.MetricSlice) error {
-	seen := make(map[string]int, ms.Len()) // metric name → first-seen index
+	seen := make(map[string]int, ms.Len()) // metric name to first-seen index
 	var errs error
 
 	for i := 0; i < ms.Len(); i++ {
