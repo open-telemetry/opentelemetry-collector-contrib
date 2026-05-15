@@ -106,6 +106,10 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		r.reader = r.file
 	}
 
+	if r.fileCacheAdvise && r.FileType != gzipExtension {
+		r.fadviseFile(0, 0)
+	}
+
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
 		r.set.Logger.Error("failed to seek", zap.Error(err))
 		return
@@ -122,11 +126,8 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			return
 		}
 	}
-	startOffset := r.Offset
+
 	r.readContents(ctx)
-	if r.fileCacheAdvise && r.FileType != gzipExtension && r.Offset > startOffset && r.file != nil {
-		r.fadviseFile(startOffset, r.Offset-startOffset)
-	}
 }
 
 // createGzipReader creates gzip reader and returns the file offset
