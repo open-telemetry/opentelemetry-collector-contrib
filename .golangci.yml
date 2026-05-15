@@ -127,9 +127,6 @@ linters:
         path: connector/servicegraphconnector/
       - linters:
           - forbidigo
-        path: connector/spanmetricsconnector/
-      - linters:
-          - forbidigo
         path: exporter/awsemfexporter/
       - linters:
           - forbidigo
