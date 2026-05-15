@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
@@ -44,6 +45,12 @@ type Config struct {
 	// translated to, allowing older and newer formats
 	// to conform to the target schema identifier.
 	Targets []string `mapstructure:"targets"`
+
+	// StorageID is an optional storage extension used to persist fetched
+	// schema files across collector restarts. When set, fetched schemas
+	// are saved to persistent storage and loaded on startup, avoiding
+	// unnecessary HTTP fetches.
+	StorageID *component.ID `mapstructure:"storage"`
 
 	// Migration defines migration entries that preserve original attributes
 	// alongside renamed ones during schema translation. Each entry specifies
