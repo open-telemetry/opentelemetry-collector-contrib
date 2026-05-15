@@ -296,6 +296,9 @@ type BooleanAttributeCfg struct {
 // OTTLConditionCfg holds the configurable setting to create a OTTL condition filter
 // sampling policy evaluator.
 type OTTLConditionCfg struct {
+	// ErrorMode determines how the processor reacts to errors that occur while processing an OTTL
+	// condition. The current default value is `propagate`, which will change to `ignore` when the
+	// `processor.tailsamplingprocessor.defaultErrorModeIgnore` feature gate is stable.
 	ErrorMode           ottl.ErrorMode `mapstructure:"error_mode"`
 	SpanConditions      []string       `mapstructure:"span"`
 	SpanEventConditions []string       `mapstructure:"spanevent"`

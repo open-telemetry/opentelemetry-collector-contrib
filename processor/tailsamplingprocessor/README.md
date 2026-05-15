@@ -37,11 +37,12 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `bytes_limiting`: Sample based on the rate of bytes per second using a token bucket algorithm implemented by golang.org/x/time/rate. This allows for burst traffic up to a configurable capacity while maintaining the average rate over time. The bucket is refilled continuously at the specified rate and has a maximum capacity for burst handling.
 - `span_count`: Sample based on the minimum and/or maximum number of spans, inclusive. If the sum of all spans in the trace is outside the range threshold, the trace will not be sampled.
 - `boolean_attribute`: Sample based on boolean attribute (resource and record).
-- `ottl_condition`: Sample based on given boolean OTTL condition (span and span event). Conditions may use OTTL path-based context names (e.g. `span.attributes["http.status_code"]`, `resource.attributes["service.name"]`, `spanevent.name`, `scope.name`). It is highly recommended to use this new syntax to avoid breaking changes in the future.
+- `ottl_condition`: Sample based on given boolean OTTL condition (span and span event). Conditions may use OTTL path-based context names (e.g. `span.attributes["http.status_code"]`, `resource.attributes["service.name"]`, `spanevent.name`, `scope.name`). It is highly recommended to use this new syntax to avoid breaking changes in the future. The `error_mode` defaults to `propagate`; this default will change to `ignore` when the `processor.tailsamplingprocessor.defaultErrorModeIgnore` feature gate is stable.
 - `and`: Sample based on multiple policies, creates an AND policy
 - `not`: Sample based on the opposite result a single policy, creates a NOT policy
 - `drop`: Drop (not sample) based on multiple policies, creates a DROP policy
 - `composite`: Sample based on a combination of above samplers, with ordering and rate allocation per sampler. Rate allocation allocates certain percentages of spans per policy order.
+
   For example if we have set max_total_spans_per_second as 100 then we can set rate_allocation as follows
   1. test-composite-policy-1 = 50 % of max_total_spans_per_second = 50 spans_per_second
   2. test-composite-policy-2 = 25 % of max_total_spans_per_second = 25 spans_per_second

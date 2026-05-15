@@ -13,8 +13,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor/processortest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 )
 
@@ -22,6 +24,18 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+}
+
+func TestDefaultOTTLConditionErrorMode(t *testing.T) {
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate.ID(), false)
+	})
+
+	assert.Equal(t, ottl.PropagateError, defaultOTTLConditionErrorMode())
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate.ID(), true))
+
+	assert.Equal(t, ottl.IgnoreError, defaultOTTLConditionErrorMode())
 }
 
 func TestCreateProcessor(t *testing.T) {

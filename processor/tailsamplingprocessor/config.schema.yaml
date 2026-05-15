@@ -262,6 +262,7 @@ $defs:
     type: object
     properties:
       error_mode:
+        description: ErrorMode determines how the processor reacts to errors that occur while processing an OTTL condition. The current default value is `propagate`, which will change to `ignore` when the `processor.tailsamplingprocessor.defaultErrorModeIgnore` feature gate is stable.
         $ref: /pkg/ottl.error_mode
       span:
         type: array
