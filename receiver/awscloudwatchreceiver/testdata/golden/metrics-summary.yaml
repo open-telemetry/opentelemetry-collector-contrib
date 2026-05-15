@@ -1,0 +1,38 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.region
+          value:
+            stringValue: us-east-1
+    scopeMetrics:
+      - metrics:
+          - name: amazonaws.com/AWS/EC2/CPUUtilization
+            summary:
+              dataPoints:
+                - attributes:
+                    - key: Dimensions
+                      value:
+                        kvlistValue:
+                          values:
+                            - key: InstanceId
+                              value:
+                                stringValue: i-1234567890abcdef0
+                    - key: MetricName
+                      value:
+                        stringValue: CPUUtilization
+                    - key: Namespace
+                      value:
+                        stringValue: AWS/EC2
+                  count: "4"
+                  quantileValues:
+                    - value: 10
+                    - quantile: 1
+                      value: 30
+                  startTimeUnixNano: "1000000"
+                  sum: 80
+                  timeUnixNano: "2000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver
