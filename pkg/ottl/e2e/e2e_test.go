@@ -2245,7 +2245,12 @@ func Test_e2e_lambda_expression(t *testing.T) {
 			want:       wantValue("result"),
 		},
 		{
-			name:       "not enough arguments",
+			name:       "not enough arguments (0 args)",
+			expression: `Eval(($a, $b) => $a, [])`,
+			wantErr:    "lambda expected at least 2 argument(s), got 0",
+		},
+		{
+			name:       "not enough arguments (1 arg)",
 			expression: `Eval(($a, $b) => $a, [1])`,
 			wantErr:    "lambda expected at least 2 argument(s), got 1",
 		},
@@ -2260,7 +2265,7 @@ func Test_e2e_lambda_expression(t *testing.T) {
 			want:       wantValue(int64(1)),
 		},
 		{
-			name:         "lambdas can't returns another lambda",
+			name:         "lambdas can't return another lambda",
 			expression:   `Eval(($a) => () => $a, [])`,
 			wantParseErr: "lambda body cannot result into another lambda expression",
 		},
