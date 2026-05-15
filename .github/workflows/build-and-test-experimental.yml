@@ -1,0 +1,521 @@
+name: build-and-test-experimental
+on:
+  pull_request:
+    # `labeled`/`unlabeled` are required so that adding/removing `ci:full` on
+    # an open PR retriggers the workflow with the new scope.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions: read-all
+
+env:
+  TEST_RESULTS: testbed/tests/results/junit/results.xml
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  exp-setup-environment:
+    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  exp-check-collector-module-version:
+    runs-on: ubuntu-24.04
+    needs: [exp-setup-environment, exp-ci-scope]
+    if: needs.exp-ci-scope.outputs.mode != 'skip'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - run: make genotelcontribcol
+      - name: Check Collector Module Version
+        run: ./.github/workflows/scripts/check-collector-module-version.sh
+
+  # Runs compute-ci-scope.sh to classify the PR's change set. Outputs a JSON
+  # matrix that downstream jobs consume directly as their `group` dimension:
+  #   - full mode: ["receiver-0", "receiver-1", ...] (the named groups)
+  #   - scoped mode: ["receiver/foo receiver/bar", ...] (bucketed module dirs)
+  #   - skip: []
+  # The Makefile's FOR_GROUP_TARGET handling treats both formats correctly.
+  # `mode` is a derived output (skip / full / scoped) used by cross-compile,
+  # which doesn't fit the group-matrix shape.
+  exp-ci-scope:
+    runs-on: ubuntu-24.04
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    outputs:
+      matrix: ${{ steps.post.outputs.matrix }}
+      mode: ${{ steps.post.outputs.mode }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+      - name: Compute scope
+        id: scope
+        shell: bash
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          BASE_REF: ${{ github.base_ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          TARGET_CONCURRENCY: 10
+          FORCE_ALL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+          # `^` anchors mean these match files at repo root, not in subdirectories,
+          # so a receiver-component Makefile change doesn't trigger the full suite.
+          CRITICAL_FILES: '[
+            "^Makefile",
+            "^Makefile.Common",
+            "^.golangci.yml",
+            "^.github/workflows/",
+            "^.github/actions/",
+            "^internal/tools/",
+            "^versions.yaml",
+            "^cmd/otelcontribcol/"
+          ]'
+          ALL_TEST_GROUPS: '[
+            "receiver-0",
+            "receiver-1",
+            "receiver-2",
+            "receiver-3",
+            "processor-0",
+            "processor-1",
+            "exporter-0",
+            "exporter-1",
+            "exporter-2",
+            "exporter-3",
+            "extension",
+            "connector",
+            "internal",
+            "pkg",
+            "cmd-0",
+            "other"
+          ]'
+        run: ./.github/workflows/scripts/compute-ci-scope.sh
+      - name: Filter matrix and derive mode
+        id: post
+        shell: bash
+        env:
+          RAW_MATRIX: ${{ steps.scope.outputs.matrix }}
+        run: |
+          # The script maps top-level files (Makefile, .github/, etc.) to "."
+          # the root module. Strip "." entries from buckets and drop buckets
+          # that become empty -- the Makefile's per-module delegation rules
+          # don't define a target for ".", so `make TARGET GROUP="."` would
+          # fail with "No rule to make target 'for-.-target'". Top-level paths
+          # that should force a full run belong in CRITICAL_FILES instead.
+          matrix=$(echo "$RAW_MATRIX" | jq -c '[.[] | split(" ") | map(select(. != ".")) | join(" ") | select(. != "")]')
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+          # Scoped buckets contain "/" (module paths); full mode emits named
+          # groups like "receiver-0" (no slashes). [] is skip.
+          if [[ "$matrix" == "[]" ]]; then
+            mode=skip
+          elif [[ "$matrix" == *"/"* ]]; then
+            mode=scoped
+          else
+            mode=full
+          fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "Raw matrix:      $RAW_MATRIX"
+          echo "Filtered matrix: $matrix"
+          echo "Mode:            $mode"
+
+  exp-lint-matrix:
+    needs: [exp-setup-environment, exp-ci-scope]
+    if: ${{ needs.exp-ci-scope.outputs.matrix != '[]' && needs.exp-ci-scope.outputs.matrix != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [windows, linux]
+        group: ${{ fromJSON(needs.exp-ci-scope.outputs.matrix) }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Lint
+        run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP="${{ matrix.group }}"
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  exp-lint:
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    runs-on: ubuntu-24.04
+    needs: [exp-setup-environment, exp-lint-matrix]
+    steps:
+      - name: Interpret result
+        env:
+          MATRIX_RESULT: ${{ needs.exp-lint-matrix.result }}
+        run: |
+          if [[ "$MATRIX_RESULT" == "success" || "$MATRIX_RESULT" == "skipped" ]]; then
+            echo "Lint passed (result=$MATRIX_RESULT)."
+          else
+            echo "Lint failed (result=$MATRIX_RESULT)."
+            exit 1
+          fi
+
+  exp-govulncheck-matrix:
+    needs: [exp-setup-environment, exp-ci-scope]
+    if: ${{ needs.exp-ci-scope.outputs.matrix != '[]' && needs.exp-ci-scope.outputs.matrix != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ${{ fromJSON(needs.exp-ci-scope.outputs.matrix) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Run govulncheck
+        run: make -j2 gogovulncheck GROUP="${{ matrix.group }}"
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  exp-govulncheck:
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    runs-on: ubuntu-24.04
+    needs: [exp-setup-environment, exp-govulncheck-matrix]
+    steps:
+      - name: Interpret result
+        env:
+          MATRIX_RESULT: ${{ needs.exp-govulncheck-matrix.result }}
+        run: |
+          if [[ "$MATRIX_RESULT" == "success" || "$MATRIX_RESULT" == "skipped" ]]; then
+            echo "govulncheck passed (result=$MATRIX_RESULT)."
+          else
+            echo "govulncheck failed (result=$MATRIX_RESULT)."
+            exit 1
+          fi
+
+  # Split the 18 checks/codegen targets across parallel matrix shards. Each
+  # shard gets a fresh runner + checkout so the file-modifying targets
+  # (goporto, gogci, gotidy, crosslink, generate) don't trample each other
+  # inside a single working tree. Wall time is bounded by the slowest shard.
+  exp-checks:
+    runs-on: ubuntu-24.04
+    needs: [exp-setup-environment, exp-ci-scope]
+    if: needs.exp-ci-scope.outputs.mode != 'skip'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - codegen
+          - porto-and-gci
+          - go-mod-hygiene
+          - small-generators
+          - schemas-and-templates
+          - read-only-checks
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - run: make genotelcontribcol
+      - name: Run shard ${{ matrix.shard }}
+        run: ./.github/workflows/scripts/run-checks-shard.sh "${{ matrix.shard }}"
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  exp-unittest-matrix:
+    needs: [exp-setup-environment, exp-ci-scope]
+    if: ${{ needs.exp-ci-scope.outputs.matrix != '[]' && needs.exp-ci-scope.outputs.matrix != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Experimental fires on PRs only; drop stable Go entirely since the
+        # required workflow still runs both versions on push/main.
+        go-version: [oldstable]
+        runner: [ubuntu-24.04]
+        group: ${{ fromJSON(needs.exp-ci-scope.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Cache Test Build
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        with:
+          path: ~/.cache/go-build
+          key: go-test-build-experimental-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+      - name: Run Unit Tests
+        id: tests
+        run: make gotest GROUP="${{ matrix.group }}"
+      - name: Fail workflow if tests fails
+        if: always()
+        run: |
+          if [[ "${{ steps.tests.outcome }}" == "failure" ]]; then
+            echo "Tests failed. Failing workflow."
+            exit 1
+          else
+            echo "Tests passed or were skipped. Continuing."
+          fi
+
+  exp-unittest:
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    runs-on: ubuntu-24.04
+    needs: [exp-setup-environment, exp-unittest-matrix]
+    steps:
+      - name: Interpret result
+        env:
+          MATRIX_RESULT: ${{ needs.exp-unittest-matrix.result }}
+        run: |
+          if [[ "$MATRIX_RESULT" == "success" || "$MATRIX_RESULT" == "skipped" ]]; then
+            echo "Unit tests passed (result=$MATRIX_RESULT)."
+          else
+            echo "Unit tests failed (result=$MATRIX_RESULT)."
+            exit 1
+          fi
+
+  exp-coverage:
+    runs-on: ubuntu-24.04
+    needs: [exp-unittest]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          merge-multiple: true
+          pattern: coverage-artifacts-*
+      - name: Upload coverage report
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  exp-integration-tests-matrix:
+    needs: [exp-setup-environment, exp-ci-scope]
+    if: ${{ needs.exp-ci-scope.outputs.matrix != '[]' && needs.exp-ci-scope.outputs.matrix != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ${{ fromJSON(needs.exp-ci-scope.outputs.matrix) }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Cache Docker images.
+        uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
+        with:
+          key: docker-experimental-${{ matrix.group }}
+      - name: Run Integration Tests
+        run: make gointegration-test GROUP="${{ matrix.group }}"
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  exp-integration-sudo-tests-matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+          - extension/cgroupruntimeextension
+          - receiver/icmpcheckreceiver
+    runs-on: ubuntu-24.04
+    needs: [exp-setup-environment, exp-ci-scope]
+    if: needs.exp-ci-scope.outputs.mode != 'skip'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Cache Docker images.
+        uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
+        with:
+          key: docker-experimental-${{ matrix.group }}
+      - name: Run Integration Tests
+        run: make --no-print-directory -C ${{ matrix.group }} mod-integration-sudo-test
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  exp-integration-tests:
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    runs-on: ubuntu-24.04
+    needs: [exp-setup-environment, exp-integration-tests-matrix, exp-integration-sudo-tests-matrix]
+    steps:
+      - name: Interpret result
+        env:
+          MATRIX_RESULT: ${{ needs.exp-integration-tests-matrix.result }}
+          SUDO_RESULT: ${{ needs.exp-integration-sudo-tests-matrix.result }}
+        run: |
+          if [[ "$MATRIX_RESULT" != "success" && "$MATRIX_RESULT" != "skipped" ]]; then
+            echo "Integration tests failed (result=$MATRIX_RESULT)."
+            exit 1
+          fi
+          if [[ "$SUDO_RESULT" != "success" && "$SUDO_RESULT" != "skipped" ]]; then
+            echo "Integration sudo tests failed (result=$SUDO_RESULT)."
+            exit 1
+          fi
+          echo "Integration tests passed (matrix=$MATRIX_RESULT sudo=$SUDO_RESULT)."
+
+  exp-correctness-traces:
+    runs-on: ubuntu-24.04
+    needs: [exp-setup-environment, exp-ci-scope]
+    if: needs.exp-ci-scope.outputs.mode != 'skip'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Correctness
+        run: make -C testbed run-correctness-traces-tests
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  exp-correctness-metrics:
+    runs-on: ubuntu-24.04
+    needs: [exp-setup-environment, exp-ci-scope]
+    if: needs.exp-ci-scope.outputs.mode != 'skip'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Correctness
+        run: make -C testbed run-correctness-metrics-tests
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  exp-build-examples:
+    runs-on: ubuntu-24.04
+    needs: [exp-setup-environment, exp-ci-scope]
+    if: needs.exp-ci-scope.outputs.mode != 'skip'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+          gomoddownload: "false"
+      - run: make genotelcontribcol
+      - name: Build Examples
+        run: make build-examples
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  # Full arch matrix; only runs on mode=full. On scoped PRs,
+  # exp-cross-compile-affected handles per-arch verification at the
+  # changed-module level instead.
+  exp-cross-compile:
+    runs-on: ubuntu-24.04
+    needs: [exp-setup-environment, exp-ci-scope]
+    if: needs.exp-ci-scope.outputs.mode == 'full'
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - darwin
+          - linux
+          - windows
+        arch:
+          - 386
+          - amd64
+          - arm
+          - arm64
+          - ppc64le
+          - riscv64
+          - s390x
+        include:
+          - os: linux
+            arch: arm
+            arm: 7
+          - os: aix
+            arch: ppc64
+        exclude:
+          - os: darwin
+            arch: 386
+          - os: darwin
+            arch: arm
+          - os: darwin
+            arch: ppc64le
+          - os: darwin
+            arch: riscv64
+          - os: darwin
+            arch: s390x
+          - os: windows
+            arch: arm
+          - os: windows
+            arch: ppc64le
+          - os: windows
+            arch: riscv64
+          - os: windows
+            arch: s390x
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Generate collector files
+        run: make genotelcontribcol
+      - name: Build Collector ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.arm }}
+        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  # Scoped cross-compile: on PRs that only touch a small set of Go sources,
+  # verify those modules build for each supported platform without rebuilding
+  # the whole otelcontribcol binary. cmd/otelcontribcol/ is in CRITICAL_FILES,
+  # so changes to the assembly layer always force mode=full.
+  exp-cross-compile-affected:
+    runs-on: ubuntu-24.04
+    needs: [exp-setup-environment, exp-ci-scope]
+    if: needs.exp-ci-scope.outputs.mode == 'scoped'
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - darwin
+          - linux
+          - windows
+        arch:
+          - 386
+          - amd64
+          - arm
+          - arm64
+          - ppc64le
+          - riscv64
+          - s390x
+        include:
+          - os: linux
+            arch: arm
+            arm: 7
+          - os: aix
+            arch: ppc64
+        exclude:
+          - os: darwin
+            arch: 386
+          - os: darwin
+            arch: arm
+          - os: darwin
+            arch: ppc64le
+          - os: darwin
+            arch: riscv64
+          - os: darwin
+            arch: s390x
+          - os: windows
+            arch: arm
+          - os: windows
+            arch: ppc64le
+          - os: windows
+            arch: riscv64
+          - os: windows
+            arch: s390x
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Build affected modules for ${{ matrix.os }}/${{ matrix.arch }}${{ matrix.arm && format('v{0}', matrix.arm) || '' }}
+        env:
+          MATRIX: ${{ needs.exp-ci-scope.outputs.matrix }}
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+          GOARM: ${{ matrix.arm }}
+        run: |
+          set -euo pipefail
+          # Flatten the bucketed matrix to a unique list of module dirs.
+          modules=$(echo "$MATRIX" | jq -r '.[]' | tr ' ' '\n' | sort -u | grep -v '^$')
+          for mod in $modules; do
+            echo "Building $mod for $GOOS/$GOARCH"
+            (cd "$mod" && go build ./...)
+          done
+      - run: ./.github/workflows/scripts/check-disk-space.sh

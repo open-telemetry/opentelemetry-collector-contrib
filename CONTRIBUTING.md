@@ -184,6 +184,18 @@ Example approve comment:
 /workflow-approve
 ```
 
+### Experimental CI Workflow
+
+`.github/workflows/build-and-test-experimental.yml` runs on every pull request alongside the required `build-and-test` workflow. It is **not required** for merging and exists to gather data on proposed CI optimizations (scoped lint/test/integration/cross-compile paths, parallelized `checks`, etc.) before promoting them to the required workflow.
+
+Scope detection is handled by `.github/workflows/scripts/compute-ci-scope.sh`, which inspects the PR's `git diff` and emits a `matrix` JSON array of either named test groups (for full runs) or bucketed module paths (for scoped runs). The script can be run locally to preview the scope a PR would produce:
+
+```
+bash .github/workflows/scripts/compute-ci-scope.sh
+```
+
+The experimental workflow honors a `ci:full` label on the pull request. Adding this label forces the full CI matrices regardless of what files changed; toggling it on or off on an open PR retriggers the workflow with the new scope. This is useful when a maintainer wants the full validation on a refactor that the file-graph traversal would otherwise mark as scoped.
+
 ## Portable Code
 
 In order to ensure compatibility with different operating systems, code should be portable. Below are some guidelines to follow when writing portable code:
