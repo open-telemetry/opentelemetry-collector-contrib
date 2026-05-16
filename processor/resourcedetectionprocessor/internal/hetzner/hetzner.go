@@ -5,6 +5,7 @@ package hetzner // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	hcloudmeta "github.com/hetznercloud/hcloud-go/v2/hcloud/metadata"
@@ -48,31 +49,49 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 }
 
 // Detect detects system metadata and returns a resource with the available ones.
-func (d *Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
+func (d *Detector) Detect(_ context.Context, failOnMissingMetadata bool) (pcommon.Resource, string, error) {
 	// Quick check: if not running in Hetzner Cloud, return empty.
 	if !d.client.IsHcloudServer() {
 		d.logger.Debug("Hetzner detector: not running on a Hetzner Cloud server")
 		return pcommon.NewResource(), "", nil
 	}
 
+	var errs []error
+
 	id, err := d.client.InstanceID()
 	if err != nil {
 		d.logger.Debug("Hetzner detector: instance ID retrieval failed", zap.Error(err))
+		if failOnMissingMetadata {
+			errs = append(errs, err)
+		}
 	}
 
 	hostname, err := d.client.Hostname()
 	if err != nil {
 		d.logger.Debug("Hetzner detector: hostname retrieval failed", zap.Error(err))
+		if failOnMissingMetadata {
+			errs = append(errs, err)
+		}
 	}
 
 	region, err := d.client.Region()
 	if err != nil {
 		d.logger.Debug("Hetzner detector: region retrieval failed", zap.Error(err))
+		if failOnMissingMetadata {
+			errs = append(errs, err)
+		}
 	}
 
 	availabilityZone, err := d.client.AvailabilityZone()
 	if err != nil {
 		d.logger.Debug("Hetzner detector: availability zone retrieval failed", zap.Error(err))
+		if failOnMissingMetadata {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) > 0 {
+		return pcommon.NewResource(), "", errors.Join(errs...)
 	}
 
 	d.rb.SetCloudProvider(conventions.CloudProviderHetzner.Value.AsString())

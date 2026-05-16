@@ -1,0 +1,9 @@
+change_type: deprecation
+component: processor/vultrdetector
+note: Deprecate per-detector `fail_on_missing_metadata` in the `vultr` detector config
+issues: [46579]
+subtext: |
+  Use the top-level `fail_on_missing_metadata` in the processor config instead.
+  The field continues to work but will emit a deprecation warning in the logs when set and
+  code will be removed later.
+change_logs: [user]

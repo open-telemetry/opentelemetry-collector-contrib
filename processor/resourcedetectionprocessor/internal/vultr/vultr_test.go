@@ -76,7 +76,7 @@ func TestVultrDetector_Detect_OK(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, schemaURL, err := d.Detect(t.Context(), false)
 	require.NoError(t, err)
 	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
@@ -97,7 +97,7 @@ func TestVultrDetector_NotOnVultr(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, schemaURL, err := d.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 	assert.Empty(t, schemaURL)
@@ -112,7 +112,7 @@ func TestVultrDetector_FailOnMissingMetadata(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, schemaURL, err := d.Detect(t.Context(), false)
 	require.Error(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 	assert.Empty(t, schemaURL)

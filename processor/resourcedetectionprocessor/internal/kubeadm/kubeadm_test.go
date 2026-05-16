@@ -45,7 +45,7 @@ func TestDetect(t *testing.T) {
 	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
-	res, schemaURL, err := k8sDetector.Detect(t.Context())
+	res, schemaURL, err := k8sDetector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)
@@ -71,7 +71,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
-	res, schemaURL, err := k8sDetector.Detect(t.Context())
+	res, schemaURL, err := k8sDetector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)

@@ -47,7 +47,7 @@ func TestDetect(t *testing.T) {
 		logger:   zap.NewNop(),
 		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)

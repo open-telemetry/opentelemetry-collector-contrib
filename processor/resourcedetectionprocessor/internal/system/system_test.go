@@ -205,7 +205,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	md.On("HostInterfaces").Return(testInterfaces, nil)
 
 	detector := newTestDetector(md, []string{"dns"}, allEnabledConfig())
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)
@@ -236,7 +236,7 @@ func TestFallbackHostname(t *testing.T) {
 	mdHostname.On("HostArch").Return("amd64", nil)
 
 	detector := newTestDetector(mdHostname, []string{"dns", "os"}, metadata.DefaultResourceAttributesConfig())
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	mdHostname.AssertExpectations(t)
@@ -265,7 +265,7 @@ func TestEnableHostID(t *testing.T) {
 	mdHostname.On("HostInterfaces").Return(testInterfaces, nil)
 
 	detector := newTestDetector(mdHostname, []string{"dns", "os"}, allEnabledConfig())
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	mdHostname.AssertExpectations(t)
@@ -298,7 +298,7 @@ func TestUseHostname(t *testing.T) {
 	mdHostname.On("HostInterfaces").Return(testInterfaces, nil)
 
 	detector := newTestDetector(mdHostname, []string{"os"}, allEnabledConfig())
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	mdHostname.AssertExpectations(t)
@@ -333,7 +333,7 @@ func TestDetectError(t *testing.T) {
 	mdFQDN.On("HostInterfaces").Return(testInterfaces, nil)
 
 	detector := newTestDetector(mdFQDN, []string{"dns"}, allEnabledConfig())
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	assert.Error(t, err)
 	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
@@ -351,7 +351,7 @@ func TestDetectError(t *testing.T) {
 	mdHostname.On("HostInterfaces").Return(testInterfaces, nil)
 
 	detector = newTestDetector(mdHostname, []string{"os"}, allEnabledConfig())
-	res, schemaURL, err = detector.Detect(t.Context())
+	res, schemaURL, err = detector.Detect(t.Context(), false)
 	assert.Error(t, err)
 	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
@@ -368,7 +368,7 @@ func TestDetectError(t *testing.T) {
 	mdOSType.On("HostInterfaces").Return(testInterfaces, nil)
 
 	detector = newTestDetector(mdOSType, []string{"os"}, allEnabledConfig())
-	res, schemaURL, err = detector.Detect(t.Context())
+	res, schemaURL, err = detector.Detect(t.Context(), false)
 	assert.Error(t, err)
 	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
@@ -385,7 +385,7 @@ func TestDetectError(t *testing.T) {
 	mdOSVersion.On("HostInterfaces").Return(testInterfaces, nil)
 
 	detector = newTestDetector(mdOSVersion, []string{"os"}, allEnabledConfig())
-	res, schemaURL, err = detector.Detect(t.Context())
+	res, schemaURL, err = detector.Detect(t.Context(), false)
 	assert.Error(t, err)
 	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
@@ -403,7 +403,7 @@ func TestDetectError(t *testing.T) {
 	mdHostID.On("HostInterfaces").Return(testInterfaces, nil)
 
 	detector = newTestDetector(mdHostID, []string{"os"}, allEnabledConfig())
-	res, schemaURL, err = detector.Detect(t.Context())
+	res, schemaURL, err = detector.Detect(t.Context(), false)
 	assert.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	assert.Equal(t, map[string]any{
@@ -434,7 +434,7 @@ func TestDetectCPUInfo(t *testing.T) {
 	cfg := allEnabledConfig()
 	cfg.HostCPUFamily.Enabled = true
 	detector := newTestDetector(md, []string{"dns"}, cfg)
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)
@@ -469,7 +469,7 @@ func TestDetectOSNameAndBuildID(t *testing.T) {
 	cfg.OsName.Enabled = true
 	cfg.OsBuildID.Enabled = true
 	detector := newTestDetector(md, []string{"dns"}, cfg)
-	res, _, err := detector.Detect(t.Context())
+	res, _, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	attrs := res.Attributes().AsRaw()
 	assert.Equal(t, "MyOS", attrs["os.name"])
@@ -491,7 +491,7 @@ func TestHostInterfaces(t *testing.T) {
 	cfg.HostInterface.Enabled = true
 
 	detector := newTestDetector(mdInterfaces, []string{"os"}, cfg)
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	mdInterfaces.AssertExpectations(t)
@@ -520,7 +520,7 @@ func TestHostInterfacesError(t *testing.T) {
 	cfg.HostInterface.Enabled = true
 
 	detector := newTestDetector(mdInterfacesError, []string{"os"}, cfg)
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	assert.Error(t, err)
 	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))

@@ -52,7 +52,7 @@ func TestDetector_DetectFromProperties(t *testing.T) {
 	require.NoError(t, createTestFile(tempDir, dtHostMetadataProperties, testPropertiesFile))
 	d.(*Detector).enrichmentDirectory = tempDir
 
-	resource, _, err := d.Detect(t.Context())
+	resource, _, err := d.Detect(t.Context(), false)
 
 	require.NoError(t, err)
 	require.NotNil(t, resource)
@@ -87,7 +87,7 @@ func TestDetector_DetectNoFileAvailable(t *testing.T) {
 
 	d.(*Detector).enrichmentDirectory = tempDir
 
-	resource, _, err := d.Detect(t.Context())
+	resource, _, err := d.Detect(t.Context(), false)
 
 	require.NoError(t, err)
 	require.NotNil(t, resource)

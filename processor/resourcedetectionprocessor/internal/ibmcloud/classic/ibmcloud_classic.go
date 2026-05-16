@@ -5,6 +5,7 @@ package classic // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -43,10 +44,13 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 }
 
 // Detect detects IBM Cloud Classic instance metadata and returns a resource with the available attributes.
-func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (pcommon.Resource, string, error) {
 	meta, err := d.provider.InstanceMetadata(ctx)
 	if err != nil {
 		d.logger.Debug("IBM Cloud Classic metadata not available", zap.Error(err))
+		if failOnMissingMetadata {
+			return pcommon.NewResource(), "", fmt.Errorf("ibmcloud classic metadata unavailable: %w", err)
+		}
 		return pcommon.NewResource(), "", nil
 	}
 

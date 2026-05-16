@@ -21,6 +21,9 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/processor/xprocessor"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
@@ -332,4 +335,94 @@ func TestLifecycleWithAllDetectors(t *testing.T) {
 func TestFactoryType(t *testing.T) {
 	factory := NewFactory()
 	assert.Equal(t, metadata.Type, factory.Type())
+}
+
+// newObservedLogger returns a zap.Logger whose output can be inspected in tests.
+func newObservedLogger() (*zap.Logger, *observer.ObservedLogs) {
+	core, logs := observer.New(zapcore.WarnLevel)
+	return zap.New(core), logs
+}
+
+func TestWarnDeprecatedPerDetectorFlags_NoWarningWhenTopLevelSet(t *testing.T) {
+	logger, logs := newObservedLogger()
+	cfg := createDefaultConfig().(*Config)
+	cfg.FailOnMissingMetadata = true
+	cfg.DetectorConfig.EC2Config.FailOnMissingMetadata = true //nolint:staticcheck
+
+	warnDeprecatedPerDetectorFlags(logger, cfg)
+
+	assert.Equal(t, 0, logs.Len(), "no warning should be emitted when top-level flag is set")
+}
+
+func TestWarnDeprecatedPerDetectorFlags_WarningWhenPerDetectorSet(t *testing.T) {
+	tests := []struct {
+		name         string
+		setField     func(*Config)
+		wantDetector string
+	}{
+		{
+			name:         "ec2",
+			setField:     func(c *Config) { c.DetectorConfig.EC2Config.FailOnMissingMetadata = true }, //nolint:staticcheck
+			wantDetector: "ec2",
+		},
+		{
+			name:         "alibaba_ecs",
+			setField:     func(c *Config) { c.DetectorConfig.AlibabaECSConfig.FailOnMissingMetadata = true }, //nolint:staticcheck
+			wantDetector: "alibaba_ecs",
+		},
+		{
+			name:         "tencent_cvm",
+			setField:     func(c *Config) { c.DetectorConfig.TencentCVMConfig.FailOnMissingMetadata = true }, //nolint:staticcheck
+			wantDetector: "tencent_cvm",
+		},
+		{
+			name:         "upcloud",
+			setField:     func(c *Config) { c.DetectorConfig.UpcloudConfig.FailOnMissingMetadata = true }, //nolint:staticcheck
+			wantDetector: "upcloud",
+		},
+		{
+			name:         "vultr",
+			setField:     func(c *Config) { c.DetectorConfig.VultrConfig.FailOnMissingMetadata = true }, //nolint:staticcheck
+			wantDetector: "vultr",
+		},
+		{
+			name:         "nova",
+			setField:     func(c *Config) { c.DetectorConfig.OpenStackNovaConfig.FailOnMissingMetadata = true }, //nolint:staticcheck
+			wantDetector: "nova",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, logs := newObservedLogger()
+			cfg := createDefaultConfig().(*Config)
+			tt.setField(cfg)
+
+			warnDeprecatedPerDetectorFlags(logger, cfg)
+
+			require.Equal(t, 1, logs.Len(), "expected exactly one deprecation warning")
+			entry := logs.All()[0]
+			assert.Equal(t, zapcore.WarnLevel, entry.Level)
+			assert.Contains(t, entry.Message, "deprecated")
+
+			// Verify the affected detector name appears in the log fields
+			found := false
+			for _, f := range entry.Context {
+				if f.Key == "affected_detectors" {
+					found = true
+					break
+				}
+			}
+			assert.True(t, found, "expected 'affected_detectors' field in log entry")
+		})
+	}
+}
+
+func TestWarnDeprecatedPerDetectorFlags_NoWarningWhenNoneSet(t *testing.T) {
+	logger, logs := newObservedLogger()
+	cfg := createDefaultConfig().(*Config)
+
+	warnDeprecatedPerDetectorFlags(logger, cfg)
+
+	assert.Equal(t, 0, logs.Len(), "no warning should be emitted when no per-detector flags are set")
 }

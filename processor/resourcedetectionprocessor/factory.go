@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
 	"go.opentelemetry.io/collector/processor/xprocessor"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
@@ -230,7 +231,19 @@ func (f *factory) getResourceDetectionProcessor(
 	cfg component.Config,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
-	provider, err := f.getResourceProvider(params, oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig)
+
+	warnDeprecatedPerDetectorFlags(params.Logger, oCfg)
+
+	// Resolve the effective fail_on_missing_metadata: top-level OR any per-detector flag (OR logic).
+	failOnMissingMetadata := oCfg.FailOnMissingMetadata ||
+		oCfg.DetectorConfig.EC2Config.FailOnMissingMetadata || //nolint:staticcheck
+		oCfg.DetectorConfig.AlibabaECSConfig.FailOnMissingMetadata || //nolint:staticcheck
+		oCfg.DetectorConfig.TencentCVMConfig.FailOnMissingMetadata || //nolint:staticcheck
+		oCfg.DetectorConfig.UpcloudConfig.FailOnMissingMetadata || //nolint:staticcheck
+		oCfg.DetectorConfig.VultrConfig.FailOnMissingMetadata || //nolint:staticcheck
+		oCfg.DetectorConfig.OpenStackNovaConfig.FailOnMissingMetadata //nolint:staticcheck
+
+	provider, err := f.getResourceProvider(params, oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig, failOnMissingMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -244,11 +257,45 @@ func (f *factory) getResourceDetectionProcessor(
 	}, nil
 }
 
+// warnDeprecatedPerDetectorFlags emits a deprecation warning if any per-detector
+// fail_on_missing_metadata fields are set without the top-level flag.
+func warnDeprecatedPerDetectorFlags(logger *zap.Logger, oCfg *Config) {
+	if oCfg.FailOnMissingMetadata {
+		return // top-level is set; per-detector fields are superseded
+	}
+	var affectedDetectors []string
+	if oCfg.DetectorConfig.EC2Config.FailOnMissingMetadata { //nolint:staticcheck
+		affectedDetectors = append(affectedDetectors, "ec2")
+	}
+	if oCfg.DetectorConfig.AlibabaECSConfig.FailOnMissingMetadata { //nolint:staticcheck
+		affectedDetectors = append(affectedDetectors, "alibaba_ecs")
+	}
+	if oCfg.DetectorConfig.TencentCVMConfig.FailOnMissingMetadata { //nolint:staticcheck
+		affectedDetectors = append(affectedDetectors, "tencent_cvm")
+	}
+	if oCfg.DetectorConfig.UpcloudConfig.FailOnMissingMetadata { //nolint:staticcheck
+		affectedDetectors = append(affectedDetectors, "upcloud")
+	}
+	if oCfg.DetectorConfig.VultrConfig.FailOnMissingMetadata { //nolint:staticcheck
+		affectedDetectors = append(affectedDetectors, "vultr")
+	}
+	if oCfg.DetectorConfig.OpenStackNovaConfig.FailOnMissingMetadata { //nolint:staticcheck
+		affectedDetectors = append(affectedDetectors, "nova")
+	}
+	if len(affectedDetectors) > 0 {
+		logger.Warn(
+			"per-detector fail_on_missing_metadata fields are deprecated; use the top-level fail_on_missing_metadata instead",
+			zap.Strings("affected_detectors", affectedDetectors),
+		)
+	}
+}
+
 func (f *factory) getResourceProvider(
 	params processor.Settings,
 	timeout time.Duration,
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,
+	failOnMissingMetadata bool,
 ) (*internal.ResourceProvider, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
@@ -262,7 +309,7 @@ func (f *factory) getResourceProvider(
 		detectorTypes = append(detectorTypes, internal.DetectorType(strings.TrimSpace(key)))
 	}
 
-	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, &detectorConfigs, detectorTypes...)
+	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, failOnMissingMetadata, &detectorConfigs, detectorTypes...)
 	if err != nil {
 		return nil, err
 	}

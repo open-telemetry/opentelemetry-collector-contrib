@@ -48,7 +48,7 @@ func TestHetznerDetector_Detect_OK(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, schemaURL, err := d.Detect(t.Context(), false)
 	require.NoError(t, err)
 	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
@@ -83,7 +83,7 @@ func TestHetznerDetector_NotOnHetzner(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, schemaURL, err := d.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 	assert.Empty(t, schemaURL)
@@ -100,7 +100,7 @@ func TestHetznerDetector_HostnameError(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, schemaURL, err := d.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 	assert.Empty(t, schemaURL)

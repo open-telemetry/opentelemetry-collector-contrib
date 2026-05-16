@@ -53,7 +53,7 @@ func TestDetect(t *testing.T) {
 	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 	detector.(*Detector).provider = md
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)

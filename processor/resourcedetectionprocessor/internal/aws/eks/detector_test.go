@@ -495,10 +495,56 @@ func TestDetect(t *testing.T) {
 				logger:         set.Logger,
 				imdsAccessible: tt.imdsAccessible,
 			}
-			res, schema, err := det.Detect(t.Context())
+			res, schema, err := det.Detect(t.Context(), false)
 			assert.NoError(t, err)
 			assert.Contains(t, schema, "https://opentelemetry.io/schemas/")
 			assert.Equal(t, tt.expectedOutput, res.Attributes().AsRaw())
 		})
 	}
+}
+
+func TestDetectFailOnMissingMetadata(t *testing.T) {
+	cfg := Config{
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+	}
+	isEKSErr := errors.New("cluster version unavailable")
+
+	set := processor.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zaptest.NewLogger(t),
+		},
+	}
+
+	det := &detector{
+		cfg:    cfg,
+		logger: set.Logger,
+		// apiProvider returns an error from ClusterVersion, causing isEKS() to fail.
+		// KUBERNETES_SERVICE_HOST must be set so isEKS() reaches ClusterVersion().
+		apiProvider: &mockAPIProvider{
+			clusterVersionErr: isEKSErr,
+			oidcIssuerErr:     errors.New("no oidc"),
+		},
+		imdsProvider: &mockIMDSProvider{},
+		ra:           cfg.ResourceAttributes,
+		rb:           metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		utils: &mockDetectorUtils{
+			cfg:    cfg,
+			logger: set.Logger,
+		},
+	}
+
+	t.Setenv(kubernetesServiceHostEnvVar, "1")
+
+	t.Run("err != nil and FailOnMissingMetadata=false suppresses error", func(t *testing.T) {
+		res, schema, err := det.Detect(t.Context(), false)
+		assert.NoError(t, err)
+		assert.Empty(t, schema)
+		assert.Equal(t, 0, res.Attributes().Len())
+	})
+
+	t.Run("err != nil and FailOnMissingMetadata=true returns error", func(t *testing.T) {
+		_, _, err := det.Detect(t.Context(), true)
+		assert.ErrorContains(t, err, "eks metadata unavailable")
+		assert.ErrorContains(t, err, isEKSErr.Error())
+	})
 }

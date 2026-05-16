@@ -5,6 +5,7 @@ package aks // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 
@@ -36,7 +37,7 @@ func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig) (internal.D
 	return &Detector{provider: azure.NewProvider(), resourceAttributes: cfg.ResourceAttributes}, nil
 }
 
-func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
 	res := pcommon.NewResource()
 
 	if !onK8s() {
@@ -46,6 +47,9 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	m, err := d.provider.Metadata(ctx)
 	// If we can't get a response from the metadata endpoint, we're not running in Azure
 	if err != nil {
+		if failOnMissingMetadata {
+			return res, "", fmt.Errorf("aks metadata unavailable: %w", err)
+		}
 		return res, "", nil
 	}
 

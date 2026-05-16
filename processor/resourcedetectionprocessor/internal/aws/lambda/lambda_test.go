@@ -21,7 +21,7 @@ func TestLambda(t *testing.T) {
 	// Call Lambda Resource detector to detect resources
 	lambdaDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
-	res, _, err := lambdaDetector.Detect(ctx)
+	res, _, err := lambdaDetector.Detect(ctx, false)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 
@@ -37,7 +37,7 @@ func TestNotLambda(t *testing.T) {
 	ctx := t.Context()
 	lambdaDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
-	res, _, err := lambdaDetector.Detect(ctx)
+	res, _, err := lambdaDetector.Detect(ctx, false)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 

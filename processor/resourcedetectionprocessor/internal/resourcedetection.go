@@ -23,7 +23,7 @@ import (
 type DetectorType string
 
 type Detector interface {
-	Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error)
+	Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error)
 }
 
 type DetectorConfig any
@@ -46,6 +46,7 @@ func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourcePro
 func (f *ResourceProviderFactory) CreateResourceProvider(
 	params processor.Settings,
 	timeout time.Duration,
+	failOnMissingMetadata bool,
 	detectorConfigs ResourceDetectorConfig,
 	detectorTypes ...DetectorType,
 ) (*ResourceProvider, error) {
@@ -54,7 +55,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 		return nil, err
 	}
 
-	provider := NewResourceProvider(params.Logger, timeout, detectors...)
+	provider := NewResourceProvider(params.Logger, timeout, failOnMissingMetadata, detectors...)
 	return provider, nil
 }
 
@@ -78,10 +79,11 @@ func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detect
 }
 
 type ResourceProvider struct {
-	logger           *zap.Logger
-	timeout          time.Duration
-	detectors        []Detector
-	detectedResource atomic.Pointer[resourceResult]
+	logger                *zap.Logger
+	timeout               time.Duration
+	detectors             []Detector
+	failOnMissingMetadata bool
+	detectedResource      atomic.Pointer[resourceResult]
 
 	// Refresh loop control
 	refreshInterval time.Duration
@@ -98,12 +100,13 @@ type resourceResult struct {
 	err       error
 }
 
-func NewResourceProvider(logger *zap.Logger, timeout time.Duration, detectors ...Detector) *ResourceProvider {
+func NewResourceProvider(logger *zap.Logger, timeout time.Duration, failOnMissingMetadata bool, detectors ...Detector) *ResourceProvider {
 	return &ResourceProvider{
-		logger:          logger,
-		timeout:         timeout,
-		detectors:       detectors,
-		refreshInterval: 0, // No periodic refresh by default
+		logger:                logger,
+		timeout:               timeout,
+		detectors:             detectors,
+		failOnMissingMetadata: failOnMissingMetadata,
+		refreshInterval:       0, // No periodic refresh by default
 	}
 }
 
@@ -167,7 +170,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 			sleep.Reset()
 
 			for {
-				r, schemaURL, err := detector.Detect(ctx)
+				r, schemaURL, err := detector.Detect(ctx, p.failOnMissingMetadata)
 				if err == nil {
 					ch <- resourceResult{resource: r, schemaURL: schemaURL}
 					return

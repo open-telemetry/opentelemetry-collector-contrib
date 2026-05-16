@@ -26,7 +26,7 @@ func TestDetector_Detect_K8s_Azure(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
 	resourceAttributes := CreateDefaultConfig().ResourceAttributes
 	detector := &Detector{provider: mockProvider(), resourceAttributes: resourceAttributes}
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	assert.Equal(t, map[string]any{
@@ -41,7 +41,7 @@ func TestDetector_Detect_K8s_NonAzure(t *testing.T) {
 	mp.On("Metadata").Return(nil, errors.New(""))
 	resourceAttributes := CreateDefaultConfig().ResourceAttributes
 	detector := &Detector{provider: mp, resourceAttributes: resourceAttributes}
-	res, _, err := detector.Detect(t.Context())
+	res, _, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	attrs := res.Attributes()
 	assert.Equal(t, 0, attrs.Len())
@@ -51,7 +51,7 @@ func TestDetector_Detect_NonK8s(t *testing.T) {
 	os.Clearenv()
 	resourceAttributes := CreateDefaultConfig().ResourceAttributes
 	detector := &Detector{provider: mockProvider(), resourceAttributes: resourceAttributes}
-	res, _, err := detector.Detect(t.Context())
+	res, _, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	attrs := res.Attributes()
 	assert.Equal(t, 0, attrs.Len())

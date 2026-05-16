@@ -27,7 +27,7 @@ type mockDetector struct {
 	mock.Mock
 }
 
-func (p *mockDetector) Detect(_ context.Context) (pcommon.Resource, string, error) {
+func (p *mockDetector) Detect(_ context.Context, _ bool) (pcommon.Resource, string, error) {
 	args := p.Called()
 	return args.Get(0).(pcommon.Resource), args.String(1), args.Error(2)
 }
@@ -90,7 +90,7 @@ func TestDetect(t *testing.T) {
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, false, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			// Perform initial detection
@@ -109,7 +109,7 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, false, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
@@ -120,7 +120,7 @@ func TestDetectResource_DetectorFactoryError(t *testing.T) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, false, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
@@ -131,7 +131,7 @@ func TestDetectResource_Error_ContextDeadline(t *testing.T) {
 	md2 := &mockDetector{}
 	md2.On("Detect").Return(pcommon.NewResource(), "", errors.New("err2"))
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
+	p := NewResourceProvider(zap.NewNop(), time.Second, false, md1, md2)
 
 	var cancel context.CancelFunc
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
@@ -210,7 +210,7 @@ func newMockParallelDetector() *mockParallelDetector {
 	return &mockParallelDetector{ch: make(chan struct{}, 1)}
 }
 
-func (p *mockParallelDetector) Detect(_ context.Context) (pcommon.Resource, string, error) {
+func (p *mockParallelDetector) Detect(_ context.Context, _ bool) (pcommon.Resource, string, error) {
 	<-p.ch
 	args := p.Called()
 	return args.Get(0).(pcommon.Resource), args.String(1), args.Error(2)
@@ -233,7 +233,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
+	p := NewResourceProvider(zap.NewNop(), time.Second, false, md1, md2)
 
 	// Perform initial detection
 	go func() {
@@ -288,7 +288,7 @@ func TestDetectResource_Reconnect(t *testing.T) {
 
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
+	p := NewResourceProvider(zap.NewNop(), time.Second, false, md1, md2)
 
 	err := p.Refresh(t.Context(), &http.Client{Timeout: 15 * time.Second})
 	assert.NoError(t, err)
@@ -313,7 +313,7 @@ func TestResourceProvider_RefreshInterval(t *testing.T) {
 	md.On("Detect").Return(res1, "", nil).Once()
 	md.On("Detect").Return(res2, "", nil).Once()
 
-	p := NewResourceProvider(zap.NewNop(), 1*time.Second, md)
+	p := NewResourceProvider(zap.NewNop(), 1*time.Second, false, md)
 
 	// Initial detection
 	err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
@@ -408,7 +408,7 @@ func TestStartStopRefreshing(t *testing.T) {
 		md.On("Detect").Return(res1, "", nil).Once()
 		md.On("Detect").Return(res2, "", nil)
 
-		p := NewResourceProvider(zap.NewNop(), time.Second, md)
+		p := NewResourceProvider(zap.NewNop(), time.Second, false, md)
 
 		// Initial detection
 		err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
@@ -442,7 +442,7 @@ func TestStartStopRefreshing(t *testing.T) {
 		require.NoError(t, res.Attributes().FromRaw(map[string]any{"a": "1"}))
 		md.On("Detect").Return(res, "", nil).Once()
 
-		p := NewResourceProvider(zap.NewNop(), time.Second, md)
+		p := NewResourceProvider(zap.NewNop(), time.Second, false, md)
 
 		// Initial detection
 		err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
@@ -467,7 +467,7 @@ func TestStartStopRefreshing(t *testing.T) {
 		require.NoError(t, res.Attributes().FromRaw(map[string]any{"a": "1"}))
 		md.On("Detect").Return(res, "", nil).Once()
 
-		p := NewResourceProvider(zap.NewNop(), time.Second, md)
+		p := NewResourceProvider(zap.NewNop(), time.Second, false, md)
 
 		// Initial detection
 		err := p.Refresh(t.Context(), &http.Client{Timeout: time.Second})
@@ -482,7 +482,7 @@ func TestStartStopRefreshing(t *testing.T) {
 }
 
 func TestStartRefreshing_CalledMultipleTimes(t *testing.T) {
-	provider := NewResourceProvider(zap.NewNop(), 5*time.Second)
+	provider := NewResourceProvider(zap.NewNop(), 5*time.Second, false)
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	// Call StartRefreshing multiple times (simulating traces, metrics, logs processors)

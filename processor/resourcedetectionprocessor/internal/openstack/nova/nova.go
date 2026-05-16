@@ -55,10 +55,10 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 	}, nil
 }
 
-func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
 	if _, err = d.metadataProvider.InstanceID(ctx); err != nil {
 		d.logger.Debug("OpenStack Nova metadata unavailable", zap.Error(err))
-		if d.failOnMissingMetadata {
+		if d.failOnMissingMetadata || failOnMissingMetadata {
 			return pcommon.NewResource(), "", err
 		}
 		return pcommon.NewResource(), "", nil

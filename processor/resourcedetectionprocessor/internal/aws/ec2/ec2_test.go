@@ -448,7 +448,7 @@ func TestDetector_Detect(t *testing.T) {
 				failOnMissingMetadata: tt.failOnMissingMetadata,
 				tagsFromIMDS:          tt.tagsFromIMDS,
 			}
-			got, _, err := d.Detect(tt.args.ctx)
+			got, _, err := d.Detect(tt.args.ctx, false)
 
 			if tt.wantErr {
 				require.Error(t, err)

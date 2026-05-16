@@ -113,7 +113,7 @@ func BenchmarkResourceProvider(b *testing.B) {
 	d1 := &benchDetector{res: generateResource(b, 0, 10)}
 	d2 := &benchDetector{res: generateResource(b, 0, 10)}
 	d3 := &benchDetector{res: generateResource(b, 0, 10)}
-	provider := NewResourceProvider(zap.NewNop(), 0, d1, d2, d3)
+	provider := NewResourceProvider(zap.NewNop(), 0, false, d1, d2, d3)
 	ctx := b.Context()
 	client := &http.Client{}
 	_ = provider.Refresh(ctx, client)
@@ -167,7 +167,7 @@ type benchDetector struct {
 	res pcommon.Resource
 }
 
-func (d *benchDetector) Detect(_ context.Context) (pcommon.Resource, string, error) {
+func (d *benchDetector) Detect(_ context.Context, _ bool) (pcommon.Resource, string, error) {
 	r := pcommon.NewResource()
 	d.res.CopyTo(r)
 	return r, "http://schema", nil

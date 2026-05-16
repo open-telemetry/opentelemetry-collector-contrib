@@ -39,7 +39,7 @@ func TestDetect(t *testing.T) {
 		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
 
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.NotEmpty(t, schemaURL)
 
@@ -67,8 +67,28 @@ func TestDetectError(t *testing.T) {
 		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
 
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err) // errors are swallowed, not returned
+	assert.Empty(t, schemaURL)
+	assert.Equal(t, 0, res.Attributes().Len())
+
+	mp.AssertExpectations(t)
+}
+
+func TestDetectErrorWithFailOnMissingMetadata(t *testing.T) {
+	mp := &classicprovider.MockProvider{}
+	mp.On("InstanceMetadata").Return(nil, errors.New("connection refused"))
+
+	detector := &Detector{
+		provider: mp,
+		logger:   processortest.NewNopSettings(metadata.Type).Logger,
+		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+	}
+
+	res, schemaURL, err := detector.Detect(t.Context(), true)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "ibmcloud classic metadata unavailable")
+	assert.ErrorContains(t, err, "connection refused") // verify original error is wrapped
 	assert.Empty(t, schemaURL)
 	assert.Equal(t, 0, res.Attributes().Len())
 
@@ -95,7 +115,7 @@ func TestDetectWithDisabledAttributes(t *testing.T) {
 		rb:       metadata.NewResourceBuilder(cfg),
 	}
 
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.NotEmpty(t, schemaURL)
 
