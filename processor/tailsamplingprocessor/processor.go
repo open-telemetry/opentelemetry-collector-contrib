@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
@@ -399,6 +400,16 @@ func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg, po
 	}
 }
 
+// effectiveOTTLErrorMode resolves the error mode for an ottl_condition policy.
+// When the mode is unset and the errormodeignore feature gate is enabled, it
+// defaults to ignore so a failing condition does not drop otherwise valid data.
+func effectiveOTTLErrorMode(configured ottl.ErrorMode) ottl.ErrorMode {
+	if configured == "" && telemetry.IsErrorModeIgnoreEnabled() {
+		return ottl.IgnoreError
+	}
+	return configured
+}
+
 func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedPolicyCfg, policyExtensions map[string]samplingpolicy.Extension) (samplingpolicy.Evaluator, error) {
 	settings.Logger = settings.Logger.With(zap.Any("policy", cfg.Type))
 
@@ -450,7 +461,7 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewBooleanAttributeFilter(settings, bafCfg.Key, bafCfg.Value, bafCfg.InvertMatch), nil
 	case OTTLCondition:
 		ottlfCfg := cfg.OTTLConditionCfg
-		return sampling.NewOTTLConditionFilter(settings, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, ottlfCfg.ErrorMode)
+		return sampling.NewOTTLConditionFilter(settings, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, effectiveOTTLErrorMode(ottlfCfg.ErrorMode))
 	case TraceFlags:
 		return sampling.NewTraceFlags(settings), nil
 	default:

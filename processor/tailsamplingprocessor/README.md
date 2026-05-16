@@ -683,6 +683,10 @@ The invert sampling decisions (`InvertSampled` and `InvertNotSampled`) have been
 
 If you disable invert decisions, you can make use of a `drop` policy to explicitly not sample select traces or a `not` policy to sample based on the opposite of a sampling decision.
 
+### Default error mode for OTTL conditions
+
+The `ottl_condition` policy has an `error_mode` setting that controls what happens when an OTTL condition fails to evaluate. The default is `propagate`, which can drop otherwise valid data when a condition errors. The `processor.tailsamplingprocessor.errormodeignore` feature gate changes that default to `ignore`, so evaluation errors are logged and processing continues. Setting `error_mode` explicitly in the policy config always takes precedence over the gate.
+
 ### Policy Evaluation Errors
 
 ```

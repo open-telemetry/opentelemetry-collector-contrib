@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
@@ -1787,4 +1788,22 @@ func (*nonTailStorageExtension) Start(context.Context, component.Host) error {
 
 func (*nonTailStorageExtension) Shutdown(context.Context) error {
 	return nil
+}
+
+func TestEffectiveOTTLErrorMode(t *testing.T) {
+	// An explicitly configured error mode is always kept as-is.
+	assert.Equal(t, ottl.PropagateError, effectiveOTTLErrorMode(ottl.PropagateError))
+	assert.Equal(t, ottl.IgnoreError, effectiveOTTLErrorMode(ottl.IgnoreError))
+
+	// With the gate disabled, an unset error mode stays empty, which OTTL
+	// treats as propagate.
+	assert.Equal(t, ottl.ErrorMode(""), effectiveOTTLErrorMode(""))
+
+	// With the gate enabled, an unset error mode defaults to ignore.
+	gateID := metadata.ProcessorTailsamplingprocessorErrormodeignoreFeatureGate.ID()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gateID, true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gateID, false))
+	})
+	assert.Equal(t, ottl.IgnoreError, effectiveOTTLErrorMode(""))
 }

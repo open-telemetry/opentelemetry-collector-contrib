@@ -14,3 +14,7 @@ func IsMetricStatCountSpansSampledEnabled() bool {
 func IsRecordPolicyEnabled() bool {
 	return metadata.ProcessorTailsamplingprocessorRecordpolicyFeatureGate.IsEnabled()
 }
+
+func IsErrorModeIgnoreEnabled() bool {
+	return metadata.ProcessorTailsamplingprocessorErrormodeignoreFeatureGate.IsEnabled()
+}
