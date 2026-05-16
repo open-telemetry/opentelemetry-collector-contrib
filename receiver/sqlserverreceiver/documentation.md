@@ -622,6 +622,7 @@ top query
 | ---- | ----------- | ------ | ------------------- |
 | sqlserver.total_worker_time | Total amount of CPU time that was consumed by executions of this plan since it was compiled, reported in delta seconds. | Any Double | - |
 | db.query.text | The text of the database query being executed. | Any Str | - |
+| db.namespace | The database name. | Any Str | - |
 | sqlserver.execution_count | Number of times that the plan has been executed since it was last compiled, reported in delta value. | Any Int | - |
 | sqlserver.total_logical_reads | Total number of logical reads performed by executions of this plan since it was compiled, reported in delta value. | Any Int | - |
 | sqlserver.total_logical_writes | Total number of logical writes performed by executions of this plan since it was compiled, reported in delta value. | Any Int | - |
@@ -638,6 +639,7 @@ top query
 | sqlserver.procedure_execution_count | Number of times that the procedure has been executed since it was last compiled, reported in delta value. | Any Int | - |
 | sqlserver.procedure_id | The SQL Server ID of the stored procedure, if any | Any Str | - |
 | sqlserver.procedure_name | The name of the stored procedure, if any | Any Str | - |
+| sqlserver.query.last_started | Timestamp of when the SQL query last started executing (ISO 8601 format). | Any Str | - |
 
 ## Resource Attributes
 
