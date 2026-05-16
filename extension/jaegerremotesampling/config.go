@@ -9,8 +9,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 )
 
 var (
@@ -22,7 +22,7 @@ var (
 // Config has the configuration for the extension enabling the health check
 // extension, used to report the health status of the service.
 type Config struct {
-	HTTPServerConfig *confighttp.ServerConfig                      `mapstructure:"http"`
+	HTTPServerConfig *confighttp.ServerConfig                         `mapstructure:"http"`
 	GRPCServerConfig configoptional.Optional[configgrpc.ServerConfig] `mapstructure:"grpc"`
 
 	// Source configures the source for the strategies file. One of `remote` or `file` has to be specified.

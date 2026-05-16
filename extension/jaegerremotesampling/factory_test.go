@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
@@ -22,10 +22,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 			Endpoint:  "localhost:5778",
 			Transport: confignet.TransportTypeTCP,
 		}},
-		GRPCServerConfig: configoptional.Some(configgrpc.ServerConfig{NetAddr: confignet.AddrConfig{
-			Endpoint:  "localhost:14250",
-			Transport: confignet.TransportTypeTCP,
-		}}),
+		GRPCServerConfig: configoptional.None[configgrpc.ServerConfig](),
 	}
 
 	// test
