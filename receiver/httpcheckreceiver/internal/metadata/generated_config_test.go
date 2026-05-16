@@ -79,12 +79,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					HttpcheckValidationFailed: HttpcheckValidationFailedMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType},
+						EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType, HttpcheckValidationFailedMetricAttributeKeyValidationTarget},
 					},
 					HttpcheckValidationPassed: HttpcheckValidationPassedMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType},
+						EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType, HttpcheckValidationPassedMetricAttributeKeyValidationTarget},
 					},
 				},
 			},
@@ -146,12 +146,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					HttpcheckValidationFailed: HttpcheckValidationFailedMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType},
+						EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType, HttpcheckValidationFailedMetricAttributeKeyValidationTarget},
 					},
 					HttpcheckValidationPassed: HttpcheckValidationPassedMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType},
+						EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType, HttpcheckValidationPassedMetricAttributeKeyValidationTarget},
 					},
 				},
 			},

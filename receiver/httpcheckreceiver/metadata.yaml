@@ -57,6 +57,10 @@ attributes:
     description: OSI transport layer or inter-process communication method.
     type: string
     requirement_level: recommended
+  validation.target:
+    description: The validation expression being evaluated (JSONPath, regex, contains string, etc.)
+    type: string
+    requirement_level: recommended
   validation.type:
     description: Type of validation performed (contains, json_path, size, regex)
     type: string
@@ -156,7 +160,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
     unit: "{validation}"
-    attributes: [http.url, validation.type]
+    attributes: [http.url, validation.type, validation.target]
   httpcheck.validation.passed:
     description: Number of response validations that passed.
     enabled: false
@@ -166,4 +170,4 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
     unit: "{validation}"
-    attributes: [http.url, validation.type]
+    attributes: [http.url, validation.type, validation.target]

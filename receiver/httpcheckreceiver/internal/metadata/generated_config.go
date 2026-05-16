@@ -500,8 +500,9 @@ func (ms *HttpcheckTLSHandshakeDurationMetricConfig) Validate() error {
 type HttpcheckValidationFailedMetricAttributeKey string
 
 const (
-	HttpcheckValidationFailedMetricAttributeKeyHTTPURL        HttpcheckValidationFailedMetricAttributeKey = "http.url"
-	HttpcheckValidationFailedMetricAttributeKeyValidationType HttpcheckValidationFailedMetricAttributeKey = "validation.type"
+	HttpcheckValidationFailedMetricAttributeKeyHTTPURL          HttpcheckValidationFailedMetricAttributeKey = "http.url"
+	HttpcheckValidationFailedMetricAttributeKeyValidationType   HttpcheckValidationFailedMetricAttributeKey = "validation.type"
+	HttpcheckValidationFailedMetricAttributeKeyValidationTarget HttpcheckValidationFailedMetricAttributeKey = "validation.target"
 )
 
 // HttpcheckValidationFailedMetricConfig provides config for the httpcheck.validation.failed metric.
@@ -530,9 +531,9 @@ func (ms *HttpcheckValidationFailedMetricConfig) Unmarshal(parser *confmap.Conf)
 func (ms *HttpcheckValidationFailedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType:
+		case HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType, HttpcheckValidationFailedMetricAttributeKeyValidationTarget:
 		default:
-			return fmt.Errorf("metric httpcheck.validation.failed doesn't have an attribute %v, valid attributes: [http.url, validation.type]", val)
+			return fmt.Errorf("metric httpcheck.validation.failed doesn't have an attribute %v, valid attributes: [http.url, validation.type, validation.target]", val)
 		}
 	}
 
@@ -549,8 +550,9 @@ func (ms *HttpcheckValidationFailedMetricConfig) Validate() error {
 type HttpcheckValidationPassedMetricAttributeKey string
 
 const (
-	HttpcheckValidationPassedMetricAttributeKeyHTTPURL        HttpcheckValidationPassedMetricAttributeKey = "http.url"
-	HttpcheckValidationPassedMetricAttributeKeyValidationType HttpcheckValidationPassedMetricAttributeKey = "validation.type"
+	HttpcheckValidationPassedMetricAttributeKeyHTTPURL          HttpcheckValidationPassedMetricAttributeKey = "http.url"
+	HttpcheckValidationPassedMetricAttributeKeyValidationType   HttpcheckValidationPassedMetricAttributeKey = "validation.type"
+	HttpcheckValidationPassedMetricAttributeKeyValidationTarget HttpcheckValidationPassedMetricAttributeKey = "validation.target"
 )
 
 // HttpcheckValidationPassedMetricConfig provides config for the httpcheck.validation.passed metric.
@@ -579,9 +581,9 @@ func (ms *HttpcheckValidationPassedMetricConfig) Unmarshal(parser *confmap.Conf)
 func (ms *HttpcheckValidationPassedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType:
+		case HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType, HttpcheckValidationPassedMetricAttributeKeyValidationTarget:
 		default:
-			return fmt.Errorf("metric httpcheck.validation.passed doesn't have an attribute %v, valid attributes: [http.url, validation.type]", val)
+			return fmt.Errorf("metric httpcheck.validation.passed doesn't have an attribute %v, valid attributes: [http.url, validation.type, validation.target]", val)
 		}
 	}
 
@@ -665,12 +667,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		HttpcheckValidationFailed: HttpcheckValidationFailedMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType},
+			EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType, HttpcheckValidationFailedMetricAttributeKeyValidationTarget},
 		},
 		HttpcheckValidationPassed: HttpcheckValidationPassedMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType},
+			EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType, HttpcheckValidationPassedMetricAttributeKeyValidationTarget},
 		},
 	}
 }

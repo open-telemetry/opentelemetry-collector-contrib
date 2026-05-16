@@ -931,3 +931,121 @@ func TestResponseValidationFailures(t *testing.T) {
 	assert.True(t, foundMetrics["httpcheck.validation.passed"])
 	assert.True(t, foundMetrics["httpcheck.validation.failed"])
 }
+
+func TestValidationTargetAttribute(t *testing.T) {
+	// Create a mock server that returns JSON with multiple system statuses
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(`{"system_1": true, "system_2": true, "system_3": false}`))
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	// Enable validation metrics
+	cfg.Metrics.HttpcheckValidationPassed.Enabled = true
+	cfg.Metrics.HttpcheckValidationFailed.Enabled = true
+
+	cfg.Targets = []*targetConfig{
+		{
+			ClientConfig: confighttp.ClientConfig{
+				Endpoint: server.URL,
+			},
+			Validations: []validationConfig{
+				{
+					JSONPath: "system_1", // Remove "$." prefix - gjson works without it
+					Equals:   "true",
+				},
+				{
+					JSONPath: "system_2", // Remove "$." prefix
+					Equals:   "true",
+				},
+				{
+					JSONPath: "system_3", // Remove "$." prefix
+					Equals:   "true",
+				},
+			},
+		},
+	}
+
+	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	metrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	// Check that we have metrics
+	require.NotZero(t, metrics.ResourceMetrics().Len())
+	rm := metrics.ResourceMetrics().At(0)
+	ilm := rm.ScopeMetrics().At(0)
+
+	var passedTargets []string
+	var failedTargets []string
+	foundPassed := false
+	foundFailed := false
+
+	for i := 0; i < ilm.Metrics().Len(); i++ {
+		metric := ilm.Metrics().At(i)
+
+		if metric.Name() == "httpcheck.validation.passed" {
+			foundPassed = true
+			dps := metric.Sum().DataPoints()
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				value := dp.IntValue()
+				// Each validation should have value 1
+				assert.Equal(t, int64(1), value, "Each passed validation should have value 1")
+
+				// Check validation.target attribute exists
+				targetAttr, ok := dp.Attributes().Get("validation.target")
+				assert.True(t, ok, "validation.target attribute should exist for passed metric")
+				passedTargets = append(passedTargets, targetAttr.Str())
+
+				// Check validation.type attribute
+				typeAttr, ok := dp.Attributes().Get("validation.type")
+				assert.True(t, ok, "validation.type attribute should exist for passed metric")
+				assert.Equal(t, "json_path", typeAttr.Str())
+			}
+		}
+
+		if metric.Name() == "httpcheck.validation.failed" {
+			foundFailed = true
+			dps := metric.Sum().DataPoints()
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				value := dp.IntValue()
+				// Each validation should have value 1
+				assert.Equal(t, int64(1), value, "Each failed validation should have value 1")
+
+				// Check validation.target attribute exists
+				targetAttr, ok := dp.Attributes().Get("validation.target")
+				assert.True(t, ok, "validation.target attribute should exist for failed metric")
+				failedTargets = append(failedTargets, targetAttr.Str())
+
+				// Check validation.type attribute
+				typeAttr, ok := dp.Attributes().Get("validation.type")
+				assert.True(t, ok, "validation.type attribute should exist for failed metric")
+				assert.Equal(t, "json_path", typeAttr.Str())
+			}
+		}
+	}
+
+	assert.True(t, foundPassed, "Should have httpcheck.validation.passed metric")
+	assert.True(t, foundFailed, "Should have httpcheck.validation.failed metric")
+
+	// Should have 2 passed validations (system_1 and system_2)
+	assert.Len(t, passedTargets, 2, "Should have 2 passed validation data points")
+
+	// Should have 1 failed validation (system_3)
+	assert.Len(t, failedTargets, 1, "Should have 1 failed validation data point")
+
+	// Verify passed targets are system_1 and system_2
+	expectedPassedTargets := []string{"system_1 == true", "system_2 == true"}
+	for _, target := range passedTargets {
+		assert.Contains(t, expectedPassedTargets, target, "Passed target should be one of: %v, got: %s", expectedPassedTargets, target)
+	}
+
+	// Verify failed target is system_3
+	assert.Equal(t, "system_3 == true", failedTargets[0], "Failed target should be system_3 == true")
+}

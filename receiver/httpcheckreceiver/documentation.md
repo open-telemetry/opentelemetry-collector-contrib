@@ -184,6 +184,7 @@ Number of response validations that failed.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | http.url | Full HTTP request URL. | Any Str | Recommended | - |
 | validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | Recommended | - |
+| validation.target | The validation expression being evaluated (JSONPath, regex, contains string, etc.) | Any Str | Recommended | - |
 
 ### httpcheck.validation.passed
 
@@ -199,3 +200,4 @@ Number of response validations that passed.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | http.url | Full HTTP request URL. | Any Str | Recommended | - |
 | validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | Recommended | - |
+| validation.target | The validation expression being evaluated (JSONPath, regex, contains string, etc.) | Any Str | Recommended | - |

@@ -83,6 +83,11 @@ func (t *timingInfo) getDurations() (dnsMs, tcpMs, tlsMs, requestMs, responseMs 
 	return dnsMs, tcpMs, tlsMs, requestMs, responseMs
 }
 
+type validationResult struct {
+	Type   string
+	Target string
+}
+
 type httpcheckScraper struct {
 	clients  []*http.Client
 	cfg      *Config
@@ -124,77 +129,95 @@ func extractTLSInfo(state *tls.ConnectionState) (issuer, commonName string, sans
 }
 
 // validateResponse performs response validation based on configured rules
-func validateResponse(body []byte, validations []validationConfig) (passed, failed map[string]int) {
-	passed = make(map[string]int)
-	failed = make(map[string]int)
+func validateResponse(body []byte, validations []validationConfig) (passedResults, failedResults []validationResult) {
+	passedResults = []validationResult{}
+	failedResults = []validationResult{}
 
 	for _, validation := range validations {
 		// String matching validations
 		if validation.Contains != "" {
 			if strings.Contains(string(body), validation.Contains) {
-				passed["contains"]++
+				passedResults = append(passedResults, validationResult{Type: "contains", Target: validation.Contains})
 			} else {
-				failed["contains"]++
+				failedResults = append(failedResults, validationResult{Type: "contains", Target: validation.Contains})
 			}
+			continue
 		}
 
 		if validation.NotContains != "" {
 			if !strings.Contains(string(body), validation.NotContains) {
-				passed["not_contains"]++
+				passedResults = append(passedResults, validationResult{Type: "not_contains", Target: validation.NotContains})
 			} else {
-				failed["not_contains"]++
+				failedResults = append(failedResults, validationResult{Type: "not_contains", Target: validation.NotContains})
 			}
+			continue
 		}
 
 		// JSON path validations
 		if validation.JSONPath != "" {
 			result := gjson.GetBytes(body, validation.JSONPath)
+			targetExpr := validation.JSONPath
+
+			// Build target expression
+			if validation.Equals != "" {
+				targetExpr = validation.JSONPath + " == " + validation.Equals
+			}
+
+			// Check if the path exists
 			if !result.Exists() {
-				failed["json_path"]++
+				failedResults = append(failedResults, validationResult{Type: "json_path", Target: targetExpr})
 				continue
 			}
 
+			// If equals condition is specified
 			if validation.Equals != "" {
-				if result.String() == validation.Equals {
-					passed["json_path"]++
+				// Convert result to string for comparison
+				resultStr := result.String()
+				if resultStr == validation.Equals {
+					passedResults = append(passedResults, validationResult{Type: "json_path", Target: targetExpr})
 				} else {
-					failed["json_path"]++
+					failedResults = append(failedResults, validationResult{Type: "json_path", Target: targetExpr})
 				}
 			} else {
-				// If no equals condition, just check existence
-				passed["json_path"]++
+				// No equals condition, just existence is enough
+				passedResults = append(passedResults, validationResult{Type: "json_path", Target: targetExpr})
 			}
+			continue
 		}
 
 		// Size validations
 		bodySize := int64(len(body))
 		if validation.MaxSize != nil {
 			if bodySize <= *validation.MaxSize {
-				passed["size"]++
+				passedResults = append(passedResults, validationResult{Type: "size", Target: "max_size"})
 			} else {
-				failed["size"]++
+				failedResults = append(failedResults, validationResult{Type: "size", Target: "max_size"})
 			}
+			continue
 		}
 
 		if validation.MinSize != nil {
 			if bodySize >= *validation.MinSize {
-				passed["size"]++
+				passedResults = append(passedResults, validationResult{Type: "size", Target: "min_size"})
 			} else {
-				failed["size"]++
+				failedResults = append(failedResults, validationResult{Type: "size", Target: "min_size"})
 			}
+			continue
 		}
 
 		// Regex validations
 		if validation.Regex != "" {
-			if matched, err := regexp.Match(validation.Regex, body); err == nil && matched {
-				passed["regex"]++
+			matched, err := regexp.Match(validation.Regex, body)
+			if err == nil && matched {
+				passedResults = append(passedResults, validationResult{Type: "regex", Target: validation.Regex})
 			} else {
-				failed["regex"]++
+				failedResults = append(failedResults, validationResult{Type: "regex", Target: validation.Regex})
 			}
+			continue
 		}
 	}
 
-	return passed, failed
+	return passedResults, failedResults
 }
 
 // start initializes the scraper by creating HTTP clients for each endpoint.
@@ -380,15 +403,15 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 			// Perform response validation if configured
 			if len(h.cfg.Targets[targetIndex].Validations) > 0 && len(responseBody) > 0 {
-				passed, failed := validateResponse(responseBody, h.cfg.Targets[targetIndex].Validations)
+				passedResults, failedResults := validateResponse(responseBody, h.cfg.Targets[targetIndex].Validations)
 
-				// Record validation metrics
-				for validationType, count := range passed {
-					h.mb.RecordHttpcheckValidationPassedDataPoint(now, int64(count), endpoint, validationType)
+				// Record validation metrics with target attribute - one datapoint per validation
+				for _, result := range passedResults {
+					h.mb.RecordHttpcheckValidationPassedDataPoint(now, 1, endpoint, result.Type, result.Target)
 				}
 
-				for validationType, count := range failed {
-					h.mb.RecordHttpcheckValidationFailedDataPoint(now, int64(count), endpoint, validationType)
+				for _, result := range failedResults {
+					h.mb.RecordHttpcheckValidationFailedDataPoint(now, 1, endpoint, result.Type, result.Target)
 				}
 			}
 

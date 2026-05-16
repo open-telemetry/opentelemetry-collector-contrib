@@ -113,7 +113,9 @@ receivers:
         enabled: true
 ```
 
-These metrics track validation results with `validation.type` attribute indicating the validation type (contains, json_path, size, regex).
+These metrics track validation results with:
+- `validation.type` attribute indicating the validation type (contains, json_path, size, regex)
+- `validation.target` attribute containing the specific validation expression (e.g., JSONPath like `system_1`, regex pattern, contains string, or size constraint)
 
 ### Request Body Support
 

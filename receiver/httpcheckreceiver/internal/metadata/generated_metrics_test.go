@@ -143,15 +143,15 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordHttpcheckValidationFailedDataPoint(ts, 1, "http.url-val", "validation.type-val")
+			mb.RecordHttpcheckValidationFailedDataPoint(ts, 1, "http.url-val", "validation.type-val", "validation.target-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordHttpcheckValidationFailedDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2")
+				mb.RecordHttpcheckValidationFailedDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2", "validation.target-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordHttpcheckValidationPassedDataPoint(ts, 1, "http.url-val", "validation.type-val")
+			mb.RecordHttpcheckValidationPassedDataPoint(ts, 1, "http.url-val", "validation.type-val", "validation.target-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordHttpcheckValidationPassedDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2")
+				mb.RecordHttpcheckValidationPassedDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2", "validation.target-val-2")
 			}
 
 			res := pcommon.NewResource()
@@ -665,6 +665,9 @@ func TestMetricsBuilder(t *testing.T) {
 						validationTypeAttrVal, ok := dp.Attributes().Get("validation.type")
 						assert.True(t, ok)
 						assert.Equal(t, "validation.type-val", validationTypeAttrVal.Str())
+						validationTargetAttrVal, ok := dp.Attributes().Get("validation.target")
+						assert.True(t, ok)
+						assert.Equal(t, "validation.target-val", validationTargetAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["httpcheck.validation.failed"], "Found a duplicate in the metrics slice: httpcheck.validation.failed")
 						validatedMetrics["httpcheck.validation.failed"] = true
@@ -692,6 +695,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("validation.type")
 						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("validation.target")
+						assert.False(t, ok)
 					}
 				case "httpcheck.validation.passed":
 					if tt.name != "reaggregate_set" {
@@ -714,6 +719,9 @@ func TestMetricsBuilder(t *testing.T) {
 						validationTypeAttrVal, ok := dp.Attributes().Get("validation.type")
 						assert.True(t, ok)
 						assert.Equal(t, "validation.type-val", validationTypeAttrVal.Str())
+						validationTargetAttrVal, ok := dp.Attributes().Get("validation.target")
+						assert.True(t, ok)
+						assert.Equal(t, "validation.target-val", validationTargetAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["httpcheck.validation.passed"], "Found a duplicate in the metrics slice: httpcheck.validation.passed")
 						validatedMetrics["httpcheck.validation.passed"] = true
@@ -740,6 +748,8 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("http.url")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("validation.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("validation.target")
 						assert.False(t, ok)
 					}
 				}
