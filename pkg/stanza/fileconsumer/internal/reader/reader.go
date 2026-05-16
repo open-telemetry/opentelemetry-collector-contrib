@@ -107,7 +107,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	}
 
 	if r.fileCacheAdvise && r.FileType != gzipExtension {
-		r.fadviseFile(0, 0)
+		r.fadviseFile()
 	}
 
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {

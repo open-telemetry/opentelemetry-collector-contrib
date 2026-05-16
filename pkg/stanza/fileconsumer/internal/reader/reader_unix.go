@@ -33,4 +33,4 @@ func (r *Reader) unlockFile() {
 	}
 }
 
-func (*Reader) fadviseFile(_, _ int64) {}
+func (*Reader) fadviseFile() {}
