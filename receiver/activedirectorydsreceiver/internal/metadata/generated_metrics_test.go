@@ -58,14 +58,14 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["ActiveDirectoryDsBindRate"] = mb.metricActiveDirectoryDsBindRate.config.AggregationStrategy
-			aggMap["ActiveDirectoryDsOperationRate"] = mb.metricActiveDirectoryDsOperationRate.config.AggregationStrategy
-			aggMap["ActiveDirectoryDsReplicationNetworkIo"] = mb.metricActiveDirectoryDsReplicationNetworkIo.config.AggregationStrategy
-			aggMap["ActiveDirectoryDsReplicationObjectRate"] = mb.metricActiveDirectoryDsReplicationObjectRate.config.AggregationStrategy
-			aggMap["ActiveDirectoryDsReplicationPropertyRate"] = mb.metricActiveDirectoryDsReplicationPropertyRate.config.AggregationStrategy
-			aggMap["ActiveDirectoryDsReplicationSyncRequestCount"] = mb.metricActiveDirectoryDsReplicationSyncRequestCount.config.AggregationStrategy
-			aggMap["ActiveDirectoryDsReplicationValueRate"] = mb.metricActiveDirectoryDsReplicationValueRate.config.AggregationStrategy
-			aggMap["ActiveDirectoryDsSuboperationRate"] = mb.metricActiveDirectoryDsSuboperationRate.config.AggregationStrategy
+			aggMap["active_directory.ds.bind.rate"] = mb.metricActiveDirectoryDsBindRate.config.AggregationStrategy
+			aggMap["active_directory.ds.operation.rate"] = mb.metricActiveDirectoryDsOperationRate.config.AggregationStrategy
+			aggMap["active_directory.ds.replication.network.io"] = mb.metricActiveDirectoryDsReplicationNetworkIo.config.AggregationStrategy
+			aggMap["active_directory.ds.replication.object.rate"] = mb.metricActiveDirectoryDsReplicationObjectRate.config.AggregationStrategy
+			aggMap["active_directory.ds.replication.property.rate"] = mb.metricActiveDirectoryDsReplicationPropertyRate.config.AggregationStrategy
+			aggMap["active_directory.ds.replication.sync.request.count"] = mb.metricActiveDirectoryDsReplicationSyncRequestCount.config.AggregationStrategy
+			aggMap["active_directory.ds.replication.value.rate"] = mb.metricActiveDirectoryDsReplicationValueRate.config.AggregationStrategy
+			aggMap["active_directory.ds.suboperation.rate"] = mb.metricActiveDirectoryDsSuboperationRate.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {

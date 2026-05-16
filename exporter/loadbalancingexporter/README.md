@@ -106,6 +106,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `interval` resolver interval in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `30s` will be used.
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `5s` will be used.
   * `port` port to be used for exporting the traces to the addresses resolved from `service`. By default, the port is set in Cloud Map, but can be be overridden with a static value in this config
+  * `owner_account` the AWS account ID that owns the Cloud Map namespace. Required when discovering instances in a namespace shared from another account via [AWS RAM](https://docs.aws.amazon.com/cloud-map/latest/dg/sharing-namespaces.html). When omitted, only namespaces owned by the caller's account are queried.
   * `health_status` filter in AWS Cloud Map, you can specify the health status of the instances that you want to discover. The health_status filter is optional and allows you to query based on the health status of the instances.
     * Available values are
       * `HEALTHY`: Only return instances that are healthy.
@@ -304,6 +305,7 @@ exporters:
       aws_cloud_map:
         namespace: aws-namespace
         service_name: aws-otel-col-service-name
+        owner_account: "123456789012" # optional, for cross-account namespace discovery
         interval: 30s
 
 service:

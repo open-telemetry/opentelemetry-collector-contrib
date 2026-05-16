@@ -249,6 +249,14 @@ Number of times a consistent read was requested for a block from the buffer cach
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {gets} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.data_dictionary.hit_ratio
+
+Data dictionary cache hit ratio from v$rowcache.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
+
 ### oracledb.db_block_gets
 
 Number of times a current block was requested from the buffer cache.
@@ -377,6 +385,30 @@ Number of SELECT statements executed in parallel
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {queries} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.recycle_bin.limit
+
+Total size of the recycle bin.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Double | Development |
+
+### oracledb.storage.usage
+
+Used database storage size from dba_data_files and dba_free_space.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Double | Development |
+
+### oracledb.storage.utilization
+
+Fraction of allocated database storage that is used.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
 ## Default Events
 
 The following events are emitted by default. Each of them can be disabled by applying the following configuration:
@@ -427,11 +459,15 @@ sample query
 | oracledb.state | Current state of the query or the session executing it. | Any Str | - |
 | oracledb.wait_class | The category of wait events a query or session is currently experiencing in Oracle Database. | Any Str | - |
 | oracledb.event | The specific wait event that a query or session is currently experiencing. | Any Str | - |
+| oracledb.query.wait_time | The wait time in seconds. If the session is currently waiting, the value is the time spent waiting in the current wait. Returns 0 if the session is not currently waiting. | Any Double | - |
 | oracledb.procedure_id | The identifier of the stored procedure or function being executed by the query. | Any Int | - |
 | oracledb.procedure_name | Name of the database object that a query is accessing. | Any Str | - |
 | oracledb.procedure_type | Type of the database object that a query is accessing. | Any Str | - |
 | oracledb.osuser | Name of the operating system user that initiated or is running the Oracle database session. | Any Str | - |
 | oracledb.duration_sec | Total time taken by a database query to execute. | Any Double | - |
+| oracledb.query.started | The timestamp when the SQL statement started execution, in ISO 8601 format (UTC). | Any Str | - |
+| oracledb.session.started | The timestamp when the session logged on, in ISO 8601 format (UTC). | Any Str | - |
+| oracledb.session.duration | The total time in seconds that the session has been connected. | Any Double | - |
 
 ### db.server.top_query
 
