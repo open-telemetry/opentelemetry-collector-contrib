@@ -280,4 +280,207 @@ service:
       exporters: [bar/counts_only]
 ```
 
+## Log Metricization Use Cases
+
+Each example below shows a complete pipeline config and the metric name(s) emitted.
+
+Defining any custom `logs` metrics disables the default `log.record.count`. Add an
+explicit entry for it if you still want the total.
+
+### Count logs by severity level
+
+One counter per severity band. Good for alerting on error rates without having to
+filter in your metrics backend.
+
+Metrics emitted:
+- `log.count.error` (severity numbers 17–24)
+- `log.count.warn` (13–16)
+- `log.count.info` (9–12)
+- `log.count.debug` (5–8)
+- `log.count.trace` (1–4)
+
+```yaml
+receivers:
+  foo:
+exporters:
+  bar:
+connectors:
+  count:
+    logs:
+      log.count.error:
+        description: Number of error and fatal log records.
+        conditions:
+          - 'severity_number >= SEVERITY_NUMBER_ERROR'
+      log.count.warn:
+        description: Number of warning log records.
+        conditions:
+          - 'severity_number >= SEVERITY_NUMBER_WARN and severity_number < SEVERITY_NUMBER_ERROR'
+      log.count.info:
+        description: Number of info log records.
+        conditions:
+          - 'severity_number >= SEVERITY_NUMBER_INFO and severity_number < SEVERITY_NUMBER_WARN'
+      log.count.debug:
+        description: Number of debug log records.
+        conditions:
+          - 'severity_number >= SEVERITY_NUMBER_DEBUG and severity_number < SEVERITY_NUMBER_INFO'
+      log.count.trace:
+        description: Number of trace log records.
+        conditions:
+          - 'severity_number >= SEVERITY_NUMBER_TRACE and severity_number < SEVERITY_NUMBER_DEBUG'
+service:
+  pipelines:
+    logs:
+      receivers: [foo]
+      exporters: [count]
+    metrics:
+      receivers: [count]
+      exporters: [bar]
+```
+
+Conditions within one metric are ORed, so a range check needs both bounds in a single
+string joined with `and`.
+
+### Count logs per `service.name`
+
+`log.count.by_service` gets one data point per distinct service name. Records with no
+`service.name` at any attribute level are skipped (no `default_value` is set).
+
+```yaml
+receivers:
+  foo:
+exporters:
+  bar:
+connectors:
+  count:
+    logs:
+      log.count.by_service:
+        description: Number of log records per service.
+        attributes:
+          - key: service.name
+service:
+  pipelines:
+    logs:
+      receivers: [foo]
+      exporters: [count]
+    metrics:
+      receivers: [count]
+      exporters: [bar]
+```
+
+The connector checks log record attributes first, then scope attributes, then resource
+attributes, so standard OTLP resource attribution works without extra configuration.
+
+### Count logs per Kubernetes pod
+
+`log.count.by_pod` is what you want when multiple pods share a service name and you
+need per-pod visibility during rollouts or incidents.
+
+```yaml
+receivers:
+  foo:
+exporters:
+  bar:
+connectors:
+  count:
+    logs:
+      log.count.by_pod:
+        description: Number of log records per Kubernetes pod.
+        attributes:
+          - key: k8s.pod.name
+            default_value: unknown
+service:
+  pipelines:
+    logs:
+      receivers: [foo]
+      exporters: [count]
+    metrics:
+      receivers: [count]
+      exporters: [bar]
+```
+
+`default_value: unknown` keeps non-Kubernetes workloads in the count rather than
+dropping them silently.
+
+### Count logs per `host.name`
+
+`log.count.by_host` tracks log volume by host. Handy for spotting hosts that start
+generating unexpected bursts.
+
+```yaml
+receivers:
+  foo:
+exporters:
+  bar:
+connectors:
+  count:
+    logs:
+      log.count.by_host:
+        description: Number of log records per host.
+        attributes:
+          - key: host.name
+service:
+  pipelines:
+    logs:
+      receivers: [foo]
+      exporters: [count]
+    metrics:
+      receivers: [count]
+      exporters: [bar]
+```
+
+### Count logs per Kubernetes namespace
+
+`log.count.by_namespace` is how teams with shared clusters track which namespace owns
+what log volume.
+
+```yaml
+receivers:
+  foo:
+exporters:
+  bar:
+connectors:
+  count:
+    logs:
+      log.count.by_namespace:
+        description: Number of log records per Kubernetes namespace.
+        attributes:
+          - key: k8s.namespace.name
+            default_value: unknown
+service:
+  pipelines:
+    logs:
+      receivers: [foo]
+      exporters: [count]
+    metrics:
+      receivers: [count]
+      exporters: [bar]
+```
+
+### Count logs matching a body pattern
+
+If your apps don't set severity correctly, body matching is a fallback for catching
+exceptions and panics. Use it sparingly: regex on every log record has a cost.
+
+```yaml
+receivers:
+  foo:
+exporters:
+  bar:
+connectors:
+  count:
+    logs:
+      log.count.exception:
+        description: Number of log records containing exception or panic patterns.
+        conditions:
+          - 'IsMatch(body, "(?i)(exception|panic|timeout)")'
+service:
+  pipelines:
+    logs:
+      receivers: [foo]
+      exporters: [count]
+    metrics:
+      receivers: [count]
+      exporters: [bar]
+```
+
 [Connectors README]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
