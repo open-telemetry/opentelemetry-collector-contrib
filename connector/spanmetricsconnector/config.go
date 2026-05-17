@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 )
 
@@ -213,7 +214,7 @@ func (c Config) GetDeltaTimestampCacheSize() int {
 func validateDimensions(dimensions []Dimension) error {
 	labelNames := make(map[string]struct{})
 	intervalLabels := []string{serviceNameKey, spanKindKey, statusCodeKey, spanNameKey}
-	if includeCollectorInstanceID.IsEnabled() {
+	if metadata.ConnectorSpanmetricsIncludeCollectorInstanceIDFeatureGate.IsEnabled() {
 		intervalLabels = append(intervalLabels, collectorInstanceKey)
 	}
 

@@ -186,6 +186,10 @@ attributes:
     description: The name of the stored procedure, if any
     type: string
     requirement_level: recommended
+  sqlserver.query.last_started:
+    description: Timestamp of when the SQL query last started executing (ISO 8601 format).
+    type: string
+    requirement_level: recommended
   sqlserver.query_hash:
     description: Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format.
     type: string
@@ -363,6 +367,7 @@ events:
     attributes:
       - sqlserver.total_worker_time
       - db.query.text
+      - db.namespace
       - sqlserver.execution_count
       - sqlserver.total_logical_reads
       - sqlserver.total_logical_writes
@@ -379,6 +384,7 @@ events:
       - sqlserver.procedure_execution_count
       - sqlserver.procedure_id
       - sqlserver.procedure_name
+      - sqlserver.query.last_started
 
 metrics:
   sqlserver.batch.request.rate:

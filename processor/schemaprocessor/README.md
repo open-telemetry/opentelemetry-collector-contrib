@@ -109,6 +109,38 @@ return an error immediately.
 | `cache_cooldown` | duration | `5m` | Wait time after retry limit is reached |
 | `cache_retry_limit` | int | `5` | Consecutive failures before cooldown |
 
+### Persistent storage
+
+By default, cached schema files are stored in memory and lost when the collector restarts. To persist schemas across restarts, configure a [storage extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage) using the `storage` field.
+
+When configured, fetched schema files are saved to persistent storage after the first HTTP fetch. On subsequent startups, schemas are loaded from storage without requiring network access. This is useful for:
+
+- **Faster cold starts** — schemas are available immediately without HTTP fetches
+- **Offline operation** — the collector can translate schemas without internet access after the initial fetch
+- **Reduced load on schema servers** — fewer HTTP requests to the servers hosting the schema files
+
+```yaml
+extensions:
+  file_storage/schemas:
+    directory: /var/lib/otelcol/schema_cache
+
+processors:
+  schema:
+    targets:
+      - https://opentelemetry.io/schemas/1.26.0
+    storage: file_storage/schemas
+
+service:
+  extensions: [file_storage/schemas]
+  pipelines:
+    traces:
+      processors: [schema]
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `storage` | string | *(none)* | ID of a storage extension to persist cached schema files |
+
 ## Schema Formats
 
 A [schema URL](https://opentelemetry.io/docs/specs/otel/schemas/#schema-url) is made up in two parts, _Schema Family_ and _Schema Version_, the schema URL is broken down like so:

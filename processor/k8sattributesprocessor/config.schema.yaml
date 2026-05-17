@@ -43,7 +43,7 @@ $defs:
     type: object
     properties:
       from:
-        description: From represents the source of the labels/annotations. Allowed values are "pod", "namespace", and "node". The default is pod.
+        description: From represents the source of the labels/annotations. Allowed values are "pod", "namespace", "node", "deployment", "statefulset", "daemonset", and "job". The default is pod.
         type: string
       key:
         description: Key represents the annotation (or label) name. This must exactly match an annotation (or label) name.

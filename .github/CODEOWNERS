@@ -286,17 +286,17 @@ receiver/googlecloudpubsubreceiver/                              @open-telemetry
 receiver/googlecloudspannerreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @KiranmayiB @nsj07
 receiver/haproxyreceiver/                                        @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy
 receiver/hostmetricsreceiver/                                    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
-receiver/hostmetricsreceiver/internal/scraper/cpuscraper/        @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
-receiver/hostmetricsreceiver/internal/scraper/diskscraper/       @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
-receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/ @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
-receiver/hostmetricsreceiver/internal/scraper/loadscraper/       @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
-receiver/hostmetricsreceiver/internal/scraper/memoryscraper/     @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
-receiver/hostmetricsreceiver/internal/scraper/networkscraper/    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
-receiver/hostmetricsreceiver/internal/scraper/nfsscraper/        @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
-receiver/hostmetricsreceiver/internal/scraper/pagingscraper/     @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
-receiver/hostmetricsreceiver/internal/scraper/processesscraper/  @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
-receiver/hostmetricsreceiver/internal/scraper/processscraper/    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
-receiver/hostmetricsreceiver/internal/scraper/systemscraper/     @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
+receiver/hostmetricsreceiver/internal/scraper/cpuscraper/        @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
+receiver/hostmetricsreceiver/internal/scraper/diskscraper/       @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
+receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/ @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
+receiver/hostmetricsreceiver/internal/scraper/loadscraper/       @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
+receiver/hostmetricsreceiver/internal/scraper/memoryscraper/     @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
+receiver/hostmetricsreceiver/internal/scraper/networkscraper/    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
+receiver/hostmetricsreceiver/internal/scraper/nfsscraper/        @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
+receiver/hostmetricsreceiver/internal/scraper/pagingscraper/     @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
+receiver/hostmetricsreceiver/internal/scraper/processesscraper/  @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
+receiver/hostmetricsreceiver/internal/scraper/processscraper/    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
+receiver/hostmetricsreceiver/internal/scraper/systemscraper/     @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
 receiver/httpcheckreceiver/                                      @open-telemetry/collector-contrib-approvers @VenuEmmadi
 receiver/huaweicloudcesreceiver/                                 @open-telemetry/collector-contrib-approvers @heitorganzeli @narcis96
 receiver/icmpcheckreceiver/                                      @open-telemetry/collector-contrib-approvers @atoulme @jkoronaAtCisco

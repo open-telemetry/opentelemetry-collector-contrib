@@ -91,6 +91,41 @@ func TestInitialCloudMapResolutionWithPort(t *testing.T) {
 	}
 }
 
+func TestCloudMapResolutionWithOwnerAccount(t *testing.T) {
+	// prepare
+	_, tb := getTelemetryAssets(t)
+	ownerAccount := "123456789012"
+
+	res := &cloudMapResolver{
+		logger:        zap.NewNop(),
+		namespaceName: &namespaceName,
+		serviceName:   &instanceID,
+		healthStatus:  &statusFilterHealthy,
+		ownerAccount:  &ownerAccount,
+		resInterval:   5 * time.Second,
+		resTimeout:    1 * time.Second,
+		stopCh:        make(chan struct{}),
+		discoveryFn:   mockDiscoveryOwnerAccount("123456789012"),
+		telemetry:     tb,
+	}
+
+	// test
+	var resolved []string
+	res.onChange(func(endpoints []string) {
+		resolved = endpoints
+	})
+	require.NoError(t, res.start(t.Context()))
+	defer func() {
+		require.NoError(t, res.shutdown(t.Context()))
+	}()
+
+	// verify
+	assert.Len(t, resolved, 2)
+	for i, value := range []string{"127.0.0.1:8080", "127.0.0.2:8080"} {
+		assert.Equal(t, value, resolved[i])
+	}
+}
+
 func makeSummary(i int) types.HttpInstanceSummary {
 	return types.HttpInstanceSummary{
 		Attributes: map[string]string{
@@ -114,4 +149,19 @@ func mockDiscovery(*servicediscovery.DiscoverInstancesInput) (*servicediscovery.
 		ResultMetadata: middleware.Metadata{},
 	}
 	return s, nil
+}
+
+func mockDiscoveryOwnerAccount(expectedAccount string) func(*servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
+	return func(input *servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
+		if input.OwnerAccount == nil || *input.OwnerAccount != expectedAccount {
+			return nil, fmt.Errorf("expected owner account %q, got %v", expectedAccount, input.OwnerAccount)
+		}
+		return &servicediscovery.DiscoverInstancesOutput{
+			Instances: []types.HttpInstanceSummary{
+				makeSummary(1),
+				makeSummary(2),
+			},
+			ResultMetadata: middleware.Metadata{},
+		}, nil
+	}
 }
