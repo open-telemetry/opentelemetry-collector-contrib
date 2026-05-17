@@ -272,7 +272,7 @@ receivers:
 
 **Validation Types:**
 - `contains` / `not_contains`: String matching
-- `json_path` + `equals`: JSON path queries using [gjson syntax](https://github.com/tidwall/gjson) (note: do not include `$.` prefix)
+- `json_path` + `equals`: JSON path queries using [gjson syntax](https://github.com/tidwall/gjson)
 - `max_size` / `min_size`: Response body size limits
 - `regex`: Regular expression matching
 
