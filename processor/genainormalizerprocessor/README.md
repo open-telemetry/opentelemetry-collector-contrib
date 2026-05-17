@@ -96,8 +96,8 @@ Attribute renames:
 | `llm.token_count.completion` | `gen_ai.usage.output_tokens` |
 | `llm.model_name` | `gen_ai.request.model` |
 | `llm.provider` | `gen_ai.provider.name` |
-| `llm.input_messages` | `gen_ai.input.messages` |
-| `llm.output_messages` | `gen_ai.output.messages` |
+| `llm.input_messages.N.message.*` | `gen_ai.input.messages` (reconstructed as JSON, see below) |
+| `llm.output_messages.N.message.*` | `gen_ai.output.messages` (reconstructed as JSON, see below) |
 | `embedding.model_name` | `gen_ai.request.model` |
 | `tool.name` | `gen_ai.tool.name` |
 | `tool.description` | `gen_ai.tool.description` |
@@ -126,6 +126,21 @@ When a mapped attribute lands on `gen_ai.operation.name`, the string value is no
 | `openinference.span.kind` | `PROMPT` | `text_completion` |
 
 Target reference: [OTel GenAI operation names](https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/).
+
+### Message reconstruction
+
+OpenInference represents messages as flattened indexed span attributes (e.g., `llm.input_messages.0.message.role`, `llm.input_messages.0.message.content`). The processor reconstructs these into a single JSON string attribute following the [GenAI input messages schema](https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-spans/#messages) and sets it as `gen_ai.input.messages` (or `gen_ai.output.messages`).
+
+Supported OpenInference message fields:
+
+- `llm.{input,output}_messages.N.message.role`
+- `llm.{input,output}_messages.N.message.content`
+- `llm.{input,output}_messages.N.message.tool_calls.M.tool_call.id`
+- `llm.{input,output}_messages.N.message.tool_calls.M.tool_call.function.name`
+- `llm.{input,output}_messages.N.message.tool_calls.M.tool_call.function.arguments`
+- `llm.{input,output}_messages.N.message.tool_call_id`
+
+Messages with a `tool_call_id` are emitted with role `tool` in the GenAI output.
 
 ## Relationship to other processors
 

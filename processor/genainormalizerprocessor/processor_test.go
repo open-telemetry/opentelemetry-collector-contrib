@@ -484,3 +484,64 @@ func TestNormalize_OpenInferenceEndToEnd(t *testing.T) {
 		assert.False(t, ok, "expected %s to be removed", k)
 	}
 }
+
+// TestNormalize_OpenInferenceFlattenedMessages exercises the flattened
+// OpenInference message attributes end-to-end, matching the real-world
+// format from issue #48421.
+func TestNormalize_OpenInferenceFlattenedMessages(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{Name: SourceOpenInference, RemoveOriginals: true}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	attrs := span.Attributes()
+	attrs.PutStr("llm.model_name", "claude-sonnet-4-6")
+	attrs.PutStr("openinference.span.kind", "LLM")
+	// Flattened input messages (from the issue's real-world example)
+	attrs.PutStr("llm.input_messages.0.message.role", "user")
+	attrs.PutStr("llm.input_messages.0.message.content", "What is the weather like in San Francisco?")
+	attrs.PutStr("llm.input_messages.1.message.role", "assistant")
+	attrs.PutStr("llm.input_messages.1.message.tool_calls.0.tool_call.id", "toolu_01")
+	attrs.PutStr("llm.input_messages.1.message.tool_calls.0.tool_call.function.name", "get_weather")
+	attrs.PutStr("llm.input_messages.1.message.tool_calls.0.tool_call.function.arguments", `{"location":"San Francisco, CA"}`)
+	attrs.PutStr("llm.input_messages.2.message.role", "user")
+	attrs.PutStr("llm.input_messages.2.message.tool_call_id", "toolu_01")
+	attrs.PutStr("llm.input_messages.2.message.content", `{"weather":"sunny","temperature":"75"}`)
+	// Flattened output message
+	attrs.PutStr("llm.output_messages.0.message.role", "assistant")
+	attrs.PutStr("llm.output_messages.0.message.content", "The weather in San Francisco is sunny with 75°F.")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	// gen_ai.input.messages must be populated
+	inputVal, ok := out.Get("gen_ai.input.messages")
+	require.True(t, ok, "gen_ai.input.messages must be set")
+	assert.Contains(t, inputVal.Str(), `"role":"user"`)
+	assert.Contains(t, inputVal.Str(), `"role":"assistant"`)
+	assert.Contains(t, inputVal.Str(), `"role":"tool"`)
+
+	// gen_ai.output.messages must be populated
+	outputVal, ok := out.Get("gen_ai.output.messages")
+	require.True(t, ok, "gen_ai.output.messages must be set")
+	assert.Contains(t, outputVal.Str(), "sunny")
+
+	// Flattened originals removed
+	for _, k := range []string{
+		"llm.input_messages.0.message.role",
+		"llm.input_messages.0.message.content",
+		"llm.input_messages.1.message.tool_calls.0.tool_call.id",
+		"llm.output_messages.0.message.role",
+	} {
+		_, ok := out.Get(k)
+		assert.False(t, ok, "expected %s to be removed", k)
+	}
+
+	// Scalar renames still work alongside message reconstruction
+	v, ok := out.Get("gen_ai.request.model")
+	require.True(t, ok)
+	assert.Equal(t, "claude-sonnet-4-6", v.Str())
+}

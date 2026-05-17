@@ -20,10 +20,18 @@ type valueTransformer interface {
 	TransformValue(targetKey, value string) string
 }
 
+// attributeAggregator reconstructs structured attributes from multiple source
+// attributes. For example, OpenInference flattened message attributes are
+// aggregated into GenAI semconv JSON message strings.
+type attributeAggregator interface {
+	AggregateAttributes(attrs pcommon.Map, removeOriginals, overwrite bool) bool
+}
+
 // sourceNormalizer holds per-source state used during normalization.
 type sourceNormalizer struct {
 	lookupTable     map[string]string
 	transformValue  valueTransformer
+	aggregator      attributeAggregator
 	removeOriginals bool
 	overwrite       bool
 }
@@ -39,6 +47,7 @@ func newSourceNormalizer(src Source) sourceNormalizer {
 	if src.Name == SourceOpenInference {
 		sn.lookupTable = openinference.LookupTable
 		sn.transformValue = openinference.Transformer{}
+		sn.aggregator = openinference.MessageAggregator{}
 	}
 	return sn
 }
@@ -80,8 +89,8 @@ func (p *genaiNormalizerProcessor) processTraces(_ context.Context, td ptrace.Tr
 	return td, nil
 }
 
-// normalizeAttributes applies the source's rename rules to attrs. It returns
-// true if at least one attribute was written.
+// normalizeAttributes applies the source's rename rules and attribute
+// aggregation to attrs. It returns true if at least one attribute was written.
 func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
 	type rename struct {
 		from string
@@ -95,10 +104,6 @@ func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
 		}
 		return true
 	})
-
-	if len(renames) == 0 {
-		return false
-	}
 
 	wrote := false
 	for _, r := range renames {
@@ -129,6 +134,13 @@ func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
 			attrs.Remove(r.from)
 		}
 	}
+
+	if sn.aggregator != nil {
+		if sn.aggregator.AggregateAttributes(attrs, sn.removeOriginals, sn.overwrite) {
+			wrote = true
+		}
+	}
+
 	return wrote
 }
 

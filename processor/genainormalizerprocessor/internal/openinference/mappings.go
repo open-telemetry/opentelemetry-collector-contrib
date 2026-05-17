@@ -22,9 +22,8 @@ var LookupTable = map[string]string{
 	"llm.model_name": otelsemconv.GenAIRequestModel,
 	"llm.provider":   otelsemconv.GenAIProviderName,
 
-	// Input/output content
-	"llm.input_messages":  otelsemconv.GenAIInputMessages,
-	"llm.output_messages": otelsemconv.GenAIOutputMessages,
+	// Input/output content: flattened message attributes (llm.input_messages.N.message.*)
+	// are handled by ReconstructMessages, not by simple key rename.
 
 	// Embeddings
 	"embedding.model_name": otelsemconv.GenAIRequestModel,
