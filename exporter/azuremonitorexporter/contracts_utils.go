@@ -36,7 +36,9 @@ func applyCloudTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes p
 		envelope.Tags[contracts.CloudRole] = cloudRole
 	}
 
-	if serviceInstance, exists := resourceAttributes.Get(string(conventions.ServiceInstanceIDKey)); exists {
+	if hostName, exists := resourceAttributes.Get(string(conventions.HostNameKey)); exists {
+		envelope.Tags[contracts.CloudRoleInstance] = hostName.Str()
+	} else if serviceInstance, exists := resourceAttributes.Get(string(conventions.ServiceInstanceIDKey)); exists {
 		envelope.Tags[contracts.CloudRoleInstance] = serviceInstance.Str()
 	}
 

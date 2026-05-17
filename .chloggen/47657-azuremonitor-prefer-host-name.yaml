@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: exporter/azuremonitor
+note: Prefer host.name over service.instance.id when populating CloudRoleInstance
+issues: [47657]
+subtext:
+change_logs: [user]
