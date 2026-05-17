@@ -37,6 +37,9 @@ properties:
   tls_enabled:
     description: Whether not TLS is enabled
     type: boolean
+  trim_metric_suffixes:
+    description: TrimMetricSuffixes trims unit and some counter type suffixes from metric names.
+    type: boolean
   use_service_account:
     description: Whether or not to use pod service account to authenticate.
     type: boolean

@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/prometheus_simple
+
+note: Add `trim_metric_suffixes` support to the `prometheus_simple` receiver.
+
+issues: [45313]
+
+subtext:
+
+change_logs: [user]

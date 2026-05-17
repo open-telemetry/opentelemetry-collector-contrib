@@ -17,6 +17,8 @@ type Config struct {
 	httpConfig `mapstructure:",squash"`
 	// CollectionInterval is the interval at which metrics should be collected
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	// TrimMetricSuffixes trims unit and some counter type suffixes from metric names.
+	TrimMetricSuffixes bool `mapstructure:"trim_metric_suffixes"`
 	// MetricsPath the path to the metrics endpoint.
 	MetricsPath string `mapstructure:"metrics_path"`
 	// Params the parameters to the metrics endpoint.

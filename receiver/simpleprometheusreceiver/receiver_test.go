@@ -95,10 +95,12 @@ func TestGetPrometheusConfig(t *testing.T) {
 			config: &Config{
 				ClientConfig:       clientConfigTLS,
 				CollectionInterval: 10 * time.Second,
+				TrimMetricSuffixes: true,
 				MetricsPath:        "/metric",
 				Params:             url.Values{"foo": []string{"bar", "foobar"}},
 			},
 			want: &prometheusreceiver.Config{
+				TrimMetricSuffixes: true,
 				PrometheusConfig: &prometheusreceiver.PromConfig{
 					GlobalConfig: config.DefaultGlobalConfig,
 					ScrapeConfigs: []*config.ScrapeConfig{
