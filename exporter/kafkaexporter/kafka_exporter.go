@@ -45,6 +45,11 @@ type messenger[T any] interface {
 
 	// getTopic returns the topic name for the given context and data.
 	getTopic(context.Context, T) string
+
+	// getMessageKey returns the Kafka record key derived from client metadata,
+	// or nil if message_key_from_metadata_key is not configured or the metadata
+	// value is absent.
+	getMessageKey(context.Context) []byte
 }
 
 // recordsBuffer is a pooled holder for a batch of kgo.Records. space owns
@@ -146,13 +151,18 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		clear(buf.pointers)
 		e.recordsPool.Put(buf)
 	}()
+	metadataKey := e.messenger.getMessageKey(ctx)
 	for partitionKey, data := range e.messenger.partitionData(data) {
 		topic := e.messenger.getTopic(ctx, data)
 		err := e.messenger.marshalData(data, func(key, value []byte) {
 			// Marshalers may set the key, but a non-nil partition key
-			// from partitionData takes precedence.
+			// from partitionData takes precedence. The metadata-derived key
+			// is mutually exclusive with partition_* flags (validated at config
+			// time), so it applies when partitionData yields nil.
 			if partitionKey != nil {
 				key = partitionKey
+			} else if metadataKey != nil {
+				key = metadataKey
 			}
 			buf.space = append(buf.space, kgo.Record{
 				Topic: topic,
@@ -232,6 +242,10 @@ func (e *kafkaTracesMessenger) getTopic(ctx context.Context, td ptrace.Traces) s
 	return getTopic[ptrace.ResourceSpans](ctx, e.config.Traces, e.config.TopicFromAttribute, td.ResourceSpans())
 }
 
+func (e *kafkaTracesMessenger) getMessageKey(ctx context.Context) []byte {
+	return getMessageKey(ctx, e.config.Traces)
+}
+
 func (e *kafkaTracesMessenger) partitionData(td ptrace.Traces) iter.Seq2[[]byte, ptrace.Traces] {
 	return func(yield func([]byte, ptrace.Traces) bool) {
 		if e.config.PartitionTracesByID {
@@ -289,6 +303,10 @@ func (e *kafkaLogsMessenger) marshalData(ld plog.Logs, yield func(key, value []b
 
 func (e *kafkaLogsMessenger) getTopic(ctx context.Context, ld plog.Logs) string {
 	return getTopic[plog.ResourceLogs](ctx, e.config.Logs, e.config.TopicFromAttribute, ld.ResourceLogs())
+}
+
+func (e *kafkaLogsMessenger) getMessageKey(ctx context.Context) []byte {
+	return getMessageKey(ctx, e.config.Logs)
 }
 
 func (e *kafkaLogsMessenger) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.Logs] {
@@ -357,6 +375,10 @@ func (e *kafkaMetricsMessenger) getTopic(ctx context.Context, md pmetric.Metrics
 	return getTopic[pmetric.ResourceMetrics](ctx, e.config.Metrics, e.config.TopicFromAttribute, md.ResourceMetrics())
 }
 
+func (e *kafkaMetricsMessenger) getMessageKey(ctx context.Context) []byte {
+	return getMessageKey(ctx, e.config.Metrics)
+}
+
 func (e *kafkaMetricsMessenger) partitionData(md pmetric.Metrics) iter.Seq2[[]byte, pmetric.Metrics] {
 	return func(yield func([]byte, pmetric.Metrics) bool) {
 		splitByResource := e.config.PartitionMetricsByResourceAttributes ||
@@ -410,6 +432,10 @@ func (e *kafkaProfilesMessenger) getTopic(ctx context.Context, ld pprofile.Profi
 	return getTopic[pprofile.ResourceProfiles](ctx, e.config.Profiles, e.config.TopicFromAttribute, ld.ResourceProfiles())
 }
 
+func (e *kafkaProfilesMessenger) getMessageKey(ctx context.Context) []byte {
+	return getMessageKey(ctx, e.config.Profiles)
+}
+
 func (e *kafkaProfilesMessenger) partitionData(pd pprofile.Profiles) iter.Seq2[[]byte, pprofile.Profiles] {
 	return func(yield func([]byte, pprofile.Profiles) bool) {
 		if e.config.TopicFromAttribute != "" {
@@ -437,6 +463,15 @@ type resourceSlice[T any] interface {
 
 type resource interface {
 	Resource() pcommon.Resource
+}
+
+func getMessageKey(ctx context.Context, signalCfg SignalConfig) []byte {
+	if k := signalCfg.MessageKeyFromMetadataKey; k != "" {
+		if vals := client.FromContext(ctx).Metadata.Get(k); len(vals) > 0 && vals[0] != "" {
+			return []byte(vals[0])
+		}
+	}
+	return nil
 }
 
 func getTopic[T resource](ctx context.Context,

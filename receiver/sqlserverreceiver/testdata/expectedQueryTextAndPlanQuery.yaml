@@ -1,24 +1,24 @@
 resourceLogs:
   - resource:
       attributes:
-        - key: host.name
-          value:
-            stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
-        - key: service.instance.id
-          value:
-            stringValue: 0.0.0.0:1433
         - key: sqlserver.computer.name
           value:
             stringValue: DESKTOP-GHAEGRD
         - key: sqlserver.instance.name
           value:
             stringValue: sqlserver
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeLogs:
       - logRecords:
           - attributes:
@@ -28,6 +28,9 @@ resourceLogs:
               - key: db.query.text
                 value:
                   stringValue: with qstats SELECT TOP ( @topNValue ) REPLACE ( @@SERVERNAME, ? ), HOST_NAME ( ), MAX ( qs.plan_handle ), qs.query_hash, qs.query_plan_hash, SUM ( qs.execution_count ), SUM ( qs.total_elapsed_time ), SUM ( qs.total_worker_time ), SUM ( qs.total_logical_reads ), SUM ( qs.total_physical_reads ), SUM ( qs.total_logical_writes ), SUM ( qs.total_rows ), SUM ( qs.total_grant_kb ) FROM sys.dm_exec_query_stats WHERE qs.last_execution_time BETWEEN DATEADD ( SECOND, @granularity, GETDATE ( ) ) AND GETDATE ( ) GROUP BY qs.query_hash, qs.query_plan_hash ) SELECT qs.*, SUBSTRING ( st.text, ( stats.statement_start_offset / ? ) + ? ( ( CASE statement_end_offset WHEN ? THEN DATALENGTH ( st.text ) ELSE stats.statement_end_offset END - stats.statement_start_offset ) / ? ) + ? ), ISNULL ( qp.query_plan, ? ) FROM qstats INNER JOIN sys.dm_exec_query_stats on qs.query_plan_handle = stats.plan_handle CROSS APPLY sys.dm_exec_query_plan ( qs.query_plan_handle ) CROSS APPLY sys.dm_exec_sql_text ( qs.query_plan_handle )
+              - key: db.namespace
+                value:
+                  stringValue: master
               - key: sqlserver.execution_count
                 value:
                   intValue: "5"
@@ -75,12 +78,13 @@ resourceLogs:
                   stringValue: "0"
               - key: sqlserver.procedure_name
                 value:
-                    stringValue: ""
+                  stringValue: ""
+              - key: sqlserver.query.last_started
+                value:
+                  stringValue: "2026-01-15T10:30:00.0000000+00:00"
             body: {}
-            eventName: "db.server.top_query"
-            spanId: ""
-            timeUnixNano: "1749224037462260000"
-            traceId: ""
+            eventName: db.server.top_query
+            timeUnixNano: "1776666630093863000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

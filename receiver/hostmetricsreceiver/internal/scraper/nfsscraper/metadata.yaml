@@ -7,7 +7,7 @@ status:
   distributions: [core, contrib, k8s]
   unsupported_platforms: [darwin, windows, freebsd, netbsd, openbsd, dragonfly, zos]
   codeowners:
-    active: [dmitryax, braydonk]
+    active: [dmitryax, braydonk, rogercoll]
 
 sem_conv_version: 1.9.0
 

@@ -1,0 +1,18 @@
+change_type: breaking
+component: pkg/ottl
+note: Return errors when OTTL datapoint context setters are used on an incompatible data point type
+issues: [48384]
+subtext: |
+  For example, `set(explicit_bounds, [1.0])` against a `NumberDataPoint` now returns an error
+  rather than silently no-opping. Statements that were previously failing silently due to data
+  point type mismatches will now surface as errors.
+
+  Affected paths and the data point types they support:
+    - `value_double`, `value_int`: NumberDataPoint
+    - `explicit_bounds`, `bucket_counts`: HistogramDataPoint
+    - `scale`, `zero_count`, `positive`, `positive.offset`, `positive.bucket_counts`,
+      `negative`, `negative.offset`, `negative.bucket_counts`: ExponentialHistogramDataPoint
+    - `quantile_values`: SummaryDataPoint
+    - `exemplars`: NumberDataPoint, HistogramDataPoint, ExponentialHistogramDataPoint
+    - `count`, `sum`: HistogramDataPoint, ExponentialHistogramDataPoint, SummaryDataPoint
+change_logs: [user]
