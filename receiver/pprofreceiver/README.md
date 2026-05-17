@@ -54,6 +54,46 @@ Content-Type: application/octet-stream
 The body is a serialized pprof `profile.proto`. Standard `Content-Encoding` values
 (e.g. `gzip`) are handled transparently by `confighttp`.
 
+#### Pushing an existing pprof file
+
+A `profile.proto` is already gzip-encoded on disk by the standard `runtime/pprof`
+package, so the file bytes can be sent as-is with `Content-Encoding: gzip`:
+
+```go
+package main
+
+import (
+	"log"
+	"net/http"
+	"os"
+)
+
+func main() {
+	f, err := os.Open("cpu.pprof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	req, err := http.NewRequest(http.MethodPost, "http://localhost:4040/v1/pprof", f)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set("Content-Encoding", "gzip")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		log.Fatalf("unexpected status: %s", resp.Status)
+	}
+}
+```
+
 ### Example
 
 ```yaml
