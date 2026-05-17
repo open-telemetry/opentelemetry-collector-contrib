@@ -505,7 +505,8 @@ func TestScraperMultipleTargets(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
 
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+	require.NoError(t, pmetrictest.CompareMetrics(
+		expectedMetrics, actualMetrics,
 		pmetrictest.IgnoreMetricAttributeValue("http.url"),
 		pmetrictest.IgnoreMetricValues("httpcheck.duration"),
 		pmetrictest.IgnoreMetricDataPointsOrder(),
@@ -933,27 +934,22 @@ func TestResponseValidationFailures(t *testing.T) {
 }
 
 func TestValidationResultStructuredAttributes(t *testing.T) {
+	// Create a mock server that returns JSON with multiple system statuses
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
-		_, err := w.Write([]byte(`{
-			"system_1": true,
-			"system_2": true,
-			"system_3": false,
-			"status": "ok",
-			"message": "healthy"
-		}`))
+		_, err := w.Write([]byte(`{"system_1": true, "system_2": true, "system_3": false, "status": "ok", "message": "healthy"}`))
 		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
 	cfg := createDefaultConfig().(*Config)
 
-	// Enable new structured metric.
+	// Enable the new structured validation metric
 	cfg.Metrics.HttpcheckValidationResult.Enabled = true
 
-	// Keep legacy metrics enabled for backward compatibility verification.
+	// Keep old metrics enabled for backward compatibility testing
 	cfg.Metrics.HttpcheckValidationPassed.Enabled = true
 	cfg.Metrics.HttpcheckValidationFailed.Enabled = true
 
@@ -991,7 +987,6 @@ func TestValidationResultStructuredAttributes(t *testing.T) {
 	}
 
 	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-
 	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
 
 	metrics, err := scraper.scrape(t.Context())
@@ -1036,16 +1031,16 @@ func TestValidationResultStructuredAttributes(t *testing.T) {
 				assert.Equal(t, int64(1), dp.IntValue())
 
 				typeAttr, ok := dp.Attributes().Get("validation.type")
-				require.True(t, ok)
+				assert.True(t, ok)
 
 				pathAttr, ok := dp.Attributes().Get("validation.path")
-				require.True(t, ok)
+				assert.True(t, ok)
 
 				expectedAttr, ok := dp.Attributes().Get("validation.expected")
-				require.True(t, ok)
+				assert.True(t, ok)
 
 				resultAttr, ok := dp.Attributes().Get("validation.result")
-				require.True(t, ok)
+				assert.True(t, ok)
 
 				validationResults = append(validationResults, validationResult{
 					Type:     typeAttr.Str(),
@@ -1064,7 +1059,7 @@ func TestValidationResultStructuredAttributes(t *testing.T) {
 				dp := dps.At(j)
 
 				typeAttr, ok := dp.Attributes().Get("validation.type")
-				require.True(t, ok)
+				assert.True(t, ok)
 
 				oldPassedCounts[typeAttr.Str()] = dp.IntValue()
 			}
@@ -1078,25 +1073,28 @@ func TestValidationResultStructuredAttributes(t *testing.T) {
 				dp := dps.At(j)
 
 				typeAttr, ok := dp.Attributes().Get("validation.type")
-				require.True(t, ok)
+				assert.True(t, ok)
 
 				oldFailedCounts[typeAttr.Str()] = dp.IntValue()
 			}
 		}
 	}
 
+	// Verify new metric exists
 	assert.True(t, foundNewMetric)
+
+	// Verify legacy metrics still exist
 	assert.True(t, foundOldPassed)
 	assert.True(t, foundOldFailed)
 
-	// Verify legacy aggregate metrics.
+	// Verify old metric counts - all validations should pass except system_3
 	assert.Equal(t, int64(2), oldPassedCounts["json_path"])
+	assert.Equal(t, int64(1), oldFailedCounts["json_path"])
 	assert.Equal(t, int64(1), oldPassedCounts["contains"])
 	assert.Equal(t, int64(1), oldPassedCounts["regex"])
 	assert.Equal(t, int64(1), oldPassedCounts["size"])
 
-	assert.Equal(t, int64(1), oldFailedCounts["json_path"])
-
+	// Verify structured validation results
 	assert.Len(t, validationResults, 6)
 
 	jsonPathPassed := 0
@@ -1111,38 +1109,29 @@ func TestValidationResultStructuredAttributes(t *testing.T) {
 			switch vr.Result {
 			case "passed":
 				jsonPathPassed++
-
-				assert.Contains(t, []string{
-					"system_1",
-					"system_2",
-				}, vr.Path)
-
+				assert.Contains(t, []string{"system_1", "system_2"}, vr.Path)
 				assert.Equal(t, "true", vr.Expected)
 
 			case "failed":
 				jsonPathFailed++
-
 				assert.Equal(t, "system_3", vr.Path)
 				assert.Equal(t, "true", vr.Expected)
 			}
 
 		case "contains":
 			containsPassed++
-
 			assert.Equal(t, "healthy", vr.Path)
 			assert.Empty(t, vr.Expected)
 			assert.Equal(t, "passed", vr.Result)
 
 		case "regex":
 			regexPassed++
-
 			assert.Equal(t, "^.*healthy.*$", vr.Path)
 			assert.Empty(t, vr.Expected)
 			assert.Equal(t, "passed", vr.Result)
 
 		case "size":
 			sizePassed++
-
 			assert.Equal(t, "max_size", vr.Path)
 			assert.Empty(t, vr.Expected)
 			assert.Equal(t, "passed", vr.Result)
@@ -1151,7 +1140,6 @@ func TestValidationResultStructuredAttributes(t *testing.T) {
 
 	assert.Equal(t, 2, jsonPathPassed)
 	assert.Equal(t, 1, jsonPathFailed)
-
 	assert.Equal(t, 1, containsPassed)
 	assert.Equal(t, 1, regexPassed)
 	assert.Equal(t, 1, sizePassed)
