@@ -5,7 +5,6 @@ package internal
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -46,33 +45,39 @@ func TestHTTPServerPush(t *testing.T) {
 	}
 	require.NoError(t, srv.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		require.NoError(t, srv.Shutdown(context.Background()))
+		require.NoError(t, srv.Shutdown(t.Context()))
 	})
 
 	pprofBody := generatePprofBody(t)
 
 	url := fmt.Sprintf("http://%s%s", addr, PushPath)
 
+	doRequest := func(method string, body []byte) *http.Response {
+		req, reqErr := http.NewRequestWithContext(t.Context(), method, url, bytes.NewReader(body)) //nolint:gosec // test-local URL
+		require.NoError(t, reqErr)
+		if method == http.MethodPost {
+			req.Header.Set("Content-Type", "application/octet-stream")
+		}
+		resp, doErr := http.DefaultClient.Do(req)
+		require.NoError(t, doErr)
+		return resp
+	}
+
 	// invalid method returns 405
 	require.Eventually(t, func() bool {
-		resp, err2 := http.Get(url)
-		if err2 != nil {
-			return false
-		}
+		resp := doRequest(http.MethodGet, nil)
 		resp.Body.Close()
 		return resp.StatusCode == http.StatusMethodNotAllowed
 	}, 3*time.Second, 50*time.Millisecond)
 
 	// valid push returns 204
-	resp, err := http.Post(url, "application/octet-stream", bytes.NewReader(pprofBody))
-	require.NoError(t, err)
+	resp := doRequest(http.MethodPost, pprofBody)
 	resp.Body.Close()
 	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	assert.NotEmpty(t, sink.AllProfiles(), "expected profiles to be consumed")
 
 	// invalid body returns 400
-	resp, err = http.Post(url, "application/octet-stream", bytes.NewReader([]byte("not pprof")))
-	require.NoError(t, err)
+	resp = doRequest(http.MethodPost, []byte("not pprof"))
 	resp.Body.Close()
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
@@ -87,7 +92,7 @@ func generatePprofBody(t *testing.T) []byte {
 	start := time.Now()
 	x := 0
 	for time.Since(start) < 100*time.Millisecond {
-		for i := 0; i < 10000; i++ {
+		for i := range 10000 {
 			x = (x + i*i) % 1_000_003
 		}
 	}

@@ -63,13 +63,11 @@ func (s *HTTPServer) Start(ctx context.Context, host component.Host) error {
 	}
 
 	s.Settings.Logger.Info("Starting pprof push HTTP server", zap.String("endpoint", s.ServerConfig.NetAddr.Endpoint))
-	s.shutdownWG.Add(1)
-	go func() {
-		defer s.shutdownWG.Done()
+	s.shutdownWG.Go(func() {
 		if serveErr := s.server.Serve(listener); !errors.Is(serveErr, http.ErrServerClosed) && serveErr != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(serveErr))
 		}
-	}()
+	})
 	return nil
 }
 
