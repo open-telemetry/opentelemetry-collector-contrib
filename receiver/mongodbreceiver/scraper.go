@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -146,12 +147,6 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {
-	dbNames, err := s.client.ListDatabaseNames(ctx, bson.D{})
-	if err != nil {
-		errs.AddPartial(1, fmt.Errorf("failed to fetch database names: %w", err))
-		return
-	}
-
 	serverStatus, sErr := s.client.ServerStatus(ctx, "admin")
 	if sErr != nil {
 		errs.Add(fmt.Errorf("failed to fetch server status: %w", sErr))
@@ -164,12 +159,23 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-
-	s.mb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
 	s.recordAdminStats(now, serverStatus, errs)
 	s.collectTopStats(ctx, now, errs)
 
-	// Collect metrics for each database
+	// Database iteration is skipped entirely if no database-level metrics are enabled.
+	var dbNames []string
+	if s.requiresDatabaseIteration() {
+		var err error
+		dbNames, err = s.client.ListDatabaseNames(ctx, bson.D{})
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf("failed to fetch database names: %w", err))
+		} else {
+			s.mb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
+		}
+	} else {
+		s.logger.Debug("Skipping database iteration as all database-level metrics are disabled")
+	}
+
 	for _, dbName := range dbNames {
 		s.collectDatabase(ctx, now, dbName, errs)
 		collectionNames, err := s.client.ListCollectionNames(ctx, dbName)
@@ -183,12 +189,27 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 		}
 	}
 
-	// Emit single resource for the server
 	rb := s.mb.NewResourceBuilder()
 	rb.SetServerAddress(serverAddress)
 	rb.SetServerPort(serverPort)
 	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
 	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+}
+
+// requiresDatabaseIteration checks if any metrics that require database iteration are enabled.
+// Returns true if we need to call ListDatabaseNames, DBStats, ListCollectionNames, or IndexStats.
+// The authoritative list of database-level metrics is databaseMetricNames in config.go.
+func (s *mongodbScraper) requiresDatabaseIteration() bool {
+	metricsVal := reflect.ValueOf(s.config.Metrics)
+	for _, name := range databaseMetricNames {
+		field := metricsVal.FieldByName(name)
+		if field.IsValid() {
+			if enabled := field.FieldByName("Enabled"); enabled.IsValid() && enabled.Bool() {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timestamp, databaseName string, errs *scrapererror.ScrapeErrors) {
