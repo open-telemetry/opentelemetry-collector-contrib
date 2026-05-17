@@ -79,12 +79,17 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					HttpcheckValidationFailed: HttpcheckValidationFailedMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType, HttpcheckValidationFailedMetricAttributeKeyValidationTarget},
+						EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType},
 					},
 					HttpcheckValidationPassed: HttpcheckValidationPassedMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType, HttpcheckValidationPassedMetricAttributeKeyValidationTarget},
+						EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType},
+					},
+					HttpcheckValidationResult: HttpcheckValidationResultMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckValidationResultMetricAttributeKey{HttpcheckValidationResultMetricAttributeKeyHTTPURL, HttpcheckValidationResultMetricAttributeKeyValidationType, HttpcheckValidationResultMetricAttributeKeyValidationPath, HttpcheckValidationResultMetricAttributeKeyValidationExpected, HttpcheckValidationResultMetricAttributeKeyValidationResult},
 					},
 				},
 			},
@@ -146,12 +151,17 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					HttpcheckValidationFailed: HttpcheckValidationFailedMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType, HttpcheckValidationFailedMetricAttributeKeyValidationTarget},
+						EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType},
 					},
 					HttpcheckValidationPassed: HttpcheckValidationPassedMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType, HttpcheckValidationPassedMetricAttributeKeyValidationTarget},
+						EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType},
+					},
+					HttpcheckValidationResult: HttpcheckValidationResultMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckValidationResultMetricAttributeKey{HttpcheckValidationResultMetricAttributeKeyHTTPURL, HttpcheckValidationResultMetricAttributeKeyValidationType, HttpcheckValidationResultMetricAttributeKeyValidationPath, HttpcheckValidationResultMetricAttributeKeyValidationExpected, HttpcheckValidationResultMetricAttributeKeyValidationResult},
 					},
 				},
 			},
@@ -160,7 +170,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(HttpcheckClientConnectionDurationMetricConfig{}, HttpcheckClientRequestDurationMetricConfig{}, HttpcheckDNSLookupDurationMetricConfig{}, HttpcheckDurationMetricConfig{}, HttpcheckErrorMetricConfig{}, HttpcheckResponseDurationMetricConfig{}, HttpcheckResponseSizeMetricConfig{}, HttpcheckStatusMetricConfig{}, HttpcheckTLSCertRemainingMetricConfig{}, HttpcheckTLSHandshakeDurationMetricConfig{}, HttpcheckValidationFailedMetricConfig{}, HttpcheckValidationPassedMetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(HttpcheckClientConnectionDurationMetricConfig{}, HttpcheckClientRequestDurationMetricConfig{}, HttpcheckDNSLookupDurationMetricConfig{}, HttpcheckDurationMetricConfig{}, HttpcheckErrorMetricConfig{}, HttpcheckResponseDurationMetricConfig{}, HttpcheckResponseSizeMetricConfig{}, HttpcheckStatusMetricConfig{}, HttpcheckTLSCertRemainingMetricConfig{}, HttpcheckTLSHandshakeDurationMetricConfig{}, HttpcheckValidationFailedMetricConfig{}, HttpcheckValidationPassedMetricConfig{}, HttpcheckValidationResultMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

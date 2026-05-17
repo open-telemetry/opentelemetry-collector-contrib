@@ -70,6 +70,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["httpcheck.tls.handshake.duration"] = mb.metricHttpcheckTLSHandshakeDuration.config.AggregationStrategy
 			aggMap["httpcheck.validation.failed"] = mb.metricHttpcheckValidationFailed.config.AggregationStrategy
 			aggMap["httpcheck.validation.passed"] = mb.metricHttpcheckValidationPassed.config.AggregationStrategy
+			aggMap["httpcheck.validation.result"] = mb.metricHttpcheckValidationResult.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -143,15 +144,21 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordHttpcheckValidationFailedDataPoint(ts, 1, "http.url-val", "validation.type-val", "validation.target-val")
+			mb.RecordHttpcheckValidationFailedDataPoint(ts, 1, "http.url-val", "validation.type-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordHttpcheckValidationFailedDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2", "validation.target-val-2")
+				mb.RecordHttpcheckValidationFailedDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordHttpcheckValidationPassedDataPoint(ts, 1, "http.url-val", "validation.type-val", "validation.target-val")
+			mb.RecordHttpcheckValidationPassedDataPoint(ts, 1, "http.url-val", "validation.type-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordHttpcheckValidationPassedDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2", "validation.target-val-2")
+				mb.RecordHttpcheckValidationPassedDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordHttpcheckValidationResultDataPoint(ts, 1, "http.url-val", "validation.type-val", "validation.path-val", "validation.expected-val", "validation.result-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordHttpcheckValidationResultDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2", "validation.path-val-2", "validation.expected-val-2", "validation.result-val-2")
 			}
 
 			res := pcommon.NewResource()
@@ -169,6 +176,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricHttpcheckTLSHandshakeDuration.aggDataPoints)
 				assert.Empty(t, mb.metricHttpcheckValidationFailed.aggDataPoints)
 				assert.Empty(t, mb.metricHttpcheckValidationPassed.aggDataPoints)
+				assert.Empty(t, mb.metricHttpcheckValidationResult.aggDataPoints)
 			}
 
 			if tt.expectEmpty {
@@ -665,9 +673,6 @@ func TestMetricsBuilder(t *testing.T) {
 						validationTypeAttrVal, ok := dp.Attributes().Get("validation.type")
 						assert.True(t, ok)
 						assert.Equal(t, "validation.type-val", validationTypeAttrVal.Str())
-						validationTargetAttrVal, ok := dp.Attributes().Get("validation.target")
-						assert.True(t, ok)
-						assert.Equal(t, "validation.target-val", validationTargetAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["httpcheck.validation.failed"], "Found a duplicate in the metrics slice: httpcheck.validation.failed")
 						validatedMetrics["httpcheck.validation.failed"] = true
@@ -695,8 +700,6 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("validation.type")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("validation.target")
-						assert.False(t, ok)
 					}
 				case "httpcheck.validation.passed":
 					if tt.name != "reaggregate_set" {
@@ -719,9 +722,6 @@ func TestMetricsBuilder(t *testing.T) {
 						validationTypeAttrVal, ok := dp.Attributes().Get("validation.type")
 						assert.True(t, ok)
 						assert.Equal(t, "validation.type-val", validationTypeAttrVal.Str())
-						validationTargetAttrVal, ok := dp.Attributes().Get("validation.target")
-						assert.True(t, ok)
-						assert.Equal(t, "validation.target-val", validationTargetAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["httpcheck.validation.passed"], "Found a duplicate in the metrics slice: httpcheck.validation.passed")
 						validatedMetrics["httpcheck.validation.passed"] = true
@@ -749,7 +749,69 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("validation.type")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("validation.target")
+					}
+				case "httpcheck.validation.result":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["httpcheck.validation.result"], "Found a duplicate in the metrics slice: httpcheck.validation.result")
+						validatedMetrics["httpcheck.validation.result"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Result of a response validation (1 for each validation, with result attribute).", mi.Description())
+						assert.Equal(t, "{validation}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						httpURLAttrVal, ok := dp.Attributes().Get("http.url")
+						assert.True(t, ok)
+						assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
+						validationTypeAttrVal, ok := dp.Attributes().Get("validation.type")
+						assert.True(t, ok)
+						assert.Equal(t, "validation.type-val", validationTypeAttrVal.Str())
+						validationPathAttrVal, ok := dp.Attributes().Get("validation.path")
+						assert.True(t, ok)
+						assert.Equal(t, "validation.path-val", validationPathAttrVal.Str())
+						validationExpectedAttrVal, ok := dp.Attributes().Get("validation.expected")
+						assert.True(t, ok)
+						assert.Equal(t, "validation.expected-val", validationExpectedAttrVal.Str())
+						validationResultAttrVal, ok := dp.Attributes().Get("validation.result")
+						assert.True(t, ok)
+						assert.Equal(t, "validation.result-val", validationResultAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["httpcheck.validation.result"], "Found a duplicate in the metrics slice: httpcheck.validation.result")
+						validatedMetrics["httpcheck.validation.result"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Result of a response validation (1 for each validation, with result attribute).", mi.Description())
+						assert.Equal(t, "{validation}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["httpcheck.validation.result"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("http.url")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("validation.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("validation.path")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("validation.expected")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("validation.result")
 						assert.False(t, ok)
 					}
 				}

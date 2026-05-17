@@ -184,7 +184,6 @@ Number of response validations that failed.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | http.url | Full HTTP request URL. | Any Str | Recommended | - |
 | validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | Recommended | - |
-| validation.target | The validation expression being evaluated (JSONPath, regex, contains string, etc.) | Any Str | Recommended | - |
 
 ### httpcheck.validation.passed
 
@@ -200,4 +199,21 @@ Number of response validations that passed.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | http.url | Full HTTP request URL. | Any Str | Recommended | - |
 | validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | Recommended | - |
-| validation.target | The validation expression being evaluated (JSONPath, regex, contains string, etc.) | Any Str | Recommended | - |
+
+### httpcheck.validation.result
+
+Result of a response validation (1 for each validation, with result attribute).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {validation} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| http.url | Full HTTP request URL. | Any Str | Recommended | - |
+| validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | Recommended | - |
+| validation.path | The validation expression being evaluated (JSONPath, contains string, regex pattern, size constraint). | Any Str | Recommended | - |
+| validation.expected | The expected value for the validation (when equals is specified). | Any Str | Recommended | - |
+| validation.result | The result of the validation (passed or failed). | Any Str | Recommended | - |

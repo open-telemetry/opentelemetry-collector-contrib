@@ -84,8 +84,10 @@ func (t *timingInfo) getDurations() (dnsMs, tcpMs, tlsMs, requestMs, responseMs 
 }
 
 type validationResult struct {
-	Type   string
-	Target string
+	Type     string
+	Path     string
+	Expected string
+	Result   string
 }
 
 type httpcheckScraper struct {
@@ -129,26 +131,45 @@ func extractTLSInfo(state *tls.ConnectionState) (issuer, commonName string, sans
 }
 
 // validateResponse performs response validation based on configured rules
-func validateResponse(body []byte, validations []validationConfig) (passedResults, failedResults []validationResult) {
-	passedResults = []validationResult{}
-	failedResults = []validationResult{}
+func validateResponse(body []byte, validations []validationConfig) (results []validationResult) {
+	results = []validationResult{}
 
 	for _, validation := range validations {
 		// String matching validations
 		if validation.Contains != "" {
 			if strings.Contains(string(body), validation.Contains) {
-				passedResults = append(passedResults, validationResult{Type: "contains", Target: validation.Contains})
+				results = append(results, validationResult{
+					Type:     "contains",
+					Path:     validation.Contains,
+					Expected: "",
+					Result:   "passed",
+				})
 			} else {
-				failedResults = append(failedResults, validationResult{Type: "contains", Target: validation.Contains})
+				results = append(results, validationResult{
+					Type:     "contains",
+					Path:     validation.Contains,
+					Expected: "",
+					Result:   "failed",
+				})
 			}
 			continue
 		}
 
 		if validation.NotContains != "" {
 			if !strings.Contains(string(body), validation.NotContains) {
-				passedResults = append(passedResults, validationResult{Type: "not_contains", Target: validation.NotContains})
+				results = append(results, validationResult{
+					Type:     "not_contains",
+					Path:     validation.NotContains,
+					Expected: "",
+					Result:   "passed",
+				})
 			} else {
-				failedResults = append(failedResults, validationResult{Type: "not_contains", Target: validation.NotContains})
+				results = append(results, validationResult{
+					Type:     "not_contains",
+					Path:     validation.NotContains,
+					Expected: "",
+					Result:   "failed",
+				})
 			}
 			continue
 		}
@@ -156,31 +177,44 @@ func validateResponse(body []byte, validations []validationConfig) (passedResult
 		// JSON path validations
 		if validation.JSONPath != "" {
 			result := gjson.GetBytes(body, validation.JSONPath)
-			targetExpr := validation.JSONPath
+			resultType := "json_path"
+			expected := validation.Equals
 
-			// Build target expression
-			if validation.Equals != "" {
-				targetExpr = validation.JSONPath + " == " + validation.Equals
-			}
-
-			// Check if the path exists
 			if !result.Exists() {
-				failedResults = append(failedResults, validationResult{Type: "json_path", Target: targetExpr})
+				results = append(results, validationResult{
+					Type:     resultType,
+					Path:     validation.JSONPath,
+					Expected: expected,
+					Result:   "failed",
+				})
 				continue
 			}
 
-			// If equals condition is specified
 			if validation.Equals != "" {
-				// Convert result to string for comparison
 				resultStr := result.String()
 				if resultStr == validation.Equals {
-					passedResults = append(passedResults, validationResult{Type: "json_path", Target: targetExpr})
+					results = append(results, validationResult{
+						Type:     resultType,
+						Path:     validation.JSONPath,
+						Expected: expected,
+						Result:   "passed",
+					})
 				} else {
-					failedResults = append(failedResults, validationResult{Type: "json_path", Target: targetExpr})
+					results = append(results, validationResult{
+						Type:     resultType,
+						Path:     validation.JSONPath,
+						Expected: expected,
+						Result:   "failed",
+					})
 				}
 			} else {
 				// No equals condition, just existence is enough
-				passedResults = append(passedResults, validationResult{Type: "json_path", Target: targetExpr})
+				results = append(results, validationResult{
+					Type:     resultType,
+					Path:     validation.JSONPath,
+					Expected: "",
+					Result:   "passed",
+				})
 			}
 			continue
 		}
@@ -189,18 +223,38 @@ func validateResponse(body []byte, validations []validationConfig) (passedResult
 		bodySize := int64(len(body))
 		if validation.MaxSize != nil {
 			if bodySize <= *validation.MaxSize {
-				passedResults = append(passedResults, validationResult{Type: "size", Target: "max_size"})
+				results = append(results, validationResult{
+					Type:     "size",
+					Path:     "max_size",
+					Expected: "",
+					Result:   "passed",
+				})
 			} else {
-				failedResults = append(failedResults, validationResult{Type: "size", Target: "max_size"})
+				results = append(results, validationResult{
+					Type:     "size",
+					Path:     "max_size",
+					Expected: "",
+					Result:   "failed",
+				})
 			}
 			continue
 		}
 
 		if validation.MinSize != nil {
 			if bodySize >= *validation.MinSize {
-				passedResults = append(passedResults, validationResult{Type: "size", Target: "min_size"})
+				results = append(results, validationResult{
+					Type:     "size",
+					Path:     "min_size",
+					Expected: "",
+					Result:   "passed",
+				})
 			} else {
-				failedResults = append(failedResults, validationResult{Type: "size", Target: "min_size"})
+				results = append(results, validationResult{
+					Type:     "size",
+					Path:     "min_size",
+					Expected: "",
+					Result:   "failed",
+				})
 			}
 			continue
 		}
@@ -209,15 +263,25 @@ func validateResponse(body []byte, validations []validationConfig) (passedResult
 		if validation.Regex != "" {
 			matched, err := regexp.Match(validation.Regex, body)
 			if err == nil && matched {
-				passedResults = append(passedResults, validationResult{Type: "regex", Target: validation.Regex})
+				results = append(results, validationResult{
+					Type:     "regex",
+					Path:     validation.Regex,
+					Expected: "",
+					Result:   "passed",
+				})
 			} else {
-				failedResults = append(failedResults, validationResult{Type: "regex", Target: validation.Regex})
+				results = append(results, validationResult{
+					Type:     "regex",
+					Path:     validation.Regex,
+					Expected: "",
+					Result:   "failed",
+				})
 			}
 			continue
 		}
 	}
 
-	return passedResults, failedResults
+	return results
 }
 
 // start initializes the scraper by creating HTTP clients for each endpoint.
@@ -403,15 +467,40 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 			// Perform response validation if configured
 			if len(h.cfg.Targets[targetIndex].Validations) > 0 && len(responseBody) > 0 {
-				passedResults, failedResults := validateResponse(responseBody, h.cfg.Targets[targetIndex].Validations)
+				results := validateResponse(responseBody, h.cfg.Targets[targetIndex].Validations)
 
-				// Record validation metrics with target attribute - one datapoint per validation
-				for _, result := range passedResults {
-					h.mb.RecordHttpcheckValidationPassedDataPoint(now, 1, endpoint, result.Type, result.Target)
+				// Track counts per validation type for old metrics
+				passedCountByType := make(map[string]int)
+				failedCountByType := make(map[string]int)
+
+				// Record new structured metric - one datapoint per validation
+				for _, result := range results {
+					// Track for old metrics
+					if result.Result == "passed" {
+						passedCountByType[result.Type]++
+					} else {
+						failedCountByType[result.Type]++
+					}
+
+					// Record new structured metric
+					h.mb.RecordHttpcheckValidationResultDataPoint(
+						now,
+						1,
+						endpoint,
+						result.Type,
+						result.Path,
+						result.Expected,
+						result.Result,
+					)
 				}
 
-				for _, result := range failedResults {
-					h.mb.RecordHttpcheckValidationFailedDataPoint(now, 1, endpoint, result.Type, result.Target)
+				// Record old metrics (backward compatible) - ONE PER TYPE
+				for validationType, count := range passedCountByType {
+					h.mb.RecordHttpcheckValidationPassedDataPoint(now, int64(count), endpoint, validationType)
+				}
+
+				for validationType, count := range failedCountByType {
+					h.mb.RecordHttpcheckValidationFailedDataPoint(now, int64(count), endpoint, validationType)
 				}
 			}
 
