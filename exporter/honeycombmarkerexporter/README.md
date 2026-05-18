@@ -32,6 +32,8 @@ The following configuration options are supported:
   * `message_key` (Optional): The key of the attribute whose value will be used as the marker's message. If necessary the value will be converted to a string.
   * `url_key` (Optional): The key of the attribute whose value will be used as the marker's url. If necessary the value will be converted to a string.
 
+`log_conditions` accept both the legacy un-prefixed form (`body == "x"`) and the new OTTL path-context form (`log.body == "x"`). Resource and scope paths are also reachable via `resource.attributes["..."]`, `scope.name`, etc. Un-prefixed paths continue to work for now; the parser logs the rewritten statements on startup. It is recommended to switch to the new syntax to avoid breaking changes in the future.
+
 Example:
 ```yaml
 exporters:
@@ -42,5 +44,10 @@ exporters:
       - type: k8s-backoff-events
         rules:
           log_conditions:
-            - IsMap(body) and IsMap(body["object"]) and body["object"]["reason"] == "Backoff"
+            - IsMap(log.body) and IsMap(log.body["object"]) and log.body["object"]["reason"] == "Backoff"
+      # Path-context syntax allows referencing resource and scope fields directly
+      - type: deployment-events
+        rules:
+          log_conditions:
+            - log.body["event"] == "deploy" and resource.attributes["service.name"] == "checkout"
 ```

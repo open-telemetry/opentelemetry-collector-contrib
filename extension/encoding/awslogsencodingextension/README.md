@@ -87,6 +87,142 @@ extensions:
     format: networkfirewall
 ```
 
+## Routing CloudWatch subscription-filter events to other encodings
+
+When subscription filters from multiple CloudWatch log groups feed a single
+collector pipeline (for example via Firehose or Lambda receivers), this extension can
+dispatch each envelope to a configured inner encoding based on its log group
+and log stream. This removes the need for a separate pipeline per log format.
+
+Routing decisions are made **per envelope**, which means CloudWatch payloads
+that aggregate multiple envelopes from different log groups (common with
+Firehose) are dispatched correctly: each envelope is matched independently
+against the routing table.
+
+Routing is configured via the nested `cloudwatch.streams` list. Each entry is
+an object with:
+
+| Field                | Description                                                                                                                         |
+|----------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `name`               | Required. Identifies the stream for diagnostics and is the lookup key for default patterns and payload mode.                        |
+| `encoding`           | Required. The component ID of an inner encoding extension that implements `plog.Unmarshaler`.                                       |
+| `log_group_pattern`  | Optional. Pattern matched against the event's `logGroup`.                                                                           |
+| `log_stream_pattern` | Optional. Pattern matched against the event's `logStream`.                                                                          |
+| `payload`            | Optional. Defaults to `message` (except `vpcflow` and `cloudtrail`, which default to `envelope`). See [Payload modes](#payload-modes). |
+
+A stream must set at least one of `log_group_pattern` / `log_stream_pattern`,
+**or** use a `name` that has a built-in default (see table below). Explicit
+values always take precedence over defaults.
+
+### Payload modes
+
+The `payload` field controls what the inner encoding receives when this stream
+matches.
+
+- **`message`** — for each `logEvent` in the matched envelope, the inner
+  encoding receives only the `event.message` bytes. The subscription-filter
+  unmarshaler attaches `cloud.provider`, `cloud.account.id`, `cloud.region`,
+  `aws.log.group.names`, and `aws.log.stream.names` to the inner's output and
+  back-fills any log record whose timestamp is unset, using the CloudWatch
+  event timestamp. Use this when the inner encoding expects a single record
+  per call (e.g. line-delimited JSON formats like WAF).
+- **`envelope`** — the inner encoding receives the entire CloudWatch
+  subscription envelope's raw bytes once. The inner is responsible for parsing
+  the envelope, iterating events, and attaching its own resource attributes;
+  the unmarshaler does not enrich or back-fill in this mode. Use this when
+  the inner encoding has its own CloudWatch-envelope-aware code path
+  (`cloudtrail` and `vpcflow` do via their internal `fromCloudWatch`
+  handlers).
+
+### Pattern syntax
+
+Patterns are matched segment-by-segment after splitting on `/`. Each segment
+may be:
+
+- an exact literal — compared by string equality
+- `*` — matches any single segment
+- an affix wildcard within a single segment: `foo*`, `*foo`, or `*foo*`
+
+Mid-segment globs such as `foo*bar` are not supported. The bare pattern `*`
+acts as a catch-all. The target may have extra trailing segments beyond the
+pattern's length — patterns are prefix-style, so `/aws/eks/*` matches both
+`/aws/eks/my-cluster` and `/aws/eks/my-cluster/audit`.
+
+### Default patterns and payload modes
+
+For known names the corresponding defaults are applied at start time when the
+user did not supply them:
+
+| `name`       | Default field        | Default pattern                  | Default `payload` |
+|--------------|----------------------|----------------------------------|-------------------|
+| `vpcflow`    | `log_stream_pattern` | `eni-*`                          | `envelope`        |
+| `cloudtrail` | `log_stream_pattern` | `*_CloudTrail_*`                 | `envelope`        |
+| `lambda`     | `log_group_pattern`  | `/aws/lambda/*`                  | `message`         |
+| `waf`        | `log_group_pattern`  | `aws-waf-logs-*`                 | `message`         |
+| `rds`        | `log_group_pattern`  | `/aws/rds/instance/*/*`          | `message`         |
+| `eks`        | `log_group_pattern`  | `/aws/eks/*`                     | `message`         |
+| `apigateway` | `log_group_pattern`  | `API-Gateway-Execution-Logs_*`   | `message`         |
+
+`vpcflow` and `cloudtrail` default to `envelope` because the built-in
+encoders for those formats have CloudWatch-envelope-aware code paths. The
+rest default to `message` because their typical inner encoders expect a
+single record per call.
+
+### Evaluation order
+
+Streams are sorted at start time; declaration order in YAML does not matter.
+The unmarshaler evaluates streams in this order:
+
+1. Catch-all entries (`*`) are evaluated last.
+2. Streams with a `log_group_pattern` are evaluated before streams that use
+   only `log_stream_pattern`.
+3. Within each group, more-specific patterns (more literal segments, fewer
+   wildcards) come before less-specific ones.
+
+The first matching stream wins. If no stream matches an envelope, the event
+falls back to the default subscription-filter behavior: each `event.message`
+is emitted as a log record body with CloudWatch resource attributes attached,
+exactly as if no routing were configured.
+
+### Example: routing to built-in formats
+
+```yaml
+extensions:
+  awslogs_encoding/vpcflow:
+    format: vpcflow
+  awslogs_encoding/cloudtrail:
+    format: cloudtrail
+
+  # "Plain" CloudWatch — used as a fallback for events that should be
+  # forwarded as raw bodies without format-specific decoding.
+  awslogs_encoding/cw_default:
+    format: cloudwatch
+
+  # The router. Same format as cw_default, with cloudwatch.streams set.
+  awslogs_encoding/cw_router:
+    format: cloudwatch
+    cloudwatch:
+      streams:
+        - name: vpcflow
+          encoding: awslogs_encoding/vpcflow      # defaults: log_stream_pattern "eni-*", payload envelope
+        - name: cloudtrail
+          encoding: awslogs_encoding/cloudtrail   # defaults: log_stream_pattern "*_CloudTrail_*", payload envelope
+        - name: lambda
+          encoding: awslogs_encoding/cw_default   # defaults: log_group_pattern "/aws/lambda/*", payload message
+        - name: catchall
+          log_group_pattern: "*"
+          encoding: awslogs_encoding/cw_default
+
+receivers:
+  awslambda:
+    cloudwatch:
+      encoding: awslogs_encoding/cw_router
+```
+
+Extensions referenced from `cloudwatch.streams` are declared as dependencies
+via [`extensioncapabilities.Dependent`](https://pkg.go.dev/go.opentelemetry.io/collector/extension/extensioncapabilities#Dependent),
+so the collector starts them before this extension.
+
 ## Log Format Identification
 
 All logs processed by this extension are automatically tagged with an `encoding.format` attribute at the scope level to identify the source format. This allows you to easily filter and route logs based on their AWS service origin.
