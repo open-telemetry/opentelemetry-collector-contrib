@@ -224,6 +224,12 @@ bucket_dirs_to_json() {
   local idx=0 bucket_id
   for dir in "${!_dirs[@]}"; do
     bucket_id=$((idx % TARGET_CONCURRENCY))
+    # The Makefile uses "/" in GROUP to tell module paths from named
+    # groups; single-segment paths (e.g. "testbed") need a "/" or they
+    # route to a nonexistent `for-<name>-target`.
+    if [[ "${dir}" != "." && "${dir}" != */* ]]; then
+      dir="./${dir}"
+    fi
     if [[ -z "${_buckets[$bucket_id]}" ]]; then
       _buckets[$bucket_id]="${dir}"
     else
