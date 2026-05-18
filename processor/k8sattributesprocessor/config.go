@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.41.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -223,7 +223,7 @@ type FieldExtractConfig struct {
 	KeyRegex string `mapstructure:"key_regex"`
 
 	// From represents the source of the labels/annotations.
-	// Allowed values are "pod", "namespace", and "node". The default is pod.
+	// Allowed values are "pod", "namespace", "node", "deployment", "statefulset", "daemonset", and "job". The default is pod.
 	From string `mapstructure:"from"`
 }
 
