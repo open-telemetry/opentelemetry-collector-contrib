@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: exporter/signalfx
+
+note: Send entity event dimension replacements to the documented PUT endpoint instead of the legacy PATCH endpoint.
+
+issues: [48469]
+
+change_logs: [user]
