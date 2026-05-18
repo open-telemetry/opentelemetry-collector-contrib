@@ -77,13 +77,13 @@ func newReceiver(config *Config,
 }
 
 func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
-	// TODO: Might want to pass `host` into read() below to report a fatal error
-	x.poller.Start(ctx)
 	srv, err := proxy.NewServer(x.proxyCfg, host, x.settings.TelemetrySettings)
 	if err != nil {
 		return err
 	}
 	x.server = srv
+	// TODO: Might want to pass `host` into read() below to report a fatal error
+	x.poller.Start(ctx)
 	go x.start()
 	go func() {
 		_ = x.server.ListenAndServe()
