@@ -27,8 +27,13 @@ type pprofReceiver struct {
 var _ xreceiver.Profiles = (*pprofReceiver)(nil)
 
 func (r *pprofReceiver) Start(ctx context.Context, host component.Host) error {
-	for _, c := range r.subComponents {
+	for i, c := range r.subComponents {
 		if err := c.Start(ctx, host); err != nil {
+			// Roll back any already-started sub-components so we don't leak
+			// goroutines or hold a listening port on partial start failure.
+			for j := i - 1; j >= 0; j-- {
+				err = errors.Join(err, r.subComponents[j].Shutdown(ctx))
+			}
 			return err
 		}
 	}

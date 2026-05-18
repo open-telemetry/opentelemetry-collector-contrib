@@ -82,6 +82,48 @@ func TestHTTPServerPush(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
+func TestHTTPServerPush_BodySizeLimit(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	addr := listener.Addr().String()
+	require.NoError(t, listener.Close())
+
+	srvCfg := confighttp.NewDefaultServerConfig()
+	srvCfg.NetAddr = confignet.AddrConfig{
+		Endpoint:  addr,
+		Transport: confignet.TransportTypeTCP,
+	}
+	srvCfg.MaxRequestBodySize = 64
+
+	srv := &HTTPServer{
+		ServerConfig: srvCfg,
+		Consumer:     new(consumertest.ProfilesSink),
+		Settings:     receivertest.NewNopSettings(metadata.Type),
+	}
+	require.NoError(t, srv.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, srv.Shutdown(t.Context()))
+	})
+
+	url := fmt.Sprintf("http://%s%s", addr, PushPath)
+	oversized := bytes.Repeat([]byte("x"), 1<<10)
+
+	var resp *http.Response
+	require.Eventually(t, func() bool {
+		req, reqErr := http.NewRequestWithContext(t.Context(), http.MethodPost, url, bytes.NewReader(oversized))
+		if reqErr != nil {
+			return false
+		}
+		req.Header.Set("Content-Type", "application/octet-stream")
+		var doErr error
+		resp, doErr = http.DefaultClient.Do(req)
+		return doErr == nil
+	}, 3*time.Second, 50*time.Millisecond)
+	resp.Body.Close()
+	// confighttp returns 400 for oversized bodies; we surface 400 from profile parse failure.
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
 func generatePprofBody(t *testing.T) []byte {
 	t.Helper()
 	dir := t.TempDir()

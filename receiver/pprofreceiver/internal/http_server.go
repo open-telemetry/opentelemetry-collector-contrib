@@ -87,7 +87,12 @@ func (s *HTTPServer) handlePush(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// confighttp.ToServer transparently handles supported Content-Encodings (e.g. gzip)
-	// before we read the body here.
+	// before we read the body here. Cap uncompressed bodies as well, since the
+	// confighttp decompressor only enforces MaxRequestBodySize when a body is
+	// actually decoded.
+	if s.ServerConfig.MaxRequestBodySize > 0 {
+		r.Body = http.MaxBytesReader(w, r.Body, s.ServerConfig.MaxRequestBodySize)
+	}
 	pprofProfile, err := profile.Parse(r.Body)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to parse pprof data: %v", err), http.StatusBadRequest)
