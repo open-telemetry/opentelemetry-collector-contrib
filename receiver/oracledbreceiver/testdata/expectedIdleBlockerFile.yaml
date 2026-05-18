@@ -97,6 +97,15 @@ resourceLogs:
               - key: oracledb.duration_sec
                 value:
                   doubleValue: 120
+              - key: oracledb.query.started
+                value:
+                  stringValue: ""
+              - key: oracledb.session.started
+                value:
+                  stringValue: ""
+              - key: oracledb.session.duration
+                value:
+                  doubleValue: 0
               - key: oracledb.blocker.session.id
                 value:
                   stringValue: ""
@@ -123,7 +132,7 @@ resourceLogs:
                   stringValue: ""
             body: {}
             eventName: db.server.query_sample
-            timeUnixNano: "1779088746320230000"
+            timeUnixNano: "1779099978892255000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
           version: latest

@@ -465,6 +465,9 @@ sample query
 | oracledb.procedure_type | Type of the database object that a query is accessing. | Any Str | - |
 | oracledb.osuser | Name of the operating system user that initiated or is running the Oracle database session. | Any Str | - |
 | oracledb.duration_sec | Total time taken by a database query to execute. | Any Double | - |
+| oracledb.query.started | The timestamp when the SQL statement started execution, in ISO 8601 format (UTC). | Any Str | - |
+| oracledb.session.started | The timestamp when the session logged on, in ISO 8601 format (UTC). | Any Str | - |
+| oracledb.session.duration | The total time in seconds that the session has been connected. | Any Double | - |
 | oracledb.blocker.session.id | The session ID (SID) of the immediate blocker of this session. Empty string when the session is not blocked. | Any Str | - |
 | oracledb.blocker.root_session.id | The session ID (SID) of the root/head blocker at the top of the blocking chain. Empty string when there is no blocking. | Any Str | - |
 | oracledb.blocker.session_relationship.state | The status of the blocking session relationship (e.g. VALID, NOT IN WAIT, GLOBAL, NO HOLDER, UNKNOWN). | Any Str | - |
