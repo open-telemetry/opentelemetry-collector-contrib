@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -42,6 +43,12 @@ func getHTTPServer(t *testing.T, srv Server) *http.Server {
 	return proxyServer.server
 }
 
+func newTestTelemetrySettings(logger *zap.Logger) component.TelemetrySettings {
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.Logger = logger
+	return settings
+}
+
 func TestHappyCase(t *testing.T) {
 	logger, recordedLogs := logSetup()
 
@@ -51,8 +58,8 @@ func TestHappyCase(t *testing.T) {
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 	cfg.Endpoint = tcpAddr
 	cfg.ProxyAddress = "https://example.com"
-	srv, err := NewServer(cfg, component.TelemetrySettings{Logger: logger})
-	assert.NoError(t, err, "NewServer should succeed")
+	srv, err := NewServer(cfg, componenttest.NewNopHost(), newTestTelemetrySettings(logger))
+	require.NoError(t, err, "NewServer must succeed")
 	go func() {
 		_ = srv.ListenAndServe()
 	}()
@@ -82,8 +89,8 @@ func TestHandlerHappyCase(t *testing.T) {
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 	cfg.Endpoint = tcpAddr
-	srv, err := NewServer(cfg, component.TelemetrySettings{Logger: logger})
-	assert.NoError(t, err, "NewServer should succeed")
+	srv, err := NewServer(cfg, componenttest.NewNopHost(), newTestTelemetrySettings(logger))
+	require.NoError(t, err, "NewServer must succeed")
 
 	handler := getHTTPServer(t, srv).Handler.ServeHTTP
 	req := httptest.NewRequest(http.MethodPost,
@@ -107,8 +114,8 @@ func TestHandlerIoReadSeekerCreationFailed(t *testing.T) {
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 	cfg.Endpoint = tcpAddr
-	srv, err := NewServer(cfg, component.TelemetrySettings{Logger: logger})
-	assert.NoError(t, err, "NewServer should succeed")
+	srv, err := NewServer(cfg, componenttest.NewNopHost(), newTestTelemetrySettings(logger))
+	require.NoError(t, err, "NewServer must succeed")
 
 	expectedErr := errors.New("expected mockReadCloser error")
 	handler := getHTTPServer(t, srv).Handler.ServeHTTP
@@ -136,8 +143,8 @@ func TestHandlerNilBodyIsOk(t *testing.T) {
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 	cfg.Endpoint = tcpAddr
-	srv, err := NewServer(cfg, component.TelemetrySettings{Logger: logger})
-	assert.NoError(t, err, "NewServer should succeed")
+	srv, err := NewServer(cfg, componenttest.NewNopHost(), newTestTelemetrySettings(logger))
+	require.NoError(t, err, "NewServer must succeed")
 
 	handler := getHTTPServer(t, srv).Handler.ServeHTTP
 	req := httptest.NewRequest(http.MethodPost,
@@ -174,8 +181,8 @@ func TestHandlerSignerErrorsOut(t *testing.T) {
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 	cfg.Endpoint = tcpAddr
-	srv, err := NewServer(cfg, component.TelemetrySettings{Logger: logger})
-	assert.NoError(t, err, "NewServer should succeed")
+	srv, err := NewServer(cfg, componenttest.NewNopHost(), newTestTelemetrySettings(logger))
+	require.NoError(t, err, "NewServer must succeed")
 
 	handler := getHTTPServer(t, srv).Handler.ServeHTTP
 	req := httptest.NewRequest(http.MethodPost,
@@ -197,7 +204,7 @@ func TestTCPEndpointInvalid(t *testing.T) {
 
 	cfg := DefaultConfig()
 	cfg.Endpoint = "invalid\n"
-	_, err := NewServer(cfg, component.TelemetrySettings{Logger: logger})
+	_, err := NewServer(cfg, componenttest.NewNopHost(), newTestTelemetrySettings(logger))
 	assert.Error(t, err, "NewServer should fail")
 }
 
@@ -219,7 +226,7 @@ func TestCantGetAWSConfigSession(t *testing.T) {
 	newAWSConfig = func(_ context.Context, _, _ string, _ *zap.Logger) (aws.Config, error) {
 		return aws.Config{}, expectedErr
 	}
-	_, err := NewServer(cfg, component.TelemetrySettings{Logger: logger})
+	_, err := NewServer(cfg, componenttest.NewNopHost(), newTestTelemetrySettings(logger))
 	assert.EqualError(t, err, expectedErr.Error())
 }
 
@@ -232,7 +239,7 @@ func TestCantGetServiceEndpoint(t *testing.T) {
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 	cfg.Endpoint = tcpAddr
 
-	_, err := NewServer(cfg, component.TelemetrySettings{Logger: logger})
+	_, err := NewServer(cfg, componenttest.NewNopHost(), newTestTelemetrySettings(logger))
 	assert.Error(t, err, "NewServer should fail")
 	assert.ErrorContains(t, err, "invalid region")
 }
@@ -247,7 +254,7 @@ func TestAWSEndpointInvalid(t *testing.T) {
 	cfg.Endpoint = tcpAddr
 	cfg.AWSEndpoint = "invalid endpoint \n"
 
-	_, err := NewServer(cfg, component.TelemetrySettings{Logger: logger})
+	_, err := NewServer(cfg, componenttest.NewNopHost(), newTestTelemetrySettings(logger))
 	assert.Error(t, err, "NewServer should fail")
 	assert.ErrorContains(t, err, "unable to parse AWS service endpoint")
 }
@@ -262,7 +269,7 @@ func TestCanCreateTransport(t *testing.T) {
 	cfg.Endpoint = tcpAddr
 	cfg.ProxyAddress = "invalid address \n"
 
-	_, err := NewServer(cfg, component.TelemetrySettings{Logger: logger})
+	_, err := NewServer(cfg, componenttest.NewNopHost(), newTestTelemetrySettings(logger))
 	assert.Error(t, err, "NewServer should fail")
 	assert.ErrorContains(t, err, "invalid control character in URL")
 }
@@ -450,8 +457,8 @@ func TestSignedRequestHasAuthorizationHeader(t *testing.T) {
 	defer backend.Close()
 	cfg.AWSEndpoint = backend.URL
 
-	srv, err := NewServer(cfg, component.TelemetrySettings{Logger: logger})
-	assert.NoError(t, err, "NewServer should succeed")
+	srv, err := NewServer(cfg, componenttest.NewNopHost(), newTestTelemetrySettings(logger))
+	require.NoError(t, err, "NewServer must succeed")
 
 	httpSrv := getHTTPServer(t, srv)
 	handler := httpSrv.Handler.ServeHTTP
@@ -501,8 +508,8 @@ func TestSignedRequestHasRequiredHeaders(t *testing.T) {
 	defer backend.Close()
 	cfg.AWSEndpoint = backend.URL
 
-	srv, err := NewServer(cfg, component.TelemetrySettings{Logger: logger})
-	assert.NoError(t, err, "NewServer should succeed")
+	srv, err := NewServer(cfg, componenttest.NewNopHost(), newTestTelemetrySettings(logger))
+	require.NoError(t, err, "NewServer must succeed")
 
 	httpSrv := getHTTPServer(t, srv)
 	handler := httpSrv.Handler.ServeHTTP
@@ -548,8 +555,8 @@ func TestConnectionHeaderRemovedBeforeSigning(t *testing.T) {
 	defer backend.Close()
 	cfg.AWSEndpoint = backend.URL
 
-	srv, err := NewServer(cfg, component.TelemetrySettings{Logger: logger})
-	assert.NoError(t, err, "NewServer should succeed")
+	srv, err := NewServer(cfg, componenttest.NewNopHost(), newTestTelemetrySettings(logger))
+	require.NoError(t, err, "NewServer must succeed")
 
 	httpSrv := getHTTPServer(t, srv)
 	handler := httpSrv.Handler.ServeHTTP

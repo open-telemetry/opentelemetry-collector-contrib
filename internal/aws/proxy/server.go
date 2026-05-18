@@ -32,6 +32,8 @@ type Server interface {
 	Shutdown(ctx context.Context) error
 }
 
+var _ Server = (*server)(nil)
+
 type server struct {
 	server       *http.Server
 	serverConfig *confighttp.ServerConfig
@@ -52,7 +54,7 @@ func (s *server) Shutdown(ctx context.Context) error {
 
 // NewServer returns a local TCP server that proxies requests to AWS
 // backend using the given credentials.
-func NewServer(cfg *Config, settings component.TelemetrySettings) (Server, error) {
+func NewServer(cfg *Config, host component.Host, settings component.TelemetrySettings) (Server, error) {
 	_, err := net.ResolveTCPAddr("tcp", cfg.Endpoint)
 	if err != nil {
 		return nil, err
@@ -148,7 +150,7 @@ func NewServer(cfg *Config, settings component.TelemetrySettings) (Server, error
 
 	httpServer, err := serverConfig.ToServer(
 		ctx,
-		map[component.ID]component.Component{},
+		host.GetExtensions(),
 		settings,
 		handler,
 	)
