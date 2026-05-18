@@ -700,12 +700,12 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				s.mb.RecordSqlserverUserConnectionCountDataPoint(now, val.(int64))
 			}
 		case usedMemory:
-			val, err := retrieveInt(row, valueKey)
+			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, usedMemory)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverMemoryUsageDataPoint(now, val.(int64))
+				s.mb.RecordSqlserverMemoryUsageDataPoint(now, val.(float64))
 			}
 		case versionStoreSize:
 			val, err := retrieveFloat(row, valueKey)
@@ -721,7 +721,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, sqlCacheMemory)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64), metadata.AttributeMemoryAreaSQLCache)
+				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64)*1024, metadata.AttributeMemoryPoolSQLCache)
 			}
 		case optimizerMemory:
 			val, err := retrieveInt(row, valueKey)
@@ -729,7 +729,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, optimizerMemory)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64), metadata.AttributeMemoryAreaOptimizer)
+				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64)*1024, metadata.AttributeMemoryPoolOptimizer)
 			}
 		case connectionMemory:
 			val, err := retrieveInt(row, valueKey)
@@ -737,7 +737,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, connectionMemory)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64), metadata.AttributeMemoryAreaConnection)
+				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64)*1024, metadata.AttributeMemoryPoolConnection)
 			}
 		case grantedWorkspaceMemory:
 			val, err := retrieveInt(row, valueKey)
@@ -745,7 +745,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, grantedWorkspaceMemory)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64), metadata.AttributeMemoryAreaGrantedWorkspace)
+				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64)*1024, metadata.AttributeMemoryPoolGrantedWorkspace)
 			}
 		case maximumWorkspaceMemory:
 			val, err := retrieveInt(row, valueKey)
@@ -753,7 +753,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, maximumWorkspaceMemory)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64), metadata.AttributeMemoryAreaMaxWorkspace)
+				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64)*1024, metadata.AttributeMemoryPoolMaxWorkspace)
 			}
 		case targetServerMemory:
 			val, err := retrieveInt(row, valueKey)
@@ -761,7 +761,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, targetServerMemory)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64), metadata.AttributeMemoryAreaTarget)
+				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64)*1024, metadata.AttributeMemoryPoolTarget)
 			}
 		case totalServerMemory:
 			val, err := retrieveInt(row, valueKey)
@@ -769,7 +769,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, totalServerMemory)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64), metadata.AttributeMemoryAreaTotal)
+				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64)*1024, metadata.AttributeMemoryPoolTotal)
 			}
 		case cachePages:
 			val, err := retrieveInt(row, valueKey)

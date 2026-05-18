@@ -4,7 +4,7 @@ note: Add Memory Manager metrics (memory areas, page pools, cache objects) conso
 issues: [48032]
 subtext: |
   Added three new opt-in metrics:
-  - `sqlserver.memory.area` with `memory.area` attribute (target, total, sql_cache, optimizer, connection, granted_workspace, max_workspace)
+  - `sqlserver.memory.area` with `memory.pool` attribute (target, total, sql_cache, optimizer, connection, granted_workspace, max_workspace)
   - `sqlserver.memory.page.count` with `page.pool` attribute (cache, total, target, database, stolen, reserved, free)
   - `sqlserver.memory.cache.object.count` with `cache.state` attribute (in_use, total)
 change_logs: [user]

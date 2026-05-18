@@ -463,19 +463,19 @@ Total number of logouts.
 
 ### sqlserver.memory.area
 
-Amount of memory used by the SQL Server memory area.
+Amount of memory used by the SQL Server memory pool.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| kBy | Gauge | Int | Development |
+| By | Gauge | Int | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| memory.area | The functional area of SQL Server memory. | Str: ``target``, ``total``, ``sql_cache``, ``optimizer``, ``connection``, ``granted_workspace``, ``max_workspace`` | Recommended | - |
+| memory.pool | The functional area of SQL Server memory. | Str: ``target``, ``total``, ``sql_cache``, ``optimizer``, ``connection``, ``granted_workspace``, ``max_workspace`` | Recommended | - |
 
 ### sqlserver.memory.cache.object.count
 
@@ -497,9 +497,9 @@ This metric is only available when the receiver is configured to directly connec
 
 Total number of memory grants pending.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {grant} | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {grants} | Sum | Int | Cumulative | false | Development |
 
 ### sqlserver.memory.page.count
 
@@ -519,11 +519,11 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.memory.usage
 
-Total amount of dynamic memory the server is currently consuming.
+Total memory in use.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| kBy | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| KB | Sum | Double | Cumulative | false | Development |
 
 ### sqlserver.os.wait.duration
 

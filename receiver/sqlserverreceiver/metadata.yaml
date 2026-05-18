@@ -95,7 +95,7 @@ attributes:
     description: The logical filename of the file being monitored.
     type: string
     requirement_level: recommended
-  memory.area:
+  memory.pool:
     description: The functional area of SQL Server memory.
     type: string
     requirement_level: recommended
@@ -639,12 +639,12 @@ metrics:
     attributes: []
   sqlserver.memory.area:
     enabled: false
-    description: Amount of memory used by the SQL Server memory area.
+    description: Amount of memory used by the SQL Server memory pool.
     stability: development
-    unit: "kBy"
+    unit: By
     gauge:
       value_type: int
-    attributes: [memory.area]
+    attributes: [memory.pool]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.memory.cache.object.count:
     enabled: false
@@ -659,8 +659,10 @@ metrics:
     enabled: false
     description: Total number of memory grants pending.
     stability: development
-    unit: "{grant}"
-    gauge:
+    unit: "{grants}"
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
       value_type: int
     attributes: []
   sqlserver.memory.page.count:
@@ -674,11 +676,13 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.memory.usage:
     enabled: false
-    description: Total amount of dynamic memory the server is currently consuming.
+    description: Total memory in use.
     stability: development
-    unit: "kBy"
-    gauge:
-      value_type: int
+    unit: "KB"
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: double
     attributes: []
   sqlserver.os.wait.duration:
     enabled: false

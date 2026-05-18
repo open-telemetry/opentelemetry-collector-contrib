@@ -920,13 +920,14 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - description: Total number of memory grants pending.
-            gauge:
+            name: sqlserver.memory.grants.pending.count
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.memory.grants.pending.count
-            unit: '{grant}'
+            unit: '{grants}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -943,18 +944,18 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Amount of memory used by the SQL Server memory area.
+          - description: Amount of memory used by the SQL Server memory pool.
             gauge:
               dataPoints:
-                - asInt: "864504"
+                - asInt: "885252096"
                   attributes:
-                    - key: memory.area
+                    - key: memory.pool
                       value:
                         stringValue: target
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.memory.area
-            unit: kBy
+            unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -971,18 +972,18 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Amount of memory used by the SQL Server memory area.
+          - description: Amount of memory used by the SQL Server memory pool.
             gauge:
               dataPoints:
-                - asInt: "307424"
+                - asInt: "314802176"
                   attributes:
-                    - key: memory.area
+                    - key: memory.pool
                       value:
                         stringValue: total
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.memory.area
-            unit: kBy
+            unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -999,14 +1000,15 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Total amount of dynamic memory the server is currently consuming.
-            gauge:
+          - description: Total memory in use.
+            name: sqlserver.memory.usage
+            sum:
+              aggregationTemporality: 2
               dataPoints:
-                - asInt: "24944"
+                - asDouble: 24944
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.memory.usage
-            unit: kBy
+            unit: KB
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1231,14 +1233,15 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Total amount of dynamic memory the server is currently consuming.
-            gauge:
+          - description: Total memory in use.
+            name: sqlserver.memory.usage
+            sum:
+              aggregationTemporality: 2
               dataPoints:
-                - asInt: "234720"
+                - asDouble: 234720
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.memory.usage
-            unit: kBy
+            unit: KB
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1432,18 +1435,18 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Amount of memory used by the SQL Server memory area.
+          - description: Amount of memory used by the SQL Server memory pool.
             gauge:
               dataPoints:
-                - asInt: "8192"
+                - asInt: "8388608"
                   attributes:
-                    - key: memory.area
+                    - key: memory.pool
                       value:
                         stringValue: sql_cache
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.memory.area
-            unit: kBy
+            unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1460,18 +1463,18 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Amount of memory used by the SQL Server memory area.
+          - description: Amount of memory used by the SQL Server memory pool.
             gauge:
               dataPoints:
-                - asInt: "4096"
+                - asInt: "4194304"
                   attributes:
-                    - key: memory.area
+                    - key: memory.pool
                       value:
                         stringValue: optimizer
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.memory.area
-            unit: kBy
+            unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1488,18 +1491,18 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Amount of memory used by the SQL Server memory area.
+          - description: Amount of memory used by the SQL Server memory pool.
             gauge:
               dataPoints:
-                - asInt: "2048"
+                - asInt: "2097152"
                   attributes:
-                    - key: memory.area
+                    - key: memory.pool
                       value:
                         stringValue: connection
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.memory.area
-            unit: kBy
+            unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1516,18 +1519,18 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Amount of memory used by the SQL Server memory area.
+          - description: Amount of memory used by the SQL Server memory pool.
             gauge:
               dataPoints:
-                - asInt: "16384"
+                - asInt: "16777216"
                   attributes:
-                    - key: memory.area
+                    - key: memory.pool
                       value:
                         stringValue: granted_workspace
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.memory.area
-            unit: kBy
+            unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1544,18 +1547,18 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Amount of memory used by the SQL Server memory area.
+          - description: Amount of memory used by the SQL Server memory pool.
             gauge:
               dataPoints:
-                - asInt: "32768"
+                - asInt: "33554432"
                   attributes:
-                    - key: memory.area
+                    - key: memory.pool
                       value:
                         stringValue: max_workspace
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.memory.area
-            unit: kBy
+            unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

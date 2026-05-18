@@ -327,9 +327,9 @@ $defs:
             items:
               type: string
               enum:
-                - "memory.area"
+                - "memory.pool"
             default:
-              - "memory.area"
+              - "memory.pool"
       sqlserver.memory.cache.object.count:
         description: "SqlserverMemoryCacheObjectCountMetricConfig provides config for the sqlserver.memory.cache.object.count metric."
         type: object

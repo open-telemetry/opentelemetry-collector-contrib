@@ -730,7 +730,7 @@ func (ms *SqlserverLogoutRateMetricConfig) Unmarshal(parser *confmap.Conf) error
 type SqlserverMemoryAreaMetricAttributeKey string
 
 const (
-	SqlserverMemoryAreaMetricAttributeKeyMemoryArea SqlserverMemoryAreaMetricAttributeKey = "memory.area"
+	SqlserverMemoryAreaMetricAttributeKeyMemoryPool SqlserverMemoryAreaMetricAttributeKey = "memory.pool"
 )
 
 // SqlserverMemoryAreaMetricConfig provides config for the sqlserver.memory.area metric.
@@ -759,9 +759,9 @@ func (ms *SqlserverMemoryAreaMetricConfig) Unmarshal(parser *confmap.Conf) error
 func (ms *SqlserverMemoryAreaMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverMemoryAreaMetricAttributeKeyMemoryArea:
+		case SqlserverMemoryAreaMetricAttributeKeyMemoryPool:
 		default:
-			return fmt.Errorf("metric sqlserver.memory.area doesn't have an attribute %v, valid attributes: [memory.area]", val)
+			return fmt.Errorf("metric sqlserver.memory.area doesn't have an attribute %v, valid attributes: [memory.pool]", val)
 		}
 	}
 
@@ -1760,7 +1760,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverMemoryArea: SqlserverMemoryAreaMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverMemoryAreaMetricAttributeKey{SqlserverMemoryAreaMetricAttributeKeyMemoryArea},
+			EnabledAttributes:   []SqlserverMemoryAreaMetricAttributeKey{SqlserverMemoryAreaMetricAttributeKeyMemoryPool},
 		},
 		SqlserverMemoryCacheObjectCount: SqlserverMemoryCacheObjectCountMetricConfig{
 			Enabled:             false,

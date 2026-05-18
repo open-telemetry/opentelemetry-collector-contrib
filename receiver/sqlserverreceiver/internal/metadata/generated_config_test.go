@@ -122,7 +122,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverMemoryArea: SqlserverMemoryAreaMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverMemoryAreaMetricAttributeKey{SqlserverMemoryAreaMetricAttributeKeyMemoryArea},
+						EnabledAttributes:   []SqlserverMemoryAreaMetricAttributeKey{SqlserverMemoryAreaMetricAttributeKeyMemoryPool},
 					},
 					SqlserverMemoryCacheObjectCount: SqlserverMemoryCacheObjectCountMetricConfig{
 						Enabled:             true,
@@ -342,7 +342,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverMemoryArea: SqlserverMemoryAreaMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverMemoryAreaMetricAttributeKey{SqlserverMemoryAreaMetricAttributeKeyMemoryArea},
+						EnabledAttributes:   []SqlserverMemoryAreaMetricAttributeKey{SqlserverMemoryAreaMetricAttributeKeyMemoryPool},
 					},
 					SqlserverMemoryCacheObjectCount: SqlserverMemoryCacheObjectCountMetricConfig{
 						Enabled:             false,

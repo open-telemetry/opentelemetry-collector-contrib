@@ -116,50 +116,50 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"write": AttributeDirectionWrite,
 }
 
-// AttributeMemoryArea specifies the value memory.area attribute.
-type AttributeMemoryArea int
+// AttributeMemoryPool specifies the value memory.pool attribute.
+type AttributeMemoryPool int
 
 const (
-	_ AttributeMemoryArea = iota
-	AttributeMemoryAreaTarget
-	AttributeMemoryAreaTotal
-	AttributeMemoryAreaSQLCache
-	AttributeMemoryAreaOptimizer
-	AttributeMemoryAreaConnection
-	AttributeMemoryAreaGrantedWorkspace
-	AttributeMemoryAreaMaxWorkspace
+	_ AttributeMemoryPool = iota
+	AttributeMemoryPoolTarget
+	AttributeMemoryPoolTotal
+	AttributeMemoryPoolSQLCache
+	AttributeMemoryPoolOptimizer
+	AttributeMemoryPoolConnection
+	AttributeMemoryPoolGrantedWorkspace
+	AttributeMemoryPoolMaxWorkspace
 )
 
-// String returns the string representation of the AttributeMemoryArea.
-func (av AttributeMemoryArea) String() string {
+// String returns the string representation of the AttributeMemoryPool.
+func (av AttributeMemoryPool) String() string {
 	switch av {
-	case AttributeMemoryAreaTarget:
+	case AttributeMemoryPoolTarget:
 		return "target"
-	case AttributeMemoryAreaTotal:
+	case AttributeMemoryPoolTotal:
 		return "total"
-	case AttributeMemoryAreaSQLCache:
+	case AttributeMemoryPoolSQLCache:
 		return "sql_cache"
-	case AttributeMemoryAreaOptimizer:
+	case AttributeMemoryPoolOptimizer:
 		return "optimizer"
-	case AttributeMemoryAreaConnection:
+	case AttributeMemoryPoolConnection:
 		return "connection"
-	case AttributeMemoryAreaGrantedWorkspace:
+	case AttributeMemoryPoolGrantedWorkspace:
 		return "granted_workspace"
-	case AttributeMemoryAreaMaxWorkspace:
+	case AttributeMemoryPoolMaxWorkspace:
 		return "max_workspace"
 	}
 	return ""
 }
 
-// MapAttributeMemoryArea is a helper map of string to AttributeMemoryArea attribute value.
-var MapAttributeMemoryArea = map[string]AttributeMemoryArea{
-	"target":            AttributeMemoryAreaTarget,
-	"total":             AttributeMemoryAreaTotal,
-	"sql_cache":         AttributeMemoryAreaSQLCache,
-	"optimizer":         AttributeMemoryAreaOptimizer,
-	"connection":        AttributeMemoryAreaConnection,
-	"granted_workspace": AttributeMemoryAreaGrantedWorkspace,
-	"max_workspace":     AttributeMemoryAreaMaxWorkspace,
+// MapAttributeMemoryPool is a helper map of string to AttributeMemoryPool attribute value.
+var MapAttributeMemoryPool = map[string]AttributeMemoryPool{
+	"target":            AttributeMemoryPoolTarget,
+	"total":             AttributeMemoryPoolTotal,
+	"sql_cache":         AttributeMemoryPoolSQLCache,
+	"optimizer":         AttributeMemoryPoolOptimizer,
+	"connection":        AttributeMemoryPoolConnection,
+	"granted_workspace": AttributeMemoryPoolGrantedWorkspace,
+	"max_workspace":     AttributeMemoryPoolMaxWorkspace,
 }
 
 // AttributePageOperations specifies the value page.operations attribute.
@@ -2239,14 +2239,14 @@ type metricSqlserverMemoryArea struct {
 // init fills sqlserver.memory.area metric with initial data.
 func (m *metricSqlserverMemoryArea) init() {
 	m.data.SetName("sqlserver.memory.area")
-	m.data.SetDescription("Amount of memory used by the SQL Server memory area.")
-	m.data.SetUnit("kBy")
+	m.data.SetDescription("Amount of memory used by the SQL Server memory pool.")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverMemoryArea) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryAreaAttributeValue string) {
+func (m *metricSqlserverMemoryArea) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryPoolAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2254,8 +2254,8 @@ func (m *metricSqlserverMemoryArea) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverMemoryAreaMetricAttributeKeyMemoryArea) {
-		dp.Attributes().PutStr("memory.area", memoryAreaAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverMemoryAreaMetricAttributeKeyMemoryPool) {
+		dp.Attributes().PutStr("memory.pool", memoryPoolAttributeValue)
 	}
 
 	var s string
@@ -2417,15 +2417,17 @@ type metricSqlserverMemoryGrantsPendingCount struct {
 func (m *metricSqlserverMemoryGrantsPendingCount) init() {
 	m.data.SetName("sqlserver.memory.grants.pending.count")
 	m.data.SetDescription("Total number of memory grants pending.")
-	m.data.SetUnit("{grant}")
-	m.data.SetEmptyGauge()
+	m.data.SetUnit("{grants}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricSqlserverMemoryGrantsPendingCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -2433,14 +2435,14 @@ func (m *metricSqlserverMemoryGrantsPendingCount) recordDataPoint(start pcommon.
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricSqlserverMemoryGrantsPendingCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSqlserverMemoryGrantsPendingCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2555,31 +2557,33 @@ type metricSqlserverMemoryUsage struct {
 // init fills sqlserver.memory.usage metric with initial data.
 func (m *metricSqlserverMemoryUsage) init() {
 	m.data.SetName("sqlserver.memory.usage")
-	m.data.SetDescription("Total amount of dynamic memory the server is currently consuming.")
-	m.data.SetUnit("kBy")
-	m.data.SetEmptyGauge()
+	m.data.SetDescription("Total memory in use.")
+	m.data.SetUnit("KB")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricSqlserverMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSqlserverMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricSqlserverMemoryUsage) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSqlserverMemoryUsage) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -4661,8 +4665,8 @@ func (mb *MetricsBuilder) RecordSqlserverLogoutRateDataPoint(ts pcommon.Timestam
 }
 
 // RecordSqlserverMemoryAreaDataPoint adds a data point to sqlserver.memory.area metric.
-func (mb *MetricsBuilder) RecordSqlserverMemoryAreaDataPoint(ts pcommon.Timestamp, val int64, memoryAreaAttributeValue AttributeMemoryArea) {
-	mb.metricSqlserverMemoryArea.recordDataPoint(mb.startTime, ts, val, memoryAreaAttributeValue.String())
+func (mb *MetricsBuilder) RecordSqlserverMemoryAreaDataPoint(ts pcommon.Timestamp, val int64, memoryPoolAttributeValue AttributeMemoryPool) {
+	mb.metricSqlserverMemoryArea.recordDataPoint(mb.startTime, ts, val, memoryPoolAttributeValue.String())
 }
 
 // RecordSqlserverMemoryCacheObjectCountDataPoint adds a data point to sqlserver.memory.cache.object.count metric.
@@ -4681,7 +4685,7 @@ func (mb *MetricsBuilder) RecordSqlserverMemoryPageCountDataPoint(ts pcommon.Tim
 }
 
 // RecordSqlserverMemoryUsageDataPoint adds a data point to sqlserver.memory.usage metric.
-func (mb *MetricsBuilder) RecordSqlserverMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordSqlserverMemoryUsageDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverMemoryUsage.recordDataPoint(mb.startTime, ts, val)
 }
 

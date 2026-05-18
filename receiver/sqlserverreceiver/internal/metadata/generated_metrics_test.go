@@ -196,9 +196,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverLogoutRateDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverMemoryAreaDataPoint(ts, 1, AttributeMemoryAreaTarget)
+			mb.RecordSqlserverMemoryAreaDataPoint(ts, 1, AttributeMemoryPoolTarget)
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverMemoryAreaDataPoint(ts, 3, AttributeMemoryAreaTotal)
+				mb.RecordSqlserverMemoryAreaDataPoint(ts, 3, AttributeMemoryPoolTotal)
 			}
 
 			allMetricsCount++
@@ -946,23 +946,23 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["sqlserver.memory.area"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Amount of memory used by the SQL Server memory area.", mi.Description())
-						assert.Equal(t, "kBy", mi.Unit())
+						assert.Equal(t, "Amount of memory used by the SQL Server memory pool.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						memoryAreaAttrVal, ok := dp.Attributes().Get("memory.area")
+						memoryPoolAttrVal, ok := dp.Attributes().Get("memory.pool")
 						assert.True(t, ok)
-						assert.Equal(t, "target", memoryAreaAttrVal.Str())
+						assert.Equal(t, "target", memoryPoolAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.memory.area"], "Found a duplicate in the metrics slice: sqlserver.memory.area")
 						validatedMetrics["sqlserver.memory.area"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Amount of memory used by the SQL Server memory area.", mi.Description())
-						assert.Equal(t, "kBy", mi.Unit())
+						assert.Equal(t, "Amount of memory used by the SQL Server memory pool.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -977,7 +977,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("memory.area")
+						_, ok := dp.Attributes().Get("memory.pool")
 						assert.False(t, ok)
 					}
 				case "sqlserver.memory.cache.object.count":
@@ -1023,11 +1023,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "sqlserver.memory.grants.pending.count":
 					assert.False(t, validatedMetrics["sqlserver.memory.grants.pending.count"], "Found a duplicate in the metrics slice: sqlserver.memory.grants.pending.count")
 					validatedMetrics["sqlserver.memory.grants.pending.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Total number of memory grants pending.", mi.Description())
-					assert.Equal(t, "{grant}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, "{grants}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1075,15 +1077,17 @@ func TestMetricsBuilder(t *testing.T) {
 				case "sqlserver.memory.usage":
 					assert.False(t, validatedMetrics["sqlserver.memory.usage"], "Found a duplicate in the metrics slice: sqlserver.memory.usage")
 					validatedMetrics["sqlserver.memory.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Total amount of dynamic memory the server is currently consuming.", mi.Description())
-					assert.Equal(t, "kBy", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total memory in use.", mi.Description())
+					assert.Equal(t, "KB", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.os.wait.duration":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["sqlserver.os.wait.duration"], "Found a duplicate in the metrics slice: sqlserver.os.wait.duration")
