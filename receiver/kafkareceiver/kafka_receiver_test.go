@@ -145,6 +145,64 @@ func TestReceiver_Headers_Metadata(t *testing.T) {
 	}
 }
 
+func TestReceiver_ExtractKafkaMetadata(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		name := "enabled"
+		if !enabled {
+			name = "disabled"
+		}
+		t.Run(name, func(t *testing.T) {
+			runTestForClients(t, func(t *testing.T) {
+				kafkaClient, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
+
+				traces := testdata.GenerateTraces(1)
+				data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+				require.NoError(t, err)
+				results := kafkaClient.ProduceSync(t.Context(), &kgo.Record{
+					Topic: "otlp_spans",
+					Value: data,
+				})
+				require.NoError(t, results.FirstErr())
+
+				received := make(chan consumerArgs[ptrace.Traces], 1)
+				receiverConfig.Traces.ExtractKafkaMetadata = enabled
+				mustNewTracesReceiver(t, receiverConfig, newChannelTracesConsumer(received))
+				args := <-received
+
+				resource := args.data.ResourceSpans().At(0).Resource()
+
+				checkAttr := func(key string) {
+					t.Helper()
+					_, ok := resource.Attributes().Get(key)
+					if enabled {
+						assert.True(t, ok, "expected attribute %q to be present", key)
+					} else {
+						assert.False(t, ok, "expected attribute %q to be absent", key)
+					}
+				}
+				checkAttr("kafka.topic")
+				checkAttr("kafka.partition")
+				checkAttr("kafka.offset")
+				checkAttr("kafka.consumer.group")
+
+				if enabled {
+					topic, _ := resource.Attributes().Get("kafka.topic")
+					assert.Equal(t, "otlp_spans", topic.Str())
+
+					partition, _ := resource.Attributes().Get("kafka.partition")
+					assert.Equal(t, int64(0), partition.Int())
+
+					offset, _ := resource.Attributes().Get("kafka.offset")
+					assert.Equal(t, int64(0), offset.Int())
+
+					consumerGroup, _ := resource.Attributes().Get("kafka.consumer.group")
+					assert.Equal(t, receiverConfig.ConsumerConfig.GroupID, consumerGroup.Str())
+				}
+			})
+		})
+	}
+}
+
 func TestReceiver_Headers_HeaderExtraction(t *testing.T) {
 	for _, enabled := range []bool{false, true} {
 		name := "enabled"
