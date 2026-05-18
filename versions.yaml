@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.151.0
+    version: v0.152.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -106,6 +106,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/mcp
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver
@@ -127,6 +128,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension/integrationtest
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight
@@ -201,6 +203,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/drainprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor

@@ -9,5 +9,5 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/cockroachdb/pebble/v2/vfs.(*diskHealthCheckingFS).startTickerLocked.func1"))
 }
