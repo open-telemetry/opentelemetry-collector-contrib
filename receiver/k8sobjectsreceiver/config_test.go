@@ -149,10 +149,11 @@ func TestLoadConfig(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	tests := []struct {
-		desc             string
-		cfg              *Config
-		expectedErr      string
-		expectedInterval time.Duration
+		desc               string
+		cfg                *Config
+		expectedErr        string
+		expectedInterval   time.Duration
+		expectZeroInterval bool
 	}{
 		{
 			desc: "invalid mode",
@@ -241,6 +242,21 @@ func TestValidate(t *testing.T) {
 			},
 			expectedInterval: 5 * time.Minute,
 		},
+		{
+			desc: "top-level interval has no effect on watch-mode objects",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Interval:  30 * time.Minute,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "events",
+						Mode: k8sinventory.WatchMode,
+					},
+				},
+			},
+			expectZeroInterval: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -253,6 +269,9 @@ func TestValidate(t *testing.T) {
 			assert.NoError(t, err)
 			if tt.expectedInterval != 0 {
 				assert.Equal(t, tt.expectedInterval, tt.cfg.Objects[0].Interval)
+			}
+			if tt.expectZeroInterval {
+				assert.Zero(t, tt.cfg.Objects[0].Interval)
 			}
 		})
 	}
