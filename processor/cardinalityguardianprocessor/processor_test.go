@@ -178,7 +178,6 @@ func TestShardDistribution(t *testing.T) {
 	require.NoError(t, err)
 
 	// Type-assert to the concrete type so we can access getShard directly.
-	// This is valid because we are inside the same package (package cardinalityprocessor).
 	p := proc.(*cardinalityProcessor)
 
 	const totalMetrics = 10_000
@@ -251,7 +250,7 @@ func TestConcurrency_Sharded(t *testing.T) {
 				// Each goroutine produces a unique value space to exercise
 				// concurrent tracker creation and the double-check lock path.
 				val := fmt.Sprintf("value_%d_%d", id, i)
-				p.shouldDrop("concurrent_metric", "key", val)
+				p.shouldDrop("concurrent_metric", "key", pcommon.NewValueStr(val))
 			}
 		})
 	}
@@ -318,13 +317,10 @@ func TestCardinalityProcessor_TagOnlyMode(t *testing.T) {
 }
 
 // TestEnforcementResolvesIdentityCollisions verifies that inline spatial
-// reaggregation resolves the Single-Writer violation that would otherwise
-// occur when enforcement mode strips attributes. Previously, this test
-// demonstrated the problem; now it verifies the fix.
-//
-// When enforcement triggers on a Delta Sum, the stripped data points that
-// share the same identity are merged: their values are summed into a single
-// data point, maintaining the Single-Writer invariant.
+// reaggregation preserves the Single-Writer invariant when enforcement strips
+// attributes. When enforcement triggers on a Delta Sum, stripped data points
+// that share the same identity are merged: their values are summed into a
+// single data point.
 func TestEnforcementResolvesIdentityCollisions(t *testing.T) {
 	cfg := &Config{
 		MaxCardinalityDeltaPerEpoch: 1, // Tiny limit to trigger enforcement immediately
@@ -619,7 +615,7 @@ func TestCardinalityProcessor_EpochRotation(t *testing.T) {
 	p := proc.(*cardinalityProcessor)
 
 	// Insert data to initialize a sketch
-	p.shouldDrop("metric", "key", "val")
+	p.shouldDrop("metric", "key", pcommon.NewValueStr("val"))
 
 	shard := p.getShard("metric")
 	shard.mu.RLock()
@@ -683,7 +679,7 @@ func TestTopOffenders(t *testing.T) {
 	for keyIdx, count := range valueCounts {
 		key := fmt.Sprintf("key_%d", keyIdx)
 		for v := range count {
-			p.shouldDrop("offender_metric", key, fmt.Sprintf("val_%d", v))
+			p.shouldDrop("offender_metric", key, pcommon.NewValueStr(fmt.Sprintf("val_%d", v)))
 		}
 	}
 
@@ -838,7 +834,7 @@ func TestTopOffenders_Disabled(t *testing.T) {
 
 	// Add some data.
 	for i := range 10 {
-		p.shouldDrop("metric_a", "label_a", fmt.Sprintf("val_%d", i))
+		p.shouldDrop("metric_a", "label_a", pcommon.NewValueStr(fmt.Sprintf("val_%d", i)))
 	}
 
 	p.rotate()
@@ -895,19 +891,19 @@ func TestTopOffenders_EvictionAndReplacement(t *testing.T) {
 
 	// key_small: 5 unique values (will be evicted)
 	for i := range 5 {
-		p.shouldDrop("m", "key_small", fmt.Sprintf("v%d", i))
+		p.shouldDrop("m", "key_small", pcommon.NewValueStr(fmt.Sprintf("v%d", i)))
 	}
 	// key_medium: 50 unique values
 	for i := range 50 {
-		p.shouldDrop("m", "key_medium", fmt.Sprintf("v%d", i))
+		p.shouldDrop("m", "key_medium", pcommon.NewValueStr(fmt.Sprintf("v%d", i)))
 	}
 	// key_large: 200 unique values (should evict key_small)
 	for i := range 200 {
-		p.shouldDrop("m", "key_large", fmt.Sprintf("v%d", i))
+		p.shouldDrop("m", "key_large", pcommon.NewValueStr(fmt.Sprintf("v%d", i)))
 	}
 	// key_tiny: 2 unique values (should be rejected — smaller than both survivors)
 	for i := range 2 {
-		p.shouldDrop("m", "key_tiny", fmt.Sprintf("v%d", i))
+		p.shouldDrop("m", "key_tiny", pcommon.NewValueStr(fmt.Sprintf("v%d", i)))
 	}
 
 	p.rotate()
@@ -953,7 +949,7 @@ func TestMaxTrackerCount_Disabled(t *testing.T) {
 	p := proc.(*cardinalityProcessor)
 
 	for i := range 1000 {
-		p.shouldDrop(fmt.Sprintf("metric_%d", i), "lbl", "val_1")
+		p.shouldDrop(fmt.Sprintf("metric_%d", i), "lbl", pcommon.NewValueStr("val_1"))
 	}
 
 	require.Equal(t, int64(1000), p.trackerCount.Load(), "should allow all trackers when disabled")
@@ -978,7 +974,7 @@ func TestMaxTrackerCount_Rejection(t *testing.T) {
 	// Attempt to create 100 unique trackers
 	for i := range 100 {
 		// shouldDrop returns true when limit exceeded, but we just verify the count
-		p.shouldDrop(fmt.Sprintf("metric_%d", i), "lbl", "val_1")
+		p.shouldDrop(fmt.Sprintf("metric_%d", i), "lbl", pcommon.NewValueStr("val_1"))
 	}
 
 	require.Equal(t, int64(50), p.trackerCount.Load(), "should stop creating trackers at 50")
@@ -1003,14 +999,14 @@ func TestMaxTrackerCount_EvictionFreesSlots(t *testing.T) {
 
 	// Fill to capacity
 	for i := range 10 {
-		p.shouldDrop(fmt.Sprintf("metric_%d", i), "lbl", "val_1")
+		p.shouldDrop(fmt.Sprintf("metric_%d", i), "lbl", pcommon.NewValueStr("val_1"))
 	}
 
 	require.Equal(t, int64(10), p.trackerCount.Load(), "filled to capacity")
 
 	// Attempt 5 more, they should be rejected
 	for i := 10; i < 15; i++ {
-		p.shouldDrop(fmt.Sprintf("metric_%d", i), "lbl", "val_1")
+		p.shouldDrop(fmt.Sprintf("metric_%d", i), "lbl", pcommon.NewValueStr("val_1"))
 	}
 	require.Equal(t, int64(10), p.trackerCount.Load(), "still at capacity")
 	require.Equal(t, int64(5), p.trackersRejected.Load(), "rejected 5")
@@ -1026,7 +1022,7 @@ func TestMaxTrackerCount_EvictionFreesSlots(t *testing.T) {
 
 	// Verify we can now accept new trackers
 	for i := 15; i < 20; i++ {
-		p.shouldDrop(fmt.Sprintf("metric_%d", i), "lbl", "val_1")
+		p.shouldDrop(fmt.Sprintf("metric_%d", i), "lbl", pcommon.NewValueStr("val_1"))
 	}
 
 	require.Equal(t, int64(5), p.trackerCount.Load(), "new trackers accepted after eviction")
@@ -1054,7 +1050,7 @@ func TestMetricOverrides_SpecificLimit(t *testing.T) {
 	// Send 100 unique values to the overridden metric — none should be dropped
 	// because 100 < 5000
 	for i := range 100 {
-		dropped := p.shouldDrop("http.server.request.duration", "route", fmt.Sprintf("/api/v1/resource/%d", i))
+		dropped := p.shouldDrop("http.server.request.duration", "route", pcommon.NewValueStr(fmt.Sprintf("/api/v1/resource/%d", i)))
 		require.False(t, dropped, "should not drop within override limit")
 	}
 }
@@ -1080,7 +1076,7 @@ func TestMetricOverrides_FallbackToGlobal(t *testing.T) {
 	// Send 20 unique values to a metric NOT in overrides — should drop after 5
 	var dropCount int
 	for i := range 20 {
-		if p.shouldDrop("db.query.duration", "table_name", fmt.Sprintf("table_%d", i)) {
+		if p.shouldDrop("db.query.duration", "table_name", pcommon.NewValueStr(fmt.Sprintf("table_%d", i))) {
 			dropCount++
 		}
 	}
@@ -1505,17 +1501,101 @@ func TestEnforcementModeValidation(t *testing.T) {
 	}
 }
 
-// TestResolvedEnforcementMode verifies that ResolvedEnforcementMode returns
+// TestResolvedEnforcementMode verifies that resolvedEnforcementMode returns
 // the configured mode or defaults to tag_only.
 func TestResolvedEnforcementMode(t *testing.T) {
 	// Default (empty) → tag_only
 	cfg := &Config{}
-	assert.Equal(t, EnforcementTagOnly, cfg.ResolvedEnforcementMode())
+	assert.Equal(t, EnforcementTagOnly, cfg.resolvedEnforcementMode())
 
 	// Explicit EnforcementMode is returned as-is (lowercased)
 	cfg = &Config{EnforcementMode: EnforcementTagOnly}
-	assert.Equal(t, EnforcementTagOnly, cfg.ResolvedEnforcementMode())
+	assert.Equal(t, EnforcementTagOnly, cfg.resolvedEnforcementMode())
 
 	cfg = &Config{EnforcementMode: EnforcementOverflowAttribute}
-	assert.Equal(t, EnforcementOverflowAttribute, cfg.ResolvedEnforcementMode())
+	assert.Equal(t, EnforcementOverflowAttribute, cfg.resolvedEnforcementMode())
+}
+
+// TestShouldDrop_NonStringAttributeTypes verifies that hashAttrValue
+// distinguishes attribute values across every pcommon.ValueType, including
+// Map and Slice values whose contents differ.
+func TestShouldDrop_NonStringAttributeTypes(t *testing.T) {
+	cfg := &Config{
+		MaxCardinalityDeltaPerEpoch: 100,
+		EpochDurationSeconds:        300,
+	}
+	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, new(consumertest.MetricsSink))
+	require.NoError(t, err)
+	p := proc.(*cardinalityProcessor)
+
+	// Int values that differ must hash differently. shouldDrop never returns
+	// true while under the limit, so we instead inspect the tracker's HLL
+	// cardinality estimate after the calls.
+	intA := pcommon.NewValueInt(42)
+	intB := pcommon.NewValueInt(43)
+	p.shouldDrop("m", "k", intA)
+	p.shouldDrop("m", "k", intB)
+
+	// Map values with different contents must hash differently.
+	mapA := pcommon.NewValueMap()
+	mapA.Map().PutStr("inner", "alpha")
+	mapB := pcommon.NewValueMap()
+	mapB.Map().PutStr("inner", "beta")
+	p.shouldDrop("m2", "k", mapA)
+	p.shouldDrop("m2", "k", mapB)
+
+	// Slice values with different contents must hash differently.
+	sliceA := pcommon.NewValueSlice()
+	sliceA.Slice().AppendEmpty().SetStr("a")
+	sliceB := pcommon.NewValueSlice()
+	sliceB.Slice().AppendEmpty().SetStr("b")
+	p.shouldDrop("m3", "k", sliceA)
+	p.shouldDrop("m3", "k", sliceB)
+
+	for _, metricName := range []string{"m", "m2", "m3"} {
+		shard := p.getShard(metricName)
+		shard.mu.RLock()
+		tr, ok := shard.trackers[trackerKey{metricName: metricName, attrKey: "k"}]
+		shard.mu.RUnlock()
+		require.True(t, ok, "tracker for %s should exist", metricName)
+		// Two distinct values → HLL estimate must be ≥ 2.
+		tr.mu.Lock()
+		est := tr.current.Estimate()
+		tr.mu.Unlock()
+		assert.GreaterOrEqual(t, est, uint64(2),
+			"tracker for %s should record 2 unique values, got %d", metricName, est)
+	}
+}
+
+// TestHandleAttributes_DropLogMaxZero verifies that when DropLogMaxPerEpoch is
+// 0 (unlimited), dropLogCount still increments on every drop so the per-epoch
+// suppression summary reflects the true count.
+func TestHandleAttributes_DropLogMaxZero(t *testing.T) {
+	cfg := &Config{
+		MaxCardinalityDeltaPerEpoch: 1,
+		EpochDurationSeconds:        300,
+		EnforcementMode:             EnforcementStripAndReaggregate,
+		DropLogMaxPerEpoch:          0, // unlimited
+	}
+	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, new(consumertest.MetricsSink))
+	require.NoError(t, err)
+	p := proc.(*cardinalityProcessor)
+
+	// Push enough unique values to trigger the drop path repeatedly.
+	attrs := pcommon.NewMap()
+	for i := range 50 {
+		attrs.Clear()
+		attrs.PutStr("k", fmt.Sprintf("v%d", i))
+		p.handleAttributes("metric", attrs)
+	}
+
+	// dropLogCount must reflect every overflow event, not be skipped by
+	// the short-circuit. (We compare ≥ a healthy floor rather than exact
+	// because the first ~MaxCardinalityDeltaPerEpoch inserts don't trip drops.)
+	require.Positive(t, p.dropLogCount.Load(),
+		"dropLogCount must increment even when DropLogMaxPerEpoch is unlimited")
+	require.Equal(t, p.dropLogCount.Load(), p.dropsThisEpoch.Load(),
+		"dropLogCount and dropsThisEpoch should match when nothing is suppressed")
 }

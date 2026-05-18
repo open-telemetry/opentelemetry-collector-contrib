@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -41,6 +42,6 @@ func FuzzShouldDrop(f *testing.F) {
 	f.Fuzz(func(_ *testing.T, metricName, attrKey, attrVal string) {
 		// The goal isn't to check the boolean result, but simply to prove
 		// that this function never panics, regardless of the input.
-		_ = cp.shouldDrop(metricName, attrKey, attrVal)
+		_ = cp.shouldDrop(metricName, attrKey, pcommon.NewValueStr(attrVal))
 	})
 }

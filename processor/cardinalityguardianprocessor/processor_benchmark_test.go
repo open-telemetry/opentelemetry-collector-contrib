@@ -8,8 +8,10 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -18,7 +20,6 @@ import (
 // shouldDrop hot path under parallel load. b.ReportAllocs() is used to assert
 // that the steady-state path (tracker already exists) is allocation-free.
 //
-// Design note on key isolation:
 // Each parallel goroutine is assigned its own unique pre-warmed tracker key so
 // that no two goroutines contend on the same per-tracker sync.Mutex. Without
 // this, all goroutines fight over one lock and the Go 1.25 mutex implementation
@@ -37,11 +38,14 @@ func BenchmarkShouldDrop_HighThroughput(b *testing.B) {
 	// Create the mock OTel settings (which includes the mock MeterProvider and Logger)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	proc, err := newCardinalityProcessor(b.Context(), cfg, set, new(consumertest.MetricsSink))
-	if err != nil {
-		b.Fatal(err)
-	}
+	require.NoError(b, err)
 
 	p := proc.(*cardinalityProcessor)
+
+	// Pre-build a stable pcommon.Value to feed into shouldDrop. Building it
+	// once outside the timed loop ensures the benchmark measures the hot path,
+	// not the value-construction cost.
+	val := pcommon.NewValueStr("bench_val")
 
 	// Pre-warm 64 unique trackers (well above any realistic GOMAXPROCS value).
 	// Each goroutine in RunParallel will claim one of these keys so that all
@@ -50,7 +54,7 @@ func BenchmarkShouldDrop_HighThroughput(b *testing.B) {
 	keys := make([]string, numKeys)
 	for i := range keys {
 		keys[i] = fmt.Sprintf("bench_key_%d", i)
-		p.shouldDrop("bench_metric", keys[i], "bench_val")
+		p.shouldDrop("bench_metric", keys[i], val)
 	}
 
 	b.ReportAllocs()
@@ -63,7 +67,7 @@ func BenchmarkShouldDrop_HighThroughput(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		key := keys[int(counter.Add(1))%numKeys]
 		for pb.Next() {
-			p.shouldDrop("bench_metric", key, "bench_val")
+			p.shouldDrop("bench_metric", key, val)
 		}
 	})
 }
@@ -79,9 +83,7 @@ func BenchmarkConsumeMetrics_Passthrough(b *testing.B) {
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	proc, err := newCardinalityProcessor(b.Context(), cfg, set, next)
-	if err != nil {
-		b.Fatal(err)
-	}
+	require.NoError(b, err)
 
 	// Build a static payload with 10 data points, each with 3 low-cardinality labels.
 	md := pmetric.NewMetrics()
@@ -99,12 +101,9 @@ func BenchmarkConsumeMetrics_Passthrough(b *testing.B) {
 	}
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		next.Reset()
-		if err := proc.ConsumeMetrics(b.Context(), md); err != nil {
-			b.Fatal(err)
-		}
+		require.NoError(b, proc.ConsumeMetrics(b.Context(), md))
 	}
 }
 
@@ -119,13 +118,11 @@ func BenchmarkConsumeMetrics_HighCardinality(b *testing.B) {
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	proc, err := newCardinalityProcessor(b.Context(), cfg, set, next)
-	if err != nil {
-		b.Fatal(err)
-	}
+	require.NoError(b, err)
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	i := 0
+	for b.Loop() {
 		// Build a fresh payload each iteration with unique label values
 		// to ensure we always exceed the cardinality limit.
 		md := pmetric.NewMetrics()
@@ -140,9 +137,8 @@ func BenchmarkConsumeMetrics_HighCardinality(b *testing.B) {
 			dp.Attributes().PutStr("request_id", fmt.Sprintf("req-%d-%d", i, j))
 		}
 		next.Reset()
-		if err := proc.ConsumeMetrics(b.Context(), md); err != nil {
-			b.Fatal(err)
-		}
+		require.NoError(b, proc.ConsumeMetrics(b.Context(), md))
+		i++
 	}
 }
 
@@ -157,9 +153,7 @@ func BenchmarkConsumeMetrics_MixedMetricTypes(b *testing.B) {
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	proc, err := newCardinalityProcessor(b.Context(), cfg, set, next)
-	if err != nil {
-		b.Fatal(err)
-	}
+	require.NoError(b, err)
 
 	// Build a static payload with one data point per metric type.
 	md := pmetric.NewMetrics()
@@ -197,12 +191,9 @@ func BenchmarkConsumeMetrics_MixedMetricTypes(b *testing.B) {
 	mSummary.Summary().DataPoints().AppendEmpty().Attributes().PutStr("k", "v")
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		next.Reset()
-		if err := proc.ConsumeMetrics(b.Context(), md); err != nil {
-			b.Fatal(err)
-		}
+		require.NoError(b, proc.ConsumeMetrics(b.Context(), md))
 	}
 }
 
@@ -217,9 +208,7 @@ func BenchmarkConsumeMetrics_LargeBatch(b *testing.B) {
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	proc, err := newCardinalityProcessor(b.Context(), cfg, set, next)
-	if err != nil {
-		b.Fatal(err)
-	}
+	require.NoError(b, err)
 
 	// Build a single large batch with 1000 data points across 10 metrics.
 	md := pmetric.NewMetrics()
@@ -239,11 +228,8 @@ func BenchmarkConsumeMetrics_LargeBatch(b *testing.B) {
 	}
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		next.Reset()
-		if err := proc.ConsumeMetrics(b.Context(), md); err != nil {
-			b.Fatal(err)
-		}
+		require.NoError(b, proc.ConsumeMetrics(b.Context(), md))
 	}
 }

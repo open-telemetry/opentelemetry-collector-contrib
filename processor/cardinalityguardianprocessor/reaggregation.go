@@ -116,22 +116,22 @@ func reaggregateNumberDataPoints(dps pmetric.NumberDataPointSlice, metricType pm
 	})
 }
 
-// hashAttributes produces a deterministic hash of a pcommon.Map's key-value
-// pairs. The hash is order-independent: we XOR individual key-value hashes
-// to ensure that {a=1, b=2} and {b=2, a=1} produce the same identity.
+// hashAttributes produces a deterministic, order-independent hash of a
+// pcommon.Map. Each key/value pair is folded through pairHashMix into a
+// single non-linear pair hash, and pair hashes are XOR-combined across the
+// map. XOR keeps the result order-independent across pairs; the non-linear
+// mix ensures swapping values across pairs (e.g. {a=x,b=y} vs {a=y,b=x})
+// does not cancel under XOR.
 //
-// This is used to detect data points that share the same attribute identity
-// after attribute stripping.
+// Value hashing dispatches on pcommon.ValueType — see hashAttrValue — which
+// avoids the v.AsString() correctness gap for non-string types.
 func hashAttributes(attrs pcommon.Map) uint64 {
 	if attrs.Len() == 0 {
 		return 0
 	}
 	var combined uint64
 	attrs.Range(func(k string, v pcommon.Value) bool {
-		// Hash key and value together as a single unit, then XOR.
-		// Using a null byte separator ensures "a"+"b" != "ab"+""
-		pairHash := xxhash.Sum64String(k + "\x00" + v.AsString())
-		combined ^= pairHash
+		combined ^= pairHashMix(xxhash.Sum64String(k), hashAttrValue(v))
 		return true
 	})
 	return combined

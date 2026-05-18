@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package cardinalityguardianprocessor is documented in processor.go.
+// Package cardinalityguardianprocessor is documented in doc.go.
 package cardinalityguardianprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cardinalityguardianprocessor"
 
 import (
@@ -150,9 +150,9 @@ const (
 	EnforcementStripAndReaggregate EnforcementMode = "strip_and_reaggregate"
 )
 
-// ResolvedEnforcementMode returns the effective enforcement mode.
+// resolvedEnforcementMode returns the effective enforcement mode.
 // If EnforcementMode is not explicitly set, it defaults to tag_only.
-func (c *Config) ResolvedEnforcementMode() EnforcementMode {
+func (c *Config) resolvedEnforcementMode() EnforcementMode {
 	if c.EnforcementMode != "" {
 		return EnforcementMode(strings.ToLower(string(c.EnforcementMode)))
 	}

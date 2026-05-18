@@ -6,13 +6,11 @@ package cardinalityguardianprocessor // import "github.com/open-telemetry/opente
 import (
 	"context"
 	"hash/maphash"
-	"math"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/axiomhq/hyperloglog"
-	"github.com/cespare/xxhash/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -25,36 +23,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cardinalityguardianprocessor/internal/metadata"
 )
 
-// staleSweepEpochs is the number of consecutive epochs a tracker must receive
-// zero inserts before it is eligible for eviction from the shard map. Two
-// epochs ensures that a tracker that received traffic at the tail end of
-// a previous epoch (and was rotated into "previous") is not prematurely
-// reaped before traffic resumes in the next epoch.
+// staleSweepEpochs is how many consecutive zero-insert epochs a tracker must
+// see before eviction. Two epochs so a tracker that fired at the tail of one
+// epoch (and is rotated into "previous") isn't reaped before traffic resumes.
 const staleSweepEpochs = 2
 
-// numShards is the number of independent shard buckets used to partition the
-// trackers map. 256 was chosen because:
-//   - It is a power of two, so the modulo operation in getShard reduces to a
-//     single bitmask AND with no division.
-//   - It fits in a uint8, making the shard index derivation branchless.
-//   - Empirically, 256 shards eliminate visible mutex contention up to ~512
-//     concurrent goroutines under a uniform metric-name distribution.
+// numShards must be a power of two so getShard reduces to a bitmask AND.
 const numShards = 256
 
-// overflowSentinel is the value used to replace high-cardinality attribute
-// values when EnforcementOverflowAttribute mode is active. It follows the
-// OTel SDK convention for cardinality overflow handling.
+// overflowSentinel replaces the offending attribute value in
+// EnforcementOverflowAttribute mode. The OTel SDK spec uses
+// "otel.metric.overflow" as a boolean marker; we use a distinct value-side
+// sentinel so consumers can distinguish "this dimension overflowed" from
+// "the whole datapoint was marked overflow".
 const overflowSentinel = "otel.cardinality_overflow"
 
-// mustGetSketch retrieves a fresh HyperLogLog++ sketch.
-// The "14" refers to the precision parameter p=14, which uses
-// 2^14 = 16 384 registers and yields a standard error of ~0.81%. This is
-// accurate enough for cardinality enforcement while keeping each sketch at a
-// fixed ~12 KB in dense mode.
-//
-// Note: We allocate directly instead of using a sync.Pool because the
-// hyperloglog.Sketch library does not provide a safe Reset() method.
-// Returning a dirty sketch to a pool would corrupt calculations.
+// mustGetSketch returns a fresh HLL++ sketch (p=14 → ~0.81% standard error,
+// ~12 KB in dense mode). Allocated directly because hyperloglog.Sketch lacks
+// a safe Reset(), so pooling dirty sketches would corrupt estimates.
 func mustGetSketch() *hyperloglog.Sketch {
 	return hyperloglog.New14()
 }
@@ -68,84 +54,37 @@ type trackerKey struct {
 	attrKey    string
 }
 
-// estimateInterval controls how often the HLL Estimate() is recomputed in the
-// hot path. Estimate() in the axiomhq/hyperloglog library always calls
-// mergeSparse() when the sketch is in sparse mode, which allocates ~5 heap
-// objects per call (a []uint32 sort buffer, a ForEach closure, a new
-// *compressedList, its backing []byte, and a fresh intmap.Set for the reset
-// tmpSet). By refreshing the estimate once every 64 inserts — checked via a
-// power-of-2 bitmask, so no division — we amortize those allocations to
-// 5/64 ≈ 0.08 allocs/op, which rounds to 0 in Go's benchmark output.
-//
-// HLL is probabilistic by design, so a 64-insert lag on the cardinality
-// estimate has no practical impact on correctness: cardinality explosions
-// unfold over thousands of data points, and the two-phase estimation strategy
-// (see tracker.insert) ensures the estimate is accurate while the sketch is
-// growing through the configured limit.
+// estimateInterval is how often Sketch.Estimate() is recomputed in the hot
+// path. Estimate() allocates ~5 heap objects per call in sparse mode; running
+// it every 64 inserts amortizes that to ~0.08 allocs/op. Power-of-two ⇒
+// bitmask check. The two-phase strategy in tracker.insert keeps the estimate
+// accurate while the sketch grows through the configured limit.
 const estimateInterval = 64
 
-// tracker holds two HyperLogLog++ sketches for a single (metric_name,
-// label_key) pair and provides the fine-grained per-tracker mutex that allows
-// the broader shard lock to be released before HLL operations begin.
-//
-// Field layout is chosen to keep the hot fields together at the front of the
-// struct to improve cache-line locality during concurrent insert operations.
+// tracker holds two HLL++ sketches for a (metric_name, label_key) pair plus
+// a fine-grained mutex so the shard-level lock can be released before HLL
+// work begins. Hot fields are at the front for cache-line locality.
 type tracker struct {
-	// mu protects all fields below. It is held only for the duration of
-	// insert() or rotate(), not for the longer shard-level operations.
-	mu sync.Mutex
-
-	// current is the HLL sketch for the in-progress epoch. New label values
-	// are inserted here on every data point.
-	current *hyperloglog.Sketch
-
-	// previous is the HLL sketch snapshot from the last completed epoch.
-	// It provides the cardinality baseline against which the delta is measured.
-	// It is replaced (not reset) on every call to rotate().
+	mu       sync.Mutex
+	current  *hyperloglog.Sketch
 	previous *hyperloglog.Sketch
-
-	// cachedCurr is the most recently computed estimate of current.Estimate().
-	// It is refreshed lazily — see the two-phase strategy in insert().
-	cachedCurr uint64
-
-	// cachedPrev is the cached estimate of previous.Estimate() at the moment
-	// of the last rotate() call. It is stable for the entire epoch and is
-	// only updated in rotate(), so it is never recomputed in insert().
-	cachedPrev uint64
-
-	// insertCount tracks how many times insert() has been called since the last
-	// rotate(). It drives the Phase 1 / Phase 2 estimation switch.
+	// cachedCurr/cachedPrev: see two-phase strategy in insert(). cachedPrev
+	// is only updated in rotate().
+	cachedCurr  uint64
+	cachedPrev  uint64
 	insertCount uint64
-
-	// idleEpochs counts the number of consecutive epoch rotations during which
-	// this tracker received zero inserts. When idleEpochs reaches
-	// staleSweepEpochs the tracker is eligible for eviction from the shard map.
+	// idleEpochs counts consecutive zero-insert rotations; eviction at staleSweepEpochs.
 	idleEpochs int
 }
 
-// insert records a pre-computed xxhash value directly via InsertHash, which
-// accepts a uint64 and avoids the []byte path entirely. Sketch.Insert([]byte)
-// internally calls `hash(e)` where hash is a package-level function variable —
-// the compiler cannot see through function variables, so any []byte argument
-// would escape to the heap. By calling InsertHash(uint64) we pass a value
-// type, eliminating all slice allocations from the hot path.
+// insert feeds a pre-hashed value into the current sketch via InsertHash —
+// the []byte path would escape to the heap because the library's `hash`
+// indirection blocks escape analysis.
 //
-// The estimate is refreshed using a two-phase strategy:
-//
-//	Phase 1 — insertCount ≤ estimateInterval: estimate on every insert.
-//	This ensures that cardinality is measured accurately while the sketch is
-//	growing toward (and through) the configured limit. Without this phase,
-//	a flat lazy interval would allow the limit to be overshot by up to
-//	estimateInterval elements before the drop logic activates.
-//
-//	Phase 2 — insertCount > estimateInterval: estimate every estimateInterval
-//	inserts (bitmask check). In the high-throughput steady state the sketch
-//	cardinality has already stabilized; recomputing less frequently amortizes
-//	the ~5 allocs/call from mergeSparse() to ≈ 5/64 = 0.08 allocs/op, which
-//	rounds to 0 in Go's benchmark output.
-//
-// previous.Estimate() is stable between epoch rotations and is only updated
-// in rotate(), so cachedPrev is never recomputed here.
+// Two-phase estimate refresh: while insertCount ≤ estimateInterval, refresh
+// on every insert so the limit can't be overshot by up to estimateInterval
+// elements before drops activate. After that, refresh every estimateInterval
+// inserts (bitmask check). cachedPrev is only updated in rotate().
 func (t *tracker) insert(hashVal uint64) (curr, prev uint64) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -157,17 +96,10 @@ func (t *tracker) insert(hashVal uint64) (curr, prev uint64) {
 	return t.cachedCurr, t.cachedPrev
 }
 
-// rotate promotes current to previous and installs a pre-allocated fresh
-// sketch as current. The evicted previous sketch is released to the GC
-// (see the sketchPool recycling note above for why it is not Put back).
-//
-// The current cached estimate is carried forward as the new cachedPrev so
-// that the cardinality baseline is immediately available in the new epoch
-// without requiring an additional Estimate() call.
-//
-// Returns true if this tracker received zero inserts during the epoch that
-// just ended, allowing the caller to track consecutive idle epochs for the
-// stale-tracker eviction sweep.
+// rotate promotes current → previous, installs fresh as the new current, and
+// carries cachedCurr forward as cachedPrev so the new epoch has its baseline
+// without another Estimate() call. Returns true when this tracker received
+// zero inserts during the epoch that just ended.
 func (t *tracker) rotate(fresh *hyperloglog.Sketch) (idle bool) {
 	t.mu.Lock()
 	idle = t.insertCount == 0
@@ -185,9 +117,6 @@ func (t *tracker) rotate(fresh *hyperloglog.Sketch) (idle bool) {
 	return idle
 }
 
-// newTracker initializes a tracker, obtaining both sketches from sketchPool
-// to avoid a cold allocation on the first insert into a new (metric, label)
-// pair.
 func newTracker() *tracker {
 	return &tracker{
 		current:  mustGetSketch(),
@@ -195,126 +124,64 @@ func newTracker() *tracker {
 	}
 }
 
-// offenderEntry holds a snapshot of a single high-delta tracker for telemetry
-// reporting. It is produced during rotate() and consumed by the telemetry
-// callback. The struct is intentionally small and value-typed so that the
-// snapshot slice can be swapped atomically under a short mutex.
+// offenderEntry is a snapshot of a high-delta tracker for telemetry reporting,
+// produced in rotate() and consumed by the top-offenders callback.
 type offenderEntry struct {
 	metricName string
 	labelKey   string
 	delta      uint64
 }
 
-// trackerEntry pairs a trackerKey with its tracker pointer. It is used by
-// rotate() and collectShardDeltas() to snapshot shard contents outside of
-// the shard lock.
+// trackerEntry is the (key, tracker) pair used to snapshot shard contents
+// outside the shard lock.
 type trackerEntry struct {
 	key trackerKey
 	t   *tracker
 }
 
-// trackerShard is an independently-locked partition of the global trackers
-// map. The 256-shard design means that two goroutines processing metrics with
-// different names will, with high probability, land in different shards and
-// acquire different mutexes — they never contend with each other at all.
+// trackerShard is an independently-locked partition of the trackers map.
+// RWMutex because the common case (tracker exists) only needs a read lock.
 type trackerShard struct {
-	// mu guards the trackers map. It is a RWMutex because the common case
-	// (tracker already exists) only needs a read lock; the write lock is
-	// acquired only when a new (metric, label) pair is seen for the first time.
-	mu sync.RWMutex
-
-	// trackers maps a (metricName, attrKey) composite key to the live tracker
-	// for that combination. Trackers are never removed; the map grows
-	// monotonically with the number of unique (metric, label) pairs observed.
+	mu       sync.RWMutex
 	trackers map[trackerKey]*tracker
 }
 
-// cardinalityProcessor is the internal implementation of the
-// processor.Metrics interface. It is returned as that interface from
-// newCardinalityProcessor so that test code can exercise all interface methods
-// without importing internal types.
 type cardinalityProcessor struct {
-	// config is the validated, merged user configuration. It is read-only after
-	// construction and therefore does not require synchronization.
-	config *Config
-
-	// logger is derived from set.TelemetrySettings.Logger in the constructor.
-	// Sourcing the logger from the OTel Collector settings — rather than
-	// accepting a separate *zap.Logger parameter — ensures that every log record
-	// carries the correct component type and ID attributes automatically.
-	logger *zap.Logger
-
-	// next is the downstream consumer. ConsumeMetrics forwards the (mutated)
-	// metric batch to next after all attribute enforcement has been applied.
-	next consumer.Metrics
-
-	// protectedLabels is a pre-built O(1) lookup set of label keys that must
-	// never be dropped or tagged, regardless of cardinality. It is populated
-	// from Config.NeverDropLabels at construction time and never modified.
+	config          *Config
+	logger          *zap.Logger
+	next            consumer.Metrics
 	protectedLabels map[string]struct{}
-
-	// seed is the maphash.Seed used by getShard. It is randomized once at
-	// construction time so that shard distribution is unpredictable to external
-	// actors (preventing deliberate hash-collision attacks) while remaining
-	// stable for the lifetime of the processor.
-	seed maphash.Seed
-
-	// shards is the 256-element array of independently-locked tracker
-	// partitions. Using a fixed-size array (not a slice) avoids an extra pointer
-	// dereference on every hot-path lookup.
+	// seed is randomized so shard distribution can't be gamed by malicious input.
+	seed   maphash.Seed
 	shards [numShards]*trackerShard
-
-	// cancel is called in Shutdown() after the gauge registration is released
-	// to stop the background rotation goroutine. We don't cache context.Context
-	// per Go best practices.
+	// cancel stops the background rotation goroutine in Shutdown.
 	cancel context.CancelFunc
-
-	// enforcementMode mirrors Config.ResolvedEnforcementMode() and is captured
-	// directly on the struct to avoid an extra pointer dereference + method call
-	// into the Config on every data point.
+	// enforcementMode mirrors config.resolvedEnforcementMode() to skip the
+	// method call on every data point.
 	enforcementMode EnforcementMode
 
-	// labelsStripped is an atomic counter tracking how many attributes were
-	// stripped or tagged. By tracking this purely as an integer, we prevent
-	// floating-point drift. This feeds both the labels stripped counter AND
-	// the estimated savings computation at scrape time.
-	labelsStripped atomic.Int64
-
-	// trackerCount is an atomic tracking the total number of unique metrics
-	// and labels being actively mapped across all shards.
-	trackerCount atomic.Int64
-	// trackersRejected counts how many tracker creation requests were denied
-	// because MaxTrackerCount was reached.
+	labelsStripped   atomic.Int64
+	trackerCount     atomic.Int64
 	trackersRejected atomic.Int64
-	// rejectionWarned ensures we only print the limit warning once per epoch.
+	// rejectionWarned ensures the MaxTrackerCount warning fires only once per epoch.
 	rejectionWarned atomic.Bool
-	// dropLogCount tracks how many enforcement Warn logs have been emitted this epoch.
-	dropLogCount atomic.Int64
-	// dropsThisEpoch tracks total drops this epoch for the suppression summary.
-	dropsThisEpoch atomic.Int64
+	dropLogCount    atomic.Int64
+	dropsThisEpoch  atomic.Int64
 
-	// telemetry holds the mdatagen TelemetryBuilder to allow clean un-registration
-	// during Shutdown. This is critical for GC correctness to prevent closures
-	// from keeping the processor alive indefinitely.
+	// telemetry is held so Shutdown can unregister the observable callbacks;
+	// without that the SDK keeps the processor (and its 256 shards) alive.
 	telemetry *metadata.TelemetryBuilder
 
-	// topOffenders holds the most recent Top-N snapshot, computed during
-	// rotate(). Read by the telemetry callback; written by rotate().
-	// Protected by topOffendersMu.
 	topOffenders   []offenderEntry
 	topOffendersMu sync.RWMutex
 
-	// wg tracks the background rotation goroutine so Shutdown can block
-	// until it fully exits.
+	// wg tracks the rotation goroutine so Shutdown blocks until it exits.
 	wg sync.WaitGroup
 }
 
-// newCardinalityProcessor constructs a cardinalityProcessor, registers its
-// internal OTel telemetry instruments, and returns it as a processor.Metrics
-// interface. It derives the logger from set.TelemetrySettings so that all OTel
-// Collector log records carry the correct component attributes — passing a
-// separate *zap.Logger alongside processor.Settings would create two sources of
-// truth and risk log records reaching the wrong sink.
+// newCardinalityProcessor constructs a cardinalityProcessor and registers its
+// internal OTel telemetry instruments. The logger is sourced from
+// set.TelemetrySettings so log records carry the correct component attributes.
 func newCardinalityProcessor(_ context.Context, cfg *Config, set processor.Settings, next consumer.Metrics) (processor.Metrics, error) {
 	protected := make(map[string]struct{}, len(cfg.NeverDropLabels))
 	for _, l := range cfg.NeverDropLabels {
@@ -330,7 +197,7 @@ func newCardinalityProcessor(_ context.Context, cfg *Config, set processor.Setti
 		protectedLabels: protected,
 		seed:            maphash.MakeSeed(),
 		cancel:          cancel,
-		enforcementMode: cfg.ResolvedEnforcementMode(),
+		enforcementMode: cfg.resolvedEnforcementMode(),
 	}
 
 	for i := range p.shards {
@@ -369,9 +236,7 @@ func newCardinalityProcessor(_ context.Context, cfg *Config, set processor.Setti
 
 	err = builder.RegisterProcessorCardinalitySavingsEstimatedCallback(func(_ context.Context, o metric.Float64Observer) error {
 		drops := p.labelsStripped.Load()
-		savings := float64(drops) * p.config.EstimatedCostPerMetricMonth
-		roundedSavings := math.Round(savings*100) / 100
-		o.Observe(roundedSavings)
+		o.Observe(float64(drops) * p.config.EstimatedCostPerMetricMonth)
 		return nil
 	})
 	if err != nil {
@@ -530,22 +395,11 @@ func (p *cardinalityProcessor) processSummaryDataPoints(metricName string, dps p
 	}
 }
 
-// handleAttributes is the innermost enforcement loop. It iterates over every
-// attribute on a single data point and applies the cardinality decision from
-// shouldDrop to each one.
-//
-// The behavior depends on the effective enforcement mode:
-//
-//   - tag_only: preserves all attributes and injects "otel.metric.overflow=true".
-//   - overflow_attribute: replaces the high-cardinality attribute value with
-//     the sentinel "otel.cardinality_overflow" string.
-//   - strip_and_reaggregate: removes the attribute (reaggregation happens
-//     at the processMetric level after all data points are processed).
-//
-// The injection/replacement cannot happen inside the RemoveIf callback because
-// pdata's KeyValueList backing slice may be reallocated by a PutBool/PutStr
-// call while RemoveIf still holds its internal cursor, producing undefined
-// behavior. Post-iteration mutations are deferred.
+// handleAttributes applies the cardinality decision from shouldDrop to every
+// attribute on a single data point. Tag/replace mutations are deferred until
+// after RemoveIf completes — a PutBool/PutStr inside the callback could
+// reallocate the pdata KeyValueList while RemoveIf still holds its internal
+// cursor.
 func (p *cardinalityProcessor) handleAttributes(metricName string, attrs pcommon.Map) {
 	p.handleAttributesWithMode(metricName, attrs, p.enforcementMode)
 }
@@ -566,23 +420,35 @@ func (p *cardinalityProcessor) handleAttributesWithMode(metricName string, attrs
 			return false
 		}
 
-		if p.shouldDrop(metricName, k, v.AsString()) {
+		if p.shouldDrop(metricName, k, v) {
 			switch mode {
 			case EnforcementTagOnly:
 				// DUAL-ROUTE MODE: record the decision, keep the attribute.
+				// Debug log is uncapped — zap suppresses Debug by default,
+				// and DropLogMaxPerEpoch is scoped to the strip-mode Warn.
 				shouldTag = true
+				p.logger.Debug("Cardinality overflow (tag_only)",
+					zap.String("metric", metricName),
+					zap.String("key", k))
 				return false
 
 			case EnforcementOverflowAttribute:
 				// OVERFLOW MODE: defer value replacement until after iteration.
 				overflowKeys = append(overflowKeys, k)
+				p.logger.Debug("Cardinality overflow (overflow_attribute)",
+					zap.String("metric", metricName),
+					zap.String("key", k))
 				return false
 
 			case EnforcementStripAndReaggregate:
 				// STRIP MODE: log and signal RemoveIf to delete this attribute.
+				// Increment dropLogCount unconditionally so the per-epoch
+				// suppression summary is accurate even when
+				// DropLogMaxPerEpoch == 0 (unlimited).
 				p.labelsStripped.Add(1)
 				p.dropsThisEpoch.Add(1)
-				if maxLog := p.config.DropLogMaxPerEpoch; maxLog == 0 || p.dropLogCount.Add(1) <= int64(maxLog) {
+				count := p.dropLogCount.Add(1)
+				if maxLog := p.config.DropLogMaxPerEpoch; maxLog == 0 || count <= int64(maxLog) {
 					p.logger.Warn("Dropping high-cardinality attribute",
 						zap.String("metric", metricName),
 						zap.String("key", k))
@@ -642,24 +508,13 @@ func (p *cardinalityProcessor) isProtected(key string) bool {
 	return ok
 }
 
-// rotate advances the sliding cardinality window by one epoch across all 256
-// shards. It is called from the background ticker goroutine in Start() and
-// never from the hot path, so it may take short-lived read locks without
-// impacting ConsumeMetrics throughput.
+// rotate advances the sliding cardinality window by one epoch across all
+// shards. It runs on the background ticker goroutine, never on the hot path.
 //
-// The rotation sequence for each shard is:
-//  1. Acquire a read lock and snapshot all tracker pointers (no allocations
-//     inside the lock — the slice is allocated before the lock is acquired in
-//     the next iteration, but this snapshot is small).
-//  2. Release the read lock.
-//  3. Allocate fresh sketches from sketchPool entirely outside any lock.
-//  4. Call tracker.rotate() for each tracker, which acquires only the fine-
-//     grained per-tracker mutex. ConsumeMetrics goroutines holding that same
-//     tracker's mutex are paused for microseconds, not the entire shard.
-//
-// This design means only 1/256th of all trackers are temporarily stalled at
-// any given point during a rotation, and the shard-level write lock is never
-// held during sketch allocation.
+// Per shard: snapshot tracker pointers under a brief RLock, release, allocate
+// fresh sketches outside any lock, then call tracker.rotate on each — which
+// takes only the fine-grained per-tracker mutex. The shard-level write lock
+// is never held during sketch allocation.
 func (p *cardinalityProcessor) rotate() {
 	p.logger.Debug("Rotating cardinality sketches")
 
@@ -677,9 +532,11 @@ func (p *cardinalityProcessor) rotate() {
 		// Snapshot tracker references under a shard read lock — no sketch
 		// allocations inside the lock.
 		shard.mu.RLock()
-		entries := make([]trackerEntry, 0, len(shard.trackers))
+		entries := make([]trackerEntry, len(shard.trackers))
+		idx := 0
 		for k, t := range shard.trackers {
-			entries = append(entries, trackerEntry{key: k, t: t})
+			entries[idx] = trackerEntry{key: k, t: t}
+			idx++
 		}
 		shard.mu.RUnlock()
 
@@ -882,29 +739,18 @@ func (p *cardinalityProcessor) Shutdown(_ context.Context) error {
 	return nil
 }
 
-// shouldDrop is the core cardinality decision function. It returns true when
-// the unique-value count for attrKey within metricName has grown by more than
-// MaxCardinalityDeltaPerEpoch since the last epoch rotation.
-//
-// Call sequence:
-//  1. Hash attrVal to a uint64 with xxhash.Sum64String (zero allocation).
-//  2. Route to the correct shard with getShard (maphash, zero allocation).
-//  3. Attempt a read lock to find an existing tracker (fast path).
-//  4. On miss: upgrade to a write lock and double-check before inserting a new
-//     tracker (classic double-checked locking pattern — safe in Go because the
-//     sync package provides the necessary memory barriers).
-//  5. Insert the hash into the tracker's current HLL sketch and retrieve the
-//     cached (curr, prev) estimates.
-//  6. Guard against uint64 underflow: if curr ≤ prev (possible due to HLL
-//     probabilistic variance near sketch boundaries), return false.
-//  7. Return true only if (curr − prev) > MaxCardinalityDeltaPerEpoch.
-func (p *cardinalityProcessor) shouldDrop(metricName, attrKey, attrVal string) bool {
+// shouldDrop returns true when the unique-value count for (metricName, attrKey)
+// has grown by more than MaxCardinalityDeltaPerEpoch since the last epoch
+// rotation. The fast path is a shard RLock; a missed tracker triggers
+// double-checked locking to install one. curr ≤ prev is treated as no growth
+// to guard against uint64 underflow from HLL variance near sketch boundaries.
+func (p *cardinalityProcessor) shouldDrop(metricName, attrKey string, attrVal pcommon.Value) bool {
 	key := trackerKey{metricName: metricName, attrKey: attrKey}
 
-	// Hash the attribute value to a uint64 before acquiring any lock.
-	// We pass this directly to InsertHash, bypassing the []byte path and
-	// the library's internal hash variable — see tracker.insert for details.
-	hashVal := xxhash.Sum64String(attrVal)
+	// Hash the attribute value before acquiring any lock. hashAttrValue keeps
+	// Str/Int/Double/Bool/Bytes on a zero-allocation path; Map/Slice fall back
+	// to AsString (JSON-marshal).
+	hashVal := hashAttrValue(attrVal)
 
 	// Route to 1/256th of the total key space.
 	shard := p.getShard(metricName)

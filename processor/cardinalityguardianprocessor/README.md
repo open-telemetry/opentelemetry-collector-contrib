@@ -151,20 +151,13 @@ Both `strip_and_reaggregate` and `overflow_attribute` modes utilize the spatial 
 
 > **Note:** For metric types that don't yet support reaggregation, the processor automatically falls back to `tag_only` behavior with an `otel.metric.overflow` tag, ensuring no data corruption.
 
-### Deprecated: `tag_only` boolean
-
-The `tag_only: true/false` boolean field is deprecated. Use `enforcement_mode` instead:
-- `tag_only: true` → `enforcement_mode: tag_only`
-- `tag_only: false` → `enforcement_mode: strip_and_reaggregate`
-
-If `enforcement_mode` is set, the `tag_only` boolean is ignored.
-
 ## Warnings
 
 Care needs to be taken when modifying data point attributes using this processor:
 
-- **Single-Writer Conflict**: When using `enforcement_mode: strip_and_reaggregate` or `enforcement_mode: overflow_attribute`, the processor performs inline spatial reaggregation for Delta Sums and Gauges to resolve the Single-Writer violation. For metric types that don't support reaggregation (Cumulative Sums, Histograms), the processor automatically falls back to `tag_only` behavior.
-- **Hash Collisions**: The reaggregation logic uses xxhash with null-byte separators to compute attribute identity. While theoretical collisions are possible, the risk is near-zero for typical OTel attribute maps.
+- **Single-Writer Conflict**: `strip_and_reaggregate` and `overflow_attribute` both intentionally cause attribute identity collisions and rely on inline spatial reaggregation to merge them. Reaggregation is only safe for Delta Sums and Gauges; Cumulative Sums, Histograms, ExponentialHistograms, and Summaries require stateful tracking that this processor doesn't perform, so they fall back to `tag_only` regardless of the configured mode. `overflow_attribute` is not a valid fallback for those types — collapsing multiple cumulative streams (or merging histogram buckets across mis-aligned scales) is what reaggregation has to solve in the first place.
+- **Hash Collisions**: Identity hashing uses `xxhash` with per-`pcommon.ValueType` dispatch and a multiplicative key/value mix to remain order-independent. Theoretical hash collisions are possible but vanishingly rare for typical attribute maps.
+- **Future work**: Supporting reaggregation across multiple OTel SDK strategies ([metrics SDK aggregation](https://opentelemetry.io/docs/specs/otel/metrics/sdk/#aggregation)) — e.g. Cumulative Sum reaggregation with stateful tracking, Histogram bucket-aligned merging — is out of scope for this PR but tracked as a follow-up.
 
 ## Troubleshooting
 

@@ -53,6 +53,57 @@ func TestHashAttributes_DifferentKeys(t *testing.T) {
 	assert.NotEqual(t, hashAttributes(a), hashAttributes(b))
 }
 
+// TestHashAttributes_CrossPairValueSwap verifies that swapping values across
+// two keys of the same map (e.g. {method=GET, status=POST} vs
+// {method=POST, status=GET}) produces a different hash. A naive XOR of
+// per-pair hashes would cancel under this swap; pairHashMix must break that
+// symmetry.
+func TestHashAttributes_CrossPairValueSwap(t *testing.T) {
+	a := pcommon.NewMap()
+	a.PutStr("method", "GET")
+	a.PutStr("status", "POST")
+
+	b := pcommon.NewMap()
+	b.PutStr("method", "POST")
+	b.PutStr("status", "GET")
+
+	assert.NotEqual(t, hashAttributes(a), hashAttributes(b),
+		"cross-pair value swap must change the hash")
+}
+
+func TestHashAttributes_NonStringValueTypes(t *testing.T) {
+	// Map-, slice-, and int-typed attribute values with different contents
+	// must each produce different pair hashes.
+	a := pcommon.NewMap()
+	mapValA := a.PutEmptyMap("payload")
+	mapValA.PutStr("inner", "alpha")
+
+	b := pcommon.NewMap()
+	mapValB := b.PutEmptyMap("payload")
+	mapValB.PutStr("inner", "beta")
+
+	assert.NotEqual(t, hashAttributes(a), hashAttributes(b))
+
+	// Slice values too.
+	sa := pcommon.NewMap()
+	sliceA := sa.PutEmptySlice("payload")
+	sliceA.AppendEmpty().SetStr("a")
+
+	sb := pcommon.NewMap()
+	sliceB := sb.PutEmptySlice("payload")
+	sliceB.AppendEmpty().SetStr("b")
+
+	assert.NotEqual(t, hashAttributes(sa), hashAttributes(sb))
+
+	// Int values too.
+	ia := pcommon.NewMap()
+	ia.PutInt("n", 42)
+	ib := pcommon.NewMap()
+	ib.PutInt("n", 43)
+
+	assert.NotEqual(t, hashAttributes(ia), hashAttributes(ib))
+}
+
 func TestHashAttributes_SubsetDiffers(t *testing.T) {
 	// {a=1, b=2} should differ from {a=1}.
 	a := pcommon.NewMap()
