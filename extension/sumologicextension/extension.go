@@ -208,9 +208,10 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 	)
 
 	if se.updateMetadata {
-		err = se.updateMetadataWithBackoff(ctx)
+		err = se.updateMetadataWithHTTPClient(ctx, se.httpClient)
 		if err != nil {
-			return err
+			se.logger.Warn("Initial metadata update failed, will retry asynchronously", zap.Error(err))
+			go se.updateMetadataAsync()
 		}
 	}
 
@@ -857,6 +858,61 @@ func (se *SumologicExtension) updateMetadataWithBackoff(ctx context.Context) err
 		case <-t.C:
 		case <-ctx.Done():
 			return fmt.Errorf("collector metadata update cancelled: %w", ctx.Err())
+		}
+	}
+}
+
+// updateMetadataAsync retries metadata update in the background with exponential
+// backoff until the update succeeds or the collector shuts down. It is started
+// when the initial synchronous attempt in Start() fails so that startup is not
+// blocked by transient network unavailability (e.g. Windows boot race).
+func (se *SumologicExtension) updateMetadataAsync() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		<-se.closeChan
+		cancel()
+	}()
+
+	b := backoff.NewExponentialBackOff()
+	b.MaxElapsedTime = 0 // retry indefinitely until success or shutdown
+	b.Reset()
+
+	for {
+		select {
+		case <-se.closeChan:
+			se.logger.Info("Async metadata update loop stopped: collector shutting down")
+			return
+		default:
+		}
+
+		err := se.updateMetadataWithHTTPClient(ctx, se.httpClient)
+		if err == nil {
+			se.logger.Info("Async metadata update succeeded")
+			return
+		}
+
+		se.logger.Warn("Async metadata update failed, will retry", zap.Error(err))
+
+		var backOffErr *backoff.PermanentError
+		if errors.As(err, &backOffErr) {
+			se.logger.Error("Async metadata update encountered a permanent error, stopping retries", zap.Error(err))
+			return
+		}
+
+		nbo := b.NextBackOff()
+		if nbo == backoff.Stop {
+			se.logger.Error("Async metadata update stopped unexpectedly: backoff exhausted")
+			return
+		}
+
+		t := time.NewTimer(nbo)
+		select {
+		case <-t.C:
+		case <-se.closeChan:
+			t.Stop()
+			se.logger.Info("Async metadata update loop stopped: collector shutting down")
+			return
 		}
 	}
 }
