@@ -62,13 +62,13 @@ func TestFactory_Type(t *testing.T) {
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	t.Cleanup(func() {
-		_ = featuregate.GlobalRegistry().Set(metadata.ProcessorTransformDefaultErrorModeIgnoreFeatureGate.ID(), false)
+		_ = featuregate.GlobalRegistry().Set(metadata.ProcessorTransformDefaultErrorModeIgnoreFeatureGate.ID(), true)
 	})
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.EqualExportedValues(t, &Config{
-		ErrorMode:         ottl.PropagateError,
+		ErrorMode:         ottl.IgnoreError,
 		TraceStatements:   []common.ContextStatements{},
 		MetricStatements:  []common.ContextStatements{},
 		LogStatements:     []common.ContextStatements{},
@@ -77,11 +77,11 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 
-	err := featuregate.GlobalRegistry().Set(metadata.ProcessorTransformDefaultErrorModeIgnoreFeatureGate.ID(), true)
+	err := featuregate.GlobalRegistry().Set(metadata.ProcessorTransformDefaultErrorModeIgnoreFeatureGate.ID(), false)
 	require.NoError(t, err)
 
 	cfg = factory.CreateDefaultConfig()
-	assert.Equal(t, ottl.IgnoreError, cfg.(*Config).ErrorMode)
+	assert.Equal(t, ottl.PropagateError, cfg.(*Config).ErrorMode)
 }
 
 func TestFactoryCreateProcessor_Empty(t *testing.T) {

@@ -64,7 +64,7 @@ Within each `<signal_statements>` list, only certain OTTL Path prefixes can be u
 This means, for example, that you cannot use the Path `span.attributes` within the `log_statements` configuration section.
 
 `error_mode`: determines how the processor treats errors that occur while processing a statement.
-If the top-level `error_mode` is not specified, `propagate` will be used.
+If the top-level `error_mode` is not specified, `ignore` will be used.
 The top-level `error_mode` can be overridden at statement group level, offering more granular control over error handling. If the statement group `error_mode` is not specified, the top-level `error_mode` is applied.
 
 | error_mode | description                                                                                                                                 |
@@ -968,6 +968,10 @@ The Transform Processor uses the [OpenTelemetry Transformation Language](https:/
 - [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry): The processor allows you to modify `span_id`, `trace_id`, and `parent_span_id` for traces and `span_id`, and `trace_id` logs.  Modifying these fields could lead to orphaned spans or logs.
 
 ## Feature Gate
+
+### `processor.transform.defaultErrorModeIgnore`
+
+The `processor.transform.defaultErrorModeIgnore` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) changes the default top-level `error_mode` of the transform processor from `propagate` to `ignore`. This gate is currently in `beta` (enabled by default), meaning the default `error_mode` is `ignore`. To revert to the previous default of `propagate`, disable the gate: `--feature-gates=-processor.transform.defaultErrorModeIgnore`.
 
 ### `transform.flatten.logs`
 
