@@ -16,6 +16,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const fetchTimeout = 30 * time.Second
+
 type secretsClient interface {
 	AccessSecretVersion(ctx context.Context, req *secretmanagerpb.AccessSecretVersionRequest,
 		opts ...gax.CallOption) (*secretmanagerpb.AccessSecretVersionResponse, error)
@@ -84,7 +86,7 @@ func (p *Provider) Shutdown(_ context.Context) error {
 }
 
 func (p *Provider) refresh(ctx context.Context) error {
-	fetchCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	fetchCtx, cancel := context.WithTimeout(ctx, fetchTimeout)
 	defer cancel()
 
 	secretPath := fmt.Sprintf("projects/%s/secrets/%s/versions/latest", p.config.Project, p.config.SecretName)
