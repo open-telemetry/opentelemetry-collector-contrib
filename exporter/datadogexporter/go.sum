@@ -131,8 +131,6 @@ github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.81.0-devel.0.20260515214905-7c02565fb890/go.mod h1:9+WcbozBoLqb4QvvhIHb/P/kwIsiXTumtiwBbqrLufk=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/logs v0.81.0-devel.0.20260515214905-7c02565fb890 h1:qjjjvTfwSGypr2uQra1k27eGynvUud9VTXnK4XEDw5c=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/logs v0.81.0-devel.0.20260515214905-7c02565fb890/go.mod h1:HLbqcaC3zrIq8tRNs+PnJa3qD+rYmYwlJ4G4CR2Wo6M=
-github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.79.0-devel.0.20260427132548-60ea7187423d h1:oevla5XqfarZ9r8rdOKTUvCloreGVzzQ5O0wuE/6NCg=
-github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.79.0-devel.0.20260427132548-60ea7187423d/go.mod h1:B6TNrljB09m8DGrjuD5cIdAw9kxTJaNNqWgRvyYJMFs=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.81.0-devel.0.20260515214905-7c02565fb890 h1:dNHwbsUit4lVei2+KpfdWkBGYirVa6rmxXCZlJMRpEE=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.81.0-devel.0.20260515214905-7c02565fb890/go.mod h1:oNz6kdB62VVCja4KtBKcoMJ7l9TDDNLHsGeCKsjxyYI=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/rum v0.81.0-devel.0.20260515214905-7c02565fb890 h1:cFQtuv/ce8alqrYeaNgpKvUnTvnTvbzXrwbXl8ZuR7U=
