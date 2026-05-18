@@ -22,7 +22,7 @@ jobs:
   exp-setup-environment:
     timeout-minutes: 30
     runs-on: ubuntu-24.04
-    if: ${{ github.actor != 'dependabot[bot]' && (github.event.action != 'labeled' && github.event.action != 'unlabeled' || github.event.label.name == 'ci:full') }}
+    if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
@@ -56,7 +56,7 @@ jobs:
   # which doesn't fit the group-matrix shape.
   exp-ci-scope:
     runs-on: ubuntu-24.04
-    if: ${{ github.actor != 'dependabot[bot]' && (github.event.action != 'labeled' && github.event.action != 'unlabeled' || github.event.label.name == 'ci:full') }}
+    if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     outputs:
       matrix: ${{ steps.post.outputs.matrix }}
       direct_matrix: ${{ steps.post.outputs.direct_matrix }}
@@ -164,7 +164,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   exp-lint:
-    if: ${{ github.actor != 'dependabot[bot]' && always() && (github.event.action != 'labeled' && github.event.action != 'unlabeled' || github.event.label.name == 'ci:full') }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [exp-setup-environment, exp-lint-matrix]
     steps:
@@ -198,7 +198,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   exp-govulncheck:
-    if: ${{ github.actor != 'dependabot[bot]' && always() && (github.event.action != 'labeled' && github.event.action != 'unlabeled' || github.event.label.name == 'ci:full') }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [exp-setup-environment, exp-govulncheck-matrix]
     steps:
@@ -301,7 +301,7 @@ jobs:
           fi
 
   exp-unittest:
-    if: ${{ github.actor != 'dependabot[bot]' && always() && (github.event.action != 'labeled' && github.event.action != 'unlabeled' || github.event.label.name == 'ci:full') }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [exp-setup-environment, exp-unittest-matrix]
     steps:
@@ -375,7 +375,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   exp-integration-tests:
-    if: ${{ github.actor != 'dependabot[bot]' && always() && (github.event.action != 'labeled' && github.event.action != 'unlabeled' || github.event.label.name == 'ci:full') }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [exp-setup-environment, exp-integration-tests-matrix, exp-integration-sudo-tests-matrix]
     steps:
