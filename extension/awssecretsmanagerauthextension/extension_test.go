@@ -94,12 +94,6 @@ func TestClient_CredentialRotation_PickedUp(t *testing.T) {
 	req, _ := http.NewRequest("GET", "http://example.com", nil)
 	_, err = rt.RoundTrip(req)
 	require.NoError(t, err)
-
-	username, password, ok := req.BasicAuth()
-	// The original request shouldn't be modified - check via roundtripper
-	_ = ok
-	_ = username
-	_ = password
 }
 
 func TestClient_CredentialProvider_Interface(t *testing.T) {
