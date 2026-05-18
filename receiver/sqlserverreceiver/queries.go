@@ -1065,9 +1065,9 @@ SELECT
 	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
 	CASE
 		WHEN SUM(waiting_requests_count) > 0
-		THEN CAST(SUM(wait_time_ms) AS FLOAT) / SUM(waiting_requests_count)
+		THEN CAST(SUM(wait_time_ms) AS FLOAT) / SUM(waiting_requests_count) / 1000.0
 		ELSE 0
-	END AS [avg_wait_time_ms]
+	END AS [avg_wait_time_seconds]
 FROM sys.dm_os_latch_stats WITH (NOLOCK)
 WHERE waiting_requests_count > 0
 {filter_instance_name};

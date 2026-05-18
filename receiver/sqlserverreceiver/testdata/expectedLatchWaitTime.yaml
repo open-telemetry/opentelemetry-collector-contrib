@@ -21,11 +21,11 @@ resourceMetrics:
           - description: Average time spent waiting for latches (lighter-weight synchronization).
             gauge:
               dataPoints:
-                - asDouble: 2.5
+                - asDouble: 0.0025
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.latch.wait_time.avg
-            unit: ms
+            unit: s
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

@@ -525,7 +525,7 @@ metrics:
     enabled: false
     description: Average time spent waiting for latches (lighter-weight synchronization).
     stability: development
-    unit: ms
+    unit: s
     gauge:
       value_type: double
     attributes: []

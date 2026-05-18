@@ -741,7 +741,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Average time spent waiting for latches (lighter-weight synchronization).", mi.Description())
-					assert.Equal(t, "ms", mi.Unit())
+					assert.Equal(t, "s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

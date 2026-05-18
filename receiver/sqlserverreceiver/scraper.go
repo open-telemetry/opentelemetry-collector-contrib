@@ -783,7 +783,7 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 
 func (s *sqlServerScraperHelper) recordLatchWaitTimeMetrics(ctx context.Context) error {
 	// Constants are the columns for metrics from query
-	const avgWaitTimeMs = "avg_wait_time_ms"
+	const avgWaitTimeSeconds = "avg_wait_time_seconds"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -799,11 +799,11 @@ func (s *sqlServerScraperHelper) recordLatchWaitTimeMetrics(ctx context.Context)
 	for i, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 
-		val, err = retrieveFloat(row, avgWaitTimeMs)
+		val, err = retrieveFloat(row, avgWaitTimeSeconds)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, avgWaitTimeMs))
+			errs = append(errs, fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, avgWaitTimeSeconds))
 		} else {
-			// Value is already in milliseconds from the query
+			// Value is already in seconds from the query
 			s.mb.RecordSqlserverLatchWaitTimeAvgDataPoint(now, val.(float64))
 		}
 

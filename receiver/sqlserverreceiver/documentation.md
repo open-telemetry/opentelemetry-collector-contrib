@@ -379,7 +379,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Double | Development |
+| s | Gauge | Double | Development |
 
 ### sqlserver.lock.timeout.rate
 
