@@ -99,10 +99,10 @@ resourceLogs:
                   doubleValue: 1
               - key: oracledb.query.started
                 value:
-                  stringValue: ""
+                  stringValue: "2026-01-01T12:00:00Z"
               - key: oracledb.session.started
                 value:
-                  stringValue: ""
+                  stringValue: "2026-01-01T12:00:00Z"
               - key: oracledb.session.duration
                 value:
                   doubleValue: 0
@@ -133,7 +133,7 @@ resourceLogs:
             body: {}
             eventName: db.server.query_sample
             spanId: a7ad6b7169203331
-            timeUnixNano: "1779099978888998000"
+            timeUnixNano: "1759142300369458000"
             traceId: 0af7651916cd43dd8448eb211c80319c
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
