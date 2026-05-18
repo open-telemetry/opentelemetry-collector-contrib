@@ -260,6 +260,16 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | database.status | The current status of a database | Str: ``online``, ``restoring``, ``recovering``, ``pending_recovery``, ``suspect``, ``offline`` | Recommended | - |
 
+### sqlserver.database.data_size
+
+Size of data files only (excluding log files).
+
+Storage consumed by data files only, excluding transaction logs. Useful for separating data growth from log growth. Reported per database via resource attribute. Available on all SQL Server editions (2012+).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
 ### sqlserver.database.execution.errors
 
 Number of execution errors.
@@ -333,6 +343,36 @@ This metric is only available when the receiver is configured to directly connec
 | file_type | The type of file being monitored. | Any Str | Recommended | - |
 | direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | Recommended | - |
 
+### sqlserver.database.security.principals.count
+
+Number of security principals (logins, users) at the database level.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database-level security principals including database users, roles, and application roles. Useful for security auditing and access management. Reported per database via resource attribute. Available on SQL Server 2012+.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {principals} | Gauge | Int | Development |
+
+### sqlserver.database.security.role_members.count
+
+Number of database role memberships.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database role membership assignments. Critical for monitoring privilege escalation and compliance. Reported per database via resource attribute. Available on SQL Server 2012+.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {memberships} | Gauge | Int | Development |
+
+### sqlserver.database.size
+
+Total size of database including data and log files.
+
+Total storage consumed by the database (data + log). Essential for capacity planning and growth tracking. Reported per database via resource attribute. Available on all SQL Server editions (2012+).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
 ### sqlserver.database.tempdb.space
 
 Total free space in temporary DB.
@@ -353,7 +393,17 @@ TempDB version store size.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “KB” | Gauge | Double | Development |
+| KB | Gauge | Double | Development |
+
+### sqlserver.database.transactions.active
+
+Number of currently active transactions.
+
+Critical for monitoring transaction blocking and long-running transactions. Reported per database via resource attribute. Available on all SQL Server editions (2005+).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {transactions} | Gauge | Int | Development |
 
 ### sqlserver.deadlock.rate
 
@@ -411,7 +461,17 @@ Total number of memory grants pending.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| “{grants}” | Sum | Int | Cumulative | false | Development |
+| {grants} | Sum | Int | Cumulative | false | Development |
+
+### sqlserver.memory.target
+
+Maximum amount of memory SQL Server is willing to use (target server memory).
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Target memory represents the ideal amount of memory SQL Server would like to acquire based on recent memory demand. When actual memory usage is less than target memory, SQL Server will attempt to acquire more memory. Available on SQL Server 2005+.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
 
 ### sqlserver.memory.usage
 
@@ -419,7 +479,7 @@ Total memory in use.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| “KB” | Sum | Double | Cumulative | false | Development |
+| KB | Sum | Double | Cumulative | false | Development |
 
 ### sqlserver.os.wait.duration
 
@@ -513,6 +573,26 @@ This metric is only available when the receiver is configured to directly connec
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {writes}/s | Gauge | Double | Development |
+
+### sqlserver.security.principals.count
+
+Number of security principals (logins, users) at the server level.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks server-level security principals including SQL logins, Windows logins, and server roles. Essential for security monitoring and compliance auditing. Available on SQL Server 2012+.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {principals} | Gauge | Int | Development |
+
+### sqlserver.security.role_members.count
+
+Number of server role memberships.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks server role membership assignments. Critical for monitoring high-privilege access and compliance. Available on SQL Server 2012+.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {memberships} | Gauge | Int | Development |
 
 ### sqlserver.table.count
 

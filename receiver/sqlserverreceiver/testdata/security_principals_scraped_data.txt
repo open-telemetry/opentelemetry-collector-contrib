@@ -1,0 +1,7 @@
+[
+    {
+        "measurement": "sqlserver_security_principals",
+        "sql_instance": "SERVER1",
+        "principal_count": "45"
+    }
+]

@@ -16,6 +16,8 @@ all_set:
     sqlserver.database.count:
       enabled: true
       attributes: ["database.status"]
+    sqlserver.database.data_size:
+      enabled: true
     sqlserver.database.execution.errors:
       enabled: true
     sqlserver.database.full_scan.rate:
@@ -29,10 +31,18 @@ all_set:
     sqlserver.database.operations:
       enabled: true
       attributes: ["physical_filename","logical_filename","file_type","direction"]
+    sqlserver.database.security.principals.count:
+      enabled: true
+    sqlserver.database.security.role_members.count:
+      enabled: true
+    sqlserver.database.size:
+      enabled: true
     sqlserver.database.tempdb.space:
       enabled: true
       attributes: ["tempdb.state"]
     sqlserver.database.tempdb.version_store.size:
+      enabled: true
+    sqlserver.database.transactions.active:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
@@ -51,6 +61,8 @@ all_set:
     sqlserver.logout.rate:
       enabled: true
     sqlserver.memory.grants.pending.count:
+      enabled: true
+    sqlserver.memory.target:
       enabled: true
     sqlserver.memory.usage:
       enabled: true
@@ -86,6 +98,10 @@ all_set:
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: true
     sqlserver.resource_pool.disk.throttled.write.rate:
+      enabled: true
+    sqlserver.security.principals.count:
+      enabled: true
+    sqlserver.security.role_members.count:
       enabled: true
     sqlserver.table.count:
       enabled: true
@@ -149,6 +165,8 @@ reaggregate_set:
     sqlserver.database.count:
       enabled: true
       attributes: []
+    sqlserver.database.data_size:
+      enabled: true
     sqlserver.database.execution.errors:
       enabled: true
     sqlserver.database.full_scan.rate:
@@ -162,10 +180,18 @@ reaggregate_set:
     sqlserver.database.operations:
       enabled: true
       attributes: []
+    sqlserver.database.security.principals.count:
+      enabled: true
+    sqlserver.database.security.role_members.count:
+      enabled: true
+    sqlserver.database.size:
+      enabled: true
     sqlserver.database.tempdb.space:
       enabled: true
       attributes: []
     sqlserver.database.tempdb.version_store.size:
+      enabled: true
+    sqlserver.database.transactions.active:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
@@ -184,6 +210,8 @@ reaggregate_set:
     sqlserver.logout.rate:
       enabled: true
     sqlserver.memory.grants.pending.count:
+      enabled: true
+    sqlserver.memory.target:
       enabled: true
     sqlserver.memory.usage:
       enabled: true
@@ -219,6 +247,10 @@ reaggregate_set:
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: true
     sqlserver.resource_pool.disk.throttled.write.rate:
+      enabled: true
+    sqlserver.security.principals.count:
+      enabled: true
+    sqlserver.security.role_members.count:
       enabled: true
     sqlserver.table.count:
       enabled: true
@@ -282,6 +314,8 @@ none_set:
     sqlserver.database.count:
       enabled: false
       attributes: ["database.status"]
+    sqlserver.database.data_size:
+      enabled: false
     sqlserver.database.execution.errors:
       enabled: false
     sqlserver.database.full_scan.rate:
@@ -295,10 +329,18 @@ none_set:
     sqlserver.database.operations:
       enabled: false
       attributes: ["physical_filename","logical_filename","file_type","direction"]
+    sqlserver.database.security.principals.count:
+      enabled: false
+    sqlserver.database.security.role_members.count:
+      enabled: false
+    sqlserver.database.size:
+      enabled: false
     sqlserver.database.tempdb.space:
       enabled: false
       attributes: ["tempdb.state"]
     sqlserver.database.tempdb.version_store.size:
+      enabled: false
+    sqlserver.database.transactions.active:
       enabled: false
     sqlserver.deadlock.rate:
       enabled: false
@@ -317,6 +359,8 @@ none_set:
     sqlserver.logout.rate:
       enabled: false
     sqlserver.memory.grants.pending.count:
+      enabled: false
+    sqlserver.memory.target:
       enabled: false
     sqlserver.memory.usage:
       enabled: false
@@ -352,6 +396,10 @@ none_set:
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: false
     sqlserver.resource_pool.disk.throttled.write.rate:
+      enabled: false
+    sqlserver.security.principals.count:
+      enabled: false
+    sqlserver.security.role_members.count:
       enabled: false
     sqlserver.table.count:
       enabled: false

@@ -1,0 +1,18 @@
+change_type: enhancement
+
+component: sqlserverreceiver
+
+note: Add 4 new security metrics for SQL Server monitoring - sqlserver.security.principals.count, sqlserver.security.role_members.count, sqlserver.database.security.principals.count, and sqlserver.database.security.role_members.count
+
+issues: []
+
+subtext: |
+  This change adds 4 new security-related metrics for SQL Server monitoring:
+  - sqlserver.security.principals.count - Server-level security principals count
+  - sqlserver.security.role_members.count - Server-level role members count
+  - sqlserver.database.security.principals.count - Database-level security principals count
+  - sqlserver.database.security.role_members.count - Database-level role members count
+
+  These metrics are useful for security auditing, compliance monitoring, and tracking changes
+  to security principals and role memberships at both server and database levels.
+  All metrics are disabled by default and set to development stability.

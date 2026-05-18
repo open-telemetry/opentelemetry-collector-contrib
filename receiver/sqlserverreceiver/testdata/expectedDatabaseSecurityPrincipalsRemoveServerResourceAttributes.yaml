@@ -1,0 +1,29 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Count of database-level users and security principals.
+            gauge:
+              dataPoints:
+                - asInt: "18"
+                  attributes:
+                    - key: database_name
+                      value:
+                        stringValue: testdb
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.security.principals.count
+            unit: '{principals}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest

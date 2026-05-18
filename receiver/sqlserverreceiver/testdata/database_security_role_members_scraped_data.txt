@@ -1,0 +1,8 @@
+[
+    {
+        "measurement": "sqlserver_database_security_role_members",
+        "sql_instance": "SERVER1",
+        "database_name": "testdb",
+        "role_member_count": "12"
+    }
+]
