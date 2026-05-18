@@ -710,7 +710,7 @@ func Test_parseLEEF_target_error(t *testing.T) {
 
 func Test_createParseLEEFFunction(t *testing.T) {
 	factory := NewParseLEEFFactory()
-	assert.Equal(t, "parse_leef", factory.Name())
+	assert.Equal(t, "ParseLEEF", factory.Name())
 
 	args := &parseLEEFArguments{
 		Target: ottl.StandardStringGetter[*ottllog.TransformContext]{

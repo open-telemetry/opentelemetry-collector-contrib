@@ -21,7 +21,7 @@ type parseLEEFArguments struct {
 }
 
 func NewParseLEEFFactory() ottl.Factory[*ottllog.TransformContext] {
-	return ottl.NewFactory("parse_leef", &parseLEEFArguments{}, createParseLEEFFunction)
+	return ottl.NewFactory("ParseLEEF", &parseLEEFArguments{}, createParseLEEFFunction)
 }
 
 func createParseLEEFFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottllog.TransformContext], error) {

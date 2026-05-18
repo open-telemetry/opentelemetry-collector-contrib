@@ -275,7 +275,7 @@ In addition to the common OTTL functions, the processor defines its own function
 
 **Logs only functions**
 
-- [parse_leef](#parse_leef)
+- [ParseLEEF](#parseleef)
 
 **Traces only functions**
 
@@ -695,15 +695,15 @@ Examples:
 # counts: [5, 11, 1]
 ```
 
-### parse_leef
+### ParseLEEF
 
-`parse_leef(target)`
+`ParseLEEF(target)`
 
-The `parse_leef` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [Log Event Extended Format (LEEF)](https://www.ibm.com/docs/en/dsm?topic=overview-leef-event-components) message.
+The `ParseLEEF` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [Log Event Extended Format (LEEF)](https://www.ibm.com/docs/en/dsm?topic=overview-leef-event-components) message.
 
 `target` is a Getter that returns a string. If the returned string is empty, or cannot be parsed as LEEF, an error will be returned.
 
-`parse_leef` can parse both LEEF 1.0 and LEEF 2.0 messages. The function is tolerant of an optional syslog header preceding the `LEEF:` token. The returned map has the following top-level fields:
+`ParseLEEF` can parse both LEEF 1.0 and LEEF 2.0 messages. The function is tolerant of an optional syslog header preceding the `LEEF:` token. The returned map has the following top-level fields:
 
 * `version` — the LEEF version (`"1.0"` or `"2.0"`).
 * `vendor`, `product_name`, `product_version`, `event_id` — the LEEF header fields.
@@ -713,11 +713,11 @@ For LEEF 1.0 the attribute delimiter is always a tab. For LEEF 2.0 the delimiter
 
 Examples:
 
-- `parse_leef(body)`
+- `ParseLEEF(body)`
 
-- `parse_leef("LEEF:1.0|Microsoft|MSExchange|4.0 SP1|15345|src=10.50.1.1\tdst=2.10.20.20\tsev=5")`
+- `ParseLEEF("LEEF:1.0|Microsoft|MSExchange|4.0 SP1|15345|src=10.50.1.1\tdst=2.10.20.20\tsev=5")`
 
-- `parse_leef("LEEF:2.0|Lancope|StealthWatch|1.0|41|^|src=10.0.1.8^dst=10.0.0.5^sev=5")`
+- `ParseLEEF("LEEF:2.0|Lancope|StealthWatch|1.0|41|^|src=10.0.1.8^dst=10.0.0.5^sev=5")`
 
 ### set_semconv_span_name
 
