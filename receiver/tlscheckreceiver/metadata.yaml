@@ -1,6 +1,7 @@
 display_name: TLS Check Receiver
 type: tls_check
 deprecated_type: tlscheck
+reaggregation_enabled: true
 
 description: This receiver emits metrics about x.509 certificates.
 
@@ -21,12 +22,15 @@ resource_attributes:
 attributes:
   tlscheck.x509.cn:
     description: The commonName in the subject of the certificate.
+    requirement_level: recommended
     type: string
   tlscheck.x509.issuer:
     description: The entity that issued the certificate.
+    requirement_level: recommended
     type: string
   tlscheck.x509.san:
     description: The Subject Alternative Name of the certificate.
+    requirement_level: opt_in
     type: slice
 
 metrics:

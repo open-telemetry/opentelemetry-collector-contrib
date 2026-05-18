@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -63,53 +62,29 @@ func TestBooleanTagFilterInverted(t *testing.T) {
 	resAttr["example"] = 8
 
 	cases := []struct {
-		Desc                  string
-		Trace                 *samplingpolicy.TraceData
-		Decision              samplingpolicy.Decision
-		DisableInvertDecision bool
+		Desc     string
+		Trace    *samplingpolicy.TraceData
+		Decision samplingpolicy.Decision
 	}{
 		{
-			Desc:  "non-matching span attribute",
-			Trace: newTraceBoolAttrs(empty, "non_matching", true),
-			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
-			Decision: samplingpolicy.InvertSampled,
+			Desc:     "non-matching span attribute",
+			Trace:    newTraceBoolAttrs(empty, "non_matching", true),
+			Decision: samplingpolicy.Sampled,
 		},
 		{
-			Desc:  "span attribute with non matching boolean value",
-			Trace: newTraceBoolAttrs(empty, "example", false),
-			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
-			Decision: samplingpolicy.InvertSampled,
+			Desc:     "span attribute with non matching boolean value",
+			Trace:    newTraceBoolAttrs(empty, "example", false),
+			Decision: samplingpolicy.Sampled,
 		},
 		{
-			Desc:  "span attribute with matching boolean value",
-			Trace: newTraceBoolAttrs(empty, "example", true),
-			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
-			Decision: samplingpolicy.InvertNotSampled,
-		},
-		{
-			Desc:                  "span attribute with non matching boolean value with DisableInvertDecision",
-			Trace:                 newTraceBoolAttrs(empty, "example", false),
-			Decision:              samplingpolicy.Sampled,
-			DisableInvertDecision: true,
-		},
-		{
-			Desc:                  "span attribute with matching boolean value with DisableInvertDecision",
-			Trace:                 newTraceBoolAttrs(empty, "example", true),
-			Decision:              samplingpolicy.NotSampled,
-			DisableInvertDecision: true,
+			Desc:     "span attribute with matching boolean value",
+			Trace:    newTraceBoolAttrs(empty, "example", true),
+			Decision: samplingpolicy.NotSampled,
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			if !c.DisableInvertDecision {
-				err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", false)
-				assert.NoError(t, err)
-				defer func() {
-					err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", true)
-					assert.NoError(t, err)
-				}()
-			}
 			u, _ := uuid.NewRandom()
 			decision, err := filter.Evaluate(t.Context(), pcommon.TraceID(u), c.Trace)
 			assert.NoError(t, err)

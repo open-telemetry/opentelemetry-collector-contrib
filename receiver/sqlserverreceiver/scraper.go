@@ -782,15 +782,17 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context) (pcommon.Resource, error) {
 	// Constants are the column names of the database status
 	const (
-		executionCount = "execution_count"
-		logicalReads   = "total_logical_reads"
-		logicalWrites  = "total_logical_writes"
-		physicalReads  = "total_physical_reads"
-		queryHash      = "query_hash"
-		queryPlan      = "query_plan"
-		queryPlanHash  = "query_plan_hash"
-		queryText      = "query_text"
-		rowsReturned   = "total_rows"
+		databaseName      = "database_name"
+		executionCount    = "execution_count"
+		lastExecutionTime = "last_execution_time"
+		logicalReads      = "total_logical_reads"
+		logicalWrites     = "total_logical_writes"
+		physicalReads     = "total_physical_reads"
+		queryHash         = "query_hash"
+		queryPlan         = "query_plan"
+		queryPlanHash     = "query_plan_hash"
+		queryText         = "query_text"
+		rowsReturned      = "total_rows"
 		// the time returned from mssql is in microsecond
 		totalElapsedTime = "total_elapsed_time"
 		totalGrant       = "total_grant_kb"
@@ -867,6 +869,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			return obfuscated, nil
 		})
 
+		databaseNameVal := row[databaseName]
+
 		var cached bool
 
 		executionCountVal := s.retrieveValue(row, executionCount, &errs, retrieveInt)
@@ -922,6 +926,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			procExecCountVal = int64(0)
 		}
 
+		lastExecutionTimeVal := row[lastExecutionTime]
+
 		totalElapsedTimeVal := float64(totalElapsedTimeDiffsMicrosecond[i]) / 1_000_000
 		if count, ok := executionCountVal.(int64); !ok || count == 0 || totalElapsedTimeVal == 0 {
 			continue
@@ -938,6 +944,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			timestamp,
 			totalWorkerTimeInSecVal,
 			queryTextVal.(string),
+			databaseNameVal,
 			executionCountVal.(int64),
 			logicalReadsVal.(int64),
 			logicalWritesVal.(int64),
@@ -954,6 +961,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			procExecCountVal.(int64),
 			row[storedProcedureID],
 			row[storedProcedureName],
+			lastExecutionTimeVal,
 		)
 	}
 	return resources, errors.Join(errs...)
@@ -1118,6 +1126,60 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		}
 		// in case the sql returned rows contains null value, we just log a warning and continue
 		s.logger.Warn("problems encountered getting log rows", zap.Error(err))
+	}
+
+	activeSessionIDs := make(map[int64]struct{})
+	blockingSessionIDs := make(map[int64]struct{})
+	for _, row := range rows {
+		sessionVal, parseErr := retrieveInt(row, sessionID)
+		if parseErr == nil {
+			activeSessionIDs[sessionVal.(int64)] = struct{}{}
+		}
+
+		blockingVal, parseErr := retrieveInt(row, blockingSessionID)
+		if parseErr == nil && blockingVal.(int64) > 0 {
+			blockingSessionIDs[blockingVal.(int64)] = struct{}{}
+		}
+	}
+
+	missingBlockingSessionIDs := make(map[int64]struct{})
+	for blockerSessionID := range blockingSessionIDs {
+		if _, ok := activeSessionIDs[blockerSessionID]; !ok {
+			missingBlockingSessionIDs[blockerSessionID] = struct{}{}
+		}
+	}
+
+	if len(missingBlockingSessionIDs) > 0 && s.db != nil {
+		idleBlockingQuery := fmt.Sprintf(
+			getSQLServerIdleBlockingSessionsQuery(),
+			formatSQLServerSessionIDsParam(missingBlockingSessionIDs),
+		)
+		idleBlockingClient := s.clientProviderFunc(
+			sqlquery.DbWrapper{Db: s.db},
+			idleBlockingQuery,
+			s.logger,
+			s.telemetry,
+		)
+
+		idleRows, idleErr := idleBlockingClient.QueryRows(
+			ctx,
+			sql.Named("top", s.config.MaxRowsPerQuery),
+		)
+		if idleErr != nil {
+			s.logger.Warn("problems encountered getting idle blocker log rows", zap.Error(idleErr))
+		}
+		if idleErr == nil || errors.Is(idleErr, sqlquery.ErrNullValueWarning) {
+			for _, idleRow := range idleRows {
+				idleSessionVal, parseErr := retrieveInt(idleRow, sessionID)
+				if parseErr == nil {
+					if _, ok := missingBlockingSessionIDs[idleSessionVal.(int64)]; ok {
+						rows = append(rows, idleRow)
+					}
+				} else {
+					s.logger.Debug("failed to parse idle blocker session id", zap.String("column", sessionID), zap.String("value", idleRow[sessionID]), zap.Error(parseErr))
+				}
+			}
+		}
 	}
 
 	var errs []error

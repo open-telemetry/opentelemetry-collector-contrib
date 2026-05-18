@@ -1,0 +1,15 @@
+display_name: GenAI Normalizer Processor
+type: gen_ai_normalizer
+
+status:
+  class: processor
+  stability:
+    development: [traces]
+  distributions: []
+  codeowners:
+    active: [TylerHelmuth]
+
+tests:
+  config:
+    sources:
+      - name: openinference

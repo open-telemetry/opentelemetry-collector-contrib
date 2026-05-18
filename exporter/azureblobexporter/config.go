@@ -7,7 +7,9 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 type TelemetryConfig struct {
@@ -73,6 +75,9 @@ const (
 
 // Config contains the main configuration options for the azure storage blob exporter
 type Config struct {
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
+
 	// URL is the endpoint to the azure storage account. This is only required until there is an azure auth extension in the future.
 	URL string `mapstructure:"url"`
 
