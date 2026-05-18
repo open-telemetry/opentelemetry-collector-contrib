@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datareceivers // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
+package datadogdatareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/datadogdatareceiver"
 
 import (
 	"context"

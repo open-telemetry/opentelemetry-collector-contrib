@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datasenders // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
+package tcpudpdatasender // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/tcpudpdatasender"
 
 import (
 	"bytes"
@@ -14,10 +14,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-type SyslogWriter struct {
+type TCPUDPWriter struct {
 	testbed.DataSenderBase
 	conn    net.Conn
 	buf     []string
@@ -25,10 +26,10 @@ type SyslogWriter struct {
 	network string
 }
 
-var _ testbed.LogDataSender = (*SyslogWriter)(nil)
+var _ testbed.LogDataSender = (*TCPUDPWriter)(nil)
 
-func NewSyslogWriter(network, host string, port, batchSize int) *SyslogWriter {
-	f := &SyslogWriter{
+func NewTCPUDPWriter(network, host string, port, batchSize int) *TCPUDPWriter {
+	f := &TCPUDPWriter{
 		network: network,
 		bufSize: batchSize,
 		DataSenderBase: testbed.DataSenderBase{
@@ -39,7 +40,7 @@ func NewSyslogWriter(network, host string, port, batchSize int) *SyslogWriter {
 	return f
 }
 
-func (f *SyslogWriter) GetEndpoint() net.Addr {
+func (f *TCPUDPWriter) GetEndpoint() net.Addr {
 	var addr net.Addr
 	switch f.network {
 	case "udp":
@@ -51,11 +52,11 @@ func (f *SyslogWriter) GetEndpoint() net.Addr {
 	return addr
 }
 
-func (*SyslogWriter) Capabilities() consumer.Capabilities {
+func (*TCPUDPWriter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (f *SyslogWriter) Start() (err error) {
+func (f *TCPUDPWriter) Start() (err error) {
 	f.conn, err = net.Dial(f.GetEndpoint().Network(), f.GetEndpoint().String())
 	// udp not ack, can't use net.Dial to check udp server is ready, use sleep 1 second to wait udp server start
 	if f.network == "udp" {
@@ -64,7 +65,7 @@ func (f *SyslogWriter) Start() (err error) {
 	return err
 }
 
-func (f *SyslogWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
+func (f *TCPUDPWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
@@ -79,37 +80,29 @@ func (f *SyslogWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
 	return nil
 }
 
-func (f *SyslogWriter) GenConfigYAMLStr() string {
+func (f *TCPUDPWriter) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
-  syslog:
-    protocol: rfc5424
-    %s:
-      listen_address: "%s"
+  %slog:
+    listen_address: "%s"
 `, f.network, f.GetEndpoint())
 }
 
-func (f *SyslogWriter) Send(lr plog.LogRecord) error {
+func (f *TCPUDPWriter) Send(lr plog.LogRecord) error {
 	ts := time.Unix(int64(lr.Timestamp()/1_000_000_000), int64(lr.Timestamp()%1_000_000_000)).Format(time.RFC3339Nano)
 	sdid := strings.Builder{}
-	if lr.TraceID().String() != "" {
-		sdid.WriteString(fmt.Sprintf("%s=%q ", "trace_id", lr.TraceID()))
-	}
-	if lr.SpanID().String() != "" {
-		sdid.WriteString(fmt.Sprintf("%s=%q ", "span_id", lr.SpanID()))
-	}
+	sdid.WriteString(fmt.Sprintf("%s=%q ", "trace_id", traceutil.TraceIDToHexOrEmptyString(lr.TraceID())))
+	sdid.WriteString(fmt.Sprintf("%s=%q ", "span_id", traceutil.SpanIDToHexOrEmptyString(lr.SpanID())))
 	sdid.WriteString(fmt.Sprintf("%s=\"%d\" ", "trace_flags", lr.Flags()))
 	for k, v := range lr.Attributes().All() {
-		if v.Str() != "" {
-			sdid.WriteString(fmt.Sprintf("%s=%q ", k, v.Str()))
-		}
+		sdid.WriteString(fmt.Sprintf("%s=%q ", k, v.Str()))
 	}
-	msg := fmt.Sprintf("<166>1 %s 127.0.0.1 - - - [test@12345 %s] %s\n", ts, strings.TrimSpace(sdid.String()), lr.Body().Str())
+	msg := fmt.Sprintf("<166> %s 127.0.0.1 - - - [%s] %s\n", ts, sdid.String(), lr.Body().Str())
 
 	f.buf = append(f.buf, msg)
 	return f.SendCheck()
 }
 
-func (f *SyslogWriter) SendCheck() error {
+func (f *TCPUDPWriter) SendCheck() error {
 	if len(f.buf) == f.bufSize {
 		b := bytes.NewBufferString("")
 		for _, v := range f.buf {
@@ -125,9 +118,9 @@ func (f *SyslogWriter) SendCheck() error {
 	return nil
 }
 
-func (*SyslogWriter) Flush() {
+func (*TCPUDPWriter) Flush() {
 }
 
-func (*SyslogWriter) ProtocolName() string {
-	return "syslog"
+func (f *TCPUDPWriter) ProtocolName() string {
+	return fmt.Sprintf(`%slog`, f.network)
 }

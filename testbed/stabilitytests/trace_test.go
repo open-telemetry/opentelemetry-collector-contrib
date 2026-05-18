@@ -15,10 +15,10 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/datadogdatareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/jaegerdatareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/zipkindatareceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/datadogdatasender"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/jaegerdatasender"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/zipkindatasender"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -97,8 +97,8 @@ func TestStabilityTracesZipkin(t *testing.T) {
 func TestStabilityTracesDatadog(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		datasenders.NewDatadogDataSender(),
-		datareceivers.NewDataDogDataReceiver(),
+		datadogdatasender.NewDatadogDataSender(),
+		datadogdatareceiver.NewDataDogDataReceiver(),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      80,
 			ExpectedMaxRAM:      110,
