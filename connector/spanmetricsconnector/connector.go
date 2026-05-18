@@ -623,8 +623,17 @@ func (p *connectorImp) buildAttributes(
 	return attr
 }
 
-// matchDimensions iterates over span and resource attributes,
-// applying function f if attribute matches any of dimension's name or glob expression.
+func sortedKeys(attrs pcommon.Map) []string {
+	keys := make([]string, 0, attrs.Len())
+	for n := range attrs.All() {
+		keys = append(keys, n)
+	}
+	slices.Sort(keys)
+	return keys
+}
+
+// matchDimensions iterates over span and resource attributes, applying function f
+// if the attribute matches any of dimension's name or glob expression.
 func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs pcommon.Map, f func(string, pcommon.Value)) {
 	for _, d := range dimensions.nameDimensions {
 		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceAttrs); ok {
@@ -635,20 +644,22 @@ func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs p
 	if len(dimensions.globDimensions) == 0 {
 		return
 	}
-	for n, v := range span.Attributes().All() {
+	for _, n := range sortedKeys(span.Attributes()) {
 		for _, g := range dimensions.globDimensions {
 			if g.Match(n) {
+				v, _ := span.Attributes().Get(n)
 				f(n, v)
 				break
 			}
 		}
 	}
-	for n, v := range resourceAttrs.All() {
+	for _, n := range sortedKeys(resourceAttrs) {
 		if _, ok := span.Attributes().Get(n); ok {
 			continue
 		}
 		for _, g := range dimensions.globDimensions {
 			if g.Match(n) {
+				v, _ := resourceAttrs.Get(n)
 				f(n, v)
 				break
 			}
