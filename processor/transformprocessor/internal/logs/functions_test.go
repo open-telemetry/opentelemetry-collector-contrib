@@ -16,8 +16,8 @@ import (
 
 func Test_LogFunctions(t *testing.T) {
 	expected := ottlfuncs.StandardFuncs[*ottllog.TransformContext]()
-	expected["parse_clf"] = logparsingfuncs.NewParseCLFFactory()
-	expected["parse_leef"] = logparsingfuncs.NewParseLEEFFactory()
+	expected["ParseCLF"] = logparsingfuncs.NewParseCLFFactory()
+	expected["ParseLEEF"] = logparsingfuncs.NewParseLEEFFactory()
 	actual := LogFunctions()
 	require.Len(t, actual, len(expected))
 	for k := range actual {

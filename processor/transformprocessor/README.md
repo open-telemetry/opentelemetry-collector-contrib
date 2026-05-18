@@ -275,8 +275,8 @@ In addition to the common OTTL functions, the processor defines its own function
 
 **Logs only functions**
 
-- [parse_clf](#parse_clf)
-- [parse_leef](#parse_leef)
+- [ParseCLF](#parseclf)
+- [ParseLEEF](#parseleef)
 
 **Traces only functions**
 
@@ -696,11 +696,11 @@ Examples:
 # counts: [5, 11, 1]
 ```
 
-### parse_clf
+### ParseCLF
 
-`parse_clf(target)`
+`ParseCLF(target)`
 
-The `parse_clf` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [Common Log Format (CLF)](https://www.w3.org/Daemon/User/Config/Logging.html#common-logfile-format) HTTP access log entry.
+The `ParseCLF` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [Common Log Format (CLF)](https://www.w3.org/Daemon/User/Config/Logging.html#common-logfile-format) HTTP access log entry.
 
 `target` is a Getter that returns a string. If the returned string is empty, or cannot be parsed as CLF, an error will be returned.
 
@@ -723,18 +723,18 @@ The returned map has the following fields:
 
 Examples:
 
-- `parse_clf(body)`
-- `parse_clf("127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] \"GET /apache_pb.gif HTTP/1.0\" 200 2326")`
+- `ParseCLF(body)`
+- `ParseCLF("127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] \"GET /apache_pb.gif HTTP/1.0\" 200 2326")`
 
-### parse_leef
+### ParseLEEF
 
-`parse_leef(target)`
+`ParseLEEF(target)`
 
-The `parse_leef` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [Log Event Extended Format (LEEF)](https://www.ibm.com/docs/en/dsm?topic=overview-leef-event-components) message.
+The `ParseLEEF` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [Log Event Extended Format (LEEF)](https://www.ibm.com/docs/en/dsm?topic=overview-leef-event-components) message.
 
 `target` is a Getter that returns a string. If the returned string is empty, or cannot be parsed as LEEF, an error will be returned.
 
-`parse_leef` can parse both LEEF 1.0 and LEEF 2.0 messages. The function is tolerant of an optional syslog header preceding the `LEEF:` token. The returned map has the following top-level fields:
+`ParseLEEF` can parse both LEEF 1.0 and LEEF 2.0 messages. The function is tolerant of an optional syslog header preceding the `LEEF:` token. The returned map has the following top-level fields:
 
 - `version` — the LEEF version (`"1.0"` or `"2.0"`).
 - `vendor`, `product_name`, `product_version`, `event_id` — the LEEF header fields.
@@ -744,9 +744,9 @@ For LEEF 1.0 the attribute delimiter is always a tab. For LEEF 2.0 the delimiter
 
 Examples:
 
-- `parse_leef(body)`
-- `parse_leef("LEEF:1.0|Microsoft|MSExchange|4.0 SP1|15345|src=10.50.1.1\tdst=2.10.20.20\tsev=5")`
-- `parse_leef("LEEF:2.0|Lancope|StealthWatch|1.0|41|^|src=10.0.1.8^dst=10.0.0.5^sev=5")`
+- `ParseLEEF(body)`
+- `ParseLEEF("LEEF:1.0|Microsoft|MSExchange|4.0 SP1|15345|src=10.50.1.1\tdst=2.10.20.20\tsev=5")`
+- `ParseLEEF("LEEF:2.0|Lancope|StealthWatch|1.0|41|^|src=10.0.1.8^dst=10.0.0.5^sev=5")`
 
 ### set_semconv_span_name
 

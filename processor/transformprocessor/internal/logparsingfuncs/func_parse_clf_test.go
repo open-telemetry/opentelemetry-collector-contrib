@@ -281,7 +281,7 @@ func Test_parseCLF_target_error(t *testing.T) {
 
 func Test_createParseCLFFunction(t *testing.T) {
 	factory := NewParseCLFFactory()
-	assert.Equal(t, "parse_clf", factory.Name())
+	assert.Equal(t, "ParseCLF", factory.Name())
 
 	args := &parseCLFArguments{
 		Target: ottl.StandardStringGetter[*ottllog.TransformContext]{
