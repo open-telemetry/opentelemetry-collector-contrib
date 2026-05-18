@@ -23,6 +23,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
+const logRetentionHours = "log.retention.hours"
+
 type brokerScraperFranz struct {
 	// franz-go handles (lazy created on first scrape)
 	adm *kadm.Client
