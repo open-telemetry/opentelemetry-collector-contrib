@@ -585,6 +585,7 @@ func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 }
 
 func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMetrics) error {
+	timestamp := pcommon.NewTimestampFromTime(p.nowWithOffset())
 	mDuration := pmetric.NewMetric()
 	mDuration.SetName("traces_service_graph_request_client")
 	mDuration.SetUnit(secondsUnit)
@@ -596,6 +597,7 @@ func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMet
 		mDuration.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		for key, expHistogram := range p.reqClientDurationExpHistogram {
 			dpDuration := mDuration.ExponentialHistogram().DataPoints().AppendEmpty()
+			dpDuration.SetTimestamp(timestamp)
 			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 			dimensions, ok := p.dimensionsForSeries(key)
 			if !ok {
