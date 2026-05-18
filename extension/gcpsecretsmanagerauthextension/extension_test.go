@@ -12,7 +12,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/extension/extensionauth"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth"
 )
@@ -161,10 +160,3 @@ type roundTripperFunc func(*http.Request) (*http.Response, error)
 func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return f(r)
 }
-
-// Ensure interfaces are satisfied
-var (
-	_ extensionauth.HTTPClient = (*gcpSecretsManagerAuthClient)(nil)
-	_ extensionauth.GRPCClient = (*gcpSecretsManagerAuthClient)(nil)
-	_ extensionauth.Server     = (*gcpSecretsManagerAuthServer)(nil)
-)

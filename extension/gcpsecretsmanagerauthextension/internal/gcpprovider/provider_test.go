@@ -184,13 +184,6 @@ func TestProvider_Shutdown(t *testing.T) {
 }
 
 func TestProvider_NilPayload(t *testing.T) {
-	mock := &mockSecretsClient{}
-	resp := &secretmanagerpb.AccessSecretVersionResponse{
-		Payload: nil,
-	}
-	_ = resp
-	mock.payload = nil
-
 	p := NewProvider(&Config{
 		Project:         "test-project",
 		SecretName:      "test-secret",
