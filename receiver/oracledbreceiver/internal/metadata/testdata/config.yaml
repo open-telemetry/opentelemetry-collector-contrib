@@ -78,6 +78,9 @@ all_set:
     oracledb.sessions.usage:
       enabled: true
       attributes: ["session_type","session_status"]
+    oracledb.sga.usage:
+      enabled: true
+      attributes: ["oracledb.sga.component"]
     oracledb.storage.usage:
       enabled: true
     oracledb.storage.utilization:
@@ -185,6 +188,9 @@ reaggregate_set:
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
+      enabled: true
+      attributes: []
+    oracledb.sga.usage:
       enabled: true
       attributes: []
     oracledb.storage.usage:
@@ -296,6 +302,9 @@ none_set:
     oracledb.sessions.usage:
       enabled: false
       attributes: ["session_type","session_status"]
+    oracledb.sga.usage:
+      enabled: false
+      attributes: ["oracledb.sga.component"]
     oracledb.storage.usage:
       enabled: false
     oracledb.storage.utilization:
