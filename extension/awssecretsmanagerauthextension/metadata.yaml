@@ -7,7 +7,7 @@ status:
     alpha: [extension]
   distributions: [contrib]
   codeowners:
-    active: [meebok, frzifus, thomasbaldwin, donny-z]
+    active: [meebok, frzifus, thomasbaldwin, donny-z, lazureykis]
 
 tests:
   skip_lifecycle: true
