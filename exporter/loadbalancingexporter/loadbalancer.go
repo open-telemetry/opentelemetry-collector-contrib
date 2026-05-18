@@ -125,6 +125,7 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 			&awsCloudMapResolver.HealthStatus,
 			awsCloudMapResolver.Interval,
 			awsCloudMapResolver.Timeout,
+			awsCloudMapResolver.OwnerAccount,
 			telemetry,
 		)
 		if err != nil {
