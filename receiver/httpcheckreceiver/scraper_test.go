@@ -998,10 +998,10 @@ func TestValidationResultStructuredAttributes(t *testing.T) {
 	ilm := rm.ScopeMetrics().At(0)
 
 	type validationResult struct {
-		Type     string
-		Path     string
-		Expected string
-		Result   string
+		Type       string
+		Expression string
+		Expected   string
+		Result     string
 	}
 
 	var validationResults []validationResult
@@ -1033,7 +1033,7 @@ func TestValidationResultStructuredAttributes(t *testing.T) {
 				typeAttr, ok := dp.Attributes().Get("validation.type")
 				assert.True(t, ok)
 
-				pathAttr, ok := dp.Attributes().Get("validation.path")
+				expressionAttr, ok := dp.Attributes().Get("validation.expression")
 				assert.True(t, ok)
 
 				expectedAttr, ok := dp.Attributes().Get("validation.expected")
@@ -1043,10 +1043,10 @@ func TestValidationResultStructuredAttributes(t *testing.T) {
 				assert.True(t, ok)
 
 				validationResults = append(validationResults, validationResult{
-					Type:     typeAttr.Str(),
-					Path:     pathAttr.Str(),
-					Expected: expectedAttr.Str(),
-					Result:   resultAttr.Str(),
+					Type:       typeAttr.Str(),
+					Expression: expressionAttr.Str(),
+					Expected:   expectedAttr.Str(),
+					Result:     resultAttr.Str(),
 				})
 			}
 
@@ -1109,30 +1109,30 @@ func TestValidationResultStructuredAttributes(t *testing.T) {
 			switch vr.Result {
 			case "passed":
 				jsonPathPassed++
-				assert.Contains(t, []string{"system_1", "system_2"}, vr.Path)
+				assert.Contains(t, []string{"system_1", "system_2"}, vr.Expression)
 				assert.Equal(t, "true", vr.Expected)
 
 			case "failed":
 				jsonPathFailed++
-				assert.Equal(t, "system_3", vr.Path)
+				assert.Equal(t, "system_3", vr.Expression)
 				assert.Equal(t, "true", vr.Expected)
 			}
 
 		case "contains":
 			containsPassed++
-			assert.Equal(t, "healthy", vr.Path)
+			assert.Equal(t, "healthy", vr.Expression)
 			assert.Empty(t, vr.Expected)
 			assert.Equal(t, "passed", vr.Result)
 
 		case "regex":
 			regexPassed++
-			assert.Equal(t, "^.*healthy.*$", vr.Path)
+			assert.Equal(t, "^.*healthy.*$", vr.Expression)
 			assert.Empty(t, vr.Expected)
 			assert.Equal(t, "passed", vr.Result)
 
 		case "size":
 			sizePassed++
-			assert.Equal(t, "max_size", vr.Path)
+			assert.Equal(t, "max_size", vr.Expression)
 			assert.Empty(t, vr.Expected)
 			assert.Equal(t, "passed", vr.Result)
 		}

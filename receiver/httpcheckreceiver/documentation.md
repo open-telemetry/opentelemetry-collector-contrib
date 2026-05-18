@@ -214,6 +214,6 @@ Result of a response validation (1 for each validation, with result attribute).
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | http.url | Full HTTP request URL. | Any Str | Recommended | - |
 | validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | Recommended | - |
-| validation.path | The validation expression being evaluated (JSONPath, contains string, regex pattern, size constraint). | Any Str | Recommended | - |
+| validation.expression | The validation expression being evaluated (JSONPath, contains string, regex pattern, size constraint). | Any Str | Recommended | - |
 | validation.expected | The expected value for the validation (when equals is specified). | Any Str | Recommended | - |
 | validation.result | The result of the validation (passed or failed). | Any Str | Recommended | - |

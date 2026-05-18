@@ -156,9 +156,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordHttpcheckValidationResultDataPoint(ts, 1, "http.url-val", "validation.type-val", "validation.path-val", "validation.expected-val", "validation.result-val")
+			mb.RecordHttpcheckValidationResultDataPoint(ts, 1, "http.url-val", "validation.type-val", "validation.expression-val", "validation.expected-val", "validation.result-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordHttpcheckValidationResultDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2", "validation.path-val-2", "validation.expected-val-2", "validation.result-val-2")
+				mb.RecordHttpcheckValidationResultDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2", "validation.expression-val-2", "validation.expected-val-2", "validation.result-val-2")
 			}
 
 			res := pcommon.NewResource()
@@ -771,9 +771,9 @@ func TestMetricsBuilder(t *testing.T) {
 						validationTypeAttrVal, ok := dp.Attributes().Get("validation.type")
 						assert.True(t, ok)
 						assert.Equal(t, "validation.type-val", validationTypeAttrVal.Str())
-						validationPathAttrVal, ok := dp.Attributes().Get("validation.path")
+						validationExpressionAttrVal, ok := dp.Attributes().Get("validation.expression")
 						assert.True(t, ok)
-						assert.Equal(t, "validation.path-val", validationPathAttrVal.Str())
+						assert.Equal(t, "validation.expression-val", validationExpressionAttrVal.Str())
 						validationExpectedAttrVal, ok := dp.Attributes().Get("validation.expected")
 						assert.True(t, ok)
 						assert.Equal(t, "validation.expected-val", validationExpectedAttrVal.Str())
@@ -807,7 +807,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("validation.type")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("validation.path")
+						_, ok = dp.Attributes().Get("validation.expression")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("validation.expected")
 						assert.False(t, ok)

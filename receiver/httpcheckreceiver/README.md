@@ -121,7 +121,7 @@ receivers:
 
 **Legacy Metrics** (`httpcheck.validation.passed` / `httpcheck.validation.failed`):
 - Aggregate validation counts by validation type only
-- Do NOT include per-validation attributes such as `validation.path` or `validation.expected`
+- Do NOT include per-validation attributes such as `validation.expression` or `validation.expected`
 - Maintained for backward compatibility - existing dashboards/alerts will continue to work unchanged
 
 **New Structured Metric** (`httpcheck.validation.result`):
@@ -131,7 +131,7 @@ receivers:
 | Attribute | Description | Example Values |
 |-----------|-------------|----------------|
 | `validation.type` | Type of validation performed | `json_path`, `contains`, `regex`, `size`, `not_contains` |
-| `validation.path` | The expression being evaluated (without `$.` prefix for JSON paths) | `system_1`, `healthy`, `^ok$`, `max_size` |
+| `validation.expression` | The validation expression being evaluated | `system_1`, `healthy`, `^ok$`, `max_size` |
 | `validation.expected` | Expected value (when `equals` specified) | `true`, `ok`, `200` |
 | `validation.result` | Pass/fail result of the validation | `passed`, `failed` |
 
@@ -140,21 +140,21 @@ receivers:
 ```text
 httpcheck.validation.result{
   validation.type="json_path",
-  validation.path="system_1",
+  validation.expression="system_1",
   validation.expected="true",
   validation.result="passed"
 } = 1
 
 httpcheck.validation.result{
   validation.type="json_path",
-  validation.path="system_3",
+  validation.expression="system_3",
   validation.expected="true",
   validation.result="failed"
 } = 1
 ```
 
 This allows you to:
-- Query specific validation paths: `httpcheck.validation.result{validation.path="system_1"}`
+- Query specific validation paths: `httpcheck.validation.result{validation.expression="system_1"}`
 - Filter by expected value: `httpcheck.validation.result{validation.expected="true"}`
 - Monitor specific validation types: `httpcheck.validation.result{validation.type="json_path", validation.result="failed"}`
 
@@ -187,21 +187,21 @@ The receiver emits:
 ```text
 httpcheck.validation.result{
   validation.type="json_path",
-  validation.path="system_1",
+  validation.expression="system_1",
   validation.expected="true",
   validation.result="passed"
 } = 1
 
 httpcheck.validation.result{
   validation.type="json_path",
-  validation.path="system_2",
+  validation.expression="system_2",
   validation.expected="true",
   validation.result="passed"
 } = 1
 
 httpcheck.validation.result{
   validation.type="json_path",
-  validation.path="system_3",
+  validation.expression="system_3",
   validation.expected="true",
   validation.result="failed"
 } = 1

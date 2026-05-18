@@ -39,7 +39,7 @@ all_set:
       attributes: ["http.url","validation.type"]
     httpcheck.validation.result:
       enabled: true
-      attributes: ["http.url","validation.type","validation.path","validation.expected","validation.result"]
+      attributes: ["http.url","validation.type","validation.expression","validation.expected","validation.result"]
 reaggregate_set:
   metrics:
     httpcheck.client.connection.duration:
@@ -121,4 +121,4 @@ none_set:
       attributes: ["http.url","validation.type"]
     httpcheck.validation.result:
       enabled: false
-      attributes: ["http.url","validation.type","validation.path","validation.expected","validation.result"]
+      attributes: ["http.url","validation.type","validation.expression","validation.expected","validation.result"]

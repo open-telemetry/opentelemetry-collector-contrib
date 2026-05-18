@@ -598,11 +598,11 @@ func (ms *HttpcheckValidationPassedMetricConfig) Validate() error {
 type HttpcheckValidationResultMetricAttributeKey string
 
 const (
-	HttpcheckValidationResultMetricAttributeKeyHTTPURL            HttpcheckValidationResultMetricAttributeKey = "http.url"
-	HttpcheckValidationResultMetricAttributeKeyValidationType     HttpcheckValidationResultMetricAttributeKey = "validation.type"
-	HttpcheckValidationResultMetricAttributeKeyValidationPath     HttpcheckValidationResultMetricAttributeKey = "validation.path"
-	HttpcheckValidationResultMetricAttributeKeyValidationExpected HttpcheckValidationResultMetricAttributeKey = "validation.expected"
-	HttpcheckValidationResultMetricAttributeKeyValidationResult   HttpcheckValidationResultMetricAttributeKey = "validation.result"
+	HttpcheckValidationResultMetricAttributeKeyHTTPURL              HttpcheckValidationResultMetricAttributeKey = "http.url"
+	HttpcheckValidationResultMetricAttributeKeyValidationType       HttpcheckValidationResultMetricAttributeKey = "validation.type"
+	HttpcheckValidationResultMetricAttributeKeyValidationExpression HttpcheckValidationResultMetricAttributeKey = "validation.expression"
+	HttpcheckValidationResultMetricAttributeKeyValidationExpected   HttpcheckValidationResultMetricAttributeKey = "validation.expected"
+	HttpcheckValidationResultMetricAttributeKeyValidationResult     HttpcheckValidationResultMetricAttributeKey = "validation.result"
 )
 
 // HttpcheckValidationResultMetricConfig provides config for the httpcheck.validation.result metric.
@@ -631,9 +631,9 @@ func (ms *HttpcheckValidationResultMetricConfig) Unmarshal(parser *confmap.Conf)
 func (ms *HttpcheckValidationResultMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case HttpcheckValidationResultMetricAttributeKeyHTTPURL, HttpcheckValidationResultMetricAttributeKeyValidationType, HttpcheckValidationResultMetricAttributeKeyValidationPath, HttpcheckValidationResultMetricAttributeKeyValidationExpected, HttpcheckValidationResultMetricAttributeKeyValidationResult:
+		case HttpcheckValidationResultMetricAttributeKeyHTTPURL, HttpcheckValidationResultMetricAttributeKeyValidationType, HttpcheckValidationResultMetricAttributeKeyValidationExpression, HttpcheckValidationResultMetricAttributeKeyValidationExpected, HttpcheckValidationResultMetricAttributeKeyValidationResult:
 		default:
-			return fmt.Errorf("metric httpcheck.validation.result doesn't have an attribute %v, valid attributes: [http.url, validation.type, validation.path, validation.expected, validation.result]", val)
+			return fmt.Errorf("metric httpcheck.validation.result doesn't have an attribute %v, valid attributes: [http.url, validation.type, validation.expression, validation.expected, validation.result]", val)
 		}
 	}
 
@@ -728,7 +728,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		HttpcheckValidationResult: HttpcheckValidationResultMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []HttpcheckValidationResultMetricAttributeKey{HttpcheckValidationResultMetricAttributeKeyHTTPURL, HttpcheckValidationResultMetricAttributeKeyValidationType, HttpcheckValidationResultMetricAttributeKeyValidationPath, HttpcheckValidationResultMetricAttributeKeyValidationExpected, HttpcheckValidationResultMetricAttributeKeyValidationResult},
+			EnabledAttributes:   []HttpcheckValidationResultMetricAttributeKey{HttpcheckValidationResultMetricAttributeKeyHTTPURL, HttpcheckValidationResultMetricAttributeKeyValidationType, HttpcheckValidationResultMetricAttributeKeyValidationExpression, HttpcheckValidationResultMetricAttributeKeyValidationExpected, HttpcheckValidationResultMetricAttributeKeyValidationResult},
 		},
 	}
 }

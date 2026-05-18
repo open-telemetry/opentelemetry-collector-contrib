@@ -89,7 +89,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					HttpcheckValidationResult: HttpcheckValidationResultMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HttpcheckValidationResultMetricAttributeKey{HttpcheckValidationResultMetricAttributeKeyHTTPURL, HttpcheckValidationResultMetricAttributeKeyValidationType, HttpcheckValidationResultMetricAttributeKeyValidationPath, HttpcheckValidationResultMetricAttributeKeyValidationExpected, HttpcheckValidationResultMetricAttributeKeyValidationResult},
+						EnabledAttributes:   []HttpcheckValidationResultMetricAttributeKey{HttpcheckValidationResultMetricAttributeKeyHTTPURL, HttpcheckValidationResultMetricAttributeKeyValidationType, HttpcheckValidationResultMetricAttributeKeyValidationExpression, HttpcheckValidationResultMetricAttributeKeyValidationExpected, HttpcheckValidationResultMetricAttributeKeyValidationResult},
 					},
 				},
 			},
@@ -161,7 +161,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					HttpcheckValidationResult: HttpcheckValidationResultMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HttpcheckValidationResultMetricAttributeKey{HttpcheckValidationResultMetricAttributeKeyHTTPURL, HttpcheckValidationResultMetricAttributeKeyValidationType, HttpcheckValidationResultMetricAttributeKeyValidationPath, HttpcheckValidationResultMetricAttributeKeyValidationExpected, HttpcheckValidationResultMetricAttributeKeyValidationResult},
+						EnabledAttributes:   []HttpcheckValidationResultMetricAttributeKey{HttpcheckValidationResultMetricAttributeKeyHTTPURL, HttpcheckValidationResultMetricAttributeKeyValidationType, HttpcheckValidationResultMetricAttributeKeyValidationExpression, HttpcheckValidationResultMetricAttributeKeyValidationExpected, HttpcheckValidationResultMetricAttributeKeyValidationResult},
 					},
 				},
 			},

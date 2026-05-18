@@ -84,10 +84,10 @@ func (t *timingInfo) getDurations() (dnsMs, tcpMs, tlsMs, requestMs, responseMs 
 }
 
 type validationResult struct {
-	Type     string
-	Path     string
-	Expected string
-	Result   string
+	Type       string
+	Expression string
+	Expected   string
+	Result     string
 }
 
 type httpcheckScraper struct {
@@ -139,17 +139,17 @@ func validateResponse(body []byte, validations []validationConfig) (results []va
 		if validation.Contains != "" {
 			if strings.Contains(string(body), validation.Contains) {
 				results = append(results, validationResult{
-					Type:     "contains",
-					Path:     validation.Contains,
-					Expected: "",
-					Result:   "passed",
+					Type:       "contains",
+					Expression: validation.Contains,
+					Expected:   "",
+					Result:     "passed",
 				})
 			} else {
 				results = append(results, validationResult{
-					Type:     "contains",
-					Path:     validation.Contains,
-					Expected: "",
-					Result:   "failed",
+					Type:       "contains",
+					Expression: validation.Contains,
+					Expected:   "",
+					Result:     "failed",
 				})
 			}
 			continue
@@ -158,17 +158,17 @@ func validateResponse(body []byte, validations []validationConfig) (results []va
 		if validation.NotContains != "" {
 			if !strings.Contains(string(body), validation.NotContains) {
 				results = append(results, validationResult{
-					Type:     "not_contains",
-					Path:     validation.NotContains,
-					Expected: "",
-					Result:   "passed",
+					Type:       "not_contains",
+					Expression: validation.NotContains,
+					Expected:   "",
+					Result:     "passed",
 				})
 			} else {
 				results = append(results, validationResult{
-					Type:     "not_contains",
-					Path:     validation.NotContains,
-					Expected: "",
-					Result:   "failed",
+					Type:       "not_contains",
+					Expression: validation.NotContains,
+					Expected:   "",
+					Result:     "failed",
 				})
 			}
 			continue
@@ -182,10 +182,10 @@ func validateResponse(body []byte, validations []validationConfig) (results []va
 
 			if !result.Exists() {
 				results = append(results, validationResult{
-					Type:     resultType,
-					Path:     validation.JSONPath,
-					Expected: expected,
-					Result:   "failed",
+					Type:       resultType,
+					Expression: validation.JSONPath,
+					Expected:   expected,
+					Result:     "failed",
 				})
 				continue
 			}
@@ -194,26 +194,26 @@ func validateResponse(body []byte, validations []validationConfig) (results []va
 				resultStr := result.String()
 				if resultStr == validation.Equals {
 					results = append(results, validationResult{
-						Type:     resultType,
-						Path:     validation.JSONPath,
-						Expected: expected,
-						Result:   "passed",
+						Type:       resultType,
+						Expression: validation.JSONPath,
+						Expected:   expected,
+						Result:     "passed",
 					})
 				} else {
 					results = append(results, validationResult{
-						Type:     resultType,
-						Path:     validation.JSONPath,
-						Expected: expected,
-						Result:   "failed",
+						Type:       resultType,
+						Expression: validation.JSONPath,
+						Expected:   expected,
+						Result:     "failed",
 					})
 				}
 			} else {
 				// No equals condition, just existence is enough
 				results = append(results, validationResult{
-					Type:     resultType,
-					Path:     validation.JSONPath,
-					Expected: "",
-					Result:   "passed",
+					Type:       resultType,
+					Expression: validation.JSONPath,
+					Expected:   "",
+					Result:     "passed",
 				})
 			}
 			continue
@@ -224,17 +224,17 @@ func validateResponse(body []byte, validations []validationConfig) (results []va
 		if validation.MaxSize != nil {
 			if bodySize <= *validation.MaxSize {
 				results = append(results, validationResult{
-					Type:     "size",
-					Path:     "max_size",
-					Expected: "",
-					Result:   "passed",
+					Type:       "size",
+					Expression: "max_size",
+					Expected:   "",
+					Result:     "passed",
 				})
 			} else {
 				results = append(results, validationResult{
-					Type:     "size",
-					Path:     "max_size",
-					Expected: "",
-					Result:   "failed",
+					Type:       "size",
+					Expression: "max_size",
+					Expected:   "",
+					Result:     "failed",
 				})
 			}
 			continue
@@ -243,17 +243,17 @@ func validateResponse(body []byte, validations []validationConfig) (results []va
 		if validation.MinSize != nil {
 			if bodySize >= *validation.MinSize {
 				results = append(results, validationResult{
-					Type:     "size",
-					Path:     "min_size",
-					Expected: "",
-					Result:   "passed",
+					Type:       "size",
+					Expression: "min_size",
+					Expected:   "",
+					Result:     "passed",
 				})
 			} else {
 				results = append(results, validationResult{
-					Type:     "size",
-					Path:     "min_size",
-					Expected: "",
-					Result:   "failed",
+					Type:       "size",
+					Expression: "min_size",
+					Expected:   "",
+					Result:     "failed",
 				})
 			}
 			continue
@@ -264,17 +264,17 @@ func validateResponse(body []byte, validations []validationConfig) (results []va
 			matched, err := regexp.Match(validation.Regex, body)
 			if err == nil && matched {
 				results = append(results, validationResult{
-					Type:     "regex",
-					Path:     validation.Regex,
-					Expected: "",
-					Result:   "passed",
+					Type:       "regex",
+					Expression: validation.Regex,
+					Expected:   "",
+					Result:     "passed",
 				})
 			} else {
 				results = append(results, validationResult{
-					Type:     "regex",
-					Path:     validation.Regex,
-					Expected: "",
-					Result:   "failed",
+					Type:       "regex",
+					Expression: validation.Regex,
+					Expected:   "",
+					Result:     "failed",
 				})
 			}
 			continue
@@ -488,7 +488,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 						1,
 						endpoint,
 						result.Type,
-						result.Path,
+						result.Expression,
 						result.Expected,
 						result.Result,
 					)

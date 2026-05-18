@@ -1206,7 +1206,7 @@ func (m *metricHttpcheckValidationResult) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricHttpcheckValidationResult) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, validationTypeAttributeValue string, validationPathAttributeValue string, validationExpectedAttributeValue string, validationResultAttributeValue string) {
+func (m *metricHttpcheckValidationResult) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, validationTypeAttributeValue string, validationExpressionAttributeValue string, validationExpectedAttributeValue string, validationResultAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1220,8 +1220,8 @@ func (m *metricHttpcheckValidationResult) recordDataPoint(start pcommon.Timestam
 	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationResultMetricAttributeKeyValidationType) {
 		dp.Attributes().PutStr("validation.type", validationTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationResultMetricAttributeKeyValidationPath) {
-		dp.Attributes().PutStr("validation.path", validationPathAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationResultMetricAttributeKeyValidationExpression) {
+		dp.Attributes().PutStr("validation.expression", validationExpressionAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationResultMetricAttributeKeyValidationExpected) {
 		dp.Attributes().PutStr("validation.expected", validationExpectedAttributeValue)
@@ -1509,8 +1509,8 @@ func (mb *MetricsBuilder) RecordHttpcheckValidationPassedDataPoint(ts pcommon.Ti
 }
 
 // RecordHttpcheckValidationResultDataPoint adds a data point to httpcheck.validation.result metric.
-func (mb *MetricsBuilder) RecordHttpcheckValidationResultDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string, validationTypeAttributeValue string, validationPathAttributeValue string, validationExpectedAttributeValue string, validationResultAttributeValue string) {
-	mb.metricHttpcheckValidationResult.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue, validationTypeAttributeValue, validationPathAttributeValue, validationExpectedAttributeValue, validationResultAttributeValue)
+func (mb *MetricsBuilder) RecordHttpcheckValidationResultDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string, validationTypeAttributeValue string, validationExpressionAttributeValue string, validationExpectedAttributeValue string, validationResultAttributeValue string) {
+	mb.metricHttpcheckValidationResult.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue, validationTypeAttributeValue, validationExpressionAttributeValue, validationExpectedAttributeValue, validationResultAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

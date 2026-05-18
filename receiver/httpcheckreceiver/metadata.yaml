@@ -61,7 +61,7 @@ attributes:
     description: The expected value for the validation (when equals is specified).
     type: string
     requirement_level: recommended
-  validation.path:
+  validation.expression:
     description: The validation expression being evaluated (JSONPath, contains string, regex pattern, size constraint).
     type: string
     requirement_level: recommended
@@ -188,4 +188,4 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
     unit: "{validation}"
-    attributes: [http.url, validation.type, validation.path, validation.expected, validation.result]
+    attributes: [http.url, validation.type, validation.expression, validation.expected, validation.result]
