@@ -834,34 +834,6 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 	return nil
 }
 
-func (se *SumologicExtension) updateMetadataWithBackoff(ctx context.Context) error {
-	se.backOff.Reset()
-	for {
-		err := se.updateMetadataWithHTTPClient(ctx, se.httpClient)
-		if err == nil {
-			return nil
-		}
-
-		se.logger.Warn(fmt.Sprintf("collector metadata update failed: %s", err))
-
-		nbo := se.backOff.NextBackOff()
-		var backOffErr *backoff.PermanentError
-		// Return error if backoff reaches the limit or uncoverable error is spotted
-		if ok := errors.As(err, &backOffErr); nbo == se.backOff.Stop || ok {
-			return fmt.Errorf("collector metadata update failed: %w", err)
-		}
-
-		t := time.NewTimer(nbo)
-		defer t.Stop()
-
-		select {
-		case <-t.C:
-		case <-ctx.Done():
-			return fmt.Errorf("collector metadata update cancelled: %w", ctx.Err())
-		}
-	}
-}
-
 // updateMetadataAsync retries metadata update in the background with exponential
 // backoff until the update succeeds or the collector shuts down. It is started
 // when the initial synchronous attempt in Start() fails so that startup is not

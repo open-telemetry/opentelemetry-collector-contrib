@@ -1610,7 +1610,7 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 
 // TestStartDoesNotBlockWhenMetadataUpdateFails verifies that when update_metadata
 // is enabled and the first metadata request returns an error (e.g. HTTP 500 on
-// Windows before the network is fully initialised), Start() still returns nil so
+// Windows before the network is fully initialized), Start() still returns nil so
 // that collector startup is not blocked.
 func TestStartDoesNotBlockWhenMetadataUpdateFails(t *testing.T) {
 	t.Parallel()
@@ -1625,7 +1625,7 @@ func TestStartDoesNotBlockWhenMetadataUpdateFails(t *testing.T) {
 				"collectorCredentialKey": "collectorKey",
 				"collectorId": "id"
 			}`))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 		case metadataURL:
 			// Always return 500 so the async goroutine keeps retrying.
 			// We only care that Start() returned without an error.
@@ -1676,7 +1676,7 @@ func TestUpdateMetadataAsyncRetriesUntilSuccess(t *testing.T) {
 				"collectorCredentialKey": "collectorKey",
 				"collectorId": "id"
 			}`))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 		case metadataURL:
 			n := metadataReqCount.Add(1)
 			if n <= failUntilReq {
