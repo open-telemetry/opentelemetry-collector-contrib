@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc"
 
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/thriftlimit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/udpserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/udpserver/thriftudp"
 )
@@ -259,7 +260,7 @@ func (jr *jReceiver) buildProcessor(address string, cfg ServerConfigUDP, factory
 		}
 	}
 	server := udpserver.NewUDPServer(transport, cfg.QueueSize, cfg.MaxPacketSize)
-	processor, err := udpserver.NewThriftProcessor(server, cfg.Workers, factory, handler, jr.settings.Logger)
+	processor, err := udpserver.NewThriftProcessor(server, cfg.Workers, thriftlimit.NewProtocolFactory(factory), handler, jr.settings.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -291,6 +292,7 @@ func (*jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *httpErr
 	}
 
 	tdes := apacheThrift.NewTDeserializer()
+	tdes.Protocol = thriftlimit.NewProtocol(tdes.Protocol)
 	batch := &jaeger.Batch{}
 	if err = tdes.Read(r.Context(), batch, bodyBytes); err != nil {
 		return nil, &httpError{

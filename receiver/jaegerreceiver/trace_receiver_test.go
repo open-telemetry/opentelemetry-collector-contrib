@@ -75,6 +75,23 @@ func TestThriftHTTPBodyDecode(t *testing.T) {
 	assert.Equal(t, batch, gotBatch)
 }
 
+func TestThriftHTTPBodyDecodeRejectsOversizedSpansList(t *testing.T) {
+	var body bytes.Buffer
+	body.WriteByte(byte(thrift.LIST))
+	require.NoError(t, binary.Write(&body, binary.BigEndian, int16(2)))
+	body.WriteByte(byte(thrift.STRUCT))
+	require.NoError(t, binary.Write(&body, binary.BigEndian, int32(1<<20+1)))
+
+	r := httptest.NewRequest(http.MethodPost, "/api/traces", bytes.NewReader(body.Bytes()))
+	r.Header.Add("content-type", "application/x-thrift")
+
+	jr := jReceiver{}
+	_, hErr := jr.decodeThriftHTTPBody(r)
+	require.NotNil(t, hErr)
+	assert.Equal(t, http.StatusBadRequest, hErr.statusCode)
+	assert.Contains(t, hErr.msg, "thrift list declares 1048577 elements")
+}
+
 func TestReception(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	// 1. Create the Jaeger receiver aka "server"
