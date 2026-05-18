@@ -5,7 +5,7 @@
 // normalize OpenLLMetry (Traceloop) instrumented spans to the OTel GenAI
 // semantic conventions.
 //
-// Reference: https://github.com/traceloop/docs/blob/32ea768d16ac2b5cd38493bfbcfac7baa32e0c96/openllmetry/contributing/semantic-conventions.mdx
+// Reference: https://github.com/traceloop/openllmetry/blob/1ebfd1b77cfcfede74a40f28dbb0d9709bcff365/packages/opentelemetry-semantic-conventions-ai/opentelemetry/semconv_ai/__init__.py
 package openllmetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/openllmetry"
 
 import (

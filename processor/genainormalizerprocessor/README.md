@@ -162,7 +162,7 @@ Coverage: this table covers the most common OpenLLMetry attributes. OpenLLMetry 
 
 OpenLLMetry instrumentation typically emits one of each collision pair (`llm.response.finish_reason` xor `llm.response.stop_reason`; `llm.request.type` xor `traceloop.span.kind`). When both attributes in a pair are present on a span, the resolved value at the target key is undefined.
 
-Source reference: [OpenLLMetry semantic conventions](https://github.com/traceloop/docs/blob/32ea768d16ac2b5cd38493bfbcfac7baa32e0c96/openllmetry/contributing/semantic-conventions.mdx).
+Source reference: [OpenLLMetry semantic conventions](https://github.com/traceloop/openllmetry/blob/1ebfd1b77cfcfede74a40f28dbb0d9709bcff365/packages/opentelemetry-semantic-conventions-ai/opentelemetry/semconv_ai/__init__.py).
 
 ### Value transformations
 
