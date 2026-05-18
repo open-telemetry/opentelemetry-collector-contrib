@@ -39,6 +39,12 @@ type Config struct {
 	// The default value is `propagate`. It will change to `ignore` when the `processor.filter.defaultErrorModeIgnore` feature gate is stable.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
+	// Action determines whether matching data should be dropped or kept.
+	// `drop` (default) discards data that matches the condition.
+	// `keep` retains only data that matches the condition and discards the rest.
+	// This processor-level Action can be overridden per condition group by setting `action` on individual condition entries.
+	Action condition.Action `mapstructure:"action"`
+
 	// Deprecated: use TraceConditions instead.
 	Spans filterconfig.MatchConfig `mapstructure:"spans"`
 	// Deprecated: use MetricConditions instead.
@@ -568,6 +574,7 @@ func (cfg *Config) validateInferredContextConfig() error {
 
 func (cfg *Config) newTraceParserCollection(telemetrySettings component.TelemetrySettings) (*condition.TraceParserCollection, error) {
 	return condition.NewTraceParserCollection(telemetrySettings,
+		condition.WithTraceAction(cfg.Action),
 		condition.WithSpanParser(cfg.spanFunctions),
 		condition.WithSpanEventParser(cfg.spanEventFunctions),
 		condition.WithTraceErrorMode(cfg.ErrorMode),
@@ -577,6 +584,7 @@ func (cfg *Config) newTraceParserCollection(telemetrySettings component.Telemetr
 
 func (cfg *Config) newMetricParserCollection(telemetrySettings component.TelemetrySettings) (*condition.MetricParserCollection, error) {
 	return condition.NewMetricParserCollection(telemetrySettings,
+		condition.WithMetricAction(cfg.Action),
 		condition.WithMetricParser(cfg.metricFunctions),
 		condition.WithDataPointParser(cfg.dataPointFunctions),
 		condition.WithMetricErrorMode(cfg.ErrorMode),
@@ -586,6 +594,7 @@ func (cfg *Config) newMetricParserCollection(telemetrySettings component.Telemet
 
 func (cfg *Config) newLogParserCollection(telemetrySettings component.TelemetrySettings) (*condition.LogParserCollection, error) {
 	return condition.NewLogParserCollection(telemetrySettings,
+		condition.WithLogAction(cfg.Action),
 		condition.WithLogParser(cfg.logFunctions),
 		condition.WithLogErrorMode(cfg.ErrorMode),
 		condition.WithLogCommonParsers(cfg.resourceFunctions),
@@ -594,6 +603,7 @@ func (cfg *Config) newLogParserCollection(telemetrySettings component.TelemetryS
 
 func (cfg *Config) newProfileParserCollection(telemetrySettings component.TelemetrySettings) (*condition.ProfileParserCollection, error) {
 	return condition.NewProfileParserCollection(telemetrySettings,
+		condition.WithProfileAction(cfg.Action),
 		condition.WithProfileParser(cfg.profileFunctions),
 		condition.WithProfileErrorMode(cfg.ErrorMode),
 		condition.WithProfileCommonParsers(cfg.resourceFunctions),

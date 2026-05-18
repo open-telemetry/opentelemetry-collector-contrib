@@ -31,6 +31,7 @@ type parsedProfileConditions struct {
 	profileConditions  []*ottl.Condition[*ottlprofile.TransformContext]
 	telemetrySettings  component.TelemetrySettings
 	errorMode          ottl.ErrorMode
+	action             Action
 }
 
 func (pc ProfilesConsumer) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
@@ -90,19 +91,21 @@ func (pc ProfilesConsumer) ConsumeProfiles(ctx context.Context, pd pprofile.Prof
 	return condErr
 }
 
-func newProfileConditionsFromResource(rc []*ottl.Condition[*ottlresource.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) parsedProfileConditions {
+func newProfileConditionsFromResource(rc []*ottl.Condition[*ottlresource.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode, action Action) parsedProfileConditions {
 	return parsedProfileConditions{
 		resourceConditions: rc,
 		telemetrySettings:  telemetrySettings,
 		errorMode:          errorMode,
+		action:             action,
 	}
 }
 
-func newProfileConditionsFromScope(sc []*ottl.Condition[*ottlscope.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) parsedProfileConditions {
+func newProfileConditionsFromScope(sc []*ottl.Condition[*ottlscope.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode, action Action) parsedProfileConditions {
 	return parsedProfileConditions{
 		scopeConditions:   sc,
 		telemetrySettings: telemetrySettings,
 		errorMode:         errorMode,
+		action:            action,
 	}
 }
 
@@ -126,6 +129,18 @@ func newProfilesConsumer(ppc *parsedProfileConditions) ProfilesConsumer {
 		pExpr = &cs
 	}
 
+	if ppc.action == ActionKeep {
+		if rExpr != nil {
+			rExpr = expr.Not(rExpr)
+		}
+		if sExpr != nil {
+			sExpr = expr.Not(sExpr)
+		}
+		if pExpr != nil {
+			pExpr = expr.Not(pExpr)
+		}
+	}
+
 	return ProfilesConsumer{
 		resourceExpr: rExpr,
 		scopeExpr:    sExpr,
@@ -133,44 +148,59 @@ func newProfilesConsumer(ppc *parsedProfileConditions) ProfilesConsumer {
 	}
 }
 
-type ProfileParserCollection ottl.ParserCollection[parsedProfileConditions]
+type ProfileParserCollection struct {
+	ottl.ParserCollection[parsedProfileConditions]
+	action Action
+}
 
-type ProfileParserCollectionOption ottl.ParserCollectionOption[parsedProfileConditions]
+type ProfileParserCollectionOption func(*ProfileParserCollection) error
 
 func WithProfileParser(functions map[string]ottl.Factory[*ottlprofile.TransformContext]) ProfileParserCollectionOption {
-	return func(pc *ottl.ParserCollection[parsedProfileConditions]) error {
-		profileParser, err := ottlprofile.NewParser(functions, pc.Settings, ottlprofile.EnablePathContextNames())
+	return func(ppc *ProfileParserCollection) error {
+		profileParser, err := ottlprofile.NewParser(functions, ppc.Settings, ottlprofile.EnablePathContextNames())
 		if err != nil {
 			return err
 		}
-		return ottl.WithParserCollectionContext(ottlprofile.ContextName, &profileParser, ottl.WithConditionConverter(convertProfileConditions))(pc)
+		return ottl.WithParserCollectionContext(ottlprofile.ContextName, &profileParser, ottl.WithConditionConverter(convertProfileConditions))(&ppc.ParserCollection)
 	}
 }
 
 func WithProfileErrorMode(errorMode ottl.ErrorMode) ProfileParserCollectionOption {
-	return ProfileParserCollectionOption(ottl.WithParserCollectionErrorMode[parsedProfileConditions](errorMode))
+	return func(ppc *ProfileParserCollection) error {
+		return ottl.WithParserCollectionErrorMode[parsedProfileConditions](errorMode)(&ppc.ParserCollection)
+	}
+}
+
+func WithProfileAction(action Action) ProfileParserCollectionOption {
+	return func(ppc *ProfileParserCollection) error {
+		ppc.action = action
+		return nil
+	}
 }
 
 func WithProfileCommonParsers(functions map[string]ottl.Factory[*ottlresource.TransformContext]) ProfileParserCollectionOption {
-	return ProfileParserCollectionOption(withCommonParsers(functions, newProfileConditionsFromResource, newProfileConditionsFromScope))
+	return func(ppc *ProfileParserCollection) error {
+		return withCommonParsers(functions, newProfileConditionsFromResource, newProfileConditionsFromScope)(&ppc.ParserCollection)
+	}
 }
 
 func NewProfileParserCollection(settings component.TelemetrySettings, options ...ProfileParserCollectionOption) (*ProfileParserCollection, error) {
-	pcOptions := []ottl.ParserCollectionOption[parsedProfileConditions]{
-		ottl.EnableParserCollectionModifiedPathsLogging[parsedProfileConditions](true),
-	}
-
-	for _, option := range options {
-		pcOptions = append(pcOptions, ottl.ParserCollectionOption[parsedProfileConditions](option))
-	}
-
-	pc, err := ottl.NewParserCollection(settings, pcOptions...)
+	pc, err := ottl.NewParserCollection(settings, ottl.EnableParserCollectionModifiedPathsLogging[parsedProfileConditions](true))
 	if err != nil {
 		return nil, err
 	}
 
-	ppc := ProfileParserCollection(*pc)
-	return &ppc, nil
+	ppc := &ProfileParserCollection{
+		ParserCollection: *pc,
+	}
+
+	for _, option := range options {
+		if err := option(ppc); err != nil {
+			return nil, err
+		}
+	}
+
+	return ppc, nil
 }
 
 func convertProfileConditions(pc *ottl.ParserCollection[parsedProfileConditions], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottlprofile.TransformContext]) (parsedProfileConditions, error) {
@@ -184,11 +214,17 @@ func convertProfileConditions(pc *ottl.ParserCollection[parsedProfileConditions]
 		profileConditions: parsedConditions,
 		telemetrySettings: pc.Settings,
 		errorMode:         errorMode,
+		action:            contextConditions.Action,
 	}, nil
 }
 
 func (ppc *ProfileParserCollection) ParseContextConditions(contextConditions ContextConditions) (ProfilesConsumer, error) {
-	pc := ottl.ParserCollection[parsedProfileConditions](*ppc)
+	pc := &ppc.ParserCollection
+
+	if contextConditions.Action == "" {
+		contextConditions.Action = ppc.action
+	}
+
 	if contextConditions.Context != "" {
 		pConditions, err := pc.ParseConditionsWithContext(string(contextConditions.Context), contextConditions, true)
 		if err != nil {
@@ -223,7 +259,8 @@ func (ppc *ProfileParserCollection) ParseContextConditions(contextConditions Con
 		scopeConditions:    sConditions,
 		profileConditions:  pConditions,
 		telemetrySettings:  pc.Settings,
-		errorMode:          getErrorMode[parsedProfileConditions](&pc, &contextConditions),
+		errorMode:          getErrorMode[parsedProfileConditions](pc, &contextConditions),
+		action:             contextConditions.Action,
 	}
 
 	return newProfilesConsumer(&aggregatedConditions), nil

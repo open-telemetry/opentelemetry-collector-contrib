@@ -13,10 +13,10 @@ import (
 )
 
 // resourceConditionBuilder creates signal-specific conditions (parsedLogConditions, parsedMetricConditions, parsedTraceConditions, parsedProfileConditions) from resource conditions
-type resourceConditionBuilder[R any] func([]*ottl.Condition[*ottlresource.TransformContext], component.TelemetrySettings, ottl.ErrorMode) R
+type resourceConditionBuilder[R any] func([]*ottl.Condition[*ottlresource.TransformContext], component.TelemetrySettings, ottl.ErrorMode, Action) R
 
 // scopeConditionBuilder creates signal-specific conditions (parsedLogConditions, parsedMetricConditions, parsedTraceConditions, parsedProfileConditions) from scope conditions
-type scopeConditionBuilder[R any] func([]*ottl.Condition[*ottlscope.TransformContext], component.TelemetrySettings, ottl.ErrorMode) R
+type scopeConditionBuilder[R any] func([]*ottl.Condition[*ottlscope.TransformContext], component.TelemetrySettings, ottl.ErrorMode, Action) R
 
 func withCommonParsers[R any](resourceFunctions map[string]ottl.Factory[*ottlresource.TransformContext], resourceBuilder resourceConditionBuilder[R], scopeBuilder scopeConditionBuilder[R]) ottl.ParserCollectionOption[R] {
 	return func(pc *ottl.ParserCollection[R]) error {
@@ -50,7 +50,7 @@ func resourceConditionsConverter[R any](builder resourceConditionBuilder[R]) ott
 			return *new(R), err
 		}
 		errorMode := getErrorMode(pc, contextConditions)
-		return builder(parsedConditions, pc.Settings, errorMode), nil
+		return builder(parsedConditions, pc.Settings, errorMode, contextConditions.Action), nil
 	}
 }
 
@@ -61,6 +61,6 @@ func scopeConditionsConverter[R any](builder scopeConditionBuilder[R]) ottl.Pars
 			return *new(R), err
 		}
 		errorMode := getErrorMode(pc, contextConditions)
-		return builder(parsedConditions, pc.Settings, errorMode), nil
+		return builder(parsedConditions, pc.Settings, errorMode, contextConditions.Action), nil
 	}
 }
