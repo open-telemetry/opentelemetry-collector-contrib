@@ -82,12 +82,12 @@ all_set:
       enabled: true
     oracledb.storage.utilization:
       enabled: true
-    oracledb.tablespace.count:
-      enabled: true
-      attributes: ["tablespace_name","oracledb.tablespace.state"]
     oracledb.tablespace.limit:
       enabled: true
       attributes: ["tablespace_name"]
+    oracledb.tablespace.status:
+      enabled: true
+      attributes: ["tablespace_name","oracledb.tablespace.state"]
     oracledb.tablespace.utilization:
       enabled: true
       attributes: ["tablespace_name"]
@@ -200,10 +200,10 @@ reaggregate_set:
       enabled: true
     oracledb.storage.utilization:
       enabled: true
-    oracledb.tablespace.count:
+    oracledb.tablespace.limit:
       enabled: true
       attributes: []
-    oracledb.tablespace.limit:
+    oracledb.tablespace.status:
       enabled: true
       attributes: []
     oracledb.tablespace.utilization:
@@ -318,12 +318,12 @@ none_set:
       enabled: false
     oracledb.storage.utilization:
       enabled: false
-    oracledb.tablespace.count:
-      enabled: false
-      attributes: ["tablespace_name","oracledb.tablespace.state"]
     oracledb.tablespace.limit:
       enabled: false
       attributes: ["tablespace_name"]
+    oracledb.tablespace.status:
+      enabled: false
+      attributes: ["tablespace_name","oracledb.tablespace.state"]
     oracledb.tablespace.utilization:
       enabled: false
       attributes: ["tablespace_name"]

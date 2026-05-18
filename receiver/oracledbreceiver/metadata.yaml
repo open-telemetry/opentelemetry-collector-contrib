@@ -644,16 +644,6 @@ metrics:
     gauge:
       value_type: double
     unit: "1"
-  oracledb.tablespace.count:
-    attributes:
-      - tablespace_name
-      - oracledb.tablespace.state
-    description: Number of tablespaces, broken down by state.
-    enabled: false
-    stability: development
-    gauge:
-      value_type: int
-    unit: "{tablespace}"
   oracledb.tablespace.limit:
     attributes:
       - tablespace_name
@@ -663,6 +653,16 @@ metrics:
     gauge:
       value_type: int
     unit: By
+  oracledb.tablespace.status:
+    attributes:
+      - tablespace_name
+      - oracledb.tablespace.state
+    description: Current status of tablespaces, broken down by state.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: "{tablespace}"
   oracledb.tablespace.utilization:
     attributes:
       - tablespace_name

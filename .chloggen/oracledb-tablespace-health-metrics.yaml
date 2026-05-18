@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add tablespace health metrics for utilization, status count, and autoextend max size
+note: Add tablespace health metrics for utilization, state status, and autoextend max size
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47303]
@@ -18,7 +18,7 @@ issues: [47303]
 subtext: |
   Add 3 new opt-in metrics (disabled by default, stability: development):
   oracledb.tablespace.utilization - fraction of tablespace in use (0-1),
-  oracledb.tablespace.count - number of tablespaces broken down by oracledb.tablespace.state attribute,
+  oracledb.tablespace.status - current status of tablespaces broken down by oracledb.tablespace.state attribute,
   oracledb.tablespace.limit - autoextend maximum size in bytes per tablespace.
 
 # If your change doesn't affect end users or the exported elements of any package,

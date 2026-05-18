@@ -504,7 +504,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeUsage.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeLimit.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbTablespaceUtilization.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbTablespaceCount.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTablespaceStatus.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbTablespaceLimit.Enabled {
 		rows, err := s.tablespaceUsageClient.metricRows(ctx)
 		if err != nil {
@@ -553,12 +553,12 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					s.mb.RecordOracledbTablespaceUtilizationDataPoint(now, utilization, tablespaceName)
 				}
 
-				if s.metricsBuilderConfig.Metrics.OracledbTablespaceCount.Enabled {
+				if s.metricsBuilderConfig.Metrics.OracledbTablespaceStatus.Enabled {
 					tablespaceStatus := strings.ToLower(row["STATUS"])
 					if tablespaceStatus == "" {
 						tablespaceStatus = "unknown"
 					}
-					s.mb.RecordOracledbTablespaceCountDataPoint(now, 1, tablespaceName, tablespaceStatus)
+					s.mb.RecordOracledbTablespaceStatusDataPoint(now, 1, tablespaceName, tablespaceStatus)
 				}
 
 				if s.metricsBuilderConfig.Metrics.OracledbTablespaceLimit.Enabled {

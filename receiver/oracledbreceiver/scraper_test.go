@@ -324,7 +324,7 @@ func TestScraper_ScrapeTablespaceHealthMetrics(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := metadata.NewDefaultMetricsBuilderConfig()
 			cfg.Metrics.OracledbTablespaceUtilization.Enabled = true
-			cfg.Metrics.OracledbTablespaceCount.Enabled = true
+			cfg.Metrics.OracledbTablespaceStatus.Enabled = true
 			cfg.Metrics.OracledbTablespaceLimit.Enabled = true
 
 			scrpr := oracleScraper{
@@ -365,7 +365,7 @@ func TestScraper_ScrapeTablespaceHealthMetrics(t *testing.T) {
 				}
 				// utilization = 111288 / 3518587 ≈ 0.031629
 				assert.InDelta(t, 0.031629, doubleMetricMap["oracledb.tablespace.utilization"], floatDelta)
-				assert.Equal(t, int64(1), intMetricMap["oracledb.tablespace.count"])
+				assert.Equal(t, int64(1), intMetricMap["oracledb.tablespace.status"])
 				assert.Equal(t, int64(1073741824), intMetricMap["oracledb.tablespace.limit"])
 			}
 		})

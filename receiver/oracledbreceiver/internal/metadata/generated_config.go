@@ -838,55 +838,6 @@ func (ms *OracledbStorageUtilizationMetricConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// OracledbTablespaceCountMetricAttributeKey specifies the key of an attribute for the oracledb.tablespace.count metric.
-type OracledbTablespaceCountMetricAttributeKey string
-
-const (
-	OracledbTablespaceCountMetricAttributeKeyTablespaceName          OracledbTablespaceCountMetricAttributeKey = "tablespace_name"
-	OracledbTablespaceCountMetricAttributeKeyOracledbTablespaceState OracledbTablespaceCountMetricAttributeKey = "oracledb.tablespace.state"
-)
-
-// OracledbTablespaceCountMetricConfig provides config for the oracledb.tablespace.count metric.
-type OracledbTablespaceCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbTablespaceCountMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *OracledbTablespaceCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *OracledbTablespaceCountMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case OracledbTablespaceCountMetricAttributeKeyTablespaceName, OracledbTablespaceCountMetricAttributeKeyOracledbTablespaceState:
-		default:
-			return fmt.Errorf("metric oracledb.tablespace.count doesn't have an attribute %v, valid attributes: [tablespace_name, oracledb.tablespace.state]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
 // OracledbTablespaceLimitMetricAttributeKey specifies the key of an attribute for the oracledb.tablespace.limit metric.
 type OracledbTablespaceLimitMetricAttributeKey string
 
@@ -923,6 +874,55 @@ func (ms *OracledbTablespaceLimitMetricConfig) Validate() error {
 		case OracledbTablespaceLimitMetricAttributeKeyTablespaceName:
 		default:
 			return fmt.Errorf("metric oracledb.tablespace.limit doesn't have an attribute %v, valid attributes: [tablespace_name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// OracledbTablespaceStatusMetricAttributeKey specifies the key of an attribute for the oracledb.tablespace.status metric.
+type OracledbTablespaceStatusMetricAttributeKey string
+
+const (
+	OracledbTablespaceStatusMetricAttributeKeyTablespaceName          OracledbTablespaceStatusMetricAttributeKey = "tablespace_name"
+	OracledbTablespaceStatusMetricAttributeKeyOracledbTablespaceState OracledbTablespaceStatusMetricAttributeKey = "oracledb.tablespace.state"
+)
+
+// OracledbTablespaceStatusMetricConfig provides config for the oracledb.tablespace.status metric.
+type OracledbTablespaceStatusMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbTablespaceStatusMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbTablespaceStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbTablespaceStatusMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbTablespaceStatusMetricAttributeKeyTablespaceName, OracledbTablespaceStatusMetricAttributeKeyOracledbTablespaceState:
+		default:
+			return fmt.Errorf("metric oracledb.tablespace.status doesn't have an attribute %v, valid attributes: [tablespace_name, oracledb.tablespace.state]", val)
 		}
 	}
 
@@ -1201,8 +1201,8 @@ type MetricsConfig struct {
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
 	OracledbStorageUsage                          OracledbStorageUsageMetricConfig                          `mapstructure:"oracledb.storage.usage"`
 	OracledbStorageUtilization                    OracledbStorageUtilizationMetricConfig                    `mapstructure:"oracledb.storage.utilization"`
-	OracledbTablespaceCount                       OracledbTablespaceCountMetricConfig                       `mapstructure:"oracledb.tablespace.count"`
 	OracledbTablespaceLimit                       OracledbTablespaceLimitMetricConfig                       `mapstructure:"oracledb.tablespace.limit"`
+	OracledbTablespaceStatus                      OracledbTablespaceStatusMetricConfig                      `mapstructure:"oracledb.tablespace.status"`
 	OracledbTablespaceUtilization                 OracledbTablespaceUtilizationMetricConfig                 `mapstructure:"oracledb.tablespace.utilization"`
 	OracledbTablespaceSizeLimit                   OracledbTablespaceSizeLimitMetricConfig                   `mapstructure:"oracledb.tablespace_size.limit"`
 	OracledbTablespaceSizeUsage                   OracledbTablespaceSizeUsageMetricConfig                   `mapstructure:"oracledb.tablespace_size.usage"`
@@ -1336,15 +1336,15 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbStorageUtilization: OracledbStorageUtilizationMetricConfig{
 			Enabled: false,
 		},
-		OracledbTablespaceCount: OracledbTablespaceCountMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbTablespaceCountMetricAttributeKey{OracledbTablespaceCountMetricAttributeKeyTablespaceName, OracledbTablespaceCountMetricAttributeKeyOracledbTablespaceState},
-		},
 		OracledbTablespaceLimit: OracledbTablespaceLimitMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []OracledbTablespaceLimitMetricAttributeKey{OracledbTablespaceLimitMetricAttributeKeyTablespaceName},
+		},
+		OracledbTablespaceStatus: OracledbTablespaceStatusMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OracledbTablespaceStatusMetricAttributeKey{OracledbTablespaceStatusMetricAttributeKeyTablespaceName, OracledbTablespaceStatusMetricAttributeKeyOracledbTablespaceState},
 		},
 		OracledbTablespaceUtilization: OracledbTablespaceUtilizationMetricConfig{
 			Enabled:             false,
