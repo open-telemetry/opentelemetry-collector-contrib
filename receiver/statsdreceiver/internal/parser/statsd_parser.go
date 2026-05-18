@@ -525,7 +525,10 @@ func parseMessageToMetric(line string, enableMetricType, enableSimpleTags bool) 
 
 			var tagSet string
 			tagSet, tagsStr, _ = strings.Cut(tagsStr, ",")
-			for ; tagSet != ""; tagSet, tagsStr, _ = strings.Cut(tagsStr, ",") {
+			for ; tagSet != "" || tagsStr != ""; tagSet, tagsStr, _ = strings.Cut(tagsStr, ",") {
+				if tagSet == "" {
+					continue
+				}
 				k, v, _ := strings.Cut(tagSet, ":")
 				if k == "" {
 					return result, fmt.Errorf("invalid tag format: %q", tagSet)
