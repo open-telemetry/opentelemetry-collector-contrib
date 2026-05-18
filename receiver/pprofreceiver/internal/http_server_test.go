@@ -53,7 +53,7 @@ func TestHTTPServerPush(t *testing.T) {
 	url := fmt.Sprintf("http://%s%s", addr, PushPath)
 
 	doRequest := func(method string, body []byte) *http.Response {
-		req, reqErr := http.NewRequestWithContext(t.Context(), method, url, bytes.NewReader(body)) //nolint:gosec // test-local URL
+		req, reqErr := http.NewRequestWithContext(t.Context(), method, url, bytes.NewReader(body))
 		require.NoError(t, reqErr)
 		if method == http.MethodPost {
 			req.Header.Set("Content-Type", "application/octet-stream")
