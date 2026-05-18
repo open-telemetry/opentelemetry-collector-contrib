@@ -18,8 +18,10 @@ import (
 	"go.uber.org/zap"
 )
 
-var patchPathRegexp = regexp.MustCompile(`/v2/dimension/([^/]+)/([^/]+)/_/sfxagent`)
-var putPathRegexp = regexp.MustCompile(`/v2/dimension/([^/]+)/([^/]+)$`)
+var (
+	patchPathRegexp = regexp.MustCompile(`/v2/dimension/([^/]+)/([^/]+)/_/sfxagent`)
+	putPathRegexp   = regexp.MustCompile(`/v2/dimension/([^/]+)/([^/]+)$`)
+)
 
 type dim struct {
 	Key          string             `json:"key"`
