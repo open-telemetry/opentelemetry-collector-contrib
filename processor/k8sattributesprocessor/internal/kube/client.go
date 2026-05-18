@@ -1654,13 +1654,7 @@ func (c *WatchClient) forgetPod(pod *api_v1.Pod) int {
 	deleteRequests := make([]deleteRequest, 0)
 
 	c.m.Lock()
-	if podUID != "" {
-		// Use the reverse index so deletes include identifiers that disappeared from the final pod object.
-		deleteRequests = c.buildDeletionRequestsForPodLocked(podUID, identifiers)
-	} else {
-		// Pods without a UID are not tracked in the reverse index; preserve the existing identifier-based cleanup.
-		deleteRequests = c.buildDeletionRequestsForIdentifiersLocked(podUID, identifiers)
-	}
+	deleteRequests = c.buildDeletionRequestsForPodLocked(podUID, identifiers)
 	podTableSize := len(c.Pods)
 	c.m.Unlock()
 
@@ -1735,10 +1729,12 @@ func (c *WatchClient) cancelStaleDeletesLocked(podUID string, identifiers []PodI
 
 // buildDeletionRequestsForPodLocked gathers identifiers known for podUID, then builds delayed delete requests for them.
 func (c *WatchClient) buildDeletionRequestsForPodLocked(podUID string, identifiers []PodIdentifier) []deleteRequest {
-	if len(c.podIdentifiers[podUID]) == 0 {
+	if podUID == "" || len(c.podIdentifiers[podUID]) == 0 {
+		// Pods without a UID are not tracked in the reverse index; preserve the existing identifier-based cleanup.
 		return c.buildDeletionRequestsForIdentifiersLocked(podUID, identifiers)
 	}
 
+	// Use the reverse index so deletes include identifiers that disappeared from the final pod object.
 	indexedIdentifiers := c.podIdentifiers[podUID]
 	identifiersToDelete := make([]PodIdentifier, 0, len(indexedIdentifiers))
 	seen := map[PodIdentifier]struct{}{}
