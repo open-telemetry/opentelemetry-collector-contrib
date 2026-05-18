@@ -163,6 +163,13 @@ feature_gates:
       When enabled, semconv stable attributes are enabled.
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589
+  - id: processor.k8sattributes.ShareProcessorBetweenPipelines
+    stage: alpha
+    description: >-
+      When enabled, processor instances with identical configuration are shared
+      across different signal type pipelines, reducing duplicate Kubernetes API watchers.
+    from_version: v0.150.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/2450
   - id: processor.k8sattributes.telemetry.disableOldFormatMetrics
     stage: alpha
     description: >-
@@ -192,7 +199,7 @@ attributes:
       - logs
       - profiles
   pod_identifier:
-    description: The pod identifier value(s) used for the association attempt
+    description: The source(s) used to identify the pod, formatted as 'from/name' (e.g., 'connection', 'resource_attribute/k8s.pod.ip'). Does not contain actual identifier values to avoid high cardinality.
     type: string
   status:
     description: The status of the pod association operation
@@ -205,7 +212,7 @@ telemetry:
   metrics:
     k8s.pod.association:
       prefix: otelcol.
-      enabled: false
+      enabled: true
       description: Number of pod associations' evaluations
       stability: development
       unit: "{resources}"

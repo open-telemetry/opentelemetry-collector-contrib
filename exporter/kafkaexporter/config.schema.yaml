@@ -27,6 +27,9 @@ $defs:
       encoding:
         description: Encoding holds the encoding of messages for the signal type. Defaults to "otlp_proto".
         type: string
+      message_key_from_metadata_key:
+        description: MessageKeyFromMetadataKey holds the name of the metadata key whose value will be used as the Kafka record key for this signal type. If the metadata key is absent or empty the record key is left nil. Mutually exclusive with the partition_* flags for the same signal.
+        type: string
       topic:
         description: 'Topic holds the name of the Kafka topic to which messages of the signal type should be produced. The default depends on the signal type: - "otlp_spans" for traces - "otlp_metrics" for metrics - "otlp_logs" for logs - "otlp_profiles" for profiles'
         type: string
@@ -73,7 +76,9 @@ properties:
     $ref: signal_config
   record_headers:
     description: RecordHeaders sets static headers on every outgoing Kafka record.
-    $ref: go.opentelemetry.io/collector/config/configopaque.map_list
+    type: array
+    items:
+      $ref: ./internal/kafkaclient.record_header
   record_partitioner:
     description: RecordPartitioner configures how Kafka records are assigned to partitions. The default ("sarama_compatible") retains the legacy Sarama-compatible hashing behavior. Set to "sticky", "round_robin", or "least_backup" to use one of the built-in franz-go partitioners, or "extension" to delegate to a custom extension.
     $ref: record_partitioner_config

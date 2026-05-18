@@ -18,7 +18,7 @@
 
 This is an exporter that will consistently export spans and metrics depending on the `routing_key` configured. Logs are exported based on the `traceID` (if it's present) or an auto-generated `traceID`. Therefore setting the `routing_key` for logs does not have any effect.
 
-The options for `routing_key` are: `service`, `traceID`, `metric` (metric name), `resource`, `streamID`.
+The options for `routing_key` are: `service`, `traceID`, `metric` (metric name), `resource`, `streamID`, `attributes`.
 
 | routing_key | can be used for      |
 | ----------- | -------------------- |
@@ -106,6 +106,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `interval` resolver interval in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `30s` will be used.
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `5s` will be used.
   * `port` port to be used for exporting the traces to the addresses resolved from `service`. By default, the port is set in Cloud Map, but can be be overridden with a static value in this config
+  * `owner_account` the AWS account ID that owns the Cloud Map namespace. Required when discovering instances in a namespace shared from another account via [AWS RAM](https://docs.aws.amazon.com/cloud-map/latest/dg/sharing-namespaces.html). When omitted, only namespaces owned by the caller's account are queried.
   * `health_status` filter in AWS Cloud Map, you can specify the health status of the instances that you want to discover. The health_status filter is optional and allows you to query based on the health status of the instances.
     * Available values are
       * `HEALTHY`: Only return instances that are healthy.
@@ -120,10 +121,11 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `service`: Routes values based on their service name. This is useful when using processors like the span metrics, so all spans for each service are sent to consistent collector instances for metric collection. Otherwise, metrics for the same services are sent to different collectors, making aggregations inaccurate.
   * `attributes`: Routes based on values in attributes. This is similar to service, but useful for situations in which a single service overwhelms any given instance of the collector, and should be split over multiple collectors. For traces, resource / scope / span attributes plus `span.kind` and `span.name` (top-level span fields) are supported. For metrics, resource / scope / datapoint attributes are supported.
   * `traceID`: Routes spans based on their `traceID`. Invalid for metrics.
+  * `resource`: Routes metrics based on a hash of all resource attributes. All metrics sharing the exact same set of resource attributes will be routed to the same backend. This is more granular than `service`, which only considers `service.name`, but less granular than `streamID`, which also considers scope and datapoint attributes. Invalid for spans.
   * `metric`: Routes metrics based on their metric name. Invalid for spans.
-  * `streamID`: Routes metrics based on their datapoint streamID. That's the unique hash of all it's attributes, plus the attributes and identifying information of its resource, scope, and metric data
+  * `streamID`: Routes metrics based on their datapoint streamID. That's the unique hash of all it's attributes, plus the attributes and identifying information of its resource, scope, and metric data.
 * loadbalancing exporter supports set of standard [queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), but they are disable by default to maintain compatibility
-* The `routing_attributes` property is used to list the attributes that should be used if the `routing_key` is `attributes`.
+* The `routing_attributes` property is used to list the attributes that should be used if the `routing_key` is `attributes`. For both traces and metrics, keys are encoded in configured order as `name=value|name=value|`, and missing attributes are encoded as `name=|`. Non-string values are deterministically stringified.
 
 Simple example
 
@@ -303,6 +305,7 @@ exporters:
       aws_cloud_map:
         namespace: aws-namespace
         service_name: aws-otel-col-service-name
+        owner_account: "123456789012" # optional, for cross-account namespace discovery
         interval: 30s
 
 service:

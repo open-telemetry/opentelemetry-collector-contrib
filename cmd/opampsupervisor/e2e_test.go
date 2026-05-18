@@ -41,11 +41,13 @@ import (
 	"github.com/open-telemetry/opamp-go/server/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
@@ -885,6 +887,42 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 	}, 5*time.Second, 250*time.Millisecond)
 }
 
+func TestSupervisorPackageCapabilitiesReturnError(t *testing.T) {
+	// Verifies that when accepts_packages or reports_package_statuses are enabled,
+	// the supervisor fails to start and never connects to the server.
+	if runtime.GOOS == "windows" {
+		t.Skip("Zap does not close the log file and Windows disallows removing files that are still opened.")
+	}
+
+	connected := atomic.Bool{}
+	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
+		OnConnected: func(ctx context.Context, conn types.Connection) {
+			connected.Store(true)
+		},
+	})
+	defer server.shutdown()
+	server.start()
+
+	storageDir := t.TempDir()
+	supervisorLogFilePath := filepath.Join(storageDir, "supervisor_log.log")
+	cfgFile := getSupervisorConfig(t, "packages_cap", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+		"log_level":   "0",
+		"log_file":    supervisorLogFilePath,
+	})
+	cfg, err := config.Load(cfgFile.Name())
+	require.NoError(t, err)
+	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
+	require.NoError(t, err)
+
+	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
+	require.NoError(t, err)
+	err = s.Start(t.Context())
+	require.ErrorContains(t, err, "accepts_packages and reports_package_statuses capabilities are not yet fully implemented")
+	require.False(t, connected.Load(), "Supervisor should not have connected to the server")
+}
+
 func TestSupervisorBootstrapsCollector(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1234,36 +1272,32 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 		t.Fatal("Failed to get agent description after 5 seconds")
 	}
 
-	expectedDescription := &protobufs.AgentDescription{
-		IdentifyingAttributes: []*protobufs.KeyValue{
-			stringKeyValue("client.id", "my-client-id"),
-			stringKeyValue("service.instance.id", uuid.UUID(ad.InstanceUid).String()),
-			stringKeyValue("service.name", command),
-			stringKeyValue("service.version", version),
-		},
-		NonIdentifyingAttributes: []*protobufs.KeyValue{
-			stringKeyValue("env", "prod"),
-			stringKeyValue("host.arch", runtime.GOARCH),
-			stringKeyValue("host.name", host),
-			stringKeyValue("os.type", runtime.GOOS),
-		},
+	expectedIdentifyingAttributes := map[string]string{
+		"client.id":           "my-client-id",
+		"service.instance.id": uuid.UUID(ad.InstanceUid).String(),
+		"service.name":        command,
+		"service.version":     version,
 	}
-
-	require.Subset(t, ad.AgentDescription.IdentifyingAttributes, expectedDescription.IdentifyingAttributes)
-	require.Subset(t, ad.AgentDescription.NonIdentifyingAttributes, expectedDescription.NonIdentifyingAttributes)
+	expectedNonIdentifyingAttributes := map[string]string{
+		"env":       "prod",
+		"host.arch": runtime.GOARCH,
+		"host.name": host,
+		"os.type":   runtime.GOOS,
+	}
+	actualIdentifyingAttributes := keyValuesToStringMap(ad.AgentDescription.IdentifyingAttributes)
+	require.Subset(t, actualIdentifyingAttributes, expectedIdentifyingAttributes)
+	actualNonIdentifyingAttributes := keyValuesToStringMap(ad.AgentDescription.NonIdentifyingAttributes)
+	require.Subset(t, actualNonIdentifyingAttributes, expectedNonIdentifyingAttributes)
 
 	time.Sleep(250 * time.Millisecond)
 }
 
-func stringKeyValue(key, val string) *protobufs.KeyValue {
-	return &protobufs.KeyValue{
-		Key: key,
-		Value: &protobufs.AnyValue{
-			Value: &protobufs.AnyValue_StringValue{
-				StringValue: val,
-			},
-		},
+func keyValuesToStringMap(kvs []*protobufs.KeyValue) map[string]string {
+	out := make(map[string]string, len(kvs))
+	for _, kv := range kvs {
+		out[kv.Key] = kv.Value.GetStringValue()
 	}
+	return out
 }
 
 // Creates a Collector config that reads and writes logs to files and provides
@@ -2693,4 +2727,55 @@ func TestSupervisorValidatesConfigBeforeApplying(t *testing.T) {
 			require.NotContains(t, currentCfg, "nonexistent_exporter", "Config should not have been updated to invalid config")
 		})
 	}
+}
+
+func TestSupervisorExtensionsFeatureGateRequired(t *testing.T) {
+	t.Run("feature-gate disabled", func(t *testing.T) {
+		// Render configuration with nop extension
+		cfgFile := getSupervisorConfig(t, "extensions", map[string]string{
+			"url": "localhost:0",
+		})
+		cfg, err := config.Load(cfgFile.Name())
+		require.NoError(t, err)
+
+		// Attempt to create a supervisor with an extensions config. The feature
+		// gate is disabled by default, so supervisor.NewSupervisor must fail with an error
+		// that references the feature gate and how to enable it.
+		s, err := supervisor.NewSupervisor(t.Context(), zap.NewNop(), cfg)
+		require.Nil(t, s)
+		require.Contains(t, err.Error(), metadata.OpampsupervisorExtensionsFeatureGate.ID())
+		require.Contains(t, err.Error(), "--feature-gates=")
+	})
+
+	t.Run("feature-gate enabled", func(t *testing.T) {
+		// Create basic opamp server to check that the supervisor connects
+		connected := atomic.Bool{}
+		server := newOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
+			OnConnected: func(context.Context, types.Connection) {
+				connected.Store(true)
+			},
+		})
+
+		// Enable extensions feature-gate
+		err := featuregate.GlobalRegistry().Set(metadata.OpampsupervisorExtensionsFeatureGate.ID(), true)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.OpampsupervisorExtensionsFeatureGate.ID(), false))
+		})
+
+		// Create supervisor with configuration that has nop extension
+		s, _ := newSupervisor(t,
+			"extensions",
+			map[string]string{
+				"url": server.addr,
+			},
+		)
+
+		// Start supervisor and wait for successful connection
+		t.Cleanup(s.Shutdown)
+		require.NoError(t, s.Start(t.Context()))
+
+		waitForSupervisorConnection(server.supervisorConnected, true)
+		require.True(t, connected.Load(), "Supervisor failed to connect")
+	})
 }

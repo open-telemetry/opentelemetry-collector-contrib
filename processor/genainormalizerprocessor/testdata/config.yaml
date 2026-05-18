@@ -1,0 +1,29 @@
+# Full config exercising the supported source and its per-source fields.
+gen_ai_normalizer:
+  sources:
+    - name: openinference
+      remove_originals: true
+      overwrite: false
+
+# Sources omitted entirely: validation error (at least one source required).
+gen_ai_normalizer/empty:
+
+# Sources with only openinference defaults.
+gen_ai_normalizer/openinference_only:
+  sources:
+    - name: openinference
+
+# Explicit empty sources list: validation error.
+gen_ai_normalizer/empty_sources:
+  sources: []
+
+# Unknown source name: validation error.
+gen_ai_normalizer/unknown_source:
+  sources:
+    - name: foobar
+
+# Same source listed twice: validation error.
+gen_ai_normalizer/duplicate_source:
+  sources:
+    - name: openinference
+    - name: openinference
