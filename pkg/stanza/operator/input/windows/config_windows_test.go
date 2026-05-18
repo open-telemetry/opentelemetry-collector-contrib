@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 )
@@ -41,7 +42,7 @@ func TestBuildEventDrivenScraping(t *testing.T) {
 			cfg.Channel = "Application"
 			cfg.EventDrivenScraping = tt.configFlag
 
-			op, err := cfg.Build(component.TelemetrySettings{})
+			op, err := cfg.Build(component.TelemetrySettings{Logger: zap.NewNop()})
 			require.NoError(t, err)
 			input, ok := op.(*Input)
 			require.True(t, ok)
@@ -64,7 +65,7 @@ func TestBuildMaxEventsPerPollForcedZeroWhenEventDriven(t *testing.T) {
 		cfg.MaxEventsPerPoll = 42
 		cfg.EventDrivenScraping = true
 
-		op, err := cfg.Build(component.TelemetrySettings{})
+		op, err := cfg.Build(component.TelemetrySettings{Logger: zap.NewNop()})
 		require.NoError(t, err)
 		input := op.(*Input)
 		require.Zero(t, input.maxEventsPerPollCycle)
@@ -80,7 +81,7 @@ func TestBuildMaxEventsPerPollForcedZeroWhenEventDriven(t *testing.T) {
 		cfg.Channel = "Application"
 		cfg.MaxEventsPerPoll = 42
 
-		op, err := cfg.Build(component.TelemetrySettings{})
+		op, err := cfg.Build(component.TelemetrySettings{Logger: zap.NewNop()})
 		require.NoError(t, err)
 		input := op.(*Input)
 		require.Zero(t, input.maxEventsPerPollCycle)
@@ -93,7 +94,7 @@ func TestBuildMaxEventsPerPollForcedZeroWhenEventDriven(t *testing.T) {
 		cfg.Channel = "Application"
 		cfg.MaxEventsPerPoll = 42
 
-		op, err := cfg.Build(component.TelemetrySettings{})
+		op, err := cfg.Build(component.TelemetrySettings{Logger: zap.NewNop()})
 		require.NoError(t, err)
 		input := op.(*Input)
 		require.Equal(t, 42, input.maxEventsPerPollCycle)

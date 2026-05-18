@@ -37,7 +37,7 @@ $defs:
       suppress_rendering_info:
         type: boolean
       wait_timeout:
-        description: WaitTimeout is the maximum duration to wait for new events before performing a safety-net poll in event-driven mode (see the event_driven_scraping config option and the stanza.windows.eventDrivenScraping feature gate). Under normal conditions the subscription signal fires immediately, so this value is rarely reached. Defaults to 5s. Ignored when event-driven scraping is not enabled.
+        description: WaitTimeout is the maximum duration to wait for new events before performing a safety-net poll in event-driven mode (see EventDrivenScraping config option and the stanza.windows.eventDrivenScraping feature gate). Under normal conditions the subscription signal fires immediately, so this value is rarely reached. Defaults to 5s. Ignored when event-driven scraping is not enabled.
         type: string
         format: duration
     allOf:
