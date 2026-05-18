@@ -578,10 +578,10 @@ func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error
 }
 
 // parseContext represents the context used during parsing operations. It is used to store
-// the current parser reference and shared scopes such as lambda frames.
+// the current parser reference and lexical scopes for local identifiers (e.g. in lambda bodies).
 type parseContext[K any] struct {
 	*Parser[K]
-	lambdaScopes lambdaScopeStack
+	localScopes localScopeStack
 }
 
 func (p *Parser[K]) newParseContext() *parseContext[K] {

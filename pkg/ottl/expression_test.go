@@ -718,13 +718,13 @@ func Test_newGetter(t *testing.T) {
 			name: "lambda",
 			val: value{
 				Lambda: &lambdaExpr{
-					Params: []lambdaParamDecl{"value"},
+					Params: []localIdentifierDecl{"$value"},
 					Arrow:  "=>",
 					Body: lambdaBody{
 						Value: &value{
 							Literal: &mathExprLiteral{
-								LambdaParamPath: &lambdaParamPath{
-									Name: "value",
+								LocalIdentifier: &localIdentifier{
+									Name: "$value",
 								},
 							},
 						},
@@ -734,10 +734,10 @@ func Test_newGetter(t *testing.T) {
 			wantLiteral: true,
 			deepEqual:   true,
 			want: &LambdaExpression[any]{
-				paramNames: []string{"value"},
-				body: &lambdaBindingGetter[any]{
-					paramPath: &lambdaParamPath{
-						Name: "value",
+				paramNames: []string{"$value"},
+				body: &localBindingGetter[any]{
+					identifierPath: &localIdentifier{
+						Name: "$value",
 					},
 				},
 			},
@@ -3406,63 +3406,6 @@ func Test_newStandardPSliceGetter(t *testing.T) {
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, s, val)
-		})
-	}
-}
-
-func Test_newLambdaBindingGetter(t *testing.T) {
-	tests := []struct {
-		name         string
-		paramPath    *lambdaParamPath
-		formalsStack []map[string]struct{}
-		want         Getter[any]
-		wantErr      string
-	}{
-		{
-			name:      "valid",
-			paramPath: &lambdaParamPath{Name: "value"},
-			formalsStack: []map[string]struct{}{
-				{"value": {}},
-			},
-			want: &lambdaBindingGetter[any]{paramPath: &lambdaParamPath{Name: "value"}},
-		},
-		{
-			name:      "lambda formal outside lambda scope",
-			paramPath: &lambdaParamPath{Name: "value"},
-			wantErr:   "lambda parameter $value is only valid inside a lambda body",
-		},
-		{
-			name:      "unknown lambda formal",
-			paramPath: &lambdaParamPath{Name: "foo"},
-			formalsStack: []map[string]struct{}{
-				{"bar": {}},
-			},
-			wantErr: "lambda parameter $foo is not declared in this lambda",
-		},
-	}
-
-	p, _ := NewParser[any](
-		map[string]Factory[any]{},
-		testParsePath[any],
-		componenttest.NewNopTelemetrySettings(),
-		WithEnumParser[any](testParseEnum),
-	)
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			pc := p.newParseContext()
-			if len(tt.formalsStack) > 0 {
-				for _, stack := range tt.formalsStack {
-					pc.lambdaScopes.push(stack)
-				}
-			}
-			res, err := pc.newLambdaBindingGetter(tt.paramPath)
-			if tt.wantErr != "" {
-				require.ErrorContains(t, err, tt.wantErr)
-				return
-			}
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, res)
 		})
 	}
 }

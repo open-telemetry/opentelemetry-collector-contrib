@@ -2237,7 +2237,7 @@ func Test_e2e_lambda_expression(t *testing.T) {
 		{
 			name:         "duplicate formals are rejected",
 			expression:   `Eval(($value, $value) => $value, ["hello lambda"])`,
-			wantParseErr: "duplicate lambda parameter $value",
+			wantParseErr: "duplicate local identifier $value",
 		},
 		{
 			name:       "no parameters",

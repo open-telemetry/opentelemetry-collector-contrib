@@ -1139,8 +1139,8 @@ func (p *parseContext[K]) newGetter(val value) (Getter[K], error) {
 		if eL.Converter != nil {
 			return p.newGetterFromConverter(*eL.Converter)
 		}
-		if eL.LambdaParamPath != nil {
-			return p.newLambdaBindingGetter(eL.LambdaParamPath)
+		if eL.LocalIdentifier != nil {
+			return p.newLocalIdentifierGetter(eL.LocalIdentifier)
 		}
 	}
 
@@ -1272,15 +1272,4 @@ func (g StandardDurationGetter[K]) Get(ctx context.Context, tCtx K) (time.Durati
 	default:
 		return 0, TypeError(fmt.Sprintf("expected duration but got %T", val))
 	}
-}
-
-func (p *parseContext[K]) newLambdaBindingGetter(paramPath *lambdaParamPath) (Getter[K], error) {
-	name := string(paramPath.Name)
-	if p.lambdaScopes.empty() {
-		return nil, fmt.Errorf("lambda parameter $%s is only valid inside a lambda body", name)
-	}
-	if !p.lambdaScopes.allows(name) {
-		return nil, fmt.Errorf("lambda parameter $%s is not declared in this lambda", name)
-	}
-	return &lambdaBindingGetter[K]{paramPath: paramPath}, nil
 }

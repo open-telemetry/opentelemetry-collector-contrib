@@ -223,9 +223,9 @@ func (c *converter) accept(v grammarVisitor) {
 }
 
 type lambdaExpr struct {
-	Params []lambdaParamDecl `parser:"'(' ( @LambdaParam ( ',' @LambdaParam )* )? ')'"`
-	Arrow  string            `parser:"@LambdaArrow"`
-	Body   lambdaBody        `parser:"@@"`
+	Params []localIdentifierDecl `parser:"'(' ( @LocalIdentifier ( ',' @LocalIdentifier )* )? ')'"`
+	Arrow  string                `parser:"@LambdaArrow"`
+	Body   lambdaBody            `parser:"@@"`
 }
 
 type lambdaBody struct {
@@ -243,27 +243,27 @@ func (lb *lambdaBody) accept(vis grammarVisitor) {
 	}
 }
 
-type lambdaParamDecl string
+type localIdentifierDecl string
 
-func (n *lambdaParamDecl) Capture(values []string) error {
+func (n *localIdentifierDecl) Capture(values []string) error {
 	s := values[0]
 	if len(s) < 2 || !strings.HasPrefix(s, "$") {
-		return fmt.Errorf("invalid lambda parameter %q: must start with '$' and include at least one character after it", s)
+		return fmt.Errorf("invalid local identifier %q: must start with '$' and include at least one character after it", s)
 	}
-	*n = lambdaParamDecl(s[1:])
+	*n = localIdentifierDecl(s)
 	return nil
 }
 
-func (n *lambdaParamDecl) name() string {
+func (n *localIdentifierDecl) name() string {
 	return string(*n)
 }
 
-type lambdaParamPath struct {
-	Name lambdaParamDecl `parser:"@LambdaParam"`
-	Keys []key           `parser:"( @@ )*"`
+type localIdentifier struct {
+	Name localIdentifierDecl `parser:"@LocalIdentifier"`
+	Keys []key               `parser:"( @@ )*"`
 }
 
-func (lb *lambdaParamPath) accept(vis grammarVisitor) {
+func (lb *localIdentifier) accept(vis grammarVisitor) {
 	if lb.Keys != nil {
 		for _, k := range lb.Keys {
 			k.accept(vis)
@@ -422,7 +422,7 @@ type mathExprLiteral struct {
 	Float           *float64         `parser:"| @Float"`
 	Int             *int64           `parser:"| @Int"`
 	Path            *path            `parser:"| @@"`
-	LambdaParamPath *lambdaParamPath `parser:"| @@ )"`
+	LocalIdentifier *localIdentifier `parser:"| @@ )"`
 }
 
 func (m *mathExprLiteral) accept(v grammarVisitor) {
@@ -436,8 +436,8 @@ func (m *mathExprLiteral) accept(v grammarVisitor) {
 	if m.Converter != nil {
 		m.Converter.accept(v)
 	}
-	if m.LambdaParamPath != nil {
-		m.LambdaParamPath.accept(v)
+	if m.LocalIdentifier != nil {
+		m.LocalIdentifier.accept(v)
 	}
 }
 
@@ -569,7 +569,7 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `OpAnd`, Pattern: `\b(and)\b`},
 		{Name: `OpComparison`, Pattern: `==|!=|>=|<=|>|<`},
 		{Name: `LambdaArrow`, Pattern: `=>`},
-		{Name: `LambdaParam`, Pattern: `\$[a-z][a-z0-9_]*`},
+		{Name: `LocalIdentifier`, Pattern: `\$[a-z][a-z0-9_]*`},
 		{Name: `OpAddSub`, Pattern: `\+|\-`},
 		{Name: `OpMultDiv`, Pattern: `\/|\*`},
 		{Name: `Boolean`, Pattern: `\b(true|false)\b`},

@@ -1902,11 +1902,11 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []lambdaParamDecl{"value"},
+								Params: []localIdentifierDecl{"$value"},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
-											LambdaParamPath: &lambdaParamPath{Name: "value"},
+											LocalIdentifier: &localIdentifier{Name: "$value"},
 										},
 									},
 								},
@@ -1936,12 +1936,12 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []lambdaParamDecl{"value"},
+								Params: []localIdentifierDecl{"$value"},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
-											LambdaParamPath: &lambdaParamPath{
-												Name: "value",
+											LocalIdentifier: &localIdentifier{
+												Name: "$value",
 												Keys: []key{
 													{
 														Int: ottltest.Intp(1),
@@ -1995,12 +1995,12 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []lambdaParamDecl{"value"},
+								Params: []localIdentifierDecl{"$value"},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
-											LambdaParamPath: &lambdaParamPath{
-												Name: "value",
+											LocalIdentifier: &localIdentifier{
+												Name: "$value",
 												Keys: []key{
 													{
 														String: ottltest.Strp("one"),
@@ -2059,11 +2059,11 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []lambdaParamDecl{"value", "value"},
+								Params: []localIdentifierDecl{"$value", "$value"},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
-											LambdaParamPath: &lambdaParamPath{Name: "value"},
+											LocalIdentifier: &localIdentifier{Name: "$value"},
 										},
 									},
 								},
@@ -2083,7 +2083,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
-			wantError: "duplicate lambda parameter $value",
+			wantError: "duplicate local identifier $value",
 		},
 		{
 			name: "lambda arg with expression body",
@@ -2093,7 +2093,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []lambdaParamDecl{"a", "b"},
+								Params: []localIdentifierDecl{"$a", "$b"},
 								Body: lambdaBody{
 									Expr: &booleanExpression{
 										Left: &term{
@@ -2101,13 +2101,13 @@ func Test_NewFunctionCall(t *testing.T) {
 												Comparison: &comparison{
 													Left: value{
 														Literal: &mathExprLiteral{
-															LambdaParamPath: &lambdaParamPath{Name: "a"},
+															LocalIdentifier: &localIdentifier{Name: "$a"},
 														},
 													},
 													Op: eq,
 													Right: value{
 														Literal: &mathExprLiteral{
-															LambdaParamPath: &lambdaParamPath{Name: "b"},
+															LocalIdentifier: &localIdentifier{Name: "$b"},
 														},
 													},
 												},
@@ -3320,11 +3320,11 @@ func Test_OttlFunctionsEnableLambdaFeatureGate(t *testing.T) {
 			{
 				Value: value{
 					Lambda: &lambdaExpr{
-						Params: []lambdaParamDecl{"value"},
+						Params: []localIdentifierDecl{"$value"},
 						Body: lambdaBody{
 							Value: &value{
 								Literal: &mathExprLiteral{
-									LambdaParamPath: &lambdaParamPath{Name: "value"},
+									LocalIdentifier: &localIdentifier{Name: "$value"},
 								},
 							},
 						},

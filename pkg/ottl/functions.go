@@ -740,38 +740,44 @@ func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*LambdaExpression[
 		return nil, errLambdaExpressionDisable
 	}
 
-	paramNames := make([]string, 0, len(l.Params))
-	validParams := make(map[string]struct{}, len(l.Params))
-	for _, param := range l.Params {
+	paramNames := make([]string, len(l.Params))
+	validParams := make(localScopeFrame, len(l.Params))
+	for i, param := range l.Params {
 		name := param.name()
-		if _, dup := validParams[name]; dup {
-			return nil, fmt.Errorf("duplicate lambda parameter $%s", name)
+		if _, exists := validParams[name]; exists {
+			return nil, fmt.Errorf("duplicate local identifier %s", name)
 		}
 		validParams[name] = struct{}{}
-		paramNames = append(paramNames, name)
+		paramNames[i] = name
 	}
 
-	p.lambdaScopes.push(validParams)
-	defer p.lambdaScopes.pop()
-
-	switch {
-	case l.Body.Expr != nil && l.Body.Value != nil:
-		return nil, errors.New("lambda cannot have both an expression and a value body, this is a programming error in OTTL")
-	case l.Body.Expr != nil:
-		body, err := p.newBoolExpr(l.Body.Expr)
-		if err != nil {
-			return nil, err
+	var result *LambdaExpression[K]
+	err := p.withLocalScope(validParams, func() error {
+		switch {
+		case l.Body.Expr != nil && l.Body.Value != nil:
+			return errors.New("lambda cannot have both an expression and a value body, this is a programming error in OTTL")
+		case l.Body.Expr != nil:
+			body, err := p.newBoolExpr(l.Body.Expr)
+			if err != nil {
+				return err
+			}
+			result = &LambdaExpression[K]{paramNames: paramNames, bodyExpr: body}
+			return nil
+		case l.Body.Value != nil:
+			body, err := p.newGetter(*l.Body.Value)
+			if err != nil {
+				return err
+			}
+			result = &LambdaExpression[K]{paramNames: paramNames, body: body}
+			return nil
+		default:
+			return errors.New("lambda requires a valid body after =>")
 		}
-		return &LambdaExpression[K]{paramNames: paramNames, bodyExpr: body}, nil
-	case l.Body.Value != nil:
-		body, err := p.newGetter(*l.Body.Value)
-		if err != nil {
-			return nil, err
-		}
-		return &LambdaExpression[K]{paramNames: paramNames, body: body}, nil
-	default:
-		return nil, errors.New("lambda requires a valid body after =>")
+	})
+	if err != nil {
+		return nil, err
 	}
+	return result, nil
 }
 
 // optionalManager provides a way for the parser to handle Optional[T] structs
