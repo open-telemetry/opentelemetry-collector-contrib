@@ -69,6 +69,7 @@ Depending on which metrics you collect, you will need to assign those permission
 GRANT SELECT ON V_$SESSION TO <username>;
 GRANT SELECT ON V_$SYSSTAT TO <username>;
 GRANT SELECT ON V_$RESOURCE_LIMIT TO <username>;
+GRANT SELECT ON V_$OSSTAT TO <username>;
 GRANT SELECT ON DBA_TABLESPACES TO <username>;
 GRANT SELECT ON DBA_DATA_FILES TO <username>;
 GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO <username>;
