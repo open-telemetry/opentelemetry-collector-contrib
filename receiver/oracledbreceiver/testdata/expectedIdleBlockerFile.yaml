@@ -79,6 +79,9 @@ resourceLogs:
               - key: oracledb.event
                 value:
                   stringValue: ""
+              - key: oracledb.query.wait_time
+                value:
+                  doubleValue: 0
               - key: oracledb.procedure_id
                 value:
                   intValue: "0"
