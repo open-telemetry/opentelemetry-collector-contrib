@@ -1074,6 +1074,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const blockingSessionID = "blocking_session_id"
 	const blockingStartTime = "blocking_start_time"
 	const clientAddress = "client_address"
+	const clientAppName = "client_app_name"
 	const clientPort = "client_port"
 	const command = "command"
 	const contextInfo = "context_info"
@@ -1092,12 +1093,10 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const reads = "reads"
 	const requestStatus = "request_status"
 	const rowCount = "row_count"
-	const sessionHostProcessID = "session_host_process_id"
+	const sessionDurationMillisecond = "session_duration"
 	const sessionID = "session_id"
-	const sessionProgramName = "session_program_name"
 	const sessionStarted = "session_started"
 	const sessionStatus = "session_status"
-	const sessionTotalElapsedTimeMillisecond = "session_total_elapsed_time"
 	const statementText = "statement_text"
 	const totalElapsedTimeMillisecond = "total_elapsed_time"
 	const transactionID = "transaction_id"
@@ -1211,7 +1210,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		estimatedCompletionTimeSecondVal := s.retrieveValue(row, estimatedCompletionTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0
 		})).(float64)
-		sessionHostProcessIDVal := s.retrieveValue(row, sessionHostProcessID, &errs, retrieveInt).(int64)
 		lockTimeoutSecondVal := s.retrieveValue(row, lockTimeoutMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0
 		})).(float64)
@@ -1224,7 +1222,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		rowCountVal := s.retrieveValue(row, rowCount, &errs, retrieveInt).(int64)
 		sessionIDVal := s.retrieveValue(row, sessionID, &errs, retrieveInt).(int64)
 		sessionStatusVal := row[sessionStatus]
-		sessionTotalElapsedTimeSecondVal := s.retrieveValue(row, sessionTotalElapsedTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
+		sessionDurationSecondVal := s.retrieveValue(row, sessionDurationMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0
 		})).(float64)
 		totalElapsedTimeSecondVal := s.retrieveValue(row, totalElapsedTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
@@ -1238,7 +1236,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		waitTimeSecondVal := float64(waitTimeMillisecondVal) / 1000.0
 		resourceTypeVal, resourceIDVal := parseWaitResource(waitResourceVal)
 		blockingStartTimeVal := row[blockingStartTime]
-		sessionProgramNameVal := row[sessionProgramName]
+		clientAppNameVal := row[clientAppName]
 		sessionStartedVal := row[sessionStarted]
 		waitTypeVal := row[waitType]
 		writesVal := s.retrieveValue(row, writes, &errs, retrieveInt).(int64)
@@ -1272,14 +1270,14 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			timestamp, clientAddressVal, clientPortVal,
 			dbNamespaceVal, queryTextVal, dbSystemNameVal,
 			networkPeerAddressVal, networkPeerPortVal,
-			blockSessionIDVal, blockingStartTimeVal, contextInfoVal,
+			blockSessionIDVal, blockingStartTimeVal, clientAppNameVal, contextInfoVal,
 			commandVal, cpuTimeSecondVal,
 			deadlockPriorityVal, estimatedCompletionTimeSecondVal,
 			lockTimeoutSecondVal, logicalReadsVal,
 			openTransactionCountVal, percentCompleteVal, queryHashVal, queryPlanHashVal,
 			queryStartVal, readsVal,
 			requestStatusVal, resourceIDVal, resourceTypeVal, rowCountVal,
-			sessionTotalElapsedTimeSecondVal, sessionHostProcessIDVal, sessionProgramNameVal, sessionStartedVal, sessionIDVal, sessionStatusVal,
+			sessionDurationSecondVal, sessionStartedVal, sessionIDVal, sessionStatusVal,
 			totalElapsedTimeSecondVal, transactionIDVal, transactionIsolationLevelVal,
 			waitResourceVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
 			row[storedProcedureID], row[storedProcedureName],

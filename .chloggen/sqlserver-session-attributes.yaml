@@ -17,11 +17,10 @@ issues: [48346]
 # Use pipe (|) for multiline entries.
 subtext: |
   The `db.server.query_sample` log records now include:
-  - `sqlserver.session.host_process_id`: Process ID of the client application on the host system.
-  - `sqlserver.session.started`: ISO 8601 timestamp of when the session was established.
-  - `sqlserver.session.total_elapsed_time`: Total elapsed time in seconds the session has been actively executing requests.
-  - `sqlserver.session.program_name`: Name of the client application that initiated the session.
 
+    - `sqlserver.client.app.name`: Name of the client application that initiated the session.
+    - `sqlserver.session.started`: ISO 8601 timestamp of when the session was established.
+    - `sqlserver.session.duration`: Total elapsed time in seconds the session has been actively executing requests.
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 # Optional: The change log or logs in which this entry should be included.

@@ -49,7 +49,7 @@ resourceLogs:
               - key: sqlserver.blocking.start_time
                 value:
                   stringValue: "2025-02-12T16:37:52.393+08:00"
-              - key: sqlserver.session.program_name
+              - key: sqlserver.client.app.name
                 value:
                   stringValue: SSMS
               - key: sqlserver.context_info
@@ -67,9 +67,6 @@ resourceLogs:
               - key: sqlserver.estimated_completion_time
                 value:
                   doubleValue: 0
-              - key: sqlserver.session.host_process_id
-                value:
-                  intValue: "1234"
               - key: sqlserver.lock_timeout
                 value:
                   doubleValue: -0.001
@@ -106,7 +103,7 @@ resourceLogs:
               - key: sqlserver.row_count
                 value:
                   intValue: "1"
-              - key: sqlserver.session.total_elapsed_time
+              - key: sqlserver.session.duration
                 value:
                   doubleValue: 720.456
               - key: sqlserver.session_id
