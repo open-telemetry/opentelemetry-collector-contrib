@@ -4,13 +4,33 @@ type: schema
 status:
   class: processor
   stability:
-    development: [traces, metrics, logs]
-  distributions: []
+    alpha: [traces, metrics, logs]
+  distributions: [contrib]
   codeowners:
     active: [MovieStoreGuy, ankitpatel96, dineshg13, MikeGoldsmith]
 
+attributes:
+  from_schema_url:
+    description: The schema URL the signal arrived with
+    type: string
+  migration_from_schema_url:
+    description: The migration from version boundary (only present when migration is active)
+    type: string
+  to_schema_url:
+    description: The target schema URL the signal was translated to
+    type: string
+
 telemetry:
   metrics:
+    processor_schema.translated:
+      enabled: true
+      description: Number of schema translations
+      unit: "{translations}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+      attributes: [from_schema_url, migration_from_schema_url, to_schema_url]
     processor_schema_cache.hits:
       enabled: true
       description: Number of schema cache hits

@@ -10,12 +10,12 @@ import (
 	"slices"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
@@ -28,6 +28,13 @@ var (
 
 var errLogsPartitionExclusive = errors.New(
 	"partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled",
+)
+
+var (
+	errTracesMessageKeyExclusive        = errors.New("traces::message_key_from_metadata_key cannot be combined with partition_traces_by_id")
+	errMetricsMessageKeyExclusive       = errors.New("metrics::message_key_from_metadata_key cannot be combined with partition_metrics_by_resource_attributes")
+	errLogsMessageKeyExclusive          = errors.New("logs::message_key_from_metadata_key cannot be combined with partition_logs_by_resource_attributes or partition_logs_by_trace_id")
+	errMessageKeyMetadataKeyNotIncluded = errors.New("message_key_from_metadata_key must be present in sending_queue::batch::partition::metadata_keys if batching is enabled")
 )
 
 var (
@@ -144,7 +151,7 @@ type Config struct {
 	IncludeMetadataKeys []string `mapstructure:"include_metadata_keys"`
 
 	// RecordHeaders sets static headers on every outgoing Kafka record.
-	RecordHeaders configopaque.MapList `mapstructure:"record_headers"`
+	RecordHeaders []kafkaclient.RecordHeader `mapstructure:"record_headers"`
 
 	// TopicFromAttribute is the name of the attribute to use as the topic name.
 	TopicFromAttribute string `mapstructure:"topic_from_attribute"`
@@ -184,6 +191,15 @@ func (c *Config) Validate() error {
 	if c.PartitionLogsByResourceAttributes && c.PartitionLogsByTraceID {
 		return errLogsPartitionExclusive
 	}
+	if c.Traces.MessageKeyFromMetadataKey != "" && c.PartitionTracesByID {
+		return errTracesMessageKeyExclusive
+	}
+	if c.Metrics.MessageKeyFromMetadataKey != "" && c.PartitionMetricsByResourceAttributes {
+		return errMetricsMessageKeyExclusive
+	}
+	if c.Logs.MessageKeyFromMetadataKey != "" && (c.PartitionLogsByResourceAttributes || c.PartitionLogsByTraceID) {
+		return errLogsMessageKeyExclusive
+	}
 	if err := c.RecordPartitioner.Validate(); err != nil {
 		return fmt.Errorf("record_partitioner: %w", err)
 	}
@@ -209,6 +225,12 @@ type SignalConfig struct {
 	// topic name for this signal type. If this is set, it takes precedence
 	// over the topic name set in the topic field.
 	TopicFromMetadataKey string `mapstructure:"topic_from_metadata_key"`
+
+	// MessageKeyFromMetadataKey holds the name of the metadata key whose value
+	// will be used as the Kafka record key for this signal type. If the metadata
+	// key is absent or empty the record key is left nil.
+	// Mutually exclusive with the partition_* flags for the same signal.
+	MessageKeyFromMetadataKey string `mapstructure:"message_key_from_metadata_key"`
 
 	// Encoding holds the encoding of messages for the signal type.
 	//
@@ -261,6 +283,20 @@ func validateBatchPartitionerKeys(c *Config) error {
 		return fmt.Errorf("profiles::topic_from_metadata_key: %w", err)
 	}
 
+	// Validate if message_key_from_metadata_key is included in partition_keys
+	if err := validateMessageKeyFromMetadataKey(c.Logs.MessageKeyFromMetadataKey, partitionMetadataKeySet); err != nil {
+		return fmt.Errorf("logs::message_key_from_metadata_key: %w", err)
+	}
+	if err := validateMessageKeyFromMetadataKey(c.Metrics.MessageKeyFromMetadataKey, partitionMetadataKeySet); err != nil {
+		return fmt.Errorf("metrics::message_key_from_metadata_key: %w", err)
+	}
+	if err := validateMessageKeyFromMetadataKey(c.Traces.MessageKeyFromMetadataKey, partitionMetadataKeySet); err != nil {
+		return fmt.Errorf("traces::message_key_from_metadata_key: %w", err)
+	}
+	if err := validateMessageKeyFromMetadataKey(c.Profiles.MessageKeyFromMetadataKey, partitionMetadataKeySet); err != nil {
+		return fmt.Errorf("profiles::message_key_from_metadata_key: %w", err)
+	}
+
 	return nil
 }
 
@@ -280,6 +316,20 @@ func validateTopicFromMetadataKey(topicFromMetadataKey string, partitionKeysSet 
 		return fmt.Errorf("%w: %q not found in partition keys=%v",
 			errTopicMetadataKeyNotIncluded,
 			topicFromMetadataKey,
+			slices.Collect(maps.Keys(partitionKeysSet)),
+		)
+	}
+	return nil
+}
+
+func validateMessageKeyFromMetadataKey(messageKeyFromMetadataKey string, partitionKeysSet map[string]struct{}) error {
+	if messageKeyFromMetadataKey == "" {
+		return nil
+	}
+	if _, ok := partitionKeysSet[messageKeyFromMetadataKey]; !ok {
+		return fmt.Errorf("%w: %q not found in partition keys=%v",
+			errMessageKeyMetadataKeyNotIncluded,
+			messageKeyFromMetadataKey,
 			slices.Collect(maps.Keys(partitionKeysSet)),
 		)
 	}
