@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
@@ -69,6 +70,23 @@ func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.Trac
 
 func (t *TestPolicyEvaluator) IsStateful() bool {
 	return t.pe.IsStateful()
+}
+
+func TestDefaultOTTLConditionErrorMode(t *testing.T) {
+	gate := metadata.ProcessorTailsamplingprocessorDefaultottlconditionerrormodeignoreFeatureGate
+	originalValue := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), originalValue))
+	})
+
+	require.Equal(t, ottl.PropagateError, defaultOTTLConditionErrorMode(""))
+	require.Equal(t, ottl.IgnoreError, defaultOTTLConditionErrorMode(ottl.IgnoreError))
+	require.Equal(t, ottl.PropagateError, defaultOTTLConditionErrorMode(ottl.PropagateError))
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+	require.Equal(t, ottl.IgnoreError, defaultOTTLConditionErrorMode(""))
+	require.Equal(t, ottl.PropagateError, defaultOTTLConditionErrorMode(ottl.PropagateError))
 }
 
 // testTSPController is a set of mechanisms to make the TSP do predictable
