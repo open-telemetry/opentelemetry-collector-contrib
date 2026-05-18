@@ -305,6 +305,10 @@ component_management:
     name: extension_awsproxy
     paths:
     - extension/awsproxy/**
+  - component_id: extension_awssecretsmanagerauth
+    name: extension_awssecretsmanagerauth
+    paths:
+    - extension/awssecretsmanagerauthextension/**
   - component_id: extension_azureauth
     name: extension_azureauth
     paths:
@@ -345,6 +349,10 @@ component_management:
     name: extension_httpforwarder
     paths:
     - extension/httpforwarderextension/**
+  - component_id: extension_internal_basicauth
+    name: extension_internal_basicauth
+    paths:
+    - extension/internal/basicauth/**
   - component_id: extension_internal_credentialsfile
     name: extension_internal_credentialsfile
     paths:
