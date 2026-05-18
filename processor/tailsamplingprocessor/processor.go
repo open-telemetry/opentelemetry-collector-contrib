@@ -368,23 +368,7 @@ func WithNonSampledDecisionCache(c cache.Cache) Option {
 	}
 }
 
-// WithSampledHooks sets hooks to be called at decision time when a trace is sampled.
-//
-// When a decision's made to sample a given trace, the configured hooks are invoked on the
-// processor's hot-path event handler goroutine. DecisionHook functions must act immediately on
-// the TraceData or make a copy if intending to process TraceData async; after the hooks are
-// invoked for the trace, the processor can still modify the provided TraceData's state.
-//
-// Hooks are typically invoked once for a given trace (at decision time), but this is not a
-// guarantee (more detail below). If span(s) arrive for a trace after the decision's been made
-// (the spans arrived "late"), and the processor's still aware that the prior trace decision was
-// to sample (either through the sampled decision cache mechanism or through the past TraceData
-// still being present in the processor's in-memory view) then the hooks are NOT invoked again
-// with those new late spans. The exception to this is if, due to the non-determinism of the
-// processor's in-memory views of past decisions, late spans arrive for a trace and the processor
-// does not find the previous decision. In which case the processor will start tracking a new
-// trace for these spans, as though it is the first time seeing it, and will accordingly invoke
-// the hooks again at decision time (potentially observing a different sampling result).
+// WithSampledHooks sets hooks to be called when a trace is sampled.
 func WithSampledHooks(hooks ...DecisionHook) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.sampledHooks = hooks
@@ -392,27 +376,6 @@ func WithSampledHooks(hooks ...DecisionHook) Option {
 }
 
 // WithNonSampledHooks sets hooks to be called when a trace is not sampled.
-//
-// When a decision's made not to sample a given trace, the configured hooks are invoked on the
-// processor's hot-path event handler goroutine. DecisionHook functions must act immediately on
-// the TraceData or make a copy if intending to process TraceData async; after the hooks are
-// invoked for the trace, the processor can still modify the provided TraceData's state.
-//
-// Hooks are typically invoked once for a given trace (at decision time), but this is not a
-// guarantee (more detail below). If span(s) arrive for a trace after the decision's been made
-// (the spans arrived "late"), and the processor's still aware that the prior trace decision was
-// to not sample (either through the sampled decision cache mechanism or through the past TraceData
-// still being present in the processor's in-memory view) then the hooks are NOT invoked again
-// with those new late spans. The exception to this is if, due to the non-determinism of the
-// processor's in-memory views of past decisions, late spans arrive for a trace and the processor
-// does not find the previous decision. In which case the processor will start tracking a new
-// trace for these spans, as though it is the first time seeing it, and will accordingly invoke
-// the hooks again at decision time (potentially observing a different sampling result).
-//
-// When `maximum_trace_size_bytes` is configured, the hooks are invoked once at the point the
-// received batch of spans causes the trace to exceed the configured byte threshold. Any additional
-// spans that arrive later for this trace will not invoke the hooks, but again only if the
-// processor finds an in-memory record of that past decision for that trace ID.
 func WithNonSampledHooks(hooks ...DecisionHook) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.nonSampledHooks = hooks
@@ -672,10 +635,6 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 		return
 	}
 
-	// TODO: note this removal policy could be a starvation risk. Instead of some portion of
-	//       complete traces getting through, if we're always dropping from the front
-	//       and appending to the back, it's possible we'll never actually flush any traces
-	//       instead of flushing some complete traces.
 	front := tsp.deleteTraceQueue.Front()
 	if front == nil {
 		// This should be impossible.
@@ -953,26 +912,21 @@ func groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceI
 	return idToSpans
 }
 
-func (tsp *tailSamplingSpanProcessor) newTraceData(id pcommon.TraceID, arrivalTime time.Time) *TraceData {
-	actualData := &TraceData{
-		arrivalTime: arrivalTime,
-		batchID:     tsp.decisionBatcher.AddToCurrentBatch(id),
-		TraceData: samplingpolicy.TraceData{
-			ReceivedBatches: ptrace.NewTraces(),
-		},
-	}
-
-	if !tsp.blockOnOverflow {
-		actualData.deleteElement = tsp.deleteTraceQueue.PushBack(id)
-	}
-
-	return actualData
-}
-
 func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrace.ResourceSpans, spanCount int64, containsRootSpan bool) {
 	actualData, ok := tsp.idToTrace[id]
 	if !ok {
-		actualData = tsp.newTraceData(id, time.Now())
+		actualData = &TraceData{
+			arrivalTime: time.Now(),
+			batchID:     tsp.decisionBatcher.AddToCurrentBatch(id),
+			TraceData: samplingpolicy.TraceData{
+				ReceivedBatches: ptrace.NewTraces(),
+			},
+		}
+
+		if !tsp.blockOnOverflow {
+			actualData.deleteElement = tsp.deleteTraceQueue.PushBack(id)
+		}
+
 		tsp.idToTrace[id] = actualData
 
 		tsp.telemetry.ProcessorTailSamplingNewTraceIDReceived.Add(tsp.ctx, 1)
@@ -1161,7 +1115,7 @@ func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, i
 	tsp.sampledIDCache.Put(id, cache.DecisionMetadata{PolicyName: td.PolicyName})
 	tsp.forwardSpans(ctx, td.ReceivedBatches)
 	_, ok := tsp.sampledIDCache.Get(id)
-	if ok || (tsp.blockOnOverflow && uint64(len(tsp.idToTrace)) >= tsp.cfg.NumTraces) {
+	if ok {
 		tsp.dropTrace(id, time.Now())
 	}
 }
@@ -1174,7 +1128,7 @@ func (tsp *tailSamplingSpanProcessor) releaseNotSampledTrace(id pcommon.TraceID,
 	}
 	tsp.nonSampledIDCache.Put(id, cache.DecisionMetadata{PolicyName: td.PolicyName})
 	_, ok := tsp.nonSampledIDCache.Get(id)
-	if ok || (tsp.blockOnOverflow && uint64(len(tsp.idToTrace)) >= tsp.cfg.NumTraces) {
+	if ok {
 		tsp.dropTrace(id, time.Now())
 	}
 }
