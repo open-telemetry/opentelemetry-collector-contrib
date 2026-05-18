@@ -455,17 +455,20 @@ func TestScrape(t *testing.T) {
 				m,
 				test.expectedDeviceDataPoints*fileSystemStatesLen,
 				test.expectedDeviceAttributes,
+				fileSystemStatesLen,
 			)
 
 			if isUnix() {
 				assertFileSystemUsageMetricHasUnixSpecificStateLabels(t, m)
 				m, err = findMetricByName(metrics, "system.filesystem.inodes.usage")
 				assert.NoError(t, err)
+				inodeStatesLen := 2 // we have 2 states for inodes, free and used
 				assertFileSystemUsageMetricValid(
 					t,
 					m,
 					test.expectedDeviceDataPoints*2,
 					test.expectedDeviceAttributes,
+					inodeStatesLen,
 				)
 			}
 
@@ -488,6 +491,7 @@ func assertFileSystemUsageMetricValid(
 	metric pmetric.Metric,
 	expectedDeviceDataPoints int,
 	expectedDeviceAttributes []map[string]pcommon.Value,
+	minDataPoints int,
 ) {
 	for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
 		for _, label := range []string{"device", "type", "mode", "mountpoint"} {
@@ -512,7 +516,7 @@ func assertFileSystemUsageMetricValid(
 			}
 		}
 	} else {
-		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), fileSystemStatesLen)
+		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), minDataPoints)
 	}
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state",
 		pcommon.NewValueStr(metadata.AttributeStateUsed.String()))
