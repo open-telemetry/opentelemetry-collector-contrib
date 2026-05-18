@@ -16,7 +16,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/stefdatareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/stefdatasender"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -57,8 +59,8 @@ func TestMetric10kDPS(t *testing.T) {
 		},
 		{
 			name:     "STEF",
-			sender:   datasenders.NewStefDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-			receiver: datareceivers.NewStefDataReceiver(testutil.GetAvailablePort(t)),
+			sender:   stefdatasender.NewStefDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			receiver: stefdatareceiver.NewStefDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 60,
 				ExpectedMaxRAM: 150,

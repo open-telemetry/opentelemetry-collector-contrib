@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package dataconnectors // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/dataconnectors"
+package routingdataconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/dataconnectors/routingdataconnector"
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"

@@ -31,8 +31,8 @@ func TestHarness_MetricsGoldenData(t *testing.T) {
 	t.Cleanup(res.Save)
 	for _, test := range tests {
 		test.TestName = fmt.Sprintf("%s-%s", test.Receiver, test.Exporter)
-		test.DataSender = correctnesstests.ConstructMetricsSender(t, test.Receiver)
-		test.DataReceiver = correctnesstests.ConstructReceiver(t, test.Exporter)
+		test.DataSender = constructMetricsSender(t, test.Receiver)
+		test.DataReceiver = constructReceiver(t, test.Exporter)
 		t.Run(test.TestName, func(t *testing.T) {
 			t.Parallel()
 			r := testWithMetricsGoldenDataset(

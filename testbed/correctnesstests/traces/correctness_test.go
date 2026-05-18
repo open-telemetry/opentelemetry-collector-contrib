@@ -36,8 +36,8 @@ func TestTracingGoldenData(t *testing.T) {
 	}
 	for _, test := range tests {
 		test.TestName = fmt.Sprintf("%s-%s", test.Receiver, test.Exporter)
-		test.DataSender = correctnesstests.ConstructTraceSender(t, test.Receiver)
-		test.DataReceiver = correctnesstests.ConstructReceiver(t, test.Exporter)
+		test.DataSender = constructTraceSender(t, test.Receiver)
+		test.DataReceiver = constructReceiver(t, test.Exporter)
 		t.Run(test.TestName, func(t *testing.T) {
 			t.Parallel()
 			testWithTracingGoldenDataset(t, test.DataSender, test.DataReceiver, test.ResourceSpec, processors)
@@ -56,9 +56,9 @@ func testWithTracingGoldenDataset(
 		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
 		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
 		"")
-	factories, err := testbed.Components()
+	f, err := factories()
 	require.NoError(t, err, "default components resulted in: %v", err)
-	runner := testbed.NewInProcessCollector(factories)
+	runner := testbed.NewInProcessCollector(f)
 	validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
 	tc := testbed.NewTestCase(
 		t,
@@ -121,9 +121,9 @@ func TestSporadicGoldenDataset(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			factories, err := testbed.Components()
+			f, err := factories()
 			require.NoError(t, err, "default components resulted in: %v", err)
-			runner := testbed.NewInProcessCollector(factories)
+			runner := testbed.NewInProcessCollector(f)
 			options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
 			dataProvider := testbed.NewGoldenDataProvider(
 				"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",

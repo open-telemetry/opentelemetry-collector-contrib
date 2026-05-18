@@ -16,7 +16,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/jaegerdatareceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/zipkindatareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/jaegerdatasender"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/zipkindatasender"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 	scenarios "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/tests"
 )
@@ -59,8 +63,8 @@ func TestStabilityTracesOTLP(t *testing.T) {
 func TestStabilityTracesJaegerGRPC(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-		datareceivers.NewJaegerDataReceiver(testutil.GetAvailablePort(t)),
+		jaegerdatasender.NewJaegerGRPCDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		jaegerdatareceiver.NewJaegerDataReceiver(testutil.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      40,
 			ExpectedMaxRAM:      90,
@@ -76,8 +80,8 @@ func TestStabilityTracesJaegerGRPC(t *testing.T) {
 func TestStabilityTracesZipkin(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		datasenders.NewZipkinDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-		datareceivers.NewZipkinDataReceiver(testutil.GetAvailablePort(t)),
+		zipkindatasender.NewZipkinDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		zipkindatareceiver.NewZipkinDataReceiver(testutil.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      80,
 			ExpectedMaxRAM:      110,

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+package components // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed/components"
 
 import (
 	"go.opentelemetry.io/collector/connector"
@@ -32,11 +32,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 )
 
-// Components returns the set of components for tests
-func Components() (
-	otelcol.Factories,
-	error,
-) {
+// All returns the full set of component factories used by the testbed.
+// It is intentionally large; if you only need a subset for a single test
+// package, define a local factories() helper that imports only what it
+// needs so the test binary doesn't compile components it never exercises.
+func All() (otelcol.Factories, error) {
 	var errs error
 
 	extensions, err := otelcol.MakeFactoryMap[extension.Factory](
@@ -76,14 +76,12 @@ func Components() (
 	)
 	errs = multierr.Append(errs, err)
 
-	factories := otelcol.Factories{
+	return otelcol.Factories{
 		Extensions: extensions,
 		Receivers:  receivers,
 		Processors: processors,
 		Exporters:  exporters,
 		Connectors: connectors,
 		Telemetry:  otelconftelemetry.NewFactory(),
-	}
-
-	return factories, errs
+	}, errs
 }

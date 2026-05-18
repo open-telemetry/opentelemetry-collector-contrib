@@ -13,12 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/dataconnectors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -213,79 +208,3 @@ func LoadPictOutputPipelineDefs(fileName string) ([]PipelineDef, error) {
 	return defs, err
 }
 
-func newDbgLogger() *zap.Logger {
-	logger, err := zap.NewDevelopment(zap.Fields(zap.String("type", "testbed")))
-	if err != nil {
-		panic("Cannot create logger " + err.Error())
-	}
-	return logger
-}
-
-// ConstructTraceSender creates a testbed trace sender from the passed-in trace sender identifier.
-func ConstructTraceSender(t *testing.T, receiver string) testbed.DataSender {
-	var sender testbed.DataSender
-	switch receiver {
-	case "otlp":
-		sender = testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
-	case "jaeger":
-		sender = datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
-	case "zipkin":
-		sender = datasenders.NewZipkinDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
-	default:
-		t.Errorf("unknown receiver type: %s", receiver)
-	}
-	return sender
-}
-
-// ConstructMetricsSender creates a testbed metrics sender from the passed-in metrics sender identifier.
-func ConstructMetricsSender(t *testing.T, receiver string) testbed.MetricDataSender {
-	var sender testbed.MetricDataSender
-	switch receiver {
-	case "otlp":
-		sender = testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
-	case "stef":
-		s := datasenders.NewStefDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
-		s.Logger = newDbgLogger()
-		sender = s
-	case "prometheus":
-		sender = datasenders.NewPrometheusDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
-	default:
-		t.Errorf("unknown receiver type: %s", receiver)
-	}
-	return sender
-}
-
-// ConstructReceiver creates a testbed receiver from the passed-in recevier identifier.
-func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
-	var receiver testbed.DataReceiver
-	switch exporter {
-	case "otlp_grpc":
-		receiver = testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
-	case "stef":
-		r := datareceivers.NewStefDataReceiver(testutil.GetAvailablePort(t))
-		r.Logger = newDbgLogger()
-		receiver = r
-	case "jaeger":
-		receiver = datareceivers.NewJaegerDataReceiver(testutil.GetAvailablePort(t))
-	case "zipkin":
-		receiver = datareceivers.NewZipkinDataReceiver(testutil.GetAvailablePort(t))
-	case "prometheus":
-		receiver = datareceivers.NewPrometheusDataReceiver(testutil.GetAvailablePort(t))
-	default:
-		t.Errorf("unknown exporter type: %s", exporter)
-	}
-	return receiver
-}
-
-func ConstructConnector(t *testing.T, connector, receiverType string) testbed.DataConnector {
-	var dataconnector testbed.DataConnector
-	switch connector {
-	case "spanmetrics":
-		dataconnector = dataconnectors.NewSpanMetricDataConnector(receiverType)
-	case "routing":
-		dataconnector = dataconnectors.NewRoutingDataConnector(receiverType)
-	default:
-		t.Errorf("unknown connector type: %s", connector)
-	}
-	return dataconnector
-}

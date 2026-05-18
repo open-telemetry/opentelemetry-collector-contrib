@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datasenders // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
+package jaegerdatasender // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/jaegerdatasender"
 
 import (
 	"context"

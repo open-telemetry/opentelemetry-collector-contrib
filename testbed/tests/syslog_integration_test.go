@@ -19,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed/components"
 )
 
 type expectedDataType struct {
@@ -102,7 +103,7 @@ func TestSyslogComplementaryRFC3164(t *testing.T) {
 }
 
 func componentFactories(t *testing.T) otelcol.Factories {
-	factories, err := testbed.Components()
+	factories, err := components.All()
 	require.NoError(t, err)
 	return factories
 }
