@@ -35,9 +35,11 @@ func createDefaultConfig() component.Config {
 	netAddr.Endpoint = "localhost:8126"
 
 	return &Config{
-		ServerConfig:     confighttp.ServerConfig{NetAddr: netAddr},
-		ReadTimeout:      60 * time.Second,
-		TraceIDCacheSize: 100,
+		ServerConfig:              confighttp.ServerConfig{NetAddr: netAddr},
+		ReadTimeout:               60 * time.Second,
+		IdleSeriesTimeout:         0,
+		IdleSeriesCleanupInterval: 5 * time.Minute,
+		TraceIDCacheSize:          100,
 		Intake: IntakeConfig{
 			Behavior: defaultConfigIntakeBehavior,
 			Proxy: ProxyConfig{

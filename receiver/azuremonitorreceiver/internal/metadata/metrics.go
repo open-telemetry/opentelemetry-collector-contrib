@@ -194,7 +194,7 @@ func (mb *MetricsBuilder) AddDataPoint(
 		}
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(mb.startTime)
+	dp.SetStartTimestamp(ts)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("azuremonitor.resource_id", resourceID)

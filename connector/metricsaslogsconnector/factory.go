@@ -10,13 +10,16 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/metricsaslogsconnector/internal/metadata"
 )
 
 func NewFactory() connector.Factory {
 	return xconnector.NewFactory(
-		component.MustNewType("metricsaslogs"),
+		metadata.Type,
 		createDefaultConfig,
 		xconnector.WithMetricsToLogs(createMetricsToLogs, component.StabilityLevelAlpha),
+		xconnector.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 

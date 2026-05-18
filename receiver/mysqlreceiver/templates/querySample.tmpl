@@ -2,7 +2,14 @@ SELECT
     thread.processlist_id AS session_id,
     thread.thread_id AS internal_thread_id,
     COALESCE(thread.processlist_user, '') AS session_user,
-    COALESCE(thread.processlist_host, '') AS client_address,
+    COALESCE(
+        {{- if .supportsProcesslist}} pl.HOST,{{- end}}
+        thread.processlist_host, ''
+    ) AS client_address,
+    -- client_port is parsed from client_address in Go using net.SplitHostPort,
+    -- which handles both IPv4 (host:port) and IPv6 ([::1]:port) formats correctly.
+    -- pl.HOST contains "host:port" for TCP/IP connections on MySQL 8.0.22+.
+    0 AS client_port,
     COALESCE(thread.processlist_db, '') AS current_database,
     COALESCE(thread.processlist_command, '') AS session_command,
     COALESCE(thread.processlist_state, '') AS session_state,
@@ -25,9 +32,45 @@ SELECT
             IF(wait.event_id = wait.end_event_id, 'CPU', wait.event_name)), 'CPU'
         )
     ) AS wait_event,
-    COALESCE(wait.timer_wait/1e12, 0) AS wait_time_seconds,
-    -- Extension: Get @traceparent from user_variables_by_thread
-    -- Use CONVERT for MySQL 8.0 which stores user variables as binary.
+    COALESCE(
+        -- Tier 1: completed wait event — TIMER_WAIT is populated (exact, picosecond precision)
+        wait.timer_wait / 1e12,
+
+        -- Tier 2: in-progress wait — approximate elapsed time from PS timers (sub-second).
+        -- statement.TIMER_WAIT is live for in-progress statements on MySQL 5.7+/8.0+.
+        -- On MariaDB, statement.TIMER_WAIT may be 0 or stale during active execution,
+        -- so the guard (statement.timer_wait > 0) causes MariaDB to fall through to Tier 3.
+        -- Math: statement.TIMER_START + statement.TIMER_WAIT ≈ current PS clock, so
+        -- elapsed_wait = current_ps_time - wait.TIMER_START. Clamped via GREATEST to
+        -- guard against microsecond read-order skew.
+        CASE
+            WHEN wait.end_event_id IS NULL
+                 AND wait.timer_start IS NOT NULL
+                 AND statement.timer_start IS NOT NULL
+                 AND statement.timer_wait > 0
+            THEN GREATEST(
+                     (statement.timer_start + statement.timer_wait - wait.timer_start) / 1e12,
+                     0)
+            ELSE NULL
+        END,
+
+        -- Tier 3: processlist_time fallback (integer second precision).
+        -- threads.PROCESSLIST_TIME resets on each processlist_state change, so it
+        -- represents elapsed seconds in the current state — semantically correct for
+        -- lock/IO waits. Always available on MySQL 5.7+ and all MariaDB 10.x.
+        CASE
+            WHEN wait.thread_id IS NOT NULL AND wait.end_event_id IS NULL
+            THEN CAST(thread.processlist_time AS DECIMAL(20, 6))
+            ELSE NULL
+        END,
+
+        0
+    ) AS wait_time_seconds,
+    COALESCE(statement.TIMER_WAIT/1e12, thread.processlist_time, 0) AS statement_timer_wait_seconds,
+    -- Extension: Get @traceparent from user_variables_by_thread.
+    -- This table is available on MySQL 5.7.3+ and MariaDB 10.5.2+.
+    -- Use CONVERT for MySQL 8.0+ which stores user variables as binary (VARBINARY);
+    -- on MySQL 5.7 and MariaDB the value is VARCHAR, so CONVERT is a no-op.
     -- utf8mb4 is used instead of the deprecated utf8 alias.
     COALESCE(CONVERT(uvt.VARIABLE_VALUE USING utf8mb4), '') AS traceparent
 FROM
@@ -35,9 +78,16 @@ FROM
     LEFT JOIN performance_schema.events_statements_current AS statement ON statement.thread_id = thread.thread_id
     LEFT JOIN performance_schema.events_waits_current AS wait ON wait.thread_id = thread.thread_id
     -- Extension: Join user_variables_by_thread to get @traceparent.
-    -- MySQL stores user variable names in lowercase in VARIABLE_NAME regardless
-    -- of how the client spelled them, so '= traceparent' matches any case variation.
+    -- Available on MySQL 5.7.3+ and MariaDB 10.5.2+; this template is used for both.
+    -- Both MySQL and MariaDB store user variable names in lowercase in VARIABLE_NAME
+    -- regardless of how the client spelled them, so '= traceparent' matches any case.
     LEFT JOIN performance_schema.user_variables_by_thread AS uvt ON uvt.thread_id = thread.thread_id AND uvt.VARIABLE_NAME = 'traceparent'
+    {{- if .supportsProcesslist}}
+    -- performance_schema.processlist.HOST returns "host:port" for TCP/IP connections,
+    -- enabling population of client.port. Available MySQL 8.0.22+; lock-free unlike
+    -- information_schema.PROCESSLIST (which was removed in MySQL 9.0).
+    LEFT JOIN performance_schema.processlist AS pl ON pl.ID = thread.PROCESSLIST_ID
+    {{- end}}
 WHERE
     thread.processlist_state IS NOT NULL
     AND thread.processlist_command NOT IN ('Sleep', 'Daemon')
