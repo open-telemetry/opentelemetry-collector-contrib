@@ -221,8 +221,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # codegen is split across the standard module groups so the slowest
+        # shard bounds wall time. Each codegen-<group> shard runs
+        # `make generate GROUP=<group>` over only that subset.
         shard:
-          - codegen
+          - codegen-receiver-0
+          - codegen-receiver-1
+          - codegen-receiver-2
+          - codegen-receiver-3
+          - codegen-processor-0
+          - codegen-processor-1
+          - codegen-exporter-0
+          - codegen-exporter-1
+          - codegen-exporter-2
+          - codegen-exporter-3
+          - codegen-extension
+          - codegen-connector
+          - codegen-internal
+          - codegen-pkg
+          - codegen-cmd-0
+          - codegen-other
           - porto-and-gci
           - go-mod-hygiene
           - small-generators
@@ -233,6 +251,11 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
+          # read-only-checks only runs checkdoc/checkmetadata/checkapi/
+          # multimod-verify. genotelcontribcol below still pulls what it
+          # actually needs lazily, but bulk-downloading every module up
+          # front isn't required.
+          gomoddownload: ${{ matrix.shard == 'read-only-checks' && 'false' || 'true' }}
       - run: make genotelcontribcol
       - name: Run shard ${{ matrix.shard }}
         run: ./.github/workflows/scripts/run-checks-shard.sh "${{ matrix.shard }}"
@@ -522,6 +545,9 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
+          # Only a handful of modules build here; let `go build` fetch what it
+          # needs lazily rather than pre-downloading every module in the repo.
+          gomoddownload: "false"
       - name: Build affected modules for ${{ matrix.os }}/${{ matrix.arch }}${{ matrix.arm && format('v{0}', matrix.arm) || '' }}
         env:
           MATRIX: ${{ needs.exp-ci-scope.outputs.matrix }}
