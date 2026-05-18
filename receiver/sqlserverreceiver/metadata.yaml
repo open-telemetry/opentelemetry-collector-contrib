@@ -436,23 +436,24 @@ metrics:
       input_type: string
     attributes: [database.status]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
-  sqlserver.database.data_size:
+  sqlserver.database.execution.errors:
     enabled: false
-    description: Size of data files only (excluding log files).
+    description: Number of execution errors.
+    stability: development
+    unit: "{errors}"
+    gauge:
+      value_type: int
+    attributes: []
+  sqlserver.database.file.size:
+    enabled: false
+    description: Size of database files.
     stability: development
     unit: By
     gauge:
       value_type: int
       input_type: string
-    extended_documentation: Storage consumed by data files only, excluding transaction logs. Useful for separating data growth from log growth. Reported per database via resource attribute. Available on all SQL Server editions (2012+).
-  sqlserver.database.execution.errors:
-    enabled: false
-    description: Number of execution errors.
-    stability: development
-    unit: “{errors}”
-    gauge:
-      value_type: int
-    attributes: []
+    attributes: [file_type, db.namespace]
+    extended_documentation: Storage consumed by database files, broken down by file type (data or log). Essential for capacity planning and growth tracking. The db.namespace attribute contains the database name. The file_type attribute indicates whether this is a data file or log file. Available on all SQL Server editions (2012+).
   sqlserver.database.full_scan.rate:
     enabled: false
     description: The number of unrestricted full table or index scans.
@@ -504,8 +505,8 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    attributes: []
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database-level security principals including database users, roles, and application roles. Useful for security auditing and access management. Reported per database via resource attribute. Available on SQL Server 2012+.
+    attributes: [db.namespace]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database-level security principals including database users, roles, and application roles. The db.namespace attribute contains the database name. Useful for security auditing and access management. Available on SQL Server 2012+.
   sqlserver.database.security.role_members.count:
     enabled: false
     description: Number of database role memberships.
@@ -514,17 +515,8 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    attributes: []
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database role membership assignments. Critical for monitoring privilege escalation and compliance. Reported per database via resource attribute. Available on SQL Server 2012+.
-  sqlserver.database.size:
-    enabled: false
-    description: Total size of database including data and log files.
-    stability: development
-    unit: By
-    gauge:
-      value_type: int
-      input_type: string
-    extended_documentation: Total storage consumed by the database (data + log). Essential for capacity planning and growth tracking. Reported per database via resource attribute. Available on all SQL Server editions (2012+).
+    attributes: [db.namespace]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database role membership assignments. The db.namespace attribute contains the database name. Critical for monitoring privilege escalation and compliance. Available on SQL Server 2012+.
   sqlserver.database.tempdb.space:
     enabled: false
     description: Total free space in temporary DB.
@@ -551,7 +543,8 @@ metrics:
     gauge:
       value_type: int
       input_type: string
-    extended_documentation: Critical for monitoring transaction blocking and long-running transactions. Reported per database via resource attribute. Available on all SQL Server editions (2005+).
+    attributes: [db.namespace]
+    extended_documentation: Critical for monitoring transaction blocking and long-running transactions. The db.namespace attribute contains the database name. Available on all SQL Server editions (2005+).
   sqlserver.deadlock.rate:
     enabled: false
     description: Total number of deadlocks.

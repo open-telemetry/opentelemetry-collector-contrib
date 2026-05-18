@@ -1,26 +1,65 @@
 [
     {
-        "measurement": "sqlserver_database_size",
+        "measurement": "sqlserver_database_file_size",
         "sql_instance": "SERVER1",
         "database_name": "AdventureWorks",
-        "size_bytes": "524288000",
-        "data_size_bytes": "419430400",
+        "file_type": "data",
+        "size_bytes": "419430400"
+    },
+    {
+        "measurement": "sqlserver_database_file_size",
+        "sql_instance": "SERVER1",
+        "database_name": "AdventureWorks",
+        "file_type": "log",
+        "size_bytes": "104857600"
+    },
+    {
+        "measurement": "sqlserver_database_transactions_active",
+        "sql_instance": "SERVER1",
+        "database_name": "AdventureWorks",
+        "file_type": "N/A",
         "active_transactions": "3"
     },
     {
-        "measurement": "sqlserver_database_size",
+        "measurement": "sqlserver_database_file_size",
         "sql_instance": "SERVER1",
         "database_name": "SalesDB",
-        "size_bytes": "1073741824",
-        "data_size_bytes": "858993459",
+        "file_type": "data",
+        "size_bytes": "858993459"
+    },
+    {
+        "measurement": "sqlserver_database_file_size",
+        "sql_instance": "SERVER1",
+        "database_name": "SalesDB",
+        "file_type": "log",
+        "size_bytes": "214748365"
+    },
+    {
+        "measurement": "sqlserver_database_transactions_active",
+        "sql_instance": "SERVER1",
+        "database_name": "SalesDB",
+        "file_type": "N/A",
         "active_transactions": "1"
     },
     {
-        "measurement": "sqlserver_database_size",
+        "measurement": "sqlserver_database_file_size",
         "sql_instance": "SERVER1",
         "database_name": "ReportsDB",
-        "size_bytes": "268435456",
-        "data_size_bytes": "214748365",
+        "file_type": "data",
+        "size_bytes": "214748365"
+    },
+    {
+        "measurement": "sqlserver_database_file_size",
+        "sql_instance": "SERVER1",
+        "database_name": "ReportsDB",
+        "file_type": "log",
+        "size_bytes": "53687091"
+    },
+    {
+        "measurement": "sqlserver_database_transactions_active",
+        "sql_instance": "SERVER1",
+        "database_name": "ReportsDB",
+        "file_type": "N/A",
         "active_transactions": "0"
     }
 ]

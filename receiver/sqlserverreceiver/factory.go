@@ -86,7 +86,7 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerMemoryTargetQuery(cfg.InstanceName))
 	}
 
-	if cfg.Metrics.SqlserverDatabaseSize.Enabled || cfg.Metrics.SqlserverDatabaseDataSize.Enabled || cfg.Metrics.SqlserverDatabaseTransactionsActive.Enabled {
+	if cfg.Metrics.SqlserverDatabaseFileSize.Enabled || cfg.Metrics.SqlserverDatabaseTransactionsActive.Enabled {
 		queries = append(queries, getSQLServerDatabaseSizeQuery(cfg.InstanceName))
 	}
 

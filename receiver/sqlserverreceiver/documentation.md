@@ -260,23 +260,30 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | database.status | The current status of a database | Str: ``online``, ``restoring``, ``recovering``, ``pending_recovery``, ``suspect``, ``offline`` | Recommended | - |
 
-### sqlserver.database.data_size
-
-Size of data files only (excluding log files).
-
-Storage consumed by data files only, excluding transaction logs. Useful for separating data growth from log growth. Reported per database via resource attribute. Available on all SQL Server editions (2012+).
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | Development |
-
 ### sqlserver.database.execution.errors
 
 Number of execution errors.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “{errors}” | Gauge | Int | Development |
+| {errors} | Gauge | Int | Development |
+
+### sqlserver.database.file.size
+
+Size of database files.
+
+Storage consumed by database files, broken down by file type (data or log). Essential for capacity planning and growth tracking. The db.namespace attribute contains the database name. The file_type attribute indicates whether this is a data file or log file. Available on all SQL Server editions (2012+).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| file_type | The type of file being monitored. | Any Str | Recommended | - |
+| db.namespace | The database name. | Any Str | Recommended | - |
 
 ### sqlserver.database.full_scan.rate
 
@@ -347,31 +354,33 @@ This metric is only available when the receiver is configured to directly connec
 
 Number of security principals (logins, users) at the database level.
 
-This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database-level security principals including database users, roles, and application roles. Useful for security auditing and access management. Reported per database via resource attribute. Available on SQL Server 2012+.
+This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database-level security principals including database users, roles, and application roles. The db.namespace attribute contains the database name. Useful for security auditing and access management. Available on SQL Server 2012+.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {principals} | Gauge | Int | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database name. | Any Str | Recommended | - |
+
 ### sqlserver.database.security.role_members.count
 
 Number of database role memberships.
 
-This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database role membership assignments. Critical for monitoring privilege escalation and compliance. Reported per database via resource attribute. Available on SQL Server 2012+.
+This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database role membership assignments. The db.namespace attribute contains the database name. Critical for monitoring privilege escalation and compliance. Available on SQL Server 2012+.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {memberships} | Gauge | Int | Development |
 
-### sqlserver.database.size
+#### Attributes
 
-Total size of database including data and log files.
-
-Total storage consumed by the database (data + log). Essential for capacity planning and growth tracking. Reported per database via resource attribute. Available on all SQL Server editions (2012+).
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | Development |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database name. | Any Str | Recommended | - |
 
 ### sqlserver.database.tempdb.space
 
@@ -399,11 +408,17 @@ TempDB version store size.
 
 Number of currently active transactions.
 
-Critical for monitoring transaction blocking and long-running transactions. Reported per database via resource attribute. Available on all SQL Server editions (2005+).
+Critical for monitoring transaction blocking and long-running transactions. The db.namespace attribute contains the database name. Available on all SQL Server editions (2005+).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {transactions} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database name. | Any Str | Recommended | - |
 
 ### sqlserver.deadlock.rate
 

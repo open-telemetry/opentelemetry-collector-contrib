@@ -819,9 +819,10 @@ func (s *sqlServerScraperHelper) recordMemoryTargetMetrics(ctx context.Context) 
 
 func (s *sqlServerScraperHelper) recordDatabaseSizeMetrics(ctx context.Context) error {
 	const (
+		measurement        = "measurement"
 		databaseName       = "database_name"
+		fileType           = "file_type"
 		sizeBytes          = "size_bytes"
-		dataSizeBytes      = "data_size_bytes"
 		activeTransactions = "active_transactions"
 	)
 
@@ -839,19 +840,18 @@ func (s *sqlServerScraperHelper) recordDatabaseSizeMetrics(ctx context.Context) 
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 		rb.SetSqlserverDatabaseName(row[databaseName])
 
-		// Record database.size metric
-		if err := s.mb.RecordSqlserverDatabaseSizeDataPoint(now, row[sizeBytes]); err != nil {
-			errs = append(errs, fmt.Errorf("failed to parse database size for row %d: %w", i, err))
-		}
+		measurementType := row[measurement]
 
-		// Record database.data_size metric
-		if err := s.mb.RecordSqlserverDatabaseDataSizeDataPoint(now, row[dataSizeBytes]); err != nil {
-			errs = append(errs, fmt.Errorf("failed to parse database data size for row %d: %w", i, err))
-		}
-
-		// Record database.transactions.active metric
-		if err := s.mb.RecordSqlserverDatabaseTransactionsActiveDataPoint(now, row[activeTransactions]); err != nil {
-			errs = append(errs, fmt.Errorf("failed to parse active transactions for row %d: %w", i, err))
+		if measurementType == "sqlserver_database_file_size" {
+			// Record database.file.size metric with file_type and db.namespace attributes
+			if err := s.mb.RecordSqlserverDatabaseFileSizeDataPoint(now, row[sizeBytes], row[fileType], row[databaseName]); err != nil {
+				errs = append(errs, fmt.Errorf("failed to parse database file size for row %d: %w", i, err))
+			}
+		} else if measurementType == "sqlserver_database_transactions_active" {
+			// Record database.transactions.active metric with db.namespace attribute
+			if err := s.mb.RecordSqlserverDatabaseTransactionsActiveDataPoint(now, row[activeTransactions], row[databaseName]); err != nil {
+				errs = append(errs, fmt.Errorf("failed to parse active transactions for row %d: %w", i, err))
+			}
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
@@ -1436,7 +1436,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSecurityPrincipalsMetrics(ctx con
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 		rb.SetSqlserverDatabaseName(row[databaseName])
 
-		if err := s.mb.RecordSqlserverDatabaseSecurityPrincipalsCountDataPoint(now, row[principalCount]); err != nil {
+		if err := s.mb.RecordSqlserverDatabaseSecurityPrincipalsCountDataPoint(now, row[principalCount], row[databaseName]); err != nil {
 			errs = append(errs, fmt.Errorf("failed to parse database security principals count for row %d: %w", i, err))
 		}
 
@@ -1448,8 +1448,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSecurityPrincipalsMetrics(ctx con
 
 func (s *sqlServerScraperHelper) recordDatabaseSecurityRoleMembersMetrics(ctx context.Context) error {
 	const (
-		databaseName     = "database_name"
-		roleMemberCount  = "role_member_count"
+		databaseName    = "database_name"
+		roleMemberCount = "role_member_count"
 	)
 
 	rows, err := s.client.QueryRows(ctx)
@@ -1466,7 +1466,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSecurityRoleMembersMetrics(ctx co
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 		rb.SetSqlserverDatabaseName(row[databaseName])
 
-		if err := s.mb.RecordSqlserverDatabaseSecurityRoleMembersCountDataPoint(now, row[roleMemberCount]); err != nil {
+		if err := s.mb.RecordSqlserverDatabaseSecurityRoleMembersCountDataPoint(now, row[roleMemberCount], row[databaseName]); err != nil {
 			errs = append(errs, fmt.Errorf("failed to parse database security role members count for row %d: %w", i, err))
 		}
 

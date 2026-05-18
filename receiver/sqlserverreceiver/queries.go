@@ -1095,39 +1095,51 @@ DECLARE @EngineEdition AS INT = CAST(SERVERPROPERTY('EngineEdition') AS INT)
 IF @EngineEdition = 5 BEGIN -- Azure SQL Database
 	-- For Azure SQL Database, use sys.database_files (single database context)
 	SELECT
-		'sqlserver_database_size' AS [measurement],
+		'sqlserver_database_file_size' AS [measurement],
 		REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
 		DB_NAME() AS [database_name],
-		SUM(CAST(size AS BIGINT) * 8 * 1024) AS [size_bytes],
-		SUM(CASE WHEN type = 0 THEN CAST(size AS BIGINT) * 8 * 1024 ELSE 0 END) AS [data_size_bytes],
-		ISNULL(dt.transaction_count, 0) AS [active_transactions]
+		CASE WHEN mf.type = 0 THEN 'data' ELSE 'log' END AS [file_type],
+		SUM(CAST(mf.size AS BIGINT) * 8 * 1024) AS [size_bytes]
 	FROM sys.database_files mf
-	LEFT JOIN (
-		SELECT database_id, COUNT(*) AS transaction_count
-		FROM sys.dm_tran_database_transactions
-		WHERE database_id = DB_ID()
-		GROUP BY database_id
-	) dt ON DB_ID() = dt.database_id
-	GROUP BY dt.transaction_count
+	GROUP BY mf.type
+	{filter_instance_name}
+
+	UNION ALL
+
+	SELECT
+		'sqlserver_database_transactions_active' AS [measurement],
+		REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+		DB_NAME() AS [database_name],
+		'N/A' AS [file_type],
+		ISNULL(COUNT(*), 0) AS [active_transactions]
+	FROM sys.dm_tran_database_transactions
+	WHERE database_id = DB_ID()
 	{filter_instance_name};
 END
 ELSE BEGIN -- Instance-level editions (on-premises, managed instance)
 	-- For all other editions, use sys.master_files (instance-wide view)
 	SELECT
-		'sqlserver_database_size' AS [measurement],
+		'sqlserver_database_file_size' AS [measurement],
 		REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
 		DB_NAME(mf.database_id) AS [database_name],
-		SUM(CAST(mf.size AS BIGINT) * 8 * 1024) AS [size_bytes],
-		SUM(CASE WHEN mf.type = 0 THEN CAST(mf.size AS BIGINT) * 8 * 1024 ELSE 0 END) AS [data_size_bytes],
-		ISNULL(dt.transaction_count, 0) AS [active_transactions]
+		CASE WHEN mf.type = 0 THEN 'data' ELSE 'log' END AS [file_type],
+		SUM(CAST(mf.size AS BIGINT) * 8 * 1024) AS [size_bytes]
 	FROM sys.master_files mf
-	LEFT JOIN (
-		SELECT database_id, COUNT(*) AS transaction_count
-		FROM sys.dm_tran_database_transactions
-		GROUP BY database_id
-	) dt ON mf.database_id = dt.database_id
 	WHERE mf.database_id > 4  -- Exclude system databases (master, tempdb, model, msdb)
-	GROUP BY mf.database_id, dt.transaction_count
+	GROUP BY mf.database_id, mf.type
+	{filter_instance_name}
+
+	UNION ALL
+
+	SELECT
+		'sqlserver_database_transactions_active' AS [measurement],
+		REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+		DB_NAME(dt.database_id) AS [database_name],
+		'N/A' AS [file_type],
+		COUNT(*) AS [active_transactions]
+	FROM sys.dm_tran_database_transactions dt
+	WHERE dt.database_id > 4
+	GROUP BY dt.database_id
 	{filter_instance_name};
 END
 `

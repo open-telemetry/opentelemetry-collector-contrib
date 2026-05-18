@@ -177,26 +177,6 @@ func (ms *SqlserverDatabaseCountMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverDatabaseDataSizeMetricConfig provides config for the sqlserver.database.data_size metric.
-type SqlserverDatabaseDataSizeMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *SqlserverDatabaseDataSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
 // SqlserverDatabaseExecutionErrorsMetricConfig provides config for the sqlserver.database.execution.errors metric.
 type SqlserverDatabaseExecutionErrorsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -214,6 +194,55 @@ func (ms *SqlserverDatabaseExecutionErrorsMetricConfig) Unmarshal(parser *confma
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverDatabaseFileSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.database.file.size metric.
+type SqlserverDatabaseFileSizeMetricAttributeKey string
+
+const (
+	SqlserverDatabaseFileSizeMetricAttributeKeyFileType    SqlserverDatabaseFileSizeMetricAttributeKey = "file_type"
+	SqlserverDatabaseFileSizeMetricAttributeKeyDbNamespace SqlserverDatabaseFileSizeMetricAttributeKey = "db.namespace"
+)
+
+// SqlserverDatabaseFileSizeMetricConfig provides config for the sqlserver.database.file.size metric.
+type SqlserverDatabaseFileSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverDatabaseFileSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverDatabaseFileSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverDatabaseFileSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverDatabaseFileSizeMetricAttributeKeyFileType, SqlserverDatabaseFileSizeMetricAttributeKeyDbNamespace:
+		default:
+			return fmt.Errorf("metric sqlserver.database.file.size doesn't have an attribute %v, valid attributes: [file_type, db.namespace]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -390,10 +419,20 @@ func (ms *SqlserverDatabaseOperationsMetricConfig) Validate() error {
 	return nil
 }
 
+// SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKey specifies the key of an attribute for the sqlserver.database.security.principals.count metric.
+type SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKey string
+
+const (
+	SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKeyDbNamespace SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKey = "db.namespace"
+)
+
 // SqlserverDatabaseSecurityPrincipalsCountMetricConfig provides config for the sqlserver.database.security.principals.count metric.
 type SqlserverDatabaseSecurityPrincipalsCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SqlserverDatabaseSecurityPrincipalsCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -410,10 +449,38 @@ func (ms *SqlserverDatabaseSecurityPrincipalsCountMetricConfig) Unmarshal(parser
 	return nil
 }
 
+func (ms *SqlserverDatabaseSecurityPrincipalsCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKeyDbNamespace:
+		default:
+			return fmt.Errorf("metric sqlserver.database.security.principals.count doesn't have an attribute %v, valid attributes: [db.namespace]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey specifies the key of an attribute for the sqlserver.database.security.role_members.count metric.
+type SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey string
+
+const (
+	SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyDbNamespace SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey = "db.namespace"
+)
+
 // SqlserverDatabaseSecurityRoleMembersCountMetricConfig provides config for the sqlserver.database.security.role_members.count metric.
 type SqlserverDatabaseSecurityRoleMembersCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SqlserverDatabaseSecurityRoleMembersCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -430,23 +497,21 @@ func (ms *SqlserverDatabaseSecurityRoleMembersCountMetricConfig) Unmarshal(parse
 	return nil
 }
 
-// SqlserverDatabaseSizeMetricConfig provides config for the sqlserver.database.size metric.
-type SqlserverDatabaseSizeMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *SqlserverDatabaseSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
+func (ms *SqlserverDatabaseSecurityRoleMembersCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyDbNamespace:
+		default:
+			return fmt.Errorf("metric sqlserver.database.security.role_members.count doesn't have an attribute %v, valid attributes: [db.namespace]", val)
+		}
 	}
 
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
-	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -518,10 +583,20 @@ func (ms *SqlserverDatabaseTempdbVersionStoreSizeMetricConfig) Unmarshal(parser 
 	return nil
 }
 
+// SqlserverDatabaseTransactionsActiveMetricAttributeKey specifies the key of an attribute for the sqlserver.database.transactions.active metric.
+type SqlserverDatabaseTransactionsActiveMetricAttributeKey string
+
+const (
+	SqlserverDatabaseTransactionsActiveMetricAttributeKeyDbNamespace SqlserverDatabaseTransactionsActiveMetricAttributeKey = "db.namespace"
+)
+
 // SqlserverDatabaseTransactionsActiveMetricConfig provides config for the sqlserver.database.transactions.active metric.
 type SqlserverDatabaseTransactionsActiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverDatabaseTransactionsActiveMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SqlserverDatabaseTransactionsActiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -535,6 +610,24 @@ func (ms *SqlserverDatabaseTransactionsActiveMetricConfig) Unmarshal(parser *con
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverDatabaseTransactionsActiveMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverDatabaseTransactionsActiveMetricAttributeKeyDbNamespace:
+		default:
+			return fmt.Errorf("metric sqlserver.database.transactions.active doesn't have an attribute %v, valid attributes: [db.namespace]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -1497,15 +1590,14 @@ type MetricsConfig struct {
 	SqlserverCPUCount                           SqlserverCPUCountMetricConfig                           `mapstructure:"sqlserver.cpu.count"`
 	SqlserverDatabaseBackupOrRestoreRate        SqlserverDatabaseBackupOrRestoreRateMetricConfig        `mapstructure:"sqlserver.database.backup_or_restore.rate"`
 	SqlserverDatabaseCount                      SqlserverDatabaseCountMetricConfig                      `mapstructure:"sqlserver.database.count"`
-	SqlserverDatabaseDataSize                   SqlserverDatabaseDataSizeMetricConfig                   `mapstructure:"sqlserver.database.data_size"`
 	SqlserverDatabaseExecutionErrors            SqlserverDatabaseExecutionErrorsMetricConfig            `mapstructure:"sqlserver.database.execution.errors"`
+	SqlserverDatabaseFileSize                   SqlserverDatabaseFileSizeMetricConfig                   `mapstructure:"sqlserver.database.file.size"`
 	SqlserverDatabaseFullScanRate               SqlserverDatabaseFullScanRateMetricConfig               `mapstructure:"sqlserver.database.full_scan.rate"`
 	SqlserverDatabaseIo                         SqlserverDatabaseIoMetricConfig                         `mapstructure:"sqlserver.database.io"`
 	SqlserverDatabaseLatency                    SqlserverDatabaseLatencyMetricConfig                    `mapstructure:"sqlserver.database.latency"`
 	SqlserverDatabaseOperations                 SqlserverDatabaseOperationsMetricConfig                 `mapstructure:"sqlserver.database.operations"`
 	SqlserverDatabaseSecurityPrincipalsCount    SqlserverDatabaseSecurityPrincipalsCountMetricConfig    `mapstructure:"sqlserver.database.security.principals.count"`
 	SqlserverDatabaseSecurityRoleMembersCount   SqlserverDatabaseSecurityRoleMembersCountMetricConfig   `mapstructure:"sqlserver.database.security.role_members.count"`
-	SqlserverDatabaseSize                       SqlserverDatabaseSizeMetricConfig                       `mapstructure:"sqlserver.database.size"`
 	SqlserverDatabaseTempdbSpace                SqlserverDatabaseTempdbSpaceMetricConfig                `mapstructure:"sqlserver.database.tempdb.space"`
 	SqlserverDatabaseTempdbVersionStoreSize     SqlserverDatabaseTempdbVersionStoreSizeMetricConfig     `mapstructure:"sqlserver.database.tempdb.version_store.size"`
 	SqlserverDatabaseTransactionsActive         SqlserverDatabaseTransactionsActiveMetricConfig         `mapstructure:"sqlserver.database.transactions.active"`
@@ -1575,11 +1667,13 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverDatabaseCountMetricAttributeKey{SqlserverDatabaseCountMetricAttributeKeyDatabaseStatus},
 		},
-		SqlserverDatabaseDataSize: SqlserverDatabaseDataSizeMetricConfig{
-			Enabled: false,
-		},
 		SqlserverDatabaseExecutionErrors: SqlserverDatabaseExecutionErrorsMetricConfig{
 			Enabled: false,
+		},
+		SqlserverDatabaseFileSize: SqlserverDatabaseFileSizeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverDatabaseFileSizeMetricAttributeKey{SqlserverDatabaseFileSizeMetricAttributeKeyFileType, SqlserverDatabaseFileSizeMetricAttributeKeyDbNamespace},
 		},
 		SqlserverDatabaseFullScanRate: SqlserverDatabaseFullScanRateMetricConfig{
 			Enabled: false,
@@ -1600,13 +1694,14 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []SqlserverDatabaseOperationsMetricAttributeKey{SqlserverDatabaseOperationsMetricAttributeKeyPhysicalFilename, SqlserverDatabaseOperationsMetricAttributeKeyLogicalFilename, SqlserverDatabaseOperationsMetricAttributeKeyFileType, SqlserverDatabaseOperationsMetricAttributeKeyDirection},
 		},
 		SqlserverDatabaseSecurityPrincipalsCount: SqlserverDatabaseSecurityPrincipalsCountMetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKey{SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKeyDbNamespace},
 		},
 		SqlserverDatabaseSecurityRoleMembersCount: SqlserverDatabaseSecurityRoleMembersCountMetricConfig{
-			Enabled: false,
-		},
-		SqlserverDatabaseSize: SqlserverDatabaseSizeMetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey{SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyDbNamespace},
 		},
 		SqlserverDatabaseTempdbSpace: SqlserverDatabaseTempdbSpaceMetricConfig{
 			Enabled:             false,
@@ -1617,7 +1712,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SqlserverDatabaseTransactionsActive: SqlserverDatabaseTransactionsActiveMetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverDatabaseTransactionsActiveMetricAttributeKey{SqlserverDatabaseTransactionsActiveMetricAttributeKeyDbNamespace},
 		},
 		SqlserverDeadlockRate: SqlserverDeadlockRateMetricConfig{
 			Enabled: false,

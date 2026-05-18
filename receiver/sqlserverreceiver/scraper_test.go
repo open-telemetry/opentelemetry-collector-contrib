@@ -41,15 +41,14 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverBatchSQLRecompilationRate.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseCount.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseDataSize.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseExecutionErrors.Enabled = enabled
+	cfg.Metrics.SqlserverDatabaseFileSize.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseFullScanRate.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseIo.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseLatency.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseOperations.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseSecurityPrincipalsCount.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseSecurityRoleMembersCount.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseSize.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseTransactionsActive.Enabled = enabled

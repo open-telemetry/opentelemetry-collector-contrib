@@ -16,10 +16,11 @@ all_set:
     sqlserver.database.count:
       enabled: true
       attributes: ["database.status"]
-    sqlserver.database.data_size:
-      enabled: true
     sqlserver.database.execution.errors:
       enabled: true
+    sqlserver.database.file.size:
+      enabled: true
+      attributes: ["file_type","db.namespace"]
     sqlserver.database.full_scan.rate:
       enabled: true
     sqlserver.database.io:
@@ -33,10 +34,10 @@ all_set:
       attributes: ["physical_filename","logical_filename","file_type","direction"]
     sqlserver.database.security.principals.count:
       enabled: true
+      attributes: ["db.namespace"]
     sqlserver.database.security.role_members.count:
       enabled: true
-    sqlserver.database.size:
-      enabled: true
+      attributes: ["db.namespace"]
     sqlserver.database.tempdb.space:
       enabled: true
       attributes: ["tempdb.state"]
@@ -44,6 +45,7 @@ all_set:
       enabled: true
     sqlserver.database.transactions.active:
       enabled: true
+      attributes: ["db.namespace"]
     sqlserver.deadlock.rate:
       enabled: true
     sqlserver.index.search.rate:
@@ -165,10 +167,11 @@ reaggregate_set:
     sqlserver.database.count:
       enabled: true
       attributes: []
-    sqlserver.database.data_size:
-      enabled: true
     sqlserver.database.execution.errors:
       enabled: true
+    sqlserver.database.file.size:
+      enabled: true
+      attributes: []
     sqlserver.database.full_scan.rate:
       enabled: true
     sqlserver.database.io:
@@ -182,10 +185,10 @@ reaggregate_set:
       attributes: []
     sqlserver.database.security.principals.count:
       enabled: true
+      attributes: []
     sqlserver.database.security.role_members.count:
       enabled: true
-    sqlserver.database.size:
-      enabled: true
+      attributes: []
     sqlserver.database.tempdb.space:
       enabled: true
       attributes: []
@@ -193,6 +196,7 @@ reaggregate_set:
       enabled: true
     sqlserver.database.transactions.active:
       enabled: true
+      attributes: []
     sqlserver.deadlock.rate:
       enabled: true
     sqlserver.index.search.rate:
@@ -314,10 +318,11 @@ none_set:
     sqlserver.database.count:
       enabled: false
       attributes: ["database.status"]
-    sqlserver.database.data_size:
-      enabled: false
     sqlserver.database.execution.errors:
       enabled: false
+    sqlserver.database.file.size:
+      enabled: false
+      attributes: ["file_type","db.namespace"]
     sqlserver.database.full_scan.rate:
       enabled: false
     sqlserver.database.io:
@@ -331,10 +336,10 @@ none_set:
       attributes: ["physical_filename","logical_filename","file_type","direction"]
     sqlserver.database.security.principals.count:
       enabled: false
+      attributes: ["db.namespace"]
     sqlserver.database.security.role_members.count:
       enabled: false
-    sqlserver.database.size:
-      enabled: false
+      attributes: ["db.namespace"]
     sqlserver.database.tempdb.space:
       enabled: false
       attributes: ["tempdb.state"]
@@ -342,6 +347,7 @@ none_set:
       enabled: false
     sqlserver.database.transactions.active:
       enabled: false
+      attributes: ["db.namespace"]
     sqlserver.deadlock.rate:
       enabled: false
     sqlserver.index.search.rate:
