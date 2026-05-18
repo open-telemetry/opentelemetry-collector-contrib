@@ -15,7 +15,7 @@
 
 Exports metrics, traces, and logs to [RabbitMQ](https://www.rabbitmq.com/) using the AMQP 0.9.1 protocol.
 
-Messages are published to the [default exchange](https://www.rabbitmq.com/tutorials/amqp-concepts#exchange-default) direct exchange, but optionally can be published to a different direct exchange. 
+Messages are published to the [default exchange](https://www.rabbitmq.com/tutorials/amqp-concepts#exchange-default) direct exchange, but optionally can be published to a different direct exchange.
 
 This component expects that exchanges, queues, and bindings already exist - they are not currently created by this component.
 

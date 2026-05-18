@@ -3,7 +3,6 @@
 
 This receiver queries the PostgreSQL [statistics collector](https://www.postgresql.org/docs/13/monitoring-stats.html).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs   |
@@ -79,7 +78,7 @@ The following settings are also optional and nested under `tls` to help configur
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
 ### Query Sample Collection
-We provide functionality to collect the query sample from PostgreSQL. It will get historical query 
+We provide functionality to collect the query sample from PostgreSQL. It will get historical query
 from `pg_stat_activity`. To enable it, you will need the following configuration
 ```
 ...
@@ -88,7 +87,7 @@ from `pg_stat_activity`. To enable it, you will need the following configuration
         enabled: true
 ...
 ```
-By default, query sample collection is disabled, also note, to use it, you will need 
+By default, query sample collection is disabled, also note, to use it, you will need
 to grant the user you are using `pg_monitor`. Take the example from `testdata/integration/init.sql`
 
 ```sql
@@ -96,7 +95,7 @@ GRANT pg_monitor TO otelu;
 ```
 
 The following options are available:
-- `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
+- `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query
 against `pg_stat_activity`.
 
 ### Top Query Collection
@@ -109,9 +108,9 @@ We provide functionality to collect the most executed queries from PostgreSQL. I
 ...
 ```
 
-Along with those attributes, we will also report the query plan we gathered if it is possible. 
+Along with those attributes, we will also report the query plan we gathered if it is possible.
 
-By default, top query collection is disabled, also note, to use it, you will need 
+By default, top query collection is disabled, also note, to use it, you will need
 to create the extension to every database. Take the example from `testdata/integration/02-create-extension.sh`
 
 ```sql
@@ -119,15 +118,15 @@ CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 ```
 
 The following options are available:
-- `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
+- `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query
 against `pg_stat_statements`.
 - `top_n_query`: (optional, default=200) The maximum number of active queries to report (to the next consumer) in a single run.
-- `max_explain_each_interval`: (optional, default=1000). The maximum number of explain query to be sent in each scrape interval. The top query 
-collection would not get the query plan directly. Instead, we need to mimic the query in the database and get the query plan from database 
+- `max_explain_each_interval`: (optional, default=1000). The maximum number of explain query to be sent in each scrape interval. The top query
+collection would not get the query plan directly. Instead, we need to mimic the query in the database and get the query plan from database
 separately. This could lead some resources usage and limit this will reduce the impact on your database.
 - `query_plan_cache_size`: (optional, default=1000). The query plan cache size. Once we got explain for one query, we will store it in the cache.
 This defines the cache's size for query plan.
-- `query_plan_cache_ttl`: (optional, default=1h). How long before the query plan cache got expired. Example values: `1m`, `1h`. 
+- `query_plan_cache_ttl`: (optional, default=1h). How long before the query plan cache got expired. Example values: `1m`, `1h`.
 - `collection_interval`: (optional, default=60s). This receiver can collect top_query metrics on an interval. If not provided then the global collection_interval takes effect. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 ### Example Configuration
 

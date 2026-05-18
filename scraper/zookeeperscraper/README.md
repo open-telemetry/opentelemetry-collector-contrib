@@ -4,7 +4,6 @@
 The Zookeeper scraper collects metrics from a Zookeeper instance, using the `mntr` command. The `mntr` 4 letter word
 command needs to be enabled for the scraper to be able to collect metrics.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |

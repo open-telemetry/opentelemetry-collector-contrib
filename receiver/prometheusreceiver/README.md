@@ -3,7 +3,6 @@
 
 The Prometheus Receiver receives metric data in [Prometheus](https://prometheus.io/) format.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -26,7 +25,7 @@ Note: This component is currently work in progress. It has several limitations
 and please don't use it if the following limitations are a concern:
 
 * Collector cannot auto-scale the scraping yet when multiple replicas of the
-  collector are run. 
+  collector are run.
 * When running multiple replicas of the collector with the same config, it will
   scrape the targets multiple times.
 * Users need to configure each replica with different scraping configuration
@@ -209,15 +208,14 @@ receivers:
             - targets: ['localhost:8080']
 ```
 
-
 This feature applies to the most common integer counter histograms; gauge histograms are dropped.
 In case a metric has both the conventional (aka classic) buckets and also native histogram buckets, only the native histogram buckets will be
 taken into account to create the corresponding exponential histogram. To scrape the classic buckets instead use the
 [scrape option](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config) `always_scrape_classic_histograms`.
 
 ## OpenTelemetry Operator
-Additional to this static job definitions this receiver allows to query a list of jobs from the 
-OpenTelemetryOperators TargetAllocator or a compatible endpoint. 
+Additional to this static job definitions this receiver allows to query a list of jobs from the
+OpenTelemetryOperators TargetAllocator or a compatible endpoint.
 
 ```yaml
 receivers:
@@ -293,7 +291,6 @@ The API server hosts the same paths as the Prometheus agent-mode API. These incl
 - /metrics
 
 More info about querying `/api/v1/` and the data format that is returned can be found in the [Prometheus documentation](https://prometheus.io/docs/prometheus/latest/querying/api/).
-
 
 ## Feature gates
 

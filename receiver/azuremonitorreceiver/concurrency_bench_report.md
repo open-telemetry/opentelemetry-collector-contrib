@@ -34,4 +34,3 @@ BenchmarkMutexMapImplLarge-8         748.2 ns/op   31 B/op  1 allocs/op
 
 ## Conclusion
 The generic concurrent-map implementation offers the best performance and scalability for concurrent workloads in Go. The classic mutex-protected map is a good fallback for simpler cases. Avoid sync.Map for intensive workloads.
-

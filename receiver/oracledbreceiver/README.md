@@ -3,7 +3,6 @@
 
 This receiver periodically queries an Oracle Database host to collect metrics.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs   |
@@ -94,7 +93,6 @@ receivers:
 ```
 
 ## Enabling events.
-
 
 The following is a generic configuration that can be used for the default logs and metrics scraped
 by the Oracle DB receiver.

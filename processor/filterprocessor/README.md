@@ -254,7 +254,7 @@ trace_conditions:
   - IsRootSpan() or spanevent.name == "bar"
 ```
 
-This condition fails because `IsRootSpan()` is only available in the span context, not span events, 
+This condition fails because `IsRootSpan()` is only available in the span context, not span events,
 while the `spanevent` Path prefix requires the condition to evaluate in the span event context.
 
 The solution is to split into separate span and span event conditions:
@@ -268,7 +268,7 @@ trace_conditions:
       - spanevent.name == "bar"
 ```
 
-The advanced configuration is required for `IsRootSpan()` because there is no Path prefix in the condition, 
+The advanced configuration is required for `IsRootSpan()` because there is no Path prefix in the condition,
 so the context must be set explicitly to `span`.
 
 ### Examples

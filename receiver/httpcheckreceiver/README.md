@@ -3,7 +3,6 @@
 
 The HTTP Check Receiver can be used for synthetic checks against HTTP endpoints.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
@@ -181,7 +180,6 @@ receivers:
 - `json_path` + `equals`: JSON path queries using [gjson syntax](https://github.com/tidwall/gjson)
 - `max_size` / `min_size`: Response body size limits
 - `regex`: Regular expression matching
-
 
 ### Example Configuration
 

@@ -3,7 +3,6 @@
 
 This receiver periodically retrieves the clock offset from a NTP server.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -18,7 +17,7 @@ This receiver periodically retrieves the clock offset from a NTP server.
 
 ## Configuration
 
-- `endpoint`: (default = `pool.ntp.org:123`) Endpoint of the NTP server. Must be formatted as `{host}:{port}`. 
+- `endpoint`: (default = `pool.ntp.org:123`) Endpoint of the NTP server. Must be formatted as `{host}:{port}`.
 
 - `collection_interval`: (default = `30m`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 
@@ -41,4 +40,3 @@ The full list of settings exposed for this receiver are documented in [config.go
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
-

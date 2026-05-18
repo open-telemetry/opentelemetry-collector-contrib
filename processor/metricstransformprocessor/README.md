@@ -307,7 +307,7 @@ operations:
   ...
 ```
 
-### Group Metrics 
+### Group Metrics
 ```yaml
 # Group metrics from one single ResourceMetrics and report them as multiple ResourceMetrics.
 # 

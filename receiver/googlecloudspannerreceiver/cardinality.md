@@ -29,7 +29,6 @@ We have one time series per minute, meaning that we can have up to 1,440 (24 hou
 
 Taking into account 1440 time series we'll obtain **7691 / 1440 = 5** new time series per minute.
 
-
 ## Labels
 For each metric in the Total N table, the labels that create a unique time series are **Project ID + Instance ID + Database ID**.
 

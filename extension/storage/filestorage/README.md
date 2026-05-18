@@ -21,7 +21,7 @@ The File Storage extension can persist state to the local file system.
 
 The extension requires read and write access to a directory. A default directory can be used, but it must already exist in order for the extension to operate.
 
-`directory` is the relative or absolute path to the dedicated data storage directory. 
+`directory` is the relative or absolute path to the dedicated data storage directory.
 The default directory is `%ProgramData%\Otelcol\FileStorage` on Windows and `/var/lib/otelcol/file_storage` otherwise.
 
 `timeout` is the maximum time to wait for a file lock. This value does not need to be modified in most circumstances.
@@ -33,8 +33,8 @@ The default timeout is `1s`.
 By default, the directories will be created with `0750 (rwxr-x---)` permissions, minus the process umask.
 Use `directory_permissions` to customize directory creation permissions, minus the process umask.
 
-`recreate` when set, the filestorage extension will automatically rename the corrupted bbolt database and create a new one when certain bbolt panics occur. 
-See (#35899)[https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35899] for more details.
+`recreate` when set, the filestorage extension will automatically rename the corrupted bbolt database and create a new one when certain bbolt panics occur.
+See [#35899](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35899) for more details.
 
 If the database fails to open due to corruption (resulting in a panic), the corrupted file will be automatically renamed to `{filename}.{ISO 8601 timestamp}.backup` and a new data file will be created from scratch. This allows the collector to continue operating even when encountering certain bbolt panics. If no corruption is detected, the existing database continues to be used normally.
 There may still be scenarios where manually removing or renaming the file may be required, and this feature flag is not a panacea for all bbolt panics you can encounter.

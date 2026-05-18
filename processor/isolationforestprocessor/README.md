@@ -6,7 +6,6 @@ The **Isolation Forest processor** adds inline, unsupervised anomaly detection t
 learns normal behaviour from recent telemetry and tags, scores, or optionally drops anomalies *in‑flight* – no
 external ML service required.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: traces, metrics, logs   |
@@ -136,7 +135,7 @@ service:
 ```
 
 > Note: Use `routingconnector` to seggregate the different kind of spans(db, messaging etc.) and send them to separate `isolationforestprocessor` deployments so the anomaly detection is pertianing to the respective category of signals.
- 
+
 ### What the example does
 
 | Signal      | What’s scored                                              | Feature grouping               | Output                                    | Notes                                                                                          |
@@ -171,12 +170,10 @@ Telemetry ───▶ │  • Score calculator & anomaly decision            �
                └───────────────────────────────────────────────────┘
 ```
 
-
 *Training cost*: **O(current_window_size × forest_size × log subsample_size)** every `training_interval`
 *Scoring cost*: **O(forest_size × log subsample_size)** per item
 
 **Note:** With adaptive window sizing enabled, `current_window_size` dynamically adjusts between `min_window_size` and `max_window_size` based on traffic patterns and memory constraints, making training costs adaptive to workload conditions.
-
 
 ---
 
@@ -192,4 +189,3 @@ Telemetry ───▶ │  • Score calculator & anomaly decision            �
 PRs welcome – please include unit tests and doc updates.
 
 ---
-

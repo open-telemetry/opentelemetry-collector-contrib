@@ -28,7 +28,7 @@ The following settings can be optionally configured:
     - `role` (no default): The role to be used in order to send data to the kinesis stream
 - `encoding`
     - `name` (default = otlp): defines the export type to be used to send to kinesis (available is `otlp_proto`, `otlp_json`, `zipkin_proto`, `zipkin_json`, `jaeger_proto`)
-      - **Note** : `otlp_json` is considered experimental and _should not_ be used for production environments. 
+      - **Note** : `otlp_json` is considered experimental and _should not_ be used for production environments.
     - `compression` (default = none): allows to set the compression type (defaults BestSpeed for all) before forwarding to kinesis (available is `flate`, `gzip`, `zlib` or `none`)
 - `max_records_per_batch` (default = 500, PutRecords limit): The number of records that can be batched together then sent to kinesis.
 - `max_record_size` (default = 1Mb, PutRecord(s) limit on record size): The max allowed size that can be exported to kinesis

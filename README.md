@@ -40,7 +40,7 @@
 
 # OpenTelemetry Collector Contrib
 
-This is a repository for OpenTelemetry Collector components that are not suitable for the  [core repository](https://github.com/open-telemetry/opentelemetry-collector) of the collector. 
+This is a repository for OpenTelemetry Collector components that are not suitable for the  [core repository](https://github.com/open-telemetry/opentelemetry-collector) of the collector.
 
 The official distributions, core and contrib, are available as part of the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repository. Some of the components in this repository are part of the "core" distribution, such as the Jaeger and Prometheus components, but most of the components here are only available as part of the "contrib" distribution. Users of the OpenTelemetry Collector are also encouraged to build their own custom distributions with the [OpenTelemetry Collector Builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder), using the components they need from the core repository, the contrib repository, and possibly third-party or internal repositories.
 
@@ -160,4 +160,4 @@ behavior. The facilitators will typically rely on codeowner's detailed review of
 when making the final approval decision.
 
 Marking the PR with the `ready to merge` label should only happen (by triagers/approvers/maintainers)
-once there is at least one approval from an approver, as per the description above. 
+once there is at least one approval from an approver, as per the description above.

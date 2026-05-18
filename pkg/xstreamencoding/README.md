@@ -3,7 +3,7 @@
 > [!NOTE]
 > These helpers are experimental and may change in future releases.
 
-This package provides reusable helpers for stream-based unmarshaling of OpenTelemetry signals. 
+This package provides reusable helpers for stream-based unmarshaling of OpenTelemetry signals.
 It is designed to support efficient processing of **newline-delimited** streams with configurable batching and flushing behavior.
 
 ## Overview
@@ -125,7 +125,7 @@ func (c *myCodec) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOp
     if err != nil {
         return nil, err
     }
-	
+ 
     logs := plog.NewLogs()
 
     decodeFunc := func() (plog.Logs, error) {
@@ -160,4 +160,3 @@ func (c *myCodec) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOp
     return xstreamencoding.NewLogsDecoderAdapter(decodeFunc, offsetFunc), nil
 }
 ```
-

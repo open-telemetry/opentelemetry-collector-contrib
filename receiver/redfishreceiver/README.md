@@ -4,7 +4,6 @@
 This receiver fetches metrics for a server running a [Redfish](https://en.wikipedia.org/wiki/Redfish_(specification))
 API.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: metrics   |
@@ -37,7 +36,7 @@ The following settings are optional:
 - `servers`: The list of redfish servers to be monitored.
 
 Each server has the following properties:
-- `base_url` (required): base url to monitor in the form [https][://][host]:[port].
+- `base_url` (required): base url to monitor in the form `https://host:port`.
 - `username` (required): Redfish username.
 - `password` (required): Redfish password.
 - `insecure` (optional, default: `false`): Sets the protocol security.

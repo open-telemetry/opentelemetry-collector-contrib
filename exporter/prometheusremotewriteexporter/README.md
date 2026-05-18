@@ -62,21 +62,20 @@ The following settings can be optionally configured:
 - `wal`: Write-Ahead-Log settings for the exporter.
   - `directory` (default = ``): The directory to store the WAL in.
   - `buffer_size` (default = `300`): Count of elements to be read from the WAL before truncating.
-  - `truncate_frequency` (default = `1m`): Frequency for how often the WAL should be truncated. 
-  - `lag_record_frequency` (default = `15s`): Frequency for how often the exporter will record the lag of the WAL. 
+  - `truncate_frequency` (default = `1m`): Frequency for how often the WAL should be truncated.
+  - `lag_record_frequency` (default = `15s`): Frequency for how often the exporter will record the lag of the WAL.
 - `target_info`: customize `target_info` metric
   - `enabled` (default = true): If `enabled` is `true`, a `target_info` metric will be generated for each resource metric (see https://github.com/open-telemetry/opentelemetry-specification/pull/2381).
 - `disable_scope_info` (default = false): If `true`, the scope info labels (`otel_scope_name`, `otel_scope_version` and `otel_scope_...` attributes) will not be exported.
-- `max_batch_size_bytes` (default = `3000000` -> `~2.861 mb`): Maximum size of a batch of samples to be sent to the remote 
+- `max_batch_size_bytes` (default = `3000000` -> `~2.861 mb`): Maximum size of a batch of samples to be sent to the remote
   write endpoint. If the batch size is larger than this value, it will be split into multiple batches. This option is ignored
   when using the wal and where the wal buffer_size / truncate_frequency will be used.
-- `max_batch_request_parallelism` (default = `5`): Maximum parallelism allowed when sending multiple requests to the remote write endpoint. 
-  If the remote write endpoint does not support out of order samples, this should be set to `1`. 
-- `protobuf_message` (default = `prometheus.WriteRequest`): 
+- `max_batch_request_parallelism` (default = `5`): Maximum parallelism allowed when sending multiple requests to the remote write endpoint.
+  If the remote write endpoint does not support out of order samples, this should be set to `1`.
+- `protobuf_message` (default = `prometheus.WriteRequest`):
   - Protobuf message to use when writing to the remote write endpoint. This option is ignored unless the `exporter.prometheusremotewritexporter.enableSendingRW2` feature gate is enabled.
   - `prometheus.WriteRequest` is the message used in [Remote Write 1.0](https://prometheus.io/docs/specs/remote_write_spec/).
   - `io.prometheus.write.v2.Request` is the message used in [Remote Write 2.0](https://prometheus.io/docs/specs/remote_write_spec_2_0/). It is more efficient, always includes metadata, and adds support for the created timestamp and native histograms. Your remote storage provider must support PRW 2.0 to be able to use this message. PRW 2.0 support is currently **In Development** and is only partially implemented, thus, not ready for usage.
-
 
 Example:
 

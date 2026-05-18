@@ -69,4 +69,4 @@ But, this is not the default behaviour. In order to make the resource mapping fl
         resource_mapping_op: "OR"
 ```
 
-The value for `resource_mapping_op` can be `AND` or `OR`. The values are case-insensitive. 
+The value for `resource_mapping_op` can be `AND` or `OR`. The values are case-insensitive.

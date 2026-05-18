@@ -9,7 +9,6 @@ or running one-time batch processing jobs.
 | ---           | ---      | ---         |
 | `id`          | `stdout` | A unique identifier for the operator. |
 
-
 ### Example Configurations
 
 #### Simple configuration

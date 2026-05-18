@@ -9,7 +9,6 @@ The `noop` operator makes no changes to a entry. It is sometimes useful as a ter
 | `id`       | `noop`           | A unique identifier for the operator. |
 | `output`   | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
 
-
 ### Example Configuration:
 
 Process logs according to some criteria, then direct all logs to a `noop` operator before emitting from the receiver.

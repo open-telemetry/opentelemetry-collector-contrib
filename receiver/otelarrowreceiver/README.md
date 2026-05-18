@@ -7,7 +7,6 @@ Arrow](https://github.com/open-telemetry/otel-arrow) and standard
 https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
 protocol via gRPC.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: traces, metrics, logs   |
@@ -176,7 +175,7 @@ exporters:
 
 In addition to the standard
 [obsreport](https://pkg.go.dev/go.opentelemetry.io/collector/obsreport)
-metrics, this component provides network-level measurement instruments 
+metrics, this component provides network-level measurement instruments
 measuring bytes transported.  At the `normal` level of metrics detail:
 
 - `otelcol_receiver_recv`: uncompressed bytes received, prior to compression

@@ -3,7 +3,6 @@
 
 This receiver accepts metrics data as [InfluxDB Line Protocol](https://docs.influxdata.com/influxdb/v2.0/reference/syntax/line-protocol/).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -81,4 +80,3 @@ prometheus,quantile=0.9  rpc_duration_seconds=9001
 prometheus,quantile=0.99 rpc_duration_seconds=76656
 prometheus               rpc_duration_seconds_count=1.7560473e+07,rpc_duration_seconds_sum=2693
 ```
-

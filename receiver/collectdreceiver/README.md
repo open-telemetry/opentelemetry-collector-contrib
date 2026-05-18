@@ -4,7 +4,6 @@
 This receiver can receive data exported by the CollectD's `write_http` plugin. Only JSON format is supported.
 Authentication is not supported at this time.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -52,4 +51,3 @@ receivers:
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
-

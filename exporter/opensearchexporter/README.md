@@ -98,7 +98,6 @@ If any placeholder key is missing, the fallback value is used e.g.:
 
 ### OpenSearch document mapping
 
-
 The mapping mode can be controlled via the scope attribute `opensearch.mapping.mode`.
 
 The OpenSearch exporter supports several document schemas and preprocessing behaviors, which may be configured through the following settings:

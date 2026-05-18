@@ -40,8 +40,8 @@ The following configuration options are required:
     `realm` is set, this option is derived and will be
     `https://ingest.{realm}.observability.splunkcloud.com`. If a value is
     explicitly set, the value of `realm` will not be used in determining
-    `ingest_url`. The explicit value will be used instead. The exporter will 
-    automatically append the appropriate path: "/v2/datapoint" for metrics, 
+    `ingest_url`. The explicit value will be used instead. The exporter will
+    automatically append the appropriate path: "/v2/datapoint" for metrics,
     and "/v2/event" for events.
 
 The following configuration options can also be configured:
@@ -55,7 +55,7 @@ The following configuration options can also be configured:
   origin for only this exporter, as others will reveal the organization access token
   by not filtering the attribute.
 - `exclude_metrics`: List of metric filters that will determine metrics to be
-  excluded from sending to Signalfx backend. The filtering is applied after the default 
+  excluded from sending to Signalfx backend. The filtering is applied after the default
   translations controlled by `disable_default_translation_rules` option.
   See in [testdata/config.yaml](./testdata/config.yaml) for examples. Apart from the values explicitly
   provided via this option, by default, [default metrics](./internal/translation/default_metrics.go) are
@@ -75,7 +75,7 @@ The following configuration options can also be configured:
       dimensions:
         state: [interrupt, user, system]
   ```
-- `log_data_points` (default = `false`): If the log level is set to `debug` 
+- `log_data_points` (default = `false`): If the log level is set to `debug`
   and this is true, all datapoints dispatched to Splunk Observability Cloud will be logged
 - `log_dimension_updates` (default = `false`): Whether or not to log dimension
   updates.
@@ -86,13 +86,13 @@ The following configuration options can also be configured:
   complete.
 - `http2_read_idle_timeout` (default = 10s): Send a ping frame for a health check if the connection has been idle for the configured value.
   0s means http/2 health check will be disabled.
-- `http2_ping_timeout` (default = 10s): Triggered by `http2_read_idle_timeout`; When there's no response to the ping within the configured value, 
-  the connection will be closed. If this value is set to 0, it will default to 15s. 
+- `http2_ping_timeout` (default = 10s): Triggered by `http2_read_idle_timeout`; When there's no response to the ping within the configured value,
+  the connection will be closed. If this value is set to 0, it will default to 15s.
 - `headers` (no default): Headers to pass in the payload.
 - `max_idle_conns` (default = 100): The maximum idle HTTP connections the client can keep open.
 - `max_idle_conns_per_host` (default = 100): The maximum idle HTTP connections the client can keep open per host.
 - `idle_conn_timeout` (default = 30s): The maximum amount of time an idle connection will remain open before closing itself.
-- More HTTP settings are available, see 
+- More HTTP settings are available, see
   [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md).
 - `sync_host_metadata`: Defines whether the exporter should scrape host metadata
   and send it as property updates to SignalFx backend. Disabled by default.
@@ -128,14 +128,14 @@ The following configuration options can also be configured:
   - `idle_conn_timeout` (default = 30s): The maximum amount of time an idle connection will remain open before closing itself.
   - `timeout` (default = 10s): Amount of time to wait for the dimension HTTP request to complete.
   - `drop_tags` (default = false): Flag that indicates whether to drop the tags from the metadata sent to Splunk Observability Cloud by the exporter.
-- `nonalphanumeric_dimension_chars`: (default = `"_-."`) A string of characters 
-that are allowed to be used as a dimension key in addition to alphanumeric 
-characters. Each nonalphanumeric dimension key character that isn't in this string 
+- `nonalphanumeric_dimension_chars`: (default = `"_-."`) A string of characters
+that are allowed to be used as a dimension key in addition to alphanumeric
+characters. Each nonalphanumeric dimension key character that isn't in this string
 will be replaced with a `_`.
 - `ingest_tls`: (no default) exposes a list of TLS settings to establish a secure connection with signafx receiver configured on another collector instance.
   - `ca_file` needs to be set if the exporter's `ingest_url` is pointing to a signalfx receiver
   with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
-  Full list of TLS options can be found in the configtls [README](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configtls#client-configuration) 
+  Full list of TLS options can be found in the configtls [README](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configtls#client-configuration)
   The following example instructs the signalfx exporter ingest client to use a custom `ca_file` to verify the server certificate.
   ```yaml
   ingest_tls:
@@ -245,7 +245,7 @@ The default rules will create the following aggregated metrics from the [`hostme
 * vmpage_io.swap.out
 
 In addition to the aggregated metrics, the default translation rules make available the following "per core" custom hostmetrics.
-The CPU number is assigned to the dimension `cpu` 
+The CPU number is assigned to the dimension `cpu`
 
 * cpu.interrupt
 * cpu.nice

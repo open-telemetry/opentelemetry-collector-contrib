@@ -19,7 +19,7 @@ Logz.io exporter is utilizing opentelemetry [exporter helper](https://github.com
 - `account_token` (Required): Your logz.io account token for your tracing or logs account.
 - `region` Your logz.io account [region code](https://docs.logz.io/user-guide/accounts/account-region.html#available-regions). Defaults to `us`. Required only if your logz.io region is different than US.
 - `endpoint` Custom endpoint, mostly used for dev or testing. This will override the region parameter.
-- `retry_on_failure` 
+- `retry_on_failure`
     - `enabled` (default = true)
     - `initial_interval`: Time to wait after the first failure before retrying; ignored if `enabled` is `false`  (default = 5s)
     - `max_interval`: Is the upper bound on backoff; ignored if `enabled` is `false` (default = 30s)
@@ -158,5 +158,5 @@ service:
 ```
 
 #### Scope Name
-When using the logs exporter with logs originating from instrumentation library (i.e opentelemetry log4j2 appender), the scopeName field will be added (if the field is populated in the original log). 
+When using the logs exporter with logs originating from instrumentation library (i.e opentelemetry log4j2 appender), the scopeName field will be added (if the field is populated in the original log).
 ```

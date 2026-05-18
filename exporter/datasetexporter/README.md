@@ -27,8 +27,8 @@ If you do not want to specify `api_key` in the file, you can use the [builtin fu
 
 ### Server Host Settings
 
-Specifying the server host is crucial for ensuring the correct functionality of DataSet. 
-DataSet expects the server host value to be provided in the `serverHost` attribute. 
+Specifying the server host is crucial for ensuring the correct functionality of DataSet.
+DataSet expects the server host value to be provided in the `serverHost` attribute.
 If the server host value is stored in a different attribute, you can use the [resourceprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourceprocessor/README.md) or [attributesprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor) to copy it into the `serverHost` attribute.
 
 You can also utilize the `server_host` settings (described below) to populate the serverHost attribute with different values.
@@ -73,7 +73,6 @@ Make sure to provide the appropriate server host value in the `serverHost` attri
 - `retry_on_failure`: See [retry_on_failure](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `timeout`: See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
-
 
 ### Attributes
 
@@ -202,7 +201,6 @@ Then the event will look like:
 
 Field names can have `.` dots, `_` underscores, and `-` hyphens. You must escape slashes in Search and PowerQueries. For example, search the field name `app.kubernetes.io/component` as `app.kubernetes.io\/component`.
 
-
 ### Example
 
 ```yaml
@@ -275,7 +273,7 @@ Based on the given configuration and scenarios, here's the expected behavior:
    * Since the attribute `container_id` is set, `attributesprocessor` will copy this value to the `serverHost`.
    * Used `serverHost` will be `cont-pay-01`.
 2. Resource: `{'node_id': 'node-pay-01', 'host.name': 'host-pay-01'}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST='server-pay-01'`, Hostname: `ip-172-31-27-19`
-   * Since the resource attribute `node_id` is set, `resourceprocessor` will copy this value to the `serverHost`. 
+   * Since the resource attribute `node_id` is set, `resourceprocessor` will copy this value to the `serverHost`.
    * Used `serverHost` will be `node-pay-01`.
 3. Resource: `{'host.name': 'host-pay-01'}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST='server-pay-01'`, Hostname: `ip-172-31-27-19`
    * Since the resource attribute `host.name` is set, it will be used.

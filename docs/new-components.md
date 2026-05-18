@@ -32,7 +32,7 @@ understand how you may leverage existing components for your use case.
 Components refer to connectors, exporters, extensions, processors, and receivers. As a first step,
 we require that you build your component outside of the [opentelemetry-collector-contrib
 repository](https://github.com/open-telemetry/opentelemetry-collector-contrib). This is also the
-fastest way to start using your component and to publish it for others to consume if you want to. 
+fastest way to start using your component and to publish it for others to consume if you want to.
 
 A component is a Go module (library) built using the `go.opentelemetry.io/collector` set of
 libraries. These libraries contain examples (e.g. see the example on the
@@ -182,7 +182,7 @@ status:
 package fooreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fooreceiver"
 ```
 - Type `make generate`. This will trigger the [metadata generator](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/README.md#using-the-metadata-generator) to generate the associated code/documentation.
-- Type `make gencodeowners`. This will trigger the regeneration of the `.github/CODEOWNERS` file. 
+- Type `make gencodeowners`. This will trigger the regeneration of the `.github/CODEOWNERS` file.
 
 When donating a component to the community, break it down into separate PRs as follows:
 
@@ -220,7 +220,7 @@ When donating a component to the community, break it down into separate PRs as f
   * Please also run:
     - `make generate`
     - `make genotelcontribcol`
- 
+
   * The component must be enabled only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha).
 * Once your component has reached `Alpha` stability, you may also submit a PR to the [OpenTelemetry Collector Releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repository to include your component in future releases of the OpenTelemetry Collector `contrib` distribution.
 * Once a new component has been added to the executable:

@@ -22,7 +22,7 @@ The interval processor (`intervalprocessor`) aggregates metrics and periodically
 * Monotonically increasing, cumulative sums
 * Monotonically increasing, cumulative histograms
 * Monotonically increasing, cumulative exponential histograms
-* Gauges 
+* Gauges
 * Summaries
 
 The following metric types will *not* be aggregated, and will instead be passed, unchanged, to the next component in the pipeline:

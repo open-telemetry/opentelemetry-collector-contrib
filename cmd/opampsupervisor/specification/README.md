@@ -317,9 +317,9 @@ This results in the following Collector process invocation:
 If `extensions` are configured but the gate is disabled, the Supervisor
 will not start and the error message names the gate to enable.
 
-These are instances of extensions specific to the Supervisor and are 
+These are instances of extensions specific to the Supervisor and are
 distinct from any extensions configured to run inside the managed
-Collector configuration. Supervisor extensions are loaded and managed by the 
+Collector configuration. Supervisor extensions are loaded and managed by the
 Supervisor process itself.
 
 Supervisor extensions are configured under a top-level `extensions:` key

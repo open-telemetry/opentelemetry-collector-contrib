@@ -4,7 +4,6 @@ ScraperControllerSettings defines common settings for a scraper controller
 configuration. Scraper controller receivers can embed this struct
 and extend it with more fields if needed.
 
-
 ### redisreceiver-Config
 
 | Name | Field Info | Default | Docs |
@@ -267,5 +266,5 @@ and extend it with more fields if needed.
 | ---- | --------- | ------- | ---- |
 | enabled |bool| true |  |
 
-### time-Duration 
+### time-Duration
 An optionally signed sequence of decimal numbers, each with a unit suffix, such as `300ms`, `-1.5h`, or `2h45m`. Valid time units are `ns`, `us`, `ms`, `s`, `m`, `h`.

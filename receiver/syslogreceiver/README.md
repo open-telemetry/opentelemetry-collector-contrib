@@ -155,4 +155,3 @@ receivers:
     protocol: rfc3164
     location: UTC
 ```
-

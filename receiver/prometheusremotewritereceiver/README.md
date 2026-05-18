@@ -4,7 +4,6 @@
 This receiver implements the
 [Prometheus Remote Write 2.0 protocol](https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
@@ -96,7 +95,7 @@ In Prometheus Remote Write v2, this problem is solved since the time series are 
 
 ### Summaries and Classic Histograms are unsupported
 
-As mentioned in [Histogram Atomicity](#histogram-atomicity), Prometheus Classic Histograms are split into several separate time series and, for this reason, it is impossible to determine if the amount of buckets received are the complete set. 
+As mentioned in [Histogram Atomicity](#histogram-atomicity), Prometheus Classic Histograms are split into several separate time series and, for this reason, it is impossible to determine if the amount of buckets received are the complete set.
 
 Summaries suffer from the same problem, a working Summary is composed by several time series just like Classic Histograms. The only difference is that instead of bucket boundaries, these time series represent pre-calculated quantiles. Since the quantiles can be sent in separate Remote Write requests, it's impossible to determine if the amount of quantiles received are enough to generate a complete Summary.
 

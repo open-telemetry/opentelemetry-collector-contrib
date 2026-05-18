@@ -27,7 +27,7 @@
 > The old name `spanmetrics` still works but is deprecated and will be removed in a future release.
 > Please update your configuration to use `span_metrics`.
 
-⚠️ Breaking Change Warning: 
+⚠️ Breaking Change Warning:
 The default duration metrics unit will change from `ms` to `s` to adhere to the OpenTelemetry semantic conventions and a feature gate `connector.spanmetrics.useSecondAsDefaultMetricsUnit` is also added.
 
 Currently, the feature gate is disabled by default, so the unit will remain `ms`. After one release cycle, the unit will switch to `s` and the feature gate will also be enabled by default.
@@ -115,7 +115,7 @@ The following settings can be optionally configured:
   - `disable` (default: `false`): Disable all histogram metrics.
   - `unit` (default: `ms`): The time unit for recording duration measurements.
   calculated from spans duration measurements. One of either: `ms` or `s`.
-  - `dimensions`: additional attributes to add as dimensions to the `traces.span.metrics.duration` metric, 
+  - `dimensions`: additional attributes to add as dimensions to the `traces.span.metrics.duration` metric,
   which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
   - `explicit`:
     - `buckets`: the list of durations defining the duration histogram time buckets. Default
@@ -129,14 +129,14 @@ The following settings can be optionally configured:
   If the `name`d attribute is missing in the span, the optional provided `default` is used.
   
   If no `default` is provided, this dimension will be **omitted** from the metric.
-- `calls_dimensions`: additional attributes to add as dimensions to the `traces.span.metrics.calls` metric, 
+- `calls_dimensions`: additional attributes to add as dimensions to the `traces.span.metrics.calls` metric,
   which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
-- `exclude_dimensions`: the list of dimensions to be excluded from the default set of dimensions. Use to exclude unneeded data from metrics. 
+- `exclude_dimensions`: the list of dimensions to be excluded from the default set of dimensions. Use to exclude unneeded data from metrics.
 - `dimensions_cache_size`: this setting is deprecated, please use aggregation_cardinality_limit instead.
 - `include_instrumentation_scope`: a list of instrumentation scope names to include from the traces.
 - `resource_metrics_cache_size` (default: `1000`): the size of the cache holding metrics for a service. This is mostly relevant for
    cumulative temporality to avoid memory leaks and correct metric timestamp resets.
-- `aggregation_temporality` (default: `AGGREGATION_TEMPORALITY_CUMULATIVE`): Defines the aggregation temporality of the generated metrics. 
+- `aggregation_temporality` (default: `AGGREGATION_TEMPORALITY_CUMULATIVE`): Defines the aggregation temporality of the generated metrics.
   One of either `AGGREGATION_TEMPORALITY_CUMULATIVE` or `AGGREGATION_TEMPORALITY_DELTA`.
 - `namespace` (default: `traces.span.metrics`): Defines the namespace of the generated metrics. If `namespace` provided, generated metric name will be added `namespace.` prefix.
 - `metrics_flush_interval` (default: `60s`): Defines the flush interval of the generated metrics.
@@ -274,8 +274,8 @@ For more example configuration covering various other use cases, please visit th
 ## Known Limitation: the Single Writer Principle
 
 Proper configuration of the `spanmetricsconnector` ensures compliance with the [Single Writer Principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer),
-which is a core requirement in the OpenTelemetry metrics data model. Misconfiguration, however, 
-may allow multiple components to write to the same metric stream, resulting in data inconsistency, 
+which is a core requirement in the OpenTelemetry metrics data model. Misconfiguration, however,
+may allow multiple components to write to the same metric stream, resulting in data inconsistency,
 metric conflicts, or the dropping of time series by metric backends.
 
 ### Why this happens
@@ -448,7 +448,7 @@ Custom web frameworks are a common source of high cardinality span names. While 
 
 **Example: Custom Web Framework in Java**
 
-Consider a custom web framework that intercepts the generic route `/my-web-fwk/*` and dispatches requests like `/my-web-fwk/product/123456ABCD` or `/my-web-fwk/user/john.doe`. 
+Consider a custom web framework that intercepts the generic route `/my-web-fwk/*` and dispatches requests like `/my-web-fwk/product/123456ABCD` or `/my-web-fwk/user/john.doe`.
 
 The default Java Servlet instrumentation produces vague span names (`GET /my-web-fwk/*`), while directly using request URIs creates high cardinality (`GET /my-web-fwk/product/123456ABCD`).
 

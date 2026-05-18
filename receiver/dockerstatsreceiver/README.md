@@ -6,7 +6,6 @@ all desired running containers on a configured interval.  These stats are for co
 resource usage of cpu, memory, network, and the
 [blkio controller](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
@@ -123,7 +122,6 @@ For enhanced security, consider:
 - Running this receiver in an isolated collector instance with elevated privileges that only exports data (does not expose receiver ports like OTLP or Zipkin), forwarding metrics to your main collector via OTLP. This reduces the attack surface and RCE risk on the privileged container.
 
 For more information, see [issue #11791](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11791).
-
 
 ## Deprecations
 

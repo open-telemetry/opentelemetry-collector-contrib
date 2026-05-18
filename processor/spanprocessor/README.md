@@ -81,7 +81,7 @@ span name that is the output after processing the previous rule.
 - `break_after_match` (default = false): specifies if processing of rules should stop after the first
 match. If it is false rule processing will continue to be performed over the
 modified span name.
-- `keep_original_name` (default = false): specifies if the original span name should be kept after 
+- `keep_original_name` (default = false): specifies if the original span name should be kept after
 processing the rules. If it is true, the original span name will be kept,
 otherwise it will be replaced with the placeholders of the captured attributes.
 

@@ -16,7 +16,7 @@ The BoundedQueue implements LIFO semantics.  See this
 [article](https://medium.com/swlh/fifo-considered-harmful-793b76f98374)
 explaining why it is preferred to FIFO semantics.
 
-## Usage 
+## Usage
 
 Create a new BoundedQueue by calling `bq := admission.NewBoundedQueue(maxLimitBytes, maxLimitWaiting)`
 

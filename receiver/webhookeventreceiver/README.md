@@ -6,7 +6,6 @@ for any webhook style data source. It is designed to work alongside other pipeli
 [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor)
 to allow the ingestion of generic events as logs into the opentelemetry collector.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: logs   |
@@ -27,7 +26,7 @@ The following settings are required:
 
 The following settings are optional:
 
-* `path` (default: '/events'): Path where the receiver instance will accept events 
+* `path` (default: '/events'): Path where the receiver instance will accept events
 * `health_path` (default: '/health_check'): Path available for checking receiver status
 * `read_timeout` (default: '500ms'): Maximum wait time while attempting to read a received event
 * `write_timeout` (default: '500ms'): Maximum wait time while attempting to write a response
@@ -44,7 +43,7 @@ The following settings are optional:
 
 If the setting is unconfigured or set to `false`, the receiver will create a single log record with the entire request body as the "body" of that record.
 
-If the webhook body looks like the following, use `split_logs_at_newline: false`: 
+If the webhook body looks like the following, use `split_logs_at_newline: false`:
 
 ```yaml
 {
@@ -66,7 +65,7 @@ a third line
 
 Three log records will be created from this example. The first two are JSON body objects and the third is just the string "a third line".
 
-This receiver does not attempt to marshal the body into a structured format as it is received so it cannot make a more intelligent determination about where the split records. 
+This receiver does not attempt to marshal the body into a structured format as it is received so it cannot make a more intelligent determination about where the split records.
 
 ### Split logs at JSON boundary example
 
@@ -98,4 +97,3 @@ receivers:
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with a detailed sample configuration in [testdata/config.yaml](./testdata/config.yaml)
-

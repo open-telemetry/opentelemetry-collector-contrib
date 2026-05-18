@@ -18,7 +18,7 @@
 This receiver queries MySQL's global status and InnoDB tables.
 
 Some metrics will not appear if their corresponding feature is inactive.  
-There are also optional metrics that you must specify in your configuration to collect, listed in [documentation.md](./documentation.md) 
+There are also optional metrics that you must specify in your configuration to collect, listed in [documentation.md](./documentation.md)
 
 ## Prerequisites
 
@@ -47,7 +47,6 @@ GRANT SELECT ON performance_schema.* TO <your-user>@'%';
 ```
 
 ## Configuration
-
 
 The following settings are optional:
 - `endpoint`: (default = `localhost:3306`)

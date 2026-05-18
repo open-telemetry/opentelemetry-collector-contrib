@@ -4,12 +4,12 @@ The operator searches the file system for files that meet the following requirem
 1. The file's path matches one or more patterns specified in the `include` setting.
 2. The file's path does not match any pattern specified in the `exclude` setting.
 
-The set of files that satisfy these requirements are known in this document as "matched files". 
+The set of files that satisfy these requirements are known in this document as "matched files".
 The effective search space (`include - exclude`) is referred to colloquially as the operator's "matching pattern".
 
 # Fingerprints
 
-Files are identified and tracked using fingerprints. A fingerprint is the first `N` bytes of the file, with the default for `N` being `1000`. 
+Files are identified and tracked using fingerprints. A fingerprint is the first `N` bytes of the file, with the default for `N` being `1000`.
 
 ### Fingerprint Growth
 
@@ -17,7 +17,7 @@ When a file is smaller than `N` bytes, the fingerprint is the entire contents of
 
 ### Deduplication of Files
 
-Multiple files with the same fingerprint are handled as if they are the same file. 
+Multiple files with the same fingerprint are handled as if they are the same file.
 
 Most commonly, this circumstance is observed during file rotation that depends on a copy/truncate strategy. After copying the file, but before truncating the original, two files with the same content briefly exist. If the `file_input` operator happens to observe both files at the same time, it will detect a duplicate fingerprint and ingest only one of the files.
 
@@ -27,7 +27,7 @@ In some rare circumstances, a logger may print a very verbose preamble to each l
 
 # Readers
 
-Readers are a convenience struct, which exist for the purpose of managing files and their associated metadata. 
+Readers are a convenience struct, which exist for the purpose of managing files and their associated metadata.
 
 ### Contents
 
@@ -46,12 +46,11 @@ Before a Reader begins consuming, it will seek the file's last known offset. If 
 
 While a file is shorter than the length of a fingerprint, its Reader will continuously append to the fingerprint, as it consumes newly written data.
 
-A Reader consumes a file using a `bufio.Scanner`, with the Scanner's buffer size defined by the `max_log_size` setting, and the Scanner's split func defined by the `multiline` setting. 
+A Reader consumes a file using a `bufio.Scanner`, with the Scanner's buffer size defined by the `max_log_size` setting, and the Scanner's split func defined by the `multiline` setting.
 
-As each log is read from the file, it is decoded according to the `encoding` function, and then emitted from the operator. 
+As each log is read from the file, it is decoded according to the `encoding` function, and then emitted from the operator.
 
 The Reader's offset is updated accordingly whenever a log is emitted.
-
 
 ### Persistence
 
@@ -61,10 +60,9 @@ Readers are maintained for a fixed period of time, and then discarded.
 
 When the `file_input` operator makes use of a persistence mechanism to save and recall its state, it is simply Setting and Getting a slice of Readers. These Readers contain all the information necessary to pick up exactly where the operator left off.
 
-
 # Polling
 
-The file system is polled on a regular interval, defined by the `poll_interval` setting. 
+The file system is polled on a regular interval, defined by the `poll_interval` setting.
 
 Each poll cycle runs through a series of steps which are presented below.
 
@@ -109,7 +107,7 @@ Each poll cycle runs through a series of steps which are presented below.
         - The file may have been rotated to another location.
             - If the file was moved, the open file handle from the previous poll cycle may be useful.
 10. Consumption
-    1. Lost files are consumed. In some cases, such as deletion, this operation will fail. However, if a file was moved, we may be able to consume the remainder of its content. 
+    1. Lost files are consumed. In some cases, such as deletion, this operation will fail. However, if a file was moved, we may be able to consume the remainder of its content.
         - We do not expect to match this file again, so the best we can do is finish consuming their current contents.
         - We can reasonably expect in most cases that these files are no longer being written to.
     2. Matched files (from this poll cycle) are consumed.
@@ -129,8 +127,6 @@ Each poll cycle runs through a series of steps which are presented below.
 15. End Poll Cycle
     1. At this point, the operator sits idle until the poll timer fires again.
 
-
-
 # Additional Details
 
 ### Startup Logic
@@ -149,13 +145,12 @@ When the operator shuts down, the following occurs:
 
 The net effect of the shut down routine is that all files are checkpointed in a normal manner (i.e. not in the middle of a log entry), and all checkpoints are persisted.
 
-
 # Known Limitations
 
 ### Potential data loss when maximum concurrency must be enforced
 
 The operator may lose a small percentage of logs, if both of the following conditions are true:
-1. The number of files being matched exceeds the maximum degree of concurrency allowed by the `max_concurrent_files` setting. 
+1. The number of files being matched exceeds the maximum degree of concurrency allowed by the `max_concurrent_files` setting.
 2. Files are being "lost". That is, file rotation is moving files out of the operator's matching pattern, such that subsequent polling cycles will not find these files.
 
 When both of these conditions occur, it is impossible for the operator to both:

@@ -3,7 +3,6 @@
 
 The HAProxy receiver generates metrics by polling periodically the HAProxy process through a dedicated socket or HTTP URL.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -31,7 +30,7 @@ Default: 1 minute
 ### Initial delay settings (optional)
 defines how long this receiver waits before starting.
 
-Default: `1s` 
+Default: `1s`
 
 ### Example configuration
 

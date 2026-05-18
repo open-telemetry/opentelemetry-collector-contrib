@@ -33,13 +33,12 @@ json array after parsing:
 ["Hello", 42, {"name": "Alice", "age": 25}, [1, 2, 3], true, null]
 ```
 
-Notice that for this example, the current parser will parse every nested object as a string and so the result is actually this - 
+Notice that for this example, the current parser will parse every nested object as a string and so the result is actually this -
 ```json
 ["Hello", 42, "{\"name\": \"Alice\", \"age\": 25}", "[1, 2, 3]", true, null]
 ```
 
 More information on json arrays can be found [here](https://json-schema.org/understanding-json-schema/reference/array)
-
 
 ### Configuration Fields
 
@@ -60,7 +59,7 @@ The `json_array_parser` can be configured to embed certain operations such as ti
 
 ### Example Configurations
 
-#### Parse the field `body` with a json array parser into an attributes field 
+#### Parse the field `body` with a json array parser into an attributes field
 
 Configuration:
 

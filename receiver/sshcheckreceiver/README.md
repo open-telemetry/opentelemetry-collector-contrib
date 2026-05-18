@@ -212,7 +212,7 @@ For production use, always configure proper host key validation using `known_hos
 
 ## Feature Gates
 
-This receiver does not currently use any feature gates. All functionality is available through configuration options. 
+This receiver does not currently use any feature gates. All functionality is available through configuration options.
 
 ## Metrics
 
@@ -235,6 +235,3 @@ The receiver adds the following resource attribute:
 ### Detailed Metric Documentation
 
 Complete details about the metrics produced by this receiver, including attributes, types, and units, can be found in [documentation.md](./documentation.md) and [metadata.yaml](./metadata.yaml).
-
-
-

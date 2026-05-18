@@ -17,7 +17,7 @@
 Exports data via gRPC using
 [Otel/STEF format](https://github.com/splunk/stef/tree/main/go/otel).
 Otel/STEF is a compact and fast telemetry format. It is currently the fastest
-benchmarked metric format in the Collector. Here are recent 
+benchmarked metric format in the Collector. Here are recent
 [benchmarking results](https://www.stefdata.net/benchmarks.html),
 comparing CPU usage when using a few different formats (lower is better):
 
@@ -33,35 +33,35 @@ comparing CPU usage when using a few different formats (lower is better):
 STEF in this benchmark outperforms all other formats, including OTLP, which was previously
 known as the fastest format in the Collector.
 
-STEF is also very compact on the wire. In uncompressed mode, it typically yields payloads 
+STEF is also very compact on the wire. In uncompressed mode, it typically yields payloads
 that  are more than 10x smaller than OTLP payloads. In compressed mode, STEF is
 typically 5-7 times more compact than OTLP.
 
-Here are some 
+Here are some
 [STEF benchmark results](https://www.stefdata.net/benchmarks.html),
 comparing STEF and OTLP payload sizes for a few sample payloads produced by Collector:
 
-<img src="images/hostandcollectormetricssize.png">
+<img src="images/hostandcollectormetricssize.png" alt="Host and Collector Metrics Size Comparison">
 
 And here is a dataset from
 [Astronomy Shop demo](https://github.com/open-telemetry/opentelemetry-demo):
 
-<img src="images/astronomymetricssize.png">
+<img src="images/astronomymetricssize.png" alt="Astronomy Shop Demo Metrics Size Comparison">
 
-(This exporter implementation uses unsorted STEF format, labeled "STEF Unsorted" in 
+(This exporter implementation uses unsorted STEF format, labeled "STEF Unsorted" in
 charts above).
 
 There are currently no known formats that match STEF's compactness and performance.
 
-STEF exporter can be used to send metrics from the Collector to any STEF-compatible 
+STEF exporter can be used to send metrics from the Collector to any STEF-compatible
 backend. STEF can also be used to send metric data between Collector instances, in which
 case on the receiving side a [STEF receiver](../../receiver/stefreceiver/README.md)
 should be used.
 
-STEF format, STEF exporter and receiver implementations are currently in alpha 
-stage of development, during which **the format may undergo breaking changes.** 
-To ensure interoperability between sending and receiving Collectors make sure 
-you are using versions of exporter and receiver that are compiled with the same 
+STEF format, STEF exporter and receiver implementations are currently in alpha
+stage of development, during which **the format may undergo breaking changes.**
+To ensure interoperability between sending and receiving Collectors make sure
+you are using versions of exporter and receiver that are compiled with the same
 version of STEF library.
 
 Feedback about STEF format and implementation is welcome in the form of issues
@@ -73,8 +73,8 @@ The following settings are required:
 
 - `endpoint` (no default): host:port to which the exporter is going to send STEF metric data,
   using the STEF/gRPC protocol. The valid syntax is described
-  [here](https://github.com/grpc/grpc/blob/master/doc/naming.md). When sending to 
-  another Collector you will typically use `<hostname>:4320` as the endpoint, since 
+  [here](https://github.com/grpc/grpc/blob/master/doc/naming.md). When sending to
+  another Collector you will typically use `<hostname>:4320` as the endpoint, since
   port 4320 is the default port used by STEF receiver.
   If a scheme of `https` is used then client transport security is enabled and overrides the `insecure` setting.
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)

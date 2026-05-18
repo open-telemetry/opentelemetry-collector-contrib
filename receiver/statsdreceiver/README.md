@@ -5,7 +5,6 @@ StatsD receiver for ingesting StatsD messages(https://github.com/statsd/statsd/b
 the OpenTelemetry Collector. Note: This receiver does not support horizontally scaled collector deployments. It is
 intended to run in agent mode, where a single collector instance receives StatsD input.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -28,7 +27,7 @@ The Following settings are optional:
 
 - `transport` (default = `udp`): Protocol used by the StatsD server. Currently supported transports can be found in [this file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/statsdreceiver/internal/transport/transport.go).
 
-- `socket_permissions` (default = `0622`): When transport is set to `unixgram`, can be used to customize permissions of the binded socket. 
+- `socket_permissions` (default = `0622`): When transport is set to `unixgram`, can be used to customize permissions of the binded socket.
 
 - `aggregation_interval: 70s`(default value is 60s): The aggregation time that the receiver aggregates the metrics (similar to the flush interval in StatsD server)
 
@@ -44,12 +43,11 @@ The Following settings are optional:
 
 - `timer_histogram_mapping:`(default value is below): Specify what OTLP type to convert received timing/histogram data to.
 
-
 `"statsd_type"` specifies received Statsd data type. Possible values for this setting are `"timing"`, `"timer"`, `"histogram"` and `"distribution"`.
 
 `"observer_type"` specifies OTLP data type to convert to. We support `"gauge"`, `"summary"`, and `"histogram"`. For `"gauge"`, it does not perform any aggregation.
 For `"summary`, the statsD receiver will aggregate to one OTLP summary metric for one metric description (the same metric name with the same tags). By default, it will send percentile 0, 10, 50, 90, 95, 100 to the downstream.  The `"histogram"` setting selects an [auto-scaling exponential histogram configured with only a maximum size](https://github.com/lightstep/go-expohisto#readme), as shown in the example below unless it matches the configured explicit_buckets matcher pattern.
-TODO: Add a new option to use a smoothed summary like Prometheus: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3261 
+TODO: Add a new option to use a smoothed summary like Prometheus: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3261
 
 Example:
 
@@ -125,11 +123,9 @@ It supports sample rate. When a sample rate is provided (between 0 and 1), the r
 
 **Note**: Currently, the sample rate is applied during aggregation and the adjusted value is exported. If OTLP adds native support for sample rate as a metric parameter in the future, the implementation may be updated to preserve the original sample rate information.
 
-
 ### Gauge
 
 `<name>:<value>|g|@<sample-rate>|#<tag1-key>:<tag1-value>`
-
 
 ### Timer
 
@@ -137,7 +133,6 @@ It supports sample rate. When a sample rate is provided (between 0 and 1), the r
 `<name>:<value>|h|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
 It supports sample rate.
-
 
 ## Testing
 

@@ -82,7 +82,6 @@ connectors:
     include_scope_info: false
 ```
 
-
 ### Example Metric Conversions
 
 For a gauge metric `cpu_usage` with value `85.2`:
@@ -122,7 +121,7 @@ Each metric data point is converted to a log record with:
 - **Body**: Fixed JSON format: `{"metric_name": "$NAME", "value": "$VALUE"}`
 - **Timestamp**: Metric data point timestamp
 - **Observed Timestamp**: Metric data point start timestamp (if available)
-- **Attributes**: 
+- **Attributes**:
   - Original metric data point attributes (labels)
   - `metric.name`: The metric name
   - `metric.type`: The metric type (Gauge, Sum, Histogram, etc.)

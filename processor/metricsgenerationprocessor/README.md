@@ -35,7 +35,7 @@ There are some specific behaviors of the `calculate` metric generation rule that
 
 ## Configuration
 
-Configuration is specified through a list of generation rules. Generation rules find the metrics which 
+Configuration is specified through a list of generation rules. Generation rules find the metrics which
 match the given metric names and apply the specified operation to those metrics.
 
 ```yaml

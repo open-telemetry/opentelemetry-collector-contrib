@@ -176,27 +176,27 @@ The list of the populated resource attributes can be found at [GCP Detector Reso
 
 #### GCE Metadata
 
-    * cloud.provider ("gcp")
-    * cloud.platform ("gcp_compute_engine")
-    * cloud.account.id (project id)
-    * cloud.region  (e.g. us-central1)
-    * cloud.availability_zone (e.g. us-central1-c)
-    * host.id (instance id)
-    * host.name (instance name)
-    * host.type (machine type)
-    * (optional) gcp.gce.instance.hostname
-    * (optional) gcp.gce.instance.name
+- cloud.provider ("gcp")
+- cloud.platform ("gcp_compute_engine")
+- cloud.account.id (project id)
+- cloud.region  (e.g. us-central1)
+- cloud.availability_zone (e.g. us-central1-c)
+- host.id (instance id)
+- host.name (instance name)
+- host.type (machine type)
+- (optional) gcp.gce.instance.hostname
+- (optional) gcp.gce.instance.name
 
 #### GKE Metadata
 
-    * cloud.provider ("gcp")
-    * cloud.platform ("gcp_kubernetes_engine")
-    * cloud.account.id (project id)
-    * cloud.region (only for regional GKE clusters; e.g. "us-central1")
-    * cloud.availability_zone (only for zonal GKE clusters; e.g. "us-central1-c")
-    * k8s.cluster.name
-    * host.id (instance id)
-    * host.name (instance name; only when workload identity is disabled)
+- cloud.provider ("gcp")
+- cloud.platform ("gcp_kubernetes_engine")
+- cloud.account.id (project id)
+- cloud.region (only for regional GKE clusters; e.g. "us-central1")
+- cloud.availability_zone (only for zonal GKE clusters; e.g. "us-central1-c")
+- k8s.cluster.name
+- host.id (instance id)
+- host.name (instance name; only when workload identity is disabled)
 
 One known issue is when GKE workload identity is enabled, the GCE metadata endpoints won't be available, thus the GKE resource detector won't be
 able to determine `host.name`. In that case, users are encouraged to set `host.name` from either:
@@ -205,45 +205,45 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
 
 #### Google Cloud Run Services Metadata
 
-    * cloud.provider ("gcp")
-    * cloud.platform ("gcp_cloud_run")
-    * cloud.account.id (project id)
-    * cloud.region (e.g. "us-central1")
-    * faas.instance (instance id)
-    * faas.name (service name)
-    * faas.version (service revision)
+- cloud.provider ("gcp")
+- cloud.platform ("gcp_cloud_run")
+- cloud.account.id (project id)
+- cloud.region (e.g. "us-central1")
+- faas.instance (instance id)
+- faas.name (service name)
+- faas.version (service revision)
 
 #### Cloud Run Jobs Metadata
 
-    * cloud.provider ("gcp")
-    * cloud.platform ("gcp_cloud_run")
-    * cloud.account.id (project id)
-    * cloud.region (e.g. "us-central1")
-    * faas.instance (instance id)
-    * faas.name (service name)
-    * gcp.cloud_run.job.execution ("my-service-ajg89")
-    * gcp.cloud_run.job.task_index ("0")
+- cloud.provider ("gcp")
+- cloud.platform ("gcp_cloud_run")
+- cloud.account.id (project id)
+- cloud.region (e.g. "us-central1")
+- faas.instance (instance id)
+- faas.name (service name)
+- gcp.cloud_run.job.execution ("my-service-ajg89")
+- gcp.cloud_run.job.task_index ("0")
 
 #### Google Cloud Functions Metadata
 
-    * cloud.provider ("gcp")
-    * cloud.platform ("gcp_cloud_functions")
-    * cloud.account.id (project id)
-    * cloud.region (e.g. "us-central1")
-    * faas.instance (instance id)
-    * faas.name (function name)
-    * faas.version (function version)
+- cloud.provider ("gcp")
+- cloud.platform ("gcp_cloud_functions")
+- cloud.account.id (project id)
+- cloud.region (e.g. "us-central1")
+- faas.instance (instance id)
+- faas.name (function name)
+- faas.version (function version)
 
 #### Google App Engine Metadata
 
-    * cloud.provider ("gcp")
-    * cloud.platform ("gcp_app_engine")
-    * cloud.account.id (project id)
-    * cloud.region (e.g. "us-central1")
-    * cloud.availability_zone (e.g. "us-central1-c")
-    * faas.instance (instance id)
-    * faas.name (service name)
-    * faas.version (service version)
+- cloud.provider ("gcp")
+- cloud.platform ("gcp_app_engine")
+- cloud.account.id (project id)
+- cloud.region (e.g. "us-central1")
+- cloud.availability_zone (e.g. "us-central1-c")
+- faas.instance (instance id)
+- faas.name (service name)
+- faas.version (service version)
 
 ### AWS EC2
 
@@ -453,7 +453,7 @@ processors:
 
 Matched tags are added as:
 
-    * azure.tags.<tag name>
+- azure.tags.\<tag name\>
 
 ### Azure AKS
 

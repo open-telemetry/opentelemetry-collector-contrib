@@ -11,13 +11,13 @@ and the generation process would be reversed – Go config files from schemas.
 
 ## Modes
 
-Script can generate schemas for components and packages. There are two distinct modes of operation: 
+Script can generate schemas for components and packages. There are two distinct modes of operation:
 `component` and `package`. Schemagen automatically detects the mode based on metadata.yaml file content.
 
 ### Component mode
 
 The `component` mode is aimed at generating configurations for individual components like receivers, processors,
-exporters, and connectors. 
+exporters, and connectors.
 
 In component mode, schema is generated in file named `config.schema.<ext>` to the chosen output folder
 (by default it's input directory). You can optionally specify the root struct to use for schema generation
@@ -83,7 +83,7 @@ componentOverrides:
     configName: 'FileLogConfig'
 ```
 
-- `namespace` corresponds to the Go package import path for modules from current repository. 
+- `namespace` corresponds to the Go package import path for modules from current repository.
   It is used to resolve references to other types within the same repository.
 - `mappings` tell schemagen how to treat specific selector expressions as
   primitive schema fields. Each mapping converts the Go type into a scalar

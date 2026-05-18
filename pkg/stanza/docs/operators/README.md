@@ -3,7 +3,6 @@ An operator is the most basic unit of log processing. Each operator fulfills a s
 
 For instance, a user may read lines from a file using the `file_input` operator. From there, the results of this operation may be sent to a `regex_parser` operator that creates fields based on a regex pattern. And then finally, these results may be sent to a `file_output` operator that writes each line to a file on disk.
 
-
 ## What operators are available?
 
 Inputs:

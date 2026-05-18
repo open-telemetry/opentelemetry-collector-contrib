@@ -121,8 +121,8 @@ transform:
     - set(profile.original_payload_format, "json")
 ```
 
-In some situations a combination of Paths, functions, or enums is not allowed, and the solution 
-might require multiple [Advanced Config](#advanced-config) configuration groups. 
+In some situations a combination of Paths, functions, or enums is not allowed, and the solution
+might require multiple [Advanced Config](#advanced-config) configuration groups.
 See [Context Inference](#context-inference) for more details.
 
 ### Advanced Config
@@ -182,7 +182,7 @@ transform:
 ```
 
 The Transform Processor will enforce that all the Paths, functions, and enums used in a group's `statements` are parsable.
-In some situations a combination of Paths, functions, or enums is not allowed, and it might require multiple configuration groups. 
+In some situations a combination of Paths, functions, or enums is not allowed, and it might require multiple configuration groups.
 See [Context Inference](#context-inference) for more details.
 
 ### Context inference
@@ -295,14 +295,13 @@ Examples:
 
 Converts incoming metrics of type "Gauge" to type "Sum", retaining the metric's datapoints and setting its aggregation temporality and monotonicity accordingly. Noop for metrics that are not of type "Gauge".
 
-`aggregation_temporality` is a string (`"cumulative"` or `"delta"`) that specifies the resultant metric's aggregation temporality. `is_monotonic` is a boolean that specifies the resultant metric's monotonicity. 
+`aggregation_temporality` is a string (`"cumulative"` or `"delta"`) that specifies the resultant metric's aggregation temporality. `is_monotonic` is a boolean that specifies the resultant metric's monotonicity.
 
 **NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
 
 Examples:
 
 - `convert_gauge_to_sum("cumulative", false)`
-
 
 - `convert_gauge_to_sum("delta", true)`
 
@@ -463,13 +462,11 @@ Examples:
 
 - `copy_metric(name="http.request.status_code", unit="s") where metric.name == "http.status_code`
 
-
 - `copy_metric(desc="new desc") where metric.description == "old desc"`
-
 
 ### convert_exponential_histogram_to_histogram
 
-__Warning:__ The approach used in this function to convert exponential histograms to explicit histograms __is not__ part of the __OpenTelemetry Specification__.
+**Warning:** The approach used in this function to convert exponential histograms to explicit histograms **is not** part of the **OpenTelemetry Specification**.
 
 `convert_exponential_histogram_to_histogram(distribution, [ExplicitBounds])`
 
@@ -479,7 +476,7 @@ This function requires 2 arguments:
 
 - `distribution` - This argument defines the distribution algorithm used to allocate the exponential histogram datapoints into a new Explicit Histogram. There are 4 options:
 
-  - __upper__ - This approach identifies the highest possible value of each exponential bucket (_the upper bound_) and uses it to distribute the datapoints by comparing the upper bound of each bucket with the ExplicitBounds provided. This approach works better for small/narrow exponential histograms where the difference between the upper bounds and lower bounds are small.
+  - **upper** - This approach identifies the highest possible value of each exponential bucket (_the upper bound_) and uses it to distribute the datapoints by comparing the upper bound of each bucket with the ExplicitBounds provided. This approach works better for small/narrow exponential histograms where the difference between the upper bounds and lower bounds are small.
 
       _For example, Given:_
       1. count = 10
@@ -491,58 +488,55 @@ This function requires 2 arguments:
         - $15>5$ (_skip_)
         - $15>10$ (_skip_)
         - $15<=15$ (allocate count to this boundary)
-      6. Allocate count: [0, 0, __10__, 0, 0]
-      7. Final Counts: [0, 0, __10__, 0, 0]
+      6. Allocate count: [0, 0, **10**, 0, 0]
+      7. Final Counts: [0, 0, **10**, 0, 0]
 
-  - __midpoint__ - This approach works in a similar way to the __upper__ approach, but instead of using the upper bound, it uses the midpoint of each exponential bucket. The midpoint is identified by calculating the average of the upper and lower bounds. This approach also works better for small/narrow exponential histograms.
+  - **midpoint** - This approach works in a similar way to the **upper** approach, but instead of using the upper bound, it uses the midpoint of each exponential bucket. The midpoint is identified by calculating the average of the upper and lower bounds. This approach also works better for small/narrow exponential histograms.
 
-
-    >The __uniform__ and __random__ distribution algorithms both utilise the concept of intersecting boundaries.
-    Intersecting boundaries are any boundary in the `boundaries array` that falls between or on the lower and upper values of the Exponential Histogram boundaries. 
+    >The **uniform** and **random** distribution algorithms both utilise the concept of intersecting boundaries.
+    Intersecting boundaries are any boundary in the `boundaries array` that falls between or on the lower and upper values of the Exponential Histogram boundaries.
     _For Example:_ if you have an Exponential Histogram bucket with a lower bound of 10 and upper of 20, and your boundaries array is [5, 10, 15, 20, 25], the intersecting boundaries are 10, 15, and 20 because they lie within the range [10, 20].
 
-  - __uniform__ - This approach distributes the datapoints for each bucket uniformly across the intersecting __ExplicitBounds__. The algorithm works as follows:
+  - **uniform** - This approach distributes the datapoints for each bucket uniformly across the intersecting **ExplicitBounds**. The algorithm works as follows:
 
-     - If there are valid intersecting boundaries, the function evenly distributes the count across these boundaries. 
-	  - Calculate the count to be allocated to each boundary.
-	  - If there is a remainder after dividing the count equally, it distributes the remainder by incrementing the count for some of the boundaries until the remainder is exhausted.
+     - If there are valid intersecting boundaries, the function evenly distributes the count across these boundaries.
+     - Calculate the count to be allocated to each boundary.
+     - If there is a remainder after dividing the count equally, it distributes the remainder by incrementing the count for some of the boundaries until the remainder is exhausted.
 
     _For example Given:_
       1. count = 10
       2. Exponential Histogram Bounds: [10, 20]
       3. Boundaries:                [5, 10, 15, 20, 25]
-      4. Intersecting Boundaries:       [10, 15, 20]                          
+      4. Intersecting Boundaries:       [10, 15, 20]
       5. Number of Intersecting Boundaries: 3
       6. Using the formula: $count/numOfIntersections=10/3=3r1$
-      
       _Uniform Allocation:_
-      
       7. Start with zeros:          [0, 0, 0, 0, 0]
       8. Allocate 3 to each:        [0, 3, 3, 3, 0]
       9. Distribute remainder $r$ 1:    [0, 4, 3, 3, 0]
       10. Final Counts:              [0, 4, 3, 3, 0]
 
-  - __random__ - This approach distributes the datapoints for each bucket randomly across the intersecting __ExplicitBounds__. This approach works in a similar manner to the uniform distribution algorithm with the main difference being that points are distributed randomly instead of uniformly. This works as follows:
+  - **random** - This approach distributes the datapoints for each bucket randomly across the intersecting **ExplicitBounds**. This approach works in a similar manner to the uniform distribution algorithm with the main difference being that points are distributed randomly instead of uniformly. This works as follows:
       - If there are valid intersecting boundaries, calculate the proportion of the count that should be allocated to each boundary based on the overlap of the boundary with the provided range (lower to upper).
       - For each boundary, a random fraction of the calculated proportion is allocated.
       - Any remaining count (_due to rounding or random distribution_) is then distributed randomly among the intersecting boundaries.
       - If the bucket range does not intersect with any boundaries, the entire count is assigned to the start boundary.
 
-- `ExplicitBounds` represents the list of bucket boundaries for the new histogram. This argument is __required__ and __cannot be empty__.
+- `ExplicitBounds` represents the list of bucket boundaries for the new histogram. This argument is **required** and **cannot be empty**.
 
-__WARNINGS:__
+**WARNINGS:**
 
-- The process of converting an ExponentialHistogram to an Explicit Histogram is not perfect and may result in a loss of precision. It is important to define an appropriate set of bucket boundaries and identify the best distribution approach for your data in order to minimize this loss. 
+- The process of converting an ExponentialHistogram to an Explicit Histogram is not perfect and may result in a loss of precision. It is important to define an appropriate set of bucket boundaries and identify the best distribution approach for your data in order to minimize this loss.
 
   For example, selecting Boundaries that are too high or too low may result histogram buckets that are too wide or too narrow, respectively.
 
-- __Negative Bucket Counts__ are not supported in Explicit Histograms, as such negative bucket counts are ignored.
+- **Negative Bucket Counts** are not supported in Explicit Histograms, as such negative bucket counts are ignored.
 
-- __ZeroCounts__ are only allocated if the ExplicitBounds array contains a zero boundary. That is, if the Explicit Boundaries that you provide does not start with `0`, the function will not allocate any zero counts from the Exponential Histogram.
+- **ZeroCounts** are only allocated if the ExplicitBounds array contains a zero boundary. That is, if the Explicit Boundaries that you provide does not start with `0`, the function will not allocate any zero counts from the Exponential Histogram.
 
 This function should only be used when Exponential Histograms are not suitable for the downstream consumers or if upstream metric sources are unable to generate Explicit Histograms.
 
-__Example__:
+**Example**:
 
 - `convert_exponential_histogram_to_histogram("random", [0.0, 10.0, 100.0, 1000.0, 10000.0])`
 
@@ -601,7 +595,7 @@ Examples:
 - `aggregate_on_attributes("max") where metric.name == "system.memory.usage"`
 - `aggregate_on_attributes("max", []) where metric.name == "system.memory.usage"`
 
-The `aggregate_on_attributes` function can also be used in conjunction with 
+The `aggregate_on_attributes` function can also be used in conjunction with
 [keep_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#keep_matching_keys) or
 [delete_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#delete_matching_keys).
 
@@ -645,7 +639,7 @@ Examples:
 
 - `aggregate_on_attribute_value("sum", "attr1", ["val1", "val2"], "new_val") where metric.name == "system.memory.usage"`
 
-The `aggregate_on_attribute_value` function can also be used in conjunction with 
+The `aggregate_on_attribute_value` function can also be used in conjunction with
 [keep_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#keep_matching_keys) or
 [delete_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#delete_matching_keys).
 
@@ -742,7 +736,6 @@ Sanitization examples:
          ```
     * Span name after applying `set_semconv_span_name("1.40.0")`: `GET /api/v1/users/{id}`
 
-
 Backward compatibility: `set_semconv_span_name` will map the following attributes to their equivalents per the v1.39.0 semantic conventions:
 
 | v1.40.0 Attribute     | Older attribute    |
@@ -771,7 +764,7 @@ transform:
   trace_statements:
     # accessing a map with a key that does not exist will return nil. 
     - set(span.attributes["test"], "pass") where span.attributes["test"] == nil
-``` 
+```
 
 ### Rename attribute
 There are 2 ways to rename an attribute key:
@@ -784,7 +777,7 @@ transform:
   trace_statements:
     - set(resource.attributes["namespace"], resource.attributes["k8s.namespace.name"])
     - delete_key(resource.attributes, "k8s.namespace.name") 
-``` 
+```
 
 Or you can update the key using regex:
 
@@ -793,7 +786,7 @@ transform:
   error_mode: ignore
   trace_statements:
     - replace_all_patterns(resource.attributes, "key", "k8s\\.namespace\\.name", "namespace")
-``` 
+```
 
 ### Move field to attribute
 Set attribute `body` to the value of the log body:
@@ -803,10 +796,10 @@ transform:
   error_mode: ignore
   log_statements:
     - set(log.attributes["body"], log.body)
-``` 
+```
 
 ### Combine two attributes
-Set attribute `test` to the value of attributes `"foo"` and `"bar"` combined. 
+Set attribute `test` to the value of attributes `"foo"` and `"bar"` combined.
 ```yaml
 transform:
   error_mode: ignore
@@ -956,7 +949,6 @@ service:
 ## Contributing
 
 See [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/CONTRIBUTING.md).
-
 
 ## Warnings
 

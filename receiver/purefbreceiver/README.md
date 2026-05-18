@@ -4,7 +4,6 @@
 The Pure Storage FlashBlade receiver, receives metrics from Pure Storage FlashBlade via the
 [Pure Storage FlashBlade OpenMetrics Exporter](https://github.com/PureStorage-OpenConnect/pure-fb-openmetrics-exporter)
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
@@ -23,7 +22,7 @@ The Pure Storage FlashBlade receiver, receives metrics from Pure Storage FlashBl
 The following settings are required:
  -  `endpoint` (default: `http://172.31.60.207:9491/metrics/array`): The URL of the scraper selected endpoint
 
-### Important 
+### Important
 
 - Only endpoints explicitly added on will be scraped. e.g: `clients`
 
@@ -56,4 +55,3 @@ receivers:
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
-

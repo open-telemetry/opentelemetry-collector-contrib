@@ -28,15 +28,15 @@ openssl rand -base64 32
  Use placeholders with the following pattern `${aes:<encrypted & base64-encoded value>}` in a configuration. The value will be decrypted using the AES key provided in the environment variable `OTEL_AES_CREDENTIAL_PROVIDER`
 
 > For example:
-> 
+>
 > ```shell
 > export OTEL_AES_CREDENTIAL_PROVIDER="GQi+Y8HwOYzs8lAOjHUqB7vXlN8bVU2k0TAKtzwJzac="
 > ```
-> 
+>
 > ```yaml
 > password: ${aes:RsEf6cTWrssi8tlssfs1AJs2bRMrVm2Ce5TaWPY=}
 > ```
-> 
+>
 > will resolve to:
 > ```yaml
 > password: '1'

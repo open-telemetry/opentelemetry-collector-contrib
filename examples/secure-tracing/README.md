@@ -1,16 +1,15 @@
-# Build A Secure Trace Collection Pipeline 
+# Build A Secure Trace Collection Pipeline
 
 Implementing robust security measures is essential for any tracing ingestion service and infrastructure. This is an illustrative example of a secure setup encompassing the following features for trace ingestion:
 
 - Data Encryption with OTLP receiver supporting TLS. Transport Layer Security (TLS) is employed to encrypt traces in transit between the application and the OpenTelemetry (OTLP) endpoint, fortifying data security.
-- Client Authentication via [Envoy](https://www.envoyproxy.io/docs/envoy/latest/start/start), a high-performance proxy. 
+- Client Authentication via [Envoy](https://www.envoyproxy.io/docs/envoy/latest/start/start), a high-performance proxy.
 Even though we can configure OTLP receiver with mTLS for client authentication, authorization is not supported by OpenTelemetry Collector. This is one of the reasons that we use Envoy for client authentication. It allows us to easily add authorization, ensuring that only authorized clients can submit traces to the ingestion service.
 
-In this example, we also include a test via telementrygen: a tool provided from this repository for generating synthetic telemetry data, which helps verify the security features and overall functionality of the set up. 
-
+In this example, we also include a test via telementrygen: a tool provided from this repository for generating synthetic telemetry data, which helps verify the security features and overall functionality of the set up.
 
 ## Data Encryption via TLS
-The OpenTelemetry Collector has detailed [documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) on how to configure TLS. In this example, we enable TLS for receivers which leverages server configuration. 
+The OpenTelemetry Collector has detailed [documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) on how to configure TLS. In this example, we enable TLS for receivers which leverages server configuration.
 
 Example
 ```
@@ -53,16 +52,16 @@ typed_config:
 
 ## Setup Environment
 ### Generate Certificates
-To generate various self-signed certificates, including those for Envoy and the OpenTelemetry Collector receiver, as well as tracing client certificate, we utilize the widely renowned open-source tool [OpenSSL](https://www.openssl.org/source/), OpenSSL 3.1.0 14 was tested. 
+To generate various self-signed certificates, including those for Envoy and the OpenTelemetry Collector receiver, as well as tracing client certificate, we utilize the widely renowned open-source tool [OpenSSL](https://www.openssl.org/source/), OpenSSL 3.1.0 14 was tested.
 
-In the `certs` folder, you can find a set of `.ext` files which define the properties for a certificate. A `MakeFile` is provided to facilate the process. 
+In the `certs` folder, you can find a set of `.ext` files which define the properties for a certificate. A `MakeFile` is provided to facilate the process.
 
 ```
 $ cd certs
 $ make clean && make all
 ```
 ### Bring up services
-We use docker compose to bring up Envoy and OpenTelemetry Collection Pipeline. Make sure the current folder is `secure-tracing`, 
+We use docker compose to bring up Envoy and OpenTelemetry Collection Pipeline. Make sure the current folder is `secure-tracing`,
 
 ```
 $ docker compose up
@@ -72,12 +71,12 @@ From the console window, verify that `Envoy` and `Collector` are up and running.
 ```
 secure-tracing-otel-collector-1  | Error: cannot start pipelines: failed to load TLS config: failed to load TLS cert and key: read /etc/otel-collector.crt: is a directory
 ```
-It's most likely due to missing certificates. Follow the steps from section above to generate certificates. 
+It's most likely due to missing certificates. Follow the steps from section above to generate certificates.
 
 ## Run test
 
 ### Compile telemetrygen
-From the root of this repository, 
+From the root of this repository,
 ```
 $ cd cmd/telemetrygen
 $ go build . 
@@ -110,7 +109,7 @@ secure-tracing-otel-collector-1  |      -> net.sock.peer.addr: Str(1.2.3.4)
 secure-tracing-otel-collector-1  |      -> peer.service: Str(telemetrygen-client)
 ...
 
-``` 
+```
 ## Shutdown Services
 ```
 $ docker compose down

@@ -6,7 +6,6 @@ AWS API, applying authentication and signing. This allows applications to avoid 
 a service, instead configuring the AWS exporter and/or proxy in the OpenTelemetry collector and only providing the
 collector with credentials.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]  |
@@ -44,7 +43,6 @@ The TCP address and port on which this proxy listens for requests.
 Default: `localhost:2000`
 
 See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
-
 
 ### proxy_address (Optional)
 Defines the proxy address that this extension forwards HTTP requests to the AWS backend through. If left unconfigured, requests will be sent directly.

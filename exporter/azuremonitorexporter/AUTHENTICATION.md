@@ -75,5 +75,3 @@ azuremonitor-ingestion-proxy:
 - `AAD_CLIENT_ID`: client id of the service principal representing the AAD identity to use.
 - `AAD_TENANT_ID`: id of the AAD Tenant the service principal exists in.
 - `AAD_CLIENT_CERTIFICATE_PATH`: path to the .pem certificate file containing the CERTIFICATE and PRIVATE KEY parts of the certificate registered with the service principal.
-
-

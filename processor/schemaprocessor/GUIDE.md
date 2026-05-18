@@ -16,7 +16,7 @@ This creates two problems:
    - **Collector pipeline** — processors downstream of the schema processor that filter, route, or transform based on attribute names (e.g., `filterprocessor`, `transformprocessor`, `routingconnector`)
    - **Backend queries and dashboards** — any saved queries or dashboard panels referencing old names
    - **Alerts** — monitoring rules that depend on specific attribute names
-   
+
    There's no error — just missing data. This discourages operators from updating their target version, even as their services naturally adopt newer instrumentation.
 
 The schema processor solves both problems: it **normalizes all telemetry to a single version** regardless of what each service emits, and the migration feature lets you **transition between versions safely** with both old and new names preserved during the changeover.

@@ -8,31 +8,30 @@ This modules contains interfaces and shared code for sending and receiving [cust
 
 An extension may implement the `opampcustommessages.CustomCapabilityRegistry` interface, which allows other components to register capabilities to send and receive messages to/from an OpAMP server. For an example of a component implementing this interface, see the [OpAMP extension](../opampextension/README.md).
 
-
 ### Registering a custom capability
 
 Other components may use a configured OpAMP extension to send and receive custom messages to and from an OpAMP server. Components may use the provided `components.Host` from the Start method in order to get a handle to the registry:
 
 ```go
 func Start(_ context.Context, host component.Host) error {
-	ext, ok := host.GetExtensions()[opampExtensionID]
-	if !ok {
-		return fmt.Errorf("extension %q does not exist", opampExtensionID)
-	}
+ ext, ok := host.GetExtensions()[opampExtensionID]
+ if !ok {
+  return fmt.Errorf("extension %q does not exist", opampExtensionID)
+ }
 
-	registry, ok := ext.(opampcustommessages.CustomCapabilityRegistry)
-	if !ok {
-		return fmt.Errorf("extension %q is not a custom message registry", opampExtensionID)
-	}
+ registry, ok := ext.(opampcustommessages.CustomCapabilityRegistry)
+ if !ok {
+  return fmt.Errorf("extension %q is not a custom message registry", opampExtensionID)
+ }
 
-	handler, err := registry.Register("io.opentelemetry.custom-capability")
-	if err != nil {
-		return fmt.Errorf("failed to register custom capability: %w", err)
-	}
+ handler, err := registry.Register("io.opentelemetry.custom-capability")
+ if err != nil {
+  return fmt.Errorf("failed to register custom capability: %w", err)
+ }
 
-	// ... send/receive messages using the given handler
+ // ... send/receive messages using the given handler
 
-	return nil
+ return nil
 }
 ```
 
@@ -46,16 +45,16 @@ To send a message, you can use the SendMessage method. Since only one custom mes
 
 ```go
 for {
-	sendingChan, err := handler.SendMessage("messageType", []byte("message-data"))
-	switch {
-	case err == nil:
-		break
-	case errors.Is(err, types.ErrCustomMessagePending):
-		<-sendingChan
-		continue
-	default:
-		return fmt.Errorf("failed to send message: %w", err)
-	}
+ sendingChan, err := handler.SendMessage("messageType", []byte("message-data"))
+ switch {
+ case err == nil:
+  break
+ case errors.Is(err, types.ErrCustomMessagePending):
+  <-sendingChan
+  continue
+ default:
+  return fmt.Errorf("failed to send message: %w", err)
+ }
 }
 ```
 

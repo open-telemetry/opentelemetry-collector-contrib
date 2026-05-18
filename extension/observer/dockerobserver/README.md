@@ -21,7 +21,6 @@ Requires Docker API Version 1.44+.
 The collector will need permissions to access the Docker Engine API, specifically it will need
 read access to the Docker socket (default `unix:///var/run/docker.sock` on non-Windows and `npipe:////./pipe/docker_engine` on Windows).
 
-
 ## Example Config
 
 ```yaml
@@ -106,7 +105,7 @@ alongside any per-port endpoints. This makes every container, including those
 without exposed ports, discoverable by `receiver_creator` rules of
 `type == "container"`. The port-less endpoint has no port information
 (`port` and `alternate_port` are `0`, `transport` is `unknown`). To get exactly
-one logging receiver per container, scope with 
+one logging receiver per container, scope with
 `rule: type == "container" and port == 0`.
 
 default: `false`

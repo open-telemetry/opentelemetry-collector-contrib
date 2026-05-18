@@ -29,7 +29,6 @@
 > one. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11780 for more
 > details.
 
-
 Health Check extension enables an HTTP url that can be probed to check the
 status of the OpenTelemetry Collector. This extension can be used as a
 liveness and/or readiness probe on Kubernetes.

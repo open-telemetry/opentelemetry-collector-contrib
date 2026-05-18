@@ -5,7 +5,6 @@ The ICMP Check Receiver can be used for synthetic checks against network endpoin
 Requests (pings) to the specified `targets`. It provides device availability monitoring and interface statistics with
 native OpenTelemetry OTLP metrics generation.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: metrics   |
@@ -31,7 +30,7 @@ Each target has the following properties:
 
 - `host` (required): A hostname or IP address to be pinged.
 - `ping_count` (optional, default = `3`): The number of packets after which the pinger is stopped.
-- `ping_interval` (optional, default = `1s`): The wait time between each packet send. 
+- `ping_interval` (optional, default = `1s`): The wait time between each packet send.
 - `ping_timeout` (optional, default = `5s`): Specifies a timeout before ping exits, regardless of how many packets have been received.
 
 ### Optional Metrics Configuration

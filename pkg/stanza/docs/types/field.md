@@ -72,7 +72,6 @@ Config:
 </tr>
 </table>
 
-
 #### Using fields to refer to various values
 
 Given the following entry, we can use fields as follows:

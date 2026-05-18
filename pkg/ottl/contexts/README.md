@@ -8,4 +8,4 @@ A Context's `PathExpressionParser` is what the OTTL will use to interpret a Path
 
 A Context's `EnumParser` is what the OTTL will use to interpret an Enum Symbol.  For the data model being represented, it should be able to handle any incoming Enum Symbol and return the appropriate Enum value.  It should return an error if the Enum Symbol is not known.  
 
-Context implementations for Traces, Metrics, and Logs are provided by this module.  It is recommended to use these contexts when using the OTTL to interact with OpenTelemetry traces, metrics, and logs. 
+Context implementations for Traces, Metrics, and Logs are provided by this module.  It is recommended to use these contexts when using the OTTL to interact with OpenTelemetry traces, metrics, and logs.

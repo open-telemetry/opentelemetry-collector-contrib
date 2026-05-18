@@ -28,7 +28,7 @@ This operator makes use of [Go regular expression](https://github.com/google/re2
 
 ### Example Configurations
 
-#### Collapse spaces 
+#### Collapse spaces
 
 Configuration:
 ```yaml

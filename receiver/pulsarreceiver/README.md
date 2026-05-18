@@ -3,7 +3,6 @@
 
 The Pulsar Receiver receives logs, metrics, and traces from [Apache Pulsar](https://pulsar.apache.org/).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics, traces, logs   |
@@ -40,7 +39,7 @@ The following settings can be optionally configured:
   - `oauth2`
     - `issuer_url`:
     - `client_id`:
-    - `audience`: 
+    - `audience`:
     - `scope`:
     - `private_key`: Path to the private client credentials json file. Must contain `type`, `client_id`, `client_secret` and `issuer_url` fields.
   - `athenz`
@@ -55,7 +54,6 @@ The following settings can be optionally configured:
 - `tls_trust_certs_file_path`: path to the CA cert. For a client this verifies the server certificate. Should
   only be used if `insecure` is set to true.
 - `tls_allow_insecure_connection`: configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
-
 
 Example configuration:
 ```yaml
@@ -73,4 +71,3 @@ receivers:
     tls_allow_insecure_connection: false
     tls_trust_certs_file_path: ca.pem
 ```
-

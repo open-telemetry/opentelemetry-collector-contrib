@@ -5,7 +5,6 @@ The Kubernetes Cluster receiver collects cluster-level metrics and entity events
 API server. It uses the K8s API to listen for updates. A single instance of this
 receiver should be used to monitor a cluster.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs   |
@@ -128,7 +127,6 @@ k8s_cluster:
 ...
 ```
 
-
 ### metadata_exporters
 
 A list of metadata exporters to which metadata being collected by this receiver
@@ -159,7 +157,7 @@ See [experimentalmetricmetadata/metadata.go](https://github.com/open-telemetry/o
 The same metadata will be also emitted as entity events in the form of log records if
 this receiver is connected to a logs pipeline.
 See [opentelemetry-collector-contrib#23565](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23565)
-for the format of emitted log records. 
+for the format of emitted log records.
 
 ## Compatibility
 
@@ -222,7 +220,7 @@ EOF
 
 ### RBAC
 
-Use the below commands to create a `ClusterRole` with required permissions and a 
+Use the below commands to create a `ClusterRole` with required permissions and a
 `ClusterRoleBinding` to grant the role to the service account created above.
 
 ```bash
@@ -323,7 +321,7 @@ EOF
 ```
 
 As an alternative to setting up a `ClusterRole`/`ClusterRoleBinding`, it is also possible to limit the observed resources to a list of
-particular namespaces by setting the `namespaces` option of the receiver. This allows the collector to only rely on `Roles`/`RoleBindings`, 
+particular namespaces by setting the `namespaces` option of the receiver. This allows the collector to only rely on `Roles`/`RoleBindings`,
 instead of granting the collector cluster-wide read access to resources.
 Note however, that in this case the following cluster-scoped resources will not be observed by the `k8sclusterreceiver`:
 
@@ -488,4 +486,3 @@ Add the following rules to your ClusterRole:
   - list
   - watch
 ```
-

@@ -65,7 +65,7 @@ Available Editors:
 
 `append(target, Optional[value], Optional[values])`
 
-The `append` function appends single or multiple string values to `target`. 
+The `append` function appends single or multiple string values to `target`.
 `append` converts scalar values into an array if the field exists but is not an array, and creates an array containing the provided values if the field doesn’t exist.
 
 Resulting field is always of type `pcommon.Slice` and will not convert the types of existing or new items in the slice. This means that it is possible to create a slice whose elements have different types.  Be careful when using `append` to set attribute values, as this will produce values that are not possible to create through OpenTelemetry APIs [according to](https://opentelemetry.io/docs/specs/otel/common/#attribute) the OpenTelemetry specification.
@@ -102,7 +102,6 @@ The key will be deleted from the map.
 
 Examples:
 
-
 - `delete_key(log.attributes, "http.request.header.authorization")`
 
 - `delete_key(resource.attributes, "http.request.header.authorization")`
@@ -118,7 +117,6 @@ The `delete_matching_keys` function removes all keys from a `pcommon.Map` that m
 All keys that match the pattern will be deleted from the map.
 
 Examples:
-
 
 - `delete_matching_keys(log.attributes, "(?i).*password.*")`
 
@@ -136,7 +134,6 @@ All keys that match the pattern will remain in the map, while non matching keys 
 
 Examples:
 
-
 - `keep_matching_keys(log.attributes, "(?i).*version.*")`
 
 - `keep_matching_keys(resource.attributes, "(?i).*version.*")`
@@ -145,10 +142,9 @@ Examples:
 
 `flatten(target, Optional[prefix], Optional[depth], Optional[resolveConflicts])`
 
-The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root. 
+The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root.
 
 `target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int, `resolveConflicts` resolves the potential conflicts in the map keys by adding a number suffix starting with `0` from the first duplicated key.
-
 
 For example, the following map
 
@@ -163,7 +159,7 @@ For example, the following map
 }
 ```
 
-is converted to 
+is converted to
 
 ```json
 {
@@ -261,15 +257,11 @@ Examples:
 
 - `flatten(resource.attributes)`
 
-
 - `flatten(metric.cache, "k8s", 4)`
-
 
 - `flatten(log.body, depth=2)`
 
-
 - `flatten(body, resolveConflicts=true)`
-
 
 ### keep_keys
 
@@ -284,7 +276,6 @@ The map will be changed to only contain the keys specified by the list of string
 Examples:
 
 - `keep_keys(log.attributes, ["http.method"])`
-
 
 - `keep_keys(resource.attributes, ["http.method", "http.route", "http.url"])`
 
@@ -308,7 +299,6 @@ Examples:
 
 - `limit(log.attributes, 100, [])`
 
-
 - `limit(resource.attributes, 50, ["http.host", "http.method"])`
 
 ### merge_maps
@@ -331,9 +321,7 @@ Examples:
 
 - `merge_maps(log.attributes, ParseJSON(log.body), "upsert")`
 
-
 - `merge_maps(log.attributes, ParseJSON(log.attributes["kubernetes"]), "update")`
-
 
 - `merge_maps(log.attributes, resource.attributes, "insert")`
 
@@ -437,12 +425,9 @@ Examples:
 
 - `set(resource.attributes["http.path"], "/foo")`
 
-
 - `set(metric.name, resource.attributes["http.route"])`
 
-
 - `set(span.trace_state["svc"], "example")`
-
 
 - `set(span.attributes["source"], span.trace_state["source"])`
 
@@ -580,7 +565,6 @@ Examples:
 
 - `Base64Decode("aGVsbG8gd29ybGQ=")`
 
-
 - `Base64Decode(resource.attributes["encoded field"])`
 
 ### Base64Encode
@@ -596,12 +580,9 @@ Examples:
 
 - `Base64Encode("test string")`
 
-
 - `Base64Encode(resource.attributes["field"])`
 
-
 - `Base64Encode(body, "base64-url")`
-
 
 - `Base64Encode(attributes["data"], "base64-raw")`
 
@@ -629,9 +610,7 @@ Examples:
 
 - `Bool(log.attributes["truthy_attribute"])`
 
-
 - `Bool("true")`
-
 
 - `Bool("0")`
 
@@ -648,7 +627,6 @@ Examples:
 
 - `Decode("aGVsbG8gd29ybGQ=", "base64")`
 
-
 - `Decode(resource.attributes["encoded field"], "us-ascii")`
 
 ### Coalesce
@@ -664,7 +642,6 @@ If all values are `nil`, the Converter returns `nil`.
 Examples:
 
 - `Coalesce([attributes["user.id"], attributes["enduser.id"], "unknown"])`
-
 
 - `Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]])`
 
@@ -686,9 +663,7 @@ Examples:
 
 - `CommunityID(attributes["source.ip"], attributes["source.port"], attributes["destination.ip"], attributes["destination.port"], "TCP", 1)`
 
-
 - `CommunityID("192.168.1.1", 54321, "10.0.0.1", 90, "UDP", 2)`
-
 
 ### Concat
 
@@ -704,9 +679,7 @@ Examples:
 
 - `Concat([span.attributes["http.method"], span.attributes["http.path"]], ": ")`
 
-
 - `Concat([metric.name, 1], " ")`
-
 
 - `Concat(["HTTP method is: ", span.attributes["http.method"]], "")`
 
@@ -840,7 +813,6 @@ Examples:
 
 - `Double(log.attributes["http.status_code"])`
 
-
 - `Double("2.0")`
 
 ### Duration
@@ -879,14 +851,14 @@ Examples:
 
 `ExtractGrokPatterns(target, pattern, Optional[namedCapturesOnly], Optional[patternDefinitions])`
 
-The `ExtractGrokPatterns` Converter parses unstructured data into a format that is structured and queryable. 
+The `ExtractGrokPatterns` Converter parses unstructured data into a format that is structured and queryable.
 It returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If no matches are found then an empty `pcommon.Map` is returned.
 
-- `target` is a Getter that returns a string. 
-- `pattern` is a grok pattern string. 
-- `namedCapturesOnly` (optional) specifies if non-named captures should be returned. 
-- `patternDefinitions` (optional) is a list of custom pattern definition strings used inside `pattern` in the form of `PATTERN_NAME=PATTERN`. 
-This parameter lets you define your own custom patterns to improve readability when the extracted `pattern` is not part of the default set or when you need custom naming. 
+- `target` is a Getter that returns a string.
+- `pattern` is a grok pattern string.
+- `namedCapturesOnly` (optional) specifies if non-named captures should be returned.
+- `patternDefinitions` (optional) is a list of custom pattern definition strings used inside `pattern` in the form of `PATTERN_NAME=PATTERN`.
+This parameter lets you define your own custom patterns to improve readability when the extracted `pattern` is not part of the default set or when you need custom naming.
 
 If `target` is not a string or nil `ExtractGrokPatterns` returns an error. If `pattern` does not contain at least 1 named capture group and `namedCapturesOnly` is set to `true` then `ExtractPatterns` errors on startup.
 
@@ -904,7 +876,6 @@ Supported types are `int`, `long`, `double`, `float` and boolean
 
 The [Elastic Go-Grok](https://github.com/elastic/go-grok) ships with numerous predefined grok patterns that simplify working with grok.
 In collector Complete set is included consisting of a default set and all additional sets adding product/tool specific capabilities (like [aws](https://github.com/elastic/go-grok/blob/main/patterns/aws.go) or [java](https://github.com/elastic/go-grok/blob/main/patterns/java.go) patterns).
-
 
 Default set consists of:
 
@@ -959,12 +930,11 @@ Examples:
 
     Note that `USERNAME` is in the default pattern set and does not need to be redefined.
 
-  - Target: `smith:pass123:1001:1000:J Smith,1234,(234)567-8910,(234)567-1098,email:/home/smith:/bin/sh` 
+  - Target: `smith:pass123:1001:1000:J Smith,1234,(234)567-8910,(234)567-1098,email:/home/smith:/bin/sh`
 
-  - Return values: 
+  - Return values:
      - `user.name`: smith
      - `user.password`: pass123
-
 
 ### FNV
 
@@ -981,7 +951,6 @@ If an error occurs during hashing it will be returned.
 Examples:
 
 - `FNV(resource.attributes["device.name"])`
-
 
 - `FNV("name")`
 
@@ -1119,7 +1088,6 @@ Examples:
 
 - `HasPrefix(resource.attributes["service.name"], "ingest_")`
 
-
 - `HasPrefix("ingest_service", "ingest_")`
 
 ### HasSuffix
@@ -1137,7 +1105,6 @@ The `value` is either a path expression to a telemetry field to retrieve or a li
 Examples:
 
 - `HasSuffix(resource.attributes["service.name"], "_service")`
-
 
 - `HasSuffix("ingest_service", "_service")`
 
@@ -1164,7 +1131,6 @@ The `value` is either a path expression to a telemetry field to retrieve or a li
 Examples:
 
 - `Hex(span.attributes["http.status_code"])`
-
 
 - `Hex(2.0)`
 
@@ -1266,7 +1232,6 @@ Examples:
 
 - `Int(log.attributes["http.status_code"])`
 
-
 - `Int("2.0")`
 
 ### IsBool
@@ -1286,12 +1251,9 @@ Examples:
 
 - `IsBool(false)`
 
-
 - `IsBool(pcommon.NewValueBool(false))`
 
-
 - `IsBool(42)`
-
 
 - `IsBool(resource.attributes["any key"])`
 
@@ -1372,7 +1334,6 @@ Examples:
 
 - `IsMap(log.body)`
 
-
 - `IsMap(log.attributes["maybe a map"])`
 
 ### IsMatch
@@ -1397,7 +1358,6 @@ If target is nil, false is always returned.
 Examples:
 
 - `IsMatch(span.attributes["http.path"], "foo")`
-
 
 - `IsMatch("string", ".*ring")`
 
@@ -1444,7 +1404,7 @@ The `Keys` Converter returns a slice containing all the keys from the given map.
 The returned type is `pcommon.Slice`.
 
 Examples:
-- 
+
 - `Keys(resource.attributes)`
 - `Keys({"k1":"v1", "k2": "v2"})`
 
@@ -1484,7 +1444,6 @@ If target is nil an error is returned.
 Examples:
 
 - `Log(span.attributes["duration_ms"])`
-
 
 - `Int(Log(span.attributes["duration_ms"])`
 
@@ -1685,12 +1644,9 @@ Examples:
 
 - `ParseCSV("999-999-9999,Joe Smith,joe.smith@example.com", "phone,name,email")`
 
-
 - `ParseCSV(log.body, "phone|name|email", delimiter="|")`
 
-
 - `ParseCSV(log.attributes["csv_line"], log.attributes["csv_headers"], delimiter="|", headerDelimiter=",", mode="lazyQuotes")`
-
 
 - `ParseCSV("\"555-555-5556,Joe Smith\",joe.smith@example.com", "phone,name,email", mode="ignoreQuotes")`
 
@@ -1706,7 +1662,7 @@ The `ParseInt` Converter interprets a string `target` in the given `base` (0, 2 
 
 If the `base` argument is 0, the true base is implied by the string's prefix following the sign (if present): 2 for "0b", 8 for "0" or "0o", 16 for "0x", and 10 otherwise. When the `base` value is 0, underscore characters are permitted as defined by the Go syntax for [integer literals](https://go.dev/ref/spec#Integer_literals).
 
-Examples of `ParseInt` behavior when `base` is 0: 
+Examples of `ParseInt` behavior when `base` is 0:
 - `ParseInt("0b1111_0000", 0) -> 240`
 - `ParseInt("0b10110", 0) -> 22`
 - `ParseInt("0xFF", 0) -> 255`
@@ -1749,12 +1705,9 @@ Examples:
 
 - `ParseJSON("{\"attr\":true}")`
 
-
 - `ParseJSON("[\"attr1\",\"attr2\"]")`
 
-
 - `ParseJSON(resource.attributes["kubernetes"])`
-
 
 - `ParseJSON(log.body)`
 
@@ -1786,7 +1739,7 @@ The `ParseSeverity` converter returns a `string` that represents one of the log 
 `target` is a Getter that returns a string or an integer.
 `severityMapping` is a map containing the log levels, and a list of values they are mapped from. These values can be either
 strings, or map items containing a numeric range, defined by a `min` and `max` key (inclusive bounds), for the given log level.
-A value will be mapped to the given log level if any of these conditions are true. 
+A value will be mapped to the given log level if any of these conditions are true.
 For example, the following mapping will map to the `info` level, if the `target` is either a string with the value `inf`,
 or an integer in the range `[200,299]`:
 
@@ -2129,7 +2082,6 @@ Examples:
 
 - `SHA1(resource.attributes["device.name"])`
 
-
 - `SHA1("name")`
 
 **Note:** [According to the National Institute of Standards and Technology (NIST)](https://csrc.nist.gov/projects/hash-functions), SHA1 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer a SHA-2 family function (such as SHA-256 or SHA-512) whenever possible.
@@ -2177,14 +2129,14 @@ The `SliceToMap` converter converts a slice of objects to a map. The arguments a
 
 - `target`: A list of maps containing the entries to be converted.
 - `keyPath`: An optional string array that determines the name of the keys for the map entries by pointing to the value of an attribute within each slice item. Note that
-if `keyPath` is provided, it must resolve to a string value, otherwise the converter will not be able to convert the item to a map entry. If `keyPath` isn't provided, the string representation of the index when looping through objects in the slice will be the key for the object in the output map. 
+if `keyPath` is provided, it must resolve to a string value, otherwise the converter will not be able to convert the item to a map entry. If `keyPath` isn't provided, the string representation of the index when looping through objects in the slice will be the key for the object in the output map.
 
 - `valuePath`: This optional string array determines which attribute should be used as the value for the map entry. If no
 `valuePath` is defined, the value of the map entry will be the same as the original slice item.
 
 Examples:
 
-The examples below will convert the following input: 
+The examples below will convert the following input:
 
 ```yaml
 attributes:
@@ -2252,11 +2204,11 @@ Once the `SliceToMap` function has been applied to a value, the converted entrie
 
 The `Sort` Converter sorts the `target` array in either ascending or descending order.
 
-`target` is an array or `pcommon.Slice` typed field containing the elements to be sorted. 
+`target` is an array or `pcommon.Slice` typed field containing the elements to be sorted.
 
 `order` is a string specifying the sort order. Must be either `asc` or `desc`. The default value is `asc`.
 
-The Sort Converter preserves the data type of the original elements while sorting. 
+The Sort Converter preserves the data type of the original elements while sorting.
 The behavior varies based on the types of elements in the target slice:
 
 | Element Types | Sorting Behavior                    | Return Value |
@@ -2330,7 +2282,6 @@ Examples:
 
 - `set(resource.attributes["service.name"], TrimPrefix(resource.attributes["service.name"], "ingest_"))`
 
-
 - `TrimPrefix("ingest_service", "ingest_")`
 
 ### TrimSuffix
@@ -2348,7 +2299,6 @@ The `value` is either a path expression to a telemetry field to retrieve or a li
 Examples:
 
 - `set(resource.attributes["service.name"], TrimSuffix(resource.attributes["service.name"], "_service"))`
-
 
 - `TrimSuffix("ingest_service", "_service")`
 
@@ -2451,7 +2401,7 @@ When loading `location`, this function will look for the IANA Time Zone database
 - a directory or uncompressed zip file named by the ZONEINFO environment variable
 - on a Unix system, the system standard installation location
 - $GOROOT/lib/time/zoneinfo.zip
-- the `time/tzdata` package, if it was imported. 
+- the `time/tzdata` package, if it was imported.
 
 When building a Collector binary, importing `time/tzdata` in any Go source file will bundle the database into the binary, which guarantees the lookups will work regardless of the setup on the host setup. Note this will add roughly 500kB to binary size.
 
@@ -2464,7 +2414,7 @@ Examples:
 - `Time("2012-11-01T22:08:41+0000 EST", "%Y-%m-%dT%H:%M:%S%z %Z")`
 - `Time("2023-05-26 12:34:56", "%Y-%m-%d %H:%M:%S", "America/New_York")`
 
-`locale` specifies the input language of the `target` value. It is used to interpret timestamp values written in a specific language, 
+`locale` specifies the input language of the `target` value. It is used to interpret timestamp values written in a specific language,
 ensuring that the function can correctly parse the localized month names, day names, and periods of the day based on the provided language.
 
 The value must be a well-formed BCP 47 language tag, and a known [CLDR](https://cldr.unicode.org) v45 locale.
@@ -2493,10 +2443,10 @@ Examples:
 
 The `ToKeyValueString` Converter takes a `pcommon.Map` and converts it to a `string` of key value pairs.
 
-- `target` is a Getter that returns a `pcommon.Map`. 
-- `delimiter` is an optional string that is used to join keys and values, the default is `=`. 
+- `target` is a Getter that returns a `pcommon.Map`.
+- `delimiter` is an optional string that is used to join keys and values, the default is `=`.
 - `pair_delimiter` is an optional string that is used to join key value pairs, the default is a single space (` `).
-- `sort_output` is an optional bool that is used to deterministically sort the keys of the output string. It should only be used if the output is required to be in the same order each time, as it introduces some performance overhead. 
+- `sort_output` is an optional bool that is used to deterministically sort the keys of the output string. It should only be used if the output is required to be in the same order each time, as it introduces some performance overhead.
 
 For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use default delimiters and be converted into the following string:
 
@@ -2504,7 +2454,7 @@ For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use defaul
 `k1=v1 k2=v2 k3=v3`
 ```
 
-**Note:** Any nested arrays or maps will be represented as a JSON string. It is recommended to [flatten](#flatten) `target` before using this function. 
+**Note:** Any nested arrays or maps will be represented as a JSON string. It is recommended to [flatten](#flatten) `target` before using this function.
 
 For example, `{"k1":"v1","k2":{"k3":"v3","k4":["v4","v5"]}}` will be converted to:
 
@@ -2574,7 +2524,6 @@ Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
 - `TraceID("a389023abaa839283293ed323892389d")`
-
 
 ### TruncateTime
 
@@ -2671,7 +2620,6 @@ The `UserAgent` Converter parses the string argument trying to match it against 
 
 The results of the parsing are returned as a map containing `user_agent.name`, `user_agent.version`, `user_agent.original`, `os.name`, and `os.version` as defined in semconv v1.34.0. `os.name` and `os.version` are omitted if empty.
 
-
 Parsing is done using the [uap-go package](https://github.com/ua-parser/uap-go). The specific formats it recognizes can be found [here](https://github.com/ua-parser/uap-core/blob/master/regexes.yaml).
 
 Examples:
@@ -2712,7 +2660,7 @@ This URL object includes properties for the URL’s domain, path, fragment, port
 
 - `URL("http://www.example.com")`
 
-results in 
+results in
 ```
   "url.original": "http://www.example.com",
   "url.scheme":   "http",
@@ -2722,7 +2670,7 @@ results in
 
 - `URL("http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment")`
 
-results in 
+results in
 ```
   "url.path":      "/foo.gif",
   "url.fragment":  "fragment",

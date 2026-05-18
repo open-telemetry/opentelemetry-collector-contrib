@@ -4,7 +4,6 @@
 The Libhoney Receiver will accept Trace and Logs signals that are emitted from applications that are
 instrumented using [Libhoney](https://docs.honeycomb.io/send-data/logs/structured/libhoney/) libraries.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: traces, logs   |
@@ -95,7 +94,7 @@ receivers:
 ### Telemetry data types supported
 
 It will subscribe to the Traces and Logs signals but accept traffic destined for either pipeline using one http receiver
-component. Libhoney does not differentiate between the two so the receiver will identify which pipeline to deliver the 
+component. Libhoney does not differentiate between the two so the receiver will identify which pipeline to deliver the
 spans or log records to.
 
 No support for metrics since they'd look just like logs.
