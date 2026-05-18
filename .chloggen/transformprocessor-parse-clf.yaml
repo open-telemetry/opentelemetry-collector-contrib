@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/transform
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `parse_clf` function for parsing Common Log Format (CLF) HTTP access log entries.
+note: Add `ParseCLF` function for parsing Common Log Format (CLF) HTTP access log entries.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48349]
@@ -16,7 +16,7 @@ issues: [48349]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  `parse_clf` is available in log statements and returns a map with the parsed
+  `ParseCLF` is available in log statements and returns a map with the parsed
   `remote_host`, `rfc931`, `authuser`, `timestamp`, `request`, `method`,
   `request_uri`, `protocol`, `status`, and `bytes` fields.
 

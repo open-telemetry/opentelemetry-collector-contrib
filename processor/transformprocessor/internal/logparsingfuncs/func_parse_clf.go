@@ -22,7 +22,7 @@ type parseCLFArguments struct {
 }
 
 func NewParseCLFFactory() ottl.Factory[*ottllog.TransformContext] {
-	return ottl.NewFactory("parse_clf", &parseCLFArguments{}, createParseCLFFunction)
+	return ottl.NewFactory("ParseCLF", &parseCLFArguments{}, createParseCLFFunction)
 }
 
 func createParseCLFFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottllog.TransformContext], error) {
