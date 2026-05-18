@@ -366,6 +366,7 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			assert.Equal(t, tt.wantDimValue, dimUpdate.Value)
 			assert.Equal(t, tt.wantProperties, dimUpdate.Properties)
 			assert.Equal(t, tt.wantTags, dimUpdate.Tags)
+			assert.True(t, dimUpdate.Replace)
 		})
 	}
 }

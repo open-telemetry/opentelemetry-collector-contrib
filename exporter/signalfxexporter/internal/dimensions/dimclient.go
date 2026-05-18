@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -45,7 +46,7 @@ type DimensionClient struct {
 	sendDelay time.Duration
 	// Set of dims that have been queued up for sending.  Use map to quickly
 	// look up in case we need to replace due to flappy prop generation.
-	delayedSet map[DimensionKey]*DimensionUpdate
+	delayedSet map[delayedDimensionKey]*DimensionUpdate
 	// Queue of dimensions to update.  The ordering should never change once
 	// put in the queue so no need for heap/priority queue.
 	delayedQueue chan *queuedDimension
@@ -71,6 +72,20 @@ type DimensionClient struct {
 type queuedDimension struct {
 	*DimensionUpdate
 	TimeToSend time.Time
+}
+
+type delayedDimensionKey struct {
+	Name    string
+	Value   string
+	Replace bool
+}
+
+func newDelayedDimensionKey(dimUpdate *DimensionUpdate) delayedDimensionKey {
+	return delayedDimensionKey{
+		Name:    dimUpdate.Name,
+		Value:   dimUpdate.Value,
+		Replace: dimUpdate.Replace,
+	}
 }
 
 type DimensionClientOptions struct {
@@ -120,7 +135,7 @@ func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
 		Token:                   options.Token,
 		APIURL:                  options.APIURL,
 		sendDelay:               options.SendDelay,
-		delayedSet:              make(map[DimensionKey]*DimensionUpdate),
+		delayedSet:              make(map[delayedDimensionKey]*DimensionUpdate),
 		delayedQueue:            make(chan *queuedDimension, options.MaxBuffered),
 		requestSender:           sender,
 		client:                  client,
@@ -161,14 +176,15 @@ func (dc *DimensionClient) AcceptDimension(dimUpdate *DimensionUpdate) error {
 	dc.Lock()
 	defer dc.Unlock()
 
-	if delayedDimUpdate := dc.delayedSet[dimUpdate.Key()]; delayedDimUpdate != nil {
+	delayedKey := newDelayedDimensionKey(dimUpdate)
+	if delayedDimUpdate := dc.delayedSet[delayedKey]; delayedDimUpdate != nil {
 		if !reflect.DeepEqual(delayedDimUpdate, dimUpdate) {
 			// Merge the latest updates into existing one.
 			delayedDimUpdate.Properties = mergeProperties(delayedDimUpdate.Properties, dimUpdate.Properties)
 			delayedDimUpdate.Tags = mergeTags(delayedDimUpdate.Tags, dimUpdate.Tags)
 		}
 	} else {
-		dc.delayedSet[dimUpdate.Key()] = dimUpdate
+		dc.delayedSet[delayedKey] = dimUpdate
 		select {
 		case dc.delayedQueue <- &queuedDimension{
 			DimensionUpdate: dimUpdate,
@@ -219,7 +235,7 @@ func (dc *DimensionClient) processQueue(ctx context.Context) {
 			}
 
 			dc.Lock()
-			delete(dc.delayedSet, delayedDimUpdate.Key())
+			delete(dc.delayedSet, newDelayedDimensionKey(delayedDimUpdate.DimensionUpdate))
 			dc.Unlock()
 
 			if err := dc.handleDimensionUpdate(ctx, delayedDimUpdate.DimensionUpdate); err != nil {
@@ -240,26 +256,14 @@ func (dc *DimensionClient) handleDimensionUpdate(ctx context.Context, dimUpdate 
 		err error
 	)
 
-	req, err = dc.makePatchRequest(ctx, dimUpdate)
+	req, err = dc.makeRequest(ctx, dimUpdate)
 	if err != nil {
 		return err
 	}
 
 	req = req.WithContext(
 		context.WithValue(req.Context(), RequestFailedCallbackKey, RequestFailedCallback(func(statusCode int, err error) {
-			retry := false
-			retryMsg := "not retrying"
-			if statusCode == 400 && len(dimUpdate.Tags) > 0 {
-				// It's possible that number of tags is too large. In this case,
-				// we should retry the request without tags to update the dimension properties at least.
-				dimUpdate.Tags = nil
-				retry = true
-				retryMsg = "retrying without tags"
-			} else if statusCode == 404 || statusCode >= 500 {
-				// Retry on 5xx server errors or 404s which can occur due to races within the dimension patch endpoint.
-				retry = true
-				retryMsg = "retrying"
-			}
+			retry, retryMsg := shouldRetryDimensionUpdate(dimUpdate, statusCode)
 
 			dc.logger.Error(
 				"Unable to update dimension, "+retryMsg,
@@ -306,10 +310,54 @@ func (dc *DimensionClient) handleDimensionUpdate(ctx context.Context, dimUpdate 
 func (dc *DimensionClient) makeDimURL(key, value string) (*url.URL, error) {
 	url, err := dc.APIURL.Parse(fmt.Sprintf("/v2/dimension/%s/%s", url.PathEscape(key), url.PathEscape(value)))
 	if err != nil {
-		return nil, fmt.Errorf("could not construct dimension property PATCH URL with %s / %s: %w", key, value, err)
+		return nil, fmt.Errorf("could not construct dimension property URL with %s / %s: %w", key, value, err)
 	}
 
 	return url, nil
+}
+
+func shouldRetryDimensionUpdate(dimUpdate *DimensionUpdate, statusCode int) (bool, string) {
+	if dimUpdate.Replace {
+		if statusCode == 0 || statusCode >= 500 {
+			return true, "retrying"
+		}
+		return false, "not retrying"
+	}
+
+	if statusCode == 400 && len(dimUpdate.Tags) > 0 {
+		// It's possible that number of tags is too large. In this case,
+		// we should retry the request without tags to update the dimension properties at least.
+		dimUpdate.Tags = nil
+		return true, "retrying without tags"
+	}
+	if statusCode == 0 || statusCode == 404 || statusCode >= 500 {
+		// Retry on transport errors, 5xx server errors, or 404s which can occur due to races
+		// within the dimension patch endpoint.
+		return true, "retrying"
+	}
+
+	return false, "not retrying"
+}
+
+func (dc *DimensionClient) makeRequest(ctx context.Context, dim *DimensionUpdate) (*http.Request, error) {
+	if dim.Replace {
+		return dc.makePutRequest(ctx, dim)
+	}
+	return dc.makePatchRequest(ctx, dim)
+}
+
+func splitDimensionTags(tags map[string]bool) (tagsToAdd, tagsToRemove []string) {
+	for tag, shouldAdd := range tags {
+		if shouldAdd {
+			tagsToAdd = append(tagsToAdd, tag)
+		} else {
+			tagsToRemove = append(tagsToRemove, tag)
+		}
+	}
+
+	sort.Strings(tagsToAdd)
+	sort.Strings(tagsToRemove)
+	return tagsToAdd, tagsToRemove
 }
 
 func (dc *DimensionClient) makePatchRequest(ctx context.Context, dim *DimensionUpdate) (*http.Request, error) {
@@ -318,13 +366,7 @@ func (dc *DimensionClient) makePatchRequest(ctx context.Context, dim *DimensionU
 		tagsToRemove []string
 	)
 
-	for tag, shouldAdd := range dim.Tags {
-		if shouldAdd {
-			tagsToAdd = append(tagsToAdd, tag)
-		} else {
-			tagsToRemove = append(tagsToRemove, tag)
-		}
-	}
+	tagsToAdd, tagsToRemove = splitDimensionTags(dim.Tags)
 
 	json, err := json.Marshal(map[string]any{
 		"customProperties": dim.Properties,
@@ -344,6 +386,49 @@ func (dc *DimensionClient) makePatchRequest(ctx context.Context, dim *DimensionU
 		ctx,
 		http.MethodPatch,
 		strings.TrimRight(url.String(), "/")+"/_/sfxagent",
+		bytes.NewReader(json))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-SF-TOKEN", string(dc.Token))
+
+	return req, nil
+}
+
+func (dc *DimensionClient) makePutRequest(ctx context.Context, dim *DimensionUpdate) (*http.Request, error) {
+	customProperties := make(map[string]string, len(dim.Properties))
+	for key, value := range dim.Properties {
+		if value != nil {
+			customProperties[key] = *value
+		}
+	}
+
+	tagsToAdd, _ := splitDimensionTags(dim.Tags)
+	if tagsToAdd == nil {
+		tagsToAdd = []string{}
+	}
+
+	json, err := json.Marshal(map[string]any{
+		"key":              dim.Name,
+		"value":            dim.Value,
+		"customProperties": customProperties,
+		"tags":             tagsToAdd,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	url, err := dc.makeDimURL(dim.Name, dim.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPut,
+		strings.TrimRight(url.String(), "/"),
 		bytes.NewReader(json))
 	if err != nil {
 		return nil, err
