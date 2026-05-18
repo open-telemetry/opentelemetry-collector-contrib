@@ -50,3 +50,4 @@ internal/tools/testresults/*
 go.work*
 
 /result
+.worktrees/
