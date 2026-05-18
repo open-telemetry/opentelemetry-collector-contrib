@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
