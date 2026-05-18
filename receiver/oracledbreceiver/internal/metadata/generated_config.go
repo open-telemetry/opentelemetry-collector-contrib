@@ -369,6 +369,66 @@ func (ms *OracledbLogonsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// OracledbOsCPULimitMetricConfig provides config for the oracledb.os.cpu.limit metric.
+type OracledbOsCPULimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbOsCPULimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbOsLoadMetricConfig provides config for the oracledb.os.load metric.
+type OracledbOsLoadMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbOsLoadMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbOsMemoryLimitMetricConfig provides config for the oracledb.os.memory.limit metric.
+type OracledbOsMemoryLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbOsMemoryLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbParallelOperationsDowngraded1To25PctMetricConfig provides config for the oracledb.parallel_operations_downgraded_1_to_25_pct metric.
 type OracledbParallelOperationsDowngraded1To25PctMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1034,6 +1094,9 @@ type MetricsConfig struct {
 	OracledbHardParses                            OracledbHardParsesMetricConfig                            `mapstructure:"oracledb.hard_parses"`
 	OracledbLogicalReads                          OracledbLogicalReadsMetricConfig                          `mapstructure:"oracledb.logical_reads"`
 	OracledbLogons                                OracledbLogonsMetricConfig                                `mapstructure:"oracledb.logons"`
+	OracledbOsCPULimit                            OracledbOsCPULimitMetricConfig                            `mapstructure:"oracledb.os.cpu.limit"`
+	OracledbOsLoad                                OracledbOsLoadMetricConfig                                `mapstructure:"oracledb.os.load"`
+	OracledbOsMemoryLimit                         OracledbOsMemoryLimitMetricConfig                         `mapstructure:"oracledb.os.memory.limit"`
 	OracledbParallelOperationsDowngraded1To25Pct  OracledbParallelOperationsDowngraded1To25PctMetricConfig  `mapstructure:"oracledb.parallel_operations_downgraded_1_to_25_pct"`
 	OracledbParallelOperationsDowngraded25To50Pct OracledbParallelOperationsDowngraded25To50PctMetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_25_to_50_pct"`
 	OracledbParallelOperationsDowngraded50To75Pct OracledbParallelOperationsDowngraded50To75PctMetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_50_to_75_pct"`
@@ -1118,6 +1181,15 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		OracledbLogons: OracledbLogonsMetricConfig{
+			Enabled: false,
+		},
+		OracledbOsCPULimit: OracledbOsCPULimitMetricConfig{
+			Enabled: false,
+		},
+		OracledbOsLoad: OracledbOsLoadMetricConfig{
+			Enabled: false,
+		},
+		OracledbOsMemoryLimit: OracledbOsMemoryLimitMetricConfig{
 			Enabled: false,
 		},
 		OracledbParallelOperationsDowngraded1To25Pct: OracledbParallelOperationsDowngraded1To25PctMetricConfig{

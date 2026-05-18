@@ -433,6 +433,27 @@ metrics:
       input_type: string
     unit: "{operation}"
 
+  oracledb.os.cpu.limit:
+    description: Number of CPUs available to the Oracle instance as reported by the operating system.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: "{cpu}"
+  oracledb.os.load:
+    description: Current OS load average as reported by the operating system.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "1"
+  oracledb.os.memory.limit:
+    description: Total physical memory available to the operating system in bytes.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
 
   oracledb.parallel_operations_downgraded_1_to_25_pct:
     description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers

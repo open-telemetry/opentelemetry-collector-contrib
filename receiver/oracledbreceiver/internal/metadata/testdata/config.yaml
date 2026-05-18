@@ -37,6 +37,12 @@ all_set:
       enabled: true
     oracledb.logons:
       enabled: true
+    oracledb.os.cpu.limit:
+      enabled: true
+    oracledb.os.load:
+      enabled: true
+    oracledb.os.memory.limit:
+      enabled: true
     oracledb.parallel_operations_downgraded_1_to_25_pct:
       enabled: true
     oracledb.parallel_operations_downgraded_25_to_50_pct:
@@ -146,6 +152,12 @@ reaggregate_set:
       enabled: true
     oracledb.logons:
       enabled: true
+    oracledb.os.cpu.limit:
+      enabled: true
+    oracledb.os.load:
+      enabled: true
+    oracledb.os.memory.limit:
+      enabled: true
     oracledb.parallel_operations_downgraded_1_to_25_pct:
       enabled: true
     oracledb.parallel_operations_downgraded_25_to_50_pct:
@@ -254,6 +266,12 @@ none_set:
     oracledb.logical_reads:
       enabled: false
     oracledb.logons:
+      enabled: false
+    oracledb.os.cpu.limit:
+      enabled: false
+    oracledb.os.load:
+      enabled: false
+    oracledb.os.memory.limit:
       enabled: false
     oracledb.parallel_operations_downgraded_1_to_25_pct:
       enabled: false

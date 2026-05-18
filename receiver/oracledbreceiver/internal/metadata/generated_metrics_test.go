@@ -146,6 +146,15 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbLogonsDataPoint(ts, "1")
 
 			allMetricsCount++
+			mb.RecordOracledbOsCPULimitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordOracledbOsLoadDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordOracledbOsMemoryLimitDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(ts, "1")
 
 			allMetricsCount++
@@ -522,6 +531,42 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.os.cpu.limit":
+					assert.False(t, validatedMetrics["oracledb.os.cpu.limit"], "Found a duplicate in the metrics slice: oracledb.os.cpu.limit")
+					validatedMetrics["oracledb.os.cpu.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of CPUs available to the Oracle instance as reported by the operating system.", mi.Description())
+					assert.Equal(t, "{cpu}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.os.load":
+					assert.False(t, validatedMetrics["oracledb.os.load"], "Found a duplicate in the metrics slice: oracledb.os.load")
+					validatedMetrics["oracledb.os.load"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Current OS load average as reported by the operating system.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "oracledb.os.memory.limit":
+					assert.False(t, validatedMetrics["oracledb.os.memory.limit"], "Found a duplicate in the metrics slice: oracledb.os.memory.limit")
+					validatedMetrics["oracledb.os.memory.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Total physical memory available to the operating system in bytes.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
