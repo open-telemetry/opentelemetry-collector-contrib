@@ -539,6 +539,86 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	}
 }
 
+// Test_metricsExporter_HistogramZeroLowerBoundDoesNotLeakToZeroBin is a
+// regression test for the percentile-collapse bug fixed in datadog-agent#50777
+// (OTAGENT-1067). An explicit-bucket histogram whose first non-empty bucket is
+// (0, B] used to park count in the sketch's zero bin (key 0, value 0), because
+// the InsertInterpolate algorithm anchors its first deposit at the lower bound
+// and binLow(0)=0. The OTel spec defines explicit-bucket intervals as
+// (lowerBound, upperBound] — strictly open at the lower bound — so observations
+// in a (0, B] bucket can never have value 0. With high-cardinality tags and
+// short delta intervals, per-bucket counts of 1 or 2 made the leak dominate
+// and collapsed all percentiles to 0 once the backend merged sketches.
+//
+// This test sends a histogram with a single observation in (0, 5] through the
+// full datadogexporter pipeline and asserts that the resulting sketch carries
+// no count at key 0.
+func Test_metricsExporter_HistogramZeroLowerBoundDoesNotLeakToZeroBin(t *testing.T) {
+	sketchRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.SketchesMetricEndpoint}
+	server := testutil.DatadogServerMock(sketchRecorder.HandlerFunc)
+	defer server.Close()
+
+	var once sync.Once
+	pusher := newTestPusher(t)
+	reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
+	require.NoError(t, err)
+	attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	acfg := traceconfig.New()
+	gatewayUsage := attributes.NewGatewayUsage()
+
+	exp, err := newMetricsExporter(
+		t.Context(),
+		exportertest.NewNopSettings(metadata.Type),
+		newTestConfig(t, server.URL, nil, datadogconfig.HistogramModeDistributions),
+		acfg,
+		&once,
+		attributesTranslator,
+		&testutil.MockSourceProvider{Src: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}},
+		reporter,
+		nil,
+		gatewayUsage,
+	)
+	require.NoError(t, err)
+	exp.getPushTime = func() uint64 { return 0 }
+
+	// Histogram with the bucket shape that triggers the bug: a single
+	// observation in the (0, 5] bucket (delta temporality).
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	met := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	met.SetName("zero.lower.bound.histogram")
+	met.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	dp := met.Histogram().DataPoints().AppendEmpty()
+	dp.SetCount(1)
+	dp.SetSum(3)
+	// Three buckets: (-Inf, 0], (0, 5], (5, +Inf). All observations land in (0, 5].
+	dp.BucketCounts().FromRaw([]uint64{0, 1, 0})
+	dp.ExplicitBounds().FromRaw([]float64{0, 5})
+	dp.SetTimestamp(seconds(0))
+
+	require.NoError(t, exp.PushMetricsData(t.Context(), md))
+	require.NotNil(t, sketchRecorder.ByteBody, "expected a sketch payload to be sent")
+
+	var payload gogen.SketchPayload
+	require.NoError(t, payload.Unmarshal(sketchRecorder.ByteBody))
+	require.Len(t, payload.Sketches, 1)
+	sketch := payload.Sketches[0]
+	require.Len(t, sketch.Dogsketches, 1)
+	ds := sketch.Dogsketches[0]
+
+	// The fix's central guarantee: no count is parked at the sketch's zero
+	// bin (key 0, which represents value 0). Pre-fix, all 1 count landed at
+	// key 0; post-fix, the count goes to the bin for upperBound = 5.
+	for _, k := range ds.K {
+		assert.NotEqualf(t, int32(0), k,
+			"sketch deposit at key 0 (value 0) is invalid for a (0, 5] bucket; full keys=%v counts=%v", ds.K, ds.N)
+	}
+	// Sanity: the count and sum round-trip correctly.
+	assert.EqualValues(t, 1, ds.Cnt)
+	assert.InDelta(t, 3.0, ds.Sum, 1e-9)
+}
+
 func TestNewExporterWithProxy(t *testing.T) {
 	server := testutil.DatadogServerMock()
 	defer server.Close()
