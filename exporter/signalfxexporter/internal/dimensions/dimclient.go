@@ -46,7 +46,7 @@ type DimensionClient struct {
 	sendDelay time.Duration
 	// Set of dims that have been queued up for sending.  Use map to quickly
 	// look up in case we need to replace due to flappy prop generation.
-	delayedSet map[delayedDimensionKey]*DimensionUpdate
+	delayedSet map[DimensionUpdateKey]*DimensionUpdate
 	// Queue of dimensions to update.  The ordering should never change once
 	// put in the queue so no need for heap/priority queue.
 	delayedQueue chan *queuedDimension
@@ -72,20 +72,6 @@ type DimensionClient struct {
 type queuedDimension struct {
 	*DimensionUpdate
 	TimeToSend time.Time
-}
-
-type delayedDimensionKey struct {
-	Name    string
-	Value   string
-	Replace bool
-}
-
-func newDelayedDimensionKey(dimUpdate *DimensionUpdate) delayedDimensionKey {
-	return delayedDimensionKey{
-		Name:    dimUpdate.Name,
-		Value:   dimUpdate.Value,
-		Replace: dimUpdate.Replace,
-	}
 }
 
 type DimensionClientOptions struct {
@@ -135,7 +121,7 @@ func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
 		Token:                   options.Token,
 		APIURL:                  options.APIURL,
 		sendDelay:               options.SendDelay,
-		delayedSet:              make(map[delayedDimensionKey]*DimensionUpdate),
+		delayedSet:              make(map[DimensionUpdateKey]*DimensionUpdate),
 		delayedQueue:            make(chan *queuedDimension, options.MaxBuffered),
 		requestSender:           sender,
 		client:                  client,
@@ -176,15 +162,14 @@ func (dc *DimensionClient) AcceptDimension(dimUpdate *DimensionUpdate) error {
 	dc.Lock()
 	defer dc.Unlock()
 
-	delayedKey := newDelayedDimensionKey(dimUpdate)
-	if delayedDimUpdate := dc.delayedSet[delayedKey]; delayedDimUpdate != nil {
+	if delayedDimUpdate := dc.delayedSet[dimUpdate.Key()]; delayedDimUpdate != nil {
 		if !reflect.DeepEqual(delayedDimUpdate, dimUpdate) {
 			// Merge the latest updates into existing one.
 			delayedDimUpdate.Properties = mergeProperties(delayedDimUpdate.Properties, dimUpdate.Properties)
 			delayedDimUpdate.Tags = mergeTags(delayedDimUpdate.Tags, dimUpdate.Tags)
 		}
 	} else {
-		dc.delayedSet[delayedKey] = dimUpdate
+		dc.delayedSet[dimUpdate.Key()] = dimUpdate
 		select {
 		case dc.delayedQueue <- &queuedDimension{
 			DimensionUpdate: dimUpdate,
@@ -235,7 +220,7 @@ func (dc *DimensionClient) processQueue(ctx context.Context) {
 			}
 
 			dc.Lock()
-			delete(dc.delayedSet, newDelayedDimensionKey(delayedDimUpdate.DimensionUpdate))
+			delete(dc.delayedSet, delayedDimUpdate.Key())
 			dc.Unlock()
 
 			if err := dc.handleDimensionUpdate(ctx, delayedDimUpdate.DimensionUpdate); err != nil {
