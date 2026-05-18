@@ -595,7 +595,7 @@ func Test_metricsExporter_HistogramZeroLowerBoundDoesNotLeakToZeroBin(t *testing
 	// Three buckets: (-Inf, 0], (0, 5], (5, +Inf). All observations land in (0, 5].
 	dp.BucketCounts().FromRaw([]uint64{0, 1, 0})
 	dp.ExplicitBounds().FromRaw([]float64{0, 5})
-	dp.SetTimestamp(seconds(0))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(int64(0), 0)))
 
 	require.NoError(t, exp.PushMetricsData(t.Context(), md))
 	require.NotNil(t, sketchRecorder.ByteBody, "expected a sketch payload to be sent")
@@ -770,7 +770,7 @@ func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
 	met.SetName("int.gauge")
 	dpsInt := met.SetEmptyGauge().DataPoints()
 	dpInt := dpsInt.AppendEmpty()
-	dpInt.SetTimestamp(seconds(0))
+	dpInt.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(int64(0), 0)))
 	dpInt.SetIntValue(222)
 
 	// host metric
@@ -778,7 +778,7 @@ func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
 	met.SetName("system.filesystem.utilization")
 	dpsInt = met.SetEmptyGauge().DataPoints()
 	dpInt = dpsInt.AppendEmpty()
-	dpInt.SetTimestamp(seconds(0))
+	dpInt.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(int64(0), 0)))
 	dpInt.SetIntValue(333)
 
 	// Histogram (delta)
@@ -791,13 +791,9 @@ func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
 	dpDoubleHist.SetSum(6)
 	dpDoubleHist.BucketCounts().FromRaw([]uint64{2, 18})
 	dpDoubleHist.ExplicitBounds().FromRaw([]float64{0})
-	dpDoubleHist.SetTimestamp(seconds(0))
+	dpDoubleHist.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(int64(0), 0)))
 
 	return md
-}
-
-func seconds(i int) pcommon.Timestamp {
-	return pcommon.NewTimestampFromTime(time.Unix(int64(i), 0))
 }
 
 func newTestConfig(t *testing.T, endpoint string, hostTags []string, histogramMode datadogconfig.HistogramMode) *datadogconfig.Config {
