@@ -406,7 +406,7 @@ var samplesQueryResponses = map[string][]metricRow{
 		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "4199919568", "DURATION_SEC": "1", "SERVICE_NAME": "",
 		"SQL_EXEC_START": "2026-01-01T12:00:00Z", "LOGON_TIME": "2026-01-01T12:00:00Z", "SESSION_DURATION_SEC": "0",
 		"BLOCKING_SESSION": "", "FINAL_BLOCKING_SESSION": "", "BLOCKING_SESSION_STATUS": "", "SECONDS_IN_WAIT": "0",
-		"BLOCKING_START_TIME": "", "LOCK_TYPE": "", "LOCK_MODE": "", "BLOCKED_OBJECT": "",
+		"BLOCKING_START_TIME": "", "LOCK_TYPE": "", "LOCK_MODE": "", "BLOCKED_OBJECT_OWNER": "", "BLOCKED_OBJECT_NAME": "",
 	}},
 	"invalidQuery": {{
 		"MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y",
@@ -414,7 +414,7 @@ var samplesQueryResponses = map[string][]metricRow{
 		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "4199919568", "DURATION_SEC": "",
 		"SQL_EXEC_START": "", "LOGON_TIME": "", "SESSION_DURATION_SEC": "0",
 		"BLOCKING_SESSION": "", "FINAL_BLOCKING_SESSION": "", "BLOCKING_SESSION_STATUS": "", "SECONDS_IN_WAIT": "0",
-		"BLOCKING_START_TIME": "", "LOCK_TYPE": "", "LOCK_MODE": "", "BLOCKED_OBJECT": "",
+		"BLOCKING_START_TIME": "", "LOCK_TYPE": "", "LOCK_MODE": "", "BLOCKED_OBJECT_OWNER": "", "BLOCKED_OBJECT_NAME": "",
 	}},
 	"blockedQuery": {{
 		// Blocked session waiting on SID 100
@@ -423,7 +423,7 @@ var samplesQueryResponses = map[string][]metricRow{
 		"PORT": "54441", "PROGRAM": "JDBC Thin Client", "MODULE": "app", "STATUS": "ACTIVE", "STATE": "WAITING", "PLAN_HASH_VALUE": "1234567890", "DURATION_SEC": "15", "SERVICE_NAME": "ORCL",
 		"SQL_EXEC_START": "2026-05-06T09:59:45Z", "LOGON_TIME": "2026-05-06T09:00:00Z", "SESSION_DURATION_SEC": "3600",
 		"BLOCKING_SESSION": "100", "FINAL_BLOCKING_SESSION": "100", "BLOCKING_SESSION_STATUS": "VALID", "SECONDS_IN_WAIT": "15",
-		"BLOCKING_START_TIME": "2026-05-06T10:00:00Z", "LOCK_TYPE": "TX", "LOCK_MODE": "EXCLUSIVE", "BLOCKED_OBJECT": "APP_USER.ORDERS",
+		"BLOCKING_START_TIME": "2026-05-06T10:00:00Z", "LOCK_TYPE": "TX", "LOCK_MODE": "EXCLUSIVE", "BLOCKED_OBJECT_OWNER": "APP_USER", "BLOCKED_OBJECT_NAME": "ORDERS",
 	}},
 	"idleBlockerQuery": {{
 		// Idle session (blocker) that is holding a lock — no longer ACTIVE but appearing in BLOCKING_SESSION subquery
@@ -432,7 +432,7 @@ var samplesQueryResponses = map[string][]metricRow{
 		"PORT": "54442", "PROGRAM": "SQL*Plus", "MODULE": "", "STATUS": "INACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "9876543210", "DURATION_SEC": "120", "SERVICE_NAME": "ORCL",
 		"SQL_EXEC_START": "", "LOGON_TIME": "", "SESSION_DURATION_SEC": "0",
 		"BLOCKING_SESSION": "", "FINAL_BLOCKING_SESSION": "", "BLOCKING_SESSION_STATUS": "", "SECONDS_IN_WAIT": "0",
-		"BLOCKING_START_TIME": "", "LOCK_TYPE": "", "LOCK_MODE": "", "BLOCKED_OBJECT": "",
+		"BLOCKING_START_TIME": "", "LOCK_TYPE": "", "LOCK_MODE": "", "BLOCKED_OBJECT_OWNER": "", "BLOCKED_OBJECT_NAME": "",
 	}},
 }
 
@@ -524,15 +524,15 @@ func TestSamplesQuery(t *testing.T) {
 
 			if test.checkBlockingAttr {
 				lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-				blockerSID, hasBlockerSID := lr.Attributes().Get("oracledb.blocker.session.id")
-				assert.True(t, hasBlockerSID, "blocker.session.id attribute must be present for a blocked session")
+				blockerSID, hasBlockerSID := lr.Attributes().Get("oracledb.blocking.blocker.sid")
+				assert.True(t, hasBlockerSID, "blocking.blocker.sid attribute must be present for a blocked session")
 				assert.Equal(t, "100", blockerSID.Str())
 
-				_, hasBlockerState := lr.Attributes().Get("oracledb.blocker.session_relationship.state")
-				assert.True(t, hasBlockerState, "blocker.session_relationship.state attribute must be present for a blocked session")
+				_, hasBlockerState := lr.Attributes().Get("oracledb.blocking.blocker.status")
+				assert.True(t, hasBlockerState, "blocking.blocker.status attribute must be present for a blocked session")
 
-				waitDuration, hasWaitDuration := lr.Attributes().Get("oracledb.wait.duration")
-				assert.True(t, hasWaitDuration, "wait.duration attribute must be present for a blocked session")
+				waitDuration, hasWaitDuration := lr.Attributes().Get("oracledb.blocking.wait_duration")
+				assert.True(t, hasWaitDuration, "blocking.wait_duration attribute must be present for a blocked session")
 				assert.Equal(t, int64(15), waitDuration.Int())
 			}
 

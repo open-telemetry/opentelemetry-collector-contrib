@@ -843,7 +843,8 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	const blockingStartTime = "BLOCKING_START_TIME"
 	const lockType = "LOCK_TYPE"
 	const lockMode = "LOCK_MODE"
-	const blockedObject = "BLOCKED_OBJECT"
+	const blockedObjectOwner = "BLOCKED_OBJECT_OWNER"
+	const blockedObjectName = "BLOCKED_OBJECT_NAME"
 
 	var scrapeErrors []error
 
@@ -915,7 +916,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], waitTime, objID, row[objectName], row[objectType],
 			row[osUser], queryDuration, row[sqlExecStart], row[logonTime], sessionDurationSec,
 			row[blockingSession], row[finalBlockingSession], row[blockingSessionStatus], row[blockingStartTime], secondsInWaitVal,
-			row[lockMode], row[lockType], row[blockedObject])
+			row[lockMode], row[lockType], row[blockedObjectOwner], row[blockedObjectName])
 	}
 
 	s.lb.Emit(metadata.WithLogsResource(rb.Emit())).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())

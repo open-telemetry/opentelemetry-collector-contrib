@@ -16,8 +16,9 @@ issues: [48143]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  New attributes: oracledb.blocker.session.id, oracledb.blocker.root_session.id, oracledb.blocker.session_relationship.state,
-  oracledb.blocking.start_time, oracledb.wait.duration, oracledb.lock.type, oracledb.lock.mode, oracledb.blocked_object.
+  New attributes under oracledb.blocking.*: oracledb.blocking.blocker.sid, oracledb.blocking.blocker.root_sid,
+  oracledb.blocking.blocker.status, oracledb.blocking.start_time, oracledb.blocking.wait_duration,
+  oracledb.blocking.lock.type, oracledb.blocking.lock.mode, oracledb.blocking.object.owner, oracledb.blocking.object.name.
   oracledb.blocking.start_time provides an estimated UTC timestamp (RFC3339) of when blocking began.
   Filters to S.TYPE = 'USER' to exclude SYS/background sessions.
   Idle blockers (INACTIVE sessions holding locks) are captured.

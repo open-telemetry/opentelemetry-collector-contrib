@@ -106,33 +106,36 @@ resourceLogs:
               - key: oracledb.session.duration
                 value:
                   doubleValue: 0
-              - key: oracledb.blocker.session.id
+              - key: oracledb.blocking.blocker.sid
                 value:
                   stringValue: ""
-              - key: oracledb.blocker.root_session.id
+              - key: oracledb.blocking.blocker.root_sid
                 value:
                   stringValue: ""
-              - key: oracledb.blocker.session_relationship.state
+              - key: oracledb.blocking.blocker.status
                 value:
                   stringValue: ""
               - key: oracledb.blocking.start_time
                 value:
                   stringValue: ""
-              - key: oracledb.wait.duration
+              - key: oracledb.blocking.wait_duration
                 value:
                   intValue: "0"
-              - key: oracledb.lock.mode
+              - key: oracledb.blocking.lock.mode
                 value:
                   stringValue: ""
-              - key: oracledb.lock.type
+              - key: oracledb.blocking.lock.type
                 value:
                   stringValue: ""
-              - key: oracledb.blocked_object
+              - key: oracledb.blocking.object.owner
+                value:
+                  stringValue: ""
+              - key: oracledb.blocking.object.name
                 value:
                   stringValue: ""
             body: {}
             eventName: db.server.query_sample
-            timeUnixNano: "1779099978892255000"
+            timeUnixNano: "1779109548168383000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
           version: latest
