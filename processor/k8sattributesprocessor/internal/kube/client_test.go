@@ -86,7 +86,7 @@ func podWithIP(name, uid, podIP string, startTime time.Time) *api_v1.Pod {
 	}
 }
 
-func assertDeleteQueueContains(t *testing.T, queue []deleteRequest, id PodIdentifier, podUID string) {
+func assertDeleteQueueContains(t *testing.T, queue []*deleteRequest, id PodIdentifier, podUID string) {
 	t.Helper()
 	for i := range queue {
 		if queue[i].id == id && queue[i].podUID == podUID {
@@ -498,6 +498,45 @@ func TestPodUpdateCleansStaleContainerIDAssociation(t *testing.T) {
 	assert.NotContains(t, c.Pods, oldID)
 	assert.Contains(t, c.Pods, newID)
 	assert.Contains(t, c.podIdentifiers["pod-uid"], newID)
+}
+
+func TestPodUpdateCancelStaleIdentifierDeletion(t *testing.T) {
+	c, _ := newTestClient(t)
+	c.Rules = ExtractionRules{ContainerID: true}
+	c.Associations = []Association{{
+		Sources: []AssociationSource{{
+			From: ResourceSource,
+			Name: "container.id",
+		}},
+	}}
+
+	oldID := newPodIdentifier(ResourceSource, "container.id", "old-container-id")
+	newID := newPodIdentifier(ResourceSource, "container.id", "new-container-id")
+	pod := podWithContainerID("pod-a", "pod-uid", "old-container-id", 0)
+	updatedPod := podWithContainerID("pod-a", "pod-uid", "new-container-id", 1)
+	restoredPod := podWithContainerID("pod-a", "pod-uid", "old-container-id", 2)
+
+	c.handlePodAdd(pod)
+	c.handlePodUpdate(pod, updatedPod)
+
+	require.Len(t, c.deleteQueue, 1)
+	assert.Equal(t, oldID, c.deleteQueue[0].id)
+	require.Len(t, c.pendingStaleDeletes, 1)
+
+	c.handlePodUpdate(updatedPod, restoredPod)
+
+	require.Len(t, c.deleteQueue, 2)
+	assert.True(t, c.deleteQueue[0].cancelled)
+	assert.Equal(t, oldID, c.deleteQueue[0].id)
+	assert.False(t, c.deleteQueue[1].cancelled)
+	assert.Equal(t, newID, c.deleteQueue[1].id)
+	require.Len(t, c.pendingStaleDeletes, 1)
+
+	c.deleteLoopProcessing(0)
+
+	assert.Contains(t, c.Pods, oldID)
+	assert.NotContains(t, c.Pods, newID)
+	assert.Empty(t, c.pendingStaleDeletes)
 }
 
 func TestPodDeleteContainerIDAssociation(t *testing.T) {
