@@ -58,6 +58,7 @@ type K8sObjectsConfig struct {
 type Config struct {
 	k8sconfig.APIConfig `mapstructure:",squash"`
 
+	Interval            time.Duration       `mapstructure:"interval"`
 	Objects             []*K8sObjectsConfig `mapstructure:"objects"`
 	Storage             *component.ID       `mapstructure:"storage"`
 	ErrorMode           ErrorMode           `mapstructure:"error_mode"`
@@ -89,7 +90,11 @@ func (c *Config) Validate() error {
 		}
 
 		if object.Mode == k8sinventory.PullMode && object.Interval == 0 {
-			object.Interval = defaultPullInterval
+			if c.Interval != 0 {
+				object.Interval = c.Interval
+			} else {
+				object.Interval = defaultPullInterval
+			}
 		}
 
 		if object.Mode == k8sinventory.PullMode && len(object.ExcludeWatchType) != 0 {
