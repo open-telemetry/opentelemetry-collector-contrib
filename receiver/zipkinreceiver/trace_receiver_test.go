@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"net"
@@ -17,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -275,6 +277,31 @@ func TestReceiverInvalidContentType(t *testing.T) {
 
 	require.Equal(t, 400, req.Code)
 	require.Equal(t, "invalid character 'i' looking for beginning of object key string\n", req.Body.String())
+}
+
+func TestReceiverRejectsOversizedThriftList(t *testing.T) {
+	body := []byte{byte(thrift.STRUCT)}
+	body = binary.BigEndian.AppendUint32(body, 1<<20+1)
+
+	r := httptest.NewRequest(http.MethodPost, "/api/v1/spans", bytes.NewBuffer(body))
+	r.Header.Add("content-type", "application/x-thrift")
+
+	cfg := &Config{
+		ServerConfig: confighttp.ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "",
+			},
+		},
+	}
+	zr, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+
+	req := httptest.NewRecorder()
+	zr.ServeHTTP(req, r)
+
+	require.Equal(t, http.StatusBadRequest, req.Code)
+	assert.Contains(t, req.Body.String(), "thrift list declares 1048577 elements")
 }
 
 func TestReceiverConsumerError(t *testing.T) {
