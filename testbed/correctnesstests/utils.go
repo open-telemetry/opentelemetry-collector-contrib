@@ -207,4 +207,3 @@ func LoadPictOutputPipelineDefs(fileName string) ([]PipelineDef, error) {
 
 	return defs, err
 }
-
