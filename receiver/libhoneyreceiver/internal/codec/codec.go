@@ -18,6 +18,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/eventtime"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/msgpackvalidator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/response"
 )
 
@@ -83,6 +84,9 @@ func DecodeEvents(contentType string, body []byte, headers http.Header) ([]libho
 
 // decodeMsgpack decodes msgpack-encoded libhoney events
 func decodeMsgpack(body []byte, headers http.Header) ([]libhoneyevent.LibhoneyEvent, error) {
+	if err := msgpackvalidator.Validate(body); err != nil {
+		return nil, fmt.Errorf("invalid msgpack: %w", err)
+	}
 	if isSingleMsgpackObject(body) {
 		return decodeSingleMsgpackEvent(body, headers)
 	}

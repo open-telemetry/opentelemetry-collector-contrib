@@ -1105,3 +1105,17 @@ func TestLibhoneyEvent_UnmarshalMsgpack(t *testing.T) {
 		})
 	}
 }
+
+func TestLibhoneyEvent_UnmarshalMsgpackRejectsForgedLengthHeader(t *testing.T) {
+	payload := []byte{
+		0x81,
+		0xa4, 'd', 'a', 't', 'a',
+		0xdf, 0xff, 0xff, 0xff, 0xff,
+	}
+
+	var event LibhoneyEvent
+	err := event.UnmarshalMsgpack(payload)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid msgpack")
+	assert.Contains(t, err.Error(), "map length")
+}

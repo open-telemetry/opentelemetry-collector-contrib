@@ -173,6 +173,49 @@ func TestDecodeEvents_Msgpack(t *testing.T) {
 	}
 }
 
+func TestDecodeEvents_MsgpackRejectsForgedLengthHeaders(t *testing.T) {
+	tests := []struct {
+		name    string
+		payload []byte
+		want    string
+	}{
+		{
+			name:    "array length",
+			payload: []byte{0xdd, 0xff, 0xff, 0xff, 0xff},
+			want:    "array length",
+		},
+		{
+			name:    "map length",
+			payload: []byte{0xdf, 0xff, 0xff, 0xff, 0xff},
+			want:    "map length",
+		},
+		{
+			name:    "string length",
+			payload: []byte{0xdb, 0xff, 0xff, 0xff, 0xff},
+			want:    "string length",
+		},
+		{
+			name:    "binary length",
+			payload: []byte{0xc6, 0xff, 0xff, 0xff, 0xff},
+			want:    "bin length",
+		},
+		{
+			name:    "extension length",
+			payload: []byte{0xc9, 0xff, 0xff, 0xff, 0xff, 0},
+			want:    "extension length",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := DecodeEvents("application/msgpack", tt.payload, http.Header{})
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "invalid msgpack")
+			assert.Contains(t, err.Error(), tt.want)
+		})
+	}
+}
+
 func TestDecodeEvents_UnsupportedContentType(t *testing.T) {
 	_, err := DecodeEvents("application/xml", []byte("<xml/>"), http.Header{})
 	require.Error(t, err)

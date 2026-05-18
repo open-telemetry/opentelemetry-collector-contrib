@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/eventtime"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/msgpackvalidator"
 )
 
 // FieldMapConfig is used to map the fields from the LibhoneyEvent to PData formats
@@ -91,6 +92,10 @@ func (l *LibhoneyEvent) UnmarshalJSON(j []byte) error {
 
 // UnmarshalMsgpack overrides the unmarshall to make sure the MsgPackTimestamp is set
 func (l *LibhoneyEvent) UnmarshalMsgpack(data []byte) error {
+	if err := msgpackvalidator.Validate(data); err != nil {
+		return fmt.Errorf("invalid msgpack: %w", err)
+	}
+
 	type _libhoneyEvent LibhoneyEvent
 	tstr := eventtime.GetEventTimeDefaultString()
 	tzero := time.Time{}
