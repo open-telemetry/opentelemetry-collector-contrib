@@ -846,9 +846,7 @@ func (se *SumologicExtension) updateMetadataAsync() {
 		cancel()
 	}()
 
-	b := backoff.NewExponentialBackOff()
-	b.MaxElapsedTime = 0 // retry indefinitely until success or shutdown
-	b.Reset()
+	se.backOff.Reset()
 
 	for {
 		select {
@@ -872,9 +870,9 @@ func (se *SumologicExtension) updateMetadataAsync() {
 			return
 		}
 
-		nbo := b.NextBackOff()
-		if nbo == backoff.Stop {
-			se.logger.Error("Async metadata update stopped unexpectedly: backoff exhausted")
+		nbo := se.backOff.NextBackOff()
+		if nbo == se.backOff.Stop {
+			se.logger.Warn("Async metadata update stopped: backoff elapsed time exceeded")
 			return
 		}
 
