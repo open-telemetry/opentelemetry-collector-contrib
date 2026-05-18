@@ -904,43 +904,9 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	}
 
 	emittedLogs := s.lb.Emit(metadata.WithLogsResource(rb.Emit()))
-	sanitizeQuerySampleOptionalAttributes(emittedLogs)
 	emittedLogs.ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 
 	return errors.Join(scrapeErrors...)
-}
-
-// sanitizeQuerySampleOptionalAttributes removes blocking-related attributes from
-// db.server.query_sample log records when there is no active blocking relationship.
-// This keeps the signal clean: absent attributes mean "not blocked", rather than
-// emitting zero/empty values that could mislead consumers.
-func sanitizeQuerySampleOptionalAttributes(logs plog.Logs) {
-	resourceLogs := logs.ResourceLogs()
-	for i := 0; i < resourceLogs.Len(); i++ {
-		scopeLogs := resourceLogs.At(i).ScopeLogs()
-		for j := 0; j < scopeLogs.Len(); j++ {
-			logRecords := scopeLogs.At(j).LogRecords()
-			for k := 0; k < logRecords.Len(); k++ {
-				logRecord := logRecords.At(k)
-				if logRecord.EventName() != "db.server.query_sample" {
-					continue
-				}
-				attrs := logRecord.Attributes()
-
-				// Remove blocking_session when empty or "0" — means session is not blocked
-				blockerSessionAttr, hasBlockerSession := attrs.Get("oracledb.blocker.session.id")
-				if !hasBlockerSession || blockerSessionAttr.Str() == "" || blockerSessionAttr.Str() == "0" {
-					attrs.Remove("oracledb.blocker.session.id")
-					attrs.Remove("oracledb.blocker.root_session.id")
-					attrs.Remove("oracledb.blocker.session_relationship.state")
-					attrs.Remove("oracledb.blocking.start_time")
-					attrs.Remove("oracledb.lock.type")
-					attrs.Remove("oracledb.lock.mode")
-					attrs.Remove("oracledb.blocked_object")
-				}
-			}
-		}
-	}
 }
 
 func asFloatInSeconds(value int64) float64 {

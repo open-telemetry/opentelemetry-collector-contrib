@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -472,7 +471,7 @@ func TestSamplesQuery(t *testing.T) {
 			checkBlockingAttr: true,
 		},
 		{
-			name: "idle blocker session strips blocking attributes",
+			name: "idle blocker session emits empty blocking attributes",
 			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
 				return &fakeDbClient{Responses: [][]metricRow{
 					samplesQueryResponses["idleBlockerQuery"],
@@ -541,73 +540,6 @@ func TestSamplesQuery(t *testing.T) {
 				errs := plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreTimestamp())
 				assert.NoError(t, errs)
 			}
-		})
-	}
-}
-
-// TestSanitizeQuerySampleOptionalAttributes verifies that blocking attributes are
-// removed from log records that have no active blocking session (empty or "0" SID).
-func TestSanitizeQuerySampleOptionalAttributes(t *testing.T) {
-	tests := []struct {
-		name                      string
-		blockingSID               string
-		expectBlockingAttrPresent bool
-	}{
-		{
-			name:                      "no blocking — empty SID removes blocking attrs",
-			blockingSID:               "",
-			expectBlockingAttrPresent: false,
-		},
-		{
-			name:                      "no blocking — SID 0 removes blocking attrs",
-			blockingSID:               "0",
-			expectBlockingAttrPresent: false,
-		},
-		{
-			name:                      "active blocking — SID present retains blocking attrs",
-			blockingSID:               "42",
-			expectBlockingAttrPresent: true,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			logs := plog.NewLogs()
-			rl := logs.ResourceLogs().AppendEmpty()
-			sl := rl.ScopeLogs().AppendEmpty()
-			lr := sl.LogRecords().AppendEmpty()
-			lr.SetEventName("db.server.query_sample")
-			attrs := lr.Attributes()
-			attrs.PutStr("oracledb.blocker.session.id", tc.blockingSID)
-			attrs.PutStr("oracledb.blocker.root_session.id", "42")
-			attrs.PutStr("oracledb.blocker.session_relationship.state", "VALID")
-			attrs.PutStr("oracledb.blocking.start_time", "2026-05-06T10:00:00Z")
-			attrs.PutInt("oracledb.wait.duration", 10)
-			attrs.PutStr("oracledb.lock.type", "TX")
-			attrs.PutStr("oracledb.lock.mode", "EXCLUSIVE")
-			attrs.PutStr("oracledb.blocked_object", "APP_USER.ORDERS")
-			sanitizeQuerySampleOptionalAttributes(logs)
-
-			_, hasBlockerSID := lr.Attributes().Get("oracledb.blocker.session.id")
-			assert.Equal(t, tc.expectBlockingAttrPresent, hasBlockerSID, "oracledb.blocker.session.id presence mismatch")
-
-			_, hasBlockerState := lr.Attributes().Get("oracledb.blocker.session_relationship.state")
-			assert.Equal(t, tc.expectBlockingAttrPresent, hasBlockerState, "oracledb.blocker.session_relationship.state presence mismatch")
-
-			_, hasBlockingStartTime := lr.Attributes().Get("oracledb.blocking.start_time")
-			assert.Equal(t, tc.expectBlockingAttrPresent, hasBlockingStartTime, "oracledb.blocking.start_time presence mismatch")
-
-			_, hasLockType := lr.Attributes().Get("oracledb.lock.type")
-			assert.Equal(t, tc.expectBlockingAttrPresent, hasLockType, "oracledb.lock.type presence mismatch")
-
-			_, hasLockMode := lr.Attributes().Get("oracledb.lock.mode")
-			assert.Equal(t, tc.expectBlockingAttrPresent, hasLockMode, "oracledb.lock.mode presence mismatch")
-
-			_, hasBlockedObject := lr.Attributes().Get("oracledb.blocked_object")
-			assert.Equal(t, tc.expectBlockingAttrPresent, hasBlockedObject, "oracledb.blocked_object presence mismatch")
-
-			_, hasWaitDuration := lr.Attributes().Get("oracledb.wait.duration")
-			assert.True(t, hasWaitDuration, "oracledb.wait.duration should always be present")
 		})
 	}
 }

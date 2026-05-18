@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/oracledb
 
 # A brief description of the change. Surround your text with quotes (") if it needs to start with a backtick (`).
-note: Adds blocking session and lock resource attributes to `db.server.query_sample` events for Oracle blocking session detection.
+note: Adds blocking session and lock attributes to `db.server.query_sample` events for Oracle blocking session detection. Blocking attributes are always emitted (empty string / 0 when not blocked).
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48143]
@@ -21,7 +21,7 @@ subtext: |
   oracledb.blocking.start_time provides an estimated UTC timestamp (RFC3339) of when blocking began.
   Filters to S.TYPE = 'USER' to exclude SYS/background sessions.
   Idle blockers (INACTIVE sessions holding locks) are captured.
-  Blocking attributes are omitted for non-blocked sessions to keep the signal clean.
+  All blocking attributes are always present on every db.server.query_sample event; empty string / 0 values indicate no active blocking.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
