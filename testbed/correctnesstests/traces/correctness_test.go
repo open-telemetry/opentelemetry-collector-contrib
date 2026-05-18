@@ -39,6 +39,7 @@ func TestTracingGoldenData(t *testing.T) {
 		test.DataSender = correctnesstests.ConstructTraceSender(t, test.Receiver)
 		test.DataReceiver = correctnesstests.ConstructReceiver(t, test.Exporter)
 		t.Run(test.TestName, func(t *testing.T) {
+			t.Parallel()
 			testWithTracingGoldenDataset(t, test.DataSender, test.DataReceiver, test.ResourceSpec, processors)
 		})
 	}
@@ -89,7 +90,9 @@ func testWithTracingGoldenDataset(
 		ItemsPerBatch:      1,
 	})
 
-	tc.Sleep(2 * time.Second)
+	// The golden dataset has 33 trace combinations and the generator stops
+	// after sending each one; 500ms at ~1ms tick is well past that.
+	tc.Sleep(500 * time.Millisecond)
 
 	tc.StopLoad()
 
@@ -103,60 +106,66 @@ func testWithTracingGoldenDataset(
 
 func TestSporadicGoldenDataset(t *testing.T) {
 	testCases := []struct {
+		name         string
 		decisionFunc func() error
 	}{
 		{
+			name:         "non_permanent_error",
 			decisionFunc: testbed.RandomNonPermanentError,
 		},
 		{
+			name:         "permanent_error",
 			decisionFunc: testbed.RandomPermanentError,
 		},
 	}
 	for _, tt := range testCases {
-		factories, err := testbed.Components()
-		require.NoError(t, err, "default components resulted in: %v", err)
-		runner := testbed.NewInProcessCollector(factories)
-		options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
-		dataProvider := testbed.NewGoldenDataProvider(
-			"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
-			"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
-			"")
-		sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
-		receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
-		receiver.WithRetry(`
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			factories, err := testbed.Components()
+			require.NoError(t, err, "default components resulted in: %v", err)
+			runner := testbed.NewInProcessCollector(factories)
+			options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+			dataProvider := testbed.NewGoldenDataProvider(
+				"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
+				"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
+				"")
+			sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+			receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
+			receiver.WithRetry(`
     retry_on_failure:
       enabled: false
 `)
-		receiver.WithQueue(`
+			receiver.WithQueue(`
     sending_queue:
       enabled: false
 `)
-		_, err = runner.PrepareConfig(t, correctnesstests.CreateConfigYaml(t, sender, receiver, nil, nil))
-		require.NoError(t, err, "collector configuration resulted in: %v", err)
-		validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
-		tc := testbed.NewTestCase(
-			t,
-			dataProvider,
-			sender,
-			receiver,
-			runner,
-			validator,
-			correctnessResults,
-			testbed.WithSkipResults(),
-			testbed.WithDecisionFunc(tt.decisionFunc),
-		)
-		defer tc.Stop()
-		tc.StartBackend()
-		tc.StartAgent()
-		tc.StartLoad(options)
-		tc.Sleep(3 * time.Second)
+			_, err = runner.PrepareConfig(t, correctnesstests.CreateConfigYaml(t, sender, receiver, nil, nil))
+			require.NoError(t, err, "collector configuration resulted in: %v", err)
+			validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
+			tc := testbed.NewTestCase(
+				t,
+				dataProvider,
+				sender,
+				receiver,
+				runner,
+				validator,
+				correctnessResults,
+				testbed.WithSkipResults(),
+				testbed.WithDecisionFunc(tt.decisionFunc),
+			)
+			defer tc.Stop()
+			tc.StartBackend()
+			tc.StartAgent()
+			tc.StartLoad(options)
+			tc.Sleep(500 * time.Millisecond)
 
-		tc.StopLoad()
+			tc.StopLoad()
 
-		tc.WaitForN(func() bool {
-			return tc.LoadGenerator.DataItemsSent()-tc.LoadGenerator.PermanentErrors() == tc.MockBackend.DataItemsReceived()
-		}, 5*time.Second, "all data items received")
-		tc.StopAgent()
-		tc.ValidateData()
+			tc.WaitForN(func() bool {
+				return tc.LoadGenerator.DataItemsSent()-tc.LoadGenerator.PermanentErrors() == tc.MockBackend.DataItemsReceived()
+			}, 5*time.Second, "all data items received")
+			tc.StopAgent()
+			tc.ValidateData()
+		})
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"sync"
 	"time"
 )
 
@@ -188,6 +189,7 @@ func (r *PerformanceResults) saveBenchmarks() {
 // CorrectnessResults implements the TestResultsSummary interface with fields suitable for reporting data translation
 // correctness test results.
 type CorrectnessResults struct {
+	mu                     sync.Mutex
 	resultsDir             string
 	resultsFile            *os.File
 	perTestResults         []*CorrectnessTestResult
@@ -253,6 +255,8 @@ func (r *CorrectnessResults) Add(_ string, result any) {
 		failuresStr = fmt.Sprintf("%s%s,%#v!=%#v,count=%d; ", failuresStr, af.fieldPath, af.expectedValue,
 			af.actualValue, af.sumCount)
 	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	_, _ = fmt.Fprintf(r.resultsFile, "%-40s|%-6s|%7.0fs|%10d|%14d|%13d|%s\n",
 		testResult.testName,
 		testResult.result,
