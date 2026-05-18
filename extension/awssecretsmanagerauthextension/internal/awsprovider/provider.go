@@ -9,11 +9,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
+
+const fetchTimeout = 30 * time.Second
 
 type secretsManagerClient interface {
 	GetSecretValue(ctx context.Context, params *secretsmanager.GetSecretValueInput,
@@ -79,12 +82,12 @@ func (p *Provider) Shutdown(_ context.Context) error {
 }
 
 func (p *Provider) refresh(ctx context.Context) error {
-	fetchCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	fetchCtx, cancel := context.WithTimeout(ctx, fetchTimeout)
 	defer cancel()
 
 	out, err := p.Client.GetSecretValue(fetchCtx, &secretsmanager.GetSecretValueInput{
 		SecretId:     &p.config.SecretARN,
-		VersionStage: strPtr("AWSCURRENT"),
+		VersionStage: aws.String("AWSCURRENT"),
 	})
 	if err != nil {
 		return fmt.Errorf("get secret value: %w", err)
@@ -109,5 +112,3 @@ func (p *Provider) refreshLoop(ctx context.Context) {
 		}
 	}
 }
-
-func strPtr(s string) *string { return &s }
