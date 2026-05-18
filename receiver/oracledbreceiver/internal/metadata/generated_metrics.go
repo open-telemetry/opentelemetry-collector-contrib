@@ -77,8 +77,8 @@ var MetricsInfo = metricsInfo{
 	OracledbLogons: metricInfo{
 		Name: "oracledb.logons",
 	},
-	OracledbOsCPULimit: metricInfo{
-		Name: "oracledb.os.cpu.limit",
+	OracledbOsCPUCount: metricInfo{
+		Name: "oracledb.os.cpu.count",
 	},
 	OracledbOsLoad: metricInfo{
 		Name: "oracledb.os.load",
@@ -191,7 +191,7 @@ type metricsInfo struct {
 	OracledbHardParses                            metricInfo
 	OracledbLogicalReads                          metricInfo
 	OracledbLogons                                metricInfo
-	OracledbOsCPULimit                            metricInfo
+	OracledbOsCPUCount                            metricInfo
 	OracledbOsLoad                                metricInfo
 	OracledbOsMemoryLimit                         metricInfo
 	OracledbParallelOperationsDowngraded1To25Pct  metricInfo
@@ -1150,21 +1150,21 @@ func newMetricOracledbLogons(cfg OracledbLogonsMetricConfig) metricOracledbLogon
 	return m
 }
 
-type metricOracledbOsCPULimit struct {
+type metricOracledbOsCPUCount struct {
 	data     pmetric.Metric                 // data buffer for generated metric.
-	config   OracledbOsCPULimitMetricConfig // metric config provided by user.
+	config   OracledbOsCPUCountMetricConfig // metric config provided by user.
 	capacity int                            // max observed number of data points added to the metric.
 }
 
-// init fills oracledb.os.cpu.limit metric with initial data.
-func (m *metricOracledbOsCPULimit) init() {
-	m.data.SetName("oracledb.os.cpu.limit")
-	m.data.SetDescription("Number of CPUs available to the Oracle instance as reported by the operating system.")
+// init fills oracledb.os.cpu.count metric with initial data.
+func (m *metricOracledbOsCPUCount) init() {
+	m.data.SetName("oracledb.os.cpu.count")
+	m.data.SetDescription("Number of CPUs available to the Oracle instance as reported by the operating system. Semantically equivalent to system.cpu.physical.count from OTel system semconv.")
 	m.data.SetUnit("{cpu}")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricOracledbOsCPULimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOracledbOsCPUCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1175,14 +1175,14 @@ func (m *metricOracledbOsCPULimit) recordDataPoint(start pcommon.Timestamp, ts p
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbOsCPULimit) updateCapacity() {
+func (m *metricOracledbOsCPUCount) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbOsCPULimit) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbOsCPUCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1190,8 +1190,8 @@ func (m *metricOracledbOsCPULimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbOsCPULimit(cfg OracledbOsCPULimitMetricConfig) metricOracledbOsCPULimit {
-	m := metricOracledbOsCPULimit{config: cfg}
+func newMetricOracledbOsCPUCount(cfg OracledbOsCPUCountMetricConfig) metricOracledbOsCPUCount {
+	m := metricOracledbOsCPUCount{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -2882,7 +2882,7 @@ type MetricsBuilder struct {
 	metricOracledbHardParses                            metricOracledbHardParses
 	metricOracledbLogicalReads                          metricOracledbLogicalReads
 	metricOracledbLogons                                metricOracledbLogons
-	metricOracledbOsCPULimit                            metricOracledbOsCPULimit
+	metricOracledbOsCPUCount                            metricOracledbOsCPUCount
 	metricOracledbOsLoad                                metricOracledbOsLoad
 	metricOracledbOsMemoryLimit                         metricOracledbOsMemoryLimit
 	metricOracledbParallelOperationsDowngraded1To25Pct  metricOracledbParallelOperationsDowngraded1To25Pct
@@ -2956,7 +2956,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbHardParses:                            newMetricOracledbHardParses(mbc.Metrics.OracledbHardParses),
 		metricOracledbLogicalReads:                          newMetricOracledbLogicalReads(mbc.Metrics.OracledbLogicalReads),
 		metricOracledbLogons:                                newMetricOracledbLogons(mbc.Metrics.OracledbLogons),
-		metricOracledbOsCPULimit:                            newMetricOracledbOsCPULimit(mbc.Metrics.OracledbOsCPULimit),
+		metricOracledbOsCPUCount:                            newMetricOracledbOsCPUCount(mbc.Metrics.OracledbOsCPUCount),
 		metricOracledbOsLoad:                                newMetricOracledbOsLoad(mbc.Metrics.OracledbOsLoad),
 		metricOracledbOsMemoryLimit:                         newMetricOracledbOsMemoryLimit(mbc.Metrics.OracledbOsMemoryLimit),
 		metricOracledbParallelOperationsDowngraded1To25Pct:  newMetricOracledbParallelOperationsDowngraded1To25Pct(mbc.Metrics.OracledbParallelOperationsDowngraded1To25Pct),
@@ -3095,7 +3095,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbHardParses.emit(ils.Metrics())
 	mb.metricOracledbLogicalReads.emit(ils.Metrics())
 	mb.metricOracledbLogons.emit(ils.Metrics())
-	mb.metricOracledbOsCPULimit.emit(ils.Metrics())
+	mb.metricOracledbOsCPUCount.emit(ils.Metrics())
 	mb.metricOracledbOsLoad.emit(ils.Metrics())
 	mb.metricOracledbOsMemoryLimit.emit(ils.Metrics())
 	mb.metricOracledbParallelOperationsDowngraded1To25Pct.emit(ils.Metrics())
@@ -3327,9 +3327,9 @@ func (mb *MetricsBuilder) RecordOracledbLogonsDataPoint(ts pcommon.Timestamp, in
 	return nil
 }
 
-// RecordOracledbOsCPULimitDataPoint adds a data point to oracledb.os.cpu.limit metric.
-func (mb *MetricsBuilder) RecordOracledbOsCPULimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricOracledbOsCPULimit.recordDataPoint(mb.startTime, ts, val)
+// RecordOracledbOsCPUCountDataPoint adds a data point to oracledb.os.cpu.count metric.
+func (mb *MetricsBuilder) RecordOracledbOsCPUCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricOracledbOsCPUCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordOracledbOsLoadDataPoint adds a data point to oracledb.os.load metric.

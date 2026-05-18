@@ -37,7 +37,7 @@ all_set:
       enabled: true
     oracledb.logons:
       enabled: true
-    oracledb.os.cpu.limit:
+    oracledb.os.cpu.count:
       enabled: true
     oracledb.os.load:
       enabled: true
@@ -152,7 +152,7 @@ reaggregate_set:
       enabled: true
     oracledb.logons:
       enabled: true
-    oracledb.os.cpu.limit:
+    oracledb.os.cpu.count:
       enabled: true
     oracledb.os.load:
       enabled: true
@@ -267,7 +267,7 @@ none_set:
       enabled: false
     oracledb.logons:
       enabled: false
-    oracledb.os.cpu.limit:
+    oracledb.os.cpu.count:
       enabled: false
     oracledb.os.load:
       enabled: false

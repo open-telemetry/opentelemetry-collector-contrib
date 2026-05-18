@@ -146,7 +146,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbLogonsDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordOracledbOsCPULimitDataPoint(ts, 1)
+			mb.RecordOracledbOsCPUCountDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordOracledbOsLoadDataPoint(ts, 1)
@@ -535,12 +535,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.os.cpu.limit":
-					assert.False(t, validatedMetrics["oracledb.os.cpu.limit"], "Found a duplicate in the metrics slice: oracledb.os.cpu.limit")
-					validatedMetrics["oracledb.os.cpu.limit"] = true
+				case "oracledb.os.cpu.count":
+					assert.False(t, validatedMetrics["oracledb.os.cpu.count"], "Found a duplicate in the metrics slice: oracledb.os.cpu.count")
+					validatedMetrics["oracledb.os.cpu.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of CPUs available to the Oracle instance as reported by the operating system.", mi.Description())
+					assert.Equal(t, "Number of CPUs available to the Oracle instance as reported by the operating system. Semantically equivalent to system.cpu.physical.count from OTel system semconv.", mi.Description())
 					assert.Equal(t, "{cpu}", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

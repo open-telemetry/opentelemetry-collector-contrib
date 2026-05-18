@@ -574,7 +574,7 @@ func (s *oracleScraper) collectDataDictHitRatio(ctx context.Context, scrapeError
 }
 
 func (s *oracleScraper) collectOSStat(ctx context.Context, scrapeErrors *[]error) {
-	if !s.metricsBuilderConfig.Metrics.OracledbOsCPULimit.Enabled &&
+	if !s.metricsBuilderConfig.Metrics.OracledbOsCPUCount.Enabled &&
 		!s.metricsBuilderConfig.Metrics.OracledbOsLoad.Enabled &&
 		!s.metricsBuilderConfig.Metrics.OracledbOsMemoryLimit.Enabled {
 		return
@@ -590,13 +590,13 @@ func (s *oracleScraper) collectOSStat(ctx context.Context, scrapeErrors *[]error
 		statValue := row[colOSStatValue]
 		switch statName {
 		case osStatNameNumCPUs:
-			if s.metricsBuilderConfig.Metrics.OracledbOsCPULimit.Enabled {
+			if s.metricsBuilderConfig.Metrics.OracledbOsCPUCount.Enabled {
 				val, err := strconv.ParseInt(statValue, 10, 64)
 				if err != nil {
-					*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbOsCPULimit, value was %s: %w", statValue, err))
+					*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbOsCPUCount, value was %s: %w", statValue, err))
 					continue
 				}
-				s.mb.RecordOracledbOsCPULimitDataPoint(now, val)
+				s.mb.RecordOracledbOsCPUCountDataPoint(now, val)
 			}
 		case osStatNameLoad:
 			if s.metricsBuilderConfig.Metrics.OracledbOsLoad.Enabled {

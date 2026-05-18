@@ -289,9 +289,9 @@ Number of logon operations
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {operation} | Sum | Int | Cumulative | true | Development |
 
-### oracledb.os.cpu.limit
+### oracledb.os.cpu.count
 
-Number of CPUs available to the Oracle instance as reported by the operating system.
+Number of CPUs available to the Oracle instance as reported by the operating system. Semantically equivalent to system.cpu.physical.count from OTel system semconv.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

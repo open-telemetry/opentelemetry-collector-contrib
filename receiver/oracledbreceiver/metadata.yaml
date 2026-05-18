@@ -433,8 +433,8 @@ metrics:
       input_type: string
     unit: "{operation}"
 
-  oracledb.os.cpu.limit:
-    description: Number of CPUs available to the Oracle instance as reported by the operating system.
+  oracledb.os.cpu.count:
+    description: Number of CPUs available to the Oracle instance as reported by the operating system. Semantically equivalent to system.cpu.physical.count from OTel system semconv.
     enabled: false
     stability: development
     gauge:

@@ -369,13 +369,13 @@ func (ms *OracledbLogonsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbOsCPULimitMetricConfig provides config for the oracledb.os.cpu.limit metric.
-type OracledbOsCPULimitMetricConfig struct {
+// OracledbOsCPUCountMetricConfig provides config for the oracledb.os.cpu.count metric.
+type OracledbOsCPUCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbOsCPULimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbOsCPUCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1094,7 +1094,7 @@ type MetricsConfig struct {
 	OracledbHardParses                            OracledbHardParsesMetricConfig                            `mapstructure:"oracledb.hard_parses"`
 	OracledbLogicalReads                          OracledbLogicalReadsMetricConfig                          `mapstructure:"oracledb.logical_reads"`
 	OracledbLogons                                OracledbLogonsMetricConfig                                `mapstructure:"oracledb.logons"`
-	OracledbOsCPULimit                            OracledbOsCPULimitMetricConfig                            `mapstructure:"oracledb.os.cpu.limit"`
+	OracledbOsCPUCount                            OracledbOsCPUCountMetricConfig                            `mapstructure:"oracledb.os.cpu.count"`
 	OracledbOsLoad                                OracledbOsLoadMetricConfig                                `mapstructure:"oracledb.os.load"`
 	OracledbOsMemoryLimit                         OracledbOsMemoryLimitMetricConfig                         `mapstructure:"oracledb.os.memory.limit"`
 	OracledbParallelOperationsDowngraded1To25Pct  OracledbParallelOperationsDowngraded1To25PctMetricConfig  `mapstructure:"oracledb.parallel_operations_downgraded_1_to_25_pct"`
@@ -1183,7 +1183,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbLogons: OracledbLogonsMetricConfig{
 			Enabled: false,
 		},
-		OracledbOsCPULimit: OracledbOsCPULimitMetricConfig{
+		OracledbOsCPUCount: OracledbOsCPUCountMetricConfig{
 			Enabled: false,
 		},
 		OracledbOsLoad: OracledbOsLoadMetricConfig{

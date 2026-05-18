@@ -17,7 +17,7 @@ issues: [0]
 # Use pipe (|) for multiline entries.
 subtext: |
   Add 3 new opt-in metrics (disabled by default, stability: development):
-  oracledb.os.cpu.limit - number of CPUs available to the Oracle instance,
+  oracledb.os.cpu.count - number of CPUs available to the Oracle instance (semantically equivalent to system.cpu.physical.count),
   oracledb.os.load - current OS load average,
   oracledb.os.memory.limit - total physical memory in bytes.
   All metrics are sourced from a single V$OSSTAT query requiring no additional database privileges.
