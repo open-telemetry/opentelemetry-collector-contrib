@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -33,6 +34,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
+
+func msgpackMapWithHugeArrayField(field string) []byte {
+	payload := []byte{0x81, 0xa0 | byte(len(field))}
+	payload = append(payload, field...)
+	return append(payload, 0xdd, 0xff, 0xff, 0xff, 0xff)
+}
 
 func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
@@ -930,6 +937,55 @@ func TestStatsV2_EndToEnd(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestStatsRejectsMsgpackWithHugeDeclaredArray(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	sink := new(consumertest.MetricsSink)
+
+	dd, err := newDataDogReceiver(
+		t.Context(),
+		cfg,
+		receivertest.NewNopSettings(metadata.Type),
+	)
+	require.NoError(t, err)
+	dd.(*datadogReceiver).nextMetricsConsumer = sink
+
+	req := httptest.NewRequest(http.MethodPost, "/v0.6/stats", bytes.NewReader(msgpackMapWithHugeArrayField("Stats")))
+	resp := httptest.NewRecorder()
+
+	dd.(*datadogReceiver).handleStats(resp, req)
+
+	require.Equal(t, http.StatusBadRequest, resp.Code)
+	require.Empty(t, sink.AllMetrics())
+}
+
+func TestStatsV2RejectsCompressedMsgpackWithHugeDeclaredArray(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	sink := new(consumertest.MetricsSink)
+
+	dd, err := newDataDogReceiver(
+		t.Context(),
+		cfg,
+		receivertest.NewNopSettings(metadata.Type),
+	)
+	require.NoError(t, err)
+	dd.(*datadogReceiver).nextMetricsConsumer = sink
+
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	_, err = gz.Write(msgpackMapWithHugeArrayField("Stats"))
+	require.NoError(t, err)
+	require.NoError(t, gz.Close())
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v0.2/stats", bytes.NewReader(buf.Bytes()))
+	req.Header.Set("Content-Encoding", "gzip")
+	resp := httptest.NewRecorder()
+
+	dd.(*datadogReceiver).handleStatsV2(resp, req)
+
+	require.Equal(t, http.StatusBadRequest, resp.Code)
+	require.Empty(t, sink.AllMetrics())
 }
 
 func TestDatadogServices_EndToEnd(t *testing.T) {

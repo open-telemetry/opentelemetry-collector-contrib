@@ -19,7 +19,6 @@ import (
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	lru "github.com/hashicorp/golang-lru/v2"
-	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -31,6 +30,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/msgpackvalidator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
@@ -390,8 +390,19 @@ func (ddr *datadogReceiver) handleStatsV2(w http.ResponseWriter, req *http.Reque
 
 	// Decode the StatsPayload (NOT ClientStatsPayload directly)
 	// The agent wraps ClientStatsPayload(s) inside a StatsPayload
+	payload, err := io.ReadAll(reader)
+	if err != nil {
+		ddr.params.Logger.Error("Error reading pb.StatsPayload", zap.Error(err))
+		http.Error(w, "Error reading pb.StatsPayload", http.StatusBadRequest)
+		return
+	}
+	if err = msgpackvalidator.Validate(payload); err != nil {
+		ddr.params.Logger.Error("Error validating pb.StatsPayload", zap.Error(err))
+		http.Error(w, "Error decoding pb.StatsPayload", http.StatusBadRequest)
+		return
+	}
 	statsPayload := &pb.StatsPayload{}
-	err = msgp.Decode(reader, statsPayload)
+	_, err = statsPayload.UnmarshalMsg(payload)
 	if err != nil {
 		ddr.params.Logger.Error("Error decoding pb.StatsPayload", zap.Error(err))
 		http.Error(w, "Error decoding pb.StatsPayload", http.StatusBadRequest)
@@ -681,7 +692,18 @@ func (ddr *datadogReceiver) handleStats(w http.ResponseWriter, req *http.Request
 	req.Header.Set("Accept", "application/msgpack")
 	clientStats := &pb.ClientStatsPayload{}
 
-	err = msgp.Decode(req.Body, clientStats)
+	payload, err := io.ReadAll(req.Body)
+	if err != nil {
+		ddr.params.Logger.Error("Error reading pb.ClientStatsPayload", zap.Error(err))
+		http.Error(w, "Error reading pb.ClientStatsPayload", http.StatusBadRequest)
+		return
+	}
+	if err = msgpackvalidator.Validate(payload); err != nil {
+		ddr.params.Logger.Error("Error validating pb.ClientStatsPayload", zap.Error(err))
+		http.Error(w, "Error decoding pb.ClientStatsPayload", http.StatusBadRequest)
+		return
+	}
+	_, err = clientStats.UnmarshalMsg(payload)
 	if err != nil {
 		ddr.params.Logger.Error("Error decoding pb.ClientStatsPayload", zap.Error(err))
 		http.Error(w, "Error decoding pb.ClientStatsPayload", http.StatusBadRequest)

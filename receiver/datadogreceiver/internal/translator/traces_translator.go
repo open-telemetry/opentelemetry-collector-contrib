@@ -28,6 +28,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/msgpackvalidator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
@@ -470,6 +471,9 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 		if _, err = io.Copy(buf, req.Body); err != nil {
 			return nil, err
 		}
+		if err = msgpackvalidator.Validate(buf.Bytes()); err != nil {
+			return nil, err
+		}
 		var tracerPayload pb.TracerPayload
 		if _, err = tracerPayload.UnmarshalMsg(buf.Bytes()); err != nil {
 			return nil, err
@@ -480,6 +484,9 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 		buf := GetBuffer()
 		defer PutBuffer(buf)
 		if _, err = io.Copy(buf, req.Body); err != nil {
+			return nil, err
+		}
+		if err = msgpackvalidator.Validate(buf.Bytes()); err != nil {
 			return nil, err
 		}
 		var traces pb.Traces
@@ -560,6 +567,9 @@ func decodeRequest(req *http.Request, dest *pb.Traces) (err error) {
 		if err != nil {
 			return err
 		}
+		if err = msgpackvalidator.Validate(buf.Bytes()); err != nil {
+			return err
+		}
 		_, err = dest.UnmarshalMsg(buf.Bytes())
 		return err
 	case "application/json", "text/json", "":
@@ -572,6 +582,9 @@ func decodeRequest(req *http.Request, dest *pb.Traces) (err error) {
 			defer PutBuffer(buf)
 			_, err2 := io.Copy(buf, req.Body)
 			if err2 != nil {
+				return err2
+			}
+			if err2 = msgpackvalidator.Validate(buf.Bytes()); err2 != nil {
 				return err2
 			}
 			_, err2 = dest.UnmarshalMsg(buf.Bytes())

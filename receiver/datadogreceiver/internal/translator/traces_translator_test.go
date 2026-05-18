@@ -73,6 +73,16 @@ var data = [2]any{
 	},
 }
 
+func msgpackMapWithHugeArrayField(field string) []byte {
+	payload := []byte{0x81, 0xa0 | byte(len(field))}
+	payload = append(payload, field...)
+	return append(payload, 0xdd, 0xff, 0xff, 0xff, 0xff)
+}
+
+func msgpackHugeArray() []byte {
+	return []byte{0xdd, 0xff, 0xff, 0xff, 0xff}
+}
+
 func getTraces(t *testing.T) (traces pb.Traces) {
 	payload, err := vmsgp.Marshal(&data)
 	assert.NoError(t, err)
@@ -144,6 +154,46 @@ func TestTracePayloadV07Unmarshalling(t *testing.T) {
 	assert.Equal(t, "my-service", value, "service.name attribute value incorrect")
 	assert.Equal(t, "my-name", span.GetName())
 	assert.Equal(t, "my-resource", span.GetResource())
+}
+
+func TestHandleTracesPayloadRejectsMsgpackWithHugeDeclaredArray(t *testing.T) {
+	tests := []struct {
+		name        string
+		path        string
+		contentType string
+		payload     []byte
+	}{
+		{
+			name:    "v0.7 tracer payload chunks",
+			path:    "/v0.7/traces",
+			payload: msgpackMapWithHugeArrayField("chunks"),
+		},
+		{
+			name:    "v0.5 dictionary traces",
+			path:    "/v0.5/traces",
+			payload: append([]byte{0x92}, msgpackHugeArray()...),
+		},
+		{
+			name:        "v0.4 msgpack traces",
+			path:        "/v0.4/traces",
+			contentType: "application/msgpack",
+			payload:     msgpackHugeArray(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodPost, tt.path, io.NopCloser(bytes.NewReader(tt.payload)))
+			require.NoError(t, err)
+			if tt.contentType != "" {
+				req.Header.Set("Content-Type", tt.contentType)
+			}
+
+			tracePayloads, err := HandleTracesPayload(req)
+			require.Error(t, err)
+			require.Nil(t, tracePayloads)
+		})
+	}
 }
 
 func BenchmarkTranslatorv05(b *testing.B) {
