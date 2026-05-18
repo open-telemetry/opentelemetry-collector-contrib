@@ -45,6 +45,15 @@ type Config struct {
 	// azeventhub lib specific
 	PollRate      int `mapstructure:"poll_rate"`
 	MaxPollEvents int `mapstructure:"max_poll_events"`
+
+	// PrefetchCount controls the size of the SDK's internal prefetch buffer per
+	// partition. The SDK uses this value to maintain an asynchronous cache of
+	// events so that ReceiveEvents calls return from a local buffer rather than
+	// waiting on the network.
+	//   0  - use the SDK default (300)
+	//  <0  - disable prefetch
+	//  >0  - use the explicit value
+	PrefetchCount int32 `mapstructure:"prefetch_count"`
 }
 
 // BlobCheckpointStoreConfig defines the configuration for Azure Blob Storage

@@ -190,6 +190,7 @@ extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
 extension/storage/redisstorageextension
 extension/tailstorage/pebbletailstorageextension
+extension/tailstorage/pebbletailstorageextension/integrationtest
 .
 internal/aws/containerinsight
 internal/aws/k8s
@@ -220,6 +221,7 @@ processor/cumulativetodeltaprocessor
 processor/deltatorateprocessor
 processor/drainprocessor
 processor/filterprocessor
+processor/genainormalizerprocessor
 processor/geoipprocessor
 processor/groupbyattrsprocessor
 processor/groupbytraceprocessor

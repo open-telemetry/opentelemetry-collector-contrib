@@ -19,6 +19,7 @@ func TestRaceTranslationSpanChanges(t *testing.T) {
 		zap.NewNop(),
 		"https://example.com/1.7.0",
 		LoadTranslationVersion(t, "complex_changeset.yml"),
+		nil,
 	)
 	require.NoError(t, err, "Must not error when creating translator")
 
@@ -50,6 +51,7 @@ func TestRaceTranslationMetricChanges(t *testing.T) {
 		zap.NewNop(),
 		"https://example.com/1.7.0",
 		LoadTranslationVersion(t, "complex_changeset.yml"),
+		nil,
 	)
 	require.NoError(t, err, "Must not error when creating translator")
 
@@ -82,6 +84,7 @@ func TestRaceTranslationLogChanges(t *testing.T) {
 		zap.NewNop(),
 		"https://example.com/1.7.0",
 		LoadTranslationVersion(t, "complex_changeset.yml"),
+		nil,
 	)
 	require.NoError(t, err, "Must not error when creating translator")
 
