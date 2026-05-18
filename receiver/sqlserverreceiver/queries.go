@@ -1051,3 +1051,35 @@ func getSQLServerWaitStatsQuery(instanceName string) string {
 	r := strings.NewReplacer("{filter_instance_name}", "")
 	return r.Replace(sqlServerWaitStatsQuery)
 }
+
+const sqlServerLatchWaitTimeQuery = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN /*NOT IN Standard,Enterprise,Express,Azure SQL Database, Azure SQL Managed Instance*/
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+SELECT
+	'sqlserver_latch_wait_time' AS [measurement],
+	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+	CASE
+		WHEN SUM(waiting_requests_count) > 0
+		THEN CAST(SUM(wait_time_ms) AS FLOAT) / SUM(waiting_requests_count)
+		ELSE 0
+	END AS [avg_wait_time_ms]
+FROM sys.dm_os_latch_stats WITH (NOLOCK)
+WHERE waiting_requests_count > 0
+{filter_instance_name};
+`
+
+func getSQLServerLatchWaitTimeQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerLatchWaitTimeQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerLatchWaitTimeQuery)
+}

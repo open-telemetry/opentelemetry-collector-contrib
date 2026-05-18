@@ -122,6 +122,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 		err = s.recordDatabaseStatusMetrics(ctx)
 	case getSQLServerWaitStatsQuery(s.config.InstanceName):
 		err = s.recordDatabaseWaitMetrics(ctx)
+	case getSQLServerLatchWaitTimeQuery(s.config.InstanceName):
+		err = s.recordLatchWaitTimeMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -771,6 +773,38 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 		} else {
 			// The value is divided here because it's stored in SQL Server in ms, need to convert to s
 			s.mb.RecordSqlserverOsWaitDurationDataPoint(now, val.(float64)/1e3, row[waitCategory], row[waitType])
+		}
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	return errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) recordLatchWaitTimeMetrics(ctx context.Context) error {
+	// Constants are the columns for metrics from query
+	const avgWaitTimeMs = "avg_wait_time_ms"
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	var val any
+	for i, row := range rows {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		val, err = retrieveFloat(row, avgWaitTimeMs)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, avgWaitTimeMs))
+		} else {
+			// Value is already in milliseconds from the query
+			s.mb.RecordSqlserverLatchWaitTimeAvgDataPoint(now, val.(float64))
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))

@@ -269,6 +269,9 @@ var MetricsInfo = metricsInfo{
 	SqlserverIndexSearchRate: metricInfo{
 		Name: "sqlserver.index.search.rate",
 	},
+	SqlserverLatchWaitTimeAvg: metricInfo{
+		Name: "sqlserver.latch.wait_time.avg",
+	},
 	SqlserverLockTimeoutRate: metricInfo{
 		Name: "sqlserver.lock.timeout.rate",
 	},
@@ -390,6 +393,7 @@ type metricsInfo struct {
 	SqlserverDatabaseTempdbVersionStoreSize     metricInfo
 	SqlserverDeadlockRate                       metricInfo
 	SqlserverIndexSearchRate                    metricInfo
+	SqlserverLatchWaitTimeAvg                   metricInfo
 	SqlserverLockTimeoutRate                    metricInfo
 	SqlserverLockWaitCount                      metricInfo
 	SqlserverLockWaitRate                       metricInfo
@@ -1460,6 +1464,56 @@ func newMetricSqlserverIndexSearchRate(cfg SqlserverIndexSearchRateMetricConfig)
 	return m
 }
 
+type metricSqlserverLatchWaitTimeAvg struct {
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   SqlserverLatchWaitTimeAvgMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.latch.wait_time.avg metric with initial data.
+func (m *metricSqlserverLatchWaitTimeAvg) init() {
+	m.data.SetName("sqlserver.latch.wait_time.avg")
+	m.data.SetDescription("Average time spent waiting for latches (lighter-weight synchronization).")
+	m.data.SetUnit("ms")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverLatchWaitTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverLatchWaitTimeAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverLatchWaitTimeAvg) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverLatchWaitTimeAvg(cfg SqlserverLatchWaitTimeAvgMetricConfig) metricSqlserverLatchWaitTimeAvg {
+	m := metricSqlserverLatchWaitTimeAvg{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverLockTimeoutRate struct {
 	data     pmetric.Metric                       // data buffer for generated metric.
 	config   SqlserverLockTimeoutRateMetricConfig // metric config provided by user.
@@ -1470,7 +1524,7 @@ type metricSqlserverLockTimeoutRate struct {
 func (m *metricSqlserverLockTimeoutRate) init() {
 	m.data.SetName("sqlserver.lock.timeout.rate")
 	m.data.SetDescription("Total number of lock timeouts.")
-	m.data.SetUnit("“{timeouts}/s”")
+	m.data.SetUnit("{timeouts}/s")
 	m.data.SetEmptyGauge()
 }
 
@@ -3442,6 +3496,7 @@ type MetricsBuilder struct {
 	metricSqlserverDatabaseTempdbVersionStoreSize     metricSqlserverDatabaseTempdbVersionStoreSize
 	metricSqlserverDeadlockRate                       metricSqlserverDeadlockRate
 	metricSqlserverIndexSearchRate                    metricSqlserverIndexSearchRate
+	metricSqlserverLatchWaitTimeAvg                   metricSqlserverLatchWaitTimeAvg
 	metricSqlserverLockTimeoutRate                    metricSqlserverLockTimeoutRate
 	metricSqlserverLockWaitCount                      metricSqlserverLockWaitCount
 	metricSqlserverLockWaitRate                       metricSqlserverLockWaitRate
@@ -3517,6 +3572,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverDatabaseTempdbVersionStoreSize:     newMetricSqlserverDatabaseTempdbVersionStoreSize(mbc.Metrics.SqlserverDatabaseTempdbVersionStoreSize),
 		metricSqlserverDeadlockRate:                       newMetricSqlserverDeadlockRate(mbc.Metrics.SqlserverDeadlockRate),
 		metricSqlserverIndexSearchRate:                    newMetricSqlserverIndexSearchRate(mbc.Metrics.SqlserverIndexSearchRate),
+		metricSqlserverLatchWaitTimeAvg:                   newMetricSqlserverLatchWaitTimeAvg(mbc.Metrics.SqlserverLatchWaitTimeAvg),
 		metricSqlserverLockTimeoutRate:                    newMetricSqlserverLockTimeoutRate(mbc.Metrics.SqlserverLockTimeoutRate),
 		metricSqlserverLockWaitCount:                      newMetricSqlserverLockWaitCount(mbc.Metrics.SqlserverLockWaitCount),
 		metricSqlserverLockWaitRate:                       newMetricSqlserverLockWaitRate(mbc.Metrics.SqlserverLockWaitRate),
@@ -3681,6 +3737,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverDatabaseTempdbVersionStoreSize.emit(ils.Metrics())
 	mb.metricSqlserverDeadlockRate.emit(ils.Metrics())
 	mb.metricSqlserverIndexSearchRate.emit(ils.Metrics())
+	mb.metricSqlserverLatchWaitTimeAvg.emit(ils.Metrics())
 	mb.metricSqlserverLockTimeoutRate.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitCount.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitRate.emit(ils.Metrics())
@@ -3849,6 +3906,11 @@ func (mb *MetricsBuilder) RecordSqlserverDeadlockRateDataPoint(ts pcommon.Timest
 // RecordSqlserverIndexSearchRateDataPoint adds a data point to sqlserver.index.search.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverIndexSearchRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverIndexSearchRate.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverLatchWaitTimeAvgDataPoint adds a data point to sqlserver.latch.wait_time.avg metric.
+func (mb *MetricsBuilder) RecordSqlserverLatchWaitTimeAvgDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverLatchWaitTimeAvg.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSqlserverLockTimeoutRateDataPoint adds a data point to sqlserver.lock.timeout.rate metric.

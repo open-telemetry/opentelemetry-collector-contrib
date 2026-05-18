@@ -371,13 +371,23 @@ Total number of index searches.
 | ---- | ----------- | ---------- | --------- |
 | “{searches}/s” | Gauge | Double | Development |
 
+### sqlserver.latch.wait_time.avg
+
+Average time spent waiting for latches (lighter-weight synchronization).
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Latches are lightweight synchronization objects used internally by SQL Server to protect in-memory structures. High latch wait times can indicate memory contention, I/O bottlenecks, or internal resource contention. Available on SQL Server 2005+.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Gauge | Double | Development |
+
 ### sqlserver.lock.timeout.rate
 
 Total number of lock timeouts.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “{timeouts}/s” | Gauge | Double | Development |
+| {timeouts}/s | Gauge | Double | Development |
 
 ### sqlserver.lock.wait.count
 

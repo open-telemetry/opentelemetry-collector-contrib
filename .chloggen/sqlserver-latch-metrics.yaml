@@ -1,0 +1,4 @@
+change_type: enhancement
+component: sqlserverreceiver
+note: Add support for latch wait time metric to monitor SQL Server internal contention
+issues: [48445]

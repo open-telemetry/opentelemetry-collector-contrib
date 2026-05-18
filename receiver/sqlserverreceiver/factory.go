@@ -82,6 +82,10 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerWaitStatsQuery(cfg.InstanceName))
 	}
 
+	if cfg.Metrics.SqlserverLatchWaitTimeAvg.Enabled {
+		queries = append(queries, getSQLServerLatchWaitTimeQuery(cfg.InstanceName))
+	}
+
 	return queries
 }
 

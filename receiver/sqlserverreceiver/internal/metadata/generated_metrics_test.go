@@ -154,6 +154,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverIndexSearchRateDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSqlserverLatchWaitTimeAvgDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordSqlserverLockTimeoutRateDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -732,13 +735,25 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.latch.wait_time.avg":
+					assert.False(t, validatedMetrics["sqlserver.latch.wait_time.avg"], "Found a duplicate in the metrics slice: sqlserver.latch.wait_time.avg")
+					validatedMetrics["sqlserver.latch.wait_time.avg"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Average time spent waiting for latches (lighter-weight synchronization).", mi.Description())
+					assert.Equal(t, "ms", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.lock.timeout.rate":
 					assert.False(t, validatedMetrics["sqlserver.lock.timeout.rate"], "Found a duplicate in the metrics slice: sqlserver.lock.timeout.rate")
 					validatedMetrics["sqlserver.lock.timeout.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Total number of lock timeouts.", mi.Description())
-					assert.Equal(t, "“{timeouts}/s”", mi.Unit())
+					assert.Equal(t, "{timeouts}/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

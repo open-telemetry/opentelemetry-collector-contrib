@@ -38,6 +38,8 @@ all_set:
       enabled: true
     sqlserver.index.search.rate:
       enabled: true
+    sqlserver.latch.wait_time.avg:
+      enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
     sqlserver.lock.wait.count:
@@ -171,6 +173,8 @@ reaggregate_set:
       enabled: true
     sqlserver.index.search.rate:
       enabled: true
+    sqlserver.latch.wait_time.avg:
+      enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
     sqlserver.lock.wait.count:
@@ -303,6 +307,8 @@ none_set:
     sqlserver.deadlock.rate:
       enabled: false
     sqlserver.index.search.rate:
+      enabled: false
+    sqlserver.latch.wait_time.avg:
       enabled: false
     sqlserver.lock.timeout.rate:
       enabled: false
