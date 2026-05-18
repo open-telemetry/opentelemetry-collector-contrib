@@ -59,7 +59,7 @@ func getConfig() component.Config {
 	return &Config{
 		Authentication:   "connection_string",
 		ConnectionString: goodConnectionString,
-		Logs:             LogsConfig{ContainerName: logsContainerName},
-		Traces:           TracesConfig{ContainerName: tracesContainerName},
+		Logs:             LogsConfig{ContainerName: logsContainerName, Encoding: EncodingOTLPJSON},
+		Traces:           TracesConfig{ContainerName: tracesContainerName, Encoding: EncodingOTLPJSON},
 	}
 }

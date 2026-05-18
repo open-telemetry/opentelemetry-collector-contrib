@@ -166,19 +166,22 @@ func TestConsumeLogsEncoding(t *testing.T) {
 	}
 }
 
-func TestConsumeUnsupportedEncoding(t *testing.T) {
-	receiver, err := getBlobReceiverWithEncodings(t, "polling", "totally_made_up", "totally_made_up")
-	require.NoError(t, err)
+func TestNewReceiverUnsupportedEncoding(t *testing.T) {
+	tests := []struct {
+		name           string
+		logsEncoding   string
+		tracesEncoding string
+	}{
+		{name: "unsupported logs encoding", logsEncoding: "totally_made_up", tracesEncoding: EncodingOTLPJSON},
+		{name: "unsupported traces encoding", logsEncoding: EncodingOTLPJSON, tracesEncoding: "totally_made_up"},
+	}
 
-	logsConsumer := receiver.(logsDataConsumer)
-	logsConsumer.setNextLogsConsumer(new(consumertest.LogsSink))
-	err = logsConsumer.consumeLogs(t.Context(), logsJSON)
-	require.Error(t, err)
-
-	tracesConsumer := receiver.(tracesDataConsumer)
-	tracesConsumer.setNextTracesConsumer(new(consumertest.TracesSink))
-	err = tracesConsumer.consumeTraces(t.Context(), tracesJSON)
-	require.Error(t, err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := getBlobReceiverWithEncodings(t, "polling", tc.logsEncoding, tc.tracesEncoding)
+			require.Error(t, err)
+		})
+	}
 }
 
 func getBlobReceiver(t *testing.T, mode string) (component.Component, error) {

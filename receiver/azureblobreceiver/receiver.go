@@ -31,10 +31,8 @@ type tracesDataConsumer interface {
 type blobReceiver struct {
 	blobEventHandler   eventHandler
 	logger             *zap.Logger
-	logsEncoding       string
-	tracesEncoding     string
-	logsUnmarshalers   map[string]plog.Unmarshaler
-	tracesUnmarshalers map[string]ptrace.Unmarshaler
+	logsUnmarshaler    plog.Unmarshaler
+	tracesUnmarshaler  ptrace.Unmarshaler
 	nextLogsConsumer   consumer.Logs
 	nextTracesConsumer consumer.Traces
 	obsrecv            *receiverhelper.ObsReport
@@ -65,14 +63,9 @@ func (b *blobReceiver) consumeLogs(ctx context.Context, data []byte) error {
 		return nil
 	}
 
-	unmarshaler, ok := b.logsUnmarshalers[b.logsEncoding]
-	if !ok {
-		return fmt.Errorf("unsupported logs encoding %q", b.logsEncoding)
-	}
-
 	logsContext := b.obsrecv.StartLogsOp(ctx)
 
-	logs, err := unmarshaler.UnmarshalLogs(data)
+	logs, err := b.logsUnmarshaler.UnmarshalLogs(data)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal logs: %w", err)
 	}
@@ -89,14 +82,9 @@ func (b *blobReceiver) consumeTraces(ctx context.Context, data []byte) error {
 		return nil
 	}
 
-	unmarshaler, ok := b.tracesUnmarshalers[b.tracesEncoding]
-	if !ok {
-		return fmt.Errorf("unsupported traces encoding %q", b.tracesEncoding)
-	}
-
 	tracesContext := b.obsrecv.StartTracesOp(ctx)
 
-	traces, err := unmarshaler.UnmarshalTraces(data)
+	traces, err := b.tracesUnmarshaler.UnmarshalTraces(data)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal traces: %w", err)
 	}
@@ -119,20 +107,32 @@ func newReceiver(set receiver.Settings, eventHandler eventHandler, logsEncoding,
 		return nil, err
 	}
 
+	var logsUnmarshaler plog.Unmarshaler
+	switch logsEncoding {
+	case EncodingOTLPJSON:
+		logsUnmarshaler = &plog.JSONUnmarshaler{}
+	case EncodingOTLPProto:
+		logsUnmarshaler = &plog.ProtoUnmarshaler{}
+	default:
+		return nil, fmt.Errorf("logs.encoding %q is not supported; supported values: [%v, %v]", logsEncoding, EncodingOTLPJSON, EncodingOTLPProto)
+	}
+
+	var tracesUnmarshaler ptrace.Unmarshaler
+	switch tracesEncoding {
+	case EncodingOTLPJSON:
+		tracesUnmarshaler = &ptrace.JSONUnmarshaler{}
+	case EncodingOTLPProto:
+		tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
+	default:
+		return nil, fmt.Errorf("traces.encoding %q is not supported; supported values: [%v, %v]", tracesEncoding, EncodingOTLPJSON, EncodingOTLPProto)
+	}
+
 	blobReceiver := &blobReceiver{
-		blobEventHandler: eventHandler,
-		logger:           set.Logger,
-		logsEncoding:     logsEncoding,
-		tracesEncoding:   tracesEncoding,
-		logsUnmarshalers: map[string]plog.Unmarshaler{
-			EncodingOTLPJSON:  &plog.JSONUnmarshaler{},
-			EncodingOTLPProto: &plog.ProtoUnmarshaler{},
-		},
-		tracesUnmarshalers: map[string]ptrace.Unmarshaler{
-			EncodingOTLPJSON:  &ptrace.JSONUnmarshaler{},
-			EncodingOTLPProto: &ptrace.ProtoUnmarshaler{},
-		},
-		obsrecv: obsrecv,
+		blobEventHandler:  eventHandler,
+		logger:            set.Logger,
+		logsUnmarshaler:   logsUnmarshaler,
+		tracesUnmarshaler: tracesUnmarshaler,
+		obsrecv:           obsrecv,
 	}
 
 	return blobReceiver, nil
