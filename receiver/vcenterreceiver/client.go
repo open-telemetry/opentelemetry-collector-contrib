@@ -328,7 +328,24 @@ func (vc *vcenterClient) PerfMetricsQuery(
 	vc.pm.Sort = true
 	sample, err := vc.pm.SampleByName(ctx, spec, names, objs)
 	if err != nil {
-		return nil, err
+		resultsByRef := map[string]*performance.EntityMetric{}
+		for _, obj := range objs {
+			singleSample, singleErr := vc.pm.SampleByName(ctx, spec, names, []vt.ManagedObjectReference{obj})
+			if singleErr != nil {
+				continue
+			}
+
+			singleResult, singleErr := vc.pm.ToMetricSeries(ctx, singleSample)
+			if singleErr != nil {
+				continue
+			}
+
+			for i := range singleResult {
+				resultsByRef[singleResult[i].Entity.Value] = &singleResult[i]
+			}
+		}
+
+		return &perfMetricsQueryResult{resultsByRef: resultsByRef}, nil
 	}
 	result, err := vc.pm.ToMetricSeries(ctx, sample)
 	if err != nil {
