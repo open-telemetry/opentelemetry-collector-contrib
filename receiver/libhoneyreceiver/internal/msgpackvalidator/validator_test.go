@@ -56,7 +56,7 @@ func TestValidateRejectsForgedLengthHeaders(t *testing.T) {
 		},
 		{
 			name:    "extension length over limit",
-			payload: append(appendLength32Header(0xc9, maxMsgpackExtLen+1), 0),
+			payload: append(appendLength32Header(0xc9, maxMsgpackBinStringLen+1), 0),
 			want:    "extension length",
 		},
 		{

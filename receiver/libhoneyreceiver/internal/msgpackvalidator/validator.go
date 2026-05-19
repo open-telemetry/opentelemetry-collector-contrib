@@ -14,7 +14,6 @@ const (
 	// bound allocations that would otherwise be driven only by msgpack headers.
 	maxMsgpackContainerElements = 1 << 20
 	maxMsgpackBinStringLen      = 20 * 1024 * 1024
-	maxMsgpackExtLen            = maxMsgpackBinStringLen
 	maxMsgpackDepth             = 64
 )
 
@@ -55,7 +54,7 @@ func (s *msgpackScanner) validateValue(depth int) error {
 	case c >= 0x90 && c <= 0x9f:
 		return s.validateArray(uint64(c&0x0f), depth)
 	case c >= 0xa0 && c <= 0xbf:
-		return s.validateBytes("string", uint64(c&0x1f), maxMsgpackBinStringLen)
+		return s.validateBytes("string", uint64(c&0x1f))
 	}
 
 	switch c {
@@ -68,19 +67,19 @@ func (s *msgpackScanner) validateValue(depth int) error {
 		if err != nil {
 			return err
 		}
-		return s.validateBytes("bin", n, maxMsgpackBinStringLen)
+		return s.validateBytes("bin", n)
 	case 0xc5:
 		n, err := s.readUint16()
 		if err != nil {
 			return err
 		}
-		return s.validateBytes("bin", n, maxMsgpackBinStringLen)
+		return s.validateBytes("bin", n)
 	case 0xc6:
 		n, err := s.readUint32()
 		if err != nil {
 			return err
 		}
-		return s.validateBytes("bin", n, maxMsgpackBinStringLen)
+		return s.validateBytes("bin", n)
 	case 0xc7:
 		n, err := s.readUint8()
 		if err != nil {
@@ -122,19 +121,19 @@ func (s *msgpackScanner) validateValue(depth int) error {
 		if err != nil {
 			return err
 		}
-		return s.validateBytes("string", n, maxMsgpackBinStringLen)
+		return s.validateBytes("string", n)
 	case 0xda:
 		n, err := s.readUint16()
 		if err != nil {
 			return err
 		}
-		return s.validateBytes("string", n, maxMsgpackBinStringLen)
+		return s.validateBytes("string", n)
 	case 0xdb:
 		n, err := s.readUint32()
 		if err != nil {
 			return err
 		}
-		return s.validateBytes("string", n, maxMsgpackBinStringLen)
+		return s.validateBytes("string", n)
 	case 0xdc:
 		n, err := s.readUint16()
 		if err != nil {
@@ -201,9 +200,9 @@ func validateElementCount(kind string, size uint64, remaining, objectsPerElement
 	return nil
 }
 
-func (s *msgpackScanner) validateBytes(kind string, size, limit uint64) error {
-	if size > limit {
-		return fmt.Errorf("msgpack %s length %d exceeds limit %d", kind, size, limit)
+func (s *msgpackScanner) validateBytes(kind string, size uint64) error {
+	if size > maxMsgpackBinStringLen {
+		return fmt.Errorf("msgpack %s length %d exceeds limit %d", kind, size, maxMsgpackBinStringLen)
 	}
 	if size > uint64(s.remaining()) {
 		return fmt.Errorf("msgpack %s length %d exceeds remaining payload size %d", kind, size, s.remaining())
@@ -215,7 +214,7 @@ func (s *msgpackScanner) validateExt(size uint64) error {
 	if _, err := s.readByte(); err != nil {
 		return err
 	}
-	return s.validateBytes("extension", size, maxMsgpackExtLen)
+	return s.validateBytes("extension", size)
 }
 
 func (s *msgpackScanner) readByte() (byte, error) {
