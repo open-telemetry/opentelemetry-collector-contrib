@@ -68,10 +68,8 @@ The following grants are required for the receiver to function correctly.
 
 ### Instance detection (always required)
 
-These views are queried once at startup to detect the Oracle version and
-whether the monitoring user is connected to a Pluggable Database (PDB).
-The `oracle.db.pdb` resource attribute is only populated when connected
-to a specific PDB.
+These views are queried once at startup to detect Oracle version, role,
+open mode, and multitenant status.
 
 ```sql
 GRANT SELECT ON V_$INSTANCE TO <username>;
@@ -80,6 +78,18 @@ GRANT SELECT ON V_$DATABASE TO <username>;
 
 > **Note:** `sys_context('USERENV', ...)` queries against `DUAL` require no
 > additional grant and are available to all database users.
+
+### Hosting type detection (Oracle >=19c only)
+
+Required to detect whether the instance is running on RDS or OCI.
+The `oracle.db.hosting_type` resource attribute is only populated on
+Oracle 19c and later.
+
+```sql
+GRANT SELECT ON V_$DATAFILE TO <username>;
+GRANT SELECT ON V_$PDBS TO <username>;        -- OCI detection, connected to PDB only
+GRANT SELECT ON CDB_SERVICES TO <username>;   -- OCI confirmation, connected to PDB only
+```
 
 ### Metrics collection
 
