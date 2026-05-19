@@ -88,7 +88,7 @@ type metricHttpcheckClientConnectionDuration struct {
 func (m *metricHttpcheckClientConnectionDuration) init() {
 	m.data.SetName("httpcheck.client.connection.duration")
 	m.data.SetDescription("Time spent establishing TCP connection to the endpoint.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -180,7 +180,7 @@ type metricHttpcheckClientRequestDuration struct {
 func (m *metricHttpcheckClientRequestDuration) init() {
 	m.data.SetName("httpcheck.client.request.duration")
 	m.data.SetDescription("Time spent sending the HTTP request to the endpoint.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -269,7 +269,7 @@ type metricHttpcheckDNSLookupDuration struct {
 func (m *metricHttpcheckDNSLookupDuration) init() {
 	m.data.SetName("httpcheck.dns.lookup.duration")
 	m.data.SetDescription("Time spent performing DNS lookup for the endpoint.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -541,7 +541,7 @@ type metricHttpcheckResponseDuration struct {
 func (m *metricHttpcheckResponseDuration) init() {
 	m.data.SetName("httpcheck.response.duration")
 	m.data.SetDescription("Time spent receiving the HTTP response from the endpoint.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -917,7 +917,7 @@ type metricHttpcheckTLSHandshakeDuration struct {
 func (m *metricHttpcheckTLSHandshakeDuration) init() {
 	m.data.SetName("httpcheck.tls.handshake.duration")
 	m.data.SetDescription("Time spent performing TLS handshake with the endpoint.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
