@@ -380,14 +380,11 @@ func (dc *DimensionClient) makePutRequest(ctx context.Context, dim *DimensionUpd
 		}
 	}
 
-	var tagsToAdd []string
+	tagsToAdd := []string{}
 	for tag, shouldAdd := range dim.Tags {
 		if shouldAdd {
 			tagsToAdd = append(tagsToAdd, tag)
 		}
-	}
-	if tagsToAdd == nil {
-		tagsToAdd = []string{}
 	}
 
 	json, err := json.Marshal(map[string]any{
