@@ -67,15 +67,24 @@ using exponential backoff with jitter.
 
 The following responses are retried:
 
-- **403 Forbidden** with `Retry-After` header -- secondary rate limit
-- **429 Too Many Requests** -- primary rate limit exceeded
+- **403 Forbidden** with `Retry-After` header -- secondary rate limit; waits
+  the server-supplied `Retry-After` seconds.
+- **403 Forbidden** or **429 Too Many Requests** with `X-RateLimit-Remaining: 0`
+  and an `X-RateLimit-Reset` epoch -- primary rate limit exhausted; waits until
+  the reset time. The reset wait is honored as-is (not capped), so a single
+  scrape can stall up to the configured GitHub rate-limit window.
+- **429 Too Many Requests** without rate-limit headers -- generic transient
+  throttle; uses exponential backoff.
 - **502 Bad Gateway** -- GitHub's proxy failed to reach the backend
 - **503 Service Unavailable** -- GitHub is temporarily down for maintenance
 - **504 Gateway Timeout** -- GitHub's backend took too long to respond
 
-Plain 403 responses (permission errors) are **not** retried. Retries are
-bounded by `max_retries` (default 10) and the scrape context, stopping when
-the next collection interval begins.
+A 403 with neither `Retry-After` nor `X-RateLimit-Remaining: 0` is treated as a
+permission error and **not** retried. A primary rate-limit response with no
+usable `X-RateLimit-Reset` header is also not retried, because retrying against
+a closed budget with no wait hint just burns attempts. Retries are bounded by
+`max_retries` (default 10) and the scrape context, stopping when the next
+collection interval begins.
 
 Retry behaviour is configurable under `retry_on_failure`:
 
