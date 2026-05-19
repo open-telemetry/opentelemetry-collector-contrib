@@ -15,6 +15,22 @@ google_cloud_storage/with_partition:
       format: year=%Y
       prefix: my-logs
 
+google_cloud_storage/with_resiliency:
+  encoding: test
+  timeout: 3s
+  sending_queue:
+    num_consumers: 7
+    queue_size: 123
+  retry_on_failure:
+    enabled: true
+    initial_interval: 1s
+    max_interval: 5s
+    max_elapsed_time: 20s
+  bucket:
+    region: test-region
+    name: test-bucket
+    project_id: test-project-id
+
 google_cloud_storage/empty_bucket_name:
   encoding: test
   bucket:
