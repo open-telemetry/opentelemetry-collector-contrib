@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package thriftlimit
+package thriftlimit // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/thriftlimit"
 
 import (
 	"context"
