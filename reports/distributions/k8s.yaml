@@ -6,7 +6,7 @@ components:
         - count
         - exceptions
         - failover
-        - otlpjson
+        - otlp_json
         - round_robin
         - routing
         - service_graph
@@ -41,7 +41,7 @@ components:
         - interval
         - k8s_attributes
         - log_dedup
-        - metricstransform
+        - metrics_transform
         - probabilistic_sampler
         - redaction
         - remotetap
