@@ -332,6 +332,46 @@ func TestOIDCAuthenticationSucceededSingleIssuerMismatch(t *testing.T) {
 	assert.NotNil(t, ctx)
 }
 
+func TestOIDCAuthenticationSucceededIgnoreIssuerMismatch(t *testing.T) {
+	// prepare
+	oidcServer, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer.Start()
+	defer oidcServer.Close()
+
+	config := &Config{
+		Providers: []ProviderCfg{
+			{
+				IssuerURL:    oidcServer.URL,
+				Audience:     "unit-test-1",
+				IgnoreIssuer: true,
+			},
+		},
+	}
+	p := newTestExtension(t, config)
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	payload, _ := json.Marshal(map[string]any{
+		"iss": "http://different-issuer.com",
+		"aud": "unit-test-1",
+		"exp": time.Now().Add(time.Minute).Unix(),
+	})
+	token, err := oidcServer.token(payload)
+	require.NoError(t, err)
+
+	srvAuth, ok := p.(extensionauth.Server)
+	require.True(t, ok)
+
+	// test
+	ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+
+	// verify
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+}
+
 func TestOIDCAuthenticationSucceededIgnoreAudienceMismatch(t *testing.T) {
 	// prepare
 	oidcServer, err := newOIDCServer()
