@@ -120,6 +120,20 @@ resourceMetrics:
                   timeUnixNano: "1632495518500962000"
               isMonotonic: true
             unit: ms
+          - description: The average number of requests served per second since the server was started.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  timeUnixNano: "1632495518500962000"
+            name: apache.request_rate.count
+            unit: "{requests}/s"
+          - description: The average number of bytes served per second since the server was started.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  timeUnixNano: "1632495518500962000"
+            name: apache.request_rate.io.transmitted
+            unit: By/s
           - description: The number of requests serviced by the HTTP server per second.
             name: apache.requests
             sum:
@@ -219,6 +233,13 @@ resourceMetrics:
                   timeUnixNano: "1632495518500962000"
               isMonotonic: true
             unit: s
+          - description: The maximum number of worker slots available on the server, derived from the length of the scoreboard.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  timeUnixNano: "1632495518500962000"
+            name: apache.worker.limit
+            unit: '{workers}'
           - description: The number of workers currently attached to the HTTP server.
             name: apache.workers
             sum:

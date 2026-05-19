@@ -94,6 +94,20 @@ $defs:
           enabled:
             type: boolean
             default: true
+      apache.request_rate.count:
+        description: "ApacheRequestRateCountMetricConfig provides config for the apache.request_rate.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      apache.request_rate.io.transmitted:
+        description: "ApacheRequestRateIoTransmittedMetricConfig provides config for the apache.request_rate.io.transmitted metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
       apache.requests:
         description: "ApacheRequestsMetricConfig provides config for the apache.requests metric."
         type: object
@@ -133,6 +147,13 @@ $defs:
             default: true
       apache.uptime:
         description: "ApacheUptimeMetricConfig provides config for the apache.uptime metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      apache.worker.limit:
+        description: "ApacheWorkerLimitMetricConfig provides config for the apache.worker.limit metric."
         type: object
         properties:
           enabled:

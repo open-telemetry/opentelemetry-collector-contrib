@@ -89,6 +89,22 @@ Total time spent on handling requests.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | ms | Sum | Int | Cumulative | true | Development |
 
+### apache.request_rate.count
+
+The average number of requests served per second since the server was started.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {requests}/s | Gauge | Double | Development |
+
+### apache.request_rate.io.transmitted
+
+The average number of bytes served per second since the server was started.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
+
 ### apache.requests
 
 The number of requests serviced by the HTTP server per second.
@@ -128,6 +144,14 @@ The amount of time that the server has been running in seconds.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | true | Development |
+
+### apache.worker.limit
+
+The maximum number of worker slots available on the server, derived from the length of the scoreboard.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {workers} | Gauge | Int | Development |
 
 ### apache.workers
 

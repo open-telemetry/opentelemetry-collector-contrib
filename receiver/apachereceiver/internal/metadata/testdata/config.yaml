@@ -19,6 +19,10 @@ all_set:
       enabled: true
     apache.request.time:
       enabled: true
+    apache.request_rate.count:
+      enabled: true
+    apache.request_rate.io.transmitted:
+      enabled: true
     apache.requests:
       enabled: true
     apache.scoreboard:
@@ -27,6 +31,8 @@ all_set:
     apache.traffic:
       enabled: true
     apache.uptime:
+      enabled: true
+    apache.worker.limit:
       enabled: true
     apache.workers:
       enabled: true
@@ -56,6 +62,10 @@ reaggregate_set:
       enabled: true
     apache.request.time:
       enabled: true
+    apache.request_rate.count:
+      enabled: true
+    apache.request_rate.io.transmitted:
+      enabled: true
     apache.requests:
       enabled: true
     apache.scoreboard:
@@ -64,6 +74,8 @@ reaggregate_set:
     apache.traffic:
       enabled: true
     apache.uptime:
+      enabled: true
+    apache.worker.limit:
       enabled: true
     apache.workers:
       enabled: true
@@ -93,6 +105,10 @@ none_set:
       enabled: false
     apache.request.time:
       enabled: false
+    apache.request_rate.count:
+      enabled: false
+    apache.request_rate.io.transmitted:
+      enabled: false
     apache.requests:
       enabled: false
     apache.scoreboard:
@@ -101,6 +117,8 @@ none_set:
     apache.traffic:
       enabled: false
     apache.uptime:
+      enabled: false
+    apache.worker.limit:
       enabled: false
     apache.workers:
       enabled: false
