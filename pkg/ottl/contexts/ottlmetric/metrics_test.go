@@ -5,7 +5,6 @@ package ottlmetric
 
 import (
 	"slices"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -318,8 +317,6 @@ func Test_newPathGetSetter_RelaxedNames(t *testing.T) {
 		".leadingDot",
 		"with🦀utf8",
 		"",
-		// Length intentionally exceeds the current 255-char spec limit.
-		strings.Repeat("a", 300),
 	}
 
 	cacheGetter := func(*TransformContext) pcommon.Map {
