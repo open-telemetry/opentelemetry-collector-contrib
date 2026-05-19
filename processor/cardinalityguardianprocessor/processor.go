@@ -424,20 +424,27 @@ func (p *cardinalityProcessor) handleAttributesWithMode(metricName string, attrs
 			switch mode {
 			case EnforcementTagOnly:
 				// DUAL-ROUTE MODE: record the decision, keep the attribute.
-				// Debug log is uncapped — zap suppresses Debug by default,
-				// and DropLogMaxPerEpoch is scoped to the strip-mode Warn.
+				// Check() gates v.AsString() so it never runs when Debug is off.
 				shouldTag = true
-				p.logger.Debug("Cardinality overflow (tag_only)",
-					zap.String("metric", metricName),
-					zap.String("key", k))
+				if ce := p.logger.Check(zap.DebugLevel, "Cardinality overflow (tag_only)"); ce != nil {
+					ce.Write(
+						zap.String("metric", metricName),
+						zap.String("key", k),
+						zap.String("value", v.AsString()),
+					)
+				}
 				return false
 
 			case EnforcementOverflowAttribute:
 				// OVERFLOW MODE: defer value replacement until after iteration.
 				overflowKeys = append(overflowKeys, k)
-				p.logger.Debug("Cardinality overflow (overflow_attribute)",
-					zap.String("metric", metricName),
-					zap.String("key", k))
+				if ce := p.logger.Check(zap.DebugLevel, "Cardinality overflow (overflow_attribute)"); ce != nil {
+					ce.Write(
+						zap.String("metric", metricName),
+						zap.String("key", k),
+						zap.String("value", v.AsString()),
+					)
+				}
 				return false
 
 			case EnforcementStripAndReaggregate:
@@ -451,7 +458,8 @@ func (p *cardinalityProcessor) handleAttributesWithMode(metricName string, attrs
 				if maxLog := p.config.DropLogMaxPerEpoch; maxLog == 0 || count <= int64(maxLog) {
 					p.logger.Warn("Dropping high-cardinality attribute",
 						zap.String("metric", metricName),
-						zap.String("key", k))
+						zap.String("key", k),
+						zap.String("value", v.AsString()))
 				}
 				return true
 			}
