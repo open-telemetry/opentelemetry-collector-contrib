@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/fortytw2/leaktest v1.3.0
-	github.com/jaegertracing/jaeger-idl v0.6.0
+	github.com/jaegertracing/jaeger-idl v0.7.1
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.152.0
 	github.com/stretchr/testify v1.11.1
@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.152.1-0.20260514231715-e7f22744c28c
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
-	google.golang.org/grpc v1.81.0
+	google.golang.org/grpc v1.81.1
 )
 
 require (
