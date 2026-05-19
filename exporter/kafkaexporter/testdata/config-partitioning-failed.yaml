@@ -45,3 +45,30 @@ kafka/per_signal_encoding:
     encoding: per_signal_encoding
   profiles:
     encoding: per_signal_encoding
+kafka/traces_message_key_exclusive:
+  traces:
+    message_key_from_metadata_key: my_key
+  partition_traces_by_id: true
+kafka/metrics_message_key_exclusive:
+  metrics:
+    message_key_from_metadata_key: my_key
+  partition_metrics_by_resource_attributes: true
+kafka/logs_message_key_exclusive_resource:
+  logs:
+    message_key_from_metadata_key: my_key
+  partition_logs_by_resource_attributes: true
+kafka/logs_message_key_exclusive_traceid:
+  logs:
+    message_key_from_metadata_key: my_key
+  partition_logs_by_trace_id: true
+kafka/multiple_partitioner:
+  record_partitioner:
+    round_robin: {}
+    least_backup: {}
+kafka/extension_not_set:
+  record_partitioner:
+    extension: ""
+kafka/invalid_sticky_key_hasher:
+  record_partitioner:
+    sticky_key:
+      hasher: invalid_hasher

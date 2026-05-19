@@ -7,18 +7,10 @@ import (
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
-
-var enableResourcePoolMemoryUsageAttr = featuregate.GlobalRegistry().MustRegister(
-	"receiver.vcenter.resourcePoolMemoryUsageAttribute",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.104.0"),
-	featuregate.WithRegisterDescription("Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric"),
-	featuregate.WithRegisterToVersion("v0.107.0"))
 
 // recordDatacenterStats records stat metrics for a vSphere Datacenter
 func (v *vcenterMetricScraper) recordDatacenterStats(
@@ -183,7 +175,7 @@ func (v *vcenterMetricScraper) recordResourcePoolStats(
 	if s.QuickStats != nil {
 		v.mb.RecordVcenterResourcePoolCPUUsageDataPoint(ts, s.QuickStats.OverallCpuUsage)
 
-		if enableResourcePoolMemoryUsageAttr.IsEnabled() {
+		if metadata.ReceiverVcenterResourcePoolMemoryUsageAttributeFeatureGate.IsEnabled() {
 			v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.GuestMemoryUsage, metadata.AttributeMemoryUsageTypeGuest)
 			v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.HostMemoryUsage, metadata.AttributeMemoryUsageTypeHost)
 			v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.OverheadMemory, metadata.AttributeMemoryUsageTypeOverhead)
@@ -258,6 +250,9 @@ func (v *vcenterMetricScraper) recordVMStats(
 	vm *mo.VirtualMachine,
 	hs *mo.HostSystem,
 ) {
+	if vm.Summary.Storage == nil || vm.Config == nil || hs == nil || hs.Summary.Hardware == nil {
+		return
+	}
 	diskUsed := vm.Summary.Storage.Committed
 	diskFree := vm.Summary.Storage.Uncommitted
 

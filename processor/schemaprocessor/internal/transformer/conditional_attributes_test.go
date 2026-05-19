@@ -22,10 +22,21 @@ func assertAttributeEquals(t *testing.T, attributes pcommon.Map, key, value stri
 	require.Equal(t, value, val.Str())
 }
 
+func TestMetricDataPointAttributesEmptyType(t *testing.T) {
+	transformer := MetricDataPointAttributes{
+		ConditionalAttributeChange: migrate.NewConditionalAttributeSet(map[string]string{
+			"old": "new",
+		}, false, "some_metric"),
+	}
+	metric := pmetric.NewMetric() // MetricTypeEmpty by default
+	err := transformer.Do(migrate.StateSelectorApply, metric)
+	require.NoError(t, err, "MetricTypeEmpty should be skipped, not error")
+}
+
 func TestMetricDataPointAttributesTransformer(t *testing.T) {
 	attrChange := migrate.NewConditionalAttributeSet(map[string]string{
 		"service_version": "service.version",
-	}, "http_request")
+	}, false, "http_request")
 	metricDataPointAttributeTransformer := MetricDataPointAttributes{attrChange}
 
 	tests := []struct {
@@ -93,7 +104,7 @@ func TestMetricDataPointAttributesTransformer(t *testing.T) {
 func TestSpanConditionalAttributeTransformer(t *testing.T) {
 	attrChange := migrate.NewConditionalAttributeSet(map[string]string{
 		"service_version": "service.version",
-	}, "http_request")
+	}, false, "http_request")
 	spanConditionalAttributeTransformer := SpanConditionalAttributes{attrChange}
 
 	span := ptrace.NewSpan()

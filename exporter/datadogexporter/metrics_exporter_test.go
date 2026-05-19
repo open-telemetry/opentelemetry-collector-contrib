@@ -145,6 +145,15 @@ func TestNewExporter_Serializer(t *testing.T) {
 }
 
 func Test_metricsExporter_PushMetricsData(t *testing.T) {
+	prevDisableVal := featuregates.DisableMetricRemappingFeatureGate.IsEnabled()
+	prevVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableMetricRemappingFeatureGate.ID(), false))
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), false))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableMetricRemappingFeatureGate.ID(), prevDisableVal))
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+	}()
+
 	attrs := map[string]string{
 		"deployment.environment": "dev",
 		"custom_attribute":       "custom_value",
@@ -773,6 +782,53 @@ func createTestMetricsWithRuntimeMetrics() pmetric.Metrics {
 	}
 
 	return md
+}
+
+func TestServiceInstanceIDTag(t *testing.T) {
+	// Verify service.instance.id resource attribute is included as a Datadog metric tag.
+	seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.MetricV2Endpoint}
+	server := testutil.DatadogServerMock(seriesRecorder.HandlerFunc)
+	defer server.Close()
+
+	var once sync.Once
+	pusher := newTestPusher(t)
+	reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
+	require.NoError(t, err)
+	attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	exp, err := newMetricsExporter(
+		t.Context(),
+		exportertest.NewNopSettings(metadata.Type),
+		newTestConfig(t, server.URL, nil, datadogconfig.HistogramModeDistributions),
+		traceconfig.New(),
+		&once,
+		attributesTranslator,
+		&testutil.MockSourceProvider{Src: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}},
+		reporter,
+		nil,
+		attributes.NewGatewayUsage(),
+	)
+	require.NoError(t, err)
+	exp.getPushTime = func() uint64 { return 0 }
+
+	ms := createTestMetrics(map[string]string{"service.instance.id": "my-instance-123"})
+	require.NoError(t, exp.PushMetricsData(t.Context(), ms))
+
+	require.NotNil(t, seriesRecorder.ByteBody)
+	buf := bytes.NewBuffer(seriesRecorder.ByteBody)
+	reader, err := gzip.NewReader(buf)
+	require.NoError(t, err)
+	dec := json.NewDecoder(reader)
+	var actual map[string]any
+	require.NoError(t, dec.Decode(&actual))
+
+	var allTags []string
+	for _, s := range actual["series"].([]any) {
+		for _, tag := range s.(map[string]any)["tags"].([]any) {
+			allTags = append(allTags, tag.(string))
+		}
+	}
+	assert.Contains(t, allTags, "service.instance.id:my-instance-123")
 }
 
 func TestMetricRemapping(t *testing.T) {

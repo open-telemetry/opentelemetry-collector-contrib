@@ -75,6 +75,11 @@ func createDefaultConfig() component.Config {
 		PartitionMetricsByResourceAttributes: defaultPartitionMetricsByResourceAttributesEnabled,
 		PartitionLogsByResourceAttributes:    defaultPartitionLogsByResourceAttributesEnabled,
 		PartitionLogsByTraceID:               defaultPartitionLogsByTraceIDEnabled,
+		RecordPartitioner: RecordPartitionerConfig{
+			StickyKey: &StickyKeyPartitionerConfig{
+				Hasher: HasherSaramaCompat,
+			},
+		},
 	}
 }
 
@@ -166,9 +171,7 @@ func exporterhelperOptions(
 ) []exporterhelper.Option {
 	return []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
-		// and will rely on the Producer Timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		xexporterhelper.WithQueueBatch(cfg.QueueBatchConfig, qbs),
 		exporterhelper.WithStart(startFunc),

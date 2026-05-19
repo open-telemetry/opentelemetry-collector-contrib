@@ -423,6 +423,10 @@ func TestPathGetSetter(t *testing.T) {
 			}
 			require.NoError(t, err)
 
+			// Verify that setting an invalid type returns an error
+			err = accessor.Set(t.Context(), tCtx, struct{}{})
+			require.Error(t, err)
+
 			exSpanEvent := createTelemetry()
 			tt.modified(exSpanEvent)
 			assert.Equal(t, exSpanEvent, spanEvent)

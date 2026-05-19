@@ -9,6 +9,23 @@ status:
   codeowners:
     active: [Aneurysm9, rapphil, dashpole, ArthurSens, ywwg]
 
+feature_gates:
+  - id: exporter.prometheusremotewritexporter.EnableMultipleWorkers
+    description: When enabled and settings configured, the Prometheus remote exporter will spawn multiple workers/goroutines to handle incoming metrics batches concurrently.
+    stage: alpha
+    from_version: v0.118.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/36134
+  - id: exporter.prometheusremotewritexporter.RetryOn429
+    description: When enabled, the Prometheus remote write exporter will retry 429 http status code. Requires exporter.prometheusremotewritexporter.metrics.RetryOn429 to be enabled.
+    stage: alpha
+    from_version: v0.101.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/31924
+  - id: exporter.prometheusremotewritexporter.enableSendingRW2
+    description: When enabled, the Prometheus remote write exporter will support sending rw2. Extra configuration is still required besides enabling this feature gate.
+    stage: alpha
+    from_version: v0.125.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/35888
+
 tests:
   expect_consumer_error: true
   goleak:

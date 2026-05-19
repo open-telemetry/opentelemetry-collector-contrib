@@ -3,16 +3,19 @@
 package metadata
 
 import (
+	"fmt"
+	"slices"
+
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// TcpcheckDurationMetricConfig provides config for the tcpcheck.duration metric.
+type TcpcheckDurationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *TcpcheckDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -26,34 +29,113 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for tcpcheck metrics.
+// TcpcheckErrorMetricAttributeKey specifies the key of an attribute for the tcpcheck.error metric.
+type TcpcheckErrorMetricAttributeKey string
+
+const (
+	TcpcheckErrorMetricAttributeKeyTcpcheckEndpoint TcpcheckErrorMetricAttributeKey = "tcpcheck.endpoint"
+	TcpcheckErrorMetricAttributeKeyErrorCode        TcpcheckErrorMetricAttributeKey = "error.code"
+)
+
+// TcpcheckErrorMetricConfig provides config for the tcpcheck.error metric.
+type TcpcheckErrorMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []TcpcheckErrorMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *TcpcheckErrorMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *TcpcheckErrorMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case TcpcheckErrorMetricAttributeKeyTcpcheckEndpoint, TcpcheckErrorMetricAttributeKeyErrorCode:
+		default:
+			return fmt.Errorf("metric tcpcheck.error doesn't have an attribute %v, valid attributes: [tcpcheck.endpoint, error.code]", val)
+		}
+	}
+	if !slices.Contains(ms.EnabledAttributes, TcpcheckErrorMetricAttributeKeyTcpcheckEndpoint) {
+		return fmt.Errorf("tcpcheck.endpoint is a required attribute for tcpcheck.error metric and must be included")
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// TcpcheckStatusMetricConfig provides config for the tcpcheck.status metric.
+type TcpcheckStatusMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *TcpcheckStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MetricsConfig provides config for tcp_check metrics.
 type MetricsConfig struct {
-	TcpcheckDuration MetricConfig `mapstructure:"tcpcheck.duration"`
-	TcpcheckError    MetricConfig `mapstructure:"tcpcheck.error"`
-	TcpcheckStatus   MetricConfig `mapstructure:"tcpcheck.status"`
+	TcpcheckDuration TcpcheckDurationMetricConfig `mapstructure:"tcpcheck.duration"`
+	TcpcheckError    TcpcheckErrorMetricConfig    `mapstructure:"tcpcheck.error"`
+	TcpcheckStatus   TcpcheckStatusMetricConfig   `mapstructure:"tcpcheck.status"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		TcpcheckDuration: MetricConfig{
+		TcpcheckDuration: TcpcheckDurationMetricConfig{
 			Enabled: true,
 		},
-		TcpcheckError: MetricConfig{
-			Enabled: true,
+		TcpcheckError: TcpcheckErrorMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []TcpcheckErrorMetricAttributeKey{TcpcheckErrorMetricAttributeKeyTcpcheckEndpoint, TcpcheckErrorMetricAttributeKeyErrorCode},
 		},
-		TcpcheckStatus: MetricConfig{
+		TcpcheckStatus: TcpcheckStatusMetricConfig{
 			Enabled: true,
 		},
 	}
 }
 
-// MetricsBuilderConfig is a configuration for tcpcheck metrics builder.
+// MetricsBuilderConfig is a configuration for tcp_check metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics: DefaultMetricsConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }

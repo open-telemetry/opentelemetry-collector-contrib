@@ -581,6 +581,7 @@ query sample
 | network.peer.address | IP address of the peer client. | Any Str | - |
 | network.peer.port | TCP port used by the peer client. | Any Int | - |
 | sqlserver.blocking_session_id | Session ID that is blocking the current session. 0 if none. | Any Int | - |
+| sqlserver.blocking.start_time | Timestamp of when the current blocking wait began (ISO 8601 format). | Any Str | - |
 | sqlserver.context_info | Context information for the session, represented as a hexadecimal string. | Any Str | - |
 | sqlserver.command | SQL command type being executed. | Any Str | - |
 | sqlserver.cpu_time | CPU time consumed by the query, in seconds. | Any Double | - |
@@ -595,6 +596,8 @@ query sample
 | sqlserver.query_start | Timestamp of when the SQL query started (ISO 8601 format). | Any Str | - |
 | sqlserver.reads | Number of physical reads performed by the query. | Any Int | - |
 | sqlserver.request_status | Status of the request (e.g., running, suspended). | Any Str | - |
+| sqlserver.wait.resource.id | SQL Server identifier for the locked or waited-on resource, if available. | Any Str | - |
+| sqlserver.wait.resource.type | SQL Server type of the locked or waited-on resource, if available. | Any Str | - |
 | sqlserver.row_count | Number of rows affected or returned by the query. | Any Int | - |
 | sqlserver.session_id | ID of the SQL Server session. | Any Int | - |
 | sqlserver.session_status | Status of the session (e.g., running, sleeping). | Any Str | - |
@@ -619,6 +622,7 @@ top query
 | ---- | ----------- | ------ | ------------------- |
 | sqlserver.total_worker_time | Total amount of CPU time that was consumed by executions of this plan since it was compiled, reported in delta seconds. | Any Double | - |
 | db.query.text | The text of the database query being executed. | Any Str | - |
+| db.namespace | The database name. | Any Str | - |
 | sqlserver.execution_count | Number of times that the plan has been executed since it was last compiled, reported in delta value. | Any Int | - |
 | sqlserver.total_logical_reads | Total number of logical reads performed by executions of this plan since it was compiled, reported in delta value. | Any Int | - |
 | sqlserver.total_logical_writes | Total number of logical writes performed by executions of this plan since it was compiled, reported in delta value. | Any Int | - |
@@ -635,6 +639,7 @@ top query
 | sqlserver.procedure_execution_count | Number of times that the procedure has been executed since it was last compiled, reported in delta value. | Any Int | - |
 | sqlserver.procedure_id | The SQL Server ID of the stored procedure, if any | Any Str | - |
 | sqlserver.procedure_name | The name of the stored procedure, if any | Any Str | - |
+| sqlserver.query.last_started | Timestamp of when the SQL query last started executing (ISO 8601 format). | Any Str | - |
 
 ## Resource Attributes
 

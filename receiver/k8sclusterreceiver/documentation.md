@@ -280,7 +280,7 @@ The upper limit for a particular resource in a specific namespace. Will only be 
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
+| resource | the name of the resource on which the quota is applied | Any Str | Required | - |
 
 ### k8s.resource_quota.used
 
@@ -294,7 +294,7 @@ The usage for a particular resource in a specific namespace. Will only be sent i
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
+| resource | the name of the resource on which the quota is applied | Any Str | Required | - |
 
 ### k8s.statefulset.current_pods
 
@@ -341,7 +341,7 @@ The upper limit for a particular resource in a specific namespace.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | k8s.namespace.name | The k8s namespace name. | Any Str | Recommended | - |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
+| resource | the name of the resource on which the quota is applied | Any Str | Required | - |
 
 ### openshift.appliedclusterquota.used
 
@@ -356,7 +356,7 @@ The usage for a particular resource in a specific namespace.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | k8s.namespace.name | The k8s namespace name. | Any Str | Recommended | - |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
+| resource | the name of the resource on which the quota is applied | Any Str | Required | - |
 
 ### openshift.clusterquota.limit
 
@@ -370,7 +370,7 @@ The configured upper limit for a particular resource.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
+| resource | the name of the resource on which the quota is applied | Any Str | Required | - |
 
 ### openshift.clusterquota.used
 
@@ -384,7 +384,7 @@ The usage for a particular resource with a configured limit.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
+| resource | the name of the resource on which the quota is applied | Any Str | Required | - |
 
 ## Optional Metrics
 
@@ -408,7 +408,7 @@ Experimental metric, may experience breaking changes. Describes the number of K8
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| k8s.container.status.reason | The reason of the current container status. | Str: ``ContainerCreating``, ``CrashLoopBackOff``, ``CreateContainerConfigError``, ``ErrImagePull``, ``ImagePullBackOff``, ``OOMKilled``, ``Completed``, ``Error``, ``ContainerCannotRun`` | Recommended | - |
+| k8s.container.status.reason | The reason of the current container status. | Str: ``ContainerCreating``, ``CrashLoopBackOff``, ``CreateContainerConfigError``, ``ErrImagePull``, ``ImagePullBackOff``, ``OOMKilled``, ``Completed``, ``Error``, ``ContainerCannotRun`` | Required | - |
 
 ### k8s.container.status.state
 
@@ -422,7 +422,7 @@ Experimental metric, may experience breaking changes. Describes the number of K8
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| k8s.container.status.state | The state of the container (terminated, running, waiting). See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#containerstate-v1-core for details. | Str: ``terminated``, ``running``, ``waiting`` | Recommended | - |
+| k8s.container.status.state | The state of the container (terminated, running, waiting). See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#containerstate-v1-core for details. | Str: ``terminated``, ``running``, ``waiting`` | Required | - |
 
 ### k8s.node.condition
 
@@ -436,7 +436,59 @@ The condition of a particular Node.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| condition | the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure | Any Str | Recommended | - |
+| condition | the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure | Any Str | Required | - |
+
+### k8s.persistentvolume.status.phase
+
+The current phase of the PersistentVolume (1 for the current phase, 0 for others).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {persistentvolume} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| k8s.persistentvolume.status.phase | The phase of the PersistentVolume. | Str: ``Pending``, ``Available``, ``Bound``, ``Released``, ``Failed`` | Required | - |
+
+### k8s.persistentvolume.storage.capacity
+
+The storage capacity of the PersistentVolume.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### k8s.persistentvolumeclaim.status.phase
+
+The current phase of the PersistentVolumeClaim (1 for the current phase, 0 for others).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {persistentvolumeclaim} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| k8s.persistentvolumeclaim.status.phase | The phase of the PersistentVolumeClaim. | Str: ``Pending``, ``Bound``, ``Lost`` | Required | - |
+
+### k8s.persistentvolumeclaim.storage.capacity
+
+The actual storage capacity provisioned for the PersistentVolumeClaim. Only available when bound.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### k8s.persistentvolumeclaim.storage.request
+
+The storage requested by the PersistentVolumeClaim.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### k8s.pod.status_reason
 
@@ -499,6 +551,11 @@ The number of load balancer ingress points (external IPs/hostnames) assigned to 
 | k8s.namespace.uid | The k8s namespace uid. | Any Str | true | - |
 | k8s.node.name | The k8s node name. | Any Str | true | - |
 | k8s.node.uid | The k8s node uid. | Any Str | true | - |
+| k8s.persistentvolume.name | The name of the PersistentVolume. | Any Str | true | - |
+| k8s.persistentvolume.reclaim_policy | The reclaim policy of the PersistentVolume. | Str: ``Delete``, ``Recycle``, ``Retain`` | false | - |
+| k8s.persistentvolume.uid | The UID of the PersistentVolume. | Any Str | true | - |
+| k8s.persistentvolumeclaim.name | The name of the PersistentVolumeClaim. | Any Str | true | - |
+| k8s.persistentvolumeclaim.uid | The UID of the PersistentVolumeClaim. | Any Str | true | - |
 | k8s.pod.name | The k8s pod name. | Any Str | true | - |
 | k8s.pod.qos_class | The k8s pod qos class name. One of Guaranteed, Burstable, BestEffort. | Any Str | false | - |
 | k8s.pod.uid | The k8s pod uid. | Any Str | true | - |
@@ -515,6 +572,7 @@ The number of load balancer ingress points (external IPs/hostnames) assigned to 
 | k8s.service.uid | The k8s service uid. | Any Str | true | - |
 | k8s.statefulset.name | The k8s statefulset name. | Any Str | true | - |
 | k8s.statefulset.uid | The k8s statefulset uid. | Any Str | true | - |
+| k8s.storageclass.name | The name of the StorageClass. | Any Str | true | - |
 | openshift.clusterquota.name | The k8s ClusterResourceQuota name. | Any Str | true | - |
 | openshift.clusterquota.uid | The k8s ClusterResourceQuota uid. | Any Str | true | - |
 | os.description | The os description used by Kubernetes Node. | Any Str | false | - |
@@ -690,7 +748,32 @@ A Kubernetes service
 - `k8s.service.name`
 - `k8s.service.type`
 - `k8s.service.publish_not_ready_addresses`
-- `k8s.service.traffic_distribution`
+
+### k8s.persistentvolume
+
+A Kubernetes PersistentVolume object.
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `k8s.persistentvolume.uid`
+
+**Descriptive Attributes:**
+- `k8s.persistentvolume.name`
+- `k8s.storageclass.name`
+- `k8s.persistentvolume.reclaim_policy`
+
+### k8s.persistentvolumeclaim
+
+A Kubernetes PersistentVolumeClaim object.
+
+**Stability:** Development
+
+**Identifying Attributes:**
+- `k8s.persistentvolumeclaim.uid`
+
+**Descriptive Attributes:**
+- `k8s.persistentvolumeclaim.name`
 
 ### k8s.hpa
 
