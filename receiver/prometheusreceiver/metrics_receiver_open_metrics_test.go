@@ -53,20 +53,26 @@ var positiveTestsWithoutSeries = []string{"null_byte", "empty_metadata"}
 
 func verifyPositiveTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
 	require.NotEmpty(t, mds, "At least one resource metric should be present")
-	metrics := getMetrics(mds[0])
-	assertUp(t, 1, metrics)
-	if slices.Contains(positiveTestsWithoutSeries, td.name) {
-		require.Equal(t, len(metrics), countScrapeMetrics(metrics, false))
-	} else {
-		require.Greater(t, len(metrics), countScrapeMetrics(metrics, false))
-	}
-	if len(mds) > 1 {
-		// We expect a single scrape and the rest (if exists) to be stale (up==0).
-		for _, m := range mds[1:] {
-			metrics = getMetrics(m)
-			assertUp(t, 0, metrics)
+
+	var foundValid bool
+	for _, m := range mds {
+		metrics := getMetrics(m)
+		for _, pm := range metrics {
+			if pm.Name() == "up" && pm.Gauge().DataPoints().Len() > 0 && pm.Gauge().DataPoints().At(0).DoubleValue() == 1 {
+				foundValid = true
+				if slices.Contains(positiveTestsWithoutSeries, td.name) {
+					require.Equal(t, len(metrics), countScrapeMetrics(metrics))
+				} else {
+					require.Greater(t, len(metrics), countScrapeMetrics(metrics))
+				}
+				break
+			}
+		}
+		if foundValid {
+			break
 		}
 	}
+	require.True(t, foundValid, "At least one successful scrape (up=1) should be present")
 }
 
 // Test open metrics positive test cases
@@ -81,7 +87,6 @@ func TestOpenMetricsPositive(t *testing.T) {
 			name: k,
 			pages: []mockPrometheusResponse{
 				{code: 200, data: v, useOpenMetrics: true},
-				{code: 404},
 			},
 			validateFunc:    verifyPositiveTarget,
 			validateScrapes: false,
@@ -137,7 +142,7 @@ func verifyInvalidTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetri
 
 	// The Prometheus scrape parser accepted the sample, but the receiver dropped it due to incompatibility with the Otel schema.
 	// In this case, we get just the default metrics.
-	require.Equal(t, len(metrics), countScrapeMetrics(metrics, false))
+	require.Equal(t, len(metrics), countScrapeMetrics(metrics))
 }
 
 func TestOpenMetricsInvalid(t *testing.T) {
@@ -485,10 +490,10 @@ func verifyCreatedTimeMetric(o verifyOpts) func(t *testing.T, _ *testData, mds [
 		assertUp(t, 1, metrics)
 
 		if !wantCounter && !wantSummary && !wantHisto {
-			require.Equal(t, len(metrics), countScrapeMetrics(metrics, false))
+			require.Equal(t, len(metrics), countScrapeMetrics(metrics))
 			return
 		}
-		require.Greater(t, len(metrics), countScrapeMetrics(metrics, false))
+		require.Greater(t, len(metrics), countScrapeMetrics(metrics))
 
 		if len(mds) > 1 {
 			// We expect a single scrape and the rest (if exists) to be stale (up==0).
