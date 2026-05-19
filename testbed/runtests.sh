@@ -19,9 +19,7 @@ TEST_COLORIZE="${SED} 's/PASS/${PASS_COLOR}/' | ${SED} 's/FAIL/${FAIL_COLOR}/'"
 
 mkdir -p results/junit
 
-# -parallel 8 lets all parallel subtests in the correctness packages run at
-# once on the 4-vCPU CI runners (default would otherwise be GOMAXPROCS=4).
-RUN_TESTBED=1 go test -v -parallel 8 ${TEST_ARGS} 2>&1 | tee results/testoutput.log | bash -c "${TEST_COLORIZE}"
+RUN_TESTBED=1 go test -v ${TEST_ARGS} 2>&1 | tee results/testoutput.log | bash -c "${TEST_COLORIZE}"
 
 testStatus=${PIPESTATUS[0]}
 
