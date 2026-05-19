@@ -16,6 +16,7 @@ import (
 	"github.com/vmware/govmomi/view"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/types"
+	vsantypes "github.com/vmware/govmomi/vsan/types"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -354,4 +355,41 @@ func TestSessionReestablish(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, connected)
 	})
+}
+
+func TestConvertVSANResultToMetricResults_EmptySampleInfo(t *testing.T) {
+	client := vcenterClient{}
+
+	result, err := client.convertVSANResultToMetricResults(vsantypes.VsanPerfEntityMetricCSV{
+		EntityRefId: "cluster-domain:domain-c1001",
+		SampleInfo:  "",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, "domain-c1001", result.UUID)
+	require.Empty(t, result.MetricDetails)
+}
+
+func TestConvertVSANResultToMetricResults_TrimmedSampleInfo(t *testing.T) {
+	client := vcenterClient{}
+
+	result, err := client.convertVSANResultToMetricResults(vsantypes.VsanPerfEntityMetricCSV{
+		EntityRefId: "cluster-domain:domain-c1001",
+		SampleInfo:  "2026-04-25 03:00:00, 2026-04-25 03:05:00",
+		Value: []vsantypes.VsanPerfMetricSeriesCSV{
+			{
+				MetricId: vsantypes.VsanPerfMetricId{
+					Label:                  "readIops",
+					MetricsCollectInterval: 300,
+				},
+				Values: "1,2",
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, "domain-c1001", result.UUID)
+	require.Len(t, result.MetricDetails, 1)
+	require.Equal(t, int64(1), result.MetricDetails[0].Values[0])
+	require.Equal(t, int64(2), result.MetricDetails[0].Values[1])
 }

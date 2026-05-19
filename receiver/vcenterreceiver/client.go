@@ -561,8 +561,16 @@ func (vc *vcenterClient) convertVSANResultToMetricResults(vSANResult types.VsanP
 	// Parse all timestamps
 	localZone, _ := time.Now().Local().Zone()
 	timeStrings := strings.Split(vSANResult.SampleInfo, ",")
+	if len(timeStrings) == 0 || (len(timeStrings) == 1 && strings.TrimSpace(timeStrings[0]) == "") {
+		return &metricResults, nil
+	}
 	timestamps := []time.Time{}
 	for _, timeString := range timeStrings {
+		timeString = strings.TrimSpace(timeString)
+		if timeString == "" {
+			continue
+		}
+
 		// Assuming the collector is making the request in the same time zone as the localized response
 		// from the vSAN API. Not a great assumption, but otherwise it will almost definitely be wrong
 		// if we assume that it is UTC. There is precedent for this method at least.
