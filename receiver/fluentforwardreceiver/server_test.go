@@ -114,3 +114,14 @@ func TestDetermineNextEventMode(t *testing.T) {
 		})
 	}
 }
+
+func TestDetermineNextEventModeRejectsOversizedTag(t *testing.T) {
+	var b []byte
+	b = msgp.AppendArrayHeader(b, 3)
+	b = appendStringHeader(b, maxTagLength+1)
+
+	peeker := bufio.NewReaderSize(bytes.NewReader(b), 1024)
+	mode, err := determineNextEventMode(peeker)
+	require.Equal(t, unknownMode, mode)
+	require.ErrorIs(t, err, msgp.ErrLimitExceeded)
+}

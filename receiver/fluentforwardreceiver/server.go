@@ -94,6 +94,7 @@ func (s *server) handleConnections(ctx context.Context, listener net.Listener) {
 
 func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 	reader := msgp.NewReaderSize(conn, readBufferSize)
+	configureMessagePackReader(reader)
 
 	for {
 		mode, err := determineNextEventMode(reader.R)
@@ -159,11 +160,12 @@ func determineNextEventMode(peeker peeker) (eventMode, error) {
 	// is the tag string header.
 	tagType := chunk[1]
 	// We already read the first type for the type
-	tagLen := 1
+	tagLen := uint64(1)
+	var tagValueLen uint64
 
 	isFixStr := tagType&0b10100000 == 0b10100000
 	if isFixStr {
-		tagLen += int(tagType & 0b00011111)
+		tagValueLen = uint64(tagType & 0b00011111)
 	} else {
 		switch tagType {
 		case 0xd9:
@@ -171,32 +173,40 @@ func determineNextEventMode(peeker peeker) (eventMode, error) {
 			if err != nil {
 				return unknownMode, err
 			}
-			tagLen += 1 + int(chunk[2])
+			tagLen++
+			tagValueLen = uint64(chunk[2])
 		case 0xda:
 			chunk, err = peeker.Peek(4)
 			if err != nil {
 				return unknownMode, err
 			}
-			tagLen += 2 + int(binary.BigEndian.Uint16(chunk[2:]))
+			tagLen += 2
+			tagValueLen = uint64(binary.BigEndian.Uint16(chunk[2:]))
 		case 0xdb:
 			chunk, err = peeker.Peek(6)
 			if err != nil {
 				return unknownMode, err
 			}
-			tagLen += 4 + int(binary.BigEndian.Uint32(chunk[2:]))
+			tagLen += 4
+			tagValueLen = uint64(binary.BigEndian.Uint32(chunk[2:]))
 		default:
 			return unknownMode, errors.New("malformed tag field")
 		}
 	}
+	if tagValueLen > maxTagLength {
+		return unknownMode, fmt.Errorf("tag length %d exceeds limit %d: %w", tagValueLen, maxTagLength, msgp.ErrLimitExceeded)
+	}
+	tagLen += tagValueLen
+	tagLenInt := int(tagLen)
 
 	// Skip past the first byte (array header) and the entire tag and then get
 	// one byte into the second field -- that is enough to know its type.
-	chunk, err = peeker.Peek(1 + tagLen + 1)
+	chunk, err = peeker.Peek(1 + tagLenInt + 1)
 	if err != nil {
 		return unknownMode, err
 	}
 
-	secondElmType := msgp.NextType(chunk[1+tagLen:])
+	secondElmType := msgp.NextType(chunk[1+tagLenInt:])
 
 	switch secondElmType {
 	case msgp.IntType, msgp.UintType, msgp.ExtensionType:

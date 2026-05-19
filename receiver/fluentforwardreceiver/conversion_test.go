@@ -133,6 +133,95 @@ func TestTimeFromTimestampBadType(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestMessagePackReaderLimits(t *testing.T) {
+	var b []byte
+	b = msgp.AppendArrayHeader(b, 3)
+	b = appendStringHeader(b, maxMessagePackStringLength+1)
+
+	reader := newLimitedMessagePackReader(b)
+	var event messageEventLogRecord
+	err := event.DecodeMsg(reader)
+	require.ErrorIs(t, err, msgp.ErrLimitExceeded)
+}
+
+func TestDecodeRejectsOversizedRecordMap(t *testing.T) {
+	var b []byte
+	b = msgp.AppendArrayHeader(b, 3)
+	b = msgp.AppendString(b, "my-tag")
+	b = msgp.AppendInt(b, 5000)
+	b = msgp.AppendMapHeader(b, maxRecordFields+1)
+
+	reader := newLimitedMessagePackReader(b)
+	var event messageEventLogRecord
+	err := event.DecodeMsg(reader)
+	require.ErrorIs(t, err, msgp.ErrLimitExceeded)
+	require.ErrorContains(t, err, "Record")
+}
+
+func TestDecodeRejectsOversizedOptionsMap(t *testing.T) {
+	var b []byte
+	b = msgp.AppendArrayHeader(b, 4)
+	b = msgp.AppendString(b, "my-tag")
+	b = msgp.AppendInt(b, 5000)
+	b = msgp.AppendMapHeader(b, 0)
+	b = msgp.AppendMapHeader(b, maxOptionFields+1)
+
+	reader := newLimitedMessagePackReader(b)
+	var event messageEventLogRecord
+	err := event.DecodeMsg(reader)
+	require.ErrorIs(t, err, msgp.ErrLimitExceeded)
+	require.ErrorContains(t, err, "Option")
+}
+
+func TestForwardDecodeRejectsOversizedEntryCount(t *testing.T) {
+	var b []byte
+	b = msgp.AppendArrayHeader(b, 2)
+	b = msgp.AppendString(b, "my-tag")
+	b = msgp.AppendArrayHeader(b, maxForwardEntries+1)
+
+	reader := newLimitedMessagePackReader(b)
+	var event forwardEventLogRecords
+	err := event.DecodeMsg(reader)
+	require.ErrorIs(t, err, msgp.ErrLimitExceeded)
+	require.ErrorContains(t, err, "Record")
+}
+
+func TestPackedForwardDecodeRejectsOversizedRawPayload(t *testing.T) {
+	tests := []struct {
+		name  string
+		event func() []byte
+	}{
+		{
+			name: "bin",
+			event: func() []byte {
+				var b []byte
+				b = msgp.AppendArrayHeader(b, 2)
+				b = msgp.AppendString(b, "my-tag")
+				return msgp.AppendBytesHeader(b, maxPackedForwardPayload+1)
+			},
+		},
+		{
+			name: "str",
+			event: func() []byte {
+				var b []byte
+				b = msgp.AppendArrayHeader(b, 2)
+				b = msgp.AppendString(b, "my-tag")
+				return appendStringHeader(b, maxPackedForwardPayload+1)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reader := newLimitedMessagePackReader(tt.event())
+			var event packedForwardEventLogRecords
+			err := event.DecodeMsg(reader)
+			require.ErrorIs(t, err, msgp.ErrLimitExceeded)
+			require.ErrorContains(t, err, "EntriesRaw")
+		})
+	}
+}
+
 func TestMessageEventConversionWithErrors(t *testing.T) {
 	var b []byte
 
@@ -245,4 +334,23 @@ func TestBodyConversion(t *testing.T) {
 			},
 		},
 	).ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le))
+}
+
+func newLimitedMessagePackReader(b []byte) *msgp.Reader {
+	reader := msgp.NewReader(bytes.NewReader(b))
+	configureMessagePackReader(reader)
+	return reader
+}
+
+func appendStringHeader(b []byte, size uint32) []byte {
+	switch {
+	case size <= 31:
+		return append(b, 0xa0|byte(size))
+	case size <= 255:
+		return append(b, 0xd9, byte(size))
+	case size <= 65535:
+		return append(b, 0xda, byte(size>>8), byte(size))
+	default:
+		return append(b, 0xdb, byte(size>>24), byte(size>>16), byte(size>>8), byte(size))
+	}
 }

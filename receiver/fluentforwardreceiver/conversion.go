@@ -18,7 +18,17 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-const tagAttributeKey = "fluent.tag"
+const (
+	tagAttributeKey = "fluent.tag"
+
+	maxMessagePackElements     = 1_000_000
+	maxMessagePackStringLength = 20 * 1024 * 1024
+	maxForwardEntries          = 100_000
+	maxRecordFields            = 1_024
+	maxOptionFields            = 128
+	maxPackedForwardPayload    = 20 * 1024 * 1024
+	maxTagLength               = maxMessagePackStringLength
+)
 
 // Most of this logic is derived directly from
 // https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1,
@@ -48,6 +58,18 @@ type eventMode int
 
 type peeker interface {
 	Peek(n int) ([]byte, error)
+}
+
+func configureMessagePackReader(reader *msgp.Reader) {
+	reader.SetMaxElements(maxMessagePackElements)
+	reader.SetMaxStringLength(maxMessagePackStringLength)
+}
+
+func checkMessagePackLen(name string, got, limit uint32) error {
+	if got > limit {
+		return fmt.Errorf("%s length %d exceeds limit %d: %w", name, got, limit, msgp.ErrLimitExceeded)
+	}
+	return nil
 }
 
 // Values for enum eventMode.
@@ -157,6 +179,9 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 	if err != nil {
 		return msgp.WrapError(err, "Record")
 	}
+	if err = checkMessagePackLen("record", recordLen, maxRecordFields); err != nil {
+		return msgp.WrapError(err, "Record")
+	}
 
 	for recordLen > 0 {
 		recordLen--
@@ -234,6 +259,9 @@ func parseOptions(dc *msgp.Reader) (optionsMap, error) {
 	if err != nil {
 		return nil, msgp.WrapError(err, "Option")
 	}
+	if err = checkMessagePackLen("option", optionLen, maxOptionFields); err != nil {
+		return nil, msgp.WrapError(err, "Option")
+	}
 	out := make(optionsMap, optionLen)
 
 	for optionLen > 0 {
@@ -278,6 +306,9 @@ func (fe *forwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 
 	entryLen, err := dc.ReadArrayHeader()
 	if err != nil {
+		return msgp.WrapError(err, "Record")
+	}
+	if err = checkMessagePackLen("entries", entryLen, maxForwardEntries); err != nil {
 		return msgp.WrapError(err, "Record")
 	}
 
@@ -352,19 +383,14 @@ func (pfe *packedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	var entriesRaw []byte
 	switch entriesType {
 	case msgp.StrType:
-		var entriesStr string
-		entriesStr, err = dc.ReadString()
-		if err != nil {
-			return msgp.WrapError(err, "EntriesRaw")
-		}
-		entriesRaw = []byte(entriesStr)
+		entriesRaw, err = readStringPayload(dc, maxPackedForwardPayload)
 	case msgp.BinType:
-		entriesRaw, err = dc.ReadBytes(nil)
-		if err != nil {
-			return msgp.WrapError(err, "EntriesRaw")
-		}
+		entriesRaw, err = readBytesPayload(dc, maxPackedForwardPayload)
 	default:
 		return msgp.WrapError(fmt.Errorf("invalid type %d", entriesType), "EntriesRaw")
+	}
+	if err != nil {
+		return msgp.WrapError(err, "EntriesRaw")
 	}
 
 	if arrLen == 3 {
@@ -382,6 +408,32 @@ func (pfe *packedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	return nil
 }
 
+func readStringPayload(dc *msgp.Reader, limit uint32) ([]byte, error) {
+	size, err := dc.ReadStringHeader()
+	if err != nil {
+		return nil, err
+	}
+	if size > limit {
+		return nil, msgp.ErrLimitExceeded
+	}
+	out := make([]byte, size)
+	_, err = dc.ReadFull(out)
+	return out, err
+}
+
+func readBytesPayload(dc *msgp.Reader, limit uint32) ([]byte, error) {
+	size, err := dc.ReadBytesHeader()
+	if err != nil {
+		return nil, err
+	}
+	if size > limit {
+		return nil, msgp.ErrLimitExceeded
+	}
+	out := make([]byte, size)
+	_, err = dc.ReadFull(out)
+	return out, err
+}
+
 func (pfe *packedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipped bool, tag string) error {
 	var reader io.Reader
 	reader = bytes.NewReader(entriesRaw)
@@ -396,8 +448,10 @@ func (pfe *packedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 	}
 
 	msgpReader := msgp.NewReader(reader)
+	configureMessagePackReader(msgpReader)
 	// Allocate only once, since the MoveTo cleans the lr, so we can reuse.
 	lr := plog.NewLogRecord()
+	entryCount := 0
 	for {
 		err := parseEntryToLogRecord(msgpReader, lr)
 		if err != nil {
@@ -405,6 +459,10 @@ func (pfe *packedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 				return nil
 			}
 			return err
+		}
+		entryCount++
+		if entryCount > maxForwardEntries {
+			return checkMessagePackLen("entries", uint32(entryCount), maxForwardEntries)
 		}
 		lr.Attributes().PutStr(tagAttributeKey, tag)
 		lr.MoveTo(pfe.AppendEmpty())

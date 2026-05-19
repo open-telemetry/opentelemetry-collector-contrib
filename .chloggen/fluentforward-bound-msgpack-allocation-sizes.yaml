@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: receiver/fluent_forward
+note: Bound MessagePack-declared lengths while decoding Fluent Forward events to reject oversized payloads before large allocations.
+issues: [48519]
