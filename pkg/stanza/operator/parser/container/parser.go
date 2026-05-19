@@ -64,9 +64,8 @@ type Parser struct {
 	format                  string
 	addMetadataFromFilepath bool
 	criLogEmitter           *helper.BatchingLogEmitter
-	asyncConsumerStarted    bool
-	criConsumerStartOnce    sync.Once
-	criConsumers            *sync.WaitGroup
+	recombineStarted        bool
+	recombineStartOnce      sync.Once
 	timeLayout              string
 }
 
@@ -128,7 +127,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 			_ = write(ctx, ent)
 
 		case containerdFormat, crioFormat:
-			p.criConsumerStartOnce.Do(func() {
+			p.recombineStartOnce.Do(func() {
 				err = p.criLogEmitter.Start(nil)
 				if err != nil {
 					p.Logger().Error("unable to start the internal LogEmitter", zap.Error(err))
@@ -139,7 +138,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 					p.Logger().Error("unable to start the internal recombine operator", zap.Error(err))
 					return
 				}
-				p.asyncConsumerStarted = true
+				p.recombineStarted = true
 			})
 
 			if format == containerdFormat {
@@ -236,7 +235,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			return fmt.Errorf("failed to process the docker log: %w", err)
 		}
 	case containerdFormat, crioFormat:
-		p.criConsumerStartOnce.Do(func() {
+		p.recombineStartOnce.Do(func() {
 			err = p.criLogEmitter.Start(nil)
 			if err != nil {
 				p.Logger().Error("unable to start the internal LogEmitter", zap.Error(err))
@@ -247,7 +246,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 				p.Logger().Error("unable to start the internal recombine operator", zap.Error(err))
 				return
 			}
-			p.asyncConsumerStarted = true
+			p.recombineStarted = true
 		})
 
 		if format == containerdFormat {
@@ -314,11 +313,10 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 	return nil
 }
 
-// Stop ensures that the internal recombineParser, the internal criLogEmitter and
-// the crioConsumer are stopped in the proper order without being affected by
-// any possible race conditions
+// Stop ensures that the internal recombineParser and criLogEmitter are stopped
+// in the proper order without being affected by any possible race conditions.
 func (p *Parser) Stop() error {
-	if !p.asyncConsumerStarted {
+	if !p.recombineStarted {
 		// nothing is started return
 		return nil
 	}
@@ -326,14 +324,9 @@ func (p *Parser) Stop() error {
 	if err := p.recombineParser.Stop(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("unable to stop the internal recombine operator: %w", err))
 	}
-	// the recombineParser will call the Process of the criLogEmitter synchronously so the entries will be first
-	// written to the channel before the Stop of the recombineParser returns. Then since the criLogEmitter handles
-	// the entries synchronously it is safe to call its Stop.
-	// After criLogEmitter is stopped the crioConsumer will consume the remaining messages and return.
 	if err := p.criLogEmitter.Stop(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("unable to stop the internal LogEmitter: %w", err))
 	}
-	p.criConsumers.Wait()
 	return errs
 }
 
