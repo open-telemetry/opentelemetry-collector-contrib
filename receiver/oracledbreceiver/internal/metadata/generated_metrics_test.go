@@ -146,15 +146,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbLogonsDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordOracledbOsCPUCountDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordOracledbOsLoadDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordOracledbOsMemoryLimitDataPoint(ts, 1)
-
-			allMetricsCount++
 			mb.RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(ts, "1")
 
 			allMetricsCount++
@@ -229,6 +220,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordOracledbStorageUtilizationDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordOracledbSystemCPUCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordOracledbSystemCPULoadDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordOracledbSystemMemoryLimitDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -531,42 +531,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.os.cpu.count":
-					assert.False(t, validatedMetrics["oracledb.os.cpu.count"], "Found a duplicate in the metrics slice: oracledb.os.cpu.count")
-					validatedMetrics["oracledb.os.cpu.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of CPUs available to the Oracle instance as reported by the operating system. Semantically equivalent to system.cpu.physical.count from OTel system semconv.", mi.Description())
-					assert.Equal(t, "{cpu}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.os.load":
-					assert.False(t, validatedMetrics["oracledb.os.load"], "Found a duplicate in the metrics slice: oracledb.os.load")
-					validatedMetrics["oracledb.os.load"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Current OS load average as reported by the operating system.", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "oracledb.os.memory.limit":
-					assert.False(t, validatedMetrics["oracledb.os.memory.limit"], "Found a duplicate in the metrics slice: oracledb.os.memory.limit")
-					validatedMetrics["oracledb.os.memory.limit"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Total physical memory available to the operating system in bytes.", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -898,6 +862,42 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "oracledb.system.cpu.count":
+					assert.False(t, validatedMetrics["oracledb.system.cpu.count"], "Found a duplicate in the metrics slice: oracledb.system.cpu.count")
+					validatedMetrics["oracledb.system.cpu.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of CPUs available to the Oracle instance as reported by the operating system.", mi.Description())
+					assert.Equal(t, "{cpu}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.system.cpu.load":
+					assert.False(t, validatedMetrics["oracledb.system.cpu.load"], "Found a duplicate in the metrics slice: oracledb.system.cpu.load")
+					validatedMetrics["oracledb.system.cpu.load"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Current OS load average as reported by the operating system.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "oracledb.system.memory.limit":
+					assert.False(t, validatedMetrics["oracledb.system.memory.limit"], "Found a duplicate in the metrics slice: oracledb.system.memory.limit")
+					validatedMetrics["oracledb.system.memory.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Total physical memory available to the operating system in bytes.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.tablespace_size.limit":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["oracledb.tablespace_size.limit"], "Found a duplicate in the metrics slice: oracledb.tablespace_size.limit")

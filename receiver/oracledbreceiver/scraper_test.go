@@ -317,7 +317,7 @@ func TestScraper_ScrapeOSStat(t *testing.T) {
 				}
 				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
 			},
-			errWanted: `failed to parse int64 for OracledbOsCPUCount, value was bad`,
+			errWanted: `failed to parse int64 for OracledbSystemCPUCount, value was bad`,
 		},
 		{
 			name: "bad LOAD value",
@@ -329,7 +329,7 @@ func TestScraper_ScrapeOSStat(t *testing.T) {
 				}
 				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
 			},
-			errWanted: `failed to parse float64 for OracledbOsLoad, value was bad`,
+			errWanted: `failed to parse float64 for OracledbSystemCPULoad, value was bad`,
 		},
 		{
 			name: "bad PHYSICAL_MEMORY_BYTES value",
@@ -341,15 +341,15 @@ func TestScraper_ScrapeOSStat(t *testing.T) {
 				}
 				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
 			},
-			errWanted: `failed to parse int64 for OracledbOsMemoryLimit, value was bad`,
+			errWanted: `failed to parse int64 for OracledbSystemMemoryLimit, value was bad`,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := metadata.NewDefaultMetricsBuilderConfig()
-			cfg.Metrics.OracledbOsCPUCount.Enabled = true
-			cfg.Metrics.OracledbOsLoad.Enabled = true
-			cfg.Metrics.OracledbOsMemoryLimit.Enabled = true
+			cfg.Metrics.OracledbSystemCPUCount.Enabled = true
+			cfg.Metrics.OracledbSystemCPULoad.Enabled = true
+			cfg.Metrics.OracledbSystemMemoryLimit.Enabled = true
 
 			scrpr := oracleScraper{
 				logger: zap.NewNop(),
@@ -387,9 +387,9 @@ func TestScraper_ScrapeOSStat(t *testing.T) {
 						}
 					}
 				}
-				assert.Equal(t, int64(8), intMetricMap["oracledb.os.cpu.count"])
-				assert.InDelta(t, 1.5, doubleMetricMap["oracledb.os.load"], floatDelta)
-				assert.Equal(t, int64(17179869184), intMetricMap["oracledb.os.memory.limit"])
+				assert.Equal(t, int64(8), intMetricMap["oracledb.system.cpu.count"])
+				assert.InDelta(t, 1.5, doubleMetricMap["oracledb.system.cpu.load"], floatDelta)
+				assert.Equal(t, int64(17179869184), intMetricMap["oracledb.system.memory.limit"])
 			}
 		})
 	}

@@ -37,12 +37,6 @@ all_set:
       enabled: true
     oracledb.logons:
       enabled: true
-    oracledb.os.cpu.count:
-      enabled: true
-    oracledb.os.load:
-      enabled: true
-    oracledb.os.memory.limit:
-      enabled: true
     oracledb.parallel_operations_downgraded_1_to_25_pct:
       enabled: true
     oracledb.parallel_operations_downgraded_25_to_50_pct:
@@ -87,6 +81,12 @@ all_set:
     oracledb.storage.usage:
       enabled: true
     oracledb.storage.utilization:
+      enabled: true
+    oracledb.system.cpu.count:
+      enabled: true
+    oracledb.system.cpu.load:
+      enabled: true
+    oracledb.system.memory.limit:
       enabled: true
     oracledb.tablespace_size.limit:
       enabled: true
@@ -152,12 +152,6 @@ reaggregate_set:
       enabled: true
     oracledb.logons:
       enabled: true
-    oracledb.os.cpu.count:
-      enabled: true
-    oracledb.os.load:
-      enabled: true
-    oracledb.os.memory.limit:
-      enabled: true
     oracledb.parallel_operations_downgraded_1_to_25_pct:
       enabled: true
     oracledb.parallel_operations_downgraded_25_to_50_pct:
@@ -202,6 +196,12 @@ reaggregate_set:
     oracledb.storage.usage:
       enabled: true
     oracledb.storage.utilization:
+      enabled: true
+    oracledb.system.cpu.count:
+      enabled: true
+    oracledb.system.cpu.load:
+      enabled: true
+    oracledb.system.memory.limit:
       enabled: true
     oracledb.tablespace_size.limit:
       enabled: true
@@ -267,12 +267,6 @@ none_set:
       enabled: false
     oracledb.logons:
       enabled: false
-    oracledb.os.cpu.count:
-      enabled: false
-    oracledb.os.load:
-      enabled: false
-    oracledb.os.memory.limit:
-      enabled: false
     oracledb.parallel_operations_downgraded_1_to_25_pct:
       enabled: false
     oracledb.parallel_operations_downgraded_25_to_50_pct:
@@ -317,6 +311,12 @@ none_set:
     oracledb.storage.usage:
       enabled: false
     oracledb.storage.utilization:
+      enabled: false
+    oracledb.system.cpu.count:
+      enabled: false
+    oracledb.system.cpu.load:
+      enabled: false
+    oracledb.system.memory.limit:
       enabled: false
     oracledb.tablespace_size.limit:
       enabled: false
