@@ -29,6 +29,78 @@ func TestDuplicateIssuers(t *testing.T) {
 	require.Error(t, config.Validate())
 }
 
+func TestIgnoreIssuers(t *testing.T) {
+	type testCase struct {
+		name      string
+		config    *Config
+		expectErr bool
+	}
+
+	testCases := []testCase{
+		{
+			name: "One provider ignore issuer true",
+			config: &Config{
+				Attribute: "authorization",
+				Providers: []ProviderCfg{
+					{
+						IssuerURL:    "https://example.com",
+						Audience:     "https://example.com",
+						IgnoreIssuer: true,
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Multi provider ignore issuer true",
+			config: &Config{
+				Attribute: "authorization",
+				Providers: []ProviderCfg{
+					{
+						IssuerURL:    "https://example.com",
+						Audience:     "https://example.com",
+						IgnoreIssuer: true,
+					},
+					{
+						IssuerURL:    "https://example.com",
+						Audience:     "https://example.com",
+						IgnoreIssuer: false,
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Multi provider ignore issuer all true",
+			config: &Config{
+				Attribute: "authorization",
+				Providers: []ProviderCfg{
+					{
+						IssuerURL:    "https://example.com",
+						Audience:     "https://example.com",
+						IgnoreIssuer: true,
+					},
+					{
+						IssuerURL:    "https://example.com",
+						Audience:     "https://example.com",
+						IgnoreIssuer: true,
+					},
+				},
+			},
+			expectErr: true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.expectErr {
+				require.Error(t, tc.config.Validate())
+			} else {
+				require.NoError(t, tc.config.Validate())
+			}
+		})
+	}
+}
+
 func TestPublicKeysFile(t *testing.T) {
 	type testCase struct {
 		name        string
