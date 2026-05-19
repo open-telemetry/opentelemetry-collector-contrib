@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: processor/cumulativetodelta
+note: Drop regular histogram points on counter reset instead of emitting them as a delta with the full cumulative value.
+issues: [48278]
+change_logs: [user]
