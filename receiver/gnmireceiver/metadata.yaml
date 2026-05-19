@@ -1,0 +1,8 @@
+type: gnmi
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [ton-github-handle]
