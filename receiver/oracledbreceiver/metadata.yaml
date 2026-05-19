@@ -63,7 +63,7 @@ attributes:
   oracledb.blocking.blocker.sid:
     description: The session ID (SID) of the immediate blocker of this session. Empty string when the session is not blocked.
     type: string
-  oracledb.blocking.blocker.status:
+  oracledb.blocking.blocker.state:
     description: The status of the blocking session relationship (e.g. VALID, NOT IN WAIT, GLOBAL, NO HOLDER, UNKNOWN).
     type: string
   oracledb.blocking.lock.mode:
@@ -264,7 +264,7 @@ events:
       - oracledb.session.duration
       - oracledb.blocking.blocker.sid
       - oracledb.blocking.blocker.root_sid
-      - oracledb.blocking.blocker.status
+      - oracledb.blocking.blocker.state
       - oracledb.blocking.start_time
       - oracledb.blocking.wait_duration
       - oracledb.blocking.lock.mode

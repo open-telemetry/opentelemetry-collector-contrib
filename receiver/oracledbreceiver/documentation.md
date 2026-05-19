@@ -470,7 +470,7 @@ sample query
 | oracledb.session.duration | The total time in seconds that the session has been connected. | Any Double | - |
 | oracledb.blocking.blocker.sid | The session ID (SID) of the immediate blocker of this session. Empty string when the session is not blocked. | Any Str | - |
 | oracledb.blocking.blocker.root_sid | The session ID (SID) of the root/head blocker at the top of the blocking chain. Empty string when there is no blocking. | Any Str | - |
-| oracledb.blocking.blocker.status | The status of the blocking session relationship (e.g. VALID, NOT IN WAIT, GLOBAL, NO HOLDER, UNKNOWN). | Any Str | - |
+| oracledb.blocking.blocker.state | The status of the blocking session relationship (e.g. VALID, NOT IN WAIT, GLOBAL, NO HOLDER, UNKNOWN). | Any Str | - |
 | oracledb.blocking.start_time | Estimated UTC timestamp of when the blocking wait began, derived from SYSDATE - SECONDS_IN_WAIT. RFC3339 format. | Any Str | - |
 | oracledb.blocking.wait_duration | The number of seconds this session has been waiting for the current wait event. | Any Int | - |
 | oracledb.blocking.lock.mode | The lock mode being requested by the blocked session (e.g., ROW SHARE, ROW EXCLUSIVE, SHARE, SHARE ROW EXCLUSIVE, EXCLUSIVE). Empty when not waiting on a lock. | Any Str | - |

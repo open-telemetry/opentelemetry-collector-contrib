@@ -112,7 +112,7 @@ resourceLogs:
               - key: oracledb.blocking.blocker.root_sid
                 value:
                   stringValue: ""
-              - key: oracledb.blocking.blocker.status
+              - key: oracledb.blocking.blocker.state
                 value:
                   stringValue: ""
               - key: oracledb.blocking.start_time
@@ -135,7 +135,7 @@ resourceLogs:
                   stringValue: ""
             body: {}
             eventName: db.server.query_sample
-            timeUnixNano: "1779109548168383000"
+            timeUnixNano: "1779182973082763000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
           version: latest
