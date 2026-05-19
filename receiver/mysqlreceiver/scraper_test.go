@@ -799,15 +799,16 @@ func (c *mockClient) getQuerySamples(uint64, bool) ([]querySample, error) {
 		s.processlistDB = text[5]
 		s.processlistCommand = text[6]
 		s.processlistState = text[7]
-		s.sqlText = text[8]
-		s.digest = text[9]
-		s.eventID, _ = parseInt(text[10])
-		s.sessionStatus = text[11]
-		s.waitEvent = text[12]
-		s.waitTime, _ = strconv.ParseFloat(text[13], 64)
-		s.statementTimerWait, _ = strconv.ParseFloat(text[14], 64)
-		if len(text) > 15 {
-			s.traceparent = text[15]
+		s.digestText = text[8]
+		s.sqlText = text[9]
+		s.digest = text[10]
+		s.eventID, _ = parseInt(text[11])
+		s.sessionStatus = text[12]
+		s.waitEvent = text[13]
+		s.waitTime, _ = strconv.ParseFloat(text[14], 64)
+		s.statementTimerWait, _ = strconv.ParseFloat(text[15], 64)
+		if len(text) > 16 {
+			s.traceparent = text[16]
 		}
 
 		samples = append(samples, s)
@@ -937,6 +938,7 @@ func TestQueryPlanCacheReuse(t *testing.T) {
 					processlistUser:    "myuser",
 					processlistCommand: "Query",
 					processlistState:   "executing",
+					digestText:         "SELECT * FROM t",
 					sqlText:            "SELECT * FROM t",
 					digest:             digest,
 					eventID:            1,

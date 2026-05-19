@@ -70,7 +70,7 @@ resourceLogs:
             body: {}
             eventName: db.server.query_sample
             spanId: "2222222222222222"
-            timeUnixNano: "1777051214725807000"
+            timeUnixNano: "1779188770661201000"
             traceId: "11111111111111111111111111111111"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
