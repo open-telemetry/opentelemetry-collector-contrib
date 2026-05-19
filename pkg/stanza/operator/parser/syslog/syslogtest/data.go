@@ -61,6 +61,27 @@ func CreateCases(basicConfig func() *syslog.Config) ([]Case, error) {
 
 	cases := []Case{
 		{
+			"NoneProtocol",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `my custom syslog message without any timestamp`,
+			},
+			&entry.Entry{
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `my custom syslog message without any timestamp`,
+				},
+				Body: `my custom syslog message without any timestamp`,
+			},
+			true,
+			true,
+		},
+		{
 			"RFC3164SkipPriAbsent",
 			func() *syslog.Config {
 				cfg := basicConfig()

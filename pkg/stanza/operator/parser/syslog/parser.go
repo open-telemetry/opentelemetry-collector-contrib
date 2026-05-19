@@ -23,6 +23,21 @@ import (
 
 var priRegex = regexp.MustCompile(`<\d{1,3}>`)
 
+// rawSyslogMessage is a simple container for raw syslog data that doesn't conform
+// to RFC3164 or RFC5424 formats. It implements sl.Message interface.
+type rawSyslogMessage struct {
+	message string
+}
+
+func (*rawSyslogMessage) Valid() bool                 { return true }
+func (*rawSyslogMessage) FacilityMessage() *string    { return nil }
+func (*rawSyslogMessage) FacilityLevel() *string      { return nil }
+func (*rawSyslogMessage) SeverityMessage() *string    { return nil }
+func (*rawSyslogMessage) SeverityLevel() *string      { return nil }
+func (*rawSyslogMessage) SeverityShortLevel() *string { return nil }
+func (*rawSyslogMessage) ComputeFromPriority(_ uint8) {}
+func (r *rawSyslogMessage) GetMessage() string        { return r.message }
+
 // parseFunc a parseFunc determines how the raw input is to be parsed into a syslog message
 type parseFunc func(input []byte) (sl.Message, error)
 
@@ -61,7 +76,9 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 
 		// Determine which callback to use based on entry data
 		callback := postprocess
-		if !p.enableOctetCounting && p.allowSkipPriHeader {
+		if p.protocol == None {
+			callback = postprocessRaw
+		} else if !p.enableOctetCounting && p.allowSkipPriHeader {
 			var bytes []byte
 			bytes, err = toBytes(ent.Body)
 			if err != nil {
@@ -102,6 +119,11 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 
 // Process will parse an entry field as syslog.
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
+	// For 'none' protocol, no postprocessing is needed
+	if p.protocol == None {
+		return p.ProcessWithCallback(ctx, entry, p.parse, postprocessRaw)
+	}
+
 	// if pri header is missing and this is an expected behavior then facility and severity values should be skipped.
 	if !p.enableOctetCounting && p.allowSkipPriHeader {
 		bytes, err := toBytes(entry.Body)
@@ -145,6 +167,8 @@ func (p *Parser) parse(value any) (any, error) {
 		return p.parseRFC3164(message, skipPriHeaderValues)
 	case *rfc5424.SyslogMessage:
 		return p.parseRFC5424(message, skipPriHeaderValues)
+	case *rawSyslogMessage:
+		return p.parseRaw(message), nil
 	default:
 		return nil, errors.New("parsed value was not rfc3164 or rfc5424 compliant")
 	}
@@ -178,6 +202,10 @@ func (p *Parser) buildParseFunc() (parseFunc, error) {
 				return rfc5424.NewMachine().Parse(input)
 			}, nil
 		}
+	case None:
+		return func(input []byte) (sl.Message, error) {
+			return &rawSyslogMessage{message: string(input)}, nil
+		}, nil
 
 	default:
 		return nil, fmt.Errorf("invalid protocol %s", p.protocol)
@@ -237,6 +265,13 @@ func (p *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage, skipPriHeade
 	}
 
 	return p.toSafeMap(value)
+}
+
+// parseRaw will parse a raw syslog message that doesn't conform to RFC3164 or RFC5424.
+func (*Parser) parseRaw(syslogMessage *rawSyslogMessage) map[string]any {
+	return map[string]any{
+		"message": syslogMessage.GetMessage(),
+	}
 }
 
 // toSafeMap will dereference any pointers on the supplied map.
@@ -337,6 +372,11 @@ func cleanupTimestamp(e *entry.Entry) error {
 
 func postprocessWithoutPriHeader(e *entry.Entry) error {
 	return cleanupTimestamp(e)
+}
+
+// postprocessRaw is a no-op for raw syslog messages since they have no structured fields to process.
+func postprocessRaw(_ *entry.Entry) error {
+	return nil
 }
 
 func postprocess(e *entry.Entry) error {
