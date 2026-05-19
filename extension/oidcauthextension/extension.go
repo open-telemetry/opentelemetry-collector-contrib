@@ -280,6 +280,7 @@ func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg
 	vCfg := &oidc.Config{
 		ClientID:          p.Audience,
 		SkipClientIDCheck: p.IgnoreAudience,
+		SkipIssuerCheck:   p.IgnoreIssuer,
 	}
 
 	if p.PublicKeysFile != "" {
