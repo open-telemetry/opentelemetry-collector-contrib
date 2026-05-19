@@ -363,6 +363,31 @@ func TestLoadConfigFailed(t *testing.T) {
 			errorContains: `sticky_key: unknown hasher "invalid_hasher", valid values are "sarama_compat", "murmur2"`,
 			configFile:    "config-partitioning-failed.yaml",
 		},
+		{
+			id:            component.NewIDWithName(metadata.Type, "traces_message_key_exclusive"),
+			errorContains: errTracesMessageKeyExclusive.Error(),
+			configFile:    "config-partitioning-failed.yaml",
+		},
+		{
+			id:            component.NewIDWithName(metadata.Type, "metrics_message_key_exclusive"),
+			errorContains: errMetricsMessageKeyExclusive.Error(),
+			configFile:    "config-partitioning-failed.yaml",
+		},
+		{
+			id:            component.NewIDWithName(metadata.Type, "logs_message_key_exclusive_resource"),
+			errorContains: errLogsMessageKeyExclusive.Error(),
+			configFile:    "config-partitioning-failed.yaml",
+		},
+		{
+			id:            component.NewIDWithName(metadata.Type, "logs_message_key_exclusive_traceid"),
+			errorContains: errLogsMessageKeyExclusive.Error(),
+			configFile:    "config-partitioning-failed.yaml",
+		},
+		{
+			id:            component.NewIDWithName(metadata.Type, "missing_message_key_batch_partition"),
+			errorContains: `logs::message_key_from_metadata_key: message_key_from_metadata_key must be present in sending_queue::batch::partition::metadata_keys`,
+			configFile:    "config-topic-from-metadata-failed.yaml",
+		},
 	}
 
 	for _, tt := range tests {

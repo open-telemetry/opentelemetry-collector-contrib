@@ -37,8 +37,14 @@ jobs:
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
 
-  # Runs compute-ci-scope.sh to classify the PR's change set. Outputs a JSON
-  # matrix that downstream jobs consume directly as their `group` dimension:
+  # Runs compute-ci-scope.sh to classify the PR's change set. Outputs two JSON
+  # matrices that downstream jobs consume directly as their `group` dimension:
+  #   - matrix:        modules + transitive dependents (build/test/checks).
+  #   - direct_matrix: modules whose files actually changed (lint-only). A
+  #                    downstream module's lint result doesn't depend on
+  #                    whether an upstream module's source changed, so lint
+  #                    skips transitive dependents.
+  # In both:
   #   - full mode: ["receiver-0", "receiver-1", ...] (the named groups)
   #   - scoped mode: ["receiver/foo receiver/bar", ...] (bucketed module dirs)
   #   - skip: []
@@ -50,6 +56,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
       matrix: ${{ steps.post.outputs.matrix }}
+      direct_matrix: ${{ steps.post.outputs.direct_matrix }}
       mode: ${{ steps.post.outputs.mode }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -100,6 +107,7 @@ jobs:
         shell: bash
         env:
           RAW_MATRIX: ${{ steps.scope.outputs.matrix }}
+          RAW_DIRECT_MATRIX: ${{ steps.scope.outputs.direct_matrix }}
         run: |
           # The script maps top-level files (Makefile, .github/, etc.) to "."
           # the root module. Strip "." entries from buckets and drop buckets
@@ -107,11 +115,16 @@ jobs:
           # don't define a target for ".", so `make TARGET GROUP="."` would
           # fail with "No rule to make target 'for-.-target'". Top-level paths
           # that should force a full run belong in CRITICAL_FILES instead.
-          matrix=$(echo "$RAW_MATRIX" | jq -c '[.[] | split(" ") | map(select(. != ".")) | join(" ") | select(. != "")]')
+          filter='[.[] | split(" ") | map(select(. != ".")) | join(" ") | select(. != "")]'
+          matrix=$(echo "$RAW_MATRIX" | jq -c "$filter")
+          direct_matrix=$(echo "$RAW_DIRECT_MATRIX" | jq -c "$filter")
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "direct_matrix=$direct_matrix" >> "$GITHUB_OUTPUT"
 
           # Scoped buckets contain "/" (module paths); full mode emits named
-          # groups like "receiver-0" (no slashes). [] is skip.
+          # groups like "receiver-0" (no slashes). [] is skip. `mode` is
+          # derived from the transitive matrix -- it drives cross-compile
+          # and gating decisions that need the broader view.
           if [[ "$matrix" == "[]" ]]; then
             mode=skip
           elif [[ "$matrix" == *"/"* ]]; then
@@ -120,18 +133,23 @@ jobs:
             mode=full
           fi
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
-          echo "Raw matrix:      $RAW_MATRIX"
-          echo "Filtered matrix: $matrix"
-          echo "Mode:            $mode"
+          echo "Raw matrix:             $RAW_MATRIX"
+          echo "Filtered matrix:        $matrix"
+          echo "Raw direct matrix:      $RAW_DIRECT_MATRIX"
+          echo "Filtered direct matrix: $direct_matrix"
+          echo "Mode:                   $mode"
 
+  # Lint runs against the direct-changes matrix only: a downstream module's
+  # lint result doesn't depend on whether an upstream module's source changed,
+  # so dragging transitive dependents in here just wastes runners.
   exp-lint-matrix:
     needs: [exp-setup-environment, exp-ci-scope]
-    if: ${{ needs.exp-ci-scope.outputs.matrix != '[]' && needs.exp-ci-scope.outputs.matrix != '' }}
+    if: ${{ needs.exp-ci-scope.outputs.direct_matrix != '[]' && needs.exp-ci-scope.outputs.direct_matrix != '' }}
     strategy:
       fail-fast: false
       matrix:
         goos: [windows, linux]
-        group: ${{ fromJSON(needs.exp-ci-scope.outputs.matrix) }}
+        group: ${{ fromJSON(needs.exp-ci-scope.outputs.direct_matrix) }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -203,8 +221,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # codegen is split across the standard module groups so the slowest
+        # shard bounds wall time. Each codegen-<group> shard runs
+        # `make generate GROUP=<group>` over only that subset.
         shard:
-          - codegen
+          - codegen-receiver-0
+          - codegen-receiver-1
+          - codegen-receiver-2
+          - codegen-receiver-3
+          - codegen-processor-0
+          - codegen-processor-1
+          - codegen-exporter-0
+          - codegen-exporter-1
+          - codegen-exporter-2
+          - codegen-exporter-3
+          - codegen-extension
+          - codegen-connector
+          - codegen-internal
+          - codegen-pkg
+          - codegen-cmd-0
+          - codegen-other
           - porto-and-gci
           - go-mod-hygiene
           - small-generators
@@ -215,6 +251,11 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
+          # read-only-checks only runs checkdoc/checkmetadata/checkapi/
+          # multimod-verify. genotelcontribcol below still pulls what it
+          # actually needs lazily, but bulk-downloading every module up
+          # front isn't required.
+          gomoddownload: ${{ matrix.shard == 'read-only-checks' && 'false' || 'true' }}
       - run: make genotelcontribcol
       - name: Run shard ${{ matrix.shard }}
         run: ./.github/workflows/scripts/run-checks-shard.sh "${{ matrix.shard }}"
@@ -282,7 +323,7 @@ jobs:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -504,6 +545,9 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
+          # Only a handful of modules build here; let `go build` fetch what it
+          # needs lazily rather than pre-downloading every module in the repo.
+          gomoddownload: "false"
       - name: Build affected modules for ${{ matrix.os }}/${{ matrix.arch }}${{ matrix.arm && format('v{0}', matrix.arm) || '' }}
         env:
           MATRIX: ${{ needs.exp-ci-scope.outputs.matrix }}
