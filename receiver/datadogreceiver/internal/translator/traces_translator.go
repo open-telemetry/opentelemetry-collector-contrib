@@ -471,8 +471,8 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 		if _, err = io.Copy(buf, req.Body); err != nil {
 			return nil, err
 		}
-		if err = msgpackvalidator.Validate(buf.Bytes()); err != nil {
-			return nil, err
+		if validateErr := msgpackvalidator.Validate(buf.Bytes()); validateErr != nil {
+			return nil, validateErr
 		}
 		var tracerPayload pb.TracerPayload
 		if _, err = tracerPayload.UnmarshalMsg(buf.Bytes()); err != nil {
@@ -486,8 +486,8 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 		if _, err = io.Copy(buf, req.Body); err != nil {
 			return nil, err
 		}
-		if err = msgpackvalidator.Validate(buf.Bytes()); err != nil {
-			return nil, err
+		if validateErr := msgpackvalidator.Validate(buf.Bytes()); validateErr != nil {
+			return nil, validateErr
 		}
 		var traces pb.Traces
 
@@ -567,8 +567,8 @@ func decodeRequest(req *http.Request, dest *pb.Traces) (err error) {
 		if err != nil {
 			return err
 		}
-		if err = msgpackvalidator.Validate(buf.Bytes()); err != nil {
-			return err
+		if validateErr := msgpackvalidator.Validate(buf.Bytes()); validateErr != nil {
+			return validateErr
 		}
 		_, err = dest.UnmarshalMsg(buf.Bytes())
 		return err
@@ -584,8 +584,8 @@ func decodeRequest(req *http.Request, dest *pb.Traces) (err error) {
 			if err2 != nil {
 				return err2
 			}
-			if err2 = msgpackvalidator.Validate(buf.Bytes()); err2 != nil {
-				return err2
+			if validateErr := msgpackvalidator.Validate(buf.Bytes()); validateErr != nil {
+				return validateErr
 			}
 			_, err2 = dest.UnmarshalMsg(buf.Bytes())
 			return err2

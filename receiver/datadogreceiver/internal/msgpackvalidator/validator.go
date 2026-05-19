@@ -60,7 +60,8 @@ func validateArray(b []byte, depth int) ([]byte, error) {
 	if err != nil {
 		return b, err
 	}
-	if err := validateElementCount("array", size, len(remain), 1); err != nil {
+	err = validateElementCount("array", size, len(remain), 1)
+	if err != nil {
 		return b, err
 	}
 	for range size {
@@ -77,7 +78,8 @@ func validateMap(b []byte, depth int) ([]byte, error) {
 	if err != nil {
 		return b, err
 	}
-	if err := validateElementCount("map", size, len(remain), 2); err != nil {
+	err = validateElementCount("map", size, len(remain), 2)
+	if err != nil {
 		return b, err
 	}
 	for range size {
