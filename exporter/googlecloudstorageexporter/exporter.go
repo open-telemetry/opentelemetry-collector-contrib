@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -328,6 +329,9 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 		}
 	}()
 	if _, err = writer.Write(compressedContent); err != nil {
+		if !storage.ShouldRetry(err) {
+			return consumererror.NewPermanent(fmt.Errorf("failed to write to file: %w", err))
+		}
 		return fmt.Errorf("failed to write to file: %w", err)
 	}
 	s.logger.Info(
