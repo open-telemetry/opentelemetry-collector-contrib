@@ -30,7 +30,8 @@ func (p *sizeLimitedProtocol) ReadMapBegin(ctx context.Context) (thrift.TType, t
 	if err != nil {
 		return keyType, valueType, size, err
 	}
-	if err := p.checkCollectionSize("map", size, 2); err != nil {
+	err = p.checkCollectionSize("map", size, 2)
+	if err != nil {
 		return keyType, valueType, size, err
 	}
 	return keyType, valueType, size, nil
@@ -41,7 +42,8 @@ func (p *sizeLimitedProtocol) ReadListBegin(ctx context.Context) (thrift.TType, 
 	if err != nil {
 		return elemType, size, err
 	}
-	if err := p.checkCollectionSize("list", size, 1); err != nil {
+	err = p.checkCollectionSize("list", size, 1)
+	if err != nil {
 		return elemType, size, err
 	}
 	return elemType, size, nil
@@ -52,7 +54,8 @@ func (p *sizeLimitedProtocol) ReadSetBegin(ctx context.Context) (thrift.TType, i
 	if err != nil {
 		return elemType, size, err
 	}
-	if err := p.checkCollectionSize("set", size, 1); err != nil {
+	err = p.checkCollectionSize("set", size, 1)
+	if err != nil {
 		return elemType, size, err
 	}
 	return elemType, size, nil
