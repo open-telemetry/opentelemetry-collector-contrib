@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package azuresecretmanagerextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/azuresecretmanagerextension"
+package azuresecretmanagerauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/azuresecretmanagerauthextension"
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/azuresecretmanagerextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/azuresecretmanagerauthextension/internal/metadata"
 )
 
 func NewFactory() extension.Factory {

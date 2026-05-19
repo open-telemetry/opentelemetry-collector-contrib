@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package azureprovider // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/azuresecretmanagerextension/internal/azureprovider"
+package azureprovider // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/azuresecretmanagerauthextension/internal/azureprovider"
 
 import (
 	"context"

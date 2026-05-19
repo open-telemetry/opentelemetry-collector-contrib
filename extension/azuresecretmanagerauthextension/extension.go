@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package azuresecretmanagerextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/azuresecretmanagerextension"
+package azuresecretmanagerauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/azuresecretmanagerauthextension"
 
 import (
 	"context"
@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 	creds "google.golang.org/grpc/credentials"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/azuresecretmanagerextension/internal/azureprovider"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/azuresecretmanagerauthextension/internal/azureprovider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth"
 )
 

@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/azuresecretmanagerextension
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/azuresecretmanagerauthextension
 
 go 1.25.0
 
@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.58.1-0.20260514231715-e7f22744c28c
 	go.opentelemetry.io/collector/extension v1.58.1-0.20260514231715-e7f22744c28c
 	go.opentelemetry.io/collector/extension/extensionauth v1.58.1-0.20260514231715-e7f22744c28c
+	go.opentelemetry.io/collector/extension/extensiontest v0.152.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	google.golang.org/grpc v1.81.1
