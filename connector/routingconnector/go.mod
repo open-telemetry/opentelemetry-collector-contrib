@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.58.1-0.20260514231715-e7f22744c28c
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
-	google.golang.org/grpc v1.81.0
+	google.golang.org/grpc v1.81.1
 )
 
 require (
