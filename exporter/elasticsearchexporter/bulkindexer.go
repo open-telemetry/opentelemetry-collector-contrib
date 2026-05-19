@@ -329,7 +329,9 @@ func flushBulkIndexer(
 		}
 	}
 	if err != nil {
-		logger.Error("bulk indexer flush error", append(fields, zap.Error(err))...)
+		if !errors.Is(err, context.Canceled) {
+			logger.Error("bulk indexer flush error", append(fields, zap.Error(err))...)
+		}
 		var bulkFailedErr docappender.ErrorFlushFailed
 		switch {
 		case errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded):
@@ -410,7 +412,9 @@ func flushBulkIndexer(
 				fields = append(fields, zap.String("hint", hint))
 			}
 		}
-		logger.Error("failed to index document", fields...)
+		if !errors.Is(err, context.Canceled) {
+			logger.Error("failed to index document", fields...)
+		}
 
 		if resp.Input != "" {
 			fields = append(fields, zap.String("input", resp.Input))
