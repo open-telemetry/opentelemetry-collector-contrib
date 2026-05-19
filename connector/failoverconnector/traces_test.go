@@ -173,6 +173,48 @@ func TestTracesWithQueue(t *testing.T) {
 	assert.NoError(t, wrappedConn.ConsumeTraces(t.Context(), tr))
 }
 
+func TestTracesImmediateRetryOnLastPipelineFailure(t *testing.T) {
+	var sinkFirst, sinkSecond consumertest.TracesSink
+	tracesFirst := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/first")
+	tracesSecond := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/second")
+
+	cfg := &Config{
+		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}},
+		RetryInterval:    5 * time.Minute,
+	}
+
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+		tracesFirst:  &sinkFirst,
+		tracesSecond: &sinkSecond,
+	})
+
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
+	require.NoError(t, err)
+
+	failoverConnector := conn.(*tracesFailover)
+	defer func() {
+		assert.NoError(t, failoverConnector.Shutdown(t.Context()))
+	}()
+
+	tr := sampleTrace()
+
+	// forcing 1st pipeline to fal
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
+
+	err = failoverConnector.ConsumeTraces(t.Context(), tr)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, failoverConnector.failover.pS.CurrentPipeline())
+
+	// making the 2nd pipeline to fail and recovering the 1st one
+	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkFirst)
+
+	err = failoverConnector.ConsumeTraces(t.Context(), tr)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, failoverConnector.failover.pS.CurrentPipeline())
+}
+
 func consumeTracesAndCheckStable(router *tracesRouter, idx int, tr ptrace.Traces) bool {
 	_ = router.Consume(context.Background(), tr)
 	stableIndex := router.pS.CurrentPipeline()
