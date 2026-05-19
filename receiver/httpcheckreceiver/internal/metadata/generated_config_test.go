@@ -20,24 +20,72 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					HttpcheckClientConnectionDuration: MetricConfig{Enabled: true},
-					HttpcheckClientRequestDuration:    MetricConfig{Enabled: true},
-					HttpcheckDNSLookupDuration:        MetricConfig{Enabled: true},
-					HttpcheckDuration:                 MetricConfig{Enabled: true},
-					HttpcheckError:                    MetricConfig{Enabled: true},
-					HttpcheckResponseDuration:         MetricConfig{Enabled: true},
-					HttpcheckResponseSize:             MetricConfig{Enabled: true},
-					HttpcheckStatus:                   MetricConfig{Enabled: true},
-					HttpcheckTLSCertRemaining:         MetricConfig{Enabled: true},
-					HttpcheckTLSHandshakeDuration:     MetricConfig{Enabled: true},
-					HttpcheckValidationFailed:         MetricConfig{Enabled: true},
-					HttpcheckValidationPassed:         MetricConfig{Enabled: true},
+					HttpcheckClientConnectionDuration: HttpcheckClientConnectionDurationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckClientConnectionDurationMetricAttributeKey{HttpcheckClientConnectionDurationMetricAttributeKeyHTTPURL, HttpcheckClientConnectionDurationMetricAttributeKeyNetworkTransport},
+					},
+					HttpcheckClientRequestDuration: HttpcheckClientRequestDurationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckClientRequestDurationMetricAttributeKey{HttpcheckClientRequestDurationMetricAttributeKeyHTTPURL},
+					},
+					HttpcheckDNSLookupDuration: HttpcheckDNSLookupDurationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckDNSLookupDurationMetricAttributeKey{HttpcheckDNSLookupDurationMetricAttributeKeyHTTPURL},
+					},
+					HttpcheckDuration: HttpcheckDurationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckDurationMetricAttributeKey{HttpcheckDurationMetricAttributeKeyHTTPURL},
+					},
+					HttpcheckError: HttpcheckErrorMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckErrorMetricAttributeKey{HttpcheckErrorMetricAttributeKeyHTTPURL, HttpcheckErrorMetricAttributeKeyErrorMessage},
+					},
+					HttpcheckResponseDuration: HttpcheckResponseDurationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckResponseDurationMetricAttributeKey{HttpcheckResponseDurationMetricAttributeKeyHTTPURL},
+					},
+					HttpcheckResponseSize: HttpcheckResponseSizeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckResponseSizeMetricAttributeKey{HttpcheckResponseSizeMetricAttributeKeyHTTPURL},
+					},
+					HttpcheckStatus: HttpcheckStatusMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckStatusMetricAttributeKey{HttpcheckStatusMetricAttributeKeyHTTPURL, HttpcheckStatusMetricAttributeKeyHTTPStatusCode, HttpcheckStatusMetricAttributeKeyHTTPMethod, HttpcheckStatusMetricAttributeKeyHTTPStatusClass},
+					},
+					HttpcheckTLSCertRemaining: HttpcheckTLSCertRemainingMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckTLSCertRemainingMetricAttributeKey{HttpcheckTLSCertRemainingMetricAttributeKeyHTTPURL, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSIssuer, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSCn, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSSan},
+					},
+					HttpcheckTLSHandshakeDuration: HttpcheckTLSHandshakeDurationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckTLSHandshakeDurationMetricAttributeKey{HttpcheckTLSHandshakeDurationMetricAttributeKeyHTTPURL},
+					},
+					HttpcheckValidationFailed: HttpcheckValidationFailedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType},
+					},
+					HttpcheckValidationPassed: HttpcheckValidationPassedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType},
+					},
 				},
 			},
 		},
@@ -45,18 +93,66 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					HttpcheckClientConnectionDuration: MetricConfig{Enabled: false},
-					HttpcheckClientRequestDuration:    MetricConfig{Enabled: false},
-					HttpcheckDNSLookupDuration:        MetricConfig{Enabled: false},
-					HttpcheckDuration:                 MetricConfig{Enabled: false},
-					HttpcheckError:                    MetricConfig{Enabled: false},
-					HttpcheckResponseDuration:         MetricConfig{Enabled: false},
-					HttpcheckResponseSize:             MetricConfig{Enabled: false},
-					HttpcheckStatus:                   MetricConfig{Enabled: false},
-					HttpcheckTLSCertRemaining:         MetricConfig{Enabled: false},
-					HttpcheckTLSHandshakeDuration:     MetricConfig{Enabled: false},
-					HttpcheckValidationFailed:         MetricConfig{Enabled: false},
-					HttpcheckValidationPassed:         MetricConfig{Enabled: false},
+					HttpcheckClientConnectionDuration: HttpcheckClientConnectionDurationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckClientConnectionDurationMetricAttributeKey{HttpcheckClientConnectionDurationMetricAttributeKeyHTTPURL, HttpcheckClientConnectionDurationMetricAttributeKeyNetworkTransport},
+					},
+					HttpcheckClientRequestDuration: HttpcheckClientRequestDurationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckClientRequestDurationMetricAttributeKey{HttpcheckClientRequestDurationMetricAttributeKeyHTTPURL},
+					},
+					HttpcheckDNSLookupDuration: HttpcheckDNSLookupDurationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckDNSLookupDurationMetricAttributeKey{HttpcheckDNSLookupDurationMetricAttributeKeyHTTPURL},
+					},
+					HttpcheckDuration: HttpcheckDurationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckDurationMetricAttributeKey{HttpcheckDurationMetricAttributeKeyHTTPURL},
+					},
+					HttpcheckError: HttpcheckErrorMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckErrorMetricAttributeKey{HttpcheckErrorMetricAttributeKeyHTTPURL, HttpcheckErrorMetricAttributeKeyErrorMessage},
+					},
+					HttpcheckResponseDuration: HttpcheckResponseDurationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckResponseDurationMetricAttributeKey{HttpcheckResponseDurationMetricAttributeKeyHTTPURL},
+					},
+					HttpcheckResponseSize: HttpcheckResponseSizeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckResponseSizeMetricAttributeKey{HttpcheckResponseSizeMetricAttributeKeyHTTPURL},
+					},
+					HttpcheckStatus: HttpcheckStatusMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckStatusMetricAttributeKey{HttpcheckStatusMetricAttributeKeyHTTPURL, HttpcheckStatusMetricAttributeKeyHTTPStatusCode, HttpcheckStatusMetricAttributeKeyHTTPMethod, HttpcheckStatusMetricAttributeKeyHTTPStatusClass},
+					},
+					HttpcheckTLSCertRemaining: HttpcheckTLSCertRemainingMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckTLSCertRemainingMetricAttributeKey{HttpcheckTLSCertRemainingMetricAttributeKeyHTTPURL, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSIssuer, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSCn, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSSan},
+					},
+					HttpcheckTLSHandshakeDuration: HttpcheckTLSHandshakeDurationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckTLSHandshakeDurationMetricAttributeKey{HttpcheckTLSHandshakeDurationMetricAttributeKeyHTTPURL},
+					},
+					HttpcheckValidationFailed: HttpcheckValidationFailedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType},
+					},
+					HttpcheckValidationPassed: HttpcheckValidationPassedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType},
+					},
 				},
 			},
 		},
@@ -64,7 +160,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(HttpcheckClientConnectionDurationMetricConfig{}, HttpcheckClientRequestDurationMetricConfig{}, HttpcheckDNSLookupDurationMetricConfig{}, HttpcheckDurationMetricConfig{}, HttpcheckErrorMetricConfig{}, HttpcheckResponseDurationMetricConfig{}, HttpcheckResponseSizeMetricConfig{}, HttpcheckStatusMetricConfig{}, HttpcheckTLSCertRemainingMetricConfig{}, HttpcheckTLSHandshakeDurationMetricConfig{}, HttpcheckValidationFailedMetricConfig{}, HttpcheckValidationPassedMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -75,7 +171,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

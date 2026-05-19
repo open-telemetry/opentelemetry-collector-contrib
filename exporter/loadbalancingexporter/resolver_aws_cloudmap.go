@@ -52,6 +52,7 @@ type cloudMapResolver struct {
 	healthStatus  *types.HealthStatusFilter
 	resInterval   time.Duration
 	resTimeout    time.Duration
+	ownerAccount  *string
 
 	endpoints         []string
 	onChangeCallbacks []func([]string)
@@ -72,6 +73,7 @@ func newCloudMapResolver(
 	healthStatus *types.HealthStatusFilter,
 	interval time.Duration,
 	timeout time.Duration,
+	ownerAccount *string,
 	tb *metadata.TelemetryBuilder,
 ) (*cloudMapResolver, error) { // Using the SDK's default configuration, loading additional config
 	// and credentials values from the environment variables, shared
@@ -113,6 +115,7 @@ func newCloudMapResolver(
 		healthStatus:  healthStatus,
 		resInterval:   interval,
 		resTimeout:    timeout,
+		ownerAccount:  ownerAccount,
 		stopCh:        make(chan struct{}),
 		discoveryFn:   createDiscoveryFunction(svc),
 		telemetry:     tb,
@@ -172,6 +175,7 @@ func (r *cloudMapResolver) resolve(ctx context.Context) ([]string, error) {
 		NamespaceName:      r.namespaceName,
 		ServiceName:        r.serviceName,
 		HealthStatus:       *r.healthStatus,
+		OwnerAccount:       r.ownerAccount,
 		MaxResults:         nil,
 		OptionalParameters: nil,
 		QueryParameters:    nil,

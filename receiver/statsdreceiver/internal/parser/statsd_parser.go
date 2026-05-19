@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
@@ -61,6 +61,8 @@ type StatsDParser struct {
 	enableSimpleTags        bool
 	isMonotonicCounter      bool
 	enableIPOnlyAggregation bool
+	ignoreHost              bool
+	counterType             protocol.CounterType
 	timerEvents             ObserverCategory
 	histogramEvents         ObserverCategory
 	lastIntervalTime        time.Time
@@ -201,7 +203,7 @@ func (p *StatsDParser) resetState(when time.Time) {
 	p.instrumentsByAddress = make(map[netAddr]*instruments)
 }
 
-func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotonicCounter, enableIPOnlyAggregation bool, sendTimerHistogram []protocol.TimerHistogramMapping) error {
+func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotonicCounter, enableIPOnlyAggregation, ignoreHost bool, sendTimerHistogram []protocol.TimerHistogramMapping, counterType protocol.CounterType) error {
 	p.resetState(timeNowFunc())
 
 	p.histogramEvents = defaultObserverCategory
@@ -210,6 +212,8 @@ func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotoni
 	p.enableSimpleTags = enableSimpleTags
 	p.isMonotonicCounter = isMonotonicCounter
 	p.enableIPOnlyAggregation = enableIPOnlyAggregation
+	p.ignoreHost = ignoreHost
+	p.counterType = counterType
 
 	// Note: validation occurs in ("../".Config).validate()
 	for _, eachMap := range sendTimerHistogram {
@@ -355,7 +359,9 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 	}
 
 	addrKey := newNetAddr(addr)
-	if p.enableIPOnlyAggregation {
+	if p.ignoreHost {
+		addrKey = netAddr{}
+	} else if p.enableIPOnlyAggregation {
 		addrKey = newIPOnlyNetAddr(addr)
 	}
 
@@ -382,10 +388,10 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 	case CounterType:
 		_, ok := instrument.counters[parsedMetric.description]
 		if !ok {
-			instrument.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter)
+			instrument.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, p.counterType)
 		} else {
 			point := instrument.counters[parsedMetric.description].Metrics().At(0).Sum().DataPoints().At(0)
-			point.SetIntValue(point.IntValue() + parsedMetric.counterValue())
+			aggregateCounterValue(point, parsedMetric.counterValue(), p.counterType)
 		}
 
 	case TimingType, HistogramType, DistributionType:

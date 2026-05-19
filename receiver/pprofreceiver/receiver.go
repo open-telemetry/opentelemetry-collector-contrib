@@ -5,74 +5,126 @@ package pprofreceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"fmt"
-	"os"
+	"errors"
 
-	"github.com/bmatcuk/doublestar/v4"
-	"github.com/google/pprof/profile"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/scraper/scrapererror"
-	"go.uber.org/multierr"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper/xscraperhelper"
+	"go.opentelemetry.io/collector/scraper/xscraper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver/internal/metadata"
 )
 
-type pprofScraper struct {
-	logger   *zap.Logger
-	config   *Config
-	settings component.TelemetrySettings
+type pprofReceiver struct {
+	subComponents []component.Component
 }
 
-func newScraper(cfg *Config, settings receiver.Settings) *pprofScraper {
-	return &pprofScraper{
-		logger:   settings.Logger,
-		settings: settings.TelemetrySettings,
-		config:   cfg,
+var _ xreceiver.Profiles = (*pprofReceiver)(nil)
+
+func (r *pprofReceiver) Start(ctx context.Context, host component.Host) error {
+	for i, c := range r.subComponents {
+		if err := c.Start(ctx, host); err != nil {
+			// Roll back any already-started sub-components so we don't leak
+			// goroutines or hold a listening port on partial start failure.
+			for j := i - 1; j >= 0; j-- {
+				err = errors.Join(err, r.subComponents[j].Shutdown(ctx))
+			}
+			return err
+		}
 	}
-}
-
-func (*pprofScraper) start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (s *pprofScraper) scrape(_ context.Context) (pprofile.Profiles, error) {
-	matches, err := doublestar.FilepathGlob(s.config.Include)
-	if err != nil {
-		return pprofile.NewProfiles(), err
-	}
-
-	var scrapeErrors []error
-	result := pprofile.NewProfiles()
-
-	for _, match := range matches {
-		reader, err := os.Open(match)
-		if err != nil {
-			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to open file %s: %w", match, err))
+func (r *pprofReceiver) Shutdown(ctx context.Context) error {
+	var errs error
+	for _, c := range r.subComponents {
+		if c == nil {
 			continue
 		}
+		errs = errors.Join(errs, c.Shutdown(ctx))
+	}
+	return errs
+}
 
-		pprofProfile, err := profile.Parse(reader)
-		reader.Close()
+func newReceiver(cfg *Config, settings receiver.Settings, consumer xconsumer.Profiles) (xreceiver.Profiles, error) {
+	r := &pprofReceiver{}
+
+	if cfg.Remote.HasValue() {
+		remoteCfg := cfg.Remote.Get()
+		sub, err := newScraperController(settings, consumer, &remoteCfg.ControllerConfig, func(set scraper.Settings) (xscraper.Profiles, error) {
+			return &internal.HTTPClientScraper{
+				ClientConfig: remoteCfg.ClientConfig,
+				Settings:     set.TelemetrySettings,
+			}, nil
+		})
 		if err != nil {
-			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse pprof data from %s: %w", match, err))
-			continue
+			return nil, err
 		}
-
-		profiles, err := pprof.ConvertPprofToProfiles(pprofProfile)
-		if err != nil {
-			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to convert pprof to profiles from %s: %w", match, err))
-			continue
-		}
-
-		profiles.ResourceProfiles().MoveAndAppendTo(result.ResourceProfiles())
-		s.logger.Debug("Successfully scraped pprof file", zap.String("file", match))
+		r.subComponents = append(r.subComponents, sub)
 	}
 
-	if len(scrapeErrors) > 0 {
-		return result, scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))
+	if cfg.File.HasValue() {
+		fileCfg := cfg.File.Get()
+		sub, err := newScraperController(settings, consumer, &fileCfg.ControllerConfig, func(set scraper.Settings) (xscraper.Profiles, error) {
+			return xscraper.NewProfiles((&internal.FileScraper{
+				Include: fileCfg.Include,
+				Logger:  set.Logger,
+			}).Scrape)
+		})
+		if err != nil {
+			return nil, err
+		}
+		r.subComponents = append(r.subComponents, sub)
 	}
-	return result, nil
+
+	if cfg.Self.HasValue() {
+		selfCfg := cfg.Self.Get()
+		sub, err := newScraperController(settings, consumer, &selfCfg.ControllerConfig, func(_ scraper.Settings) (xscraper.Profiles, error) {
+			return &internal.SelfScraper{
+				BlockProfileFraction: selfCfg.BlockProfileFraction,
+				MutexProfileFraction: selfCfg.MutexProfileFraction,
+			}, nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		r.subComponents = append(r.subComponents, sub)
+	}
+
+	if cfg.Server.HasValue() {
+		serverCfg := cfg.Server.Get()
+		r.subComponents = append(r.subComponents, &internal.HTTPServer{
+			ServerConfig: serverCfg.ServerConfig,
+			Consumer:     consumer,
+			Settings:     settings,
+		})
+	}
+
+	return r, nil
+}
+
+func newScraperController(
+	settings receiver.Settings,
+	consumer xconsumer.Profiles,
+	controllerCfg *scraperhelper.ControllerConfig,
+	scraperFn func(scraper.Settings) (xscraper.Profiles, error),
+) (xreceiver.Profiles, error) {
+	scraperFactory := xscraper.NewFactory(
+		metadata.Type,
+		func() component.Config { return &struct{}{} },
+		xscraper.WithProfiles(func(_ context.Context, set scraper.Settings, _ component.Config) (xscraper.Profiles, error) {
+			return scraperFn(set)
+		}, metadata.ProfilesStability),
+	)
+	return xscraperhelper.NewProfilesController(
+		controllerCfg,
+		settings,
+		consumer,
+		xscraperhelper.AddFactoryWithConfig(scraperFactory, nil),
+	)
 }

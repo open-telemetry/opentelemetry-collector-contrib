@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -420,6 +420,14 @@ func withWaitForMetadata(wait bool) option {
 func withWaitForMetadataTimeout(timeout time.Duration) option {
 	return func(p *kubernetesprocessor) error {
 		p.waitForMetadataTimeout = timeout
+		return nil
+	}
+}
+
+// withWatchSyncPeriod allows specifying the resync period for informer.
+func withWatchSyncPeriod(duration time.Duration) option {
+	return func(p *kubernetesprocessor) error {
+		p.watchSyncPeriod = duration
 		return nil
 	}
 }

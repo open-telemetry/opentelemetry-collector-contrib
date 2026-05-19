@@ -81,5 +81,9 @@ resourceLogs:
               stringValue: Host header is a numeric IP address
             timeUnixNano: "1490025129149449900"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.application_gateway
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

@@ -1,4 +1,10 @@
+display_name: Oracle DB Receiver
 type: oracledb
+
+description: |
+  This receiver periodically queries an Oracle Database host to collect metrics.
+
+reaggregation_enabled: true
 
 status:
   class: receiver
@@ -63,6 +69,9 @@ attributes:
   oracledb.cluster_wait_time:
     description: Total time (in seconds) that a query waited due to Oracle Real Application Clusters (RAC) coordination (reporting delta).
     type: double
+  oracledb.command_type:
+    description: Command type of the query.
+    type: int
   oracledb.concurrency_wait_time:
     description: Total time (in seconds) a query spent waiting on concurrency-related events (reporting delta).
     type: double
@@ -112,6 +121,9 @@ attributes:
   oracledb.plan_hash_value:
     description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
     type: string
+  oracledb.procedure_execution_count:
+    description: The number of times the stored procedure has been executed, derived from the minimum statement execution count across all statements in the procedure (reporting delta). Please note, this is best effort and may not be accurate in some scenarios. Use with caution.
+    type: int
   oracledb.procedure_id:
     description: The identifier of the stored procedure or function being executed by the query.
     type: int
@@ -127,6 +139,12 @@ attributes:
   oracledb.program:
     description: Name of the client program or tool that initiated the Oracle database session.
     type: string
+  oracledb.query.started:
+    description: "The timestamp when the SQL statement started execution, in ISO 8601 format (UTC)."
+    type: string
+  oracledb.query.wait_time:
+    description: The wait time in seconds. If the session is currently waiting, the value is the time spent waiting in the current wait. Returns 0 if the session is not currently waiting.
+    type: double
   oracledb.query_plan:
     description: The query execution plan used by the SQL Server.
     type: string
@@ -138,6 +156,12 @@ attributes:
     type: string
   oracledb.serial:
     description: Serial number associated with a session.
+    type: string
+  oracledb.session.duration:
+    description: The total time in seconds that the session has been connected.
+    type: double
+  oracledb.session.started:
+    description: "The timestamp when the session logged on, in ISO 8601 format (UTC)."
     type: string
   oracledb.sid:
     description: ID of the Oracle Server session.
@@ -160,12 +184,15 @@ attributes:
   session_status:
     description: Session status
     type: string
+    requirement_level: recommended
   session_type:
     description: Session type
     type: string
+    requirement_level: recommended
   tablespace_name:
     description: Tablespace name
     type: string
+    requirement_level: recommended
   # attributes for events
   ## top query
   user.name:
@@ -199,11 +226,15 @@ events:
       - oracledb.state
       - oracledb.wait_class
       - oracledb.event
+      - oracledb.query.wait_time
       - oracledb.procedure_id
       - oracledb.procedure_name
       - oracledb.procedure_type
       - oracledb.osuser
       - oracledb.duration_sec
+      - oracledb.query.started
+      - oracledb.session.started
+      - oracledb.session.duration
   db.server.top_query:
     enabled: false
     description: Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).
@@ -218,6 +249,7 @@ events:
       - oracledb.application_wait_time
       - oracledb.buffer_gets
       - oracledb.cluster_wait_time
+      - oracledb.command_type
       - oracledb.concurrency_wait_time
       - oracledb.cpu_time
       - oracledb.direct_reads
@@ -231,6 +263,7 @@ events:
       - oracledb.physical_write_requests
       - oracledb.rows_processed
       - oracledb.user_io_wait_time
+      - oracledb.procedure_execution_count
       - oracledb.procedure_id
       - oracledb.procedure_name
       - oracledb.procedure_type
@@ -254,6 +287,13 @@ metrics:
       monotonic: true
       value_type: double
     unit: s
+  oracledb.data_dictionary.hit_ratio:
+    description: Data dictionary cache hit ratio from v$rowcache.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
   oracledb.db_block_gets:
     description: Number of times a current block was requested from the buffer cache.
     enabled: false
@@ -560,6 +600,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{queries}"
+  oracledb.recycle_bin.limit:
+    description: Total size of the recycle bin.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: By
   oracledb.sessions.limit:
     description: Maximum limit of active sessions, -1 if unlimited.
     enabled: true
@@ -579,6 +626,20 @@ metrics:
       value_type: int
       input_type: string
     unit: "{sessions}"
+  oracledb.storage.usage:
+    description: Used database storage size from dba_data_files and dba_free_space.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: By
+  oracledb.storage.utilization:
+    description: Fraction of allocated database storage that is used.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "1"
   oracledb.tablespace_size.limit:
     attributes:
       - tablespace_name

@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -30,16 +31,21 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/extensions"
 )
+
+var _ confmap.Validator = (*Supervisor)(nil)
 
 // Supervisor is the Supervisor config file format.
 type Supervisor struct {
-	Server       OpAMPServer  `mapstructure:"server"`
-	Agent        Agent        `mapstructure:"agent"`
-	Capabilities Capabilities `mapstructure:"capabilities"`
-	Storage      Storage      `mapstructure:"storage"`
-	Telemetry    Telemetry    `mapstructure:"telemetry"`
-	HealthCheck  HealthCheck  `mapstructure:"healthcheck"`
+	Server       OpAMPServer       `mapstructure:"server"`
+	Agent        Agent             `mapstructure:"agent"`
+	Capabilities Capabilities      `mapstructure:"capabilities"`
+	Storage      Storage           `mapstructure:"storage"`
+	Telemetry    Telemetry         `mapstructure:"telemetry"`
+	HealthCheck  HealthCheck       `mapstructure:"healthcheck"`
+	Extensions   extensions.Config `mapstructure:"extensions,omitempty"`
 }
 
 // Load loads the Supervisor config from a file.
@@ -73,26 +79,10 @@ func Load(configFile string) (Supervisor, error) {
 		return Supervisor{}, err
 	}
 
-	if err := cfg.Validate(); err != nil {
-		return Supervisor{}, fmt.Errorf("cannot validate supervisor config %s: %w", configFile, err)
-	}
-
 	return cfg, nil
 }
 
-func (s Supervisor) Validate() error {
-	if err := s.Server.Validate(); err != nil {
-		return err
-	}
-
-	if err := s.Agent.Validate(); err != nil {
-		return err
-	}
-
-	if err := s.HealthCheck.Validate(); err != nil {
-		return err
-	}
-
+func (Supervisor) Validate() error {
 	return nil
 }
 
@@ -116,6 +106,8 @@ type Capabilities struct {
 	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
 	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
 	ReportsHeartbeat               bool `mapstructure:"reports_heartbeat"`
+	AcceptsPackages                bool `mapstructure:"accepts_packages"`
+	ReportsPackageStatuses         bool `mapstructure:"reports_package_statuses"`
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -162,6 +154,16 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 	}
 	if c.ReportsHeartbeat {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
+	}
+
+	// AcceptsPackages and ReportsPackageStatuses are not yet fully implemented.
+	// They are included here for completeness.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272
+	if c.AcceptsPackages {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages
+	}
+	if c.ReportsPackageStatuses {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
 	}
 
 	return supportedCapabilities
@@ -214,6 +216,7 @@ func (o OpAMPServer) Validate() error {
 
 type Agent struct {
 	Executable              string            `mapstructure:"executable"`
+	InstanceID              string            `mapstructure:"instance_id"`
 	OrphanDetectionInterval time.Duration     `mapstructure:"orphan_detection_interval"`
 	Description             AgentDescription  `mapstructure:"description"`
 	ConfigApplyTimeout      time.Duration     `mapstructure:"config_apply_timeout"`
@@ -221,6 +224,7 @@ type Agent struct {
 	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
 	UseHUPConfigReload      bool              `mapstructure:"use_hup_config_reload"`
+	ValidateConfig          bool              `mapstructure:"validate_config"`
 	ConfigFiles             []string          `mapstructure:"config_files"`
 	Arguments               []string          `mapstructure:"args"`
 	Env                     map[string]string `mapstructure:"env"`
@@ -237,6 +241,12 @@ func (a Agent) Validate() error {
 
 	if a.OpAMPServerPort < 0 || a.OpAMPServerPort > 65535 {
 		return errors.New("agent::opamp_server_port must be a valid port number")
+	}
+
+	if a.InstanceID != "" {
+		if _, err := uuid.Parse(a.InstanceID); err != nil {
+			return fmt.Errorf("agent::instance_id must be a valid UUID string when set: %w", err)
+		}
 	}
 
 	if a.Executable == "" {
@@ -296,10 +306,12 @@ type Telemetry struct {
 	Metrics Metrics                        `mapstructure:"metrics"`
 	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
-	Resource map[string]*string `mapstructure:"resource"`
+	Resource otelconftelemetry.ResourceConfig `mapstructure:"resource"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
+
+type ResourceConfig = otelconftelemetry.ResourceConfig
 
 type HealthCheck struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
@@ -371,6 +383,8 @@ func DefaultSupervisor() Supervisor {
 			ReportsRemoteConfig:            false,
 			ReportsAvailableComponents:     false,
 			ReportsHeartbeat:               true,
+			AcceptsPackages:                false,
+			ReportsPackageStatuses:         false,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,
@@ -380,6 +394,7 @@ func DefaultSupervisor() Supervisor {
 			ConfigApplyTimeout:      5 * time.Second,
 			BootstrapTimeout:        3 * time.Second,
 			PassthroughLogs:         false,
+			ValidateConfig:          false,
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{

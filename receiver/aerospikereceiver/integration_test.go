@@ -15,7 +15,6 @@ import (
 	"time"
 
 	as "github.com/aerospike/aerospike-client-go/v8"
-	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
@@ -74,7 +73,7 @@ type waitStrategy struct{}
 
 func (waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
 	if err := wait.ForAll(
-		wait.ForListeningPort(nat.Port(aerospikePort)),
+		wait.ForListeningPort(aerospikePort),
 		wait.ForLog("service ready: soon there will be cake!"),
 		wait.ForLog("NODE-ID"),
 	).
@@ -105,11 +104,11 @@ func aerospikeHost(ctx context.Context, st wait.StrategyTarget) (*as.Host, error
 	if err != nil {
 		return nil, err
 	}
-	port, err := st.MappedPort(ctx, nat.Port(aerospikePort))
+	port, err := st.MappedPort(ctx, aerospikePort)
 	if err != nil {
 		return nil, err
 	}
-	return as.NewHost(host, port.Int()), nil
+	return as.NewHost(host, int(port.Num())), nil
 }
 
 type doneCheckable interface {

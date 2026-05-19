@@ -20,77 +20,311 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					MongodbatlasDbCounts:                                  MetricConfig{Enabled: true},
-					MongodbatlasDbSize:                                    MetricConfig{Enabled: true},
-					MongodbatlasDiskPartitionIopsAverage:                  MetricConfig{Enabled: true},
-					MongodbatlasDiskPartitionIopsMax:                      MetricConfig{Enabled: true},
-					MongodbatlasDiskPartitionLatencyAverage:               MetricConfig{Enabled: true},
-					MongodbatlasDiskPartitionLatencyMax:                   MetricConfig{Enabled: true},
-					MongodbatlasDiskPartitionQueueDepth:                   MetricConfig{Enabled: true},
-					MongodbatlasDiskPartitionSpaceAverage:                 MetricConfig{Enabled: true},
-					MongodbatlasDiskPartitionSpaceMax:                     MetricConfig{Enabled: true},
-					MongodbatlasDiskPartitionThroughput:                   MetricConfig{Enabled: true},
-					MongodbatlasDiskPartitionUsageAverage:                 MetricConfig{Enabled: true},
-					MongodbatlasDiskPartitionUsageMax:                     MetricConfig{Enabled: true},
-					MongodbatlasDiskPartitionUtilizationAverage:           MetricConfig{Enabled: true},
-					MongodbatlasDiskPartitionUtilizationMax:               MetricConfig{Enabled: true},
-					MongodbatlasProcessAsserts:                            MetricConfig{Enabled: true},
-					MongodbatlasProcessBackgroundFlush:                    MetricConfig{Enabled: true},
-					MongodbatlasProcessCacheIo:                            MetricConfig{Enabled: true},
-					MongodbatlasProcessCacheRatio:                         MetricConfig{Enabled: true},
-					MongodbatlasProcessCacheSize:                          MetricConfig{Enabled: true},
-					MongodbatlasProcessConnections:                        MetricConfig{Enabled: true},
-					MongodbatlasProcessCPUChildrenNormalizedUsageAverage:  MetricConfig{Enabled: true},
-					MongodbatlasProcessCPUChildrenNormalizedUsageMax:      MetricConfig{Enabled: true},
-					MongodbatlasProcessCPUChildrenUsageAverage:            MetricConfig{Enabled: true},
-					MongodbatlasProcessCPUChildrenUsageMax:                MetricConfig{Enabled: true},
-					MongodbatlasProcessCPUNormalizedUsageAverage:          MetricConfig{Enabled: true},
-					MongodbatlasProcessCPUNormalizedUsageMax:              MetricConfig{Enabled: true},
-					MongodbatlasProcessCPUUsageAverage:                    MetricConfig{Enabled: true},
-					MongodbatlasProcessCPUUsageMax:                        MetricConfig{Enabled: true},
-					MongodbatlasProcessCursors:                            MetricConfig{Enabled: true},
-					MongodbatlasProcessDbDocumentRate:                     MetricConfig{Enabled: true},
-					MongodbatlasProcessDbOperationsRate:                   MetricConfig{Enabled: true},
-					MongodbatlasProcessDbOperationsTime:                   MetricConfig{Enabled: true},
-					MongodbatlasProcessDbQueryExecutorScanned:             MetricConfig{Enabled: true},
-					MongodbatlasProcessDbQueryTargetingScannedPerReturned: MetricConfig{Enabled: true},
-					MongodbatlasProcessDbStorage:                          MetricConfig{Enabled: true},
-					MongodbatlasProcessGlobalLock:                         MetricConfig{Enabled: true},
-					MongodbatlasProcessIndexBtreeMissRatio:                MetricConfig{Enabled: true},
-					MongodbatlasProcessIndexCounters:                      MetricConfig{Enabled: true},
-					MongodbatlasProcessJournalingCommits:                  MetricConfig{Enabled: true},
-					MongodbatlasProcessJournalingDataFiles:                MetricConfig{Enabled: true},
-					MongodbatlasProcessJournalingWritten:                  MetricConfig{Enabled: true},
-					MongodbatlasProcessMemoryUsage:                        MetricConfig{Enabled: true},
-					MongodbatlasProcessNetworkIo:                          MetricConfig{Enabled: true},
-					MongodbatlasProcessNetworkRequests:                    MetricConfig{Enabled: true},
-					MongodbatlasProcessOplogRate:                          MetricConfig{Enabled: true},
-					MongodbatlasProcessOplogTime:                          MetricConfig{Enabled: true},
-					MongodbatlasProcessPageFaults:                         MetricConfig{Enabled: true},
-					MongodbatlasProcessRestarts:                           MetricConfig{Enabled: true},
-					MongodbatlasProcessTickets:                            MetricConfig{Enabled: true},
-					MongodbatlasSystemCPUNormalizedUsageAverage:           MetricConfig{Enabled: true},
-					MongodbatlasSystemCPUNormalizedUsageMax:               MetricConfig{Enabled: true},
-					MongodbatlasSystemCPUUsageAverage:                     MetricConfig{Enabled: true},
-					MongodbatlasSystemCPUUsageMax:                         MetricConfig{Enabled: true},
-					MongodbatlasSystemFtsCPUNormalizedUsage:               MetricConfig{Enabled: true},
-					MongodbatlasSystemFtsCPUUsage:                         MetricConfig{Enabled: true},
-					MongodbatlasSystemFtsDiskUsed:                         MetricConfig{Enabled: true},
-					MongodbatlasSystemFtsMemoryUsage:                      MetricConfig{Enabled: true},
-					MongodbatlasSystemMemoryUsageAverage:                  MetricConfig{Enabled: true},
-					MongodbatlasSystemMemoryUsageMax:                      MetricConfig{Enabled: true},
-					MongodbatlasSystemNetworkIoAverage:                    MetricConfig{Enabled: true},
-					MongodbatlasSystemNetworkIoMax:                        MetricConfig{Enabled: true},
-					MongodbatlasSystemPagingIoAverage:                     MetricConfig{Enabled: true},
-					MongodbatlasSystemPagingIoMax:                         MetricConfig{Enabled: true},
-					MongodbatlasSystemPagingUsageAverage:                  MetricConfig{Enabled: true},
-					MongodbatlasSystemPagingUsageMax:                      MetricConfig{Enabled: true},
+					MongodbatlasDbCounts: MongodbatlasDbCountsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDbCountsMetricAttributeKey{MongodbatlasDbCountsMetricAttributeKeyObjectType},
+					},
+					MongodbatlasDbSize: MongodbatlasDbSizeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDbSizeMetricAttributeKey{MongodbatlasDbSizeMetricAttributeKeyObjectType},
+					},
+					MongodbatlasDiskPartitionIopsAverage: MongodbatlasDiskPartitionIopsAverageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionIopsAverageMetricAttributeKey{MongodbatlasDiskPartitionIopsAverageMetricAttributeKeyDiskDirection},
+					},
+					MongodbatlasDiskPartitionIopsMax: MongodbatlasDiskPartitionIopsMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionIopsMaxMetricAttributeKey{MongodbatlasDiskPartitionIopsMaxMetricAttributeKeyDiskDirection},
+					},
+					MongodbatlasDiskPartitionLatencyAverage: MongodbatlasDiskPartitionLatencyAverageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionLatencyAverageMetricAttributeKey{MongodbatlasDiskPartitionLatencyAverageMetricAttributeKeyDiskDirection},
+					},
+					MongodbatlasDiskPartitionLatencyMax: MongodbatlasDiskPartitionLatencyMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionLatencyMaxMetricAttributeKey{MongodbatlasDiskPartitionLatencyMaxMetricAttributeKeyDiskDirection},
+					},
+					MongodbatlasDiskPartitionQueueDepth: MongodbatlasDiskPartitionQueueDepthMetricConfig{
+						Enabled: true,
+					},
+					MongodbatlasDiskPartitionSpaceAverage: MongodbatlasDiskPartitionSpaceAverageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionSpaceAverageMetricAttributeKey{MongodbatlasDiskPartitionSpaceAverageMetricAttributeKeyDiskStatus},
+					},
+					MongodbatlasDiskPartitionSpaceMax: MongodbatlasDiskPartitionSpaceMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionSpaceMaxMetricAttributeKey{MongodbatlasDiskPartitionSpaceMaxMetricAttributeKeyDiskStatus},
+					},
+					MongodbatlasDiskPartitionThroughput: MongodbatlasDiskPartitionThroughputMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionThroughputMetricAttributeKey{MongodbatlasDiskPartitionThroughputMetricAttributeKeyDiskDirection},
+					},
+					MongodbatlasDiskPartitionUsageAverage: MongodbatlasDiskPartitionUsageAverageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionUsageAverageMetricAttributeKey{MongodbatlasDiskPartitionUsageAverageMetricAttributeKeyDiskStatus},
+					},
+					MongodbatlasDiskPartitionUsageMax: MongodbatlasDiskPartitionUsageMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionUsageMaxMetricAttributeKey{MongodbatlasDiskPartitionUsageMaxMetricAttributeKeyDiskStatus},
+					},
+					MongodbatlasDiskPartitionUtilizationAverage: MongodbatlasDiskPartitionUtilizationAverageMetricConfig{
+						Enabled: true,
+					},
+					MongodbatlasDiskPartitionUtilizationMax: MongodbatlasDiskPartitionUtilizationMaxMetricConfig{
+						Enabled: true,
+					},
+					MongodbatlasProcessAsserts: MongodbatlasProcessAssertsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessAssertsMetricAttributeKey{MongodbatlasProcessAssertsMetricAttributeKeyAssertType},
+					},
+					MongodbatlasProcessBackgroundFlush: MongodbatlasProcessBackgroundFlushMetricConfig{
+						Enabled: true,
+					},
+					MongodbatlasProcessCacheIo: MongodbatlasProcessCacheIoMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCacheIoMetricAttributeKey{MongodbatlasProcessCacheIoMetricAttributeKeyCacheDirection},
+					},
+					MongodbatlasProcessCacheRatio: MongodbatlasProcessCacheRatioMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCacheRatioMetricAttributeKey{MongodbatlasProcessCacheRatioMetricAttributeKeyCacheRatioType},
+					},
+					MongodbatlasProcessCacheSize: MongodbatlasProcessCacheSizeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbatlasProcessCacheSizeMetricAttributeKey{MongodbatlasProcessCacheSizeMetricAttributeKeyCacheStatus},
+					},
+					MongodbatlasProcessConnections: MongodbatlasProcessConnectionsMetricConfig{
+						Enabled: true,
+					},
+					MongodbatlasProcessCPUChildrenNormalizedUsageAverage: MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricAttributeKey{MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCPUChildrenNormalizedUsageMax: MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricAttributeKey{MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCPUChildrenUsageAverage: MongodbatlasProcessCPUChildrenUsageAverageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUChildrenUsageAverageMetricAttributeKey{MongodbatlasProcessCPUChildrenUsageAverageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCPUChildrenUsageMax: MongodbatlasProcessCPUChildrenUsageMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUChildrenUsageMaxMetricAttributeKey{MongodbatlasProcessCPUChildrenUsageMaxMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCPUNormalizedUsageAverage: MongodbatlasProcessCPUNormalizedUsageAverageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUNormalizedUsageAverageMetricAttributeKey{MongodbatlasProcessCPUNormalizedUsageAverageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCPUNormalizedUsageMax: MongodbatlasProcessCPUNormalizedUsageMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUNormalizedUsageMaxMetricAttributeKey{MongodbatlasProcessCPUNormalizedUsageMaxMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCPUUsageAverage: MongodbatlasProcessCPUUsageAverageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUUsageAverageMetricAttributeKey{MongodbatlasProcessCPUUsageAverageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCPUUsageMax: MongodbatlasProcessCPUUsageMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUUsageMaxMetricAttributeKey{MongodbatlasProcessCPUUsageMaxMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCursors: MongodbatlasProcessCursorsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCursorsMetricAttributeKey{MongodbatlasProcessCursorsMetricAttributeKeyCursorState},
+					},
+					MongodbatlasProcessDbDocumentRate: MongodbatlasProcessDbDocumentRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessDbDocumentRateMetricAttributeKey{MongodbatlasProcessDbDocumentRateMetricAttributeKeyDocumentStatus},
+					},
+					MongodbatlasProcessDbOperationsRate: MongodbatlasProcessDbOperationsRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessDbOperationsRateMetricAttributeKey{MongodbatlasProcessDbOperationsRateMetricAttributeKeyOperation, MongodbatlasProcessDbOperationsRateMetricAttributeKeyClusterRole},
+					},
+					MongodbatlasProcessDbOperationsTime: MongodbatlasProcessDbOperationsTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbatlasProcessDbOperationsTimeMetricAttributeKey{MongodbatlasProcessDbOperationsTimeMetricAttributeKeyExecutionType},
+					},
+					MongodbatlasProcessDbQueryExecutorScanned: MongodbatlasProcessDbQueryExecutorScannedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessDbQueryExecutorScannedMetricAttributeKey{MongodbatlasProcessDbQueryExecutorScannedMetricAttributeKeyScannedType},
+					},
+					MongodbatlasProcessDbQueryTargetingScannedPerReturned: MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricAttributeKey{MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricAttributeKeyScannedType},
+					},
+					MongodbatlasProcessDbStorage: MongodbatlasProcessDbStorageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessDbStorageMetricAttributeKey{MongodbatlasProcessDbStorageMetricAttributeKeyStorageStatus},
+					},
+					MongodbatlasProcessGlobalLock: MongodbatlasProcessGlobalLockMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessGlobalLockMetricAttributeKey{MongodbatlasProcessGlobalLockMetricAttributeKeyGlobalLockState},
+					},
+					MongodbatlasProcessIndexBtreeMissRatio: MongodbatlasProcessIndexBtreeMissRatioMetricConfig{
+						Enabled: true,
+					},
+					MongodbatlasProcessIndexCounters: MongodbatlasProcessIndexCountersMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessIndexCountersMetricAttributeKey{MongodbatlasProcessIndexCountersMetricAttributeKeyBtreeCounterType},
+					},
+					MongodbatlasProcessJournalingCommits: MongodbatlasProcessJournalingCommitsMetricConfig{
+						Enabled: true,
+					},
+					MongodbatlasProcessJournalingDataFiles: MongodbatlasProcessJournalingDataFilesMetricConfig{
+						Enabled: true,
+					},
+					MongodbatlasProcessJournalingWritten: MongodbatlasProcessJournalingWrittenMetricConfig{
+						Enabled: true,
+					},
+					MongodbatlasProcessMemoryUsage: MongodbatlasProcessMemoryUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessMemoryUsageMetricAttributeKey{MongodbatlasProcessMemoryUsageMetricAttributeKeyMemoryState},
+					},
+					MongodbatlasProcessNetworkIo: MongodbatlasProcessNetworkIoMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessNetworkIoMetricAttributeKey{MongodbatlasProcessNetworkIoMetricAttributeKeyDirection},
+					},
+					MongodbatlasProcessNetworkRequests: MongodbatlasProcessNetworkRequestsMetricConfig{
+						Enabled: true,
+					},
+					MongodbatlasProcessOplogRate: MongodbatlasProcessOplogRateMetricConfig{
+						Enabled: true,
+					},
+					MongodbatlasProcessOplogTime: MongodbatlasProcessOplogTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessOplogTimeMetricAttributeKey{MongodbatlasProcessOplogTimeMetricAttributeKeyOplogType},
+					},
+					MongodbatlasProcessPageFaults: MongodbatlasProcessPageFaultsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessPageFaultsMetricAttributeKey{MongodbatlasProcessPageFaultsMetricAttributeKeyMemoryIssueType},
+					},
+					MongodbatlasProcessRestarts: MongodbatlasProcessRestartsMetricConfig{
+						Enabled: true,
+					},
+					MongodbatlasProcessTickets: MongodbatlasProcessTicketsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessTicketsMetricAttributeKey{MongodbatlasProcessTicketsMetricAttributeKeyTicketType},
+					},
+					MongodbatlasSystemCPUNormalizedUsageAverage: MongodbatlasSystemCPUNormalizedUsageAverageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemCPUNormalizedUsageAverageMetricAttributeKey{MongodbatlasSystemCPUNormalizedUsageAverageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasSystemCPUNormalizedUsageMax: MongodbatlasSystemCPUNormalizedUsageMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemCPUNormalizedUsageMaxMetricAttributeKey{MongodbatlasSystemCPUNormalizedUsageMaxMetricAttributeKeyCPUState},
+					},
+					MongodbatlasSystemCPUUsageAverage: MongodbatlasSystemCPUUsageAverageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemCPUUsageAverageMetricAttributeKey{MongodbatlasSystemCPUUsageAverageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasSystemCPUUsageMax: MongodbatlasSystemCPUUsageMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemCPUUsageMaxMetricAttributeKey{MongodbatlasSystemCPUUsageMaxMetricAttributeKeyCPUState},
+					},
+					MongodbatlasSystemFtsCPUNormalizedUsage: MongodbatlasSystemFtsCPUNormalizedUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemFtsCPUNormalizedUsageMetricAttributeKey{MongodbatlasSystemFtsCPUNormalizedUsageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasSystemFtsCPUUsage: MongodbatlasSystemFtsCPUUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemFtsCPUUsageMetricAttributeKey{MongodbatlasSystemFtsCPUUsageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasSystemFtsDiskUsed: MongodbatlasSystemFtsDiskUsedMetricConfig{
+						Enabled: true,
+					},
+					MongodbatlasSystemFtsMemoryUsage: MongodbatlasSystemFtsMemoryUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbatlasSystemFtsMemoryUsageMetricAttributeKey{MongodbatlasSystemFtsMemoryUsageMetricAttributeKeyMemoryState},
+					},
+					MongodbatlasSystemMemoryUsageAverage: MongodbatlasSystemMemoryUsageAverageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemMemoryUsageAverageMetricAttributeKey{MongodbatlasSystemMemoryUsageAverageMetricAttributeKeyMemoryStatus},
+					},
+					MongodbatlasSystemMemoryUsageMax: MongodbatlasSystemMemoryUsageMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemMemoryUsageMaxMetricAttributeKey{MongodbatlasSystemMemoryUsageMaxMetricAttributeKeyMemoryStatus},
+					},
+					MongodbatlasSystemNetworkIoAverage: MongodbatlasSystemNetworkIoAverageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemNetworkIoAverageMetricAttributeKey{MongodbatlasSystemNetworkIoAverageMetricAttributeKeyDirection},
+					},
+					MongodbatlasSystemNetworkIoMax: MongodbatlasSystemNetworkIoMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemNetworkIoMaxMetricAttributeKey{MongodbatlasSystemNetworkIoMaxMetricAttributeKeyDirection},
+					},
+					MongodbatlasSystemPagingIoAverage: MongodbatlasSystemPagingIoAverageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemPagingIoAverageMetricAttributeKey{MongodbatlasSystemPagingIoAverageMetricAttributeKeyDirection},
+					},
+					MongodbatlasSystemPagingIoMax: MongodbatlasSystemPagingIoMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemPagingIoMaxMetricAttributeKey{MongodbatlasSystemPagingIoMaxMetricAttributeKeyDirection},
+					},
+					MongodbatlasSystemPagingUsageAverage: MongodbatlasSystemPagingUsageAverageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemPagingUsageAverageMetricAttributeKey{MongodbatlasSystemPagingUsageAverageMetricAttributeKeyMemoryState},
+					},
+					MongodbatlasSystemPagingUsageMax: MongodbatlasSystemPagingUsageMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemPagingUsageMaxMetricAttributeKey{MongodbatlasSystemPagingUsageMaxMetricAttributeKeyMemoryState},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MongodbAtlasClusterName:     ResourceAttributeConfig{Enabled: true},
@@ -113,71 +347,305 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					MongodbatlasDbCounts:                                  MetricConfig{Enabled: false},
-					MongodbatlasDbSize:                                    MetricConfig{Enabled: false},
-					MongodbatlasDiskPartitionIopsAverage:                  MetricConfig{Enabled: false},
-					MongodbatlasDiskPartitionIopsMax:                      MetricConfig{Enabled: false},
-					MongodbatlasDiskPartitionLatencyAverage:               MetricConfig{Enabled: false},
-					MongodbatlasDiskPartitionLatencyMax:                   MetricConfig{Enabled: false},
-					MongodbatlasDiskPartitionQueueDepth:                   MetricConfig{Enabled: false},
-					MongodbatlasDiskPartitionSpaceAverage:                 MetricConfig{Enabled: false},
-					MongodbatlasDiskPartitionSpaceMax:                     MetricConfig{Enabled: false},
-					MongodbatlasDiskPartitionThroughput:                   MetricConfig{Enabled: false},
-					MongodbatlasDiskPartitionUsageAverage:                 MetricConfig{Enabled: false},
-					MongodbatlasDiskPartitionUsageMax:                     MetricConfig{Enabled: false},
-					MongodbatlasDiskPartitionUtilizationAverage:           MetricConfig{Enabled: false},
-					MongodbatlasDiskPartitionUtilizationMax:               MetricConfig{Enabled: false},
-					MongodbatlasProcessAsserts:                            MetricConfig{Enabled: false},
-					MongodbatlasProcessBackgroundFlush:                    MetricConfig{Enabled: false},
-					MongodbatlasProcessCacheIo:                            MetricConfig{Enabled: false},
-					MongodbatlasProcessCacheRatio:                         MetricConfig{Enabled: false},
-					MongodbatlasProcessCacheSize:                          MetricConfig{Enabled: false},
-					MongodbatlasProcessConnections:                        MetricConfig{Enabled: false},
-					MongodbatlasProcessCPUChildrenNormalizedUsageAverage:  MetricConfig{Enabled: false},
-					MongodbatlasProcessCPUChildrenNormalizedUsageMax:      MetricConfig{Enabled: false},
-					MongodbatlasProcessCPUChildrenUsageAverage:            MetricConfig{Enabled: false},
-					MongodbatlasProcessCPUChildrenUsageMax:                MetricConfig{Enabled: false},
-					MongodbatlasProcessCPUNormalizedUsageAverage:          MetricConfig{Enabled: false},
-					MongodbatlasProcessCPUNormalizedUsageMax:              MetricConfig{Enabled: false},
-					MongodbatlasProcessCPUUsageAverage:                    MetricConfig{Enabled: false},
-					MongodbatlasProcessCPUUsageMax:                        MetricConfig{Enabled: false},
-					MongodbatlasProcessCursors:                            MetricConfig{Enabled: false},
-					MongodbatlasProcessDbDocumentRate:                     MetricConfig{Enabled: false},
-					MongodbatlasProcessDbOperationsRate:                   MetricConfig{Enabled: false},
-					MongodbatlasProcessDbOperationsTime:                   MetricConfig{Enabled: false},
-					MongodbatlasProcessDbQueryExecutorScanned:             MetricConfig{Enabled: false},
-					MongodbatlasProcessDbQueryTargetingScannedPerReturned: MetricConfig{Enabled: false},
-					MongodbatlasProcessDbStorage:                          MetricConfig{Enabled: false},
-					MongodbatlasProcessGlobalLock:                         MetricConfig{Enabled: false},
-					MongodbatlasProcessIndexBtreeMissRatio:                MetricConfig{Enabled: false},
-					MongodbatlasProcessIndexCounters:                      MetricConfig{Enabled: false},
-					MongodbatlasProcessJournalingCommits:                  MetricConfig{Enabled: false},
-					MongodbatlasProcessJournalingDataFiles:                MetricConfig{Enabled: false},
-					MongodbatlasProcessJournalingWritten:                  MetricConfig{Enabled: false},
-					MongodbatlasProcessMemoryUsage:                        MetricConfig{Enabled: false},
-					MongodbatlasProcessNetworkIo:                          MetricConfig{Enabled: false},
-					MongodbatlasProcessNetworkRequests:                    MetricConfig{Enabled: false},
-					MongodbatlasProcessOplogRate:                          MetricConfig{Enabled: false},
-					MongodbatlasProcessOplogTime:                          MetricConfig{Enabled: false},
-					MongodbatlasProcessPageFaults:                         MetricConfig{Enabled: false},
-					MongodbatlasProcessRestarts:                           MetricConfig{Enabled: false},
-					MongodbatlasProcessTickets:                            MetricConfig{Enabled: false},
-					MongodbatlasSystemCPUNormalizedUsageAverage:           MetricConfig{Enabled: false},
-					MongodbatlasSystemCPUNormalizedUsageMax:               MetricConfig{Enabled: false},
-					MongodbatlasSystemCPUUsageAverage:                     MetricConfig{Enabled: false},
-					MongodbatlasSystemCPUUsageMax:                         MetricConfig{Enabled: false},
-					MongodbatlasSystemFtsCPUNormalizedUsage:               MetricConfig{Enabled: false},
-					MongodbatlasSystemFtsCPUUsage:                         MetricConfig{Enabled: false},
-					MongodbatlasSystemFtsDiskUsed:                         MetricConfig{Enabled: false},
-					MongodbatlasSystemFtsMemoryUsage:                      MetricConfig{Enabled: false},
-					MongodbatlasSystemMemoryUsageAverage:                  MetricConfig{Enabled: false},
-					MongodbatlasSystemMemoryUsageMax:                      MetricConfig{Enabled: false},
-					MongodbatlasSystemNetworkIoAverage:                    MetricConfig{Enabled: false},
-					MongodbatlasSystemNetworkIoMax:                        MetricConfig{Enabled: false},
-					MongodbatlasSystemPagingIoAverage:                     MetricConfig{Enabled: false},
-					MongodbatlasSystemPagingIoMax:                         MetricConfig{Enabled: false},
-					MongodbatlasSystemPagingUsageAverage:                  MetricConfig{Enabled: false},
-					MongodbatlasSystemPagingUsageMax:                      MetricConfig{Enabled: false},
+					MongodbatlasDbCounts: MongodbatlasDbCountsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDbCountsMetricAttributeKey{MongodbatlasDbCountsMetricAttributeKeyObjectType},
+					},
+					MongodbatlasDbSize: MongodbatlasDbSizeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDbSizeMetricAttributeKey{MongodbatlasDbSizeMetricAttributeKeyObjectType},
+					},
+					MongodbatlasDiskPartitionIopsAverage: MongodbatlasDiskPartitionIopsAverageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionIopsAverageMetricAttributeKey{MongodbatlasDiskPartitionIopsAverageMetricAttributeKeyDiskDirection},
+					},
+					MongodbatlasDiskPartitionIopsMax: MongodbatlasDiskPartitionIopsMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionIopsMaxMetricAttributeKey{MongodbatlasDiskPartitionIopsMaxMetricAttributeKeyDiskDirection},
+					},
+					MongodbatlasDiskPartitionLatencyAverage: MongodbatlasDiskPartitionLatencyAverageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionLatencyAverageMetricAttributeKey{MongodbatlasDiskPartitionLatencyAverageMetricAttributeKeyDiskDirection},
+					},
+					MongodbatlasDiskPartitionLatencyMax: MongodbatlasDiskPartitionLatencyMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionLatencyMaxMetricAttributeKey{MongodbatlasDiskPartitionLatencyMaxMetricAttributeKeyDiskDirection},
+					},
+					MongodbatlasDiskPartitionQueueDepth: MongodbatlasDiskPartitionQueueDepthMetricConfig{
+						Enabled: false,
+					},
+					MongodbatlasDiskPartitionSpaceAverage: MongodbatlasDiskPartitionSpaceAverageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionSpaceAverageMetricAttributeKey{MongodbatlasDiskPartitionSpaceAverageMetricAttributeKeyDiskStatus},
+					},
+					MongodbatlasDiskPartitionSpaceMax: MongodbatlasDiskPartitionSpaceMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionSpaceMaxMetricAttributeKey{MongodbatlasDiskPartitionSpaceMaxMetricAttributeKeyDiskStatus},
+					},
+					MongodbatlasDiskPartitionThroughput: MongodbatlasDiskPartitionThroughputMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionThroughputMetricAttributeKey{MongodbatlasDiskPartitionThroughputMetricAttributeKeyDiskDirection},
+					},
+					MongodbatlasDiskPartitionUsageAverage: MongodbatlasDiskPartitionUsageAverageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionUsageAverageMetricAttributeKey{MongodbatlasDiskPartitionUsageAverageMetricAttributeKeyDiskStatus},
+					},
+					MongodbatlasDiskPartitionUsageMax: MongodbatlasDiskPartitionUsageMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasDiskPartitionUsageMaxMetricAttributeKey{MongodbatlasDiskPartitionUsageMaxMetricAttributeKeyDiskStatus},
+					},
+					MongodbatlasDiskPartitionUtilizationAverage: MongodbatlasDiskPartitionUtilizationAverageMetricConfig{
+						Enabled: false,
+					},
+					MongodbatlasDiskPartitionUtilizationMax: MongodbatlasDiskPartitionUtilizationMaxMetricConfig{
+						Enabled: false,
+					},
+					MongodbatlasProcessAsserts: MongodbatlasProcessAssertsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessAssertsMetricAttributeKey{MongodbatlasProcessAssertsMetricAttributeKeyAssertType},
+					},
+					MongodbatlasProcessBackgroundFlush: MongodbatlasProcessBackgroundFlushMetricConfig{
+						Enabled: false,
+					},
+					MongodbatlasProcessCacheIo: MongodbatlasProcessCacheIoMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCacheIoMetricAttributeKey{MongodbatlasProcessCacheIoMetricAttributeKeyCacheDirection},
+					},
+					MongodbatlasProcessCacheRatio: MongodbatlasProcessCacheRatioMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCacheRatioMetricAttributeKey{MongodbatlasProcessCacheRatioMetricAttributeKeyCacheRatioType},
+					},
+					MongodbatlasProcessCacheSize: MongodbatlasProcessCacheSizeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbatlasProcessCacheSizeMetricAttributeKey{MongodbatlasProcessCacheSizeMetricAttributeKeyCacheStatus},
+					},
+					MongodbatlasProcessConnections: MongodbatlasProcessConnectionsMetricConfig{
+						Enabled: false,
+					},
+					MongodbatlasProcessCPUChildrenNormalizedUsageAverage: MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricAttributeKey{MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCPUChildrenNormalizedUsageMax: MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricAttributeKey{MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCPUChildrenUsageAverage: MongodbatlasProcessCPUChildrenUsageAverageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUChildrenUsageAverageMetricAttributeKey{MongodbatlasProcessCPUChildrenUsageAverageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCPUChildrenUsageMax: MongodbatlasProcessCPUChildrenUsageMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUChildrenUsageMaxMetricAttributeKey{MongodbatlasProcessCPUChildrenUsageMaxMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCPUNormalizedUsageAverage: MongodbatlasProcessCPUNormalizedUsageAverageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUNormalizedUsageAverageMetricAttributeKey{MongodbatlasProcessCPUNormalizedUsageAverageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCPUNormalizedUsageMax: MongodbatlasProcessCPUNormalizedUsageMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUNormalizedUsageMaxMetricAttributeKey{MongodbatlasProcessCPUNormalizedUsageMaxMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCPUUsageAverage: MongodbatlasProcessCPUUsageAverageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUUsageAverageMetricAttributeKey{MongodbatlasProcessCPUUsageAverageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCPUUsageMax: MongodbatlasProcessCPUUsageMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCPUUsageMaxMetricAttributeKey{MongodbatlasProcessCPUUsageMaxMetricAttributeKeyCPUState},
+					},
+					MongodbatlasProcessCursors: MongodbatlasProcessCursorsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessCursorsMetricAttributeKey{MongodbatlasProcessCursorsMetricAttributeKeyCursorState},
+					},
+					MongodbatlasProcessDbDocumentRate: MongodbatlasProcessDbDocumentRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessDbDocumentRateMetricAttributeKey{MongodbatlasProcessDbDocumentRateMetricAttributeKeyDocumentStatus},
+					},
+					MongodbatlasProcessDbOperationsRate: MongodbatlasProcessDbOperationsRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessDbOperationsRateMetricAttributeKey{MongodbatlasProcessDbOperationsRateMetricAttributeKeyOperation, MongodbatlasProcessDbOperationsRateMetricAttributeKeyClusterRole},
+					},
+					MongodbatlasProcessDbOperationsTime: MongodbatlasProcessDbOperationsTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbatlasProcessDbOperationsTimeMetricAttributeKey{MongodbatlasProcessDbOperationsTimeMetricAttributeKeyExecutionType},
+					},
+					MongodbatlasProcessDbQueryExecutorScanned: MongodbatlasProcessDbQueryExecutorScannedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessDbQueryExecutorScannedMetricAttributeKey{MongodbatlasProcessDbQueryExecutorScannedMetricAttributeKeyScannedType},
+					},
+					MongodbatlasProcessDbQueryTargetingScannedPerReturned: MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricAttributeKey{MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricAttributeKeyScannedType},
+					},
+					MongodbatlasProcessDbStorage: MongodbatlasProcessDbStorageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessDbStorageMetricAttributeKey{MongodbatlasProcessDbStorageMetricAttributeKeyStorageStatus},
+					},
+					MongodbatlasProcessGlobalLock: MongodbatlasProcessGlobalLockMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessGlobalLockMetricAttributeKey{MongodbatlasProcessGlobalLockMetricAttributeKeyGlobalLockState},
+					},
+					MongodbatlasProcessIndexBtreeMissRatio: MongodbatlasProcessIndexBtreeMissRatioMetricConfig{
+						Enabled: false,
+					},
+					MongodbatlasProcessIndexCounters: MongodbatlasProcessIndexCountersMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessIndexCountersMetricAttributeKey{MongodbatlasProcessIndexCountersMetricAttributeKeyBtreeCounterType},
+					},
+					MongodbatlasProcessJournalingCommits: MongodbatlasProcessJournalingCommitsMetricConfig{
+						Enabled: false,
+					},
+					MongodbatlasProcessJournalingDataFiles: MongodbatlasProcessJournalingDataFilesMetricConfig{
+						Enabled: false,
+					},
+					MongodbatlasProcessJournalingWritten: MongodbatlasProcessJournalingWrittenMetricConfig{
+						Enabled: false,
+					},
+					MongodbatlasProcessMemoryUsage: MongodbatlasProcessMemoryUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessMemoryUsageMetricAttributeKey{MongodbatlasProcessMemoryUsageMetricAttributeKeyMemoryState},
+					},
+					MongodbatlasProcessNetworkIo: MongodbatlasProcessNetworkIoMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessNetworkIoMetricAttributeKey{MongodbatlasProcessNetworkIoMetricAttributeKeyDirection},
+					},
+					MongodbatlasProcessNetworkRequests: MongodbatlasProcessNetworkRequestsMetricConfig{
+						Enabled: false,
+					},
+					MongodbatlasProcessOplogRate: MongodbatlasProcessOplogRateMetricConfig{
+						Enabled: false,
+					},
+					MongodbatlasProcessOplogTime: MongodbatlasProcessOplogTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessOplogTimeMetricAttributeKey{MongodbatlasProcessOplogTimeMetricAttributeKeyOplogType},
+					},
+					MongodbatlasProcessPageFaults: MongodbatlasProcessPageFaultsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessPageFaultsMetricAttributeKey{MongodbatlasProcessPageFaultsMetricAttributeKeyMemoryIssueType},
+					},
+					MongodbatlasProcessRestarts: MongodbatlasProcessRestartsMetricConfig{
+						Enabled: false,
+					},
+					MongodbatlasProcessTickets: MongodbatlasProcessTicketsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasProcessTicketsMetricAttributeKey{MongodbatlasProcessTicketsMetricAttributeKeyTicketType},
+					},
+					MongodbatlasSystemCPUNormalizedUsageAverage: MongodbatlasSystemCPUNormalizedUsageAverageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemCPUNormalizedUsageAverageMetricAttributeKey{MongodbatlasSystemCPUNormalizedUsageAverageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasSystemCPUNormalizedUsageMax: MongodbatlasSystemCPUNormalizedUsageMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemCPUNormalizedUsageMaxMetricAttributeKey{MongodbatlasSystemCPUNormalizedUsageMaxMetricAttributeKeyCPUState},
+					},
+					MongodbatlasSystemCPUUsageAverage: MongodbatlasSystemCPUUsageAverageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemCPUUsageAverageMetricAttributeKey{MongodbatlasSystemCPUUsageAverageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasSystemCPUUsageMax: MongodbatlasSystemCPUUsageMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemCPUUsageMaxMetricAttributeKey{MongodbatlasSystemCPUUsageMaxMetricAttributeKeyCPUState},
+					},
+					MongodbatlasSystemFtsCPUNormalizedUsage: MongodbatlasSystemFtsCPUNormalizedUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemFtsCPUNormalizedUsageMetricAttributeKey{MongodbatlasSystemFtsCPUNormalizedUsageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasSystemFtsCPUUsage: MongodbatlasSystemFtsCPUUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemFtsCPUUsageMetricAttributeKey{MongodbatlasSystemFtsCPUUsageMetricAttributeKeyCPUState},
+					},
+					MongodbatlasSystemFtsDiskUsed: MongodbatlasSystemFtsDiskUsedMetricConfig{
+						Enabled: false,
+					},
+					MongodbatlasSystemFtsMemoryUsage: MongodbatlasSystemFtsMemoryUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MongodbatlasSystemFtsMemoryUsageMetricAttributeKey{MongodbatlasSystemFtsMemoryUsageMetricAttributeKeyMemoryState},
+					},
+					MongodbatlasSystemMemoryUsageAverage: MongodbatlasSystemMemoryUsageAverageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemMemoryUsageAverageMetricAttributeKey{MongodbatlasSystemMemoryUsageAverageMetricAttributeKeyMemoryStatus},
+					},
+					MongodbatlasSystemMemoryUsageMax: MongodbatlasSystemMemoryUsageMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemMemoryUsageMaxMetricAttributeKey{MongodbatlasSystemMemoryUsageMaxMetricAttributeKeyMemoryStatus},
+					},
+					MongodbatlasSystemNetworkIoAverage: MongodbatlasSystemNetworkIoAverageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemNetworkIoAverageMetricAttributeKey{MongodbatlasSystemNetworkIoAverageMetricAttributeKeyDirection},
+					},
+					MongodbatlasSystemNetworkIoMax: MongodbatlasSystemNetworkIoMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemNetworkIoMaxMetricAttributeKey{MongodbatlasSystemNetworkIoMaxMetricAttributeKeyDirection},
+					},
+					MongodbatlasSystemPagingIoAverage: MongodbatlasSystemPagingIoAverageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemPagingIoAverageMetricAttributeKey{MongodbatlasSystemPagingIoAverageMetricAttributeKeyDirection},
+					},
+					MongodbatlasSystemPagingIoMax: MongodbatlasSystemPagingIoMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemPagingIoMaxMetricAttributeKey{MongodbatlasSystemPagingIoMaxMetricAttributeKeyDirection},
+					},
+					MongodbatlasSystemPagingUsageAverage: MongodbatlasSystemPagingUsageAverageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemPagingUsageAverageMetricAttributeKey{MongodbatlasSystemPagingUsageAverageMetricAttributeKeyMemoryState},
+					},
+					MongodbatlasSystemPagingUsageMax: MongodbatlasSystemPagingUsageMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MongodbatlasSystemPagingUsageMaxMetricAttributeKey{MongodbatlasSystemPagingUsageMaxMetricAttributeKeyMemoryState},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MongodbAtlasClusterName:     ResourceAttributeConfig{Enabled: false},
@@ -200,7 +668,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MongodbatlasDbCountsMetricConfig{}, MongodbatlasDbSizeMetricConfig{}, MongodbatlasDiskPartitionIopsAverageMetricConfig{}, MongodbatlasDiskPartitionIopsMaxMetricConfig{}, MongodbatlasDiskPartitionLatencyAverageMetricConfig{}, MongodbatlasDiskPartitionLatencyMaxMetricConfig{}, MongodbatlasDiskPartitionQueueDepthMetricConfig{}, MongodbatlasDiskPartitionSpaceAverageMetricConfig{}, MongodbatlasDiskPartitionSpaceMaxMetricConfig{}, MongodbatlasDiskPartitionThroughputMetricConfig{}, MongodbatlasDiskPartitionUsageAverageMetricConfig{}, MongodbatlasDiskPartitionUsageMaxMetricConfig{}, MongodbatlasDiskPartitionUtilizationAverageMetricConfig{}, MongodbatlasDiskPartitionUtilizationMaxMetricConfig{}, MongodbatlasProcessAssertsMetricConfig{}, MongodbatlasProcessBackgroundFlushMetricConfig{}, MongodbatlasProcessCacheIoMetricConfig{}, MongodbatlasProcessCacheRatioMetricConfig{}, MongodbatlasProcessCacheSizeMetricConfig{}, MongodbatlasProcessConnectionsMetricConfig{}, MongodbatlasProcessCPUChildrenNormalizedUsageAverageMetricConfig{}, MongodbatlasProcessCPUChildrenNormalizedUsageMaxMetricConfig{}, MongodbatlasProcessCPUChildrenUsageAverageMetricConfig{}, MongodbatlasProcessCPUChildrenUsageMaxMetricConfig{}, MongodbatlasProcessCPUNormalizedUsageAverageMetricConfig{}, MongodbatlasProcessCPUNormalizedUsageMaxMetricConfig{}, MongodbatlasProcessCPUUsageAverageMetricConfig{}, MongodbatlasProcessCPUUsageMaxMetricConfig{}, MongodbatlasProcessCursorsMetricConfig{}, MongodbatlasProcessDbDocumentRateMetricConfig{}, MongodbatlasProcessDbOperationsRateMetricConfig{}, MongodbatlasProcessDbOperationsTimeMetricConfig{}, MongodbatlasProcessDbQueryExecutorScannedMetricConfig{}, MongodbatlasProcessDbQueryTargetingScannedPerReturnedMetricConfig{}, MongodbatlasProcessDbStorageMetricConfig{}, MongodbatlasProcessGlobalLockMetricConfig{}, MongodbatlasProcessIndexBtreeMissRatioMetricConfig{}, MongodbatlasProcessIndexCountersMetricConfig{}, MongodbatlasProcessJournalingCommitsMetricConfig{}, MongodbatlasProcessJournalingDataFilesMetricConfig{}, MongodbatlasProcessJournalingWrittenMetricConfig{}, MongodbatlasProcessMemoryUsageMetricConfig{}, MongodbatlasProcessNetworkIoMetricConfig{}, MongodbatlasProcessNetworkRequestsMetricConfig{}, MongodbatlasProcessOplogRateMetricConfig{}, MongodbatlasProcessOplogTimeMetricConfig{}, MongodbatlasProcessPageFaultsMetricConfig{}, MongodbatlasProcessRestartsMetricConfig{}, MongodbatlasProcessTicketsMetricConfig{}, MongodbatlasSystemCPUNormalizedUsageAverageMetricConfig{}, MongodbatlasSystemCPUNormalizedUsageMaxMetricConfig{}, MongodbatlasSystemCPUUsageAverageMetricConfig{}, MongodbatlasSystemCPUUsageMaxMetricConfig{}, MongodbatlasSystemFtsCPUNormalizedUsageMetricConfig{}, MongodbatlasSystemFtsCPUUsageMetricConfig{}, MongodbatlasSystemFtsDiskUsedMetricConfig{}, MongodbatlasSystemFtsMemoryUsageMetricConfig{}, MongodbatlasSystemMemoryUsageAverageMetricConfig{}, MongodbatlasSystemMemoryUsageMaxMetricConfig{}, MongodbatlasSystemNetworkIoAverageMetricConfig{}, MongodbatlasSystemNetworkIoMaxMetricConfig{}, MongodbatlasSystemPagingIoAverageMetricConfig{}, MongodbatlasSystemPagingIoMaxMetricConfig{}, MongodbatlasSystemPagingUsageAverageMetricConfig{}, MongodbatlasSystemPagingUsageMaxMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -211,7 +679,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

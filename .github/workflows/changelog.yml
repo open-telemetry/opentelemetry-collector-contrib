@@ -35,7 +35,7 @@ jobs:
           # Fetch complete history depth only if the PR is not a chore.
           fetch-depth: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]') && '0' || '1' }}
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version: oldstable
           cache-dependency-path: "**/*.sum"
@@ -52,17 +52,6 @@ jobs:
             false
           else
             echo "CHANGELOG.md and CHANGELOG-API.md were not modified."
-          fi
-
-      - name: Ensure changelog config.yaml is up to date
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog')}}
-        run: |
-          make generate-chloggen-components
-          if [[ $(git diff --name-only) ]]; then
-            echo ".chloggen/config.yaml is out of date. Please run 'make generate-chloggen-components' and commit the changes."
-            false
-          else
-            echo ".chloggen/config.yaml is up to date."
           fi
 
       - name: Ensure ./.chloggen/*.yaml addition(s)

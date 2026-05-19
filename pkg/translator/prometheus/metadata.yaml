@@ -1,5 +1,14 @@
+type: prometheus
+
 status:
   disable_codecov_badge: true
   class: "pkg"
   codeowners:
     active: [dashpole, bertysentry, ArthurSens]
+
+feature_gates:
+  - id: pkg.translator.prometheus.PermissiveLabelSanitization
+    description: Controls whether to change labels starting with '_' to 'key_'.
+    stage: alpha
+    from_version: v0.55.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950

@@ -119,15 +119,8 @@ func newReceiver(settings receiver.Settings, config Config) (*splunkReceiver, er
 		return nil, err
 	}
 	r := &splunkReceiver{
-		settings: settings,
-		config:   &config,
-		server: &http.Server{
-			Addr: config.NetAddr.Endpoint,
-			// TODO: Evaluate what properties should be configurable, for now
-			//		set some hard-coded values.
-			ReadHeaderTimeout: defaultServerTimeout,
-			WriteTimeout:      defaultServerTimeout,
-		},
+		settings:       settings,
+		config:         &config,
 		obsrecv:        obsrecv,
 		gzipReaderPool: &sync.Pool{New: func() any { return new(gzip.Reader) }},
 	}
@@ -189,6 +182,9 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *splunkReceiver) Shutdown(context.Context) error {
+	if r.server == nil {
+		return nil
+	}
 	err := r.server.Close()
 	r.shutdownWG.Wait()
 	return err
