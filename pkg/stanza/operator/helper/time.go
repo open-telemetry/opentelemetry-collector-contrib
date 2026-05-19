@@ -111,7 +111,7 @@ func (t *TimeParser) Validate() error {
 		)
 	}
 
-	if t.LayoutType == GotimeKey || t.LayoutType == StrptimeKey { // also covers StrptimeKey because it was remapped above
+	if t.LayoutType == GotimeKey || t.LayoutType == StrptimeKey {
 		if err := t.setLocation(); err != nil {
 			return fmt.Errorf("invalid 'location': %w", err)
 		}
