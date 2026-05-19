@@ -1,12 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package cardinalityguardianprocessor is documented in processor.go.
+// Package cardinalityguardianprocessor is documented in doc.go.
 package cardinalityguardianprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cardinalityguardianprocessor"
 
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // Config defines the user-facing configuration for the cardinality_guardian
@@ -18,14 +19,13 @@ import (
 //	    max_cardinality_delta_per_epoch: 500
 //	    epoch_duration_seconds: 300
 //	    never_drop_labels: [region, http.status_code]
-//	    tag_only: false
+//	    enforcement_mode: tag_only
 //	    estimated_cost_per_metric_month: 0.05
 type Config struct {
 	// MaxCardinalityDeltaPerEpoch is the maximum number of new unique label
 	// values that are allowed for a single metric+label-key combination within
 	// one epoch. Once this threshold is exceeded, additional unique values are
-	// either dropped (TagOnly: false) or tagged for cold-storage routing
-	// (TagOnly: true).
+	// handled according to the configured EnforcementMode.
 	//
 	// The processor measures cardinality growth using a HyperLogLog sketch and
 	// compares the current epoch's estimate against the previous epoch's
@@ -59,18 +59,27 @@ type Config struct {
 	// construction time and never accessed in the hot path.
 	NeverDropLabels []string `mapstructure:"never_drop_labels"`
 
-	// TagOnly switches the processor from hard-drop mode to dual-route tagging
-	// mode. When false (the default), high-cardinality attributes are silently
-	// removed from the data point, keeping expensive time-series databases clean.
-	// When true, the attribute is preserved and a boolean attribute
-	// "otel.metric.overflow: true" is injected into the same data point.
+	// EnforcementMode controls how the processor handles high-cardinality
+	// attributes once the delta threshold is exceeded. Three modes are available:
 	//
-	// The injected tag is designed to be consumed by a downstream OTel routing
-	// processor: metrics with the tag can be forwarded to cheap object storage
-	// (S3, GCS, etc.) while clean metrics continue to flow into Prometheus or
-	// Datadog. This makes the cardinality killer non-destructive and reversible,
-	// which is valuable in regulated environments or during initial rollout.
-	TagOnly bool `mapstructure:"tag_only"`
+	//   - "tag_only" — preserves all attributes and injects
+	//     "otel.metric.overflow: true" for downstream routing. No data mutation.
+	//     This is the safest mode and recommended for initial deployment.
+	//
+	//   - "overflow_attribute" — replaces the high-cardinality attribute value
+	//     with a sentinel "otel.cardinality_overflow" string. All overflowed
+	//     data points merge into a single overflow bucket. This is OTel-SDK-
+	//     spec-aligned and avoids the Single-Writer violation because all
+	//     overflow points share one identity.
+	//
+	//   - "strip_and_reaggregate" — removes the offending attribute and performs
+	//     inline spatial reaggregation to merge data points that now share the
+	//     same identity. Currently supports Delta Sum and Gauge metric types.
+	//     Cumulative Sums, Histograms, and ExponentialHistograms fall back to
+	//     tag_only behavior with a warning log.
+	//
+	// If empty, defaults to "tag_only".
+	EnforcementMode EnforcementMode `mapstructure:"enforcement_mode"`
 
 	// EstimatedCostPerMetricMonth configures the theoretical cost per active time-series. This is
 	// used solely to populate the "otelcol_processor_cardinality_estimated_savings_dollars_total" OTel counter
@@ -120,6 +129,36 @@ type Config struct {
 	DropLogMaxPerEpoch int `mapstructure:"drop_log_max_per_epoch"`
 }
 
+// EnforcementMode determines how the processor handles attributes that exceed
+// the cardinality delta threshold.
+type EnforcementMode string
+
+const (
+	// EnforcementTagOnly preserves all attributes and injects
+	// "otel.metric.overflow: true" for downstream routing decisions.
+	EnforcementTagOnly EnforcementMode = "tag_only"
+
+	// EnforcementOverflowAttribute replaces the high-cardinality attribute
+	// value with a sentinel "otel.cardinality_overflow" string. All overflowed
+	// data points for a given (metric, attribute_key) collapse into a single
+	// overflow identity, avoiding the Single-Writer violation.
+	EnforcementOverflowAttribute EnforcementMode = "overflow_attribute"
+
+	// EnforcementStripAndReaggregate removes the offending attribute and
+	// performs inline spatial reaggregation to merge data points that now
+	// share the same identity. Currently supports Delta Sum and Gauge.
+	EnforcementStripAndReaggregate EnforcementMode = "strip_and_reaggregate"
+)
+
+// resolvedEnforcementMode returns the effective enforcement mode.
+// If EnforcementMode is not explicitly set, it defaults to tag_only.
+func (c *Config) resolvedEnforcementMode() EnforcementMode {
+	if c.EnforcementMode != "" {
+		return EnforcementMode(strings.ToLower(string(c.EnforcementMode)))
+	}
+	return EnforcementTagOnly
+}
+
 // Validate checks that all required Config fields are within their acceptable
 // ranges and returns a descriptive error if any constraint is violated. The
 // OTel Collector framework calls Validate automatically during pipeline
@@ -150,6 +189,15 @@ func (c *Config) Validate() error {
 	}
 	if c.DropLogMaxPerEpoch < 0 {
 		return errors.New("drop_log_max_per_epoch must be >= 0")
+	}
+	if c.EnforcementMode != "" {
+		normalized := EnforcementMode(strings.ToLower(string(c.EnforcementMode)))
+		switch normalized {
+		case EnforcementTagOnly, EnforcementOverflowAttribute, EnforcementStripAndReaggregate:
+			// valid
+		default:
+			return fmt.Errorf("enforcement_mode must be one of: tag_only, overflow_attribute, strip_and_reaggregate; got %q", c.EnforcementMode)
+		}
 	}
 	return nil
 }
