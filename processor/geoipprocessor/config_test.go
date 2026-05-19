@@ -41,7 +41,8 @@ func TestLoadConfig(t *testing.T) {
 				Providers: map[string]provider.Config{
 					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
 				},
-				Attributes: defaultAttributes,
+				Attributes:        defaultAttributes,
+				providerFactories: defaultProviderFactories,
 			},
 		},
 		{
@@ -51,7 +52,8 @@ func TestLoadConfig(t *testing.T) {
 				Providers: map[string]provider.Config{
 					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
 				},
-				Attributes: defaultAttributes,
+				Attributes:        defaultAttributes,
+				providerFactories: defaultProviderFactories,
 			},
 		},
 		{
@@ -73,7 +75,8 @@ func TestLoadConfig(t *testing.T) {
 				Providers: map[string]provider.Config{
 					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
 				},
-				Attributes: []attribute.Key{"client.address", "source.address", "custom.address"},
+				Attributes:        []attribute.Key{"client.address", "source.address", "custom.address"},
+				providerFactories: defaultProviderFactories,
 			},
 		},
 	}
@@ -125,13 +128,11 @@ func TestLoadConfig_ValidProviderKey(t *testing.T) {
 	baseMockFactory.CreateDefaultConfigF = func() provider.Config {
 		return &dbMockConfig{providerConfigMock: providerConfigMock{func() error { return nil }}}
 	}
-	providerFactories["mock"] = &baseMockFactory
 
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 
-	factory := NewFactory()
-	factories.Processors[metadata.Type] = factory
+	factories.Processors[metadata.Type] = newFactoryWithMocks(map[string]provider.GeoIPProviderFactory{"mock": &baseMockFactory})
 	collectorConfig, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-mockProvider.yaml"), factories)
 
 	require.NoError(t, err)
@@ -142,9 +143,8 @@ func TestLoadConfig_ValidProviderKey(t *testing.T) {
 	baseMockFactory.CreateDefaultConfigF = func() provider.Config {
 		return &providerConfigMock{func() error { return nil }}
 	}
-	providerFactories["mock"] = &baseMockFactory
 
-	factories.Processors[metadata.Type] = factory
+	factories.Processors[metadata.Type] = newFactoryWithMocks(map[string]provider.GeoIPProviderFactory{"mock": &baseMockFactory})
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-mockProvider.yaml"), factories)
 
 	require.ErrorContains(t, err, "'geoipprocessor.providerConfigMock' has invalid keys: database")
@@ -161,13 +161,11 @@ func TestLoadConfig_ProviderValidateError(t *testing.T) {
 		}
 		return &sampleConfig
 	}
-	providerFactories["mock"] = &baseMockFactory
 
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 
-	factory := NewFactory()
-	factories.Processors[metadata.Type] = factory
+	factories.Processors[metadata.Type] = newFactoryWithMocks(map[string]provider.GeoIPProviderFactory{"mock": &baseMockFactory})
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-mockProvider.yaml"), factories)
 
 	require.ErrorContains(t, err, "error validating provider mock")

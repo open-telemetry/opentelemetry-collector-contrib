@@ -31,8 +31,11 @@ var (
 	}
 )
 
-// providerFactories is a map that stores GeoIPProviderFactory instances, keyed by the provider type.
-var providerFactories = map[string]provider.GeoIPProviderFactory{
+// defaultProviderFactories is the read-only set of provider factories baked into the geoip
+// processor at build time. Each Config snapshots this map in createDefaultConfig so that
+// runtime overrides (e.g. tests installing a mock provider) live on the Config instance
+// instead of mutating shared package state.
+var defaultProviderFactories = map[string]provider.GeoIPProviderFactory{
 	maxmind.TypeStr: &maxmind.Factory{},
 }
 
@@ -42,36 +45,26 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(metadata.Type, createDefaultConfig, processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability), processor.WithLogs(createLogsProcessor, metadata.LogsStability), processor.WithTraces(createTracesProcessor, metadata.TracesStability))
 }
 
-// getProviderFactory retrieves the GeoIPProviderFactory for the given key.
-// It returns the factory and a boolean indicating whether the factory was found.
-func getProviderFactory(key string) (provider.GeoIPProviderFactory, bool) {
-	if factory, ok := providerFactories[key]; ok {
-		return factory, true
-	}
-
-	return nil, false
-}
-
 // createDefaultConfig returns a default configuration for the processor.
 func createDefaultConfig() component.Config {
 	return &Config{
-		Context:    resource,
-		Attributes: defaultAttributes,
+		Context:           resource,
+		Attributes:        defaultAttributes,
+		providerFactories: defaultProviderFactories,
 	}
 }
 
-// createGeoIPProviders creates a list of GeoIPProvider instances based on the provided configuration and providers factories.
+// createGeoIPProviders creates a list of GeoIPProvider instances based on the provided configuration.
 func createGeoIPProviders(
 	ctx context.Context,
 	set processor.Settings,
 	config *Config,
-	factories map[string]provider.GeoIPProviderFactory,
 ) ([]provider.GeoIPProvider, error) {
 	providers := make([]provider.GeoIPProvider, 0, len(config.Providers))
 
 	for key, cfg := range config.Providers {
-		factory := factories[key]
-		if factory == nil {
+		factory, ok := config.providerFactories[key]
+		if !ok {
 			return nil, fmt.Errorf("geoIP provider factory not found for key: %q", key)
 		}
 
@@ -88,7 +81,7 @@ func createGeoIPProviders(
 
 func createMetricsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
 	geoCfg := cfg.(*Config)
-	providers, err := createGeoIPProviders(ctx, set, geoCfg, providerFactories)
+	providers, err := createGeoIPProviders(ctx, set, geoCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +91,7 @@ func createMetricsProcessor(ctx context.Context, set processor.Settings, cfg com
 
 func createTracesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
 	geoCfg := cfg.(*Config)
-	providers, err := createGeoIPProviders(ctx, set, geoCfg, providerFactories)
+	providers, err := createGeoIPProviders(ctx, set, geoCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +101,7 @@ func createTracesProcessor(ctx context.Context, set processor.Settings, cfg comp
 
 func createLogsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
 	geoCfg := cfg.(*Config)
-	providers, err := createGeoIPProviders(ctx, set, geoCfg, providerFactories)
+	providers, err := createGeoIPProviders(ctx, set, geoCfg)
 	if err != nil {
 		return nil, err
 	}
