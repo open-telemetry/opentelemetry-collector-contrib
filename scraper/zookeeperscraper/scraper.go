@@ -148,11 +148,16 @@ func (z *zookeeperMetricsScraper) processMntr(response []string) {
 			}
 			int64Val, err := strconv.ParseInt(metricValue, 10, 64)
 			if err != nil {
-				z.logger.Debug(
-					"non-integer value from "+mntrCommand,
-					zap.String("value", metricValue),
-				)
-				continue
+				// zk_avg_latency changed to float in ZK 3.7+; truncate to int64.
+				floatVal, floatErr := strconv.ParseFloat(metricValue, 64)
+				if floatErr != nil {
+					z.logger.Debug(
+						"non-parseable value from "+mntrCommand,
+						zap.String("value", metricValue),
+					)
+					continue
+				}
+				int64Val = int64(floatVal)
 			}
 			recordDataPoints(now, int64Val)
 		}

@@ -29,6 +29,11 @@ properties:
     type: array
     items:
       type: string
+  storage:
+    description: StorageID is an optional storage extension used to persist fetched schema files across collector restarts. When set, fetched schemas are saved to persistent storage and loaded on startup, avoiding unnecessary HTTP fetches.
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
   targets:
     description: Targets define what schema families should be translated to, allowing older and newer formats to conform to the target schema identifier.
     type: array
