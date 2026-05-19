@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -315,9 +314,8 @@ func shouldRetryDimensionUpdate(dimUpdate *DimensionUpdate, statusCode int) (boo
 		dimUpdate.Tags = nil
 		return true, "retrying without tags"
 	}
-	if statusCode == 0 || statusCode == 404 || statusCode >= 500 {
-		// Retry on transport errors, 5xx server errors, or 404s which can occur due to races
-		// within the dimension patch endpoint.
+	if statusCode == 404 || statusCode >= 500 {
+		// Retry on 5xx server errors or 404s which can occur due to races within the dimension patch endpoint.
 		return true, "retrying"
 	}
 
@@ -331,27 +329,19 @@ func (dc *DimensionClient) makeRequest(ctx context.Context, dim *DimensionUpdate
 	return dc.makePatchRequest(ctx, dim)
 }
 
-func splitDimensionTags(tags map[string]bool) (tagsToAdd, tagsToRemove []string) {
-	for tag, shouldAdd := range tags {
-		if shouldAdd {
-			tagsToAdd = append(tagsToAdd, tag)
-		} else {
-			tagsToRemove = append(tagsToRemove, tag)
-		}
-	}
-
-	sort.Strings(tagsToAdd)
-	sort.Strings(tagsToRemove)
-	return tagsToAdd, tagsToRemove
-}
-
 func (dc *DimensionClient) makePatchRequest(ctx context.Context, dim *DimensionUpdate) (*http.Request, error) {
 	var (
 		tagsToAdd    []string
 		tagsToRemove []string
 	)
 
-	tagsToAdd, tagsToRemove = splitDimensionTags(dim.Tags)
+	for tag, shouldAdd := range dim.Tags {
+		if shouldAdd {
+			tagsToAdd = append(tagsToAdd, tag)
+		} else {
+			tagsToRemove = append(tagsToRemove, tag)
+		}
+	}
 
 	json, err := json.Marshal(map[string]any{
 		"customProperties": dim.Properties,
@@ -390,7 +380,12 @@ func (dc *DimensionClient) makePutRequest(ctx context.Context, dim *DimensionUpd
 		}
 	}
 
-	tagsToAdd, _ := splitDimensionTags(dim.Tags)
+	var tagsToAdd []string
+	for tag, shouldAdd := range dim.Tags {
+		if shouldAdd {
+			tagsToAdd = append(tagsToAdd, tag)
+		}
+	}
 	if tagsToAdd == nil {
 		tagsToAdd = []string{}
 	}
