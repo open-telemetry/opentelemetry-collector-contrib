@@ -6,6 +6,7 @@ package pmetricassert // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -198,6 +199,18 @@ func compareAttributes(expected, actual map[string]any) error {
 			}
 			continue
 		}
+		if key, ok := strings.CutSuffix(rawKey, "/regex"); ok {
+			seen[key] = struct{}{}
+			actualValue, exists := actual[key]
+			if !exists {
+				errs = append(errs, fmt.Errorf("missing attribute %q required by /regex", key))
+				continue
+			}
+			if err := compareRegexAttribute(key, expectedValue, actualValue); err != nil {
+				errs = append(errs, err)
+			}
+			continue
+		}
 		seen[rawKey] = struct{}{}
 		actualValue, ok := actual[rawKey]
 		if !ok {
@@ -214,6 +227,25 @@ func compareAttributes(expected, actual map[string]any) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+func compareRegexAttribute(key string, expectedValue, actualValue any) error {
+	pattern, ok := expectedValue.(string)
+	if !ok {
+		return fmt.Errorf("attribute %q/regex must be a string pattern", key)
+	}
+	actualStr, ok := actualValue.(string)
+	if !ok {
+		return fmt.Errorf("attribute %q must be a string to match /regex (got %T)", key, actualValue)
+	}
+	re, err := regexp.Compile("^(?:" + pattern + ")$")
+	if err != nil {
+		return fmt.Errorf("attribute %q/regex has invalid pattern %q: %w", key, pattern, err)
+	}
+	if !re.MatchString(actualStr) {
+		return fmt.Errorf("attribute %q value %q does not match regex %q", key, actualStr, pattern)
+	}
+	return nil
 }
 
 func boolPtrEqual(a, b *bool) bool {
