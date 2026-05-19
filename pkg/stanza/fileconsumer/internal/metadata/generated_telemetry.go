@@ -25,6 +25,8 @@ type TelemetryBuilder struct {
 	meter                    metric.Meter
 	mu                       sync.Mutex
 	registrations            []metric.Registration
+	FileconsumerFileOffset   metric.Int64Gauge
+	FileconsumerFileSize     metric.Int64Gauge
 	FileconsumerOpenFiles    metric.Int64UpDownCounter
 	FileconsumerReadingFiles metric.Int64UpDownCounter
 }
@@ -58,6 +60,18 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.FileconsumerFileOffset, err = builder.meter.Int64Gauge(
+		"otelcol_fileconsumer_file_offset",
+		metric.WithDescription("Current read offset in files being monitored. This value may reset when files are rotated. [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	builder.FileconsumerFileSize, err = builder.meter.Int64Gauge(
+		"otelcol_fileconsumer_file_size",
+		metric.WithDescription("Current size of files being monitored. This value may reset when files are rotated. [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
 	builder.FileconsumerOpenFiles, err = builder.meter.Int64UpDownCounter(
 		"otelcol_fileconsumer_open_files",
 		metric.WithDescription("Number of open files [Development]"),

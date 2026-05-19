@@ -366,6 +366,51 @@ func BenchmarkFileRead(b *testing.B) {
 	}
 }
 
+func TestGetFileSize_OpenFile(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	temp := filetest.OpenTemp(t, tempDir)
+	content := "test content\n"
+	filetest.WriteString(t, temp, content)
+
+	f, _ := testFactory(t)
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+
+	reader, err := f.NewReader(temp, fp)
+	require.NoError(t, err)
+	defer reader.Close()
+
+	size, err := reader.GetFileSize()
+	require.NoError(t, err)
+	require.Equal(t, int64(len(content)), size)
+}
+
+func TestGetFileSize_ClosedFile(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	temp := filetest.OpenTemp(t, tempDir)
+	filetest.WriteString(t, temp, "test\n")
+
+	f, _ := testFactory(t)
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+
+	reader, err := f.NewReader(temp, fp)
+	require.NoError(t, err)
+
+	// Close the reader
+	reader.Close()
+
+	// Attempt to get file size after closing
+	size, err := reader.GetFileSize()
+	require.Error(t, err)
+	require.Equal(t, int64(0), size)
+	require.Contains(t, err.Error(), "file has been closed")
+}
+
 func newTestFactory(tb testing.TB, callback emit.Callback) *Factory {
 	splitFunc, err := split.Config{}.Func(unicode.UTF8, false, defaultMaxLogSize)
 	require.NoError(tb, err)
