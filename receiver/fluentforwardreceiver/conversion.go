@@ -72,7 +72,8 @@ func readStringWithLimit(dc *msgp.Reader, limit uint32) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err := validateMsgpackByteCount(size, limit); err != nil {
+	err = validateMsgpackByteCount(size, limit)
+	if err != nil {
 		return "", err
 	}
 	if size == 0 {
@@ -101,7 +102,8 @@ func readRawBytesWithLimit(dc *msgp.Reader, typ msgp.Type, limit uint32) ([]byte
 	if err != nil {
 		return nil, err
 	}
-	if err := validateMsgpackByteCount(size, limit); err != nil {
+	err = validateMsgpackByteCount(size, limit)
+	if err != nil {
 		return nil, err
 	}
 
@@ -374,7 +376,8 @@ func (fe *forwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	if err != nil {
 		return msgp.WrapError(err, "Record")
 	}
-	if err := validateMsgpackElementCount(entryLen); err != nil {
+	err = validateMsgpackElementCount(entryLen)
+	if err != nil {
 		return msgp.WrapError(err, "Record")
 	}
 
