@@ -808,132 +808,7 @@ func TestAutoContentTypeConfiguration(t *testing.T) {
 	}
 }
 
-func TestResponseValidation(t *testing.T) {
-	// Create a mock server that returns JSON
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte(`{"status": "ok", "count": 5, "message": "healthy"}`))
-		assert.NoError(t, err)
-	}))
-	defer server.Close()
-
-	cfg := createDefaultConfig().(*Config)
-	// Enable validation metrics
-	cfg.Metrics.HttpcheckValidationPassed.Enabled = true
-	cfg.Metrics.HttpcheckValidationFailed.Enabled = true
-	cfg.Metrics.HttpcheckResponseSize.Enabled = true
-
-	cfg.Targets = []*targetConfig{
-		{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: server.URL,
-			},
-			Validations: []validationConfig{
-				{
-					Contains: "healthy",
-				},
-				{
-					JSONPath: "$.status",
-					Equals:   "ok",
-				},
-				{
-					JSONPath: "$.count",
-					Equals:   "5",
-				},
-				{
-					MaxSize: func() *int64 { size := int64(100); return &size }(),
-				},
-				{
-					NotContains: "error",
-				},
-			},
-		},
-	}
-
-	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
-
-	metrics, err := scraper.scrape(t.Context())
-	require.NoError(t, err)
-
-	// Check that we have metrics
-	require.Positive(t, metrics.ResourceMetrics().Len())
-	rm := metrics.ResourceMetrics().At(0)
-	ilm := rm.ScopeMetrics().At(0)
-
-	// Verify validation metrics are present
-	foundMetrics := make(map[string]bool)
-	for i := 0; i < ilm.Metrics().Len(); i++ {
-		metric := ilm.Metrics().At(i)
-		foundMetrics[metric.Name()] = true
-	}
-
-	// Check that validation metrics are present
-	assert.True(t, foundMetrics["httpcheck.validation.passed"])
-	assert.True(t, foundMetrics["httpcheck.response.size"])
-}
-
-func TestResponseValidationFailures(t *testing.T) {
-	// Create a mock server that returns JSON with some failing conditions
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte(`{"status": "error", "count": 3, "message": "unhealthy"}`))
-		assert.NoError(t, err)
-	}))
-	defer server.Close()
-
-	cfg := createDefaultConfig().(*Config)
-	// Enable validation metrics
-	cfg.Metrics.HttpcheckValidationPassed.Enabled = true
-	cfg.Metrics.HttpcheckValidationFailed.Enabled = true
-
-	cfg.Targets = []*targetConfig{
-		{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: server.URL,
-			},
-			Validations: []validationConfig{
-				{
-					Contains: "healthy", // This will fail
-				},
-				{
-					JSONPath: "$.status",
-					Equals:   "ok", // This will fail
-				},
-				{
-					JSONPath: "$.count",
-					Equals:   "3", // This will pass
-				},
-			},
-		},
-	}
-
-	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
-
-	metrics, err := scraper.scrape(t.Context())
-	require.NoError(t, err)
-
-	// Check that we have metrics
-	require.Positive(t, metrics.ResourceMetrics().Len())
-	rm := metrics.ResourceMetrics().At(0)
-	ilm := rm.ScopeMetrics().At(0)
-
-	// Verify validation metrics are present
-	foundMetrics := make(map[string]bool)
-	for i := 0; i < ilm.Metrics().Len(); i++ {
-		metric := ilm.Metrics().At(i)
-		foundMetrics[metric.Name()] = true
-	}
-
-	// Check that validation metrics are present
-	assert.True(t, foundMetrics["httpcheck.validation.passed"])
-	assert.True(t, foundMetrics["httpcheck.validation.failed"])
-}
-
-func TestValidationResultStructuredAttributes(t *testing.T) {
+func TestValidationOutcomeMetric(t *testing.T) {
 	// Create a mock server that returns JSON with multiple system statuses
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -947,13 +822,7 @@ func TestValidationResultStructuredAttributes(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
 	// Enable the new structured validation metric
-	cfg.Metrics.HttpcheckValidationResult.Enabled = true
-
-	// Keep old metrics enabled for backward compatibility testing
-	cfg.Metrics.HttpcheckValidationPassed.Enabled = true
-	cfg.Metrics.HttpcheckValidationFailed.Enabled = true
-
-	maxSize := int64(1000)
+	cfg.Metrics.HttpcheckValidationOutcome.Enabled = true
 
 	cfg.Targets = []*targetConfig{
 		{
@@ -980,7 +849,7 @@ func TestValidationResultStructuredAttributes(t *testing.T) {
 					Regex: "^.*healthy.*$",
 				},
 				{
-					MaxSize: &maxSize,
+					MaxSize: func() *int64 { size := int64(1000); return &size }(),
 				},
 			},
 		},
@@ -997,150 +866,64 @@ func TestValidationResultStructuredAttributes(t *testing.T) {
 	rm := metrics.ResourceMetrics().At(0)
 	ilm := rm.ScopeMetrics().At(0)
 
-	type validationResult struct {
-		Type       string
-		Expression string
-		Expected   string
-		Result     string
-	}
-
-	var validationResults []validationResult
-
-	foundNewMetric := false
-	foundOldPassed := false
-	foundOldFailed := false
-
-	oldPassedCounts := make(map[string]int64)
-	oldFailedCounts := make(map[string]int64)
+	foundMetric := false
+	validationCount := 0
+	passedCount := 0
+	failedCount := 0
 
 	for i := 0; i < ilm.Metrics().Len(); i++ {
 		metric := ilm.Metrics().At(i)
 
-		switch metric.Name() {
-		case "httpcheck.validation.result":
-			foundNewMetric = true
-
+		if metric.Name() == "httpcheck.validation.outcome" {
+			foundMetric = true
 			dps := metric.Sum().DataPoints()
-
-			// 3 json_path + 1 contains + 1 regex + 1 size
-			assert.Equal(t, 6, dps.Len())
 
 			for j := 0; j < dps.Len(); j++ {
 				dp := dps.At(j)
+				validationCount++
 
+				// Verify value is 1
 				assert.Equal(t, int64(1), dp.IntValue())
 
-				typeAttr, ok := dp.Attributes().Get("validation.type")
+				// Verify attributes exist
+				_, ok := dp.Attributes().Get("http.url")
 				assert.True(t, ok)
 
-				expressionAttr, ok := dp.Attributes().Get("validation.expression")
+				typeAttr, ok := dp.Attributes().Get("httpcheck.validation.type")
 				assert.True(t, ok)
 
-				expectedAttr, ok := dp.Attributes().Get("validation.expected")
+				targetAttr, ok := dp.Attributes().Get("httpcheck.validation.target")
 				assert.True(t, ok)
 
-				resultAttr, ok := dp.Attributes().Get("validation.result")
+				outcomeAttr, ok := dp.Attributes().Get("httpcheck.validation.outcome")
 				assert.True(t, ok)
 
-				validationResults = append(validationResults, validationResult{
-					Type:       typeAttr.Str(),
-					Expression: expressionAttr.Str(),
-					Expected:   expectedAttr.Str(),
-					Result:     resultAttr.Str(),
-				})
-			}
+				// Count outcomes
+				if outcomeAttr.Str() == "passed" {
+					passedCount++
+				} else {
+					failedCount++
+				}
 
-		case "httpcheck.validation.passed":
-			foundOldPassed = true
-
-			dps := metric.Sum().DataPoints()
-
-			for j := 0; j < dps.Len(); j++ {
-				dp := dps.At(j)
-
-				typeAttr, ok := dp.Attributes().Get("validation.type")
-				assert.True(t, ok)
-
-				oldPassedCounts[typeAttr.Str()] = dp.IntValue()
-			}
-
-		case "httpcheck.validation.failed":
-			foundOldFailed = true
-
-			dps := metric.Sum().DataPoints()
-
-			for j := 0; j < dps.Len(); j++ {
-				dp := dps.At(j)
-
-				typeAttr, ok := dp.Attributes().Get("validation.type")
-				assert.True(t, ok)
-
-				oldFailedCounts[typeAttr.Str()] = dp.IntValue()
+				// Verify targets
+				if typeAttr.Str() == "json_path" {
+					assert.Contains(t, []string{"system_1", "system_2", "system_3"}, targetAttr.Str())
+				}
+				if typeAttr.Str() == "contains" {
+					assert.Equal(t, "healthy", targetAttr.Str())
+				}
+				if typeAttr.Str() == "regex" {
+					assert.Equal(t, "^.*healthy.*$", targetAttr.Str())
+				}
+				if typeAttr.Str() == "size" {
+					assert.Equal(t, "max_size", targetAttr.Str())
+				}
 			}
 		}
 	}
 
-	// Verify new metric exists
-	assert.True(t, foundNewMetric)
-
-	// Verify legacy metrics still exist
-	assert.True(t, foundOldPassed)
-	assert.True(t, foundOldFailed)
-
-	// Verify old metric counts - all validations should pass except system_3
-	assert.Equal(t, int64(2), oldPassedCounts["json_path"])
-	assert.Equal(t, int64(1), oldFailedCounts["json_path"])
-	assert.Equal(t, int64(1), oldPassedCounts["contains"])
-	assert.Equal(t, int64(1), oldPassedCounts["regex"])
-	assert.Equal(t, int64(1), oldPassedCounts["size"])
-
-	// Verify structured validation results
-	assert.Len(t, validationResults, 6)
-
-	jsonPathPassed := 0
-	jsonPathFailed := 0
-	containsPassed := 0
-	regexPassed := 0
-	sizePassed := 0
-
-	for _, vr := range validationResults {
-		switch vr.Type {
-		case "json_path":
-			switch vr.Result {
-			case "passed":
-				jsonPathPassed++
-				assert.Contains(t, []string{"system_1", "system_2"}, vr.Expression)
-				assert.Equal(t, "true", vr.Expected)
-
-			case "failed":
-				jsonPathFailed++
-				assert.Equal(t, "system_3", vr.Expression)
-				assert.Equal(t, "true", vr.Expected)
-			}
-
-		case "contains":
-			containsPassed++
-			assert.Equal(t, "healthy", vr.Expression)
-			assert.Empty(t, vr.Expected)
-			assert.Equal(t, "passed", vr.Result)
-
-		case "regex":
-			regexPassed++
-			assert.Equal(t, "^.*healthy.*$", vr.Expression)
-			assert.Empty(t, vr.Expected)
-			assert.Equal(t, "passed", vr.Result)
-
-		case "size":
-			sizePassed++
-			assert.Equal(t, "max_size", vr.Expression)
-			assert.Empty(t, vr.Expected)
-			assert.Equal(t, "passed", vr.Result)
-		}
-	}
-
-	assert.Equal(t, 2, jsonPathPassed)
-	assert.Equal(t, 1, jsonPathFailed)
-	assert.Equal(t, 1, containsPassed)
-	assert.Equal(t, 1, regexPassed)
-	assert.Equal(t, 1, sizePassed)
+	assert.True(t, foundMetric, "Should have httpcheck.validation.outcome metric")
+	assert.Equal(t, 6, validationCount, "Should have 6 validation data points")
+	assert.Equal(t, 5, passedCount, "Should have 5 passed validations")
+	assert.Equal(t, 1, failedCount, "Should have 1 failed validation (system_3)")
 }
