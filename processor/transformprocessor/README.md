@@ -273,6 +273,11 @@ In addition to the common OTTL functions, the processor defines its own function
 - [aggregate_on_attribute_value](#aggregate_on_attribute_value)
 - [merge_histogram_buckets](#merge_histogram_buckets)
 
+**Logs only functions**
+
+- [ParseCLF](#parseclf)
+- [ParseLEEF](#parseleef)
+
 **Traces only functions**
 
 - [set_semconv_span_name](#set_semconv_span_name)
@@ -690,6 +695,58 @@ Examples:
 # bounds: [0.1, 1.0]
 # counts: [5, 11, 1]
 ```
+
+### ParseCLF
+
+`ParseCLF(target)`
+
+The `ParseCLF` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [Common Log Format (CLF)](https://www.w3.org/Daemon/User/Config/Logging.html#common-logfile-format) HTTP access log entry.
+
+`target` is a Getter that returns a string. If the returned string is empty, or cannot be parsed as CLF, an error will be returned.
+
+The CLF entry is expected to have the form:
+
+```
+remotehost rfc931 authuser [date] "request" status bytes
+```
+
+The returned map has the following fields:
+
+- `remote_host` — the client's DNS name or IP address.
+- `rfc931` — the remote logname of the user (CLF uses `-` when unknown).
+- `authuser` — the authenticated user (CLF uses `-` when unknown).
+- `timestamp` — the contents of the bracketed date field, preserved as a string.
+- `request` — the raw request line as sent by the client.
+- `method`, `request_uri`, `protocol` — the parsed components of the request line, only set when the request line is well-formed.
+- `status` — the HTTP status code as an integer.
+- `bytes` — the content-length of the response as an integer. Omitted when CLF reports `-` (e.g. on a 304 response).
+
+Examples:
+
+- `ParseCLF(body)`
+- `ParseCLF("127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] \"GET /apache_pb.gif HTTP/1.0\" 200 2326")`
+
+### ParseLEEF
+
+`ParseLEEF(target)`
+
+The `ParseLEEF` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [Log Event Extended Format (LEEF)](https://www.ibm.com/docs/en/dsm?topic=overview-leef-event-components) message.
+
+`target` is a Getter that returns a string. If the returned string is empty, or cannot be parsed as LEEF, an error will be returned.
+
+`ParseLEEF` can parse both LEEF 1.0 and LEEF 2.0 messages. The function is tolerant of an optional syslog header preceding the `LEEF:` token. The returned map has the following top-level fields:
+
+- `version` — the LEEF version (`"1.0"` or `"2.0"`).
+- `vendor`, `product_name`, `product_version`, `event_id` — the LEEF header fields.
+- `attributes` — a map of the parsed key/value attribute pairs.
+
+For LEEF 1.0 the attribute delimiter is always a tab. For LEEF 2.0 the delimiter is taken from the header and may be specified as a single character or as a hex value (e.g. `0x09`).
+
+Examples:
+
+- `ParseLEEF(body)`
+- `ParseLEEF("LEEF:1.0|Microsoft|MSExchange|4.0 SP1|15345|src=10.50.1.1\tdst=2.10.20.20\tsev=5")`
+- `ParseLEEF("LEEF:2.0|Lancope|StealthWatch|1.0|41|^|src=10.0.1.8^dst=10.0.0.5^sev=5")`
 
 ### set_semconv_span_name
 

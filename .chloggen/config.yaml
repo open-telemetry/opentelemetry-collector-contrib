@@ -227,6 +227,7 @@ components:
     - processor/tail_sampling
     - processor/tencentcvmdetector
     - processor/transform
+    - processor/transformprocessor/internal/logparsingfuncs
     - processor/unroll
     - processor/upclouddetector
     - processor/vultrdetector
