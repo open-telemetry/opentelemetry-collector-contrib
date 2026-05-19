@@ -97,6 +97,12 @@ attributes:
   oracledb.event:
     description: The specific wait event that a query or session is currently experiencing.
     type: string
+  oracledb.event.duration:
+    description: Total time waited in seconds for the wait event.
+    type: double
+  oracledb.event.waits:
+    description: Total number of waits for the wait event across all sessions.
+    type: int
   oracledb.executions:
     description: The number of times a specific SQL query has been executed (reporting delta).
     type: int
@@ -235,6 +241,16 @@ events:
       - oracledb.query.started
       - oracledb.session.started
       - oracledb.session.duration
+  db.server.session.wait_sample:
+    enabled: false
+    description: Per-session wait event statistics from v$session_event showing total time waited and total waits per event.
+    attributes:
+      - oracledb.sid
+      - oracledb.serial
+      - oracledb.event
+      - oracledb.wait_class
+      - oracledb.event.waits
+      - oracledb.event.duration
   db.server.top_query:
     enabled: false
     description: Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).
