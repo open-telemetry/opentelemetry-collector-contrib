@@ -153,10 +153,6 @@ linters:
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47586
       - linters:
           - forbidigo
-        path: internal/aws/proxy/
-        text: confighttp
-      - linters:
-          - forbidigo
         path: testbed/
         text: confighttp
 
