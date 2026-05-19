@@ -4,6 +4,7 @@
 package loadbalancingexporter
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -139,7 +140,7 @@ func makeSummary(i int) types.HttpInstanceSummary {
 	}
 }
 
-func mockDiscovery(*servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
+func mockDiscovery(_ context.Context, _ *servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
 	s := &servicediscovery.DiscoverInstancesOutput{
 		Instances: []types.HttpInstanceSummary{
 			makeSummary(1),

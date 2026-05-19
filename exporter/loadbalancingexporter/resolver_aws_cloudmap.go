@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"sort"
 	"sync"
 	"time"
@@ -37,9 +36,9 @@ var (
 	awsResolverFailureAttrSet = attribute.NewSet(awsResolverAttr, attribute.Bool("success", false))
 )
 
-func createDiscoveryFunction(client *servicediscovery.Client) func(params *servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
-	return func(params *servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
-		return client.DiscoverInstances(context.TODO(), params)
+func createDiscoveryFunction(client *servicediscovery.Client) func(ctx context.Context, params *servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
+	return func(ctx context.Context, params *servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
+		return client.DiscoverInstances(ctx, params)
 	}
 }
 
@@ -61,7 +60,7 @@ type cloudMapResolver struct {
 	updateLock         sync.Mutex
 	shutdownWg         sync.WaitGroup
 	changeCallbackLock sync.RWMutex
-	discoveryFn        func(params *servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error)
+	discoveryFn        func(ctx context.Context, params *servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error)
 	telemetry          *metadata.TelemetryBuilder
 }
 
@@ -78,10 +77,9 @@ func newCloudMapResolver(
 ) (*cloudMapResolver, error) { // Using the SDK's default configuration, loading additional config
 	// and credentials values from the environment variables, shared
 	// credentials, and shared configuration files
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithDefaultRegion("us-east-1"))
+	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithDefaultRegion("us-east-1"))
 	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
-		return nil, err
+		return nil, fmt.Errorf("unable to load AWS SDK config: %w", err)
 	}
 
 	// Using the Config value, create the DynamoDB client
@@ -171,7 +169,7 @@ func (r *cloudMapResolver) resolve(ctx context.Context) ([]string, error) {
 	r.shutdownWg.Add(1)
 	defer r.shutdownWg.Done()
 
-	discoverInstancesOutput, err := r.discoveryFn(&servicediscovery.DiscoverInstancesInput{
+	discoverInstancesOutput, err := r.discoveryFn(ctx, &servicediscovery.DiscoverInstancesInput{
 		NamespaceName:      r.namespaceName,
 		ServiceName:        r.serviceName,
 		HealthStatus:       *r.healthStatus,
