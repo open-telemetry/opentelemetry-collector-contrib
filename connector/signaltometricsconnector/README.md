@@ -93,7 +93,7 @@ signal_to_metrics:
 The `error_mode` configuration option determines how the connector handles errors that occur while processing OTTL expressions:
 
 - `error_mode` (optional): Determines how errors returned from OTTL expressions are handled. Valid values are `propagate`, `ignore`, and `silent`.
-  - `propagate` (default): Errors cause the entire batch to fail and be returned up the pipeline. This will result in the payload being dropped from the collector.
+  - `propagate` (default): Errors cause the entire batch to fail and be returned up the pipeline. This will result in the payload being dropped from the collector. The default will change to `ignore` when the `connector.signaltometrics.defaultErrorModeIgnore` feature gate is stable.
   - `ignore`: Errors are logged and the specific record that caused the error is skipped, but processing continues for the rest of the batch.
   - `silent`: Errors are not logged and the specific record that caused the error is skipped, but processing continues for the rest of the batch.
 

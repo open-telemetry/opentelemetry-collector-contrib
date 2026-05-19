@@ -61,7 +61,8 @@ type Config struct {
 	// If an error occurs, the record is skipped and the error is logged.
 	// `silent` means the connector ignores errors returned by conditions and continues processing.
 	// If an error occurs, the record is skipped and the error is not logged.
-	// The default value is `propagate`.
+	// The current default value is `propagate`, which will change to `ignore` when the
+	// `connector.signaltometrics.defaultErrorModeIgnore` feature gate is stable.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 	// prevent unkeyed literal initialization
 	_ struct{}

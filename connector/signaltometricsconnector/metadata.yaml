@@ -40,3 +40,10 @@ tests:
         description: "Count of datapoint"
         sum:
           value: Int(1) # Count each data point as 1, can also use the Int converter
+
+feature_gates:
+  - id: "connector.signaltometrics.defaultErrorModeIgnore"
+    description: Changes the default error_mode of the signaltometrics connector from propagate to ignore
+    stage: alpha
+    from_version: v0.153.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48419
