@@ -60,7 +60,7 @@ func (p *Provider) Start(ctx context.Context, _ component.Host) error {
 	}
 
 	if err := p.refresh(ctx); err != nil {
-		return fmt.Errorf("initial credential fetch: %w", err)
+		return fmt.Errorf("initial credential fetch failed: %w", err)
 	}
 
 	loopCtx, cancel := context.WithCancel(context.Background())
@@ -90,7 +90,7 @@ func (p *Provider) refresh(ctx context.Context) error {
 
 	resp, err := p.Client.GetSecret(fetchCtx, p.config.SecretName, "", nil)
 	if err != nil {
-		return fmt.Errorf("get secret value: %w", err)
+		return fmt.Errorf("failed to get secret value: %w", err)
 	}
 	if resp.Value == nil {
 		return fmt.Errorf("secret %q has no value", p.config.SecretName)
