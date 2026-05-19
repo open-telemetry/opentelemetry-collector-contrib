@@ -273,6 +273,10 @@ In addition to the common OTTL functions, the processor defines its own function
 - [aggregate_on_attribute_value](#aggregate_on_attribute_value)
 - [merge_histogram_buckets](#merge_histogram_buckets)
 
+**Logs only functions**
+
+- [parse_elf](#parse_elf)
+
 **Traces only functions**
 
 - [set_semconv_span_name](#set_semconv_span_name)
@@ -690,6 +694,33 @@ Examples:
 # bounds: [0.1, 1.0]
 # counts: [5, 11, 1]
 ```
+
+### parse_elf
+
+`parse_elf(target)`
+
+The `parse_elf` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [W3C Extended Log Format (ELF)](https://www.w3.org/TR/WD-logfile.html) log block.
+
+`target` is a Getter that returns a string containing a complete ELF log block (one or more directive lines followed by data lines). If the string is empty or does not contain a valid `#Version` directive, an error is returned.
+
+The returned map contains the following keys:
+
+* `version` — value of the `#Version` directive (required).
+* `software` — value of `#Software` (omitted if not present).
+* `date` — value of `#Date` (omitted if not present).
+* `start_date` — value of `#Start-Date` (omitted if not present).
+* `end_date` — value of `#End-Date` (omitted if not present).
+* `remark` — value of `#Remark` (omitted if not present).
+* `fields` — string slice of field names from the last `#Fields` directive.
+* `entries` — slice of maps, one per data line, keyed by field name. Missing values are represented as `"-"`.
+
+Multiple `#Fields` directives within a single block are supported; each directive applies to subsequent data lines until the next `#Fields` directive is encountered. Double-quoted field values (as produced by Microsoft IIS) are handled correctly.
+
+Examples:
+
+- `parse_elf(body)`
+
+- `parse_elf("#Version: 1.0\n#Fields: time cs-method cs-uri\n00:34:23 GET /foo/bar.html")`
 
 ### set_semconv_span_name
 
