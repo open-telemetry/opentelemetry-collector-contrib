@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package msgpackvalidator
+package msgpackvalidator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/msgpackvalidator"
 
 import (
 	"encoding/binary"
@@ -201,7 +201,7 @@ func validateElementCount(kind string, size uint64, remaining, objectsPerElement
 	return nil
 }
 
-func (s *msgpackScanner) validateBytes(kind string, size uint64, limit uint64) error {
+func (s *msgpackScanner) validateBytes(kind string, size, limit uint64) error {
 	if size > limit {
 		return fmt.Errorf("msgpack %s length %d exceeds limit %d", kind, size, limit)
 	}
