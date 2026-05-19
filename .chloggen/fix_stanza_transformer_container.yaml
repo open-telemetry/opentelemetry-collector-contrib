@@ -7,7 +7,7 @@ change_type: "bug_fix"
 component: "pkg/stanza"
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Fix container parser operator logging errors at ERROR level when `on_error` is set to quiet mode"
+note: "Fix stanza parsers and transformers logging errors at ERROR level when `on_error` is set to a quiet mode"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42646]
@@ -15,7 +15,14 @@ issues: [42646]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  When the `on_error` strategy is `drop_quiet` or `send_quiet`, entry-level
+  errors are now consistently swallowed by `HandleEntryError` /
+  `HandleEntryErrorWithWrite` and are no longer propagated up the pipeline
+  by the stanza helper, container, syslog and recombine operators. This
+  also fixes paths in `helper.ParserOperator.ProcessWithCallback` /
+  `ProcessBatchWithCallback` that previously surfaced Skip and callback
+  errors at ERROR level in quiet mode.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
