@@ -12,7 +12,7 @@ components:
         - service_graph
     exporter:
         - file
-        - loadbalancing
+        - load_balancing
         - otelarrow
     extension:
         - ack
