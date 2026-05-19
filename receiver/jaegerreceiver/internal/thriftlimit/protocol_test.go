@@ -64,9 +64,9 @@ func TestProtocolRejectsOversizedCollections(t *testing.T) {
 
 func TestProtocolRejectsCollectionLargerThanRemainingPayload(t *testing.T) {
 	trans := thrift.NewTMemoryBuffer()
-	require.NoError(t, thrift.NewTBinaryProtocolTransport(trans).WriteListBegin(t.Context(), thrift.STRUCT, 1))
+	require.NoError(t, thrift.NewTBinaryProtocolConf(trans, &thrift.TConfiguration{}).WriteListBegin(t.Context(), thrift.STRUCT, 1))
 
-	_, _, err := NewProtocol(thrift.NewTBinaryProtocolTransport(trans)).ReadListBegin(t.Context())
+	_, _, err := NewProtocol(thrift.NewTBinaryProtocolConf(trans, &thrift.TConfiguration{})).ReadListBegin(t.Context())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "only 0 payload bytes remain")
 }
