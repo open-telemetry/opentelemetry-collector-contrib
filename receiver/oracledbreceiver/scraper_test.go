@@ -528,8 +528,8 @@ func TestSamplesQuery(t *testing.T) {
 				assert.True(t, hasBlockerSID, "blocking.blocker.sid attribute must be present for a blocked session")
 				assert.Equal(t, "100", blockerSID.Str())
 
-				_, hasBlockerState := lr.Attributes().Get("oracledb.blocking.blocker.status")
-				assert.True(t, hasBlockerState, "blocking.blocker.status attribute must be present for a blocked session")
+				_, hasBlockerState := lr.Attributes().Get("oracledb.blocking.blocker.state")
+				assert.True(t, hasBlockerState, "blocking.blocker.state attribute must be present for a blocked session")
 
 				waitDuration, hasWaitDuration := lr.Attributes().Get("oracledb.blocking.wait_duration")
 				assert.True(t, hasWaitDuration, "blocking.wait_duration attribute must be present for a blocked session")
