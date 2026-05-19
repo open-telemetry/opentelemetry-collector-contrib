@@ -703,21 +703,21 @@ func NewTestParserConfig() ParserConfig {
 	return expect
 }
 
-func TestProcessWithCallback_QuietMode_PropagatesWriteError(t *testing.T) {
+func TestProcessWithCallback_QuietMode(t *testing.T) {
+	// Under the new contract, HandleEntryError returns nil in quiet mode,
+	// so ProcessWithCallback MUST NOT propagate a parse error regardless of
+	// whether the downstream write also fails.
 	testCases := []struct {
-		name        string
-		onError     string
-		expectError bool
+		name    string
+		onError string
 	}{
 		{
-			name:        "SendOnErrorQuiet_WriteFailure_PropagatesWriteError",
-			onError:     SendOnErrorQuiet,
-			expectError: true,
+			name:    "SendOnErrorQuiet_WriteFailure_Suppressed",
+			onError: SendOnErrorQuiet,
 		},
 		{
-			name:        "DropOnErrorQuiet_ParseFailure_SuppressesError",
-			onError:     DropOnErrorQuiet,
-			expectError: false,
+			name:    "DropOnErrorQuiet_ParseFailure_Suppressed",
+			onError: DropOnErrorQuiet,
 		},
 	}
 
@@ -742,6 +742,7 @@ func TestProcessWithCallback_QuietMode_PropagatesWriteError(t *testing.T) {
 					OnError:        tc.onError,
 				},
 				ParseFrom: entry.NewBodyField(),
+				ParseTo:   entry.NewAttributeField(),
 			}
 
 			parse := func(_ any) (any, error) {
@@ -751,13 +752,87 @@ func TestProcessWithCallback_QuietMode_PropagatesWriteError(t *testing.T) {
 			ctx := t.Context()
 			testEntry := entry.New()
 			err := parser.ProcessWithCallback(ctx, testEntry, parse, nil)
-			if tc.expectError {
-				require.Error(t, err, "write errors must propagate even in quiet mode")
-				var writeErr *WriteError
-				require.ErrorAs(t, err, &writeErr, "error should be a WriteError")
-			} else {
-				require.NoError(t, err, "processing errors should be suppressed in quiet mode")
+			require.NoError(t, err, "quiet mode must not propagate any error")
+		})
+	}
+}
+
+// TestProcessWithCallback_QuietMode_SkipAndCallbackPaths exercises the four
+// code paths in helper/parser.go that previously did not honor quiet mode:
+//   - ProcessWithCallback Skip error
+//   - ProcessWithCallback callback error
+//   - ProcessBatchWithCallback Skip error
+//   - ProcessBatchWithCallback callback error
+//
+// All four must be suppressed when the operator is configured in quiet mode.
+func TestProcessWithCallback_QuietMode_SkipAndCallbackPaths(t *testing.T) {
+	parse := func(v any) (any, error) { return v, nil }
+	okCb := func(_ *entry.Entry) error { return nil }
+	failingCb := func(_ *entry.Entry) error { return errors.New("callback failure") }
+
+	// An "if" expression that always errors during evaluation (because the
+	// attribute is missing and types do not match), driving the Skip error
+	// path.
+	badIfExpr, err := ExprCompileBool(`attributes["missing"] + 1 == 2`)
+	require.NoError(t, err)
+
+	for _, onError := range []string{DropOnErrorQuiet, SendOnErrorQuiet} {
+		t.Run("ProcessWithCallback_Skip_"+onError, func(t *testing.T) {
+			writer, _ := writerWithFakeOut(t)
+			parser := ParserOperator{
+				TransformerOperator: TransformerOperator{
+					WriterOperator: *writer,
+					OnError:        onError,
+					IfExpr:         badIfExpr,
+				},
+				ParseFrom: entry.NewBodyField(),
+				ParseTo:   entry.NewAttributeField(),
 			}
+			require.NoError(t, parser.ProcessWithCallback(t.Context(), entry.New(), parse, okCb),
+				"Skip error must be suppressed in quiet mode")
+		})
+
+		t.Run("ProcessWithCallback_Callback_"+onError, func(t *testing.T) {
+			writer, _ := writerWithFakeOut(t)
+			parser := ParserOperator{
+				TransformerOperator: TransformerOperator{
+					WriterOperator: *writer,
+					OnError:        onError,
+				},
+				ParseFrom: entry.NewBodyField(),
+				ParseTo:   entry.NewAttributeField(),
+			}
+			require.NoError(t, parser.ProcessWithCallback(t.Context(), entry.New(), parse, failingCb),
+				"callback error must be suppressed in quiet mode")
+		})
+
+		t.Run("ProcessBatchWithCallback_Skip_"+onError, func(t *testing.T) {
+			writer, _ := writerWithFakeOut(t)
+			parser := ParserOperator{
+				TransformerOperator: TransformerOperator{
+					WriterOperator: *writer,
+					OnError:        onError,
+					IfExpr:         badIfExpr,
+				},
+				ParseFrom: entry.NewBodyField(),
+				ParseTo:   entry.NewAttributeField(),
+			}
+			require.NoError(t, parser.ProcessBatchWithCallback(t.Context(), []*entry.Entry{entry.New()}, parse, okCb),
+				"batch Skip error must be suppressed in quiet mode")
+		})
+
+		t.Run("ProcessBatchWithCallback_Callback_"+onError, func(t *testing.T) {
+			writer, _ := writerWithFakeOut(t)
+			parser := ParserOperator{
+				TransformerOperator: TransformerOperator{
+					WriterOperator: *writer,
+					OnError:        onError,
+				},
+				ParseFrom: entry.NewBodyField(),
+				ParseTo:   entry.NewAttributeField(),
+			}
+			require.NoError(t, parser.ProcessBatchWithCallback(t.Context(), []*entry.Entry{entry.New()}, parse, failingCb),
+				"batch callback error must be suppressed in quiet mode")
 		})
 	}
 }

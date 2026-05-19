@@ -106,12 +106,7 @@ func (t *TransformerOperator) ProcessBatchWithTransform(ctx context.Context, ent
 		}
 
 		if err = transform(ent); err != nil {
-			if handleErr := t.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
-				var writeErr *WriteError
-				if !t.isQuietMode() || errors.As(handleErr, &writeErr) {
-					errs = append(errs, handleErr)
-				}
-			}
+			errs = append(errs, t.HandleEntryErrorWithWrite(ctx, ent, err, write))
 			continue
 		}
 
@@ -135,21 +130,19 @@ func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entr
 	}
 
 	if err := transform(entry); err != nil {
-		handleErr := t.HandleEntryError(ctx, entry, err)
-		var writeErr *WriteError
-		if t.isQuietMode() && !errors.As(handleErr, &writeErr) {
-			return nil
-		}
-		return handleErr
+		return t.HandleEntryError(ctx, entry, err)
 	}
 	return t.Write(ctx, entry)
 }
 
-// HandleEntryError will handle an entry error using the on_error strategy.
+// HandleEntryError handles an entry error using the on_error strategy.
+// Returns nil in quiet modes (drop_quiet, send_quiet).
 func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry.Entry, err error) error {
 	return t.HandleEntryErrorWithWrite(ctx, entry, err, t.Write)
 }
 
+// HandleEntryErrorWithWrite is like HandleEntryError but uses the supplied write function.
+// Returns nil in quiet modes (drop_quiet, send_quiet).
 func (t *TransformerOperator) HandleEntryErrorWithWrite(ctx context.Context, entry *entry.Entry, err error, write WriteFunction) error {
 	if entry == nil {
 		return errors.New("got a nil entry, this should not happen and is potentially a bug")
@@ -165,10 +158,13 @@ func (t *TransformerOperator) HandleEntryErrorWithWrite(ctx context.Context, ent
 	}
 	if t.OnError == SendOnError || t.OnError == SendOnErrorQuiet {
 		if writeErr := write(ctx, entry); writeErr != nil {
-			return &WriteError{Err: fmt.Errorf("failed to send entry after error: %w", writeErr)}
+			err = fmt.Errorf("failed to send entry after error: %w", writeErr)
 		}
 	}
 
+	if t.isQuietMode() {
+		return nil
+	}
 	return err
 }
 
@@ -210,20 +206,6 @@ type ProcessFunction = func(context.Context, *entry.Entry) error
 
 // TransformFunction is function that transforms an entry.
 type TransformFunction = func(*entry.Entry) error
-
-// WriteError wraps errors that occur when writing/sending entries downstream.
-// These should not be suppressed in quiet mode.
-type WriteError struct {
-	Err error
-}
-
-func (e *WriteError) Error() string {
-	return e.Err.Error()
-}
-
-func (e *WriteError) Unwrap() error {
-	return e.Err
-}
 
 // SendOnError specifies an on_error mode for sending entries after an error.
 const SendOnError = "send"

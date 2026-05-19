@@ -742,31 +742,39 @@ func TestTransformerIf(t *testing.T) {
 	})
 }
 
-func TestHandleEntryErrorWithWrite_ReturnsWriteError(t *testing.T) {
+func TestHandleEntryErrorWithWrite(t *testing.T) {
+	// The new contract for HandleEntryErrorWithWrite:
+	//   - In quiet mode (drop_quiet / send_quiet) the method ALWAYS returns
+	//     nil, regardless of whether the downstream write failed.
+	//   - In non-quiet mode (drop / send) the method returns either the
+	//     original processing error or, if a SendOnError write also failed,
+	//     a wrapped "failed to send entry after error" error.
 	testCases := []struct {
-		name           string
-		onError        string
-		expectWriteErr bool
+		name              string
+		onError           string
+		expectNil         bool
+		expectWriteWrap   bool
+		expectOriginalErr bool
 	}{
 		{
-			name:           "SendOnError_WriteFailure_ReturnsWriteError",
-			onError:        SendOnError,
-			expectWriteErr: true,
+			name:            "SendOnError_WriteFailure_ReturnsWrappedWriteErr",
+			onError:         SendOnError,
+			expectWriteWrap: true,
 		},
 		{
-			name:           "SendOnErrorQuiet_WriteFailure_ReturnsWriteError",
-			onError:        SendOnErrorQuiet,
-			expectWriteErr: true,
+			name:      "SendOnErrorQuiet_WriteFailure_ReturnsNil",
+			onError:   SendOnErrorQuiet,
+			expectNil: true,
 		},
 		{
-			name:           "DropOnError_WriteNotCalled_ReturnsOriginalError",
-			onError:        DropOnError,
-			expectWriteErr: false,
+			name:              "DropOnError_WriteNotCalled_ReturnsOriginalError",
+			onError:           DropOnError,
+			expectOriginalErr: true,
 		},
 		{
-			name:           "DropOnErrorQuiet_WriteNotCalled_ReturnsOriginalError",
-			onError:        DropOnErrorQuiet,
-			expectWriteErr: false,
+			name:      "DropOnErrorQuiet_WriteNotCalled_ReturnsNil",
+			onError:   DropOnErrorQuiet,
+			expectNil: true,
 		},
 	}
 
@@ -792,35 +800,37 @@ func TestHandleEntryErrorWithWrite_ReturnsWriteError(t *testing.T) {
 			}
 
 			err := transformer.HandleEntryErrorWithWrite(t.Context(), testEntry, errors.New("processing error"), failingWrite)
-			require.Error(t, err)
 
-			var writeErr *WriteError
-			if tc.expectWriteErr {
-				require.ErrorAs(t, err, &writeErr, "expected WriteError type")
-				require.Contains(t, writeErr.Error(), "downstream write failure")
-			} else {
-				require.NotErrorAs(t, err, &writeErr, "did not expect WriteError for drop mode")
+			switch {
+			case tc.expectNil:
+				require.NoError(t, err, "quiet modes must swallow errors entirely")
+			case tc.expectWriteWrap:
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to send entry after error")
+				require.Contains(t, err.Error(), "downstream write failure")
+			case tc.expectOriginalErr:
+				require.Error(t, err)
 				require.Contains(t, err.Error(), "processing error")
 			}
 		})
 	}
 }
 
-func TestProcessWith_QuietMode_PropagatesWriteError(t *testing.T) {
+func TestProcessWith_QuietMode(t *testing.T) {
+	// Under the new contract HandleEntryError returns nil in quiet mode, so
+	// ProcessWith MUST NOT propagate any error to the pipeline regardless of
+	// whether the downstream write also failed.
 	testCases := []struct {
-		name        string
-		onError     string
-		expectError bool
+		name    string
+		onError string
 	}{
 		{
-			name:        "SendOnErrorQuiet_WriteFailure_PropagatesError",
-			onError:     SendOnErrorQuiet,
-			expectError: true,
+			name:    "SendOnErrorQuiet_WriteFailure_Suppressed",
+			onError: SendOnErrorQuiet,
 		},
 		{
-			name:        "DropOnErrorQuiet_TransformFailure_SuppressesError",
-			onError:     DropOnErrorQuiet,
-			expectError: false,
+			name:    "DropOnErrorQuiet_TransformFailure_Suppressed",
+			onError: DropOnErrorQuiet,
 		},
 	}
 
@@ -829,7 +839,7 @@ func TestProcessWith_QuietMode_PropagatesWriteError(t *testing.T) {
 			output := &testutil.Operator{}
 			output.On("ID").Return("test-output")
 			output.On("CanProcess").Return(true)
-			// Make the downstream write fail
+			// Make the downstream write fail so we exercise the write path.
 			output.On("Process", mock.Anything, mock.Anything).Return(errors.New("downstream failure"))
 
 			set := componenttest.NewNopTelemetrySettings()
@@ -855,13 +865,7 @@ func TestProcessWith_QuietMode_PropagatesWriteError(t *testing.T) {
 			}
 
 			err := transformer.ProcessWith(ctx, testEntry, transform)
-			if tc.expectError {
-				require.Error(t, err, "write errors must propagate even in quiet mode")
-				var writeErr *WriteError
-				require.ErrorAs(t, err, &writeErr, "error should be a WriteError")
-			} else {
-				require.NoError(t, err, "non-write errors should be suppressed in quiet mode")
-			}
+			require.NoError(t, err, "quiet mode must not propagate any error")
 		})
 	}
 }

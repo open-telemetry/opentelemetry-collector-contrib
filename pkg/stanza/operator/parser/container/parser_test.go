@@ -16,7 +16,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/recombine"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -1303,12 +1302,13 @@ func TestUnlimitedBatchSize(t *testing.T) {
 }
 
 func TestContainerQuietModeProcess(t *testing.T) {
+	// Under the new contract HandleEntryError returns nil in quiet mode,
+	// so a failing downstream write must also be suppressed in quiet mode.
 	testCases := []struct {
 		name             string
 		onError          string
 		useFailingOutput bool
 		expectError      bool
-		expectWriteError bool
 	}{
 		{
 			name:        "DropOnErrorQuiet_ReturnsNoError",
@@ -1331,11 +1331,16 @@ func TestContainerQuietModeProcess(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name:             "SendOnErrorQuiet_WriteFailure_PropagatesWriteError",
+			name:             "SendOnErrorQuiet_WriteFailure_SuppressesError",
 			onError:          "send_quiet",
 			useFailingOutput: true,
+			expectError:      false,
+		},
+		{
+			name:             "SendOnError_WriteFailure_PropagatesError",
+			onError:          "send",
+			useFailingOutput: true,
 			expectError:      true,
-			expectWriteError: true,
 		},
 	}
 
@@ -1365,12 +1370,8 @@ func TestContainerQuietModeProcess(t *testing.T) {
 			err = op.Process(t.Context(), e)
 			if tc.expectError {
 				require.Error(t, err, "expected error")
-				if tc.expectWriteError {
-					var writeErr *helper.WriteError
-					require.ErrorAs(t, err, &writeErr, "write errors must propagate even in quiet mode")
-				}
 			} else {
-				require.NoError(t, err, "expected no error in quiet mode")
+				require.NoError(t, err, "expected no error in quiet mode (write failures included)")
 			}
 		})
 	}
