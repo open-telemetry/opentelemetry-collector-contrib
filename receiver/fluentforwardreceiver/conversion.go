@@ -49,6 +49,8 @@ type event interface {
 type optionsMap map[string]any
 
 func setMsgpackReaderLimits(dc *msgp.Reader) {
+	// msgp also uses MaxElements to cap bin/ext byte allocations.
+	// Packed-forward payloads are the only place this receiver intentionally allows larger raw bytes.
 	dc.SetMaxElements(maxMsgpackElements)
 	dc.SetMaxStringLength(maxMsgpackRawBytes)
 }
@@ -60,59 +62,22 @@ func validateMsgpackElementCount(count uint32) error {
 	return nil
 }
 
-func validateMsgpackByteCount(count, limit uint32) error {
-	if count > limit {
-		return msgp.ErrLimitExceeded
-	}
-	return nil
-}
-
-func readStringWithLimit(dc *msgp.Reader, limit uint32) (string, error) {
-	size, err := dc.ReadStringHeader()
-	if err != nil {
-		return "", err
-	}
-	err = validateMsgpackByteCount(size, limit)
-	if err != nil {
-		return "", err
-	}
-	if size == 0 {
-		return "", nil
-	}
-
-	out := make([]byte, int(size))
-	_, err = dc.ReadFull(out)
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
-}
-
-func readRawBytesWithLimit(dc *msgp.Reader, typ msgp.Type, limit uint32) ([]byte, error) {
-	var size uint32
-	var err error
+func readPackedForwardPayload(dc *msgp.Reader, typ msgp.Type) ([]byte, error) {
 	switch typ {
 	case msgp.StrType:
-		size, err = dc.ReadStringHeader()
+		entriesStr, err := dc.ReadString()
+		if err != nil {
+			return nil, err
+		}
+		return []byte(entriesStr), nil
 	case msgp.BinType:
-		size, err = dc.ReadBytesHeader()
+		prevMaxElements := dc.GetMaxElements()
+		dc.SetMaxElements(maxMsgpackRawBytes)
+		defer dc.SetMaxElements(prevMaxElements)
+		return dc.ReadBytesLimit(nil, int64(maxMsgpackRawBytes))
 	default:
 		return nil, fmt.Errorf("invalid type %d", typ)
 	}
-	if err != nil {
-		return nil, err
-	}
-	err = validateMsgpackByteCount(size, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	out := make([]byte, int(size))
-	_, err = dc.ReadFull(out)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 // Chunk returns the `chunk` option or blank string if it was not set.
@@ -297,7 +262,7 @@ func (melr *messageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
 		return msgp.ArrayError{Wanted: 3, Got: arrLen}
 	}
 
-	tag, err := readStringWithLimit(dc, maxMsgpackTagBytes)
+	tag, err := dc.ReadString()
 	if err != nil {
 		return msgp.WrapError(err, "Tag")
 	}
@@ -367,7 +332,7 @@ func (fe *forwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 		return msgp.ArrayError{Wanted: 2, Got: arrLen}
 	}
 
-	tag, err := readStringWithLimit(dc, maxMsgpackTagBytes)
+	tag, err := dc.ReadString()
 	if err != nil {
 		return msgp.WrapError(err, "Tag")
 	}
@@ -435,7 +400,7 @@ func (pfe *packedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 		return msgp.ArrayError{Wanted: 2, Got: arrLen}
 	}
 
-	tag, err := readStringWithLimit(dc, maxMsgpackTagBytes)
+	tag, err := dc.ReadString()
 	if err != nil {
 		return msgp.WrapError(err, "Tag")
 	}
@@ -451,7 +416,7 @@ func (pfe *packedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	// comes after.  I guess we could use some kind of detection logic to
 	// determine if it is gzipped by peeking and just ignoring options, but
 	// this seems simpler for now.
-	entriesRaw, err := readRawBytesWithLimit(dc, entriesType, maxMsgpackRawBytes)
+	entriesRaw, err := readPackedForwardPayload(dc, entriesType)
 	if err != nil {
 		return msgp.WrapError(err, "EntriesRaw")
 	}

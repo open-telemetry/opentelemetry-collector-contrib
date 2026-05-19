@@ -191,9 +191,8 @@ func determineNextEventMode(peeker peeker) (eventMode, error) {
 			return unknownMode, errors.New("malformed tag field")
 		}
 	}
-	err = validateMsgpackByteCount(tagValueLen, maxMsgpackTagBytes)
-	if err != nil {
-		return unknownMode, msgp.WrapError(err, "Tag")
+	if tagValueLen > maxMsgpackTagBytes {
+		return unknownMode, msgp.WrapError(msgp.ErrLimitExceeded, "Tag")
 	}
 	tagLen := tagHeaderLen + int(tagValueLen)
 

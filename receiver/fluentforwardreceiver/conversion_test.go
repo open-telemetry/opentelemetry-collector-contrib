@@ -289,16 +289,6 @@ func TestDecodeMsgRejectsOversizedDirectElementCounts(t *testing.T) {
 	}
 }
 
-func TestDecodeMsgRejectsOversizedTag(t *testing.T) {
-	var b []byte
-	b = msgp.AppendArrayHeader(b, 3)
-	b = appendStringHeader(b, maxMsgpackTagBytes+1)
-
-	var event messageEventLogRecord
-	err := event.DecodeMsg(msgp.NewReader(bytes.NewReader(b)))
-	require.ErrorIs(t, err, msgp.ErrLimitExceeded)
-}
-
 func TestPackedForwardRejectsOversizedEntriesRaw(t *testing.T) {
 	tests := []struct {
 		name  string
