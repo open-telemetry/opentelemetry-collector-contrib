@@ -28,13 +28,11 @@ func TestHarness_MetricsGoldenData(t *testing.T) {
 
 	res := results{}
 	res.Init("results")
-	t.Cleanup(res.Save)
 	for _, test := range tests {
 		test.TestName = fmt.Sprintf("%s-%s", test.Receiver, test.Exporter)
 		test.DataSender = constructMetricsSender(t, test.Receiver)
 		test.DataReceiver = constructReceiver(t, test.Exporter)
 		t.Run(test.TestName, func(t *testing.T) {
-			t.Parallel()
 			r := testWithMetricsGoldenDataset(
 				t,
 				test.DataSender.(testbed.MetricDataSender),
@@ -43,6 +41,7 @@ func TestHarness_MetricsGoldenData(t *testing.T) {
 			res.Add("", r)
 		})
 	}
+	res.Save()
 }
 
 func testWithMetricsGoldenDataset(

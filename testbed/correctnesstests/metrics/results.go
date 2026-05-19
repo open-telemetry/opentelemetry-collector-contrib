@@ -8,12 +8,10 @@ import (
 	"log"
 	"os"
 	"path"
-	"sync"
 	"time"
 )
 
 type results struct {
-	mu          sync.Mutex
 	resultsFile *os.File
 }
 
@@ -48,8 +46,6 @@ func (r *results) Add(_ string, rslt any) {
 		tr.testResult,
 		tr.numDiffs,
 	)
-	r.mu.Lock()
-	defer r.mu.Unlock()
 	r.writeString(line)
 }
 
@@ -58,8 +54,6 @@ func (r *results) writeString(s string) {
 }
 
 func (r *results) Save() {
-	r.mu.Lock()
-	defer r.mu.Unlock()
 	err := r.resultsFile.Close()
 	if err != nil {
 		panic(err)
