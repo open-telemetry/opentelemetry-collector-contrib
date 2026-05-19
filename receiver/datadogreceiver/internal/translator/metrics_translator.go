@@ -43,6 +43,26 @@ func (mt *MetricsTranslator) updateLastTsForStream(stream identity.Stream, ts pc
 	mt.lastTs[stream] = ts
 }
 
+// trackStreamTimestamp looks up the last-seen timestamp for the given stream
+// and returns it as a candidate StartTimestamp only when it does not exceed
+// currentTs, enforcing the OTel data model invariant for delta-temporality
+// points (StartTimestamp <= Timestamp). It also updates the stored timestamp,
+// but only advances it forward to prevent a late-arriving or out-of-order
+// data point from poisoning the stored value for subsequent submissions.
+func (mt *MetricsTranslator) trackStreamTimestamp(stream identity.Stream, currentTs pcommon.Timestamp) (pcommon.Timestamp, bool) {
+	lastTs, ok := mt.streamHasTimestamp(stream)
+	// Only advance the stored timestamp forward. If !ok this is the first
+	// submission for this stream, so always store. If ok, only store when the
+	// new timestamp is >= the previous one.
+	if !ok || currentTs >= lastTs {
+		mt.updateLastTsForStream(stream, currentTs)
+	}
+	if ok && lastTs <= currentTs {
+		return lastTs, true
+	}
+	return 0, false
+}
+
 // Prune recreates the map keeping only the recent items.
 // It returns the number of removed items.
 func (mt *MetricsTranslator) Prune() int {

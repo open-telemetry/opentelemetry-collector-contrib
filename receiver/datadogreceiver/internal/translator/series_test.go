@@ -432,3 +432,247 @@ func TestTranslateSeriesV2(t *testing.T) {
 		})
 	}
 }
+
+func TestTranslateSeriesV1StartTimestampOrdering(t *testing.T) {
+	tests := []struct {
+		name string
+		// Each element simulates a separate submission (call to TranslateSeriesV1).
+		submissions []SeriesList
+		expect      func(t *testing.T, results []pmetric.Metrics)
+	}{
+		{
+			name: "In-order submissions set StartTimestamp correctly",
+			submissions: []SeriesList{
+				{Series: []datadogV1.Series{{
+					Metric: "TestCount", Host: strPtr("Host1"),
+					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1000, Value: 1.0}}),
+				}}},
+				{Series: []datadogV1.Series{{
+					Metric: "TestCount", Host: strPtr("Host1"),
+					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1010, Value: 2.0}}),
+				}}},
+				{Series: []datadogV1.Series{{
+					Metric: "TestCount", Host: strPtr("Host1"),
+					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1020, Value: 3.0}}),
+				}}},
+			},
+			expect: func(t *testing.T, results []pmetric.Metrics) {
+				// First submission: no previous timestamp, StartTimestamp should be 0
+				dp0 := results[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+				require.Equal(t, int64(0), dp0.StartTimestamp().AsTime().Unix())
+				require.Equal(t, int64(1000), dp0.Timestamp().AsTime().Unix())
+
+				// Second submission: StartTimestamp should be the previous Timestamp
+				dp1 := results[1].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+				require.Equal(t, int64(1000), dp1.StartTimestamp().AsTime().Unix())
+				require.Equal(t, int64(1010), dp1.Timestamp().AsTime().Unix())
+
+				// Third submission: StartTimestamp should chain from the second
+				dp2 := results[2].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+				require.Equal(t, int64(1010), dp2.StartTimestamp().AsTime().Unix())
+				require.Equal(t, int64(1020), dp2.Timestamp().AsTime().Unix())
+			},
+		},
+		{
+			name: "Out-of-order submission does not set StartTimestamp exceeding Timestamp",
+			submissions: []SeriesList{
+				{Series: []datadogV1.Series{{
+					Metric: "TestCount", Host: strPtr("Host1"),
+					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1010, Value: 1.0}}),
+				}}},
+				{Series: []datadogV1.Series{{
+					Metric: "TestCount", Host: strPtr("Host1"),
+					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1020, Value: 2.0}}),
+				}}},
+				// Late/reordered arrival with an older timestamp
+				{Series: []datadogV1.Series{{
+					Metric: "TestCount", Host: strPtr("Host1"),
+					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1010, Value: 1.5}}),
+				}}},
+			},
+			expect: func(t *testing.T, results []pmetric.Metrics) {
+				// Third submission (late): StartTimestamp must NOT exceed Timestamp.
+				// lastTs is 1020, incoming Timestamp is 1010 → StartTimestamp should NOT be set.
+				dp2 := results[2].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+				require.Equal(t, int64(0), dp2.StartTimestamp().AsTime().Unix(),
+					"StartTimestamp should not be set when it would exceed Timestamp")
+				require.Equal(t, int64(1010), dp2.Timestamp().AsTime().Unix())
+			},
+		},
+		{
+			name: "Recovery after out-of-order: lastTs is not poisoned",
+			submissions: []SeriesList{
+				{Series: []datadogV1.Series{{
+					Metric: "TestCount", Host: strPtr("Host1"),
+					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1010, Value: 1.0}}),
+				}}},
+				{Series: []datadogV1.Series{{
+					Metric: "TestCount", Host: strPtr("Host1"),
+					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1020, Value: 2.0}}),
+				}}},
+				// Late arrival
+				{Series: []datadogV1.Series{{
+					Metric: "TestCount", Host: strPtr("Host1"),
+					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1010, Value: 1.5}}),
+				}}},
+				// Normal next submission: should still chain from 1020, not 1010
+				{Series: []datadogV1.Series{{
+					Metric: "TestCount", Host: strPtr("Host1"),
+					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1030, Value: 3.0}}),
+				}}},
+			},
+			expect: func(t *testing.T, results []pmetric.Metrics) {
+				// Fourth submission: StartTimestamp should be 1020 (from second submission),
+				// NOT 1010 (the late third submission must not have overwritten lastTs).
+				dp3 := results[3].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+				require.Equal(t, int64(1020), dp3.StartTimestamp().AsTime().Unix(),
+					"lastTs should not be poisoned by a late-arriving out-of-order data point")
+				require.Equal(t, int64(1030), dp3.Timestamp().AsTime().Unix())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mt := createMetricsTranslator()
+			var results []pmetric.Metrics
+			for _, submission := range tt.submissions {
+				results = append(results, mt.TranslateSeriesV1(submission))
+			}
+			tt.expect(t, results)
+		})
+	}
+}
+
+func TestTranslateSeriesV2StartTimestampOrdering(t *testing.T) {
+	tests := []struct {
+		name        string
+		submissions [][]*gogen.MetricPayload_MetricSeries
+		expect      func(t *testing.T, results []pmetric.Metrics)
+	}{
+		{
+			name: "In-order submissions set StartTimestamp correctly",
+			submissions: [][]*gogen.MetricPayload_MetricSeries{
+				{{
+					Resources: []*gogen.MetricPayload_Resource{{Type: "host", Name: "Host1"}},
+					Metric:    "TestCount", Tags: []string{"env:test"},
+					Points: []*gogen.MetricPayload_MetricPoint{{Timestamp: 1000, Value: 1.0}},
+					Type:   gogen.MetricPayload_COUNT,
+				}},
+				{{
+					Resources: []*gogen.MetricPayload_Resource{{Type: "host", Name: "Host1"}},
+					Metric:    "TestCount", Tags: []string{"env:test"},
+					Points: []*gogen.MetricPayload_MetricPoint{{Timestamp: 1010, Value: 2.0}},
+					Type:   gogen.MetricPayload_COUNT,
+				}},
+				{{
+					Resources: []*gogen.MetricPayload_Resource{{Type: "host", Name: "Host1"}},
+					Metric:    "TestCount", Tags: []string{"env:test"},
+					Points: []*gogen.MetricPayload_MetricPoint{{Timestamp: 1020, Value: 3.0}},
+					Type:   gogen.MetricPayload_COUNT,
+				}},
+			},
+			expect: func(t *testing.T, results []pmetric.Metrics) {
+				dp0 := results[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+				require.Equal(t, int64(0), dp0.StartTimestamp().AsTime().Unix())
+				require.Equal(t, int64(1000), dp0.Timestamp().AsTime().Unix())
+
+				dp1 := results[1].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+				require.Equal(t, int64(1000), dp1.StartTimestamp().AsTime().Unix())
+				require.Equal(t, int64(1010), dp1.Timestamp().AsTime().Unix())
+
+				dp2 := results[2].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+				require.Equal(t, int64(1010), dp2.StartTimestamp().AsTime().Unix())
+				require.Equal(t, int64(1020), dp2.Timestamp().AsTime().Unix())
+			},
+		},
+		{
+			name: "Out-of-order submission does not set StartTimestamp exceeding Timestamp",
+			submissions: [][]*gogen.MetricPayload_MetricSeries{
+				{{
+					Resources: []*gogen.MetricPayload_Resource{{Type: "host", Name: "Host1"}},
+					Metric:    "TestCount", Tags: []string{"env:test"},
+					Points: []*gogen.MetricPayload_MetricPoint{{Timestamp: 1010, Value: 1.0}},
+					Type:   gogen.MetricPayload_COUNT,
+				}},
+				{{
+					Resources: []*gogen.MetricPayload_Resource{{Type: "host", Name: "Host1"}},
+					Metric:    "TestCount", Tags: []string{"env:test"},
+					Points: []*gogen.MetricPayload_MetricPoint{{Timestamp: 1020, Value: 2.0}},
+					Type:   gogen.MetricPayload_COUNT,
+				}},
+				// Late/reordered arrival
+				{{
+					Resources: []*gogen.MetricPayload_Resource{{Type: "host", Name: "Host1"}},
+					Metric:    "TestCount", Tags: []string{"env:test"},
+					Points: []*gogen.MetricPayload_MetricPoint{{Timestamp: 1010, Value: 1.5}},
+					Type:   gogen.MetricPayload_COUNT,
+				}},
+			},
+			expect: func(t *testing.T, results []pmetric.Metrics) {
+				dp2 := results[2].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+				require.Equal(t, int64(0), dp2.StartTimestamp().AsTime().Unix(),
+					"StartTimestamp should not be set when it would exceed Timestamp")
+				require.Equal(t, int64(1010), dp2.Timestamp().AsTime().Unix())
+			},
+		},
+		{
+			name: "Recovery after out-of-order: lastTs is not poisoned",
+			submissions: [][]*gogen.MetricPayload_MetricSeries{
+				{{
+					Resources: []*gogen.MetricPayload_Resource{{Type: "host", Name: "Host1"}},
+					Metric:    "TestCount", Tags: []string{"env:test"},
+					Points: []*gogen.MetricPayload_MetricPoint{{Timestamp: 1010, Value: 1.0}},
+					Type:   gogen.MetricPayload_COUNT,
+				}},
+				{{
+					Resources: []*gogen.MetricPayload_Resource{{Type: "host", Name: "Host1"}},
+					Metric:    "TestCount", Tags: []string{"env:test"},
+					Points: []*gogen.MetricPayload_MetricPoint{{Timestamp: 1020, Value: 2.0}},
+					Type:   gogen.MetricPayload_COUNT,
+				}},
+				// Late arrival
+				{{
+					Resources: []*gogen.MetricPayload_Resource{{Type: "host", Name: "Host1"}},
+					Metric:    "TestCount", Tags: []string{"env:test"},
+					Points: []*gogen.MetricPayload_MetricPoint{{Timestamp: 1010, Value: 1.5}},
+					Type:   gogen.MetricPayload_COUNT,
+				}},
+				// Normal next
+				{{
+					Resources: []*gogen.MetricPayload_Resource{{Type: "host", Name: "Host1"}},
+					Metric:    "TestCount", Tags: []string{"env:test"},
+					Points: []*gogen.MetricPayload_MetricPoint{{Timestamp: 1030, Value: 3.0}},
+					Type:   gogen.MetricPayload_COUNT,
+				}},
+			},
+			expect: func(t *testing.T, results []pmetric.Metrics) {
+				dp3 := results[3].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+				require.Equal(t, int64(1020), dp3.StartTimestamp().AsTime().Unix(),
+					"lastTs should not be poisoned by a late-arriving out-of-order data point")
+				require.Equal(t, int64(1030), dp3.Timestamp().AsTime().Unix())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mt := createMetricsTranslator()
+			var results []pmetric.Metrics
+			for _, submission := range tt.submissions {
+				results = append(results, mt.TranslateSeriesV2(submission))
+			}
+			tt.expect(t, results)
+		})
+	}
+}
