@@ -1702,19 +1702,11 @@ func TestTranslateV2(t *testing.T) {
 						},
 						Histograms: []writev2.Histogram{
 							{
-								Count: &writev2.Histogram_CountInt{
-									CountInt: 20,
-								},
 								Sum:            math.Float64frombits(value.StaleNaN),
 								Timestamp:      1,
 								StartTimestamp: 1,
 								ZeroThreshold:  1,
-								ZeroCount: &writev2.Histogram_ZeroCountInt{
-									ZeroCountInt: 2,
-								},
 								Schema:         -4,
-								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}},
-								PositiveDeltas: []int64{10, 20},
 							},
 						},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
@@ -1752,12 +1744,8 @@ func TestTranslateV2(t *testing.T) {
 				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp.SetScale(-4)
-				dp.SetZeroCount(2)
 				dp.SetZeroThreshold(1)
 				dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
-
-				dp.Positive().SetOffset(0)
-				dp.Positive().BucketCounts().FromRaw([]uint64{10, 30})
 
 				return metrics
 			}(),
