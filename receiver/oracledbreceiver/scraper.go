@@ -210,6 +210,9 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 			s.clientProviderFunc(s.db, instanceCDBSQL, s.logger),
 			s.clientProviderFunc(s.db, instanceConTypeSQL, s.logger),
 			s.clientProviderFunc(s.db, instanceConNameSQL, s.logger),
+			s.clientProviderFunc(s.db, instanceRDSSQL, s.logger),
+			s.clientProviderFunc(s.db, instanceOCISQL, s.logger),
+			s.clientProviderFunc(s.db, instanceOCICDBServicesSQL, s.logger),
 			s.logger,
 		)
 	}
@@ -992,6 +995,18 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	rb.SetOracledbInstanceName(s.instanceName)
 	rb.SetHostName(s.hostName)
 	rb.SetServiceInstanceID(s.serviceInstanceID)
+	if s.instanceInfo.dbVersion != "" {
+		rb.SetOracleDbVersion(s.instanceInfo.dbVersion)
+	}
+	if s.instanceInfo.databaseRole != "" {
+		rb.SetOracleDbRole(s.instanceInfo.databaseRole)
+	}
+	if s.instanceInfo.openMode != "" {
+		rb.SetOracleDbOpenMode(s.instanceInfo.openMode)
+	}
+	if s.instanceInfo.hostingType != "" {
+		rb.SetOracleDbHostingType(s.instanceInfo.hostingType)
+	}
 	if s.instanceInfo.connectedToPDB && s.instanceInfo.pdbName != "" {
 		rb.SetOracleDbPdb(s.instanceInfo.pdbName)
 	}
