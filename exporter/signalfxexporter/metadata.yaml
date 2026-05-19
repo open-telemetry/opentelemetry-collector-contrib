@@ -8,6 +8,14 @@ status:
   distributions: [contrib]
   codeowners:
     active: [dmitryax, crobert-1]
+
+feature_gates:
+  - id: exporter.signalfx.consumeEntityEvents
+    stage: alpha
+    description: Process entity events from logs pipeline and convert to dimension property updates
+    from_version: v0.145.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/45595
+
 tests:
   config:
     access_token: "my_fake_token"
