@@ -271,6 +271,7 @@ In addition to the common OTTL functions, the processor defines its own function
 - [aggregate_on_attributes](#aggregate_on_attributes)
 - [convert_exponential_histogram_to_histogram](#convert_exponential_histogram_to_histogram)
 - [aggregate_on_attribute_value](#aggregate_on_attribute_value)
+- [limit_histogram_buckets](#limit_histogram_buckets)
 - [merge_histogram_buckets](#merge_histogram_buckets)
 
 **Traces only functions**
@@ -658,6 +659,39 @@ statements:
 ```
 
 To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
+
+### limit_histogram_buckets
+
+`limit_histogram_buckets(max_buckets)`
+
+The `limit_histogram_buckets` function reduces explicit histogram resolution by merging adjacent buckets until the histogram has no more than `max_buckets` buckets.
+
+`max_buckets` is an integer value greater than 0. The function reduces resolution in uniform compaction passes. In each pass, it merges adjacent bucket pairs from lower to higher bucket order, combines their counts, and keeps an unpaired final bucket unchanged. Bucket count values and boundary widths do not affect which buckets are merged. Because each pass roughly halves the number of buckets, the resulting histogram may have fewer than `max_buckets` buckets.
+
+The function:
+- Preserves the total count and sum of the histogram.
+- Only works on histogram metrics (no-op for other metric types).
+- Makes no changes if:
+  - The histogram is already at or below the requested bucket limit.
+  - The histogram is empty.
+  - The histogram structure is invalid (mismatched bounds and counts, or unordered bounds).
+
+**NOTE:** This function reduces histogram resolution and may affect percentile or quantile accuracy. Use only when you are confident that reducing bucket detail is acceptable for downstream consumers.
+
+Examples:
+
+```yaml
+# Limit histograms to at most 5 buckets
+- limit_histogram_buckets(5) where metric.name == "http_request_duration"
+
+# Given a histogram with:
+# bounds: [0.1, 0.2, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0]
+# counts: [80, 4, 6, 120, 3, 2, 40, 10, 1]
+#
+# After limiting to 5 buckets, one compaction pass merges bucket pairs:
+# bounds: [0.2, 1.0, 5.0, 30.0]
+# counts: [84, 126, 5, 50, 1]
+```
 
 ### merge_histogram_buckets
 
