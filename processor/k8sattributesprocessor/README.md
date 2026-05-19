@@ -27,6 +27,10 @@ running in a cluster, keeps a record of their IP addresses, pod UIDs and interes
 The rules for associating the data passing through the processor (spans, metrics and logs) with specific Pod Metadata are configured via "pod_association" key.
 It represents a list of associations that are executed in the specified order until the first one is able to do the match.
 
+## Attributes list
+
+For the full list of attributes the component supports see the [Resource Attributes documentation](./documentation.md#resource-attributes).
+
 ## Configuration
 
 The processor stores the list of running pods and the associated metadata. When it sees a datapoint (log, trace or metric), it will try to associate the datapoint
