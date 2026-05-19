@@ -20,17 +20,25 @@ import (
 )
 
 type couchdbScraper struct {
-	client   client
-	config   *Config
-	settings component.TelemetrySettings
-	mb       *metadata.MetricsBuilder
+	client             client
+	config             *Config
+	settings           component.TelemetrySettings
+	mb                 *metadata.MetricsBuilder
+	resourceAttributes couchDbResourceAttributes
+}
+
+type couchDbResourceAttributes struct {
+	couchDbVersion    string
+	serviceInstanceID string
+	serviceName       string
 }
 
 func newCouchdbScraper(settings receiver.Settings, config *Config) *couchdbScraper {
 	return &couchdbScraper{
-		settings: settings.TelemetrySettings,
-		config:   config,
-		mb:       metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		settings:           settings.TelemetrySettings,
+		config:             config,
+		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		resourceAttributes: couchDbResourceAttributes{},
 	}
 }
 
@@ -40,6 +48,37 @@ func (c *couchdbScraper) start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("failed to start: %w", err)
 	}
 	c.client = httpClient
+	err = c.scrapeResourceAttributes()
+	if err != nil {
+		// Do not fail to start for being unable to scrape resource attributes, we will try again when we scrape
+		c.settings.Logger.Warn("Failed to scrape resource attributes on startup, will try again later", zap.String("endpoint", c.config.Endpoint), zap.Error(err))
+	}
+	return nil
+}
+
+func (c *couchdbScraper) scrapeResourceAttributes() error {
+	localNode := "_local"
+
+	rootInfo, err := c.client.GetRootInfo()
+	if err != nil {
+		return fmt.Errorf("failed to fetch couchdb root info: %w", err)
+	}
+
+	if uuid, ok := rootInfo["uuid"].(string); ok {
+		c.resourceAttributes.serviceInstanceID = uuid
+	}
+	if version, ok := rootInfo["version"].(string); ok {
+		c.resourceAttributes.couchDbVersion = version
+	}
+
+	nodeInfo, err := c.client.GetNodeInfo(localNode)
+	if err != nil {
+		c.settings.Logger.Error("Failed to fetch couchdb node info for the local node", zap.String("endpoint", c.config.Endpoint), zap.Error(err))
+		return fmt.Errorf("failed to fetch couchdb node info for the local node: %w", err)
+	} else if name, ok := nodeInfo["name"].(string); ok {
+		c.resourceAttributes.serviceName = name
+	}
+
 	return nil
 }
 
@@ -71,7 +110,28 @@ func (c *couchdbScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	c.recordCouchdbFileDescriptorOpenDataPoint(now, stats, errs)
 	c.recordCouchdbDatabaseOperationsDataPoint(now, stats, errs)
 
+	// Refresh resource attributes if we were unable to get them when starting the scraper
+	if c.resourceAttributes.serviceInstanceID == "" {
+		err = c.scrapeResourceAttributes()
+		if err != nil {
+			c.settings.Logger.Error("Unable to fetch couchdb info for resource attributes",
+				zap.String("endpoint", c.config.Endpoint),
+				zap.Error(err),
+			)
+		}
+	}
+
 	rb := c.mb.NewResourceBuilder()
 	rb.SetCouchdbNodeName(c.config.Endpoint)
+	if c.resourceAttributes.serviceInstanceID != "" {
+		rb.SetServiceInstanceID(c.resourceAttributes.serviceInstanceID)
+	}
+	if c.resourceAttributes.serviceName != "" {
+		rb.SetServiceName(c.resourceAttributes.serviceName)
+	}
+	if c.resourceAttributes.couchDbVersion != "" {
+		rb.SetCouchdbVersion(c.resourceAttributes.couchDbVersion)
+	}
+
 	return c.mb.Emit(metadata.WithResource(rb.Emit())), errs.Combine()
 }

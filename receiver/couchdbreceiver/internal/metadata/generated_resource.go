@@ -28,6 +28,27 @@ func (rb *ResourceBuilder) SetCouchdbNodeName(val string) {
 	}
 }
 
+// SetCouchdbVersion sets provided value as "couchdb.version" attribute.
+func (rb *ResourceBuilder) SetCouchdbVersion(val string) {
+	if rb.config.CouchdbVersion.Enabled {
+		rb.res.Attributes().PutStr("couchdb.version", val)
+	}
+}
+
+// SetServiceInstanceID sets provided value as "service.instance.id" attribute.
+func (rb *ResourceBuilder) SetServiceInstanceID(val string) {
+	if rb.config.ServiceInstanceID.Enabled {
+		rb.res.Attributes().PutStr("service.instance.id", val)
+	}
+}
+
+// SetServiceName sets provided value as "service.name" attribute.
+func (rb *ResourceBuilder) SetServiceName(val string) {
+	if rb.config.ServiceName.Enabled {
+		rb.res.Attributes().PutStr("service.name", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
