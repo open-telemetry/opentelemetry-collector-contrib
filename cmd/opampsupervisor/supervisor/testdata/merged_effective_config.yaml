@@ -47,5 +47,8 @@ service:
       error_output_paths: ["stderr"]
       output_paths: ["stdout"]
     resource:
-      service.instance.id: 00000000-0000-0000-0000-000000000000
-      service.name: otelcol
+      attributes:
+        - name: service.name
+          value: otelcol
+        - name: service.instance.id
+          value: 00000000-0000-0000-0000-000000000000

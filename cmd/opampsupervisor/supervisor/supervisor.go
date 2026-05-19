@@ -85,6 +85,12 @@ const (
 
 const maxBufferedCustomMessages = 10
 
+// clearResourceAttributesKey is an internal merge sentinel used to give
+// remote `service.telemetry.resource.attributes` explicit clear semantics.
+// It is injected into a synthetic config before the actual remote config,
+// consumed by configMergeFunc, and never written to the final collector config.
+const clearResourceAttributesKey = "__opampsupervisor_clear_resource_attributes__"
+
 type configState struct {
 	// Supervisor-assembled config to be given to the Collector.
 	mergedConfig string
@@ -1121,10 +1127,14 @@ func (s *Supervisor) createRemoteConfigComposers(incomingConfig *protobufs.Agent
 			if item == nil {
 				continue
 			}
+			if remoteConfigDeclaresResourceAttributes(item.Body) {
+				remoteConfigComposers = append(remoteConfigComposers, composeClearResourceAttributesConfig)
+			}
 			remoteConfigComposers = append(remoteConfigComposers, func() []byte {
 				return item.Body
 			})
 		}
+		remoteConfigComposers = append(remoteConfigComposers, s.composeRequiredResourceAttributesConfig)
 	}
 	return remoteConfigComposers
 }
@@ -1164,8 +1174,21 @@ func (s *Supervisor) composeExtraTelemetryConfig() []byte {
 	for _, attr := range ad.NonIdentifyingAttributes {
 		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
 	}
+	attrNames := make([]string, 0, len(resourceAttrs))
+	for name := range resourceAttrs {
+		attrNames = append(attrNames, name)
+	}
+	sort.Strings(attrNames)
+
+	resourceAttributeValues := make([]resourceAttributeTemplateValue, 0, len(attrNames))
+	for _, name := range attrNames {
+		resourceAttributeValues = append(resourceAttributeValues, resourceAttributeTemplateValue{
+			Name:  name,
+			Value: resourceAttrs[name],
+		})
+	}
 	tplVars := map[string]any{
-		"ResourceAttributes": resourceAttrs,
+		"ResourceAttributes": resourceAttributeValues,
 		"SupervisorPort":     s.opampServerPort,
 	}
 	err := s.extraTelemetryConfigTemplate.Execute(
@@ -1178,6 +1201,46 @@ func (s *Supervisor) composeExtraTelemetryConfig() []byte {
 	}
 
 	return cfg.Bytes()
+}
+
+func (s *Supervisor) composeRequiredResourceAttributesConfig() []byte {
+	var cfg bytes.Buffer
+	resourceAttrs := map[string]string{
+		"service.instance.id": s.persistentState.InstanceID.String(),
+	}
+	ad := s.agentDescription.Load().(*protobufs.AgentDescription)
+	for _, attr := range ad.IdentifyingAttributes {
+		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
+	}
+	for _, attr := range ad.NonIdentifyingAttributes {
+		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
+	}
+
+	attrNames := make([]string, 0, len(resourceAttrs))
+	for name := range resourceAttrs {
+		attrNames = append(attrNames, name)
+	}
+	sort.Strings(attrNames)
+
+	cfg.WriteString("service:\n  telemetry:\n    resource:\n      attributes:\n")
+	for _, name := range attrNames {
+		fmt.Fprintf(&cfg, "        - name: %s\n          value: %q\n", name, resourceAttrs[name])
+	}
+
+	return cfg.Bytes()
+}
+
+func composeClearResourceAttributesConfig() []byte {
+	return []byte("service:\n  telemetry:\n    resource:\n      " + clearResourceAttributesKey + ": true\n")
+}
+
+func remoteConfigDeclaresResourceAttributes(body []byte) bool {
+	k := koanf.New("::")
+	if err := k.Load(rawbytes.Provider(body), yaml.Parser()); err != nil {
+		return false
+	}
+	_, ok := k.Get("service::telemetry::resource::attributes").([]any)
+	return ok
 }
 
 func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
@@ -1207,6 +1270,11 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 }
 
 type configComposer func() []byte
+
+type resourceAttributeTemplateValue struct {
+	Name  string
+	Value string
+}
 
 func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemoteConfig) ([]byte, error) {
 	conf := koanf.New("::")
@@ -2232,6 +2300,16 @@ func (s *Supervisor) getTracer() trace.Tracer {
 func configMergeFunc(src, dest map[string]any) error {
 	srcExtensions := maps.Search(src, []string{"service", "extensions"})
 	destExtensions := maps.Search(dest, []string{"service", "extensions"})
+	srcResourceAttributes := maps.Search(src, []string{"service", "telemetry", "resource", "attributes"})
+	destResourceAttributes := maps.Search(dest, []string{"service", "telemetry", "resource", "attributes"})
+	if resource, ok := maps.Search(src, []string{"service", "telemetry", "resource"}).(map[string]any); ok {
+		if clear, ok := resource[clearResourceAttributesKey].(bool); ok && clear {
+			if destResource, ok := maps.Search(dest, []string{"service", "telemetry", "resource"}).(map[string]any); ok {
+				clearResourceAttributes(destResource)
+			}
+			delete(resource, clearResourceAttributesKey)
+		}
+	}
 
 	maps.Merge(src, dest)
 
@@ -2257,5 +2335,56 @@ func configMergeFunc(src, dest map[string]any) error {
 		}
 	}
 
+	if destAttrs, ok := destResourceAttributes.([]any); ok {
+		if srcAttrs, ok := srcResourceAttributes.([]any); ok {
+			if resource, ok := maps.Search(dest, []string{"service", "telemetry", "resource"}).(map[string]any); ok {
+				resource["attributes"] = mergeResourceAttributes(destAttrs, srcAttrs)
+			}
+		}
+	}
+
 	return nil
+}
+
+func clearResourceAttributes(resource map[string]any) {
+	delete(resource, "attributes")
+	delete(resource, "attributes_list")
+	for key := range resource {
+		switch key {
+		case "schema_url", "detectors":
+			continue
+		default:
+			delete(resource, key)
+		}
+	}
+}
+
+func mergeResourceAttributes(destAttrs, srcAttrs []any) []any {
+	merged := append(slices.Clone(destAttrs), srcAttrs...)
+	seenByName := make(map[string]int, len(merged))
+	result := make([]any, 0, len(merged))
+
+	for _, attr := range merged {
+		attrMap, ok := attr.(map[string]any)
+		if !ok {
+			result = append(result, attr)
+			continue
+		}
+
+		name, ok := attrMap["name"].(string)
+		if !ok || name == "" {
+			result = append(result, attr)
+			continue
+		}
+
+		if idx, exists := seenByName[name]; exists {
+			result[idx] = attr
+			continue
+		}
+
+		seenByName[name] = len(result)
+		result = append(result, attr)
+	}
+
+	return result
 }
