@@ -18,8 +18,7 @@ import (
 const fetchTimeout = 30 * time.Second
 
 type secretsClient interface {
-	GetSecret(ctx context.Context, name string, version string,
-		options *azsecrets.GetSecretOptions) (azsecrets.GetSecretResponse, error)
+	GetSecret(ctx context.Context, name, version string, options *azsecrets.GetSecretOptions) (azsecrets.GetSecretResponse, error)
 }
 
 type Config struct {

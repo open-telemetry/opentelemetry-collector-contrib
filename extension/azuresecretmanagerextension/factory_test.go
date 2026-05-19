@@ -4,7 +4,6 @@
 package azuresecretmanagerextension
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,7 +36,7 @@ func TestFactory_CreateExtension_Client(t *testing.T) {
 	set := extension.Settings{
 		TelemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
 	}
-	ext, err := createExtension(context.Background(), set, cfg)
+	ext, err := createExtension(t.Context(), set, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, ext)
 	_, ok := ext.(*azureSecretsManagerAuthClient)
@@ -56,7 +55,7 @@ func TestFactory_CreateExtension_Server(t *testing.T) {
 	set := extension.Settings{
 		TelemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
 	}
-	ext, err := createExtension(context.Background(), set, cfg)
+	ext, err := createExtension(t.Context(), set, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, ext)
 	_, ok := ext.(*azureSecretsManagerAuthServer)

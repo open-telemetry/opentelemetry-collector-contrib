@@ -6,6 +6,7 @@ package azuresecretmanagerextension // import "github.com/open-telemetry/opentel
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -153,7 +154,7 @@ func (s *azureSecretsManagerAuthServer) Shutdown(ctx context.Context) error {
 func (s *azureSecretsManagerAuthServer) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	fn := s.matchFunc.Load()
 	if fn == nil {
-		return ctx, fmt.Errorf("authenticator not started")
+		return ctx, errors.New("authenticator not started")
 	}
 	return basicauth.Authenticate(ctx, headers, *fn)
 }

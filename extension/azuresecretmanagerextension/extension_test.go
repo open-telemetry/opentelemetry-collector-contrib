@@ -4,7 +4,6 @@
 package azuresecretmanagerextension
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -24,13 +23,13 @@ func TestClient_RoundTripper_SetsBasicAuth(t *testing.T) {
 	var capturedReq *http.Request
 	base := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		capturedReq = req
-		return &http.Response{StatusCode: 200}, nil
+		return &http.Response{StatusCode: http.StatusOK}, nil
 	})
 
 	rt, err := ext.RoundTripper(base)
 	require.NoError(t, err)
 
-	req, _ := http.NewRequest("GET", "http://example.com", nil)
+	req, _ := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	_, err = rt.RoundTrip(req)
 	require.NoError(t, err)
 
@@ -45,7 +44,7 @@ func TestClient_RoundTripper_ColonInUsername(t *testing.T) {
 	ext.creds.Store(&clientCredentials{username: "user:name", password: "pass"})
 
 	base := roundTripperFunc(func(*http.Request) (*http.Response, error) {
-		return &http.Response{StatusCode: 200}, nil
+		return &http.Response{StatusCode: http.StatusOK}, nil
 	})
 
 	_, err := ext.RoundTripper(base)
@@ -60,7 +59,7 @@ func TestClient_PerRPCCredentials_Authorization(t *testing.T) {
 	cred, err := ext.PerRPCCredentials()
 	require.NoError(t, err)
 
-	md, err := cred.GetRequestMetadata(context.Background())
+	md, err := cred.GetRequestMetadata(t.Context())
 	require.NoError(t, err)
 
 	authHeader, ok := md["authorization"]
@@ -81,8 +80,8 @@ func TestClient_CredentialRotation_PickedUp(t *testing.T) {
 	ext := &azureSecretsManagerAuthClient{}
 	ext.creds.Store(&clientCredentials{username: "old", password: "oldpass"})
 
-	base := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
-		return &http.Response{StatusCode: 200}, nil
+	base := roundTripperFunc(func(*http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: http.StatusOK}, nil
 	})
 
 	rt, err := ext.RoundTripper(base)
@@ -90,7 +89,7 @@ func TestClient_CredentialRotation_PickedUp(t *testing.T) {
 
 	ext.creds.Store(&clientCredentials{username: "new", password: "newpass"})
 
-	req, _ := http.NewRequest("GET", "http://example.com", nil)
+	req, _ := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	_, err = rt.RoundTrip(req)
 	require.NoError(t, err)
 }
@@ -116,7 +115,7 @@ func TestServer_Authenticate_ValidCredentials(t *testing.T) {
 		"Authorization": {"Basic YWRtaW46c2VjcmV0"}, // admin:secret
 	}
 
-	ctx, err := ext.Authenticate(context.Background(), headers)
+	ctx, err := ext.Authenticate(t.Context(), headers)
 	require.NoError(t, err)
 
 	cl := client.FromContext(ctx)
@@ -133,7 +132,7 @@ func TestServer_Authenticate_InvalidCredentials(t *testing.T) {
 		"Authorization": {"Basic YWRtaW46d3Jvbmc="}, // admin:wrong
 	}
 
-	_, err := ext.Authenticate(context.Background(), headers)
+	_, err := ext.Authenticate(t.Context(), headers)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, basicauth.ErrInvalidCredentials)
 }
@@ -145,7 +144,7 @@ func TestServer_Authenticate_NoAuthHeader(t *testing.T) {
 
 	headers := map[string][]string{}
 
-	_, err := ext.Authenticate(context.Background(), headers)
+	_, err := ext.Authenticate(t.Context(), headers)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, basicauth.ErrNoAuth)
 }
@@ -157,7 +156,7 @@ func TestServer_Authenticate_NotStarted(t *testing.T) {
 		"Authorization": {"Basic YWRtaW46c2VjcmV0"},
 	}
 
-	_, err := ext.Authenticate(context.Background(), headers)
+	_, err := ext.Authenticate(t.Context(), headers)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not started")
 }

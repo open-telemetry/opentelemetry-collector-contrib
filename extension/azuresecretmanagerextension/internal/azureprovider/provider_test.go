@@ -23,8 +23,7 @@ type mockSecretsClient struct {
 	err    error
 }
 
-func (m *mockSecretsClient) GetSecret(_ context.Context, _ string, _ string,
-	_ *azsecrets.GetSecretOptions) (azsecrets.GetSecretResponse, error) {
+func (m *mockSecretsClient) GetSecret(_ context.Context, _, _ string, _ *azsecrets.GetSecretOptions) (azsecrets.GetSecretResponse, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.err != nil {
@@ -51,9 +50,8 @@ func (m *mockSecretsClient) setError(err error) {
 }
 
 func TestProvider_Start_Success(t *testing.T) {
-	secret := `{"user":"admin","pass":"secret123"}`
 	mock := &mockSecretsClient{}
-	mock.setSecret(secret)
+	mock.setSecret(`{"user":"alice","pass":"pw"}`)
 
 	var receivedValue string
 	p := NewProvider(&Config{
@@ -68,11 +66,11 @@ func TestProvider_Start_Success(t *testing.T) {
 	})
 	p.Client = mock
 
-	err := p.Start(context.Background(), nil)
+	err := p.Start(t.Context(), nil)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = p.Shutdown(context.Background()) })
+	t.Cleanup(func() { _ = p.Shutdown(t.Context()) })
 
-	assert.Equal(t, secret, receivedValue)
+	assert.Equal(t, `{"user":"alice","pass":"pw"}`, receivedValue)
 }
 
 func TestProvider_Start_Fails(t *testing.T) {
@@ -91,7 +89,7 @@ func TestProvider_Start_Fails(t *testing.T) {
 	})
 	p.Client = mock
 
-	err := p.Start(context.Background(), nil)
+	err := p.Start(t.Context(), nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "access denied")
 }
@@ -114,9 +112,9 @@ func TestProvider_CredentialRotation(t *testing.T) {
 	})
 	p.Client = mock
 
-	err := p.Start(context.Background(), nil)
+	err := p.Start(t.Context(), nil)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = p.Shutdown(context.Background()) })
+	t.Cleanup(func() { _ = p.Shutdown(t.Context()) })
 
 	mock.setSecret("value2")
 
@@ -146,9 +144,9 @@ func TestProvider_ErrorKeepsStaleState(t *testing.T) {
 	})
 	p.Client = mock
 
-	err := p.Start(context.Background(), nil)
+	err := p.Start(t.Context(), nil)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = p.Shutdown(context.Background()) })
+	t.Cleanup(func() { _ = p.Shutdown(t.Context()) })
 
 	initialCount := callCount.Load()
 	mock.setError(errors.New("transient failure"))
@@ -175,10 +173,10 @@ func TestProvider_Shutdown(t *testing.T) {
 	})
 	p.Client = mock
 
-	err := p.Start(context.Background(), nil)
+	err := p.Start(t.Context(), nil)
 	require.NoError(t, err)
 
-	err = p.Shutdown(context.Background())
+	err = p.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -197,7 +195,7 @@ func TestProvider_NilSecretValue(t *testing.T) {
 	})
 	p.Client = mock
 
-	err := p.Start(context.Background(), nil)
+	err := p.Start(t.Context(), nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no value")
 }
