@@ -32,14 +32,15 @@ type dim struct {
 }
 
 type testServer struct {
-	startCh      chan struct{}
-	finishCh     chan struct{}
-	acceptedDims []dim
-	methods      []string
-	paths        []string
-	server       *httptest.Server
-	respCode     int
-	requestCount *atomic.Int32
+	startCh       chan struct{}
+	finishCh      chan struct{}
+	acceptedDims  []dim
+	requestBodies []map[string]json.RawMessage
+	methods       []string
+	paths         []string
+	server        *httptest.Server
+	respCode      int
+	requestCount  *atomic.Int32
 }
 
 func (ts *testServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
@@ -69,22 +70,31 @@ func (ts *testServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var bodyDim dim
-	if err := json.NewDecoder(r.Body).Decode(&bodyDim); err != nil {
-		rw.WriteHeader(http.StatusBadRequest)
-		ts.finishCh <- struct{}{}
-		return
-	}
-	if r.Method == http.MethodPatch {
-		bodyDim.Key = match[1]
-		bodyDim.Value = match[2]
-	} else if bodyDim.Key != match[1] || bodyDim.Value != match[2] {
+	var requestBody map[string]json.RawMessage
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		ts.finishCh <- struct{}{}
 		return
 	}
 
+	bodyBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		rw.WriteHeader(http.StatusBadRequest)
+		ts.finishCh <- struct{}{}
+		return
+	}
+
+	var bodyDim dim
+	if err := json.Unmarshal(bodyBytes, &bodyDim); err != nil {
+		rw.WriteHeader(http.StatusBadRequest)
+		ts.finishCh <- struct{}{}
+		return
+	}
+	bodyDim.Key = match[1]
+	bodyDim.Value = match[2]
+
 	ts.acceptedDims = append(ts.acceptedDims, bodyDim)
+	ts.requestBodies = append(ts.requestBodies, requestBody)
 	ts.methods = append(ts.methods, r.Method)
 	ts.paths = append(ts.paths, r.URL.Path)
 
@@ -115,6 +125,7 @@ func (ts *testServer) reset() {
 		ts.finishCh = make(chan struct{})
 	}
 	ts.acceptedDims = nil
+	ts.requestBodies = nil
 	ts.methods = nil
 	ts.paths = nil
 	ts.respCode = http.StatusOK
@@ -214,6 +225,8 @@ func TestDimensionClient(t *testing.T) {
 		}, server.acceptedDims)
 		require.Equal(t, []string{http.MethodPut}, server.methods)
 		require.Equal(t, []string{"/v2/dimension/k8s.pod.uid/pod-123"}, server.paths)
+		require.NotContains(t, server.requestBodies[0], "key")
+		require.NotContains(t, server.requestBodies[0], "value")
 		require.EqualValues(t, 1, server.requestCount.Load())
 	})
 

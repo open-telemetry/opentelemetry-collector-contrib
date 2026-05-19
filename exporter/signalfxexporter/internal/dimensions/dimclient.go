@@ -388,8 +388,6 @@ func (dc *DimensionClient) makePutRequest(ctx context.Context, dim *DimensionUpd
 	}
 
 	json, err := json.Marshal(map[string]any{
-		"key":              dim.Name,
-		"value":            dim.Value,
 		"customProperties": customProperties,
 		"tags":             tagsToAdd,
 	})
