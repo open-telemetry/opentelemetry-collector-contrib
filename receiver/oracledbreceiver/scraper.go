@@ -574,9 +574,9 @@ func (s *oracleScraper) collectDataDictHitRatio(ctx context.Context, scrapeError
 }
 
 func (s *oracleScraper) collectOSStat(ctx context.Context, scrapeErrors *[]error) {
-	if !s.metricsBuilderConfig.Metrics.OracledbSystemCPUCount.Enabled &&
+	if !s.metricsBuilderConfig.Metrics.SystemCPUPhysicalCount.Enabled &&
 		!s.metricsBuilderConfig.Metrics.OracledbSystemCPULoad.Enabled &&
-		!s.metricsBuilderConfig.Metrics.OracledbSystemMemoryLimit.Enabled {
+		!s.metricsBuilderConfig.Metrics.SystemMemoryLimit.Enabled {
 		return
 	}
 	now := pcommon.NewTimestampFromTime(time.Now())
@@ -590,13 +590,13 @@ func (s *oracleScraper) collectOSStat(ctx context.Context, scrapeErrors *[]error
 		statValue := row[colOSStatValue]
 		switch statName {
 		case osStatNameNumCPUs:
-			if s.metricsBuilderConfig.Metrics.OracledbSystemCPUCount.Enabled {
+			if s.metricsBuilderConfig.Metrics.SystemCPUPhysicalCount.Enabled {
 				val, err := strconv.ParseInt(statValue, 10, 64)
 				if err != nil {
-					*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbSystemCPUCount, value was %s: %w", statValue, err))
+					*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for SystemCPUPhysicalCount, value was %s: %w", statValue, err))
 					continue
 				}
-				s.mb.RecordOracledbSystemCPUCountDataPoint(now, val)
+				s.mb.RecordSystemCPUPhysicalCountDataPoint(now, val)
 			}
 		case osStatNameLoad:
 			if s.metricsBuilderConfig.Metrics.OracledbSystemCPULoad.Enabled {
@@ -608,13 +608,13 @@ func (s *oracleScraper) collectOSStat(ctx context.Context, scrapeErrors *[]error
 				s.mb.RecordOracledbSystemCPULoadDataPoint(now, val)
 			}
 		case osStatNamePhysicalMemory:
-			if s.metricsBuilderConfig.Metrics.OracledbSystemMemoryLimit.Enabled {
+			if s.metricsBuilderConfig.Metrics.SystemMemoryLimit.Enabled {
 				val, err := strconv.ParseInt(statValue, 10, 64)
 				if err != nil {
-					*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbSystemMemoryLimit, value was %s: %w", statValue, err))
+					*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for SystemMemoryLimit, value was %s: %w", statValue, err))
 					continue
 				}
-				s.mb.RecordOracledbSystemMemoryLimitDataPoint(now, val)
+				s.mb.RecordSystemMemoryLimitDataPoint(now, val)
 			}
 		}
 	}

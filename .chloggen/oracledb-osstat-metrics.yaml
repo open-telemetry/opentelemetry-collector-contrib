@@ -17,8 +17,8 @@ issues: [0]
 # Use pipe (|) for multiline entries.
 subtext: |
   Add 3 new opt-in metrics (disabled by default, stability: development) sourced from V$OSSTAT:
-  oracledb.system.cpu.count - number of CPUs available to the Oracle server,
-  oracledb.system.memory.limit - total physical memory available to the Oracle server in bytes,
+  system.cpu.physical.count - number of physical CPUs available to the Oracle server (reuses OTel system semconv),
+  system.memory.limit - total physical memory of the Oracle server in bytes (reuses OTel system semconv),
   oracledb.system.cpu.load - current OS load average as reported by the Oracle server.
   Requires GRANT SELECT ON V_$OSSTAT TO <username>.
 
