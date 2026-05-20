@@ -71,8 +71,15 @@ const (
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
 	dataDictHitRatioSQL = "SELECT (1-(SUM(getmisses)/SUM(gets))) * 100 as DATA_DICTIONARY_HIT_RATIO FROM v$rowcache WHERE getmisses + gets <> 0"
+	osStatSQL           = "SELECT STAT_NAME, VALUE FROM v$osstat WHERE STAT_NAME IN ('LOAD', 'NUM_CPUS', 'PHYSICAL_MEMORY_BYTES')"
 	recycleBinSizeSQL   = "SELECT nvl(SUM(SPACE*(SELECT value FROM v$parameter WHERE name = 'db_block_size')),0) as RECYCLE_BIN_SIZE_BYTES FROM dba_recyclebin"
 	storageUsageSQL     = "WITH total_bytes AS (SELECT SUM(bytes) AS total FROM dba_data_files) SELECT (total - (SELECT SUM(bytes) FROM dba_free_space)) AS USED_DB_SIZE, total AS ALLOCATED_DB_SIZE FROM total_bytes"
+
+	osStatNameLoad           = "LOAD"
+	osStatNameNumCPUs        = "NUM_CPUS"
+	osStatNamePhysicalMemory = "PHYSICAL_MEMORY_BYTES"
+	colOSStatName            = "STAT_NAME"
+	colOSStatValue           = "VALUE"
 
 	colDataDictHitRatio    = "DATA_DICTIONARY_HIT_RATIO"
 	colRecycleBinSizeBytes = "RECYCLE_BIN_SIZE_BYTES"
@@ -132,6 +139,7 @@ type oracleScraper struct {
 	oraclePlanDataClient       dbClient
 	samplesQueryClient         dbClient
 	dataDictHitRatioClient     dbClient
+	osStatClient               dbClient
 	recycleBinSizeClient       dbClient
 	storageUsageClient         dbClient
 	db                         *sql.DB
@@ -205,6 +213,7 @@ func (s *oracleScraper) start(context.Context, component.Host) error {
 	s.tablespaceUsageClient = s.clientProviderFunc(s.db, tablespaceUsageSQL, s.logger)
 	s.samplesQueryClient = s.clientProviderFunc(s.db, samplesQuery, s.logger)
 	s.dataDictHitRatioClient = s.clientProviderFunc(s.db, dataDictHitRatioSQL, s.logger)
+	s.osStatClient = s.clientProviderFunc(s.db, osStatSQL, s.logger)
 	s.recycleBinSizeClient = s.clientProviderFunc(s.db, recycleBinSizeSQL, s.logger)
 	s.storageUsageClient = s.clientProviderFunc(s.db, storageUsageSQL, s.logger)
 	return nil
@@ -530,6 +539,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	s.collectDataDictHitRatio(ctx, &scrapeErrors)
+	s.collectOSStat(ctx, &scrapeErrors)
 	s.collectRecycleBinSize(ctx, &scrapeErrors)
 	s.collectStorageUsage(ctx, &scrapeErrors)
 
@@ -560,6 +570,53 @@ func (s *oracleScraper) collectDataDictHitRatio(ctx context.Context, scrapeError
 			continue
 		}
 		s.mb.RecordOracledbDataDictionaryHitRatioDataPoint(now, val)
+	}
+}
+
+func (s *oracleScraper) collectOSStat(ctx context.Context, scrapeErrors *[]error) {
+	if !s.metricsBuilderConfig.Metrics.SystemCPUPhysicalCount.Enabled &&
+		!s.metricsBuilderConfig.Metrics.OracledbSystemCPULoad.Enabled &&
+		!s.metricsBuilderConfig.Metrics.SystemMemoryLimit.Enabled {
+		return
+	}
+	now := pcommon.NewTimestampFromTime(time.Now())
+	rows, err := s.osStatClient.metricRows(ctx)
+	if err != nil {
+		*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", osStatSQL, err))
+		return
+	}
+	for _, row := range rows {
+		statName := row[colOSStatName]
+		statValue := row[colOSStatValue]
+		switch statName {
+		case osStatNameNumCPUs:
+			if s.metricsBuilderConfig.Metrics.SystemCPUPhysicalCount.Enabled {
+				val, err := strconv.ParseInt(statValue, 10, 64)
+				if err != nil {
+					*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for SystemCPUPhysicalCount, value was %s: %w", statValue, err))
+					continue
+				}
+				s.mb.RecordSystemCPUPhysicalCountDataPoint(now, val)
+			}
+		case osStatNameLoad:
+			if s.metricsBuilderConfig.Metrics.OracledbSystemCPULoad.Enabled {
+				val, err := strconv.ParseFloat(statValue, 64)
+				if err != nil {
+					*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse float64 for OracledbSystemCPULoad, value was %s: %w", statValue, err))
+					continue
+				}
+				s.mb.RecordOracledbSystemCPULoadDataPoint(now, val)
+			}
+		case osStatNamePhysicalMemory:
+			if s.metricsBuilderConfig.Metrics.SystemMemoryLimit.Enabled {
+				val, err := strconv.ParseInt(statValue, 10, 64)
+				if err != nil {
+					*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for SystemMemoryLimit, value was %s: %w", statValue, err))
+					continue
+				}
+				s.mb.RecordSystemMemoryLimitDataPoint(now, val)
+			}
+		}
 	}
 }
 
