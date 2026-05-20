@@ -780,14 +780,21 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 		return
 	}
 
+	droppedSamples := 0
+
 	for i := range samples {
 		sample := &samples[i]
+		if sample.digestText == "" {
+			droppedSamples++
+			continue
+		}
+
 		clientAddress := sample.processlistHost
 		clientPort := int64(sample.clientPort)
 		networkPeerAddress := clientAddress
 		networkPeerPort := clientPort
 
-		obfuscatedQuery, obfErr := m.obfuscator.obfuscateSQLString(sample.sqlText)
+		obfuscatedQuery, obfErr := m.obfuscator.obfuscateSQLString(sample.digestText)
 		if obfErr != nil {
 			m.logger.Error("Failed to obfuscate query", zap.Error(obfErr))
 		}
@@ -808,7 +815,7 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 
 		var queryPlan string
 		if sample.digest != "" {
-			queryPlan = m.retrieveQueryPlan(obfuscatedQuery, sample.sqlText, sample.processlistDB, sample.digest)
+			queryPlan = m.retrieveQueryPlan(sample.digestText, sample.sqlText, sample.processlistDB, sample.digest)
 		}
 
 		queryPlanHash := ""
@@ -840,6 +847,11 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			networkPeerAddress,
 			networkPeerPort,
 		)
+	}
+
+	if droppedSamples > 0 {
+		m.logger.Warn("dropped query samples due to missing digest_text",
+			zap.Int("count", droppedSamples))
 	}
 }
 
