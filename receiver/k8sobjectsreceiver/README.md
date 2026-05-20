@@ -28,12 +28,13 @@ The following is example configuration
     auth_type: serviceAccount
     storage: file_storage
     k8s_leader_elector: k8s_leader_elector
-    interval: 15m
+    interval: 30m
     objects:
       - name: pods
         mode: pull
         label_selector: environment in (production),tier in (frontend)
         field_selector: status.phase=Running
+        interval: 15m
         exclude_namespaces:
           - regexp: namespace-to-ignore
       - name: events
