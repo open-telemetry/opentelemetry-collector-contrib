@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: extension/storage/dbstorage
+note: Quote generated table identifiers for PostgreSQL/SQLite so valid component names containing `-` do not break SQL statements.
+issues: [48030]
+subtext:
+change_logs: [user]
