@@ -36,6 +36,25 @@ func TestAssertMetrics_IgnoresValuesAndTimestamps(t *testing.T) {
 	require.NoError(t, AssertMetrics(path, m))
 }
 
+func TestAssertMetrics_IncludeValues(t *testing.T) {
+	m := buildSampleMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, WriteAssertionFile(t, path, m, IncludeValues()))
+
+	// Assertion must pass against the original metrics.
+	require.NoError(t, AssertMetrics(path, m))
+
+	// Mutate values; assertion must fail because the snapshot includes values.
+	rm := m.ResourceMetrics().At(0)
+	metric := rm.ScopeMetrics().At(0).Metrics().At(1) // the sum metric
+	dp := metric.Sum().DataPoints().At(0)
+	dp.SetIntValue(dp.IntValue() + 9999)
+
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "value mismatch")
+}
+
 func TestAssertMetrics_DetectsMissingMetric(t *testing.T) {
 	m := buildSampleMetrics()
 	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
