@@ -782,7 +782,7 @@ func TestSplitLogsByAttributes(t *testing.T) {
 
 		batches := splitLogsByAttributes(ld, []string{"env"})
 		require.Len(t, batches, 1)
-		require.Contains(t, batches, "prod")
+		require.Contains(t, batches, "env=prod|")
 	})
 
 	t.Run("multiple attributes composite key", func(t *testing.T) {
@@ -794,7 +794,7 @@ func TestSplitLogsByAttributes(t *testing.T) {
 
 		batches := splitLogsByAttributes(ld, []string{"env", "region"})
 		require.Len(t, batches, 1)
-		require.Contains(t, batches, "produs-east")
+		require.Contains(t, batches, "env=prod|region=us-east|")
 	})
 
 	t.Run("missing attribute uses empty string", func(t *testing.T) {
@@ -804,7 +804,7 @@ func TestSplitLogsByAttributes(t *testing.T) {
 
 		batches := splitLogsByAttributes(ld, []string{"nonexistent"})
 		require.Len(t, batches, 1)
-		require.Contains(t, batches, "")
+		require.Contains(t, batches, "nonexistent=|")
 	})
 
 	t.Run("pseudo attribute log.severity", func(t *testing.T) {
@@ -816,7 +816,7 @@ func TestSplitLogsByAttributes(t *testing.T) {
 
 		batches := splitLogsByAttributes(ld, []string{"log.severity"})
 		require.Len(t, batches, 1)
-		require.Contains(t, batches, "ERROR")
+		require.Contains(t, batches, "log.severity=ERROR|")
 	})
 
 	t.Run("pseudo attribute log.body", func(t *testing.T) {
@@ -828,7 +828,7 @@ func TestSplitLogsByAttributes(t *testing.T) {
 
 		batches := splitLogsByAttributes(ld, []string{"log.body"})
 		require.Len(t, batches, 1)
-		require.Contains(t, batches, "my log body")
+		require.Contains(t, batches, "log.body=my log body|")
 	})
 
 	t.Run("scope attribute", func(t *testing.T) {
@@ -840,7 +840,7 @@ func TestSplitLogsByAttributes(t *testing.T) {
 
 		batches := splitLogsByAttributes(ld, []string{"library"})
 		require.Len(t, batches, 1)
-		require.Contains(t, batches, "mylib")
+		require.Contains(t, batches, "library=mylib|")
 	})
 
 	t.Run("log record attribute", func(t *testing.T) {
@@ -852,7 +852,7 @@ func TestSplitLogsByAttributes(t *testing.T) {
 
 		batches := splitLogsByAttributes(ld, []string{"user.id"})
 		require.Len(t, batches, 1)
-		require.Contains(t, batches, "user-123")
+		require.Contains(t, batches, "user.id=user-123|")
 	})
 
 	t.Run("empty logs", func(t *testing.T) {
@@ -881,7 +881,7 @@ func TestSplitLogsByAttributes(t *testing.T) {
 
 		batches := splitLogsByAttributes(ld, []string{"env"})
 		require.Len(t, batches, 1)
-		require.Contains(t, batches, "resource-value")
+		require.Contains(t, batches, "env=resource-value|")
 	})
 
 	t.Run("attribute lookup priority scope over log record", func(t *testing.T) {
@@ -894,7 +894,7 @@ func TestSplitLogsByAttributes(t *testing.T) {
 
 		batches := splitLogsByAttributes(ld, []string{"env"})
 		require.Len(t, batches, 1)
-		require.Contains(t, batches, "scope-value")
+		require.Contains(t, batches, "env=scope-value|")
 	})
 
 	t.Run("different resources produce different keys", func(t *testing.T) {
@@ -908,8 +908,8 @@ func TestSplitLogsByAttributes(t *testing.T) {
 
 		batches := splitLogsByAttributes(ld, []string{"env"})
 		require.Len(t, batches, 2)
-		require.Contains(t, batches, "prod")
-		require.Contains(t, batches, "staging")
+		require.Contains(t, batches, "env=prod|")
+		require.Contains(t, batches, "env=staging|")
 	})
 
 	t.Run("same composite key merged", func(t *testing.T) {
@@ -925,8 +925,8 @@ func TestSplitLogsByAttributes(t *testing.T) {
 
 		batches := splitLogsByAttributes(ld, []string{"env", "region"})
 		require.Len(t, batches, 1)
-		require.Contains(t, batches, "produs")
-		assert.Equal(t, 2, batches["produs"].ResourceLogs().Len())
+		require.Contains(t, batches, "env=prod|region=us|")
+		assert.Equal(t, 2, batches["env=prod|region=us|"].ResourceLogs().Len())
 	})
 
 	t.Run("no scope logs", func(t *testing.T) {
@@ -937,7 +937,7 @@ func TestSplitLogsByAttributes(t *testing.T) {
 
 		batches := splitLogsByAttributes(ld, []string{"env", "user.id"})
 		require.Len(t, batches, 1)
-		require.Contains(t, batches, "prod")
+		require.Contains(t, batches, "env=prod|")
 	})
 
 	t.Run("mixed record attributes within single ResourceLogs are split per-record", func(t *testing.T) {
@@ -957,11 +957,11 @@ func TestSplitLogsByAttributes(t *testing.T) {
 
 		batches := splitLogsByAttributes(ld, []string{"log.severity"})
 		require.Len(t, batches, 2, "two different severities should produce two batches")
-		require.Contains(t, batches, "ERROR")
-		require.Contains(t, batches, "INFO")
+		require.Contains(t, batches, "log.severity=ERROR|")
+		require.Contains(t, batches, "log.severity=INFO|")
 
 		// ERROR batch should have 2 records
-		errorBatch := batches["ERROR"]
+		errorBatch := batches["log.severity=ERROR|"]
 		totalError := 0
 		for i := 0; i < errorBatch.ResourceLogs().Len(); i++ {
 			for j := 0; j < errorBatch.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
@@ -971,7 +971,7 @@ func TestSplitLogsByAttributes(t *testing.T) {
 		assert.Equal(t, 2, totalError)
 
 		// INFO batch should have 1 record
-		infoBatch := batches["INFO"]
+		infoBatch := batches["log.severity=INFO|"]
 		totalInfo := 0
 		for i := 0; i < infoBatch.ResourceLogs().Len(); i++ {
 			for j := 0; j < infoBatch.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
@@ -993,10 +993,10 @@ func TestSplitLogsByAttributes(t *testing.T) {
 
 		batches := splitLogsByAttributes(ld, []string{"env"})
 		require.Len(t, batches, 1)
-		require.Contains(t, batches, "prod")
+		require.Contains(t, batches, "env=prod|")
 		// Both records should stay together in one ResourceLogs
 		totalRecords := 0
-		b := batches["prod"]
+		b := batches["env=prod|"]
 		for i := 0; i < b.ResourceLogs().Len(); i++ {
 			for j := 0; j < b.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
 				totalRecords += b.ResourceLogs().At(i).ScopeLogs().At(j).LogRecords().Len()
@@ -1461,7 +1461,9 @@ func TestSplitLogsByTraceID(t *testing.T) {
 
 		batches := splitLogsByTraceID(ld)
 		require.Len(t, batches, 1)
-		// empty traceID maps to "00000000000000000000000000000000"
+		// empty traceID gets a random key to avoid hot-spotting
+		emptyKey := pcommon.TraceID([16]byte{}).String()
+		require.NotContains(t, batches, emptyKey)
 	})
 
 	t.Run("empty logs", func(t *testing.T) {
@@ -2140,7 +2142,7 @@ func TestConsumeLogsMissingServiceMultipleEndpoints(t *testing.T) {
 
 func TestSplitLogsByTraceIDEmptyAndNonEmptyMixed(t *testing.T) {
 	// traceID routing with empty and non-empty trace IDs mixed in same scope:
-	// empty grouped together, non-empty isolated.
+	// empty IDs get random keys (spread across backends), non-empty are isolated.
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().PutStr("service.name", "svc-1")
@@ -2162,25 +2164,29 @@ func TestSplitLogsByTraceIDEmptyAndNonEmptyMixed(t *testing.T) {
 
 	batches := splitLogsByTraceID(ld)
 
-	// 3 batches: empty traceID, {1,2,3,4}, {5,6,7,8}
-	emptyKey := pcommon.TraceID([16]byte{}).String()
 	tid1 := pcommon.TraceID([16]byte{1, 2, 3, 4}).String()
 	tid2 := pcommon.TraceID([16]byte{5, 6, 7, 8}).String()
 
-	require.Len(t, batches, 3)
-	require.Contains(t, batches, emptyKey)
+	// 4 batches: each empty traceID record gets its own random key, plus
+	// one batch per non-empty traceID.
+	require.Len(t, batches, 4)
 	require.Contains(t, batches, tid1)
 	require.Contains(t, batches, tid2)
 
-	// Empty traceID batch should have 2 records
-	emptyBatch := batches[emptyKey]
-	emptyCount := 0
-	for i := 0; i < emptyBatch.ResourceLogs().Len(); i++ {
-		for j := 0; j < emptyBatch.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
-			emptyCount += emptyBatch.ResourceLogs().At(i).ScopeLogs().At(j).LogRecords().Len()
+	// Empty traceID key should NOT appear (random keys used instead)
+	emptyKey := pcommon.TraceID([16]byte{}).String()
+	require.NotContains(t, batches, emptyKey)
+
+	// Total record count should be preserved
+	totalRecords := 0
+	for _, b := range batches {
+		for i := 0; i < b.ResourceLogs().Len(); i++ {
+			for j := 0; j < b.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+				totalRecords += b.ResourceLogs().At(i).ScopeLogs().At(j).LogRecords().Len()
+			}
 		}
 	}
-	assert.Equal(t, 2, emptyCount, "empty traceID records should be grouped together")
+	assert.Equal(t, 4, totalRecords, "all 4 records should be preserved")
 
 	// Non-empty traceID batches should each have 1 record
 	for _, key := range []string{tid1, tid2} {
@@ -2257,12 +2263,12 @@ func TestSplitLogsByAttributesBothPseudoAttrs(t *testing.T) {
 
 	// 3 unique combinations: ERROR+disk full, WARN+disk full, ERROR+oom killed
 	require.Len(t, batches, 3)
-	require.Contains(t, batches, "ERRORdisk full")
-	require.Contains(t, batches, "WARNdisk full")
-	require.Contains(t, batches, "ERRORoom killed")
+	require.Contains(t, batches, "log.severity=ERROR|log.body=disk full|")
+	require.Contains(t, batches, "log.severity=WARN|log.body=disk full|")
+	require.Contains(t, batches, "log.severity=ERROR|log.body=oom killed|")
 
 	// ERROR+disk full should have 2 records
-	b := batches["ERRORdisk full"]
+	b := batches["log.severity=ERROR|log.body=disk full|"]
 	count := 0
 	for i := 0; i < b.ResourceLogs().Len(); i++ {
 		for j := 0; j < b.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
@@ -2296,17 +2302,21 @@ func TestSplitLogsByAttributesMultipleScopeLogsNoCrossContamination(t *testing.T
 
 	// Two different scope-level "team" values → two batches
 	require.Len(t, batches, 2)
-	require.Contains(t, batches, "alpha")
-	require.Contains(t, batches, "beta")
+	require.Contains(t, batches, "team=alpha|")
+	require.Contains(t, batches, "team=beta|")
 
 	// Verify each batch has the correct scope name (no mixing)
+	expectedTeamByKey := map[string]string{
+		"team=alpha|": "alpha",
+		"team=beta|":  "beta",
+	}
 	for key, b := range batches {
 		for i := 0; i < b.ResourceLogs().Len(); i++ {
 			for j := 0; j < b.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
 				sl := b.ResourceLogs().At(i).ScopeLogs().At(j)
 				teamVal, ok := sl.Scope().Attributes().Get("team")
 				require.True(t, ok)
-				assert.Equal(t, key, teamVal.Str(),
+				assert.Equal(t, expectedTeamByKey[key], teamVal.Str(),
 					"scope with team=%s ended up in batch for key=%s — cross-scope contamination",
 					teamVal.Str(), key)
 			}
@@ -2405,10 +2415,10 @@ func TestSplitLogsByAttributesScopeLevelResolution(t *testing.T) {
 	batches := splitLogsByAttributes(ld, []string{"env"})
 
 	require.Len(t, batches, 1)
-	require.Contains(t, batches, "prod")
+	require.Contains(t, batches, "env=prod|")
 
 	// All 3 records should stay together — no per-record split needed
-	b := batches["prod"]
+	b := batches["env=prod|"]
 	totalRecords := 0
 	for i := 0; i < b.ResourceLogs().Len(); i++ {
 		for j := 0; j < b.ResourceLogs().At(i).ScopeLogs().Len(); j++ {

@@ -6,6 +6,7 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"strings"
 	"sync"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/metric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
@@ -204,7 +206,8 @@ func splitLogsByResourceID(ld plog.Logs) map[string]plog.Logs {
 
 // splitLogsByTraceID splits logs per-record by trace ID, so records with
 // different trace IDs within the same ResourceLogs are routed to different
-// backends. This mirrors how batchpersignal.SplitLogs works.
+// backends. Records without a trace ID get a random key to avoid hot-spotting
+// a single backend.
 func splitLogsByTraceID(ld plog.Logs) map[string]plog.Logs {
 	results := make(map[string]plog.Logs)
 
@@ -222,7 +225,13 @@ func splitLogsByTraceID(ld plog.Logs) map[string]plog.Logs {
 
 			for k := 0; k < sl.LogRecords().Len(); k++ {
 				lr := sl.LogRecords().At(k)
-				key := lr.TraceID().String()
+				traceID := lr.TraceID()
+				var key string
+				if traceID.IsEmpty() {
+					key = randomTraceID().String()
+				} else {
+					key = traceID.String()
+				}
 
 				sb, ok := batches[key]
 				if !ok {
@@ -268,28 +277,25 @@ func splitLogsByAttributes(ld plog.Logs, attrs []string) map[string]plog.Logs {
 		rl := ld.ResourceLogs().At(i)
 		resourceAttrs := rl.Resource().Attributes()
 
-		// Resolve attributes at resource level first.
-		var baseResourceKey strings.Builder
+		var baseResourceKeyBuilder strings.Builder
 		pendingResourceAttrs := make([]string, 0, len(attrs))
 		for _, a := range attrs {
 			if val, ok := resourceAttrs.Get(a); ok {
-				baseResourceKey.WriteString(val.Str())
+				baseResourceKeyBuilder.WriteString(buildAttributeRoutingKeyValue(a, val))
 				continue
 			}
 			pendingResourceAttrs = append(pendingResourceAttrs, a)
 		}
+		baseResourceKey := baseResourceKeyBuilder.String()
 
-		// If all attributes resolved at resource level, or there are no scope
-		// logs to inspect further, route using what we have.
 		if len(pendingResourceAttrs) == 0 || rl.ScopeLogs().Len() == 0 {
-			key := baseResourceKey.String()
-			existing, ok := results[key]
+			existing, ok := results[baseResourceKey]
 			if ok {
 				rl.CopyTo(existing.ResourceLogs().AppendEmpty())
 			} else {
 				newLD := plog.NewLogs()
 				rl.CopyTo(newLD.ResourceLogs().AppendEmpty())
-				results[key] = newLD
+				results[baseResourceKey] = newLD
 			}
 			continue
 		}
@@ -298,26 +304,23 @@ func splitLogsByAttributes(ld plog.Logs, attrs []string) map[string]plog.Logs {
 			sl := rl.ScopeLogs().At(j)
 			scopeAttrs := sl.Scope().Attributes()
 
-			// Resolve remaining attributes at scope level.
-			var baseScopeKey strings.Builder
-			baseScopeKey.WriteString(baseResourceKey.String())
+			var baseScopeKeyBuilder strings.Builder
+			baseScopeKeyBuilder.WriteString(baseResourceKey)
 			pendingScopeAttrs := make([]string, 0, len(pendingResourceAttrs))
 			for _, a := range pendingResourceAttrs {
 				if val, ok := scopeAttrs.Get(a); ok {
-					baseScopeKey.WriteString(val.Str())
+					baseScopeKeyBuilder.WriteString(buildAttributeRoutingKeyValue(a, val))
 					continue
 				}
 				pendingScopeAttrs = append(pendingScopeAttrs, a)
 			}
+			baseScopeKey := baseScopeKeyBuilder.String()
 
-			// If all attributes resolved at resource+scope level, no per-record split needed.
 			if len(pendingScopeAttrs) == 0 {
-				key := baseScopeKey.String()
-				appendLogScope(results, key, rl, sl)
+				appendLogScope(results, baseScopeKey, rl, sl)
 				continue
 			}
 
-			// Must inspect individual log records for remaining attributes.
 			type recordBatch struct {
 				rl plog.ResourceLogs
 			}
@@ -326,19 +329,21 @@ func splitLogsByAttributes(ld plog.Logs, attrs []string) map[string]plog.Logs {
 			for k := 0; k < sl.LogRecords().Len(); k++ {
 				lr := sl.LogRecords().At(k)
 				rKey.Reset()
-				rKey.WriteString(baseScopeKey.String())
+				rKey.WriteString(baseScopeKey)
 
 				for _, a := range pendingScopeAttrs {
 					if a == pseudoAttrLogSeverity {
-						rKey.WriteString(lr.SeverityText())
+						rKey.WriteString(buildAttributeRoutingKeyStrValue(a, lr.SeverityText()))
 						continue
 					}
 					if a == pseudoAttrLogBody {
-						rKey.WriteString(lr.Body().AsString())
+						rKey.WriteString(buildAttributeRoutingKeyStrValue(a, lr.Body().AsString()))
 						continue
 					}
 					if val, ok := lr.Attributes().Get(a); ok {
-						rKey.WriteString(val.Str())
+						rKey.WriteString(buildAttributeRoutingKeyValue(a, val))
+					} else {
+						rKey.WriteString(buildAttributeRoutingKey(a))
 					}
 				}
 
@@ -370,6 +375,14 @@ func splitLogsByAttributes(ld plog.Logs, attrs []string) map[string]plog.Logs {
 	}
 
 	return results
+}
+
+func randomTraceID() pcommon.TraceID {
+	v1 := uint8(rand.IntN(256))
+	v2 := uint8(rand.IntN(256))
+	v3 := uint8(rand.IntN(256))
+	v4 := uint8(rand.IntN(256))
+	return [16]byte{v1, v2, v3, v4}
 }
 
 // appendLogScope adds a full scope to the results map under the given key,
