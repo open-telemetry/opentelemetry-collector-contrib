@@ -52,7 +52,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
   - `propagate` will propagate the error to the collector as an Error.
   - `ignore` will log and ignore the error and continue.
   - `silent` will ignore the error and continue without logging.
-- `interval`: Default pull interval applied to all pull-mode objects that do not set their own `interval`. Falls back to `1h` when neither this field nor the per-resource `objects[*].interval` is set. Has no effect on watch-mode objects.
+- `interval`: Top level pull interval applied to all pull-mode objects that do not set their own `interval`. Falls back to `1h` when neither this field nor the per-resource `objects[*].interval` is set. Has no effect on watch-mode objects.
 - `name`: Name of the resource object to collect
 - `mode`: define in which way it collects this type of object, either "pull" or "watch".
   - `pull` mode will read all objects of this type use the list API at an interval.
