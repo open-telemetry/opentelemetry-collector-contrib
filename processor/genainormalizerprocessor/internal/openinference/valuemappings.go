@@ -6,23 +6,24 @@ package openinference // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"strings"
 
+	oisemconv "github.com/Arize-ai/openinference/go/openinference-semantic-conventions"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
 )
 
 // operationNameValues maps openinference.span.kind values to OTel GenAI
-// operation names. Keys are lowercased; Transform lowercases the input
-// before lookup.
+// operation names. Source-side keys come from the upstream SpanKind*
+// constants, lowercased so Transform can do a case-insensitive lookup.
 var operationNameValues = map[string]string{
-	"llm":       "chat",
-	"embedding": "embeddings",
-	"chain":     "invoke_agent",
-	"retriever": "retrieval",
-	"reranker":  "retrieval",
-	"tool":      "execute_tool",
-	"agent":     "invoke_agent",
-	"prompt":    "text_completion",
+	strings.ToLower(oisemconv.SpanKindLLM):       "chat",
+	strings.ToLower(oisemconv.SpanKindEmbedding): "embeddings",
+	strings.ToLower(oisemconv.SpanKindChain):     "invoke_agent",
+	strings.ToLower(oisemconv.SpanKindRetriever): "retrieval",
+	strings.ToLower(oisemconv.SpanKindReranker):  "retrieval",
+	strings.ToLower(oisemconv.SpanKindTool):      "execute_tool",
+	strings.ToLower(oisemconv.SpanKindAgent):     "invoke_agent",
+	strings.ToLower(oisemconv.SpanKindPrompt):    "text_completion",
 }
 
 // Transform applies OpenInference-specific value-level normalization. It
