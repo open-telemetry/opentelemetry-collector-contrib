@@ -64,9 +64,25 @@ const (
 	pgaMemory                      = "session pga memory"
 	dbBlockGets                    = "db block gets"
 	consistentGets                 = "consistent gets"
-	sessionCountSQL                = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
-	systemResourceLimitsSQL        = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
-	tablespaceUsageSQL             = `
+
+	// I/O performance v$sysstat names
+	physicalReadBytesStat            = "physical read bytes"
+	physicalWriteBytesStat           = "physical write bytes"
+	physicalReadTotalBytesStat       = "physical read total bytes"
+	physicalWriteTotalBytesStat      = "physical write total bytes"
+	physicalReadTotalIORequestsStat  = "physical read total IO requests"
+	physicalWriteTotalIORequestsStat = "physical write total IO requests"
+	physicalReadMultiBlockReqStat    = "physical read total multi block requests"
+	physicalWriteMultiBlockReqStat   = "physical write total multi block requests"
+	physicalWritesFromCacheStat      = "physical writes from cache"
+	sqlnetBytesRecvFromClient        = "bytes received via SQL*Net from client"
+	sqlnetBytesSentToClient          = "bytes sent via SQL*Net to client"
+	sqlnetBytesRecvFromDBLink        = "bytes received via SQL*Net from dblink"
+	sqlnetBytesSentToDBLink          = "bytes sent via SQL*Net to dblink"
+
+	sessionCountSQL         = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
+	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
+	tablespaceUsageSQL      = `
 		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
@@ -242,7 +258,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPgaMemory.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbDbBlockGets.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbConsistentGets.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbLogons.Enabled
+		s.metricsBuilderConfig.Metrics.OracledbLogons.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoBytes.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequests.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalWritesFromCache.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSqlnetBytes.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
 		rows, execError := s.statsClient.metricRows(ctx)
@@ -394,6 +414,58 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			case logons:
 				err := s.mb.RecordOracledbLogonsDataPoint(now, row["VALUE"])
 				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalReadBytesStat:
+				if err := s.mb.RecordOracledbPhysicalIoBytesDataPoint(now, row["VALUE"], metadata.AttributeDirectionRead, metadata.AttributeIoTypeBuffered); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalWriteBytesStat:
+				if err := s.mb.RecordOracledbPhysicalIoBytesDataPoint(now, row["VALUE"], metadata.AttributeDirectionWrite, metadata.AttributeIoTypeBuffered); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalReadTotalBytesStat:
+				if err := s.mb.RecordOracledbPhysicalIoBytesDataPoint(now, row["VALUE"], metadata.AttributeDirectionRead, metadata.AttributeIoTypeTotal); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalWriteTotalBytesStat:
+				if err := s.mb.RecordOracledbPhysicalIoBytesDataPoint(now, row["VALUE"], metadata.AttributeDirectionWrite, metadata.AttributeIoTypeTotal); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalReadTotalIORequestsStat:
+				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDirectionRead, metadata.AttributeBlockSizeAll); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalWriteTotalIORequestsStat:
+				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDirectionWrite, metadata.AttributeBlockSizeAll); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalReadMultiBlockReqStat:
+				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDirectionRead, metadata.AttributeBlockSizeMulti); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalWriteMultiBlockReqStat:
+				if err := s.mb.RecordOracledbPhysicalIoRequestsDataPoint(now, row["VALUE"], metadata.AttributeDirectionWrite, metadata.AttributeBlockSizeMulti); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalWritesFromCacheStat:
+				if err := s.mb.RecordOracledbPhysicalWritesFromCacheDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case sqlnetBytesRecvFromClient:
+				if err := s.mb.RecordOracledbSqlnetBytesDataPoint(now, row["VALUE"], metadata.AttributeSqlnetDirectionReceived, metadata.AttributePeerClient); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case sqlnetBytesSentToClient:
+				if err := s.mb.RecordOracledbSqlnetBytesDataPoint(now, row["VALUE"], metadata.AttributeSqlnetDirectionSent, metadata.AttributePeerClient); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case sqlnetBytesRecvFromDBLink:
+				if err := s.mb.RecordOracledbSqlnetBytesDataPoint(now, row["VALUE"], metadata.AttributeSqlnetDirectionReceived, metadata.AttributePeerDblink); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case sqlnetBytesSentToDBLink:
+				if err := s.mb.RecordOracledbSqlnetBytesDataPoint(now, row["VALUE"], metadata.AttributeSqlnetDirectionSent, metadata.AttributePeerDblink); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			}

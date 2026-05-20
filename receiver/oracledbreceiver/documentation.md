@@ -337,6 +337,36 @@ Number of times parallel execution was executed at the requested degree of paral
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {executions} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.physical_io.bytes
+
+Total physical I/O bytes transferred between Oracle and storage. Sums across all data files. Sourced from v$sysstat names physical read/write bytes (io_type=buffered) and physical read/write total bytes (io_type=total).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+| io_type | Whether the I/O bytes are buffered (cache-mediated) or total (raw transfer count). | Str: ``buffered``, ``total`` | Recommended | - |
+
+### oracledb.physical_io.requests
+
+Number of physical I/O requests issued to storage. Sourced from v$sysstat names physical read/write total IO requests (block_size=all) and physical read/write total multi block requests (block_size=multi).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {requests} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+| block_size | Multi-block vs single-block (all) I/O request grouping. | Str: ``all``, ``multi`` | Recommended | - |
+
 ### oracledb.physical_read_io_requests
 
 Number of read requests for application activity
@@ -377,6 +407,14 @@ Number of writes directly to disk, bypassing the buffer cache
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {writes} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.physical_writes_from_cache
+
+Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$sysstat name physical writes from cache.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {writes} | Sum | Int | Cumulative | true | Development |
+
 ### oracledb.queries_parallelized
 
 Number of SELECT statements executed in parallel
@@ -392,6 +430,21 @@ Total size of the recycle bin.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Double | Development |
+
+### oracledb.sqlnet.bytes
+
+Bytes transferred via SQL*Net between Oracle and clients/dblinks. Sourced from v$sysstat names bytes received/sent via SQL*Net from/to client/dblink.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlnet_direction | Direction of the SQL*Net network transfer. | Str: ``received``, ``sent`` | Recommended | - |
+| peer | SQL*Net peer endpoint (client application or remote database link). | Str: ``client``, ``dblink`` | Recommended | - |
 
 ### oracledb.storage.usage
 

@@ -30,6 +30,10 @@ resource_attributes:
     type: string
 
 attributes:
+  block_size:
+    description: Multi-block vs single-block (all) I/O request grouping.
+    type: string
+    enum: [all, multi]
   client.address:
     description: Hostname or address of the client.
     type: string
@@ -48,6 +52,14 @@ attributes:
   db.system.name:
     description: The database management system (DBMS) product as identified by the client instrumentation.
     type: string
+  direction:
+    description: Direction of the storage I/O operation.
+    type: string
+    enum: [read, write]
+  io_type:
+    description: Whether the I/O bytes are buffered (cache-mediated) or total (raw transfer count).
+    type: string
+    enum: [buffered, total]
   network.peer.address:
     description: IP address of the peer client.
     type: string
@@ -181,6 +193,10 @@ attributes:
   oracledb.wait_class:
     description: The category of wait events a query or session is currently experiencing in Oracle Database.
     type: string
+  peer:
+    description: SQL*Net peer endpoint (client application or remote database link).
+    type: string
+    enum: [client, dblink]
   session_status:
     description: Session status
     type: string
@@ -189,6 +205,10 @@ attributes:
     description: Session type
     type: string
     requirement_level: recommended
+  sqlnet_direction:
+    description: Direction of the SQL*Net network transfer.
+    type: string
+    enum: [received, sent]
   tablespace_name:
     description: Tablespace name
     type: string
@@ -514,6 +534,28 @@ metrics:
       value_type: int
       input_type: string
     unit: By
+  oracledb.physical_io.bytes:
+    description: Total physical I/O bytes transferred between Oracle and storage. Sums across all data files. Sourced from v$sysstat names physical read/write bytes (io_type=buffered) and physical read/write total bytes (io_type=total).
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: By
+    attributes: [direction, io_type]
+  oracledb.physical_io.requests:
+    description: Number of physical I/O requests issued to storage. Sourced from v$sysstat names physical read/write total IO requests (block_size=all) and physical read/write total multi block requests (block_size=multi).
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{requests}"
+    attributes: [direction, block_size]
   oracledb.physical_read_io_requests:
     description: Number of read requests for application activity
     enabled: false
@@ -574,6 +616,16 @@ metrics:
       value_type: int
       input_type: string
     unit: "{writes}"
+  oracledb.physical_writes_from_cache:
+    description: Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$sysstat name physical writes from cache.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{writes}"
   oracledb.processes.limit:
     description: Maximum limit of active processes, -1 if unlimited.
     enabled: true
@@ -626,6 +678,17 @@ metrics:
       value_type: int
       input_type: string
     unit: "{sessions}"
+  oracledb.sqlnet.bytes:
+    description: Bytes transferred via SQL*Net between Oracle and clients/dblinks. Sourced from v$sysstat names bytes received/sent via SQL*Net from/to client/dblink.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: By
+    attributes: [sqlnet_direction, peer]
   oracledb.storage.usage:
     description: Used database storage size from dba_data_files and dba_free_space.
     enabled: false
