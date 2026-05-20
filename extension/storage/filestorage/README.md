@@ -41,13 +41,6 @@ See [#35899](https://github.com/open-telemetry/opentelemetry-collector-contrib/i
 1. In the **main goroutine** (e.g. "freepages: failed to open read only tx", "failed to rollback tx").
 2. In a **goroutine spawned by `bbolt.freepages`** (e.g. the "multiple references" panic when the freelist scan finds duplicate page references). Go's `recover()` cannot catch panics in goroutines it didn't spawn.
 
-The extension applies two layers of defense, in this order:
-
-1. **Subprocess pre-check.** When `recreate: true` and the database file exists, the extension re-executes the current binary with the environment variable `OTELCOL_FILESTORAGE_PRECHECK_DB` set. The child process attempts `bbolt.Open` and exits immediately. If the subprocess crashes with the runtime panic exit code (`2`), the parent renames the corrupt file to `{filename}.{ISO 8601 timestamp}.backup` and opens a fresh database in its place.
-2. **In-process `defer/recover`.** After the pre-check (or in environments where the pre-check is skipped, e.g. `os.Executable()` is unavailable), `bbolt.Open` is called inside a `defer/recover` block. This catches the main-goroutine panics that the pre-check might miss in rare cases, and also serves as a safety net when the pre-check could not be performed.
-
-If the subprocess exits cleanly the parent proceeds with the normal open. Transient errors (file lock, permission denied) are logged and the parent open is attempted so the user sees the underlying error.
-
 There may still be scenarios where manually removing or renaming the file is required; this feature flag is not a panacea for every bbolt failure mode.
 
 > [!Note]
