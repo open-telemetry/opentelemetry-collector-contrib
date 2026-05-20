@@ -3,7 +3,7 @@
 
 // tools package includes the list of tools available for the MCP extension. The contents of this
 // file originated in https://github.com/pavolloffay/opentelemetry-mcp-server/blob/main/internal/tools/tools.go
-package tools // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/mcp/internal/mcp/tools"
+package tools // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/mcp/internal/tools"
 
 import (
 	"context"
@@ -29,6 +29,7 @@ func GetAllTools() ([]Tool, error) {
 	}
 
 	tools := []Tool{
+		// original donation tools
 		getCollectorVersionsTool(schemaManager),
 		getCollectorComponentsTool(schemaManager, latestCollectorVersion),
 		getCollectorReadmeTool(schemaManager, latestCollectorVersion),
@@ -38,7 +39,6 @@ func GetAllTools() ([]Tool, error) {
 		getCollectorChangelogTool(schemaManager, latestCollectorVersion),
 		getCollectorDocumentationRAG(schemaManager, latestCollectorVersion),
 	}
-
 	return tools, nil
 }
 
@@ -367,5 +367,3 @@ func getCollectorDocumentationRAG(schemaManager *collectorschema.SchemaManager, 
 
 	return Tool{Tool: tool, Handler: handler}
 }
-
-func boolPtr(b bool) *bool { return &b }
