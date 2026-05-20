@@ -97,7 +97,7 @@ func requireStringSliceArg(args map[string]any, key string) ([]string, bool) {
 
 func getCollectorVersionsTool(schemaManager *collectorschema.SchemaManager) Tool {
 	tool := &mcp.Tool{
-		Name:        "opentelemetry-collector-get-versions",
+		Name:        "get-versions",
 		Description: "Get all supported OpenTelemetry collector versions by this tool",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: boolPtr(false),
@@ -119,7 +119,7 @@ func getCollectorVersionsTool(schemaManager *collectorschema.SchemaManager) Tool
 
 func getCollectorComponentsTool(schemaManager *collectorschema.SchemaManager, latestCollectorVersion string) Tool {
 	tool := &mcp.Tool{
-		Name:        "opentelemetry-collector-components",
+		Name:        "components",
 		Description: "Get all OpenTelemetry collector components",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: boolPtr(false),
@@ -148,7 +148,7 @@ func getCollectorComponentsTool(schemaManager *collectorschema.SchemaManager, la
 
 func getCollectorReadmeTool(schemaManager *collectorschema.SchemaManager, latestCollectorVersion string) Tool {
 	tool := &mcp.Tool{
-		Name:        "opentelemetry-collector-readme",
+		Name:        "readme",
 		Description: "Explain OpenTelemetry collector processor, receiver, exporter, extension functionality and use-cases",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: boolPtr(false),
@@ -181,7 +181,7 @@ func getCollectorReadmeTool(schemaManager *collectorschema.SchemaManager, latest
 
 func getCollectorChangelogTool(schemaManager *collectorschema.SchemaManager, latestCollectorVersion string) Tool {
 	tool := &mcp.Tool{
-		Name:        "opentelemetry-collector-changelog",
+		Name:        "changelog",
 		Description: "Returns OpenTelemetry collector changelog",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: boolPtr(false),
@@ -206,7 +206,7 @@ func getCollectorChangelogTool(schemaManager *collectorschema.SchemaManager, lat
 
 func getCollectorSchemaGetTool(schemaManager *collectorschema.SchemaManager, latestCollectorVersion string) Tool {
 	tool := &mcp.Tool{
-		Name:        "opentelemetry-collector-component-schema",
+		Name:        "component-schema",
 		Description: "Explain OpenTelemetry collector receiver, exporter, processor, connector and extension configuration schema",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: boolPtr(false),
@@ -239,7 +239,7 @@ func getCollectorSchemaGetTool(schemaManager *collectorschema.SchemaManager, lat
 
 func getCollectorSchemaValidationTool(schemaManager *collectorschema.SchemaManager, latestCollectorVersion string) Tool {
 	tool := &mcp.Tool{
-		Name:        "opentelemetry-collector-component-schema-validation",
+		Name:        "component-schema-validation",
 		Description: "Validate OpenTelemetry collector processor, receiver, exporter, extension configuration JSON",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: boolPtr(false),
@@ -281,7 +281,7 @@ type DeprecatedComponentFields struct {
 
 func getCollectorComponentDeprecatedTool(schemaManager *collectorschema.SchemaManager, latestCollectorVersion string) Tool {
 	tool := &mcp.Tool{
-		Name:        "opentelemetry-collector-component-deprecated-fields",
+		Name:        "component-deprecated-fields",
 		Description: "Return deprecated OpenTelemetry collector receiver, exporter, processor, connector and extension configuration fields",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: boolPtr(false),
@@ -328,7 +328,7 @@ type DocumentationSearchResult struct {
 
 func getCollectorDocumentationRAG(schemaManager *collectorschema.SchemaManager, latestCollectorVersion string) Tool {
 	tool := &mcp.Tool{
-		Name:        "opentelemetry-collector-rag",
+		Name:        "rag",
 		Description: "Answer questions about OpenTelemetry collector",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: boolPtr(false),
