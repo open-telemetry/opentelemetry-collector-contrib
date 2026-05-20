@@ -97,9 +97,10 @@ func TestHTTPAttributeMapping(t *testing.T) {
 
 func testRPCPAttributeMapping(t *testing.T, variant string) {
 	rpcAttributeValues := map[string]any{
-		"rpc.system":  "rpc.system",
-		"rpc.service": "rpc.service",
-		"rpc.method":  "rpc.method",
+		"rpc.system.name":          "rpc.system",
+		"rpc.service":              "rpc.service",
+		"rpc.method":               "rpc.method",
+		"rpc.response.status_code": int64(1),
 	}
 
 	attributeMap := pcommon.NewMap()
@@ -122,6 +123,7 @@ func testRPCPAttributeMapping(t *testing.T, variant string) {
 	assert.Equal(t, "rpc.system", rpcAttributes.RPCSystem)
 	assert.Equal(t, "rpc.service", rpcAttributes.RPCService)
 	assert.Equal(t, "rpc.method", rpcAttributes.RPCMethod)
+	assert.Equal(t, int64(1), rpcAttributes.RPCGRPCStatusCode)
 
 	networkAttributesValidations(t, rpcAttributes.NetworkAttributes)
 

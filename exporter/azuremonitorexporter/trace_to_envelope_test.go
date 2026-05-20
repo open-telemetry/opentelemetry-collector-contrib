@@ -85,8 +85,8 @@ var (
 
 	// Required attribute for any RPC Span
 	requiredRPCAttributes = map[string]any{
-		"rpc.system":     defaultRPCSystem,
-		"server.address": defaultServerAddress,
+		"rpc.system.name": defaultRPCSystem,
+		"server.address":  defaultServerAddress,
 	}
 
 	requiredDatabaseAttributes = map[string]any{
@@ -398,10 +398,10 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
 	defaultRPCRemoteDependencyDataValidations(t, span, data, "127.0.0.1:81")
 
-	// test RPC error using the new rpc.grpc.status_code attribute
+	// test RPC error using the new rpc.response.status_code attribute
 	span.Status().SetCode(ptrace.StatusCodeError)
 	span.Status().SetMessage("Resource exhausted")
-	spanAttributes.PutInt("rpc.grpc.status_code", 8)
+	spanAttributes.PutInt("rpc.response.status_code", 8)
 
 	envelopes, _ = spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, zap.NewNop())
 	envelope = envelopes[0]
