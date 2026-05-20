@@ -61,7 +61,7 @@ config:
           - tag_name: kube_app_managed_by
             key: app.kubernetes.io/managed-by
             from: pod
-    resourcedetection:
+    resource_detection:
       detectors: [env, eks, ec2, system]
       timeout: 2s
       override: false
@@ -78,13 +78,13 @@ config:
     pipelines:
       metrics:
         receivers: [otlp]
-        processors: [resourcedetection, k8sattributes]
+        processors: [resource_detection, k8sattributes]
         exporters: [datadog]
       traces:
         receivers: [otlp]
-        processors: [resourcedetection, k8sattributes]
+        processors: [resource_detection, k8sattributes]
         exporters: [datadog]
       logs:
         receivers: [otlp]
-        processors: [resourcedetection, k8sattributes]
+        processors: [resource_detection, k8sattributes]
         exporters: [datadog]

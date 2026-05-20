@@ -176,8 +176,9 @@ type ExtractConfig struct {
 	// E.g. "resource.opentelemetry.io/foo" becomes "foo"
 	OtelAnnotations bool `mapstructure:"otel_annotations"`
 
-	// DeploymentNameFromReplicaSet allows extracting deployment name from replicaset name by trimming pod template hash.
-	// This will disable watching for replicaset resources.
+	// DeploymentNameFromReplicaSet allows extracting deployment name from ReplicaSet name by trimming pod template hash.
+	//
+	// Deprecated: This option now defaults to true and will be removed in future releases.
 	DeploymentNameFromReplicaSet bool `mapstructure:"deployment_name_from_replicaset"`
 }
 
