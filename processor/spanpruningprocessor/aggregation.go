@@ -16,10 +16,11 @@ import (
 // aggregationGroup captures the spans to aggregate along with execution
 // metadata (tree depth, preassigned summary ID).
 type aggregationGroup struct {
-	nodes         []*spanNode    // nodes to aggregate (replaces []spanInfo for efficiency)
-	depth         int            // tree depth (0 = leaf, 1 = parent of leaf, etc.)
-	summarySpanID pcommon.SpanID // SpanID of the summary span (assigned before creation)
-	templateNode  *spanNode      // node to use as summary template (longest duration)
+	nodes         []*spanNode          // nodes to aggregate (replaces []spanInfo for efficiency)
+	depth         int                  // tree depth (0 = leaf, 1 = parent of leaf, etc.)
+	summarySpanID pcommon.SpanID       // SpanID of the summary span (assigned before creation)
+	lossInfo      attributeLossSummary // attribute-loss details for summary annotations
+	templateNode  *spanNode            // node to use as summary template (longest duration)
 }
 
 // aggregationPlan orders aggregation groups for top-down execution and
@@ -183,6 +184,13 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 		for _, count := range data.bucketCounts {
 			bucketCountsSlice.AppendEmpty().SetInt(count)
 		}
+	}
+
+	if len(group.lossInfo.diverse) > 0 {
+		newSpan.Attributes().PutStr(prefix+"diverse_attributes", formatAttributeCardinality(group.lossInfo.diverse))
+	}
+	if len(group.lossInfo.missing) > 0 {
+		newSpan.Attributes().PutStr(prefix+"missing_attributes", formatAttributeCardinality(group.lossInfo.missing))
 	}
 
 	return newSpan
