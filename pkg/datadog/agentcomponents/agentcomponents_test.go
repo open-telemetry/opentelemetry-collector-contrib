@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -444,6 +445,33 @@ func TestWithProxy(t *testing.T) {
 			// Verify NO_PROXY setting
 			noProxySlice := config.Get("proxy.no_proxy")
 			assert.Equal(t, tt.expectedNoProxy, noProxySlice)
+		})
+	}
+}
+
+func TestWithTLSSetting(t *testing.T) {
+	tests := []struct {
+		name               string
+		insecureSkipVerify bool
+	}{
+		{name: "insecure_skip_verify true", insecureSkipVerify: true},
+		{name: "insecure_skip_verify false", insecureSkipVerify: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &datadogconfig.Config{
+				ClientConfig: confighttp.ClientConfig{
+					TLS: configtls.ClientConfig{InsecureSkipVerify: tt.insecureSkipVerify},
+				},
+			}
+
+			configComponent := NewConfigComponent(WithTLSSetting(cfg))
+			require.NotNil(t, configComponent)
+			config := configComponent.(pkgconfigmodel.Config)
+
+			assert.Equal(t, tt.insecureSkipVerify, config.GetBool("skip_ssl_validation"))
+			assert.Equal(t, tt.insecureSkipVerify, config.GetBool("apm_config.skip_ssl_validation"))
 		})
 	}
 }
