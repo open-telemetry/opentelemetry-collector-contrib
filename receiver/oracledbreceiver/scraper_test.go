@@ -421,10 +421,10 @@ func TestSamplesQuery(t *testing.T) {
 	}{
 		{
 			name: "valid",
-			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
 				return &fakeDbClient{
 					Responses: [][]metricRow{
-						samplesQueryResponses[s],
+						samplesQueryResponses[samplesQuery],
 					},
 				}
 			},
