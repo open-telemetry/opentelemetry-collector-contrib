@@ -704,16 +704,18 @@ func NewTestParserConfig() ParserConfig {
 }
 
 func TestProcessWithCallback_QuietMode(t *testing.T) {
-	// Under the new contract, HandleEntryError returns nil in quiet mode,
-	// so ProcessWithCallback MUST NOT propagate a parse error regardless of
-	// whether the downstream write also fails.
+	// Quiet mode swallows processing errors, but send_quiet still surfaces
+	// downstream write failures so the pipeline can react to delivery errors.
+	// drop_quiet never calls write so its parse failure is fully suppressed.
 	testCases := []struct {
-		name    string
-		onError string
+		name            string
+		onError         string
+		expectWriteWrap bool
 	}{
 		{
-			name:    "SendOnErrorQuiet_WriteFailure_Suppressed",
-			onError: SendOnErrorQuiet,
+			name:            "SendOnErrorQuiet_WriteFailure_PropagatesWriteError",
+			onError:         SendOnErrorQuiet,
+			expectWriteWrap: true,
 		},
 		{
 			name:    "DropOnErrorQuiet_ParseFailure_Suppressed",
@@ -752,7 +754,12 @@ func TestProcessWithCallback_QuietMode(t *testing.T) {
 			ctx := t.Context()
 			testEntry := entry.New()
 			err := parser.ProcessWithCallback(ctx, testEntry, parse, nil)
-			require.NoError(t, err, "quiet mode must not propagate any error")
+			if tc.expectWriteWrap {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to send entry after error")
+			} else {
+				require.NoError(t, err, "quiet mode must not propagate the processing error")
+			}
 		})
 	}
 }

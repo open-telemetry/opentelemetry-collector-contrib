@@ -136,13 +136,16 @@ func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entr
 }
 
 // HandleEntryError handles an entry error using the on_error strategy.
-// Returns nil in quiet modes (drop_quiet, send_quiet).
+// In quiet modes (drop_quiet, send_quiet) the processing error is swallowed,
+// but a downstream write error from send_quiet is still returned so the
+// pipeline can react to delivery failures.
 func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry.Entry, err error) error {
 	return t.HandleEntryErrorWithWrite(ctx, entry, err, t.Write)
 }
 
 // HandleEntryErrorWithWrite is like HandleEntryError but uses the supplied write function.
-// Returns nil in quiet modes (drop_quiet, send_quiet).
+// In quiet modes the processing error is swallowed; a downstream write error
+// from send_quiet is still returned.
 func (t *TransformerOperator) HandleEntryErrorWithWrite(ctx context.Context, entry *entry.Entry, err error, write WriteFunction) error {
 	if entry == nil {
 		return errors.New("got a nil entry, this should not happen and is potentially a bug")
@@ -156,9 +159,10 @@ func (t *TransformerOperator) HandleEntryErrorWithWrite(ctx context.Context, ent
 	} else {
 		t.Logger().Error("Failed to process entry", zapAttributes(entry, t.OnError, err)...)
 	}
+
 	if t.OnError == SendOnError || t.OnError == SendOnErrorQuiet {
 		if writeErr := write(ctx, entry); writeErr != nil {
-			err = fmt.Errorf("failed to send entry after error: %w", writeErr)
+			return fmt.Errorf("failed to send entry after error: %w", writeErr)
 		}
 	}
 

@@ -16,13 +16,12 @@ issues: [42646]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  When the `on_error` strategy is `drop_quiet` or `send_quiet`, entry-level
-  errors are now consistently swallowed by `HandleEntryError` /
-  `HandleEntryErrorWithWrite` and are no longer propagated up the pipeline
-  by the stanza helper, container, syslog and recombine operators. This
-  also fixes paths in `helper.ParserOperator.ProcessWithCallback` /
-  `ProcessBatchWithCallback` that previously surfaced Skip and callback
-  errors at ERROR level in quiet mode.
+  Previously, the `container`, `syslog`, `recombine` and other stanza parser
+  operators logged entry-level processing errors at ERROR level even when
+  `on_error` was set to `drop_quiet` or `send_quiet`. These errors are now
+  logged at DEBUG level in quiet modes, matching the documented behavior.
+  Downstream delivery failures continue to propagate so the pipeline can
+  react to them.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -1302,8 +1302,9 @@ func TestUnlimitedBatchSize(t *testing.T) {
 }
 
 func TestContainerQuietModeProcess(t *testing.T) {
-	// Under the new contract HandleEntryError returns nil in quiet mode,
-	// so a failing downstream write must also be suppressed in quiet mode.
+	// Quiet mode swallows the processing/parse error, but send_quiet still
+	// surfaces downstream write failures so the pipeline can react to delivery
+	// errors.
 	testCases := []struct {
 		name             string
 		onError          string
@@ -1331,10 +1332,10 @@ func TestContainerQuietModeProcess(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name:             "SendOnErrorQuiet_WriteFailure_SuppressesError",
+			name:             "SendOnErrorQuiet_WriteFailure_PropagatesError",
 			onError:          "send_quiet",
 			useFailingOutput: true,
-			expectError:      false,
+			expectError:      true,
 		},
 		{
 			name:             "SendOnError_WriteFailure_PropagatesError",
@@ -1371,7 +1372,7 @@ func TestContainerQuietModeProcess(t *testing.T) {
 			if tc.expectError {
 				require.Error(t, err, "expected error")
 			} else {
-				require.NoError(t, err, "expected no error in quiet mode (write failures included)")
+				require.NoError(t, err, "expected no error when processing error is swallowed in quiet mode")
 			}
 		})
 	}

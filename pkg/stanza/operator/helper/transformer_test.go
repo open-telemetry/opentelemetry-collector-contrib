@@ -743,9 +743,11 @@ func TestTransformerIf(t *testing.T) {
 }
 
 func TestHandleEntryErrorWithWrite(t *testing.T) {
-	// The new contract for HandleEntryErrorWithWrite:
-	//   - In quiet mode (drop_quiet / send_quiet) the method ALWAYS returns
-	//     nil, regardless of whether the downstream write failed.
+	// Contract for HandleEntryErrorWithWrite:
+	//   - In quiet modes (drop_quiet / send_quiet) the processing error is
+	//     swallowed, but a downstream write error from send_quiet is still
+	//     returned (wrapped as "failed to send entry after error").
+	//   - drop_quiet never calls write so it always returns nil.
 	//   - In non-quiet mode (drop / send) the method returns either the
 	//     original processing error or, if a SendOnError write also failed,
 	//     a wrapped "failed to send entry after error" error.
@@ -762,9 +764,9 @@ func TestHandleEntryErrorWithWrite(t *testing.T) {
 			expectWriteWrap: true,
 		},
 		{
-			name:      "SendOnErrorQuiet_WriteFailure_ReturnsNil",
-			onError:   SendOnErrorQuiet,
-			expectNil: true,
+			name:            "SendOnErrorQuiet_WriteFailure_ReturnsWrappedWriteErr",
+			onError:         SendOnErrorQuiet,
+			expectWriteWrap: true,
 		},
 		{
 			name:              "DropOnError_WriteNotCalled_ReturnsOriginalError",
@@ -817,16 +819,18 @@ func TestHandleEntryErrorWithWrite(t *testing.T) {
 }
 
 func TestProcessWith_QuietMode(t *testing.T) {
-	// Under the new contract HandleEntryError returns nil in quiet mode, so
-	// ProcessWith MUST NOT propagate any error to the pipeline regardless of
-	// whether the downstream write also failed.
+	// Quiet mode swallows processing errors, but send_quiet still surfaces
+	// downstream write failures so the pipeline can react to delivery errors.
+	// drop_quiet never calls write so its transform failure is fully suppressed.
 	testCases := []struct {
-		name    string
-		onError string
+		name            string
+		onError         string
+		expectWriteWrap bool
 	}{
 		{
-			name:    "SendOnErrorQuiet_WriteFailure_Suppressed",
-			onError: SendOnErrorQuiet,
+			name:            "SendOnErrorQuiet_WriteFailure_PropagatesWriteError",
+			onError:         SendOnErrorQuiet,
+			expectWriteWrap: true,
 		},
 		{
 			name:    "DropOnErrorQuiet_TransformFailure_Suppressed",
@@ -865,7 +869,13 @@ func TestProcessWith_QuietMode(t *testing.T) {
 			}
 
 			err := transformer.ProcessWith(ctx, testEntry, transform)
-			require.NoError(t, err, "quiet mode must not propagate any error")
+			if tc.expectWriteWrap {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to send entry after error")
+				require.Contains(t, err.Error(), "downstream failure")
+			} else {
+				require.NoError(t, err, "quiet mode must not propagate the processing error")
+			}
 		})
 	}
 }
