@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -37,6 +38,15 @@ type Metadata struct {
 	TokenLenState    tokenlen.State
 	FileType         string
 	TruncateSkipping bool
+
+	// LastObservedPath and LastObservedMtime are used by the
+	// filelog.skipUnchangedPathByMtime feature gate to skip re-opening and
+	// re-fingerprinting a file whose path+mtime is unchanged since the last
+	// observation. They are populated on a best-effort basis by the manager
+	// when the gate is enabled and are safe to leave at their zero values
+	// (the gate-off code path does not read them).
+	LastObservedPath  string
+	LastObservedMtime time.Time
 }
 
 // Reader manages a single file

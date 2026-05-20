@@ -41,6 +41,15 @@ feature_gates:
       Use protobuf encoding for checkpoint storage instead of JSON.
     from_version: v0.148.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266
+  - id: filelog.skipUnchangedPathByMtime
+    stage: alpha
+    description: >-
+      When enabled, a file whose path+mtime is unchanged from a previously tracked reader
+      (within the `knownFiles` generation window) is skipped during the poll: no open, no
+      fingerprint, no read. The retained reader metadata is promoted into the current
+      generation so it ages on the same schedule as if it had been processed.
+    from_version: v0.150.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47861
   - id: filelog.windows.caseInsensitive
     stage: alpha
     description: >-

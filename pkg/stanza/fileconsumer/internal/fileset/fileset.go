@@ -65,6 +65,15 @@ func (set *Fileset[T]) Match(fp *fingerprint.Fingerprint, cmp func(a, b *fingerp
 	return val
 }
 
+// RemoveAt removes the element at the given index. Caller is responsible for
+// bounds checking; this method is a no-op if idx is out of range.
+func (set *Fileset[T]) RemoveAt(idx int) {
+	if idx < 0 || idx >= len(set.readers) {
+		return
+	}
+	set.readers = append(set.readers[:idx], set.readers[idx+1:]...)
+}
+
 // comparators
 func StartsWith(a, b *fingerprint.Fingerprint) bool {
 	return a.StartsWith(b)
