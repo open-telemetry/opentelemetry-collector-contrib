@@ -348,7 +348,15 @@ jobs:
         env:
           GROUP: ${{ matrix.group }}
         run: |
-          group_hash="$(printf '%s' "$GROUP" | sha256sum | cut -d ' ' -f 1)"
+          normalized_group="$(
+            printf '%s' "$GROUP" \
+              | tr '[:space:]' '\n' \
+              | sed '/^$/d' \
+              | sort \
+              | tr '\n' ' ' \
+              | sed 's/[[:space:]]\+$//'
+          )"
+          group_hash="$(printf '%s' "$normalized_group" | sha256sum | cut -d ' ' -f 1)"
           echo "key=docker-experimental-${group_hash}" >> "$GITHUB_OUTPUT"
       - name: Cache Docker images.
         uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
