@@ -158,12 +158,12 @@ func determineNextEventMode(peeker peeker) (eventMode, error) {
 	// message modes have more than 4 entries. So skip to the second byte which
 	// is the tag string header.
 	tagType := chunk[1]
-	// We already read the first type for the type
-	tagLen := 1
 
 	isFixStr := tagType&0b10100000 == 0b10100000
+	tagHeaderLen := 1
+	var tagValueLen uint32
 	if isFixStr {
-		tagLen += int(tagType & 0b00011111)
+		tagValueLen = uint32(tagType & 0b00011111)
 	} else {
 		switch tagType {
 		case 0xd9:
@@ -171,23 +171,30 @@ func determineNextEventMode(peeker peeker) (eventMode, error) {
 			if err != nil {
 				return unknownMode, err
 			}
-			tagLen += 1 + int(chunk[2])
+			tagHeaderLen = 2
+			tagValueLen = uint32(chunk[2])
 		case 0xda:
 			chunk, err = peeker.Peek(4)
 			if err != nil {
 				return unknownMode, err
 			}
-			tagLen += 2 + int(binary.BigEndian.Uint16(chunk[2:]))
+			tagHeaderLen = 3
+			tagValueLen = uint32(binary.BigEndian.Uint16(chunk[2:]))
 		case 0xdb:
 			chunk, err = peeker.Peek(6)
 			if err != nil {
 				return unknownMode, err
 			}
-			tagLen += 4 + int(binary.BigEndian.Uint32(chunk[2:]))
+			tagHeaderLen = 5
+			tagValueLen = binary.BigEndian.Uint32(chunk[2:])
 		default:
 			return unknownMode, errors.New("malformed tag field")
 		}
 	}
+	if tagValueLen > maxMsgpackTagBytes {
+		return unknownMode, msgp.WrapError(msgp.ErrLimitExceeded, "Tag")
+	}
+	tagLen := tagHeaderLen + int(tagValueLen)
 
 	// Skip past the first byte (array header) and the entire tag and then get
 	// one byte into the second field -- that is enough to know its type.
