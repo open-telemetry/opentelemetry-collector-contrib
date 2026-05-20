@@ -852,6 +852,8 @@ otel_scope_info{animal="rabbit", otel_scope_name="scope.with.info", otel_scope_v
 `
 
 func TestScopeInfoScopeAttributes(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPrometheusreceiverIgnoreScopeInfoMetricFeatureGate, false)()
+
 	targets := []*testData{
 		{
 			name: "target1",
