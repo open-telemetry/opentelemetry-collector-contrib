@@ -188,8 +188,6 @@ func timeFromTimestamp(ts any) (time.Time, error) {
 }
 
 func parseRecordToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
-	setMsgpackReaderLimits(dc)
-
 	tsIntf, err := dc.ReadIntf()
 	if err != nil {
 		return msgp.WrapError(err, "Time")
