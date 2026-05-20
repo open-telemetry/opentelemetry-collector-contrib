@@ -12,7 +12,7 @@ $defs:
         description: Condition is an OTTL condition used for making a routing decision. For the "request" context, 'Condition' is required and must be of the form 'request["<attribute>"] {== | !=} <value>'. For all other contexts, 'Statement' or 'Condition' must be provided, and must be a valid OTTL condition.
         type: string
       context:
-        description: One of "request", "resource", "log", "span", "metric", "datapoint". Optional. Default "resource".
+        description: One of "request" (deprecated), "resource", "log", "span", "metric", "datapoint", "otelcol". Optional. Default is inferred from the condition/statement paths.
         type: string
       pipelines:
         description: Pipelines contains the list of pipelines to use when the value from the FromAttribute field matches this table item. When no pipelines are specified, the ones specified under DefaultPipelines are used, if any. The routing processor will fail upon the first failure from these pipelines. Optional.
