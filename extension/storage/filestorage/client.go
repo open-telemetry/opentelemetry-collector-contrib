@@ -162,6 +162,7 @@ func (c *fileStorageClient) Walk(ctx context.Context, fn storage.WalkFunc) error
 }
 
 // updateBucket executes the specified operations in order for a given bucket. Get operation results are updated in place
+// The function caller must hold a read lock on compactionMutex.
 func updateBucket(bucket *bbolt.Bucket, ops ...*storage.Operation) error {
 	var err error
 	for _, op := range ops {
