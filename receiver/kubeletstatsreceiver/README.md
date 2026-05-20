@@ -322,6 +322,30 @@ The following parameters can also be specified:
 - `collection_interval` (default = `10s`): The interval at which to collect data.
 - `insecure_skip_verify` (default = `false`): Whether or not to skip certificate verification.
 
+### Connection Pooling
+
+To reduce CPU overhead from TLS handshakes, the receiver supports HTTP connection pooling settings.
+This is particularly useful when scraping at high frequency, as it allows connections to be reused
+between collection intervals rather than performing expensive TLS handshakes on every scrape.
+
+- `max_idle_conns` (default = `100`): Maximum number of idle (keep-alive) connections across all hosts. Zero means no limit.
+- `max_idle_conns_per_host` (default = `2`): Maximum number of idle connections to keep per-host. For single-host scraping like kubelet, consider setting this higher (e.g., `10`) to improve connection reuse.
+- `idle_conn_timeout` (default = `90s`): Maximum amount of time an idle connection will remain open before closing itself. Zero means no limit.
+
+Example configuration with connection pooling:
+
+```yaml
+receivers:
+  kubeletstats:
+    collection_interval: 10s
+    auth_type: "serviceAccount"
+    endpoint: "https://${env:K8S_NODE_NAME}:10250"
+    insecure_skip_verify: true
+    max_idle_conns: 100
+    max_idle_conns_per_host: 10
+    idle_conn_timeout: 120s
+```
+
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 

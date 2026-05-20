@@ -5,6 +5,8 @@ package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"net"
+	"net/http"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -79,7 +81,12 @@ func createMetricsReceiver(
 }
 
 func restClient(logger *zap.Logger, cfg *Config) (kubelet.RestClient, error) {
-	clientProvider, err := kube.NewClientProvider(cfg.Endpoint, &cfg.ClientConfig, logger)
+	// Create a transport with connection pooling settings configured.
+	// This transport will be used as the base for the kubelet client,
+	// allowing connections to be reused across scrapes to reduce TLS handshake overhead.
+	transport := createTransport(cfg)
+
+	clientProvider, err := kube.NewClientProviderWithRoundTripper(cfg.Endpoint, &cfg.ClientConfig, logger, transport)
 	if err != nil {
 		return nil, err
 	}
@@ -89,4 +96,30 @@ func restClient(logger *zap.Logger, cfg *Config) (kubelet.RestClient, error) {
 	}
 	rest := kubelet.NewRestClient(client)
 	return rest, nil
+}
+
+// createTransport creates an http.Transport with connection pooling settings from the config.
+// These settings help reduce TLS handshake overhead by reusing connections between scrapes.
+func createTransport(cfg *Config) *http.Transport {
+	// Clone the default transport to preserve reasonable defaults
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+
+	// Apply dialer timeout if configured (backwards compat with confignet.TCPAddrConfig).
+	if cfg.DialerConfig.Timeout > 0 {
+		d := &net.Dialer{Timeout: cfg.DialerConfig.Timeout}
+		transport.DialContext = d.DialContext
+	}
+
+	// Apply connection pooling settings from config
+	if cfg.MaxIdleConns > 0 {
+		transport.MaxIdleConns = cfg.MaxIdleConns
+	}
+	if cfg.MaxIdleConnsPerHost > 0 {
+		transport.MaxIdleConnsPerHost = cfg.MaxIdleConnsPerHost
+	}
+	if cfg.IdleConnTimeout > 0 {
+		transport.IdleConnTimeout = cfg.IdleConnTimeout
+	}
+
+	return transport
 }

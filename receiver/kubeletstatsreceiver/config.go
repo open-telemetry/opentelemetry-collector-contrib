@@ -6,6 +6,7 @@ package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -24,8 +25,32 @@ var _ component.Config = (*Config)(nil)
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
-	kube.ClientConfig       `mapstructure:",squash"`
-	confignet.TCPAddrConfig `mapstructure:",squash"`
+	kube.ClientConfig `mapstructure:",squash"`
+
+	// Endpoint is the URL of the kubelet on the node. The scheme, host, and port can be specified
+	// in this field (e.g., https://hostname:10250). The scheme must be https.
+	// If the scheme is omitted, https will be used.
+	Endpoint string `mapstructure:"endpoint"`
+
+	// DialerConfig contains options for connecting to an address.
+	// Retained for backwards compatibility with confignet.TCPAddrConfig.
+	DialerConfig confignet.DialerConfig `mapstructure:"dialer,omitempty"`
+
+	// HTTP connection pooling settings to reduce TLS handshake overhead.
+	// These settings can significantly improve performance when scraping metrics at high frequency.
+
+	// MaxIdleConns sets the maximum number of idle (keep-alive) connections across all hosts.
+	// Zero means no limit. Default is 100.
+	MaxIdleConns int `mapstructure:"max_idle_conns"`
+
+	// MaxIdleConnsPerHost sets the maximum number of idle (keep-alive) connections to keep per-host.
+	// If zero, http.DefaultMaxIdleConnsPerHost (2) is used. For single-host scraping like kubelet,
+	// consider setting this higher (e.g., 10) to improve connection reuse.
+	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host"`
+
+	// IdleConnTimeout is the maximum amount of time an idle connection will remain idle before
+	// closing itself. Zero means no limit. Default is 90 seconds.
+	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout"`
 
 	// ExtraMetadataLabels contains list of extra metadata that should be taken from /pods endpoint
 	// and put as extra labels on metrics resource.
