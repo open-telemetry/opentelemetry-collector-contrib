@@ -15,6 +15,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/featuregate"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension/internal/metadata"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
@@ -22,6 +25,30 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NoError(t, confmap.New().Unmarshal(cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+}
+
+func TestCreateDefaultConfigReportsHeartbeatFeatureGate(t *testing.T) {
+	t.Run("disabled", func(t *testing.T) {
+		previousValue := metadata.ExtensionOpampextensionHeartbeatIntervalNegotiationFeatureGate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionOpampextensionHeartbeatIntervalNegotiationFeatureGate.ID(), false))
+		t.Cleanup(func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionOpampextensionHeartbeatIntervalNegotiationFeatureGate.ID(), previousValue))
+		})
+
+		cfg := NewFactory().CreateDefaultConfig().(*Config)
+		assert.False(t, cfg.Capabilities.ReportsHeartbeat)
+	})
+
+	t.Run("enabled", func(t *testing.T) {
+		previousValue := metadata.ExtensionOpampextensionHeartbeatIntervalNegotiationFeatureGate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionOpampextensionHeartbeatIntervalNegotiationFeatureGate.ID(), true))
+		t.Cleanup(func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionOpampextensionHeartbeatIntervalNegotiationFeatureGate.ID(), previousValue))
+		})
+
+		cfg := NewFactory().CreateDefaultConfig().(*Config)
+		assert.True(t, cfg.Capabilities.ReportsHeartbeat)
+	})
 }
 
 func TestUnmarshalConfig(t *testing.T) {
@@ -42,6 +69,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				ReportsEffectiveConfig:     true,
 				ReportsHealth:              true,
 				ReportsAvailableComponents: true,
+				ReportsHeartbeat:           false,
 			},
 			PPIDPollInterval: 5 * time.Second,
 		}, cfg)
@@ -68,6 +96,7 @@ func TestUnmarshalHttpConfig(t *testing.T) {
 				ReportsEffectiveConfig:     true,
 				ReportsHealth:              true,
 				ReportsAvailableComponents: true,
+				ReportsHeartbeat:           false,
 			},
 			PPIDPollInterval: 5 * time.Second,
 		}, cfg)
@@ -376,6 +405,7 @@ func TestCapabilities_toAgentCapabilities(t *testing.T) {
 		ReportsEffectiveConfig     bool
 		ReportsHealth              bool
 		ReportsAvailableComponents bool
+		ReportsHeartbeat           bool
 	}
 	tests := []struct {
 		name   string
@@ -388,6 +418,7 @@ func TestCapabilities_toAgentCapabilities(t *testing.T) {
 				ReportsEffectiveConfig:     false,
 				ReportsHealth:              false,
 				ReportsAvailableComponents: false,
+				ReportsHeartbeat:           false,
 			},
 			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
 		},
@@ -397,8 +428,19 @@ func TestCapabilities_toAgentCapabilities(t *testing.T) {
 				ReportsEffectiveConfig:     true,
 				ReportsHealth:              true,
 				ReportsAvailableComponents: true,
+				ReportsHeartbeat:           true,
 			},
-			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus | protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig | protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth | protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents,
+			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus | protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig | protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth | protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents | protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat,
+		},
+		{
+			name: "only heartbeat enabled",
+			fields: fields{
+				ReportsEffectiveConfig:     false,
+				ReportsHealth:              false,
+				ReportsAvailableComponents: false,
+				ReportsHeartbeat:           true,
+			},
+			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus | protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat,
 		},
 	}
 	for _, tt := range tests {
@@ -406,7 +448,8 @@ func TestCapabilities_toAgentCapabilities(t *testing.T) {
 			caps := Capabilities{
 				ReportsEffectiveConfig:     tt.fields.ReportsEffectiveConfig,
 				ReportsHealth:              tt.fields.ReportsHealth,
-				ReportsAvailableComponents: tt.fields.ReportsEffectiveConfig,
+				ReportsAvailableComponents: tt.fields.ReportsAvailableComponents,
+				ReportsHeartbeat:           tt.fields.ReportsHeartbeat,
 			}
 			assert.Equalf(t, tt.want, caps.toAgentCapabilities(), "toAgentCapabilities()")
 		})

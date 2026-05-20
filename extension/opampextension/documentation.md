@@ -8,6 +8,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `extension.opampextension.HeartbeatIntervalNegotiation` | alpha | When enabled, the OpAMP extension defaults `reports_heartbeat` to true. | v0.153.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48043) |
 | `extension.opampextension.RemoteRestarts` | alpha | When enabled, the OpAMP extension supports restart commands from the OpAMP server through the `CommandType_Restart` command. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/45056) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

@@ -10,6 +10,11 @@ status:
     active: [portertech, evan-bradley, tigrannajaryan]
 
 feature_gates:
+  - id: extension.opampextension.HeartbeatIntervalNegotiation
+    description: "When enabled, the OpAMP extension defaults `reports_heartbeat` to true."
+    stage: alpha
+    from_version: "v0.153.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48043
   - id: extension.opampextension.RemoteRestarts
     description: "When enabled, the OpAMP extension supports restart commands from the OpAMP server through the `CommandType_Restart` command."
     stage: alpha
