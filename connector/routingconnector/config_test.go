@@ -376,6 +376,34 @@ func TestValidateConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "otelcol context with statement",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "otelcol",
+						Statement: `route() where otelcol.client.metadata["x-tenant"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "otelcol context with condition",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "otelcol",
+						Condition: `otelcol.client.metadata["x-tenant"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "invalid action value",
 			config: &Config{
 				Table: []RoutingTableItem{
