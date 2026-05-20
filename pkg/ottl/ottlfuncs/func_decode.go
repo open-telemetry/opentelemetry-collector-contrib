@@ -4,10 +4,12 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"golang.org/x/text/encoding"
@@ -46,6 +48,10 @@ type base64Decoder struct {
 }
 
 func (bd base64Decoder) Decode(src []byte) (any, error) {
+	// Trim whitespace so that message bodies with leading/trailing
+	// newlines or spaces (common in event-streaming systems) don't
+	// cause spurious "illegal base64 data at input byte 0" errors.
+	src = bytes.TrimSpace(src)
 	dbuf := make([]byte, bd.enc.DecodedLen(len(src)))
 	n, err := bd.enc.Decode(dbuf, src)
 	if err != nil {
@@ -55,7 +61,7 @@ func (bd base64Decoder) Decode(src []byte) (any, error) {
 }
 
 func (bd base64Decoder) DecodeString(src string) (any, error) {
-	buf, err := bd.enc.DecodeString(src)
+	buf, err := bd.enc.DecodeString(strings.TrimSpace(src))
 	if err != nil {
 		return nil, fmt.Errorf("could not decode: %w", err)
 	}

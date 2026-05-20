@@ -25,6 +25,12 @@ func TestDecode(t *testing.T) {
 	testValueBytes := pcommon.NewValueBytes()
 	testValueBytes.Bytes().FromRaw([]byte{116, 0, 101, 0, 115, 0, 116, 0, 32, 0, 115, 0, 116, 0, 114, 0, 105, 0, 110, 0, 103, 0})
 
+	// pcommon.Value of type Bytes whose raw bytes ARE the base64-encoded text
+	// (mirrors what the azureeventhubreceiver stores in log.body with format:raw
+	// when the event payload is a base64-encoded string).
+	testValueBytesBase64 := pcommon.NewValueBytes()
+	testValueBytesBase64.Bytes().FromRaw([]byte("aGVsbG8gd29ybGQ="))
+
 	type testCase struct {
 		name          string
 		value         any
@@ -40,8 +46,44 @@ func TestDecode(t *testing.T) {
 			want:     "test\n",
 		},
 		{
+			name:     "convert base64 byte array with leading newline",
+			value:    []byte("\naGVsbG8gd29ybGQ="),
+			encoding: "base64",
+			want:     "hello world",
+		},
+		{
+			name:     "convert base64 byte array with trailing newline",
+			value:    []byte("aGVsbG8gd29ybGQ=\n"),
+			encoding: "base64",
+			want:     "hello world",
+		},
+		{
+			name:     "convert base64 ValueBytes (log.body bytes containing base64 text)",
+			value:    testValueBytesBase64,
+			encoding: "base64",
+			want:     "hello world",
+		},
+		{
+			name:     "convert base64 ValueBytes pointer",
+			value:    &testValueBytesBase64,
+			encoding: "base64",
+			want:     "hello world",
+		},
+		{
 			name:     "convert base64 string",
 			value:    "aGVsbG8gd29ybGQ=",
+			encoding: "base64",
+			want:     "hello world",
+		},
+		{
+			name:     "convert base64 string with leading whitespace",
+			value:    "  aGVsbG8gd29ybGQ=",
+			encoding: "base64",
+			want:     "hello world",
+		},
+		{
+			name:     "convert base64 string with trailing whitespace",
+			value:    "aGVsbG8gd29ybGQ=  ",
 			encoding: "base64",
 			want:     "hello world",
 		},
