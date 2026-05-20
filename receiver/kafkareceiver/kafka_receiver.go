@@ -89,6 +89,7 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 				},
 				attrs,
 				headerAttrKeys,
+				config.Logs.ExtractKafkaMetadata,
 			)
 		}, nil
 	}
@@ -116,6 +117,7 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 				},
 				attrs,
 				headerAttrKeys,
+				config.Metrics.ExtractKafkaMetadata,
 			)
 		}, nil
 	}
@@ -143,6 +145,7 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 				},
 				attrs,
 				headerAttrKeys,
+				config.Traces.ExtractKafkaMetadata,
 			)
 		}, nil
 	}
@@ -170,6 +173,7 @@ func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xco
 				},
 				attrs,
 				headerAttrKeys,
+				config.Profiles.ExtractKafkaMetadata,
 			)
 		}, nil
 	}
@@ -363,6 +367,7 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 	handler messageHandler[T],
 	attrs attribute.Set,
 	headerAttrKeys map[string]string,
+	extractKafkaMetadata bool,
 ) error {
 	if logger.Core().Enabled(zap.DebugLevel) {
 		logger.Debug("kafka message received",
@@ -397,6 +402,13 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 		}
 	}
 
+	// Add Kafka record metadata as resource attributes if configured.
+	if extractKafkaMetadata {
+		for resource := range handler.getResources(data) {
+			setKafkaMetadataAttributes(record, config.ConsumerConfig.GroupID, resource.Attributes())
+		}
+	}
+
 	err = handler.consumeData(ctx, data)
 	handler.endObsReport(obsCtx, n, err)
 	return err
@@ -415,6 +427,14 @@ func getMessageHeaderResourceAttributes(headers []kgo.RecordHeader, headerKeys m
 			}
 		}
 	}
+}
+
+// setKafkaMetadataAttributes adds Kafka record metadata as resource attributes.
+func setKafkaMetadataAttributes(record *kgo.Record, consumerGroup string, dest pcommon.Map) {
+	dest.PutStr("kafka.topic", record.Topic)
+	dest.PutInt("kafka.partition", int64(record.Partition))
+	dest.PutInt("kafka.offset", record.Offset)
+	dest.PutStr("kafka.consumer.group", consumerGroup)
 }
 
 // buildHeaderAttrKeys pre-computes the mapping from raw header names to their

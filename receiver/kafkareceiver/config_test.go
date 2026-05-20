@@ -268,6 +268,34 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "extract_kafka_metadata"),
+			expected: &Config{
+				ClientConfig:   configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
+				Logs: TopicEncodingConfig{
+					Topics:               []string{"otlp_logs"},
+					Encoding:             "otlp_proto",
+					ExtractKafkaMetadata: true,
+				},
+				Metrics: TopicEncodingConfig{
+					Topics:   []string{"otlp_metrics"},
+					Encoding: "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topics:               []string{"otlp_spans"},
+					Encoding:             "otlp_proto",
+					ExtractKafkaMetadata: true,
+				},
+				Profiles: TopicEncodingConfig{
+					Topics:   []string{"otlp_profiles"},
+					Encoding: "otlp_proto",
+				},
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -424,4 +452,12 @@ func TestConfigValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTopicEncodingConfigExtractKafkaMetadataDefaultsFalse(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	assert.False(t, cfg.Logs.ExtractKafkaMetadata)
+	assert.False(t, cfg.Metrics.ExtractKafkaMetadata)
+	assert.False(t, cfg.Traces.ExtractKafkaMetadata)
+	assert.False(t, cfg.Profiles.ExtractKafkaMetadata)
 }

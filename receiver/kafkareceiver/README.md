@@ -49,6 +49,7 @@ The following settings can be optionally configured:
   - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
      (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
   - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
+  - `extract_kafka_metadata` (default = false): When true, adds `kafka.topic`, `kafka.partition`, `kafka.offset`, and `kafka.consumer.group` as resource attributes on all consumed telemetry.
 - `metrics`
   - `topic` (Deprecated [v0.142.0]: use `topics`)
      (default = otlp\_metrics): If this is set, it will take precedence over default value of `topics`
@@ -57,6 +58,7 @@ The following settings can be optionally configured:
   - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
      (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
   - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
+  - `extract_kafka_metadata` (default = false): When true, adds `kafka.topic`, `kafka.partition`, `kafka.offset`, and `kafka.consumer.group` as resource attributes on all consumed telemetry.
 - `traces`
   - `topic` (Deprecated [v0.142.0]: use `topics`)
      (default = otlp\_spans): If this is set, it will take precedence over default value of `topics`
@@ -65,6 +67,7 @@ The following settings can be optionally configured:
   - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
      (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
   - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
+  - `extract_kafka_metadata` (default = false): When true, adds `kafka.topic`, `kafka.partition`, `kafka.offset`, and `kafka.consumer.group` as resource attributes on all consumed telemetry.
 - `profiles`
   - `topic`  (Deprecated [v0.142.0]: use `topics`)
      (default = otlp\_profiles): If this is set, it will take precedence over default value of `topics`
@@ -73,6 +76,7 @@ The following settings can be optionally configured:
   - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
      (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
   - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
+  - `extract_kafka_metadata` (default = false): When true, adds `kafka.topic`, `kafka.partition`, `kafka.offset`, and `kafka.consumer.group` as resource attributes on all consumed telemetry.
 - `group_id` (default = otel-collector): The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
 - `rack_id` (default = ""): The rack identifier for this client. When set and brokers are configured with a rack-aware replica selector, the client will prefer fetching from the closest replica.

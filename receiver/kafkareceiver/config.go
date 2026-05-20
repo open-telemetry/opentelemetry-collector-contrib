@@ -156,6 +156,11 @@ type TopicEncodingConfig struct {
 
 	// Optional exclude topics option, used only in regex mode.
 	ExcludeTopics []string `mapstructure:"exclude_topics"`
+
+	// ExtractKafkaMetadata controls whether Kafka record metadata (topic, partition,
+	// offset, consumer group) is added as resource attributes on consumed telemetry.
+	// Defaults to false.
+	ExtractKafkaMetadata bool `mapstructure:"extract_kafka_metadata"`
 }
 
 type MessageMarking struct {
