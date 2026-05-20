@@ -4,13 +4,13 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: awscloudwatchlogsexporter
+component: exporter/awscloudwatchlogs
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add max_event_payload_bytes config option to opt in to CloudWatch Logs' 1 MiB per-event limit (previously hardcoded to 256 KiB).
+note: "Add max_event_payload_bytes config option to opt in to the CloudWatch Logs 1 MiB per-event limit (previously hardcoded to 256 KiB)."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [48559]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

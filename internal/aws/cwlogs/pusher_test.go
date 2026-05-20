@@ -317,7 +317,7 @@ func TestPusher_perPusherMaxEventPayloadBytes(t *testing.T) {
 	t.Run("per-pusher cap raises ceiling above package default", func(t *testing.T) {
 		ev := NewEvent(timestampMs, body)
 		require.NoError(t, ev.validateWithCap(zap.NewNop(), defaultMaxEventPayloadBytes*2))
-		assert.Equal(t, largeSize, len(*ev.InputLogEvent.Message),
+		assert.Len(t, *ev.InputLogEvent.Message, largeSize,
 			"event should pass through untruncated because the per-pusher cap is large enough")
 		assert.NotContains(t, *ev.InputLogEvent.Message, truncatedSuffix)
 	})
