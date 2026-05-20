@@ -83,7 +83,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverDatabaseSecurityRoleMembersCount: SqlserverDatabaseSecurityRoleMembersCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey{SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyDbNamespace},
+						EnabledAttributes:   []SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey{SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyDbNamespace, SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyRole},
 					},
 					SqlserverDatabaseTempdbSpace: SqlserverDatabaseTempdbSpaceMetricConfig{
 						Enabled:             true,
@@ -187,7 +187,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					SqlserverSecurityRoleMembersCount: SqlserverSecurityRoleMembersCountMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SqlserverSecurityRoleMembersCountMetricAttributeKey{SqlserverSecurityRoleMembersCountMetricAttributeKeyRole},
 					},
 					SqlserverTableCount: SqlserverTableCountMetricConfig{
 						Enabled:             true,
@@ -300,7 +302,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverDatabaseSecurityRoleMembersCount: SqlserverDatabaseSecurityRoleMembersCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey{SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyDbNamespace},
+						EnabledAttributes:   []SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey{SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyDbNamespace, SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyRole},
 					},
 					SqlserverDatabaseTempdbSpace: SqlserverDatabaseTempdbSpaceMetricConfig{
 						Enabled:             false,
@@ -404,7 +406,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					SqlserverSecurityRoleMembersCount: SqlserverSecurityRoleMembersCountMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SqlserverSecurityRoleMembersCountMetricAttributeKey{SqlserverSecurityRoleMembersCountMetricAttributeKeyRole},
 					},
 					SqlserverTableCount: SqlserverTableCountMetricConfig{
 						Enabled:             false,

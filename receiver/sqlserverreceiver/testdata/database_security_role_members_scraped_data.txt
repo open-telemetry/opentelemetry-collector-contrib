@@ -3,6 +3,28 @@
         "measurement": "sqlserver_database_security_role_members",
         "sql_instance": "SERVER1",
         "database_name": "testdb",
-        "role_member_count": "12"
+        "role_name": "db_owner",
+        "role_member_count": "2"
+    },
+    {
+        "measurement": "sqlserver_database_security_role_members",
+        "sql_instance": "SERVER1",
+        "database_name": "testdb",
+        "role_name": "db_datareader",
+        "role_member_count": "5"
+    },
+    {
+        "measurement": "sqlserver_database_security_role_members",
+        "sql_instance": "SERVER1",
+        "database_name": "testdb",
+        "role_name": "db_datawriter",
+        "role_member_count": "4"
+    },
+    {
+        "measurement": "sqlserver_database_security_role_members",
+        "sql_instance": "SERVER1",
+        "database_name": "productiondb",
+        "role_name": "db_owner",
+        "role_member_count": "1"
     }
 ]

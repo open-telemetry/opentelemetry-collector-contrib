@@ -37,7 +37,7 @@ all_set:
       attributes: ["db.namespace"]
     sqlserver.database.security.role_members.count:
       enabled: true
-      attributes: ["db.namespace"]
+      attributes: ["db.namespace","role"]
     sqlserver.database.tempdb.space:
       enabled: true
       attributes: ["tempdb.state"]
@@ -105,6 +105,7 @@ all_set:
       enabled: true
     sqlserver.security.role_members.count:
       enabled: true
+      attributes: ["role"]
     sqlserver.table.count:
       enabled: true
       attributes: ["table.state","table.status"]
@@ -256,6 +257,7 @@ reaggregate_set:
       enabled: true
     sqlserver.security.role_members.count:
       enabled: true
+      attributes: []
     sqlserver.table.count:
       enabled: true
       attributes: []
@@ -339,7 +341,7 @@ none_set:
       attributes: ["db.namespace"]
     sqlserver.database.security.role_members.count:
       enabled: false
-      attributes: ["db.namespace"]
+      attributes: ["db.namespace","role"]
     sqlserver.database.tempdb.space:
       enabled: false
       attributes: ["tempdb.state"]
@@ -407,6 +409,7 @@ none_set:
       enabled: false
     sqlserver.security.role_members.count:
       enabled: false
+      attributes: ["role"]
     sqlserver.table.count:
       enabled: false
       attributes: ["table.state","table.status"]

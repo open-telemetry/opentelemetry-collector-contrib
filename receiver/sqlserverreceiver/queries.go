@@ -1195,14 +1195,18 @@ END
 SELECT
 	'sqlserver_security_role_members' AS [measurement],
 	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+	role_principal.name AS [role_name],
 	COUNT(*) AS [role_member_count]
-FROM sys.server_role_members WITH (NOLOCK)
-{filter_instance_name};
+FROM sys.server_role_members srm WITH (NOLOCK)
+INNER JOIN sys.server_principals role_principal WITH (NOLOCK)
+	ON srm.role_principal_id = role_principal.principal_id
+{filter_instance_name}
+GROUP BY role_principal.name;
 `
 
 func getSQLServerSecurityRoleMembersQuery(instanceName string) string {
 	if instanceName != "" {
-		whereClause := fmt.Sprintf("\tWHERE @@SERVERNAME = '%s'", instanceName)
+		whereClause := fmt.Sprintf("\nWHERE @@SERVERNAME = '%s'", instanceName)
 		r := strings.NewReplacer("{filter_instance_name}", whereClause)
 		return r.Replace(sqlServerSecurityRoleMembersQuery)
 	}
@@ -1275,24 +1279,37 @@ IF @EngineEdition = 5 BEGIN -- Azure SQL Database
 		'sqlserver_database_security_role_members' AS [measurement],
 		REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
 		DB_NAME() AS [database_name],
+		role_principal.name AS [role_name],
 		COUNT(*) AS [role_member_count]
-	FROM sys.database_role_members WITH (NOLOCK)
-	{filter_instance_name};
+	FROM sys.database_role_members drm WITH (NOLOCK)
+	INNER JOIN sys.database_principals role_principal WITH (NOLOCK)
+		ON drm.role_principal_id = role_principal.principal_id
+	{filter_instance_name}
+	GROUP BY role_principal.name;
 END
 ELSE BEGIN
+	-- On-premises SQL Server: query all databases
+	DECLARE @SQL NVARCHAR(MAX) = N'';
+
+	SELECT @SQL = @SQL + N'
+	USE [' + name + N'];
 	SELECT
-		'sqlserver_database_security_role_members' AS [measurement],
-		REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
-		DB_NAME(d.database_id) AS [database_name],
-		(
-			SELECT COUNT(*)
-			FROM sys.database_role_members drm WITH (NOLOCK)
-			WHERE drm.database_id = d.database_id
-		) AS [role_member_count]
-	FROM sys.databases d WITH (NOLOCK)
-	WHERE d.database_id > 4  -- Exclude system databases
-		AND d.state = 0  -- Online only
+		''sqlserver_database_security_role_members'' AS [measurement],
+		REPLACE(@@SERVERNAME, ''\'', '':'') AS [sql_instance],
+		DB_NAME() AS [database_name],
+		role_principal.name AS [role_name],
+		COUNT(*) AS [role_member_count]
+	FROM sys.database_role_members drm WITH (NOLOCK)
+	INNER JOIN sys.database_principals role_principal WITH (NOLOCK)
+		ON drm.role_principal_id = role_principal.principal_id
+	GROUP BY role_principal.name;
+	'
+	FROM sys.databases
+	WHERE database_id > 4  -- Exclude system databases
+		AND state = 0  -- Online only
 	{filter_instance_name};
+
+	EXEC sp_executesql @SQL;
 END
 `
 

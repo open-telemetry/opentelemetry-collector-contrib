@@ -1391,7 +1391,10 @@ func (s *sqlServerScraperHelper) recordSecurityPrincipalsMetrics(ctx context.Con
 }
 
 func (s *sqlServerScraperHelper) recordSecurityRoleMembersMetrics(ctx context.Context) error {
-	const roleMemberCount = "role_member_count"
+	const (
+		roleName        = "role_name"
+		roleMemberCount = "role_member_count"
+	)
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -1406,7 +1409,7 @@ func (s *sqlServerScraperHelper) recordSecurityRoleMembersMetrics(ctx context.Co
 	for i, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 
-		if err := s.mb.RecordSqlserverSecurityRoleMembersCountDataPoint(now, row[roleMemberCount]); err != nil {
+		if err := s.mb.RecordSqlserverSecurityRoleMembersCountDataPoint(now, row[roleMemberCount], row[roleName]); err != nil {
 			errs = append(errs, fmt.Errorf("failed to parse security role members count for row %d: %w", i, err))
 		}
 
@@ -1449,6 +1452,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSecurityPrincipalsMetrics(ctx con
 func (s *sqlServerScraperHelper) recordDatabaseSecurityRoleMembersMetrics(ctx context.Context) error {
 	const (
 		databaseName    = "database_name"
+		roleName        = "role_name"
 		roleMemberCount = "role_member_count"
 	)
 
@@ -1466,7 +1470,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSecurityRoleMembersMetrics(ctx co
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 		rb.SetSqlserverDatabaseName(row[databaseName])
 
-		if err := s.mb.RecordSqlserverDatabaseSecurityRoleMembersCountDataPoint(now, row[roleMemberCount], row[databaseName]); err != nil {
+		if err := s.mb.RecordSqlserverDatabaseSecurityRoleMembersCountDataPoint(now, row[roleMemberCount], row[databaseName], row[roleName]); err != nil {
 			errs = append(errs, fmt.Errorf("failed to parse database security role members count for row %d: %w", i, err))
 		}
 

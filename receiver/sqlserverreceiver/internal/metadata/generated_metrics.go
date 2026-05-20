@@ -1438,14 +1438,14 @@ type metricSqlserverDatabaseSecurityRoleMembersCount struct {
 // init fills sqlserver.database.security.role_members.count metric with initial data.
 func (m *metricSqlserverDatabaseSecurityRoleMembersCount) init() {
 	m.data.SetName("sqlserver.database.security.role_members.count")
-	m.data.SetDescription("Number of database role memberships.")
-	m.data.SetUnit("{memberships}")
+	m.data.SetDescription("Number of members in a database role.")
+	m.data.SetUnit("{members}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverDatabaseSecurityRoleMembersCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
+func (m *metricSqlserverDatabaseSecurityRoleMembersCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, roleAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1455,6 +1455,9 @@ func (m *metricSqlserverDatabaseSecurityRoleMembersCount) recordDataPoint(start 
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyRole) {
+		dp.Attributes().PutStr("role", roleAttributeValue)
 	}
 
 	var s string
@@ -3254,27 +3257,61 @@ func newMetricSqlserverSecurityPrincipalsCount(cfg SqlserverSecurityPrincipalsCo
 }
 
 type metricSqlserverSecurityRoleMembersCount struct {
-	data     pmetric.Metric                                // data buffer for generated metric.
-	config   SqlserverSecurityRoleMembersCountMetricConfig // metric config provided by user.
-	capacity int                                           // max observed number of data points added to the metric.
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        SqlserverSecurityRoleMembersCountMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills sqlserver.security.role_members.count metric with initial data.
 func (m *metricSqlserverSecurityRoleMembersCount) init() {
 	m.data.SetName("sqlserver.security.role_members.count")
-	m.data.SetDescription("Number of server role memberships.")
-	m.data.SetUnit("{memberships}")
+	m.data.SetDescription("Number of members in a server role.")
+	m.data.SetUnit("{members}")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSqlserverSecurityRoleMembersCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSqlserverSecurityRoleMembersCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, roleAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverSecurityRoleMembersCountMetricAttributeKeyRole) {
+		dp.Attributes().PutStr("role", roleAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3287,6 +3324,11 @@ func (m *metricSqlserverSecurityRoleMembersCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSqlserverSecurityRoleMembersCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -4410,12 +4452,12 @@ func (mb *MetricsBuilder) RecordSqlserverDatabaseSecurityPrincipalsCountDataPoin
 }
 
 // RecordSqlserverDatabaseSecurityRoleMembersCountDataPoint adds a data point to sqlserver.database.security.role_members.count metric.
-func (mb *MetricsBuilder) RecordSqlserverDatabaseSecurityRoleMembersCountDataPoint(ts pcommon.Timestamp, inputVal string, dbNamespaceAttributeValue string) error {
+func (mb *MetricsBuilder) RecordSqlserverDatabaseSecurityRoleMembersCountDataPoint(ts pcommon.Timestamp, inputVal string, dbNamespaceAttributeValue string, roleAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SqlserverDatabaseSecurityRoleMembersCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricSqlserverDatabaseSecurityRoleMembersCount.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
+	mb.metricSqlserverDatabaseSecurityRoleMembersCount.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, roleAttributeValue)
 	return nil
 }
 
@@ -4595,12 +4637,12 @@ func (mb *MetricsBuilder) RecordSqlserverSecurityPrincipalsCountDataPoint(ts pco
 }
 
 // RecordSqlserverSecurityRoleMembersCountDataPoint adds a data point to sqlserver.security.role_members.count metric.
-func (mb *MetricsBuilder) RecordSqlserverSecurityRoleMembersCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (mb *MetricsBuilder) RecordSqlserverSecurityRoleMembersCountDataPoint(ts pcommon.Timestamp, inputVal string, roleAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SqlserverSecurityRoleMembersCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricSqlserverSecurityRoleMembersCount.recordDataPoint(mb.startTime, ts, val)
+	mb.metricSqlserverSecurityRoleMembersCount.recordDataPoint(mb.startTime, ts, val, roleAttributeValue)
 	return nil
 }
 

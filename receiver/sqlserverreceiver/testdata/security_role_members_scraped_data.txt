@@ -2,6 +2,25 @@
     {
         "measurement": "sqlserver_security_role_members",
         "sql_instance": "SERVER1",
-        "role_member_count": "32"
+        "role_name": "sysadmin",
+        "role_member_count": "5"
+    },
+    {
+        "measurement": "sqlserver_security_role_members",
+        "sql_instance": "SERVER1",
+        "role_name": "securityadmin",
+        "role_member_count": "3"
+    },
+    {
+        "measurement": "sqlserver_security_role_members",
+        "sql_instance": "SERVER1",
+        "role_name": "serveradmin",
+        "role_member_count": "2"
+    },
+    {
+        "measurement": "sqlserver_security_role_members",
+        "sql_instance": "SERVER1",
+        "role_name": "processadmin",
+        "role_member_count": "1"
     }
 ]

@@ -117,6 +117,10 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [transmit, receive]
+  role:
+    description: The name of the database or server role.
+    type: string
+    requirement_level: recommended
   server.address:
     description: The network address of the server hosting the database.
     type: string
@@ -509,14 +513,14 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database-level security principals including database users, roles, and application roles. The db.namespace attribute contains the database name. Useful for security auditing and access management. Available on SQL Server 2012+.
   sqlserver.database.security.role_members.count:
     enabled: false
-    description: Number of database role memberships.
+    description: Number of members in a database role.
     stability: development
-    unit: "{memberships}"
+    unit: "{members}"
     gauge:
       value_type: int
       input_type: string
-    attributes: [db.namespace]
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database role membership assignments. The db.namespace attribute contains the database name. Critical for monitoring privilege escalation and compliance. Available on SQL Server 2012+.
+    attributes: [db.namespace, role]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Reports the number of members (principals) assigned to each database-level role. The 'db.namespace' attribute identifies the database, and the 'role' attribute identifies the specific role (e.g., db_owner, db_datareader). Critical for monitoring privilege escalation and compliance. Available on SQL Server 2012+.
   sqlserver.database.tempdb.space:
     enabled: false
     description: Total free space in temporary DB.
@@ -774,14 +778,14 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks server-level security principals including SQL logins, Windows logins, and server roles. Essential for security monitoring and compliance auditing. Available on SQL Server 2012+.
   sqlserver.security.role_members.count:
     enabled: false
-    description: Number of server role memberships.
+    description: Number of members in a server role.
     stability: development
-    unit: "{memberships}"
+    unit: "{members}"
     gauge:
       value_type: int
       input_type: string
-    attributes: []
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks server role membership assignments. Critical for monitoring high-privilege access and compliance. Available on SQL Server 2012+.
+    attributes: [role]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Reports the number of members (principals) assigned to each server-level role. The 'role' attribute identifies the specific server role (e.g., sysadmin, securityadmin). Critical for monitoring high-privilege access and compliance. Available on SQL Server 2012+.
   sqlserver.table.count:
     enabled: false
     description: The number of tables.

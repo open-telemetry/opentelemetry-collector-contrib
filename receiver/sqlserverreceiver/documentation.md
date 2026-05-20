@@ -368,19 +368,20 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.database.security.role_members.count
 
-Number of database role memberships.
+Number of members in a database role.
 
-This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database role membership assignments. The db.namespace attribute contains the database name. Critical for monitoring privilege escalation and compliance. Available on SQL Server 2012+.
+This metric is only available when the receiver is configured to directly connect to SQL Server. Reports the number of members (principals) assigned to each database-level role. The 'db.namespace' attribute identifies the database, and the 'role' attribute identifies the specific role (e.g., db_owner, db_datareader). Critical for monitoring privilege escalation and compliance. Available on SQL Server 2012+.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {memberships} | Gauge | Int | Development |
+| {members} | Gauge | Int | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The database name. | Any Str | Recommended | - |
+| role | The name of the database or server role. | Any Str | Recommended | - |
 
 ### sqlserver.database.tempdb.space
 
@@ -601,13 +602,19 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.security.role_members.count
 
-Number of server role memberships.
+Number of members in a server role.
 
-This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks server role membership assignments. Critical for monitoring high-privilege access and compliance. Available on SQL Server 2012+.
+This metric is only available when the receiver is configured to directly connect to SQL Server. Reports the number of members (principals) assigned to each server-level role. The 'role' attribute identifies the specific server role (e.g., sysadmin, securityadmin). Critical for monitoring high-privilege access and compliance. Available on SQL Server 2012+.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {memberships} | Gauge | Int | Development |
+| {members} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| role | The name of the database or server role. | Any Str | Recommended | - |
 
 ### sqlserver.table.count
 

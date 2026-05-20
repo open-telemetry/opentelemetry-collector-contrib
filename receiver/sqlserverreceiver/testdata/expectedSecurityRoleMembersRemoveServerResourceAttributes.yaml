@@ -12,10 +12,98 @@ resourceMetrics:
             stringValue: SERVER1
     scopeMetrics:
       - metrics:
-          - description: Count of server-level role member assignments.
+          - description: Number of members in a server role.
             gauge:
               dataPoints:
-                - asInt: "32"
+                - asInt: "5"
+                  attributes:
+                    - key: role
+                      value:
+                        stringValue: sysadmin
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.security.role_members.count
+            unit: '{members}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Number of members in a server role.
+            gauge:
+              dataPoints:
+                - asInt: "3"
+                  attributes:
+                    - key: role
+                      value:
+                        stringValue: securityadmin
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.security.role_members.count
+            unit: '{members}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Number of members in a server role.
+            gauge:
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: role
+                      value:
+                        stringValue: serveradmin
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.security.role_members.count
+            unit: '{members}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Number of members in a server role.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: role
+                      value:
+                        stringValue: processadmin
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.security.role_members.count

@@ -7,17 +7,20 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: testdb
         - key: sqlserver.instance.name
           value:
             stringValue: SERVER1
     scopeMetrics:
       - metrics:
-          - description: Count of database-level users and security principals.
+          - description: Number of security principals (logins, users) at the database level.
             gauge:
               dataPoints:
                 - asInt: "18"
                   attributes:
-                    - key: database_name
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                   startTimeUnixNano: "1000000"

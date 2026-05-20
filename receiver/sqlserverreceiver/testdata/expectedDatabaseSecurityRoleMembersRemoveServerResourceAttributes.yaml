@@ -7,19 +7,127 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: testdb
         - key: sqlserver.instance.name
           value:
             stringValue: SERVER1
     scopeMetrics:
       - metrics:
-          - description: Count of database-level role member assignments.
+          - description: Number of members in a database role.
             gauge:
               dataPoints:
-                - asInt: "12"
+                - asInt: "2"
                   attributes:
-                    - key: database_name
+                    - key: db.namespace
                       value:
                         stringValue: testdb
+                    - key: role
+                      value:
+                        stringValue: db_owner
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.security.role_members.count
+            unit: '{members}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: testdb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Number of members in a database role.
+            gauge:
+              dataPoints:
+                - asInt: "5"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
+                    - key: role
+                      value:
+                        stringValue: db_datareader
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.security.role_members.count
+            unit: '{members}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: testdb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Number of members in a database role.
+            gauge:
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: testdb
+                    - key: role
+                      value:
+                        stringValue: db_datawriter
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.security.role_members.count
+            unit: '{members}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: productiondb
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Number of members in a database role.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: productiondb
+                    - key: role
+                      value:
+                        stringValue: db_owner
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.security.role_members.count

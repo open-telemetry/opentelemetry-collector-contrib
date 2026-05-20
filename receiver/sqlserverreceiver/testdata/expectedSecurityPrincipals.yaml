@@ -18,7 +18,7 @@ resourceMetrics:
             stringValue: SERVER1
     scopeMetrics:
       - metrics:
-          - description: Count of server-level logins and security principals.
+          - description: Number of security principals (logins, users) at the server level.
             gauge:
               dataPoints:
                 - asInt: "45"
