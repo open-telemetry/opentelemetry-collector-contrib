@@ -10,6 +10,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"os"
 	"testing"
@@ -117,30 +118,59 @@ func createMockCertFile(t *testing.T, expiry time.Time) string {
 
 // createMockJKSFile creates a JKS keystore containing a single TrustedCertificateEntry
 // and returns its absolute path.
-func createMockJKSFile(t *testing.T, expiry time.Time, password string) string {
+func createMockJKSFile(t *testing.T, expiry time.Time, password string, numTrustedCerts, numPrivateKeys int) string {
 	t.Helper()
 
-	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	require.NoError(t, err)
-
-	template := &x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject:      pkix.Name{CommonName: "jks-test.example.com"},
-		Issuer:       pkix.Name{CommonName: "JKSIssuer"},
-		NotBefore:    time.Now().Add(-1 * time.Hour),
-		NotAfter:     expiry,
-	}
-	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &privKey.PublicKey, privKey)
-	require.NoError(t, err)
-
 	ks := keystorego.New()
-	err = ks.SetTrustedCertificateEntry("test-alias", keystorego.TrustedCertificateEntry{
-		Certificate: keystorego.Certificate{
-			Type:    "X.509",
-			Content: certDER,
-		},
-	})
-	require.NoError(t, err)
+
+	for i := range numTrustedCerts {
+		privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		require.NoError(t, err)
+
+		template := &x509.Certificate{
+			SerialNumber: big.NewInt(int64(i + 1)),
+			Subject:      pkix.Name{CommonName: fmt.Sprintf("jks-trusted-%d.example.com", i)},
+			Issuer:       pkix.Name{CommonName: "JKSIssuer"},
+			NotBefore:    time.Now().Add(-1 * time.Hour),
+			NotAfter:     expiry,
+		}
+		certDER, err := x509.CreateCertificate(rand.Reader, template, template, &privKey.PublicKey, privKey)
+		require.NoError(t, err)
+
+		err = ks.SetTrustedCertificateEntry(fmt.Sprintf("trusted-alias-%d", i), keystorego.TrustedCertificateEntry{
+			Certificate: keystorego.Certificate{
+				Type:    "X.509",
+				Content: certDER,
+			},
+		})
+		require.NoError(t, err)
+	}
+
+	for i := range numPrivateKeys {
+		privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		require.NoError(t, err)
+
+		template := &x509.Certificate{
+			SerialNumber: big.NewInt(int64(numTrustedCerts + i + 1)),
+			Subject:      pkix.Name{CommonName: fmt.Sprintf("jks-private-%d.example.com", i)},
+			Issuer:       pkix.Name{CommonName: "JKSIssuer"},
+			NotBefore:    time.Now().Add(-1 * time.Hour),
+			NotAfter:     expiry,
+		}
+		certDER, err := x509.CreateCertificate(rand.Reader, template, template, &privKey.PublicKey, privKey)
+		require.NoError(t, err)
+
+		privKeyDER, err := x509.MarshalPKCS8PrivateKey(privKey)
+		require.NoError(t, err)
+
+		err = ks.SetPrivateKeyEntry(fmt.Sprintf("private-alias-%d", i), keystorego.PrivateKeyEntry{
+			PrivateKey: privKeyDER,
+			CertificateChain: []keystorego.Certificate{
+				{Type: "X.509", Content: certDER},
+			},
+		}, []byte(password))
+		require.NoError(t, err)
+	}
 
 	tmpFile, err := os.CreateTemp(t.TempDir(), "test-keystore-*.jks")
 	require.NoError(t, err)
@@ -456,7 +486,7 @@ func TestScrape_ValidFilepathCertificate(t *testing.T) {
 }
 
 func TestScrape_ValidJKSCertificate(t *testing.T) {
-	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "changeit")
+	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "changeit", 1, 0)
 	cfg := &Config{
 		Targets: []*CertificateTarget{
 			{
@@ -482,14 +512,14 @@ func TestScrape_ValidJKSCertificate(t *testing.T) {
 
 	dp := rm.ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
 	commonName, _ := dp.Attributes().Get("tlscheck.x509.cn")
-	require.Equal(t, "jks-test.example.com", commonName.AsString())
+	require.Equal(t, "jks-trusted-0.example.com", commonName.AsString())
 
 	timeLeft := dp.IntValue()
 	require.Positive(t, timeLeft, "Time left should be positive for a valid JKS cert")
 }
 
 func TestScrape_ExpiredJKSCertificate(t *testing.T) {
-	jksFile := createMockJKSFile(t, time.Date(1999, 1, 1, 0, 0, 0, 0, time.UTC), "changeit")
+	jksFile := createMockJKSFile(t, time.Date(1999, 1, 1, 0, 0, 0, 0, time.UTC), "changeit", 1, 0)
 	cfg := &Config{
 		Targets: []*CertificateTarget{
 			{
@@ -512,7 +542,7 @@ func TestScrape_ExpiredJKSCertificate(t *testing.T) {
 }
 
 func TestScrape_WrongPasswordJKS(t *testing.T) {
-	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "correct-password")
+	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "correct-password", 1, 0)
 	cfg := &Config{
 		Targets: []*CertificateTarget{
 			{
@@ -529,6 +559,44 @@ func TestScrape_WrongPasswordJKS(t *testing.T) {
 	metrics, err := s.scrape(t.Context())
 	require.Error(t, err)
 	require.Equal(t, 0, metrics.DataPointCount())
+}
+
+func TestScrape_JKSMultipleAliases(t *testing.T) {
+	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "changeit", 2, 2)
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath:   jksFile,
+				FileFormat: FileFormatJKS,
+				Password:   configopaque.String("changeit"),
+			},
+		},
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	settings := receivertest.NewNopSettings(factory.Type())
+	s := newScraper(cfg, settings, mockGetConnectionStateValid)
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 4, metrics.ResourceMetrics().Len())
+
+	commonNames := make(map[string]bool)
+	for i := range metrics.ResourceMetrics().Len() {
+		rm := metrics.ResourceMetrics().At(i)
+		target, exists := rm.Resource().Attributes().Get("tlscheck.target")
+		require.True(t, exists)
+		require.Equal(t, jksFile, target.AsString())
+
+		dp := rm.ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+		cn, _ := dp.Attributes().Get("tlscheck.x509.cn")
+		commonNames[cn.AsString()] = true
+		require.Positive(t, dp.IntValue(), "Time left should be positive for a valid JKS cert")
+	}
+	require.Contains(t, commonNames, "jks-trusted-0.example.com")
+	require.Contains(t, commonNames, "jks-trusted-1.example.com")
+	require.Contains(t, commonNames, "jks-private-0.example.com")
+	require.Contains(t, commonNames, "jks-private-1.example.com")
 }
 
 func TestScrape_ValidPKCS12Certificate(t *testing.T) {
@@ -599,7 +667,7 @@ func TestScrape_WrongPasswordPKCS12(t *testing.T) {
 }
 
 func TestScrape_AutoDetectJKSByExtension(t *testing.T) {
-	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "changeit")
+	jksFile := createMockJKSFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC), "changeit", 1, 0)
 	// FileFormat deliberately omitted; resolveFileFormat infers JKS from ".jks" extension
 	cfg := &Config{
 		Targets: []*CertificateTarget{
