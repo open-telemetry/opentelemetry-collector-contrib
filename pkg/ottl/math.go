@@ -11,18 +11,17 @@ import (
 )
 
 func (p *Parser[K]) evaluateMathExpression(expr *mathExpression) (Getter[K], error) {
-	mainGetter, err := p.evaluateAddSubTerm(expr.Left)
+	mainGetter, err := p.evaluateBitwiseOrTerm(expr.Left)
 	if err != nil {
 		return nil, err
 	}
 	for _, rhs := range expr.Right {
-		getter, err := p.evaluateAddSubTerm(rhs.Term)
+		getter, err := p.evaluateBitwiseOrTerm(rhs.Term)
 		if err != nil {
 			return nil, err
 		}
 		mainGetter = attemptMathOperation(mainGetter, rhs.Operator, getter)
 	}
-
 	return mainGetter, nil
 }
 
@@ -85,6 +84,36 @@ func (p *Parser[K]) evaluateMathValue(val *mathValue) (Getter[K], error) {
 	}
 }
 
+func (p *Parser[K]) evaluateBitwiseOrTerm(term *bitwiseOrTerm) (Getter[K], error) {
+	mainGetter, err := p.evaluateBitwiseAndTerm(term.Left)
+	if err != nil {
+		return nil, err
+	}
+	for _, rhs := range term.Right {
+		getter, err := p.evaluateBitwiseAndTerm(rhs.Term)
+		if err != nil {
+			return nil, err
+		}
+		mainGetter = attemptMathOperation(mainGetter, rhs.Operator, getter)
+	}
+	return mainGetter, nil
+}
+
+func (p *Parser[K]) evaluateBitwiseAndTerm(term *bitwiseAndTerm) (Getter[K], error) {
+	mainGetter, err := p.evaluateAddSubTerm(term.Left)
+	if err != nil {
+		return nil, err
+	}
+	for _, rhs := range term.Right {
+		getter, err := p.evaluateAddSubTerm(rhs.Term)
+		if err != nil {
+			return nil, err
+		}
+		mainGetter = attemptMathOperation(mainGetter, rhs.Operator, getter)
+	}
+	return mainGetter, nil
+}
+
 func negateGetter[K any](baseGetter Getter[K]) Getter[K] {
 	return &exprGetter[K]{
 		expr: Expr[K]{
@@ -117,6 +146,14 @@ func attemptMathOperation[K any](lhs Getter[K], op mathOp, rhs Getter[K]) Getter
 				y, err := rhs.Get(ctx, tCtx)
 				if err != nil {
 					return nil, err
+				}
+				if op == bitwiseAnd || op == bitwiseOr {
+					xInt, xOk := x.(int64)
+					yInt, yOk := y.(int64)
+					if !xOk || !yOk {
+						return nil, fmt.Errorf("bitwise operations require int64 operands, got %T and %T", x, y)
+					}
+					return performBitwiseOp(xInt, yInt, op)
 				}
 				switch newX := x.(type) {
 				case int64:
@@ -230,4 +267,14 @@ func performOp[N int64 | float64](x, y N, op mathOp) (N, error) {
 		return x / y, nil
 	}
 	return 0, fmt.Errorf("invalid operation %v", op)
+}
+
+func performBitwiseOp(x, y int64, op mathOp) (int64, error) {
+	switch op {
+	case bitwiseAnd:
+		return x & y, nil
+	case bitwiseOr:
+		return x | y, nil
+	}
+	return 0, fmt.Errorf("invalid bitwise operation %v", op)
 }

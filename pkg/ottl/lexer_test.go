@@ -94,8 +94,16 @@ func Test_lexer(t *testing.T) {
 			{"OpNot", "not"},
 			{"Boolean", "false"},
 		}},
-		{"nothing_recognizable", "|", true, []result{
-			{"", ""},
+		{"bitwise_or", "|", false, []result{
+			{"OpBitwiseOr", "|"},
+		}},
+		{"bitwise_and", "&", false, []result{{"OpBitwiseAnd", "&"}}},
+		{"bitwise_expression", "3 & 5 | 1", false, []result{
+			{"Int", "3"},
+			{"OpBitwiseAnd", "&"},
+			{"Int", "5"},
+			{"OpBitwiseOr", "|"},
+			{"Int", "1"},
 		}},
 		{"basic_ident_expr", `set(attributes["bytes"], 0x0102030405060708)`, false, []result{
 			{"Lowercase", "set"},

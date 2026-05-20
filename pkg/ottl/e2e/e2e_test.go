@@ -1832,6 +1832,41 @@ func Test_e2e_ottl_features(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "1:4KOPjy2bsV43uY/mf4HtwyZkwqM=")
 			},
 		},
+		{
+			name:      "bitwise AND with literals",
+			statement: `set(attributes["result"], 255 & 15)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("result", 15)
+			},
+		},
+		{
+			name:      "bitwise OR with literals",
+			statement: `set(attributes["result"], 5 | 3)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("result", 7)
+			},
+		},
+		{
+			name:      "bitwise AND precedence over OR",
+			statement: `set(attributes["result"], 5 | 3 & 6)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("result", 7)
+			},
+		},
+		{
+			name:      "bitwise with arithmetic precedence",
+			statement: `set(attributes["result"], 1 + 2 | 4)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("result", 7)
+			},
+		},
+		{
+			name:      "bitwise with parentheses",
+			statement: `set(attributes["result"], (5 | 3) & 6)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("result", 6)
+			},
+		},
 	}
 
 	for _, tt := range tests {

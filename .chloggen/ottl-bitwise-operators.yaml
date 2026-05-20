@@ -1,0 +1,11 @@
+change_type: enhancement
+component: pkg/ottl
+issues: [45560]
+note: |
+  Add bitwise AND (&) and OR (|) operators for int64 values in math expressions.
+  Bitwise AND (&) and OR (|) can now be used in OTTL math expressions.
+  They operate on int64 values only and follow standard precedence:
+  multiply/divide > add/subtract > bitwise AND > bitwise OR
+  Example:
+  set(attributes["masked"], attributes["flags"] & 0xFF)
+default_service_change: false

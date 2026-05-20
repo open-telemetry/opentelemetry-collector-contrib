@@ -1308,20 +1308,24 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								MathExpression: &mathExpression{
-									Left: &addSubTerm{
-										Left: &mathValue{
-											Literal: &mathExprLiteral{
-												Int: ottltest.Intp(1000),
-											},
-										},
-									},
-									Right: []*opAddSubTerm{
-										{
-											Operator: sub,
-											Term: &addSubTerm{
+									Left: &bitwiseOrTerm{
+										Left: &bitwiseAndTerm{
+											Left: &addSubTerm{
 												Left: &mathValue{
 													Literal: &mathExprLiteral{
-														Int: ottltest.Intp(600),
+														Int: ottltest.Intp(1000),
+													},
+												},
+											},
+											Right: []*opAddSubTerm{
+												{
+													Operator: sub,
+													Term: &addSubTerm{
+														Left: &mathValue{
+															Literal: &mathExprLiteral{
+																Int: ottltest.Intp(600),
+															},
+														},
 													},
 												},
 											},
@@ -1338,28 +1342,32 @@ func Test_parse(t *testing.T) {
 							Comparison: &comparison{
 								Left: value{
 									MathExpression: &mathExpression{
-										Left: &addSubTerm{
-											Left: &mathValue{
-												Literal: &mathExprLiteral{
-													Int: ottltest.Intp(1),
-												},
-											},
-										},
-										Right: []*opAddSubTerm{
-											{
-												Operator: add,
-												Term: &addSubTerm{
+										Left: &bitwiseOrTerm{
+											Left: &bitwiseAndTerm{
+												Left: &addSubTerm{
 													Left: &mathValue{
 														Literal: &mathExprLiteral{
 															Int: ottltest.Intp(1),
 														},
 													},
-													Right: []*opMultDivValue{
-														{
-															Operator: mult,
-															Value: &mathValue{
+												},
+												Right: []*opAddSubTerm{
+													{
+														Operator: add,
+														Term: &addSubTerm{
+															Left: &mathValue{
 																Literal: &mathExprLiteral{
-																	Int: ottltest.Intp(2),
+																	Int: ottltest.Intp(1),
+																},
+															},
+															Right: []*opMultDivValue{
+																{
+																	Operator: mult,
+																	Value: &mathValue{
+																		Literal: &mathExprLiteral{
+																			Int: ottltest.Intp(2),
+																		},
+																	},
 																},
 															},
 														},
@@ -1372,30 +1380,34 @@ func Test_parse(t *testing.T) {
 								Op: eq,
 								Right: value{
 									MathExpression: &mathExpression{
-										Left: &addSubTerm{
-											Left: &mathValue{
-												Literal: &mathExprLiteral{
-													Path: &path{
-														Pos: lexer.Position{
-															Offset: 55,
-															Line:   1,
-															Column: 56,
-														},
-														Fields: []field{
-															{
-																Name: "three",
+										Left: &bitwiseOrTerm{
+											Left: &bitwiseAndTerm{
+												Left: &addSubTerm{
+													Left: &mathValue{
+														Literal: &mathExprLiteral{
+															Path: &path{
+																Pos: lexer.Position{
+																	Offset: 55,
+																	Line:   1,
+																	Column: 56,
+																},
+																Fields: []field{
+																	{
+																		Name: "three",
+																	},
+																},
 															},
 														},
 													},
-												},
-											},
-											Right: []*opMultDivValue{
-												{
-													Operator: div,
-													Value: &mathValue{
-														Literal: &mathExprLiteral{
-															Converter: &converter{
-																Function: "One",
+													Right: []*opMultDivValue{
+														{
+															Operator: div,
+															Value: &mathValue{
+																Literal: &mathExprLiteral{
+																	Converter: &converter{
+																		Function: "One",
+																	},
+																},
 															},
 														},
 													},
@@ -1518,28 +1530,32 @@ func Test_parseCondition_full(t *testing.T) {
 						Comparison: &comparison{
 							Left: value{
 								MathExpression: &mathExpression{
-									Left: &addSubTerm{
-										Left: &mathValue{
-											Literal: &mathExprLiteral{
-												Int: ottltest.Intp(1),
-											},
-										},
-									},
-									Right: []*opAddSubTerm{
-										{
-											Operator: add,
-											Term: &addSubTerm{
+									Left: &bitwiseOrTerm{
+										Left: &bitwiseAndTerm{
+											Left: &addSubTerm{
 												Left: &mathValue{
 													Literal: &mathExprLiteral{
 														Int: ottltest.Intp(1),
 													},
 												},
-												Right: []*opMultDivValue{
-													{
-														Operator: mult,
-														Value: &mathValue{
+											},
+											Right: []*opAddSubTerm{
+												{
+													Operator: add,
+													Term: &addSubTerm{
+														Left: &mathValue{
 															Literal: &mathExprLiteral{
-																Int: ottltest.Intp(2),
+																Int: ottltest.Intp(1),
+															},
+														},
+														Right: []*opMultDivValue{
+															{
+																Operator: mult,
+																Value: &mathValue{
+																	Literal: &mathExprLiteral{
+																		Int: ottltest.Intp(2),
+																	},
+																},
 															},
 														},
 													},
@@ -1552,30 +1568,34 @@ func Test_parseCondition_full(t *testing.T) {
 							Op: eq,
 							Right: value{
 								MathExpression: &mathExpression{
-									Left: &addSubTerm{
-										Left: &mathValue{
-											Literal: &mathExprLiteral{
-												Path: &path{
-													Pos: lexer.Position{
-														Offset: 13,
-														Line:   1,
-														Column: 14,
-													},
-													Fields: []field{
-														{
-															Name: "three",
+									Left: &bitwiseOrTerm{
+										Left: &bitwiseAndTerm{
+											Left: &addSubTerm{
+												Left: &mathValue{
+													Literal: &mathExprLiteral{
+														Path: &path{
+															Pos: lexer.Position{
+																Offset: 13,
+																Line:   1,
+																Column: 14,
+															},
+															Fields: []field{
+																{
+																	Name: "three",
+																},
+															},
 														},
 													},
 												},
-											},
-										},
-										Right: []*opMultDivValue{
-											{
-												Operator: div,
-												Value: &mathValue{
-													Literal: &mathExprLiteral{
-														Converter: &converter{
-															Function: "One",
+												Right: []*opMultDivValue{
+													{
+														Operator: div,
+														Value: &mathValue{
+															Literal: &mathExprLiteral{
+																Converter: &converter{
+																	Function: "One",
+																},
+															},
 														},
 													},
 												},

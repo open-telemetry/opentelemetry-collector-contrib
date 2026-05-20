@@ -197,9 +197,14 @@ When defining an OTTL function, if the function needs to take an Enum then the f
 
 ### Math Expressions
 
-Math Expressions represent arithmetic calculations.  They support `+`, `-`, `*`, and `/`, along with `()` for grouping.
+Math Expressions represent arithmetic calculations.  They support `+`, `-`, `*`, `/`, `&` (bitwise AND), and `|` (bitwise OR), along with `()` for grouping.
 
 Math Expressions currently support `int64`, `float64`, `time.Time` and `time.Duration`.
+
+#### Arithmetic operators
+
+For `int64` and `float64`, all arithmetic operators (`+`, `-`, `*`, `/`) are supported.
+
 For `time.Time` and `time.Duration`, only `+` and `-` are supported with the following rules:
 - A `time.Time` `-` a `time.Time` yields a `time.Duration`.
 - A `time.Duration` `+` a `time.Time` yields a `time.Time`.
@@ -208,11 +213,31 @@ For `time.Time` and `time.Duration`, only `+` and `-` are supported with the fol
 - A `time.Duration` `+` a `time.Duration` yields a `time.Duration`.
 - A `time.Duration` `-` a `time.Duration` yields a `time.Duration`.
 
-Math Expressions support `Paths` and `Editors` that return supported types.
-Note that `*` and `/` take precedence over `+` and `-`.
-Also note that `time.Time` and `time.Duration` can only be used with `+` and `-`.
+#### Bitwise operators
+
+The bitwise operators `&` (AND) and `|` (OR) operate only on `int64` values. Using them with `float64`, `time.Time`, or `time.Duration` operands will result in an error.
+
+Example bitwise expressions:
+- `attributes["flags"] & 0x01` — test if a flag bit is set
+- `attributes["a"] | attributes["b"]` — combine flag values
+
+#### Operator precedence
+
+Operators are listed below from highest to lowest precedence. Operators on the same line have the same precedence.
+
+| Precedence | Operators   | Description              |
+|------------|-------------|--------------------------|
+| 1 (highest)| `*` `/`     | Multiplication, Division |
+| 2          | `+` `-`     | Addition, Subtraction    |
+| 3          | `&`         | Bitwise AND              |
+| 4 (lowest) | `\|`        | Bitwise OR               |
+
 Operations that share the same level of precedence will be executed in the order that they appear in the Math Expression.
 Math Expressions can be grouped with parentheses to override evaluation precedence.
+
+#### Type rules
+
+Math Expressions support `Paths` and `Editors` that return supported types.
 Math Expressions that mix `int64` and `float64` will result in an error.
 It is up to the function using the Math Expression to determine what to do with that error and the default return value of `nil`.
 Division by zero is gracefully handled with an error, but other arithmetic operations that would result in a panic will still result in a panic.
@@ -225,7 +250,8 @@ Example Math Expressions
 - `1 + 1`
 - `end_time_unix_nano - end_time_unix_nano`
 - `sum([1, 2, 3, 4]) + (10 / 1) - 1`
-
+- `attributes["flags"] & 0xFF`
+- `attributes["a"] | attributes["b"] & attributes["c"]`
 
 ### Boolean Expressions
 
