@@ -1,0 +1,20 @@
+azuresecretsmanagerauth/client:
+  client_auth:
+    key_vault_uri: "https://my-vault.vault.azure.net"
+    secret_name: "otel-collector-creds"
+    username_key: "username"
+    password_key: "password"
+    refresh_interval: "5m"
+
+azuresecretsmanagerauth/server:
+  htpasswd:
+    key_vault_uri: "https://my-vault.vault.azure.net"
+    secret_name: "otel-collector-htpasswd"
+    refresh_interval: "5m"
+
+azuresecretsmanagerauth/server_json:
+  htpasswd:
+    key_vault_uri: "https://my-vault.vault.azure.net"
+    secret_name: "otel-collector-htpasswd-json"
+    value_key: "htpasswd_content"
+    refresh_interval: "5m"
