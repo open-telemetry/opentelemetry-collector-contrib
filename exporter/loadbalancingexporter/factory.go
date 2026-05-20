@@ -14,8 +14,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	metricnoop "go.opentelemetry.io/otel/metric/noop"
-	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -65,20 +63,31 @@ func buildExporterSettings(typ component.Type, params exporter.Settings, endpoin
 		params.ID = component.NewID(typ)
 	}
 	telemetry := params.TelemetrySettings
-	telemetry.MeterProvider = metricnoop.NewMeterProvider()
-	telemetry.TracerProvider = tracenoop.NewTracerProvider()
 	params.Logger = params.Logger.With(zap.String(zapEndpointKey, endpoint))
 	telemetry.Logger = params.Logger
 	params.TelemetrySettings = telemetry
 	return params
 }
 
+func buildExporterQueueSettings(cfg *Config) configoptional.Optional[exporterhelper.QueueBatchConfig] {
+	if !cfg.QueueSettings.HasValue() {
+		return configoptional.None[exporterhelper.QueueBatchConfig]()
+	}
+
+	queueSettings := *cfg.QueueSettings.Get()
+	if cfg.Enabled && queueSettings.StorageID == nil {
+		queueSettings.WaitForResult = true
+	}
+
+	return configoptional.Some(queueSettings)
+}
+
 func buildExporterResilienceOptions(options []exporterhelper.Option, cfg *Config) []exporterhelper.Option {
 	if cfg.TimeoutSettings.Timeout > 0 {
 		options = append(options, exporterhelper.WithTimeout(cfg.TimeoutSettings))
 	}
-	if cfg.QueueSettings.HasValue() {
-		options = append(options, exporterhelper.WithQueue(cfg.QueueSettings))
+	if queueSettings := buildExporterQueueSettings(cfg); queueSettings.HasValue() {
+		options = append(options, exporterhelper.WithQueue(queueSettings))
 	}
 	if cfg.Enabled {
 		options = append(options, exporterhelper.WithRetry(cfg.BackOffConfig))
