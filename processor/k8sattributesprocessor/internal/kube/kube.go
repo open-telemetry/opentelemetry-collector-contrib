@@ -175,9 +175,6 @@ type deleteRequest struct {
 	// contains uid of pod to remove from pods map
 	podUID string
 	ts     time.Time
-	// cancelled is true when this delayed delete was created for a stale identifier,
-	// but the identifier became current again before the grace period expired.
-	cancelled bool
 }
 
 // Filters is used to instruct the client on how to filter out k8s pods.

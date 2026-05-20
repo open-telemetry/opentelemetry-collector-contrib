@@ -34,24 +34,21 @@ import (
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
 type WatchClient struct {
-	m                   sync.RWMutex
-	deleteMut           sync.Mutex
-	logger              *zap.Logger
-	kc                  kubernetes.Interface
-	mc                  clientmeta.Interface
-	informer            cache.SharedInformer
-	namespaceInformer   cache.SharedInformer
-	nodeInformer        cache.SharedInformer
-	deploymentInformer  cache.SharedInformer
-	statefulsetInformer cache.SharedInformer
-	daemonsetInformer   cache.SharedInformer
-	jobInformer         cache.SharedInformer
-	replicasetInformer  cache.SharedInformer
-	cronJobRegex        *regexp.Regexp
-	deleteQueue         []*deleteRequest
-	// pendingStaleDeletes indexes delayed deletes created when an identifier disappears on pod update.
-	// The value points to the matching deleteQueue entry so it can be cancelled if the identifier returns.
-	pendingStaleDeletes    map[pendingStaleDeleteKey]*deleteRequest
+	m                      sync.RWMutex
+	deleteMut              sync.Mutex
+	logger                 *zap.Logger
+	kc                     kubernetes.Interface
+	mc                     clientmeta.Interface
+	informer               cache.SharedInformer
+	namespaceInformer      cache.SharedInformer
+	nodeInformer           cache.SharedInformer
+	deploymentInformer     cache.SharedInformer
+	statefulsetInformer    cache.SharedInformer
+	daemonsetInformer      cache.SharedInformer
+	jobInformer            cache.SharedInformer
+	replicasetInformer     cache.SharedInformer
+	cronJobRegex           *regexp.Regexp
+	deleteQueue            []deleteRequest
 	stopCh                 chan struct{}
 	waitForMetadata        bool
 	waitForMetadataTimeout time.Duration
@@ -62,7 +59,7 @@ type WatchClient struct {
 	Pods map[PodIdentifier]*Pod
 	// podIdentifiers tracks the PodIdentifier keys associated with each pod UID so
 	// identifiers that disappear on pod update can be cleaned after the delete grace period.
-	podIdentifiers map[string]map[PodIdentifier]struct{}
+	podIdentifiers map[string]map[PodIdentifier]podIdentifierState
 	Rules          ExtractionRules
 	Filters        Filters
 	Associations   []Association
@@ -112,9 +109,10 @@ const podTemplateHashLabel = "pod-template-hash"
 
 var errCannotRetrieveImage = errors.New("cannot retrieve image name")
 
-type pendingStaleDeleteKey struct {
-	podUID string
-	id     PodIdentifier
+type podIdentifierState struct {
+	// staleSinceUnixNano is zero when the identifier is currently active.
+	// Non-zero values identify since when the stale period represented by a delayed delete request started.
+	staleSinceUnixNano int64
 }
 
 type InformersFactoryList struct {
@@ -157,7 +155,7 @@ func New(
 	}
 
 	c.Pods = map[PodIdentifier]*Pod{}
-	c.podIdentifiers = map[string]map[PodIdentifier]struct{}{}
+	c.podIdentifiers = map[string]map[PodIdentifier]podIdentifierState{}
 	c.Namespaces = map[string]*Namespace{}
 	c.Nodes = map[string]*Node{}
 	c.ReplicaSets = map[string]*ReplicaSet{}
@@ -764,7 +762,6 @@ func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 func (c *WatchClient) deleteLoopProcessing(gracePeriod time.Duration) {
 	var cutoff int
 	now := time.Now()
-	c.m.Lock()
 	c.deleteMut.Lock()
 	for i := range c.deleteQueue {
 		d := c.deleteQueue[i]
@@ -775,28 +772,37 @@ func (c *WatchClient) deleteLoopProcessing(gracePeriod time.Duration) {
 	}
 	toDelete := c.deleteQueue[:cutoff]
 	c.deleteQueue = c.deleteQueue[cutoff:]
+	c.deleteMut.Unlock()
 
+	c.m.Lock()
 	deleted := false
 	for i := range toDelete {
 		d := toDelete[i]
-		if d.cancelled {
-			continue
-		}
-		key := pendingStaleDeleteKey{podUID: d.podUID, id: d.id}
-		if c.pendingStaleDeletes[key] == d {
-			delete(c.pendingStaleDeletes, key)
+		identifiers := c.podIdentifiers[d.podUID]
+		identifierState, indexed := identifiers[d.id]
+		if indexed {
+			// staleSinceUnixNano == 0 means the identifier is currently active.
+			// Otherwise, we check if the stale period is identical to the delete request timestamp in order to avoid deleting the identifier prematurely.
+			if identifierState.staleSinceUnixNano == 0 || identifierState.staleSinceUnixNano != d.ts.UnixNano() {
+				continue
+			}
+			delete(identifiers, d.id)
+			if len(identifiers) == 0 {
+				delete(c.podIdentifiers, d.podUID)
+			}
 		}
 		if p, ok := c.Pods[d.id]; ok {
 			// Sanity check: make sure we are deleting the same pod
 			// and the underlying state (ip<>pod mapping) has not changed.
 			if p.PodUID == d.podUID {
 				delete(c.Pods, d.id)
-				c.removePodIdentifierLocked(d.podUID, d.id)
+				if !indexed {
+					c.removePodIdentifierLocked(d.podUID, d.id)
+				}
 				deleted = true
 			}
 		}
 	}
-	c.deleteMut.Unlock()
 
 	if deleted {
 		c.compactPodMap()
@@ -1616,9 +1622,8 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) int {
 
 	c.m.Lock()
 	if newPod.PodUID != "" {
-		staleIdentifiers = c.getStalePodIdentifiersForDeletionLocked(newPod.PodUID, identifiers)
+		staleIdentifiers = c.markStalePodIdentifiersForDeletionLocked(newPod.PodUID, identifiers)
 	}
-	currentIdentifiers := make([]PodIdentifier, 0, len(identifiers))
 	for i := range identifiers {
 		id := identifiers[i]
 		// compare initial scheduled timestamp for existing pod and new pod with same identifier
@@ -1633,17 +1638,11 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) int {
 		}
 		c.Pods[id] = newPod
 		c.addPodIdentifierLocked(newPod.PodUID, id)
-		currentIdentifiers = append(currentIdentifiers, id)
-	}
-	if len(currentIdentifiers) > 0 {
-		c.deleteMut.Lock()
-		c.cancelStaleDeletesLocked(newPod.PodUID, currentIdentifiers)
-		c.deleteMut.Unlock()
 	}
 	podTableSize := len(c.Pods)
 	c.m.Unlock()
 
-	c.appendDeleteRequests(staleIdentifiers, true)
+	c.appendDeleteRequests(staleIdentifiers)
 	return podTableSize
 }
 
@@ -1658,12 +1657,12 @@ func (c *WatchClient) forgetPod(pod *api_v1.Pod) int {
 	podTableSize := len(c.Pods)
 	c.m.Unlock()
 
-	c.appendDeleteRequests(deleteRequests, false)
+	c.appendDeleteRequests(deleteRequests)
 	return podTableSize
 }
 
-// getStalePodIdentifiersForDeletionLocked returns delete requests for indexed identifiers missing from the current pod state.
-func (c *WatchClient) getStalePodIdentifiersForDeletionLocked(podUID string, identifiers []PodIdentifier) []deleteRequest {
+// markStalePodIdentifiersForDeletionLocked returns delete requests for indexed identifiers missing from the current pod state and marks them as stale by setting the staleSinceUnixNano field.
+func (c *WatchClient) markStalePodIdentifiersForDeletionLocked(podUID string, identifiers []PodIdentifier) []deleteRequest {
 	indexedIdentifiers := c.podIdentifiers[podUID]
 	if len(indexedIdentifiers) == 0 {
 		return nil
@@ -1674,12 +1673,19 @@ func (c *WatchClient) getStalePodIdentifiersForDeletionLocked(podUID string, ide
 		currentIdentifiers[identifiers[i]] = struct{}{}
 	}
 	staleIdentifiers := make([]deleteRequest, 0)
+	now := time.Now()
 	for id := range indexedIdentifiers {
 		if _, ok := currentIdentifiers[id]; ok {
 			continue
 		}
 		if p, ok := c.Pods[id]; ok && p.PodUID == podUID {
-			staleIdentifiers = append(staleIdentifiers, deleteRequest{id: id, podUID: podUID})
+			identifierState := indexedIdentifiers[id]
+			if identifierState.staleSinceUnixNano != 0 {
+				continue
+			}
+			identifierState.staleSinceUnixNano = now.UnixNano()
+			indexedIdentifiers[id] = identifierState
+			staleIdentifiers = append(staleIdentifiers, deleteRequest{id: id, podUID: podUID, ts: now})
 		}
 	}
 	return staleIdentifiers
@@ -1692,10 +1698,10 @@ func (c *WatchClient) addPodIdentifierLocked(podUID string, id PodIdentifier) {
 	}
 	identifiers := c.podIdentifiers[podUID]
 	if identifiers == nil {
-		identifiers = map[PodIdentifier]struct{}{}
+		identifiers = map[PodIdentifier]podIdentifierState{}
 		c.podIdentifiers[podUID] = identifiers
 	}
-	identifiers[id] = struct{}{}
+	identifiers[id] = podIdentifierState{}
 }
 
 // removePodIdentifierLocked removes id from podUID's reverse index entry.
@@ -1707,20 +1713,6 @@ func (c *WatchClient) removePodIdentifierLocked(podUID string, id PodIdentifier)
 	delete(identifiers, id)
 	if len(identifiers) == 0 {
 		delete(c.podIdentifiers, podUID)
-	}
-}
-
-// cancelStaleDeletesLocked invalidates delayed stale deletes when their identifiers become current again.
-func (c *WatchClient) cancelStaleDeletesLocked(podUID string, identifiers []PodIdentifier) {
-	if podUID == "" || len(c.pendingStaleDeletes) == 0 {
-		return
-	}
-	for i := range identifiers {
-		key := pendingStaleDeleteKey{podUID: podUID, id: identifiers[i]}
-		if request := c.pendingStaleDeletes[key]; request != nil {
-			request.cancelled = true
-			delete(c.pendingStaleDeletes, key)
-		}
 	}
 }
 
@@ -1762,19 +1754,23 @@ func (c *WatchClient) buildDeletionRequestsForPodLocked(podUID string, identifie
 // buildDeletionRequestsForIdentifiersLocked converts identifiers owned by podUID into delayed delete requests.
 func (c *WatchClient) buildDeletionRequestsForIdentifiersLocked(podUID string, identifiers []PodIdentifier) []deleteRequest {
 	requests := make([]deleteRequest, 0, len(identifiers))
+	now := time.Now()
 	for i := range identifiers {
 		id := identifiers[i]
 		p, ok := c.Pods[id]
 		if !ok || p.PodUID != podUID {
 			continue
 		}
-		requests = append(requests, deleteRequest{id: id, podUID: podUID})
+		if indexedIdentifiers := c.podIdentifiers[podUID]; indexedIdentifiers != nil {
+			indexedIdentifiers[id] = podIdentifierState{staleSinceUnixNano: now.UnixNano()}
+		}
+		requests = append(requests, deleteRequest{id: id, podUID: podUID, ts: now})
 	}
 	return requests
 }
 
 // appendDeleteRequests appends requests to the delayed delete queue.
-func (c *WatchClient) appendDeleteRequests(requests []deleteRequest, cancellable bool) {
+func (c *WatchClient) appendDeleteRequests(requests []deleteRequest) {
 	if len(requests) == 0 {
 		return
 	}
@@ -1782,21 +1778,10 @@ func (c *WatchClient) appendDeleteRequests(requests []deleteRequest, cancellable
 	now := time.Now()
 	for i := range requests {
 		request := requests[i]
-		request.ts = now
-		req := &request
-		if cancellable {
-			// Cancellable requests are created for identifiers that disappeared on pod update.
-			// Index one pending request per identifier so it can be cancelled if the identifier returns.
-			key := pendingStaleDeleteKey{podUID: request.podUID, id: request.id}
-			if _, ok := c.pendingStaleDeletes[key]; ok {
-				continue
-			}
-			if c.pendingStaleDeletes == nil {
-				c.pendingStaleDeletes = map[pendingStaleDeleteKey]*deleteRequest{}
-			}
-			c.pendingStaleDeletes[key] = req
+		if request.ts.IsZero() {
+			request.ts = now
 		}
-		c.deleteQueue = append(c.deleteQueue, req)
+		c.deleteQueue = append(c.deleteQueue, request)
 	}
 	c.deleteMut.Unlock()
 }

@@ -86,7 +86,7 @@ func podWithIP(name, uid, podIP string, startTime time.Time) *api_v1.Pod {
 	}
 }
 
-func assertDeleteQueueContains(t *testing.T, queue []*deleteRequest, id PodIdentifier, podUID string) {
+func assertDeleteQueueContains(t *testing.T, queue []deleteRequest, id PodIdentifier, podUID string) {
 	t.Helper()
 	for i := range queue {
 		if queue[i].id == id && queue[i].podUID == podUID {
@@ -515,28 +515,52 @@ func TestPodUpdateCancelStaleIdentifierDeletion(t *testing.T) {
 	pod := podWithContainerID("pod-a", "pod-uid", "old-container-id", 0)
 	updatedPod := podWithContainerID("pod-a", "pod-uid", "new-container-id", 1)
 	restoredPod := podWithContainerID("pod-a", "pod-uid", "old-container-id", 2)
+	secondUpdatedPod := podWithContainerID("pod-a", "pod-uid", "new-container-id", 3)
 
 	c.handlePodAdd(pod)
 	c.handlePodUpdate(pod, updatedPod)
 
 	require.Len(t, c.deleteQueue, 1)
 	assert.Equal(t, oldID, c.deleteQueue[0].id)
-	require.Len(t, c.pendingStaleDeletes, 1)
+	assert.NotZero(t, c.podIdentifiers["pod-uid"][oldID].staleSinceUnixNano)
 
 	c.handlePodUpdate(updatedPod, restoredPod)
 
 	require.Len(t, c.deleteQueue, 2)
-	assert.True(t, c.deleteQueue[0].cancelled)
 	assert.Equal(t, oldID, c.deleteQueue[0].id)
-	assert.False(t, c.deleteQueue[1].cancelled)
 	assert.Equal(t, newID, c.deleteQueue[1].id)
-	require.Len(t, c.pendingStaleDeletes, 1)
+	assert.Zero(t, c.podIdentifiers["pod-uid"][oldID].staleSinceUnixNano)
+	assert.NotZero(t, c.podIdentifiers["pod-uid"][newID].staleSinceUnixNano)
+
+	c.handlePodUpdate(restoredPod, secondUpdatedPod)
+
+	require.Len(t, c.deleteQueue, 3)
+	assert.Equal(t, oldID, c.deleteQueue[0].id)
+	assert.Equal(t, newID, c.deleteQueue[1].id)
+	assert.Equal(t, oldID, c.deleteQueue[2].id)
+	assert.NotZero(t, c.podIdentifiers["pod-uid"][oldID].staleSinceUnixNano)
+	assert.Zero(t, c.podIdentifiers["pod-uid"][newID].staleSinceUnixNano)
+
+	gracePeriod := time.Hour
+	expiredTS := c.deleteQueue[2].ts.Add(-2 * gracePeriod)
+	c.deleteQueue[0].ts = expiredTS
+	c.deleteQueue[1].ts = expiredTS
+
+	c.deleteLoopProcessing(gracePeriod)
+
+	assert.Contains(t, c.Pods, oldID)
+	assert.Contains(t, c.Pods, newID)
+	assert.Contains(t, c.podIdentifiers["pod-uid"], oldID)
+	assert.Contains(t, c.podIdentifiers["pod-uid"], newID)
+	require.Len(t, c.deleteQueue, 1)
+	assert.Equal(t, oldID, c.deleteQueue[0].id)
 
 	c.deleteLoopProcessing(0)
 
-	assert.Contains(t, c.Pods, oldID)
-	assert.NotContains(t, c.Pods, newID)
-	assert.Empty(t, c.pendingStaleDeletes)
+	assert.NotContains(t, c.Pods, oldID)
+	assert.Contains(t, c.Pods, newID)
+	assert.NotContains(t, c.podIdentifiers["pod-uid"], oldID)
+	assert.Contains(t, c.podIdentifiers["pod-uid"], newID)
 }
 
 func TestPodDeleteContainerIDAssociation(t *testing.T) {
