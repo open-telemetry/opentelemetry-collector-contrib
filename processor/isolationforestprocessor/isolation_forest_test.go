@@ -16,7 +16,7 @@ import (
 )
 
 func TestOnlineIsolationForestCreation(t *testing.T) {
-	forest := newOnlineIsolationForest(10, 100, 8)
+	forest := newOnlineIsolationForest(10, 100, 8, 0.1, 10)
 
 	assert.Equal(t, 10, forest.numTrees, "Should create forest with specified number of trees")
 	assert.Equal(t, 8, forest.maxDepth, "Should set specified max depth")
@@ -51,7 +51,7 @@ func TestOnlineIsolationForestCreationWithAdaptive(t *testing.T) {
 		StabilityCheckInterval: "2m",
 	}
 
-	forest := newOnlineIsolationForestWithAdaptive(5, 100, 6, adaptiveConfig)
+	forest := newOnlineIsolationForestWithAdaptive(5, 100, 6, adaptiveConfig, 0.1, 10)
 
 	assert.Equal(t, 5, forest.numTrees, "Should create forest with specified number of trees")
 	assert.Equal(t, 6, forest.maxDepth, "Should set specified max depth")
@@ -76,7 +76,7 @@ func TestOnlineIsolationForestCreationWithDisabledAdaptive(t *testing.T) {
 		Enabled: false, // Explicitly disabled
 	}
 
-	forest := newOnlineIsolationForestWithAdaptive(3, 80, 4, adaptiveConfig)
+	forest := newOnlineIsolationForestWithAdaptive(3, 80, 4, adaptiveConfig, 0.1, 10)
 
 	// Should behave like regular forest when disabled
 	expectedCurrentSize := forest.getCurrentWindowSize() // Should return windowSize when disabled
@@ -88,7 +88,7 @@ func TestOnlineIsolationForestCreationWithDisabledAdaptive(t *testing.T) {
 
 // Test adaptive forest creation with nil config
 func TestOnlineIsolationForestCreationWithNilAdaptive(t *testing.T) {
-	forest := newOnlineIsolationForestWithAdaptive(3, 80, 4, nil)
+	forest := newOnlineIsolationForestWithAdaptive(3, 80, 4, nil, 0.1, 10)
 
 	// Should behave like regular forest when nil
 	expectedCurrentSize := forest.getCurrentWindowSize() // Should return windowSize when nil config
@@ -97,7 +97,7 @@ func TestOnlineIsolationForestCreationWithNilAdaptive(t *testing.T) {
 }
 
 func TestBasicAnomalyDetection(t *testing.T) {
-	forest := newOnlineIsolationForest(20, 50, 6)
+	forest := newOnlineIsolationForest(20, 50, 6, 0.1, 10)
 
 	// Generate normal data points (clustered around origin)
 	normalSamples := [][]float64{
@@ -142,7 +142,7 @@ func TestBasicAnomalyDetection(t *testing.T) {
 }
 
 func TestAdaptiveThreshold(t *testing.T) {
-	forest := newOnlineIsolationForest(10, 100, 6)
+	forest := newOnlineIsolationForest(10, 100, 6, 0.1, 10)
 
 	// Track how threshold changes with different score patterns
 	initialStats := forest.GetStatistics()
@@ -181,7 +181,7 @@ func TestAdaptiveThreshold(t *testing.T) {
 }
 
 func TestForestStatistics(t *testing.T) {
-	forest := newOnlineIsolationForest(5, 20, 4)
+	forest := newOnlineIsolationForest(5, 20, 4, 0.1, 10)
 
 	// Initial statistics
 	stats := forest.GetStatistics()
@@ -224,7 +224,7 @@ func TestAdaptiveForestStatistics(t *testing.T) {
 		StabilityCheckInterval: "1m",
 	}
 
-	forest := newOnlineIsolationForestWithAdaptive(3, 50, 4, adaptiveConfig)
+	forest := newOnlineIsolationForestWithAdaptive(3, 50, 4, adaptiveConfig, 0.1, 10)
 
 	// Initial adaptive statistics
 	stats := forest.GetStatistics()
@@ -252,18 +252,18 @@ func TestAdaptiveForestStatistics(t *testing.T) {
 // NEW: Test getCurrentWindowSize method
 func TestGetCurrentWindowSize(t *testing.T) {
 	// Test non-adaptive forest
-	forest := newOnlineIsolationForest(5, 100, 4)
+	forest := newOnlineIsolationForest(5, 100, 4, 0.1, 10)
 	assert.Equal(t, 100, forest.getCurrentWindowSize(), "Should return static window size for non-adaptive")
 
 	// Test adaptive forest (disabled)
 	adaptiveConfig := &AdaptiveWindowConfig{Enabled: false}
-	adaptiveForest := newOnlineIsolationForestWithAdaptive(5, 100, 4, adaptiveConfig)
+	adaptiveForest := newOnlineIsolationForestWithAdaptive(5, 100, 4, adaptiveConfig, 0.1, 10)
 	assert.Equal(t, 100, adaptiveForest.getCurrentWindowSize(), "Should return static window size when disabled")
 
 	// Test adaptive forest (enabled)
 	adaptiveConfig.Enabled = true
 	adaptiveConfig.MinWindowSize = 50
-	adaptiveForest = newOnlineIsolationForestWithAdaptive(5, 100, 4, adaptiveConfig)
+	adaptiveForest = newOnlineIsolationForestWithAdaptive(5, 100, 4, adaptiveConfig, 0.1, 10)
 	assert.Equal(t, 50, adaptiveForest.getCurrentWindowSize(), "Should return current adaptive window size")
 }
 
@@ -276,7 +276,7 @@ func TestVelocityTracking(t *testing.T) {
 		VelocityThreshold: 5.0,
 	}
 
-	forest := newOnlineIsolationForestWithAdaptive(3, 50, 4, adaptiveConfig)
+	forest := newOnlineIsolationForestWithAdaptive(3, 50, 4, adaptiveConfig, 0.1, 10)
 
 	// Process samples rapidly to create velocity
 	for i := range 10 {
@@ -301,7 +301,7 @@ func TestMemoryMonitoring(t *testing.T) {
 		MemoryLimitMB: 64,
 	}
 
-	forest := newOnlineIsolationForestWithAdaptive(3, 50, 4, adaptiveConfig)
+	forest := newOnlineIsolationForestWithAdaptive(3, 50, 4, adaptiveConfig, 0.1, 10)
 
 	// Process samples to generate memory usage
 	for i := range 20 {
@@ -325,7 +325,7 @@ func TestAdaptiveWindowResizing(t *testing.T) {
 		VelocityThreshold: 1.0, // Low threshold to trigger growth
 	}
 
-	forest := newOnlineIsolationForestWithAdaptive(2, 30, 4, adaptiveConfig)
+	forest := newOnlineIsolationForestWithAdaptive(2, 30, 4, adaptiveConfig, 0.1, 10)
 	initialSize := forest.getCurrentWindowSize()
 
 	// Process samples to trigger adaptive behavior
@@ -359,7 +359,7 @@ func TestMinMaxInt(t *testing.T) {
 
 // NEW: Test resizeDataWindow functionality
 func TestResizeDataWindow(t *testing.T) {
-	forest := newOnlineIsolationForest(2, 5, 4)
+	forest := newOnlineIsolationForest(2, 5, 4, 0.1, 10)
 
 	// Fill window partially
 	samples := [][]float64{{1.0}, {2.0}, {3.0}}
@@ -416,7 +416,7 @@ func TestTreePathLength(t *testing.T) {
 }
 
 func TestExpectedPathLength(t *testing.T) {
-	forest := newOnlineIsolationForest(10, 100, 6)
+	forest := newOnlineIsolationForest(10, 100, 6, 0.1, 10)
 
 	// Add some samples to the window
 	samples := [][]float64{
@@ -435,13 +435,13 @@ func TestExpectedPathLength(t *testing.T) {
 
 func TestOnlineIsolationForestCreation_AutoMaxDepth(t *testing.T) {
 	// Test with maxDepth <= 0 to trigger auto-calculation
-	forest := newOnlineIsolationForest(5, 32, 0)
+	forest := newOnlineIsolationForest(5, 32, 0, 0.1, 10)
 	expectedDepth := int(math.Ceil(math.Log2(float64(32)))) // Should be 5
 	assert.Equal(t, expectedDepth, forest.maxDepth, "Should auto-calculate max depth")
 }
 
 func TestProcessSample_EmptySample(t *testing.T) {
-	forest := newOnlineIsolationForest(5, 10, 4)
+	forest := newOnlineIsolationForest(5, 10, 4, 0.1, 10)
 
 	score, isAnomaly := forest.ProcessSample([]float64{})
 	assert.Equal(t, 0.0, score, "Empty sample should return 0 score")
@@ -449,14 +449,14 @@ func TestProcessSample_EmptySample(t *testing.T) {
 }
 
 func TestCalculateAnomalyScore_NoTrees(t *testing.T) {
-	forest := newOnlineIsolationForest(0, 10, 4)
+	forest := newOnlineIsolationForest(0, 10, 4, 0.1, 10)
 
 	score := forest.calculateAnomalyScore([]float64{1.0, 2.0})
 	assert.Equal(t, 0.5, score, "No trees should return neutral score")
 }
 
 func TestCalculateAnomalyScore_NoValidTrees(t *testing.T) {
-	forest := newOnlineIsolationForest(3, 10, 4)
+	forest := newOnlineIsolationForest(3, 10, 4, 0.1, 10)
 	// Keep trees with nil roots
 
 	score := forest.calculateAnomalyScore([]float64{1.0, 2.0})
@@ -464,7 +464,7 @@ func TestCalculateAnomalyScore_NoValidTrees(t *testing.T) {
 }
 
 func TestCalculateAnomalyScore_ScoreBounds(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 10, 4)
+	forest := newOnlineIsolationForest(1, 10, 4, 0.1, 10)
 
 	// Initialize tree with very shallow structure to test score bounds
 	forest.trees[0].root = &onlineTreeNode{
@@ -478,7 +478,7 @@ func TestCalculateAnomalyScore_ScoreBounds(t *testing.T) {
 }
 
 func TestUpdateForest_SlidingWindow(t *testing.T) {
-	forest := newOnlineIsolationForest(2, 3, 4) // Small window for testing
+	forest := newOnlineIsolationForest(2, 3, 4, 0.1, 10) // Small window for testing
 
 	// Fill window beyond capacity to test circular buffer
 	samples := [][]float64{
@@ -495,7 +495,7 @@ func TestUpdateForest_SlidingWindow(t *testing.T) {
 }
 
 func TestUpdateAdaptiveThreshold_InsufficientSamples(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 10, 4)
+	forest := newOnlineIsolationForest(1, 10, 4, 0.1, 10)
 
 	// Add fewer than 50 samples (minimum for threshold update)
 	for range 10 {
@@ -511,7 +511,7 @@ func TestUpdateAdaptiveThreshold_InsufficientSamples(t *testing.T) {
 }
 
 func TestUpdateAdaptiveThreshold_SufficientSamples(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 100, 4)
+	forest := newOnlineIsolationForest(1, 100, 4, 0.1, 10)
 
 	// Add enough samples for threshold adaptation
 	for i := range 60 {
@@ -529,7 +529,7 @@ func TestUpdateAdaptiveThreshold_SufficientSamples(t *testing.T) {
 }
 
 func TestUpdateTreesIncremental(t *testing.T) {
-	forest := newOnlineIsolationForest(20, 10, 4) // Many trees to test subset updates
+	forest := newOnlineIsolationForest(20, 10, 4, 0.1, 10) // Many trees to test subset updates
 
 	sample := []float64{1.0, 2.0}
 	forest.updateTreesIncremental(sample)
@@ -546,7 +546,7 @@ func TestUpdateTreesIncremental(t *testing.T) {
 }
 
 func TestUpdateTree_InitializeRoot(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 10, 4)
+	forest := newOnlineIsolationForest(1, 10, 4, 0.1, 10)
 	tree := forest.trees[0]
 	sample := []float64{1.0, 2.0}
 
@@ -560,7 +560,7 @@ func TestUpdateTree_InitializeRoot(t *testing.T) {
 }
 
 func TestUpdateNodePath_LeafNode(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 10, 4)
+	forest := newOnlineIsolationForest(1, 10, 4, 0.1, 10)
 
 	node := &onlineTreeNode{
 		depth:       2,
@@ -575,7 +575,7 @@ func TestUpdateNodePath_LeafNode(t *testing.T) {
 }
 
 func TestUpdateNodePath_MaxDepthReached(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 10, 2)
+	forest := newOnlineIsolationForest(1, 10, 2, 0.1, 10)
 
 	node := &onlineTreeNode{
 		depth:       2,
@@ -591,7 +591,7 @@ func TestUpdateNodePath_MaxDepthReached(t *testing.T) {
 }
 
 func TestSplitNode_EmptySample(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 10, 4)
+	forest := newOnlineIsolationForest(1, 10, 4, 0.1, 10)
 
 	node := &onlineTreeNode{
 		depth:       1,
@@ -607,7 +607,7 @@ func TestSplitNode_EmptySample(t *testing.T) {
 }
 
 func TestSplitNode_AtMaxDepth(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 10, 2)
+	forest := newOnlineIsolationForest(1, 10, 2, 0.1, 10)
 
 	node := &onlineTreeNode{
 		depth:       2,
@@ -622,7 +622,7 @@ func TestSplitNode_AtMaxDepth(t *testing.T) {
 }
 
 func TestSplitNode_InsufficientData(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 2, 4) // Very small window
+	forest := newOnlineIsolationForest(1, 2, 4, 0.1, 10) // Very small window
 
 	node := &onlineTreeNode{
 		depth:       1,
@@ -640,7 +640,7 @@ func TestSplitNode_InsufficientData(t *testing.T) {
 }
 
 func TestSplitNode_ConstantFeature(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 10, 4)
+	forest := newOnlineIsolationForest(1, 10, 4, 0.1, 10)
 
 	// Fill window with constant values
 	for range 5 {
@@ -660,7 +660,7 @@ func TestSplitNode_ConstantFeature(t *testing.T) {
 }
 
 func TestSplitNode_SuccessfulSplit(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 10, 4)
+	forest := newOnlineIsolationForest(1, 10, 4, 0.1, 10)
 
 	// Fill window with varying values
 	values := [][]float64{{1.0}, {2.0}, {3.0}, {4.0}, {5.0}}
@@ -753,7 +753,7 @@ func TestEstimateRemainingPath(t *testing.T) {
 }
 
 func TestGetWindowData_WindowNotFull(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 5, 4)
+	forest := newOnlineIsolationForest(1, 5, 4, 0.1, 10)
 
 	// Add some data without filling window
 	samples := [][]float64{{1.0}, {2.0}, {3.0}}
@@ -766,7 +766,7 @@ func TestGetWindowData_WindowNotFull(t *testing.T) {
 }
 
 func TestGetWindowData_WindowFull(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 3, 4)
+	forest := newOnlineIsolationForest(1, 3, 4, 0.1, 10)
 
 	// Fill window completely and beyond
 	samples := [][]float64{{1.0}, {2.0}, {3.0}, {4.0}, {5.0}}
@@ -779,7 +779,7 @@ func TestGetWindowData_WindowFull(t *testing.T) {
 }
 
 func TestGetExpectedPathLength_SingleSample(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 10, 4)
+	forest := newOnlineIsolationForest(1, 10, 4, 0.1, 10)
 
 	// Add single sample
 	forest.updateSlidingWindow([]float64{1.0})
@@ -789,14 +789,14 @@ func TestGetExpectedPathLength_SingleSample(t *testing.T) {
 }
 
 func TestGetExpectedPathLength_NoSamples(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 10, 4)
+	forest := newOnlineIsolationForest(1, 10, 4, 0.1, 10)
 
 	expectedLength := forest.getExpectedPathLength()
 	assert.Equal(t, 1.0, expectedLength, "Should return 1.0 for no samples")
 }
 
 func TestConcurrentAccess(t *testing.T) {
-	forest := newOnlineIsolationForest(5, 20, 4)
+	forest := newOnlineIsolationForest(5, 20, 4, 0.1, 10)
 
 	// Test concurrent processing to ensure thread safety
 	done := make(chan bool, 10)
@@ -819,7 +819,7 @@ func TestConcurrentAccess(t *testing.T) {
 }
 
 func TestUpdateNodePath_WithChildren(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 10, 4)
+	forest := newOnlineIsolationForest(1, 10, 4, 0.1, 10)
 
 	root := &onlineTreeNode{
 		featureIndex: 0,
@@ -846,7 +846,7 @@ func TestUpdateNodePath_WithChildren(t *testing.T) {
 }
 
 func TestUpdateNodePath_NodeCreatesChildren(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 10, 4)
+	forest := newOnlineIsolationForest(1, 10, 4, 0.1, 10)
 
 	node := &onlineTreeNode{
 		depth:       1,
@@ -867,7 +867,7 @@ func TestUpdateNodePath_NodeCreatesChildren(t *testing.T) {
 }
 
 func TestSplitNode_EdgeCases(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 10, 4)
+	forest := newOnlineIsolationForest(1, 10, 4, 0.1, 10)
 
 	// Test split with different feature values
 	for range 3 {
@@ -887,7 +887,7 @@ func TestSplitNode_EdgeCases(t *testing.T) {
 }
 
 func TestCalculateAnomalyScore_ExtremeScores(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 10, 4)
+	forest := newOnlineIsolationForest(1, 10, 4, 0.1, 10)
 
 	// Create tree with very shallow path to test score bounds
 	forest.trees[0].root = &onlineTreeNode{
@@ -907,7 +907,7 @@ func TestCalculateAnomalyScore_ExtremeScores(t *testing.T) {
 }
 
 func TestUpdateAdaptiveThreshold_BoundaryValues(t *testing.T) {
-	forest := newOnlineIsolationForest(1, 100, 4)
+	forest := newOnlineIsolationForest(1, 100, 4, 0.1, 10)
 
 	// Add exactly 50 samples (boundary for threshold update)
 	for range 50 {
@@ -923,7 +923,7 @@ func TestUpdateAdaptiveThreshold_BoundaryValues(t *testing.T) {
 }
 
 func TestOnlineForestStatistics_EdgeCases(t *testing.T) {
-	forest := newOnlineIsolationForest(0, 10, 4) // Zero trees
+	forest := newOnlineIsolationForest(0, 10, 4, 0.1, 10) // Zero trees
 
 	stats := forest.GetStatistics()
 	assert.Equal(t, 0, stats.ActiveTrees, "Should report zero active trees")
@@ -933,7 +933,7 @@ func TestOnlineForestStatistics_EdgeCases(t *testing.T) {
 
 // Keep existing benchmark tests
 func BenchmarkIsolationForestProcessing(b *testing.B) {
-	forest := newOnlineIsolationForest(100, 1000, 10)
+	forest := newOnlineIsolationForest(100, 1000, 10, 0.1, 10)
 
 	// Prepare test samples
 	samples := make([][]float64, 1000)
@@ -963,7 +963,7 @@ func BenchmarkAdaptiveIsolationForestProcessing(b *testing.B) {
 		StabilityCheckInterval: "5m",
 	}
 
-	forest := newOnlineIsolationForestWithAdaptive(100, 1000, 10, adaptiveConfig)
+	forest := newOnlineIsolationForestWithAdaptive(100, 1000, 10, adaptiveConfig, 0.1, 10)
 
 	// Prepare test samples
 	samples := make([][]float64, 1000)
