@@ -980,9 +980,11 @@ func (*Supervisor) getHeadersFromSettings(protoHeaders *protobufs.Headers) http.
 
 func (s *Supervisor) onConnect(_ context.Context) {
 	s.telemetrySettings.Logger.Info("Connected to the OpAMP server.")
-	if !s.initialOpampConnSuccess.Load() {
-		s.initialOpampConnSuccess.Store(true)
+
+	if s.initialOpampConnSuccess.Load() {
+		return
 	}
+	s.initialOpampConnSuccess.Store(true)
 
 	fallbackEnabled := s.config.Agent.FallbackEnabled()
 	if !fallbackEnabled {
