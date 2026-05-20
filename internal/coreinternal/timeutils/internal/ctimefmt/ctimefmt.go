@@ -143,24 +143,32 @@ func Parse(format string, parse ParseFunc) (time.Time, string, error) {
 
 // Alternative formats that allow more flexible ctime-compatible parsing.
 // The values are split into discrete time.Parse elements so they can be identified in ParseError.LayoutElem.
-var ctimeParseSubstitutes = map[string][]string{
-	"%m": {"1"},
-	"%o": {"1"},
-	"%q": {"1"},
-	"%d": {"2"},
-	"%e": {"2"},
-	"%g": {"2"},
-	"%I": {"3"},
-	"%M": {"4"},
-	"%S": {"5"},
-	"%D": {"1", "/", "2", "/", "2006"},
-	"%x": {"1", "/", "2", "/", "2006"},
-	"%F": {"2006", "-", "1", "-", "2"},
-	"%T": {"15", ":", "4", ":", "5"},
-	"%X": {"15", ":", "4", ":", "5"},
-	"%r": {"3", ":", "4", ":", "5", " ", "pm"},
-	"%R": {"15", ":", "4"},
-	"%c": {"Mon", " ", "Jan", " ", "2", " ", "15", ":", "4", ":", "5", " ", "2006"},
+// Hour and minute values are parsed with and without a leading zero to work around https://github.com/elastic/lunes/issues/15
+var ctimeParseSubstitutes = map[string][][]string{
+	"%m": {{"1"}},
+	"%o": {{"1"}},
+	"%q": {{"1"}},
+	"%d": {{"2"}},
+	"%e": {{"2"}},
+	"%g": {{"2"}},
+	"%I": {{"3"}},
+	"%M": {{"4"}, {"04"}},
+	"%S": {{"5"}, {"05"}},
+	"%D": {
+		// N.B. The docs above say that %D is equivalent to %m/%d/%y, but the implementation of Format uses %m/%d/%Y. We try to parse as both.
+		{"1", "/", "2", "/", "2006"},
+		{"1", "/", "2", "/", "06"},
+	},
+	"%x": {
+		{"1", "/", "2", "/", "2006"},
+		{"1", "/", "2", "/", "06"},
+	},
+	"%F": {{"2006", "-", "1", "-", "2"}},
+	"%T": {{"15", ":", "4", ":", "5"}, {"15", ":", "04", ":", "05"}},
+	"%X": {{"15", ":", "4", ":", "5"}, {"15", ":", "04", ":", "05"}},
+	"%r": {{"3", ":", "4", ":", "5", " ", "pm"}, {"3", ":", "04", ":", "05", " ", "pm"}},
+	"%R": {{"15", ":", "4"}, {"15", ":", "04"}},
+	"%c": {{"Mon", " ", "Jan", " ", "2", " ", "15", ":", "4", ":", "5", " ", "2006"}},
 }
 
 func iterativeParse(partialLayout, format string, startIndex int, indexes [][]int, parse ParseFunc) (out time.Time, layout string, err error) {
@@ -230,9 +238,13 @@ func iterativeParse(partialLayout, format string, startIndex int, indexes [][]in
 		return out, layout, err
 	}
 	if substs, ok := ctimeParseSubstitutes[directive]; ok {
-		if i, _ := try(substs...); i < 0 {
-			return out, layout, err
+		for _, subst := range substs {
+			if i, _ := try(subst...); i < 0 {
+				break
+			}
 		}
+		// Don't fall back to the original substitutes, or we will generate incorrect error messages.
+		return out, layout, err
 	}
 	if subst, ok := ctimeSubstitutes[directive]; ok {
 		try("", subst)
