@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: processor/deltatocumulative
+note: Sort incoming data points by timestamp to prevent dropping out-of-order batches.
+issues: [46441]
