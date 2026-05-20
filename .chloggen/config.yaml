@@ -57,7 +57,7 @@ components:
     - exporter/honeycomb_marker
     - exporter/influxdb
     - exporter/kafka
-    - exporter/loadbalancing
+    - exporter/load_balancing
     - exporter/logicmonitor
     - exporter/logzio
     - exporter/mezmo
@@ -218,7 +218,7 @@ components:
     - processor/redaction
     - processor/remotetap
     - processor/resource
-    - processor/resourcedetection
+    - processor/resource_detection
     - processor/scalewaydetector
     - processor/schema
     - processor/span

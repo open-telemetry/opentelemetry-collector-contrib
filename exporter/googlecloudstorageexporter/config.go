@@ -10,7 +10,10 @@ import (
 	"github.com/lestrrat-go/strftime"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 var (
@@ -20,6 +23,10 @@ var (
 )
 
 type Config struct {
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	RetrySettings   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+
 	Encoding *component.ID `mapstructure:"encoding"`
 	Bucket   bucketConfig  `mapstructure:"bucket"`
 }
@@ -85,6 +92,9 @@ var _ xconfmap.Validator = (*Config)(nil)
 
 func createDefaultConfig() component.Config {
 	return &Config{
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+		QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+		RetrySettings:   configretry.NewDefaultBackOffConfig(),
 		Bucket: bucketConfig{
 			ReuseIfExists: false,
 			FilePrefix:    "logs",

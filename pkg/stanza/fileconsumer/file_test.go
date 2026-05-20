@@ -753,7 +753,7 @@ func TestRestartOffsets(t *testing.T) {
 		{"start_at_beginning_short", "beginning", 20},
 		{"start_at_end_short", "end", 20},
 		{"start_at_beginning_long", "beginning", 2000},
-		{"start_at_end_short", "end", 2000},
+		{"start_at_end_long", "end", 2000},
 	}
 
 	for _, tc := range testCases {
@@ -774,14 +774,16 @@ func TestRestartOffsets(t *testing.T) {
 			during2ndRun := filetest.TokenWithLength(tc.lineLength)
 
 			operatorOne, sink1 := testManager(t, cfg)
+			operatorOne.persister = persister
 			filetest.WriteString(t, logFile, string(before1stRun)+"\n")
-			require.NoError(t, operatorOne.Start(persister))
+			operatorOne.poll(t.Context())
 			if tc.startAt == "beginning" {
 				sink1.ExpectToken(t, before1stRun)
 			} else {
-				sink1.ExpectNoCallsUntil(t, 500*time.Millisecond)
+				sink1.ExpectNoCalls(t)
 			}
 			filetest.WriteString(t, logFile, string(during1stRun)+"\n")
+			operatorOne.poll(t.Context())
 			sink1.ExpectToken(t, during1stRun)
 			require.NoError(t, operatorOne.Stop())
 
@@ -1318,10 +1320,8 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 	filetest.WriteString(t, temp, "|headerField1: headerValue1\n")
 
 	persister := testutil.NewUnscopedMockPersister()
-
-	// Start and stop the operator, ensuring that at least one poll cycle occurs in between
-	require.NoError(t, op1.Start(persister))
-	time.Sleep(2 * cfg1.PollInterval)
+	op1.persister = persister
+	op1.poll(t.Context())
 	require.NoError(t, op1.Stop())
 
 	filetest.WriteString(t, temp, "|headerField2: headerValue2\nlog line\n")
