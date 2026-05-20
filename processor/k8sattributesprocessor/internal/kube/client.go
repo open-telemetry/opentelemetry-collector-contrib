@@ -1690,9 +1690,6 @@ func (c *WatchClient) addPodIdentifierLocked(podUID string, id PodIdentifier) {
 	if podUID == "" {
 		return
 	}
-	if c.podIdentifiers == nil {
-		c.podIdentifiers = map[string]map[PodIdentifier]struct{}{}
-	}
 	identifiers := c.podIdentifiers[podUID]
 	if identifiers == nil {
 		identifiers = map[PodIdentifier]struct{}{}
@@ -1703,7 +1700,7 @@ func (c *WatchClient) addPodIdentifierLocked(podUID string, id PodIdentifier) {
 
 // removePodIdentifierLocked removes id from podUID's reverse index entry.
 func (c *WatchClient) removePodIdentifierLocked(podUID string, id PodIdentifier) {
-	if podUID == "" || c.podIdentifiers == nil {
+	if podUID == "" {
 		return
 	}
 	identifiers := c.podIdentifiers[podUID]
