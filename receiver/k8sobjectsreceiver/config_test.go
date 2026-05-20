@@ -257,6 +257,36 @@ func TestValidate(t *testing.T) {
 			},
 			expectZeroInterval: true,
 		},
+		{
+			desc: "negative top-level interval is invalid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Interval:  -1 * time.Minute,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: k8sinventory.PullMode,
+					},
+				},
+			},
+			expectedErr: "interval must not be negative",
+		},
+		{
+			desc: "negative per-resource interval is invalid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:     "pods",
+						Mode:     k8sinventory.PullMode,
+						Interval: -1 * time.Minute,
+					},
+				},
+			},
+			expectedErr: "objects[*].interval must not be negative",
+		},
 	}
 
 	for _, tt := range tests {

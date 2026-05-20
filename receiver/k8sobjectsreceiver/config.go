@@ -82,11 +82,19 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("invalid error_mode %q: must be one of 'propagate', 'ignore', or 'silent'", c.ErrorMode)
 	}
 
+	if c.Interval < 0 {
+		return errors.New("interval must not be negative")
+	}
+
 	for _, object := range c.Objects {
 		if object.Mode == "" {
 			object.Mode = defaultMode
 		} else if _, ok := modeMap[object.Mode]; !ok {
 			return fmt.Errorf("invalid mode: %v", object.Mode)
+		}
+
+		if object.Interval < 0 {
+			return errors.New("objects[*].interval must not be negative")
 		}
 
 		if object.Mode == k8sinventory.PullMode && object.Interval == 0 {
