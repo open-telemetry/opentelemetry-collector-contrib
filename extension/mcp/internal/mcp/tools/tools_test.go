@@ -59,14 +59,14 @@ func TestGetAllTools(t *testing.T) {
 		names = append(names, tool.Tool.Name)
 	}
 	assert.ElementsMatch(t, []string{
-		"opentelemetry-collector-get-versions",
-		"opentelemetry-collector-components",
-		"opentelemetry-collector-readme",
-		"opentelemetry-collector-component-schema",
-		"opentelemetry-collector-component-schema-validation",
-		"opentelemetry-collector-component-deprecated-fields",
-		"opentelemetry-collector-changelog",
-		"opentelemetry-collector-rag",
+		"get-versions",
+		"components",
+		"readme",
+		"component-schema",
+		"component-schema-validation",
+		"component-deprecated-fields",
+		"changelog",
+		"rag",
 	}, names)
 }
 
