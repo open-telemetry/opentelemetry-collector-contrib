@@ -106,6 +106,14 @@ attributes:
   oracledb.osuser:
     description: Name of the operating system user that initiated or is running the Oracle database session.
     type: string
+  oracledb.parse.result:
+    description: Result of a parse operation (e.g., failure).
+    type: string
+    enum: [failure]
+  oracledb.parse.type:
+    description: Type of parse operation (e.g., soft).
+    type: string
+    enum: [soft]
   oracledb.physical_read_bytes:
     description: The total number of bytes read from disk by a query (reporting delta).
     type: int
@@ -166,6 +174,10 @@ attributes:
   oracledb.sid:
     description: ID of the Oracle Server session.
     type: string
+  oracledb.sort.type:
+    description: Type of sort operation (e.g., memory, disk).
+    type: string
+    enum: [memory]
   oracledb.sql_id:
     description: The SQL ID of the query.
     type: string
@@ -268,6 +280,13 @@ events:
       - oracledb.procedure_name
       - oracledb.procedure_type
 metrics:
+  oracledb.buffer_cache.utilization:
+    description: Fraction of logical reads served from the buffer cache without physical I/O, as computed by Oracle V$SYSMETRIC (% (LogRead - PhyRead)/LogRead).
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
   oracledb.consistent_gets:
     description: Number of times a consistent read was requested for a block from the buffer cache.
     enabled: false
@@ -289,6 +308,20 @@ metrics:
     unit: s
   oracledb.data_dictionary.hit_ratio:
     description: Data dictionary cache hit ratio from v$rowcache.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
+  oracledb.database.cpu.utilization:
+    description: Fraction of total database time spent on CPU, as computed by Oracle V$SYSMETRIC (% Cpu/DB_Time).
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
+  oracledb.database.wait.utilization:
+    description: Fraction of total database time spent waiting on I/O, locks, or latches, as computed by Oracle V$SYSMETRIC (% Wait/DB_Time).
     enabled: false
     stability: development
     gauge:
@@ -392,6 +425,15 @@ metrics:
       value_type: int
       input_type: string
     unit: "{deadlocks}"
+  oracledb.execution.utilization:
+    attributes:
+      - oracledb.parse.type
+    description: Fraction of executions that did not require a parse, as computed by Oracle V$SYSMETRIC (% (ExecWOParse/TotalExec)). High values indicate good cursor reuse.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
   oracledb.executions:
     description: Total number of calls (user and recursive) that executed SQL statements
     enabled: true
@@ -412,6 +454,20 @@ metrics:
       value_type: int
       input_type: string
     unit: "{parses}"
+  oracledb.host.cpu.utilization:
+    description: Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idle+Busy)).
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
+  oracledb.library_cache.utilization:
+    description: Fraction of library cache pin requests that found the object already cached, as computed by Oracle V$SYSMETRIC (% Hits/Pins).
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
   oracledb.logical_reads:
     description: Number of logical reads
     enabled: true
@@ -432,8 +488,6 @@ metrics:
       value_type: int
       input_type: string
     unit: "{operation}"
-
-
   oracledb.parallel_operations_downgraded_1_to_25_pct:
     description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers
     enabled: false
@@ -494,6 +548,22 @@ metrics:
       value_type: int
       input_type: string
     unit: "{executions}"
+  oracledb.parse.rate:
+    attributes:
+      - oracledb.parse.result
+    description: Rate of parse operations per second broken down by result, as computed by Oracle V$SYSMETRIC (e.g., Parse Failure Count Per Sec).
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "{parses}/s"
+  oracledb.parse.utilization:
+    description: Fraction of parse calls that were soft parses, as computed by Oracle V$SYSMETRIC (% SoftParses/TotalParses). High values indicate good cursor reuse.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
   oracledb.parse_calls:
     description: Total number of parse calls.
     enabled: true
@@ -607,6 +677,13 @@ metrics:
     gauge:
       value_type: double
     unit: By
+  oracledb.redo_allocation.utilization:
+    description: Fraction of redo allocations that succeeded without space contention, as computed by Oracle V$SYSMETRIC (% (#Redo - RedoSpaceReq)/#Redo).
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
   oracledb.sessions.limit:
     description: Maximum limit of active sessions, -1 if unlimited.
     enabled: true
@@ -626,6 +703,29 @@ metrics:
       value_type: int
       input_type: string
     unit: "{sessions}"
+  oracledb.shared_pool.utilization:
+    description: Fraction of the shared pool that is currently free, as computed by Oracle V$SYSMETRIC (% Free/Total). Low values indicate shared pool pressure.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
+  oracledb.sort.ratio:
+    attributes:
+      - oracledb.sort.type
+    description: Fraction of sorts performed in memory vs disk, as computed by Oracle V$SYSMETRIC (% MemSort/(MemSort + DiskSort)). Low values indicate PGA memory pressure.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "1"
+  oracledb.sql_service.response.duration:
+    description: Average SQL service response time in seconds, converted from centiseconds as reported by Oracle V$SYSMETRIC (CentiSeconds Per Call).
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: s
   oracledb.storage.usage:
     description: Used database storage size from dba_data_files and dba_free_space.
     enabled: false

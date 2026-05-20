@@ -4,6 +4,13 @@ $defs:
     description: MetricsConfig provides config for oracledb metrics.
     type: object
     properties:
+      oracledb.buffer_cache.utilization:
+        description: "OracledbBufferCacheUtilizationMetricConfig provides config for the oracledb.buffer_cache.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.consistent_gets:
         description: "OracledbConsistentGetsMetricConfig provides config for the oracledb.consistent_gets metric."
         type: object
@@ -20,6 +27,20 @@ $defs:
             default: true
       oracledb.data_dictionary.hit_ratio:
         description: "OracledbDataDictionaryHitRatioMetricConfig provides config for the oracledb.data_dictionary.hit_ratio metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.database.cpu.utilization:
+        description: "OracledbDatabaseCPUUtilizationMetricConfig provides config for the oracledb.database.cpu.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.database.wait.utilization:
+        description: "OracledbDatabaseWaitUtilizationMetricConfig provides config for the oracledb.database.wait.utilization metric."
         type: object
         properties:
           enabled:
@@ -102,6 +123,29 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.execution.utilization:
+        description: "OracledbExecutionUtilizationMetricConfig provides config for the oracledb.execution.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oracledb.parse.type"
+            default:
+              - "oracledb.parse.type"
       oracledb.executions:
         description: "OracledbExecutionsMetricConfig provides config for the oracledb.executions metric."
         type: object
@@ -116,6 +160,20 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.host.cpu.utilization:
+        description: "OracledbHostCPUUtilizationMetricConfig provides config for the oracledb.host.cpu.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.library_cache.utilization:
+        description: "OracledbLibraryCacheUtilizationMetricConfig provides config for the oracledb.library_cache.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.logical_reads:
         description: "OracledbLogicalReadsMetricConfig provides config for the oracledb.logical_reads metric."
         type: object
@@ -167,6 +225,36 @@ $defs:
             default: false
       oracledb.parallel_operations_not_downgraded:
         description: "OracledbParallelOperationsNotDowngradedMetricConfig provides config for the oracledb.parallel_operations_not_downgraded metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.parse.rate:
+        description: "OracledbParseRateMetricConfig provides config for the oracledb.parse.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oracledb.parse.result"
+            default:
+              - "oracledb.parse.result"
+      oracledb.parse.utilization:
+        description: "OracledbParseUtilizationMetricConfig provides config for the oracledb.parse.utilization metric."
         type: object
         properties:
           enabled:
@@ -256,6 +344,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.redo_allocation.utilization:
+        description: "OracledbRedoAllocationUtilizationMetricConfig provides config for the oracledb.redo_allocation.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.sessions.limit:
         description: "OracledbSessionsLimitMetricConfig provides config for the oracledb.sessions.limit metric."
         type: object
@@ -288,6 +383,43 @@ $defs:
             default:
               - "session_type"
               - "session_status"
+      oracledb.shared_pool.utilization:
+        description: "OracledbSharedPoolUtilizationMetricConfig provides config for the oracledb.shared_pool.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.sort.ratio:
+        description: "OracledbSortRatioMetricConfig provides config for the oracledb.sort.ratio metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "oracledb.sort.type"
+            default:
+              - "oracledb.sort.type"
+      oracledb.sql_service.response.duration:
+        description: "OracledbSQLServiceResponseDurationMetricConfig provides config for the oracledb.sql_service.response.duration metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.storage.usage:
         description: "OracledbStorageUsageMetricConfig provides config for the oracledb.storage.usage metric."
         type: object
