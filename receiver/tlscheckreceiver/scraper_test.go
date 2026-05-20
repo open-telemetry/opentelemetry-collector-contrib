@@ -10,6 +10,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"os"
 	"testing"
@@ -143,6 +144,56 @@ func createMockJKSFile(t *testing.T, expiry time.Time, password string) string {
 	require.NoError(t, err)
 
 	tmpFile, err := os.CreateTemp(t.TempDir(), "test-keystore-*.jks")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.Remove(tmpFile.Name()) })
+
+	require.NoError(t, ks.Store(tmpFile, []byte(password)))
+	require.NoError(t, tmpFile.Close())
+
+	return tmpFile.Name()
+}
+
+// createMockMultiAliasJKSFile creates a JKS keystore containing one TrustedCertificateEntry
+// per expiry and returns its absolute path.
+func createMockMultiAliasJKSFile(t *testing.T, expiries []time.Time, password string) string {
+	t.Helper()
+
+	ks := keystorego.New()
+	for i, expiry := range expiries {
+		privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		require.NoError(t, err)
+
+		issuerTemplate := &x509.Certificate{
+			SerialNumber: big.NewInt(int64(i + 100)),
+			Subject:      pkix.Name{CommonName: fmt.Sprintf("JKSMultiIssuer-%d", i+1)},
+			NotBefore:    time.Now().Add(-1 * time.Hour),
+			NotAfter:     expiry,
+			IsCA:         true,
+		}
+		issuerCertDER, err := x509.CreateCertificate(rand.Reader, issuerTemplate, issuerTemplate, &privKey.PublicKey, privKey)
+		require.NoError(t, err)
+		issuerCert, err := x509.ParseCertificate(issuerCertDER)
+		require.NoError(t, err)
+
+		leafTemplate := &x509.Certificate{
+			SerialNumber: big.NewInt(int64(i + 10)),
+			Subject:      pkix.Name{CommonName: fmt.Sprintf("jks-test-%d.example.com", i+1)},
+			NotBefore:    time.Now().Add(-1 * time.Hour),
+			NotAfter:     expiry,
+		}
+		certDER, err := x509.CreateCertificate(rand.Reader, leafTemplate, issuerCert, &privKey.PublicKey, privKey)
+		require.NoError(t, err)
+
+		err = ks.SetTrustedCertificateEntry(fmt.Sprintf("test-alias-%d", i+1), keystorego.TrustedCertificateEntry{
+			Certificate: keystorego.Certificate{
+				Type:    "X.509",
+				Content: certDER,
+			},
+		})
+		require.NoError(t, err)
+	}
+
+	tmpFile, err := os.CreateTemp(t.TempDir(), "test-multi-keystore-*.jks")
 	require.NoError(t, err)
 	t.Cleanup(func() { os.Remove(tmpFile.Name()) })
 
@@ -509,6 +560,104 @@ func TestScrape_ExpiredJKSCertificate(t *testing.T) {
 
 	dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
 	require.Negative(t, dp.IntValue(), "Time left should be negative for an expired JKS cert")
+}
+
+func TestScrape_JKSReaggregation(t *testing.T) {
+	baseTime := time.Now().UTC().Truncate(time.Second)
+	expiries := []time.Time{
+		baseTime.Add(24 * time.Hour),
+		baseTime.Add(48 * time.Hour),
+		baseTime.Add(72 * time.Hour),
+	}
+	jksFile := createMockMultiAliasJKSFile(t, expiries, "changeit")
+
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath:   jksFile,
+				FileFormat: FileFormatJKS,
+				Password:   configopaque.String("changeit"),
+			},
+		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	cfg.Metrics.TlscheckTimeLeft.AggregationStrategy = metadata.AggregationStrategySum
+	cfg.Metrics.TlscheckTimeLeft.EnabledAttributes = nil
+
+	factory := receivertest.NewNopFactory()
+	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+
+	rm := metrics.ResourceMetrics().At(0)
+	require.Equal(t, 1, rm.ScopeMetrics().Len())
+	require.Equal(t, 1, rm.ScopeMetrics().At(0).Metrics().Len())
+
+	dps := rm.ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints()
+	require.Equal(t, 1, dps.Len())
+
+	dp := dps.At(0)
+	require.Equal(t, 0, dp.Attributes().Len())
+
+	var expected int64
+	timestamp := dp.Timestamp().AsTime()
+	for _, expiry := range expiries {
+		expected += int64(expiry.Sub(timestamp).Seconds())
+	}
+	require.Equal(t, expected, dp.IntValue())
+}
+
+func TestScrape_JKSReaggregationWithAttributes(t *testing.T) {
+	baseTime := time.Now().UTC().Truncate(time.Second)
+	expiries := []time.Time{
+		baseTime.Add(24 * time.Hour),
+		baseTime.Add(48 * time.Hour),
+		baseTime.Add(72 * time.Hour),
+	}
+	jksFile := createMockMultiAliasJKSFile(t, expiries, "changeit")
+
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath:   jksFile,
+				FileFormat: FileFormatJKS,
+				Password:   configopaque.String("changeit"),
+			},
+		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	cfg.Metrics.TlscheckTimeLeft.AggregationStrategy = metadata.AggregationStrategySum
+	cfg.Metrics.TlscheckTimeLeft.EnabledAttributes = []metadata.TlscheckTimeLeftMetricAttributeKey{
+		metadata.TlscheckTimeLeftMetricAttributeKeyTlscheckX509Issuer,
+	}
+
+	factory := receivertest.NewNopFactory()
+	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+
+	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints()
+	require.Equal(t, 3, dps.Len())
+
+	issuers := make([]string, 0, dps.Len())
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		require.Equal(t, 1, dp.Attributes().Len())
+
+		issuer, ok := dp.Attributes().Get("tlscheck.x509.issuer")
+		require.True(t, ok)
+		issuers = append(issuers, issuer.AsString())
+	}
+
+	assert.ElementsMatch(t, []string{
+		"CN=JKSMultiIssuer-1",
+		"CN=JKSMultiIssuer-2",
+		"CN=JKSMultiIssuer-3",
+	}, issuers)
 }
 
 func TestScrape_WrongPasswordJKS(t *testing.T) {
