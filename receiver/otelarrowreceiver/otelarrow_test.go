@@ -446,19 +446,67 @@ func TestOTelArrowShutdown(t *testing.T) {
 			// the sink should not change.
 			assert.Equal(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
 
-			shutdownCause := ""
-		scanLogs:
-			for _, log := range obslogs.All() {
-				if log.Message == "arrow stream shutdown" {
-					for _, f := range log.Context {
-						if f.Key == "message" {
-							shutdownCause = f.String
-							break scanLogs
-						}
+			// Verify the recv side observed the stream ending.
+			//
+			// In cooperative mode, the client called CloseSend() so the
+			// server-side Recv() returns io.EOF and we expect the Debug
+			// "arrow stream shutdown" log with message="EOF".
+			//
+			// In non-cooperative mode the gRPC server's MaxConnectionAge
+			// keepalive forces the transport closed.  Depending on
+			// platform/timing the resulting Recv() error may be a
+			// Canceled status (logged as "arrow stream shutdown") or a
+			// transport-closing status such as Unavailable (logged as
+			// "arrow stream error").  Either is a valid outcome of this
+			// shutdown path; we just verify the recv side reported a
+			// stream-ending event.
+			var shutdownLog, errorLog *observer.LoggedEntry
+			allLogs := obslogs.All()
+			for i := range allLogs {
+				switch allLogs[i].Message {
+				case "arrow stream shutdown":
+					if shutdownLog == nil {
+						shutdownLog = &allLogs[i]
+					}
+				case "arrow stream error":
+					if errorLog == nil {
+						errorLog = &allLogs[i]
 					}
 				}
 			}
-			assert.Equal(t, "EOF", shutdownCause)
+			fieldString := func(entry *observer.LoggedEntry, key string) string {
+				for _, f := range entry.Context {
+					if f.Key == key {
+						return f.String
+					}
+				}
+				return ""
+			}
+			fieldInt := func(entry *observer.LoggedEntry, key string) int64 {
+				for _, f := range entry.Context {
+					if f.Key == key {
+						return f.Integer
+					}
+				}
+				return 0
+			}
+			if cooperative {
+				if assert.NotNil(t, shutdownLog, "expected 'arrow stream shutdown' log") {
+					assert.Equal(t, "EOF", fieldString(shutdownLog, "message"))
+					assert.Equal(t, "recv", fieldString(shutdownLog, "where"))
+				}
+			} else {
+				switch {
+				case shutdownLog != nil:
+					assert.Equal(t, "recv", fieldString(shutdownLog, "where"))
+				case errorLog != nil:
+					assert.Equal(t, "recv", fieldString(errorLog, "where"))
+					assert.Equal(t, int64(codes.Unavailable), fieldInt(errorLog, "code"),
+						"unexpected gRPC code on recv-side stream error")
+				default:
+					assert.Fail(t, "expected one of 'arrow stream shutdown' or 'arrow stream error' log")
+				}
+			}
 		})
 	}
 }
