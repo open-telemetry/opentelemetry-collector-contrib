@@ -1,0 +1,4 @@
+change_type: enhancement
+component: receiver/vcenter
+note: Add max_query_metrics option to batch QueryPerf requests, preventing vCenter resource exhaustion in large deployments.
+issues: [47941]

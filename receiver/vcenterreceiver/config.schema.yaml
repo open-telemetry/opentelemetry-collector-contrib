@@ -3,6 +3,8 @@ type: object
 properties:
   endpoint:
     type: string
+  max_query_metrics:
+    type: integer
   password:
     $ref: go.opentelemetry.io/collector/config/configopaque.string
   username:

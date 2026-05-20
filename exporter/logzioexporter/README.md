@@ -71,7 +71,7 @@ service:
 #### Logs example:
 * We recommend using `sending_queue::batch` option. Batching helps better compress the data and reduce the number of outgoing connections required to transmit the data.
 * We recommend adding `type` attribute to classify your log records
-* We recommend adding `resourcedetection` processor to add metadata to your log records
+* We recommend adding `resource_detection` processor to add metadata to your log records
 
 ```yaml
 receivers:
@@ -86,7 +86,7 @@ receivers:
     attributes:
       type: <<your-logzio-type>>
 processors:
-  resourcedetection/system:
+  resource_detection/system:
     detectors: [ "system" ]
     system:
       hostname_sources: [ "os" ]
@@ -98,7 +98,7 @@ service:
   pipelines:
     logs:
       receivers: [file_log]
-      processors: [ resourcedetection/system ]
+      processors: [ resource_detection/system ]
       exporters: [logzio/logs]
   telemetry:
     logs:

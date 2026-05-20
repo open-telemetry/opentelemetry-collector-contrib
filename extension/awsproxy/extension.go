@@ -26,7 +26,7 @@ type xrayProxy struct {
 var _ extension.Extension = (*xrayProxy)(nil)
 
 func (x *xrayProxy) Start(_ context.Context, host component.Host) error {
-	srv, err := proxy.NewServer(&x.config.ProxyConfig, x.settings.Logger)
+	srv, err := proxy.NewServer(&x.config.ProxyConfig, host, x.settings)
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,6 @@
+change_type: deprecation
+component: processor/resource_detection
+note: Rename to `resource_detection` with deprecated alias `resourcedetection`
+issues: [48525]
+subtext:
+change_logs: [user]

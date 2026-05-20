@@ -46,7 +46,7 @@ components:
         - redaction
         - remotetap
         - resource
-        - resourcedetection
+        - resource_detection
         - tail_sampling
         - transform
     receiver:
