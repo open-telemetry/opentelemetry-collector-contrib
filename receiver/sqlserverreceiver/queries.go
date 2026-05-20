@@ -1051,3 +1051,275 @@ func getSQLServerWaitStatsQuery(instanceName string) string {
 	r := strings.NewReplacer("{filter_instance_name}", "")
 	return r.Replace(sqlServerWaitStatsQuery)
 }
+
+const sqlServerMemoryTargetQuery = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+SELECT
+	'sqlserver_memory_target' AS [measurement],
+	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+	CAST(cntr_value * 1024 AS BIGINT) AS [target_memory_bytes]
+FROM sys.dm_os_performance_counters WITH (NOLOCK)
+WHERE
+	object_name LIKE '%Memory Manager%'
+	AND counter_name = 'Target Server Memory (KB)'
+{filter_instance_name};
+`
+
+func getSQLServerMemoryTargetQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerMemoryTargetQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerMemoryTargetQuery)
+}
+
+const sqlServerDatabaseSizeQuery = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN /*NOT IN Standard,Enterprise,Express,Azure SQL Database, Azure SQL Managed Instance*/
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+DECLARE @EngineEdition AS INT = CAST(SERVERPROPERTY('EngineEdition') AS INT)
+
+IF @EngineEdition = 5 BEGIN -- Azure SQL Database
+	-- For Azure SQL Database, use sys.database_files (single database context)
+	SELECT
+		'sqlserver_database_file_size' AS [measurement],
+		REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+		DB_NAME() AS [database_name],
+		CASE WHEN mf.type = 0 THEN 'data' ELSE 'log' END AS [file_type],
+		SUM(CAST(mf.size AS BIGINT) * 8 * 1024) AS [size_bytes]
+	FROM sys.database_files mf
+	GROUP BY mf.type
+	{filter_instance_name}
+
+	UNION ALL
+
+	SELECT
+		'sqlserver_database_transactions_active' AS [measurement],
+		REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+		DB_NAME() AS [database_name],
+		'N/A' AS [file_type],
+		ISNULL(COUNT(*), 0) AS [active_transactions]
+	FROM sys.dm_tran_database_transactions
+	WHERE database_id = DB_ID()
+	{filter_instance_name};
+END
+ELSE BEGIN -- Instance-level editions (on-premises, managed instance)
+	-- For all other editions, use sys.master_files (instance-wide view)
+	SELECT
+		'sqlserver_database_file_size' AS [measurement],
+		REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+		DB_NAME(mf.database_id) AS [database_name],
+		CASE WHEN mf.type = 0 THEN 'data' ELSE 'log' END AS [file_type],
+		SUM(CAST(mf.size AS BIGINT) * 8 * 1024) AS [size_bytes]
+	FROM sys.master_files mf
+	WHERE mf.database_id > 4  -- Exclude system databases (master, tempdb, model, msdb)
+	GROUP BY mf.database_id, mf.type
+	{filter_instance_name}
+
+	UNION ALL
+
+	SELECT
+		'sqlserver_database_transactions_active' AS [measurement],
+		REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+		DB_NAME(dt.database_id) AS [database_name],
+		'N/A' AS [file_type],
+		COUNT(*) AS [active_transactions]
+	FROM sys.dm_tran_database_transactions dt
+	WHERE dt.database_id > 4
+	GROUP BY dt.database_id
+	{filter_instance_name};
+END
+`
+
+func getSQLServerDatabaseSizeQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerDatabaseSizeQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerDatabaseSizeQuery)
+}
+
+const sqlServerSecurityPrincipalsQuery = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+SELECT
+	'sqlserver_security_principals' AS [measurement],
+	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+	COUNT(*) AS [principal_count]
+FROM sys.server_principals WITH (NOLOCK)
+WHERE type IN ('S', 'U', 'G', 'R', 'A')  -- SQL login, Windows login, Windows group, Server role, Application role
+	AND is_disabled = 0
+{filter_instance_name};
+`
+
+func getSQLServerSecurityPrincipalsQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerSecurityPrincipalsQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerSecurityPrincipalsQuery)
+}
+
+const sqlServerSecurityRoleMembersQuery = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+SELECT
+	'sqlserver_security_role_members' AS [measurement],
+	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+	role_principal.name AS [role_name],
+	COUNT(*) AS [role_member_count]
+FROM sys.server_role_members srm WITH (NOLOCK)
+INNER JOIN sys.server_principals role_principal WITH (NOLOCK)
+	ON srm.role_principal_id = role_principal.principal_id
+{filter_instance_name}
+GROUP BY role_principal.name;
+`
+
+func getSQLServerSecurityRoleMembersQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("\nWHERE @@SERVERNAME = '%s'", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerSecurityRoleMembersQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerSecurityRoleMembersQuery)
+}
+
+const sqlServerDatabaseSecurityPrincipalsQuery = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+DECLARE @EngineEdition AS INT = CAST(SERVERPROPERTY('EngineEdition') AS INT)
+
+IF @EngineEdition = 5 BEGIN -- Azure SQL Database
+	SELECT
+		'sqlserver_database_security_principals' AS [measurement],
+		REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+		DB_NAME() AS [database_name],
+		COUNT(*) AS [principal_count]
+	FROM sys.database_principals WITH (NOLOCK)
+	WHERE type IN ('S', 'U', 'G', 'R', 'A')  -- SQL user, Windows user, Windows group, Database role, Application role
+	{filter_instance_name};
+END
+ELSE BEGIN
+	SELECT
+		'sqlserver_database_security_principals' AS [measurement],
+		REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+		DB_NAME(d.database_id) AS [database_name],
+		(
+			SELECT COUNT(*)
+			FROM sys.database_principals dp WITH (NOLOCK)
+			WHERE dp.type IN ('S', 'U', 'G', 'R', 'A')
+				AND dp.database_id = d.database_id
+		) AS [principal_count]
+	FROM sys.databases d WITH (NOLOCK)
+	WHERE d.database_id > 4  -- Exclude system databases
+		AND d.state = 0  -- Online only
+	{filter_instance_name};
+END
+`
+
+func getSQLServerDatabaseSecurityPrincipalsQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerDatabaseSecurityPrincipalsQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerDatabaseSecurityPrincipalsQuery)
+}
+
+const sqlServerDatabaseSecurityRoleMembersQuery = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+DECLARE @EngineEdition AS INT = CAST(SERVERPROPERTY('EngineEdition') AS INT)
+
+IF @EngineEdition = 5 BEGIN -- Azure SQL Database
+	SELECT
+		'sqlserver_database_security_role_members' AS [measurement],
+		REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+		DB_NAME() AS [database_name],
+		role_principal.name AS [role_name],
+		COUNT(*) AS [role_member_count]
+	FROM sys.database_role_members drm WITH (NOLOCK)
+	INNER JOIN sys.database_principals role_principal WITH (NOLOCK)
+		ON drm.role_principal_id = role_principal.principal_id
+	{filter_instance_name}
+	GROUP BY role_principal.name;
+END
+ELSE BEGIN
+	-- On-premises SQL Server: query all databases
+	DECLARE @SQL NVARCHAR(MAX) = N'';
+
+	SELECT @SQL = @SQL + N'
+	USE [' + name + N'];
+	SELECT
+		''sqlserver_database_security_role_members'' AS [measurement],
+		REPLACE(@@SERVERNAME, ''\'', '':'') AS [sql_instance],
+		DB_NAME() AS [database_name],
+		role_principal.name AS [role_name],
+		COUNT(*) AS [role_member_count]
+	FROM sys.database_role_members drm WITH (NOLOCK)
+	INNER JOIN sys.database_principals role_principal WITH (NOLOCK)
+		ON drm.role_principal_id = role_principal.principal_id
+	GROUP BY role_principal.name;
+	'
+	FROM sys.databases
+	WHERE database_id > 4  -- Exclude system databases
+		AND state = 0  -- Online only
+	{filter_instance_name};
+
+	EXEC sp_executesql @SQL;
+END
+`
+
+func getSQLServerDatabaseSecurityRoleMembersQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerDatabaseSecurityRoleMembersQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerDatabaseSecurityRoleMembersQuery)
+}

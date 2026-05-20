@@ -117,6 +117,10 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [transmit, receive]
+  role:
+    description: The name of the database or server role.
+    type: string
+    requirement_level: recommended
   server.address:
     description: The network address of the server hosting the database.
     type: string
@@ -446,10 +450,20 @@ metrics:
     enabled: false
     description: Number of execution errors.
     stability: development
-    unit: “{errors}”
+    unit: "{errors}"
     gauge:
       value_type: int
     attributes: []
+  sqlserver.database.file.size:
+    enabled: false
+    description: Size of database files.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [file_type, db.namespace]
+    extended_documentation: Storage consumed by database files, broken down by file type (data or log). Essential for capacity planning and growth tracking. The db.namespace attribute contains the database name. The file_type attribute indicates whether this is a data file or log file. Available on all SQL Server editions (2012+).
   sqlserver.database.full_scan.rate:
     enabled: false
     description: The number of unrestricted full table or index scans.
@@ -493,6 +507,26 @@ metrics:
       input_type: string
     attributes: [physical_filename, logical_filename, file_type, direction]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.database.security.principal.count:
+    enabled: false
+    description: Number of security principals (logins, users) at the database level.
+    stability: development
+    unit: "{principals}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [db.namespace]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database-level security principals including database users, roles, and application roles. The db.namespace attribute contains the database name. Useful for security auditing and access management. Available on SQL Server 2012+.
+  sqlserver.database.security.role_membership.count:
+    enabled: false
+    description: Number of members in a database role.
+    stability: development
+    unit: "{members}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [db.namespace, role]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Reports the number of members (principals) assigned to each database-level role. The 'db.namespace' attribute identifies the database, and the 'role' attribute identifies the specific role (e.g., db_owner, db_datareader). Critical for monitoring privilege escalation and compliance. Available on SQL Server 2012+.
   sqlserver.database.tempdb.space:
     enabled: false
     description: Total free space in temporary DB.
@@ -507,10 +541,20 @@ metrics:
     enabled: false
     description: TempDB version store size.
     stability: development
-    unit: “KB”
+    unit: "KB"
     gauge:
       value_type: double
     attributes: []
+  sqlserver.database.transactions.active:
+    enabled: false
+    description: Number of currently active transactions.
+    stability: development
+    unit: "{transactions}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [db.namespace]
+    extended_documentation: Critical for monitoring transaction blocking and long-running transactions. The db.namespace attribute contains the database name. Available on all SQL Server editions (2005+).
   sqlserver.deadlock.rate:
     enabled: false
     description: Total number of deadlocks.
@@ -580,17 +624,27 @@ metrics:
     enabled: false
     description: Total number of memory grants pending.
     stability: development
-    unit: “{grants}”
+    unit: "{grants}"
     sum:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     attributes: []
+  sqlserver.memory.target:
+    enabled: false
+    description: Maximum amount of memory SQL Server is willing to use (target server memory).
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Target memory represents the ideal amount of memory SQL Server would like to acquire based on recent memory demand. When actual memory usage is less than target memory, SQL Server will attempt to acquire more memory. Available on SQL Server 2005+.
   sqlserver.memory.usage:
     enabled: false
     description: Total memory in use.
     stability: development
-    unit: “KB”
+    unit: "KB"
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -718,6 +772,26 @@ metrics:
       input_type: string
     attributes: []
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.server.security.principal.count:
+    enabled: false
+    description: Number of security principals (logins, users) at the server level.
+    stability: development
+    unit: "{principals}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks server-level security principals including SQL logins, Windows logins, and server roles. Essential for security monitoring and compliance auditing. Available on SQL Server 2012+.
+  sqlserver.server.security.role_membership.count:
+    enabled: false
+    description: Number of members in a server role.
+    stability: development
+    unit: "{members}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [role]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Reports the number of members (principals) assigned to each server-level role. The 'role' attribute identifies the specific server role (e.g., sysadmin, securityadmin). Critical for monitoring high-privilege access and compliance. Available on SQL Server 2012+.
   sqlserver.table.count:
     enabled: false
     description: The number of tables.

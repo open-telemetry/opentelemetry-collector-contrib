@@ -266,7 +266,24 @@ Number of execution errors.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “{errors}” | Gauge | Int | Development |
+| {errors} | Gauge | Int | Development |
+
+### sqlserver.database.file.size
+
+Size of database files.
+
+Storage consumed by database files, broken down by file type (data or log). Essential for capacity planning and growth tracking. The db.namespace attribute contains the database name. The file_type attribute indicates whether this is a data file or log file. Available on all SQL Server editions (2012+).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| file_type | The type of file being monitored. | Any Str | Recommended | - |
+| db.namespace | The database name. | Any Str | Recommended | - |
 
 ### sqlserver.database.full_scan.rate
 
@@ -333,6 +350,39 @@ This metric is only available when the receiver is configured to directly connec
 | file_type | The type of file being monitored. | Any Str | Recommended | - |
 | direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | Recommended | - |
 
+### sqlserver.database.security.principal.count
+
+Number of security principals (logins, users) at the database level.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database-level security principals including database users, roles, and application roles. The db.namespace attribute contains the database name. Useful for security auditing and access management. Available on SQL Server 2012+.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {principals} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database name. | Any Str | Recommended | - |
+
+### sqlserver.database.security.role_membership.count
+
+Number of members in a database role.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Reports the number of members (principals) assigned to each database-level role. The 'db.namespace' attribute identifies the database, and the 'role' attribute identifies the specific role (e.g., db_owner, db_datareader). Critical for monitoring privilege escalation and compliance. Available on SQL Server 2012+.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {members} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database name. | Any Str | Recommended | - |
+| role | The name of the database or server role. | Any Str | Recommended | - |
+
 ### sqlserver.database.tempdb.space
 
 Total free space in temporary DB.
@@ -353,7 +403,23 @@ TempDB version store size.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| “KB” | Gauge | Double | Development |
+| KB | Gauge | Double | Development |
+
+### sqlserver.database.transactions.active
+
+Number of currently active transactions.
+
+Critical for monitoring transaction blocking and long-running transactions. The db.namespace attribute contains the database name. Available on all SQL Server editions (2005+).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {transactions} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database name. | Any Str | Recommended | - |
 
 ### sqlserver.deadlock.rate
 
@@ -411,7 +477,17 @@ Total number of memory grants pending.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| “{grants}” | Sum | Int | Cumulative | false | Development |
+| {grants} | Sum | Int | Cumulative | false | Development |
+
+### sqlserver.memory.target
+
+Maximum amount of memory SQL Server is willing to use (target server memory).
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Target memory represents the ideal amount of memory SQL Server would like to acquire based on recent memory demand. When actual memory usage is less than target memory, SQL Server will attempt to acquire more memory. Available on SQL Server 2005+.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
 
 ### sqlserver.memory.usage
 
@@ -419,7 +495,7 @@ Total memory in use.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| “KB” | Sum | Double | Cumulative | false | Development |
+| KB | Sum | Double | Cumulative | false | Development |
 
 ### sqlserver.os.wait.duration
 
@@ -513,6 +589,32 @@ This metric is only available when the receiver is configured to directly connec
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {writes}/s | Gauge | Double | Development |
+
+### sqlserver.server.security.principal.count
+
+Number of security principals (logins, users) at the server level.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks server-level security principals including SQL logins, Windows logins, and server roles. Essential for security monitoring and compliance auditing. Available on SQL Server 2012+.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {principals} | Gauge | Int | Development |
+
+### sqlserver.server.security.role_membership.count
+
+Number of members in a server role.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. Reports the number of members (principals) assigned to each server-level role. The 'role' attribute identifies the specific server role (e.g., sysadmin, securityadmin). Critical for monitoring high-privilege access and compliance. Available on SQL Server 2012+.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {members} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| role | The name of the database or server role. | Any Str | Recommended | - |
 
 ### sqlserver.table.count
 
