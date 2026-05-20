@@ -589,8 +589,11 @@ func (s *oracleScraper) collectRecycleBinSize(ctx context.Context, scrapeErrors 
 	}
 }
 
+const sgaMaxComponentName = "Maximum SGA Size"
+
 func (s *oracleScraper) collectSGAInfo(ctx context.Context, scrapeErrors *[]error) {
-	if !s.metricsBuilderConfig.Metrics.OracledbSgaUsage.Enabled {
+	if !s.metricsBuilderConfig.Metrics.OracledbSgaUsage.Enabled &&
+		!s.metricsBuilderConfig.Metrics.OracledbSgaLimit.Enabled {
 		return
 	}
 	now := pcommon.NewTimestampFromTime(time.Now())
@@ -605,7 +608,13 @@ func (s *oracleScraper) collectSGAInfo(ctx context.Context, scrapeErrors *[]erro
 			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbSgaUsage, value was %s: %w", row[colSGAInfoBytes], err))
 			continue
 		}
-		s.mb.RecordOracledbSgaUsageDataPoint(now, val, row[colSGAInfoName])
+		if row[colSGAInfoName] == sgaMaxComponentName {
+			if s.metricsBuilderConfig.Metrics.OracledbSgaLimit.Enabled {
+				s.mb.RecordOracledbSgaLimitDataPoint(now, val)
+			}
+		} else if s.metricsBuilderConfig.Metrics.OracledbSgaUsage.Enabled {
+			s.mb.RecordOracledbSgaUsageDataPoint(now, val, row[colSGAInfoName])
+		}
 	}
 }
 

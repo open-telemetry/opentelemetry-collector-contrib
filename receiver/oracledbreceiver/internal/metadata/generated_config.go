@@ -798,11 +798,31 @@ func (ms *OracledbSessionsUsageMetricConfig) Validate() error {
 	return nil
 }
 
+// OracledbSgaLimitMetricConfig provides config for the oracledb.sga.limit metric.
+type OracledbSgaLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSgaLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbSgaUsageMetricAttributeKey specifies the key of an attribute for the oracledb.sga.usage metric.
 type OracledbSgaUsageMetricAttributeKey string
 
 const (
-	OracledbSgaUsageMetricAttributeKeyOracledbSgaComponent OracledbSgaUsageMetricAttributeKey = "oracledb.sga.component"
+	OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName OracledbSgaUsageMetricAttributeKey = "oracledb.sga.component.name"
 )
 
 // OracledbSgaUsageMetricConfig provides config for the oracledb.sga.usage metric.
@@ -831,9 +851,9 @@ func (ms *OracledbSgaUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *OracledbSgaUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbSgaUsageMetricAttributeKeyOracledbSgaComponent:
+		case OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName:
 		default:
-			return fmt.Errorf("metric oracledb.sga.usage doesn't have an attribute %v, valid attributes: [oracledb.sga.component]", val)
+			return fmt.Errorf("metric oracledb.sga.usage doesn't have an attribute %v, valid attributes: [oracledb.sga.component.name]", val)
 		}
 	}
 
@@ -1102,6 +1122,7 @@ type MetricsConfig struct {
 	OracledbRecycleBinLimit                       OracledbRecycleBinLimitMetricConfig                       `mapstructure:"oracledb.recycle_bin.limit"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
+	OracledbSgaLimit                              OracledbSgaLimitMetricConfig                              `mapstructure:"oracledb.sga.limit"`
 	OracledbSgaUsage                              OracledbSgaUsageMetricConfig                              `mapstructure:"oracledb.sga.usage"`
 	OracledbStorageUsage                          OracledbStorageUsageMetricConfig                          `mapstructure:"oracledb.storage.usage"`
 	OracledbStorageUtilization                    OracledbStorageUtilizationMetricConfig                    `mapstructure:"oracledb.storage.utilization"`
@@ -1231,10 +1252,13 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []OracledbSessionsUsageMetricAttributeKey{OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus},
 		},
+		OracledbSgaLimit: OracledbSgaLimitMetricConfig{
+			Enabled: false,
+		},
 		OracledbSgaUsage: OracledbSgaUsageMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbSgaUsageMetricAttributeKey{OracledbSgaUsageMetricAttributeKeyOracledbSgaComponent},
+			EnabledAttributes:   []OracledbSgaUsageMetricAttributeKey{OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName},
 		},
 		OracledbStorageUsage: OracledbStorageUsageMetricConfig{
 			Enabled: false,

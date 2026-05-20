@@ -217,9 +217,12 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordOracledbSgaUsageDataPoint(ts, 1, "oracledb.sga.component-val")
+			mb.RecordOracledbSgaLimitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordOracledbSgaUsageDataPoint(ts, 1, "oracledb.sga.component.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbSgaUsageDataPoint(ts, 3, "oracledb.sga.component-val-2")
+				mb.RecordOracledbSgaUsageDataPoint(ts, 3, "oracledb.sga.component.name-val-2")
 			}
 
 			allMetricsCount++
@@ -837,6 +840,18 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("session_status")
 						assert.False(t, ok)
 					}
+				case "oracledb.sga.limit":
+					assert.False(t, validatedMetrics["oracledb.sga.limit"], "Found a duplicate in the metrics slice: oracledb.sga.limit")
+					validatedMetrics["oracledb.sga.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Maximum size of the System Global Area (SGA) in bytes as reported by V$SGAINFO (Maximum SGA Size).", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.sga.usage":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["oracledb.sga.usage"], "Found a duplicate in the metrics slice: oracledb.sga.usage")
@@ -850,9 +865,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						oracledbSgaComponentAttrVal, ok := dp.Attributes().Get("oracledb.sga.component")
+						oracledbSgaComponentNameAttrVal, ok := dp.Attributes().Get("oracledb.sga.component.name")
 						assert.True(t, ok)
-						assert.Equal(t, "oracledb.sga.component-val", oracledbSgaComponentAttrVal.Str())
+						assert.Equal(t, "oracledb.sga.component.name-val", oracledbSgaComponentNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["oracledb.sga.usage"], "Found a duplicate in the metrics slice: oracledb.sga.usage")
 						validatedMetrics["oracledb.sga.usage"] = true
@@ -874,7 +889,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("oracledb.sga.component")
+						_, ok := dp.Attributes().Get("oracledb.sga.component.name")
 						assert.False(t, ok)
 					}
 				case "oracledb.storage.usage":

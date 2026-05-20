@@ -393,6 +393,14 @@ Total size of the recycle bin.
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Double | Development |
 
+### oracledb.sga.limit
+
+Maximum size of the System Global Area (SGA) in bytes as reported by V$SGAINFO (Maximum SGA Size).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
 ### oracledb.sga.usage
 
 Size in bytes of each component of the System Global Area (SGA) as reported by V$SGAINFO.
@@ -405,7 +413,7 @@ Size in bytes of each component of the System Global Area (SGA) as reported by V
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.sga.component | Name of the SGA memory component as reported by V$SGAINFO (e.g. Buffer Cache, Shared Pool, Log Buffer). | Any Str | Recommended | - |
+| oracledb.sga.component.name | Name of the SGA memory component as reported by V$SGAINFO (e.g. Buffer Cache, Shared Pool, Log Buffer). | Any Str | Recommended | - |
 
 ### oracledb.storage.usage
 

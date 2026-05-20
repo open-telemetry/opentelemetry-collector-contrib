@@ -932,6 +932,7 @@ func TestScraper_ScrapeSGAInfo(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := metadata.NewDefaultMetricsBuilderConfig()
 			cfg.Metrics.OracledbSgaUsage.Enabled = true
+			cfg.Metrics.OracledbSgaLimit.Enabled = true
 
 			scrpr := oracleScraper{
 				logger: zap.NewNop(),
@@ -955,20 +956,27 @@ func TestScraper_ScrapeSGAInfo(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-				metricMap := make(map[string]int64)
+				sgaUsageMap := make(map[string]int64)
+				var sgaLimit int64
 				for i := 0; i < metrics.Len(); i++ {
 					metric := metrics.At(i)
-					if metric.Name() == "oracledb.sga.usage" {
+					switch metric.Name() {
+					case "oracledb.sga.usage":
 						for j := 0; j < metric.Gauge().DataPoints().Len(); j++ {
 							dp := metric.Gauge().DataPoints().At(j)
-							component, _ := dp.Attributes().Get("oracledb.sga.component")
-							metricMap[component.Str()] = dp.IntValue()
+							component, _ := dp.Attributes().Get("oracledb.sga.component.name")
+							sgaUsageMap[component.Str()] = dp.IntValue()
 						}
+					case "oracledb.sga.limit":
+						sgaLimit = metric.Gauge().DataPoints().At(0).IntValue()
 					}
 				}
-				assert.Equal(t, int64(1375731712), metricMap["Buffer Cache Size"])
-				assert.Equal(t, int64(536870912), metricMap["Shared Pool Size"])
-				assert.Equal(t, int64(14598144), metricMap["Redo Buffers"])
+				assert.Equal(t, int64(1375731712), sgaUsageMap["Buffer Cache Size"])
+				assert.Equal(t, int64(536870912), sgaUsageMap["Shared Pool Size"])
+				assert.Equal(t, int64(14598144), sgaUsageMap["Redo Buffers"])
+				assert.Equal(t, int64(2147483648), sgaLimit)
+				// Maximum SGA Size row should not appear in usage map
+				assert.NotContains(t, sgaUsageMap, "Maximum SGA Size")
 			}
 		})
 	}
