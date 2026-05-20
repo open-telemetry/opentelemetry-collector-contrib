@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
@@ -36,13 +37,8 @@ func createDefaultConfig() component.Config {
 				Transport: confignet.TransportTypeTCP,
 			},
 		},
-		GRPCServerConfig: &configgrpc.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Endpoint:  testutil.EndpointForPort(14250),
-				Transport: confignet.TransportTypeTCP,
-			},
-		},
-		Source: Source{},
+		GRPCServerConfig: configoptional.None[configgrpc.ServerConfig](),
+		Source:           Source{},
 	}
 }
 

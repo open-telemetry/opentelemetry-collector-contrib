@@ -87,11 +87,13 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 		}
 	}
 
-	if jrse.cfg.GRPCServerConfig != nil {
-		grpcServer, err := grpc.NewGRPC(jrse.telemetry, *jrse.cfg.GRPCServerConfig, jrse.samplingStore)
+	if jrse.cfg.GRPCServerConfig.HasValue() {
+		grpcCfg := jrse.cfg.GRPCServerConfig.Get()
+		grpcServer, err := grpc.NewGRPC(jrse.telemetry, *grpcCfg, jrse.samplingStore)
 		if err != nil {
 			return fmt.Errorf("error while creating the gRPC server: %w", err)
 		}
+
 		jrse.grpcServer = grpcServer
 		// start our gRPC server interface
 		if err := jrse.grpcServer.Start(ctx, host); err != nil {
