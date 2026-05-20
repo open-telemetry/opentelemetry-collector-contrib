@@ -257,9 +257,11 @@ func (prwe *prwExporter) Shutdown(context.Context) error {
 	default:
 		close(prwe.closeChan)
 	}
-	err := prwe.shutdownWALIfEnabled()
+	// Wait for all inflight PushMetrics calls to finish before shutting down the WAL.
+	// Previously, shutdownWALIfEnabled was called first, which could close the WAL
+	// while persistToWAL was still writing, causing data corruption.
 	prwe.wg.Wait()
-	return err
+	return prwe.shutdownWALIfEnabled()
 }
 
 func (prwe *prwExporter) pushMetricsV1(ctx context.Context, md pmetric.Metrics) error {

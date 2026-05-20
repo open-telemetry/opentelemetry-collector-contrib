@@ -220,7 +220,12 @@ func (prweWAL *prweWAL) stop() error {
 	prweWAL.stopOnce.Do(func() {
 		close(prweWAL.stopChan)
 		prweWAL.wg.Wait()
+		// Hold mu when closing the WAL to prevent a data race with
+		// concurrent persistToWAL or readPrompbFromWAL calls that
+		// also access prweWAL.wal under the same lock.
+		prweWAL.mu.Lock()
 		err = prweWAL.closeWAL()
+		prweWAL.mu.Unlock()
 	})
 	return err
 }
@@ -422,6 +427,10 @@ func (prweWAL *prweWAL) persistToWAL(ctx context.Context, requests []*prompb.Wri
 	prweWAL.mu.Lock()
 	defer prweWAL.mu.Unlock()
 
+	if prweWAL.wal == nil {
+		return errNilWAL
+	}
+
 	// Write all the requests to the WAL in a batch.
 	batch := new(wal.Batch)
 	for _, req := range requests {
@@ -464,6 +473,7 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 		}
 		prweWAL.mu.Lock()
 		if prweWAL.wal == nil {
+			prweWAL.mu.Unlock()
 			return nil, errors.New("attempt to read from closed WAL")
 		}
 		prweWAL.telemetry.recordWALReads(ctx)
