@@ -12,12 +12,19 @@ import (
 )
 
 // compressingWriter wraps an io.WriteCloser with streaming zstd compression.
-// It closes and resets the encoder after each Write() call so that every
-// write produces a complete, independently decompressible zstd frame.
-// This is essential for file rotation (via timberjack): since timberjack
-// can silently switch to a new file between writes, each file segment must
-// contain only complete frames. The zstd decoder handles concatenated
-// frames natively.
+//
+// Operating modes:
+//   - rotation enabled (rotation != nil): closes and resets the encoder after
+//     each Write() so every record produces a complete, independently
+//     decompressible zstd frame. This is required because timberjack can
+//     silently switch to a new file between writes, so each rotated file
+//     must contain only complete frames. The zstd decoder handles
+//     concatenated frames natively.
+//   - rotation disabled (rotation == nil): keeps a single zstd stream open
+//     across writes. The frame is finalized by the periodic flush() ticker
+//     and by Close() on shutdown. This avoids the per-record Close()+Reset()
+//     overhead and lets zstd share context across records for a better
+//     compression ratio.
 //
 // Note: zstd.Encoder.Flush() only performs a block-level flush within an
 // open frame, it does NOT write the "last block" marker or CRC that make
@@ -31,15 +38,17 @@ type compressingWriter struct {
 	compression string
 	level       int
 	encoder     io.WriteCloser // zstd.Encoder
+	rotation    *Rotation      // when non-nil, finalize a frame per Write()
 	dirty       bool           // tracks whether encoder has received data since last flush/creation
 	err         error          // sticky error state
 }
 
-func newCompressingWriter(base io.WriteCloser, compression string, level int) (*compressingWriter, error) {
+func newCompressingWriter(base io.WriteCloser, compression string, level int, rotation *Rotation) (*compressingWriter, error) {
 	cw := &compressingWriter{
 		base:        base,
 		compression: compression,
 		level:       level,
+		rotation:    rotation,
 	}
 
 	encoder, err := cw.newEncoder()
@@ -75,6 +84,13 @@ func (c *compressingWriter) Write(p []byte) (int, error) {
 	}
 
 	c.dirty = true
+
+	// When rotation is disabled, keep the zstd stream open across writes.
+	// flush() (called by the periodic flusher) and Close() (on shutdown)
+	// will finalize the frame.
+	if c.rotation == nil {
+		return n, nil
+	}
 
 	// Close the encoder to finalize the current zstd frame with the
 	// "last block" marker and CRC checksum. This makes the frame

@@ -197,7 +197,7 @@ func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInte
 	switch {
 	case compression != "" && metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled():
 		var err error
-		wc, err = newCompressingWriter(baseWriter, compression, compressionLevel)
+		wc, err = newCompressingWriter(baseWriter, compression, compressionLevel, rotation)
 		if err != nil {
 			baseWriter.Close()
 			return nil, err

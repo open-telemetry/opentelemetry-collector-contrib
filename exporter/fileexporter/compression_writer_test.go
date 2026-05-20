@@ -16,7 +16,7 @@ func TestCompressingWriter_Zstd(t *testing.T) {
 	var buf bytes.Buffer
 	base := &nopWriteCloser{&buf}
 
-	cw, err := newCompressingWriter(base, compressionZSTD, 3)
+	cw, err := newCompressingWriter(base, compressionZSTD, 3, nil)
 	require.NoError(t, err)
 
 	testData := []byte("hello world from zstd compression")
@@ -43,7 +43,7 @@ func TestCompressingWriter_MultipleWrites_Zstd(t *testing.T) {
 	var buf bytes.Buffer
 	base := &nopWriteCloser{&buf}
 
-	cw, err := newCompressingWriter(base, compressionZSTD, 0)
+	cw, err := newCompressingWriter(base, compressionZSTD, 0, nil)
 	require.NoError(t, err)
 
 	messages := []string{
@@ -75,7 +75,7 @@ func TestCompressingWriter_UnsupportedCompression(t *testing.T) {
 	var buf bytes.Buffer
 	base := &nopWriteCloser{&buf}
 
-	_, err := newCompressingWriter(base, "snappy", 0)
+	_, err := newCompressingWriter(base, "snappy", 0, nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unsupported compression")
 }
@@ -84,7 +84,7 @@ func TestCompressingWriter_Flush(t *testing.T) {
 	var buf bytes.Buffer
 	base := &nopWriteCloser{&buf}
 
-	cw, err := newCompressingWriter(base, compressionZSTD, 0)
+	cw, err := newCompressingWriter(base, compressionZSTD, 0, nil)
 	require.NoError(t, err)
 
 	testData := []byte("data to flush")
