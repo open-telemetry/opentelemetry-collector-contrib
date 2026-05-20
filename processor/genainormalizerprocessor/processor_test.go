@@ -213,7 +213,7 @@ func TestNormalizeAttributes(t *testing.T) {
 		{
 			name:           "string target routed through transformValue",
 			lookup:         map[string]string{"src.op": "gen_ai.operation.name"},
-			transformValue: openinference.Transformer{},
+			transformValue: openinference.Transform,
 			setup: func(attrs pcommon.Map) {
 				attrs.PutStr("src.op", "LLM")
 			},
@@ -540,10 +540,11 @@ func TestNormalize_OpenLLMetry_OperationNameFolding(t *testing.T) {
 	assert.False(t, ok, "original must be removed")
 }
 
-// TestNormalize_OpenLLMetry_StructuredMessagesStringified asserts that a
+// TestNormalize_OpenLLMetry_StructuredMessagesPassThrough asserts that a
 // structured (slice-of-maps) source value renamed to gen_ai.input.messages
-// lands as a JSON string. Documented in README "Type handling".
-func TestNormalize_OpenLLMetry_StructuredMessagesStringified(t *testing.T) {
+// passes through verbatim. The OTel GenAI semconv defines this target as
+// "any"; the processor does not invent shape on the user's behalf.
+func TestNormalize_OpenLLMetry_StructuredMessagesPassThrough(t *testing.T) {
 	cfg := &Config{
 		Sources: []Source{{Name: SourceOpenLLMetry, RemoveOriginals: true}},
 	}
@@ -562,6 +563,11 @@ func TestNormalize_OpenLLMetry_StructuredMessagesStringified(t *testing.T) {
 
 	v, ok := out.Get("gen_ai.input.messages")
 	require.True(t, ok, "gen_ai.input.messages must be set")
-	require.Equal(t, pcommon.ValueTypeStr, v.Type(), "structured input must be stringified")
-	assert.Equal(t, `[{"content":"hi","role":"user"}]`, v.Str())
+	require.Equal(t, pcommon.ValueTypeSlice, v.Type(), "structured input must pass through as slice")
+	require.Equal(t, 1, v.Slice().Len())
+	mv := v.Slice().At(0).Map()
+	role, _ := mv.Get("role")
+	content, _ := mv.Get("content")
+	assert.Equal(t, "user", role.Str())
+	assert.Equal(t, "hi", content.Str())
 }

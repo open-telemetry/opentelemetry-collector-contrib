@@ -1,60 +1,119 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package otelsemconv is the single source of truth for the OTel semantic-
-// conventions version this processor targets. Bumping versions: update the
-// import path below, verify referenced constants still exist, and bump any
-// version references in public-facing docs.
+// Package otelsemconv pins the OTel semantic-conventions version this
+// processor targets and exports the gen_ai.* attribute keys it emits, along
+// with the Go type each key is defined to carry.
+//
+// Bumping versions: update the conventions import path below, verify any
+// referenced symbols still exist, and bump version references in public docs.
+//
+// Adding a new attribute: prefer typed(conventions.GenAIFooBar) — the typed
+// constructor's argument type drives Coerce, which is what enforces spec
+// types at write time. untyped(conventions.GenAIFooBarKey) is an escape
+// hatch reserved for keys whose spec type is "any" (e.g. gen_ai.input.messages,
+// gen_ai.operation.name) and which therefore have no typed constructor in
+// the semconv library; values for these keys pass through verbatim, with no
+// type enforcement. If a typed constructor exists, use typed.
 package otelsemconv // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
 
-import conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+import (
+	"reflect"
+
+	"go.opentelemetry.io/otel/attribute"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+)
 
 // SchemaURL is the OTel semconv schema URL for the targeted version.
 const SchemaURL = conventions.SchemaURL
 
-// GenAI attribute keys as plain strings for use as pdata keys.
-// Grouped by top-level subnamespace (gen_ai.<group>.*), alphabetical within group.
+// targetTypes maps each gen_ai.* key registered via typed() to the Go type
+// the corresponding semconv constructor accepts. Variadic constructors (e.g.
+// ...string) yield a slice type. Keys registered via untyped() are absent;
+// Coerce treats those as opaque and passes values through.
+var targetTypes = map[string]reflect.Type{}
+
+// typed registers a gen_ai.* attribute whose semconv definition is a typed
+// constructor (e.g. func(string) attribute.KeyValue) and returns the
+// attribute key as a string for use as a pdata map key. The constructor's
+// argument type is recorded so Coerce can enforce it at write time.
+//
+// Both the key string and the type registration come from the same ctor
+// symbol — there's no separate *Key constant to drift.
+func typed(ctor any) string {
+	t := reflect.TypeOf(ctor)
+	if t.Kind() != reflect.Func || t.NumIn() != 1 || t.NumOut() != 1 {
+		panic("otelsemconv: typed expects a 1-arg, 1-return semconv constructor")
+	}
+	in := t.In(0)
+	var out []reflect.Value
+	if t.IsVariadic() {
+		// Variadic ...T: param type already arrives as []T. CallSlice passes
+		// the slice as the variadic arg.
+		out = reflect.ValueOf(ctor).CallSlice([]reflect.Value{reflect.MakeSlice(in, 0, 0)})
+	} else {
+		out = reflect.ValueOf(ctor).Call([]reflect.Value{reflect.Zero(in)})
+	}
+	kv := out[0].Interface().(attribute.KeyValue)
+	name := string(kv.Key)
+	targetTypes[name] = in
+	return name
+}
+
+// untyped is an escape hatch for gen_ai.* keys whose spec type is "any" and
+// for which the semconv library therefore exposes no typed constructor —
+// only a *Key constant. Coerce passes values for these keys through verbatim
+// with no type enforcement. Do not use untyped for keys that have a typed
+// constructor; use typed so the spec type is enforced.
+func untyped(k attribute.Key) string {
+	return string(k)
+}
+
+// GenAI attribute keys, grouped by subnamespace. Adding a new attribute is
+// one line: typed(conventions.GenAIFoo) or untyped(conventions.GenAIFooKey).
+//
+//nolint:gochecknoglobals // canonical key registry
 var (
 	// gen_ai.agent.*
-	GenAIAgentName = string(conventions.GenAIAgentNameKey)
+	GenAIAgentName = typed(conventions.GenAIAgentName)
 
 	// gen_ai.conversation.*
-	GenAIConversationID = string(conventions.GenAIConversationIDKey)
+	GenAIConversationID = typed(conventions.GenAIConversationID)
 
 	// gen_ai.input.*
-	GenAIInputMessages = string(conventions.GenAIInputMessagesKey)
+	GenAIInputMessages = untyped(conventions.GenAIInputMessagesKey)
 
 	// gen_ai.operation.*
-	GenAIOperationName = string(conventions.GenAIOperationNameKey)
+	GenAIOperationName = untyped(conventions.GenAIOperationNameKey)
 
 	// gen_ai.output.*
-	GenAIOutputMessages = string(conventions.GenAIOutputMessagesKey)
+	GenAIOutputMessages = untyped(conventions.GenAIOutputMessagesKey)
 
 	// gen_ai.provider.*
-	GenAIProviderName = string(conventions.GenAIProviderNameKey)
+	GenAIProviderName = untyped(conventions.GenAIProviderNameKey)
 
 	// gen_ai.request.*
-	GenAIRequestFrequencyPenalty = string(conventions.GenAIRequestFrequencyPenaltyKey)
-	GenAIRequestMaxTokens        = string(conventions.GenAIRequestMaxTokensKey)
-	GenAIRequestModel            = string(conventions.GenAIRequestModelKey)
-	GenAIRequestPresencePenalty  = string(conventions.GenAIRequestPresencePenaltyKey)
-	GenAIRequestStopSequences    = string(conventions.GenAIRequestStopSequencesKey)
-	GenAIRequestTemperature      = string(conventions.GenAIRequestTemperatureKey)
-	GenAIRequestTopK             = string(conventions.GenAIRequestTopKKey)
-	GenAIRequestTopP             = string(conventions.GenAIRequestTopPKey)
+	GenAIRequestFrequencyPenalty = typed(conventions.GenAIRequestFrequencyPenalty)
+	GenAIRequestMaxTokens        = typed(conventions.GenAIRequestMaxTokens)
+	GenAIRequestModel            = typed(conventions.GenAIRequestModel)
+	GenAIRequestPresencePenalty  = typed(conventions.GenAIRequestPresencePenalty)
+	GenAIRequestStopSequences    = typed(conventions.GenAIRequestStopSequences)
+	GenAIRequestTemperature      = typed(conventions.GenAIRequestTemperature)
+	GenAIRequestTopK             = typed(conventions.GenAIRequestTopK)
+	GenAIRequestTopP             = typed(conventions.GenAIRequestTopP)
 
 	// gen_ai.response.*
-	GenAIResponseFinishReasons = string(conventions.GenAIResponseFinishReasonsKey)
-	GenAIResponseModel         = string(conventions.GenAIResponseModelKey)
+	GenAIResponseFinishReasons = typed(conventions.GenAIResponseFinishReasons)
+	GenAIResponseModel         = typed(conventions.GenAIResponseModel)
 
 	// gen_ai.tool.*
-	GenAIToolCallArguments = string(conventions.GenAIToolCallArgumentsKey)
-	GenAIToolCallID        = string(conventions.GenAIToolCallIDKey)
-	GenAIToolDefinitions   = string(conventions.GenAIToolDefinitionsKey)
-	GenAIToolDescription   = string(conventions.GenAIToolDescriptionKey)
-	GenAIToolName          = string(conventions.GenAIToolNameKey)
+	GenAIToolCallArguments = untyped(conventions.GenAIToolCallArgumentsKey)
+	GenAIToolCallID        = typed(conventions.GenAIToolCallID)
+	GenAIToolDefinitions   = untyped(conventions.GenAIToolDefinitionsKey)
+	GenAIToolDescription   = typed(conventions.GenAIToolDescription)
+	GenAIToolName          = typed(conventions.GenAIToolName)
 
 	// gen_ai.usage.*
-	GenAIUsageInputTokens  = string(conventions.GenAIUsageInputTokensKey)
-	GenAIUsageOutputTokens = string(conventions.GenAIUsageOutputTokensKey)
+	GenAIUsageInputTokens  = typed(conventions.GenAIUsageInputTokens)
+	GenAIUsageOutputTokens = typed(conventions.GenAIUsageOutputTokens)
 )

@@ -51,16 +51,21 @@ The following are not modified:
 
 ### Schema URL
 
-When a mapping fires on a span, the enclosing `ScopeSpans.schema_url` is set to the OTel semantic-conventions version this processor targets (currently `https://opentelemetry.io/schemas/1.40.0`). An existing `schema_url` is overwritten. `ResourceSpans.schema_url` is never modified.
+When a mapping fires on a span, the enclosing `ScopeSpans.schema_url` is set to the OTel semantic-conventions version this processor targets (`https://opentelemetry.io/schemas/1.40.0`). An existing `schema_url` is overwritten. `ResourceSpans.schema_url` is never modified.
 
 ### Type handling
 
-This processor renames attribute keys and applies the value normalizations listed in [Built-in mappings](#built-in-mappings). The documented value normalizations include type-shape changes:
+After renaming, the processor enforces target attribute types against the OTel GenAI semantic conventions, derived from the typed constructor functions in `go.opentelemetry.io/otel/semconv`.
 
-- `gen_ai.response.finish_reasons`: a string source is wrapped into a single-element `string[]` to match the OTel GenAI spec type.
-- `gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.tool.definitions`: structured source values (slice or map) are JSON-encoded to a string. Existing string sources pass through unchanged. Storage backends like OpenSearch reject documents when a field's type disagrees with the index mapping; emitting a consistent string shape across sources avoids those conflicts at ingest. Downstream consumers parse the JSON on read.
+For target keys with a typed primitive constructor in semconv (`gen_ai.usage.input_tokens` int, `gen_ai.request.temperature` float64, `gen_ai.request.model` string, `gen_ai.response.finish_reasons` []string, etc.), the processor coerces between compatible scalar types and drops the rename when coercion is unsafe:
 
-Other type coercion is the user's responsibility. If a source library writes `llm.token_count.prompt` as a string, `gen_ai.usage.input_tokens` will also be a string after normalization. Fix the instrumentation upstream, or pair this processor with the [`transformprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) for OTTL-based coercion.
+- string -> int: parsed via `strconv.ParseInt`; non-numeric strings drop.
+- string -> float64: parsed via `strconv.ParseFloat`; non-numeric strings drop.
+- string -> []string: wrapped into a single-element slice.
+- int / double / bool -> string: converted to canonical string form.
+- structured source (map / slice) -> primitive target: dropped (would lose information).
+
+For target keys defined as `any` in the spec (`gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.tool.definitions`, `gen_ai.operation.name` enum, etc.), the processor preserves whatever shape the source emitted. Backends that require a uniform type for these targets should pair this processor with the [`transformprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) for OTTL-based shape normalization.
 
 ## Examples
 
@@ -130,7 +135,7 @@ Attribute renames:
 | `session.id` | `gen_ai.conversation.id` |
 | `openinference.span.kind` | `gen_ai.operation.name` (with value mapping, see below) |
 
-Source reference: [OpenInference semantic conventions](https://github.com/Arize-ai/openinference/blob/725d68c0c43778089bc99060efba74d37231f9f1/spec/semantic_conventions.md).
+See [`internal/openinference/mappings.go`](./internal/openinference/mappings.go) for the canonical map. Source reference: [OpenInference semantic conventions](https://github.com/Arize-ai/openinference/blob/725d68c0c43778089bc99060efba74d37231f9f1/spec/semantic_conventions.md).
 
 ### `openllmetry`
 
@@ -149,20 +154,20 @@ Attribute renames:
 | `llm.frequency_penalty` | `gen_ai.request.frequency_penalty` | |
 | `llm.presence_penalty` | `gen_ai.request.presence_penalty` | |
 | `llm.chat.stop_sequences` | `gen_ai.request.stop_sequences` | |
-| `llm.request.functions` | `gen_ai.tool.definitions` | structured source values JSON-encoded to string ([Type handling](#type-handling)) |
+| `llm.request.functions` | `gen_ai.tool.definitions` | source-shape preserved ([Type handling](#type-handling)) |
 | `llm.response.finish_reason` | `gen_ai.response.finish_reasons` | string wrapped into a single-element string[] |
 | `llm.response.stop_reason` | `gen_ai.response.finish_reasons` | string wrapped into a single-element string[] |
 | `llm.request.type` | `gen_ai.operation.name` | with value mapping, see below |
 | `traceloop.span.kind` | `gen_ai.operation.name` | with value mapping, see below |
 | `traceloop.entity.name` | `gen_ai.agent.name` | |
-| `traceloop.entity.input` | `gen_ai.input.messages` | structured source values JSON-encoded to string ([Type handling](#type-handling)) |
-| `traceloop.entity.output` | `gen_ai.output.messages` | structured source values JSON-encoded to string ([Type handling](#type-handling)) |
+| `traceloop.entity.input` | `gen_ai.input.messages` | source-shape preserved ([Type handling](#type-handling)) |
+| `traceloop.entity.output` | `gen_ai.output.messages` | source-shape preserved ([Type handling](#type-handling)) |
 
 Coverage: this table covers the most common OpenLLMetry attributes. OpenLLMetry attributes not listed pass through unchanged. Open an issue if a missing attribute is blocking your migration.
 
 OpenLLMetry instrumentation typically emits one of each collision pair (`llm.response.finish_reason` xor `llm.response.stop_reason`; `llm.request.type` xor `traceloop.span.kind`). When both attributes in a pair are present on a span, the resolved value at the target key is undefined.
 
-Source reference: [OpenLLMetry semantic conventions](https://github.com/traceloop/openllmetry/blob/1ebfd1b77cfcfede74a40f28dbb0d9709bcff365/packages/opentelemetry-semantic-conventions-ai/opentelemetry/semconv_ai/__init__.py).
+See [`internal/openllmetry/mappings.go`](./internal/openllmetry/mappings.go) for the canonical map. Source reference: [OpenLLMetry semantic conventions](https://github.com/traceloop/openllmetry/blob/1ebfd1b77cfcfede74a40f28dbb0d9709bcff365/packages/opentelemetry-semantic-conventions-ai/opentelemetry/semconv_ai/__init__.py).
 
 ### Value transformations
 

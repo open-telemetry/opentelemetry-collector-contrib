@@ -35,13 +35,13 @@ var LookupTable = map[string]string{
 	"tool_call.function.arguments": otelsemconv.GenAIToolCallArguments,
 	"tool_call.id":                 otelsemconv.GenAIToolCallID,
 
-	// Reranker model (mutually exclusive with llm/embedding model)
+	// Reranker model
 	"reranker.model_name": otelsemconv.GenAIRequestModel,
 
 	// Agent & session
 	"agent.name": otelsemconv.GenAIAgentName,
 	"session.id": otelsemconv.GenAIConversationID,
 
-	// Span kind -> operation name (value normalization handled by Transformer)
+	// Span kind -> operation name (value normalization handled by Transform)
 	"openinference.span.kind": otelsemconv.GenAIOperationName,
 }

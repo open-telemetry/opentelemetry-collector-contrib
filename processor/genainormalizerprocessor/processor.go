@@ -14,14 +14,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
 )
 
-// valueTransformer writes a normalized representation of src into dst for the
-// given target key. It owns both value-level normalization (e.g. enum folding)
-// and type-level changes (e.g. string -> string[]). Sources that do not need
-// any normalization may leave this nil; the processor falls back to a plain
-// src.CopyTo(dst) in that case.
-type valueTransformer interface {
-	Transform(targetKey string, src, dst pcommon.Value)
-}
+// valueTransformer applies source-specific value-level normalization (e.g.
+// enum folding from "workflow" to "invoke_workflow") into dst. Sources that
+// do not need value-level normalization may leave this nil; the processor
+// falls back to a plain src.CopyTo(dst) in that case. Type-level enforcement
+// (string -> int coercion, single-string -> string[] wrap, etc.) is applied
+// downstream of this function via otelsemconv.Coerce, driven by the OTel
+// GenAI semconv library's typed constructors.
+type valueTransformer func(targetKey string, src, dst pcommon.Value)
 
 // sourceNormalizer holds per-source state used during normalization.
 type sourceNormalizer struct {
@@ -42,10 +42,10 @@ func newSourceNormalizer(src Source) sourceNormalizer {
 	switch src.Name {
 	case SourceOpenInference:
 		sn.lookupTable = openinference.LookupTable
-		sn.transformValue = openinference.Transformer{}
+		sn.transformValue = openinference.Transform
 	case SourceOpenLLMetry:
 		sn.lookupTable = openllmetry.LookupTable
-		sn.transformValue = openllmetry.Transformer{}
+		sn.transformValue = openllmetry.Transform
 	}
 	return sn
 }
@@ -113,16 +113,26 @@ func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
 		if !ok {
 			continue
 		}
-		dest, existed := attrs.GetOrPutEmpty(r.to)
-		if existed && !sn.overwrite {
+		if _, exists := attrs.Get(r.to); exists && !sn.overwrite {
 			continue
 		}
 
+		// Step 1: apply source-specific value normalization (e.g. enum folding).
+		transformed := pcommon.NewValueEmpty()
 		if sn.transformValue != nil {
-			sn.transformValue.Transform(r.to, val, dest)
+			sn.transformValue(r.to, val, transformed)
 		} else {
-			val.CopyTo(dest)
+			val.CopyTo(transformed)
 		}
+
+		// Step 2: enforce target type per OTel GenAI semconv. Drops the rename
+		// if coercion would lose information or change shape unsafely.
+		coerced := pcommon.NewValueEmpty()
+		if !otelsemconv.Coerce(r.to, transformed, coerced) {
+			continue
+		}
+
+		coerced.CopyTo(attrs.PutEmpty(r.to))
 		wrote = true
 
 		if sn.removeOriginals {

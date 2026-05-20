@@ -17,7 +17,6 @@ func TestTransform_OperationName(t *testing.T) {
 		value string
 		want  string
 	}{
-		// openinference.span.kind values.
 		{"LLM", "LLM", "chat"},
 		{"EMBEDDING", "EMBEDDING", "embeddings"},
 		{"CHAIN", "CHAIN", "invoke_agent"},
@@ -38,7 +37,7 @@ func TestTransform_OperationName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			src := pcommon.NewValueStr(tt.value)
 			dst := pcommon.NewValueEmpty()
-			Transformer{}.Transform("gen_ai.operation.name", src, dst)
+			Transform("gen_ai.operation.name", src, dst)
 
 			require.Equal(t, pcommon.ValueTypeStr, dst.Type())
 			assert.Equal(t, tt.want, dst.Str())
@@ -51,7 +50,7 @@ func TestTransform_OperationName(t *testing.T) {
 func TestTransform_PassthroughForUnrelatedKeys(t *testing.T) {
 	src := pcommon.NewValueStr("LLM")
 	dst := pcommon.NewValueEmpty()
-	Transformer{}.Transform("gen_ai.request.model", src, dst)
+	Transform("gen_ai.request.model", src, dst)
 
 	require.Equal(t, pcommon.ValueTypeStr, dst.Type())
 	assert.Equal(t, "LLM", dst.Str())
@@ -62,7 +61,7 @@ func TestTransform_PassthroughForUnrelatedKeys(t *testing.T) {
 func TestTransform_PassthroughForNonStringTypes(t *testing.T) {
 	src := pcommon.NewValueInt(42)
 	dst := pcommon.NewValueEmpty()
-	Transformer{}.Transform("gen_ai.operation.name", src, dst)
+	Transform("gen_ai.operation.name", src, dst)
 
 	require.Equal(t, pcommon.ValueTypeInt, dst.Type())
 	assert.Equal(t, int64(42), dst.Int())

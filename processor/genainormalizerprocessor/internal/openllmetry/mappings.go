@@ -32,13 +32,13 @@ var LookupTable = map[string]string{
 	"llm.chat.stop_sequences": otelsemconv.GenAIRequestStopSequences,
 	"llm.request.functions":   otelsemconv.GenAIToolDefinitions,
 
-	// Finish reason: source is a single string, target is a string[].
-	// Wrapping is handled by Transformer.
+	// Finish reason: source is a single string. Wrapping into a string[] at
+	// gen_ai.response.finish_reasons is handled by otelsemconv.Coerce.
 	"llm.response.finish_reason": otelsemconv.GenAIResponseFinishReasons,
 	"llm.response.stop_reason":   otelsemconv.GenAIResponseFinishReasons,
 
-	// Operation: llm.request.type on LLM spans, traceloop.span.kind on workflow
-	// spans. Value normalization handled by Transformer.
+	// Operation: llm.request.type on LLM spans, traceloop.span.kind on
+	// workflow spans. Enum folding handled by Transform.
 	"llm.request.type":    otelsemconv.GenAIOperationName,
 	"traceloop.span.kind": otelsemconv.GenAIOperationName,
 

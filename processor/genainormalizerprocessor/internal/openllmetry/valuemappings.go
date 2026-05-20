@@ -12,12 +12,8 @@ import (
 )
 
 // operationNameValues maps OpenLLMetry traceloop.span.kind and llm.request.type
-// values to OTel GenAI operation names. The two enum spaces share one map
-// because their keys do not collide today. Adding values that overlap (e.g.
-// a future llm.request.type value of "tool") would require splitting into
-// two maps and dispatching by source key in Transform.
-//
-// Keys are lowercased; Transform lowercases the input before lookup.
+// values to OTel GenAI operation names. Keys are lowercased; Transform
+// lowercases the input before lookup.
 var operationNameValues = map[string]string{
 	// traceloop.span.kind (original: lowercase)
 	"workflow": "invoke_workflow",
@@ -32,40 +28,18 @@ var operationNameValues = map[string]string{
 	"embedding":  "embeddings",
 }
 
-// Transformer implements the processor's valueTransformer interface for the
-// OpenLLMetry source.
-type Transformer struct{}
-
-// Transform writes a normalized representation of src into dst:
-//   - gen_ai.operation.name: fold string against operationNameValues
-//     (case-insensitive)
-//   - gen_ai.response.finish_reasons: wrap a string into a single-element
-//     string[] to satisfy the OTel GenAI spec type
-//   - gen_ai.input.messages, gen_ai.output.messages, gen_ai.tool.definitions:
-//     stringify any structured source value (Map/Slice) to JSON via
-//     pcommon.Value.AsString. Strings pass through. See README "Type handling"
-//     for the rationale.
-//
-// All other keys and types fall through to a plain src.CopyTo(dst).
-func (Transformer) Transform(targetKey string, src, dst pcommon.Value) {
-	switch targetKey {
-	case otelsemconv.GenAIOperationName:
-		if src.Type() == pcommon.ValueTypeStr {
-			if mapped, ok := operationNameValues[strings.ToLower(src.Str())]; ok {
-				dst.SetStr(mapped)
-				return
-			}
-		}
-	case otelsemconv.GenAIResponseFinishReasons:
-		if src.Type() == pcommon.ValueTypeStr {
-			dst.SetEmptySlice().AppendEmpty().SetStr(src.Str())
+// Transform applies OpenLLMetry-specific value-level normalization. It folds
+// llm.request.type and traceloop.span.kind strings onto the
+// gen_ai.operation.name enum (case-insensitive) and copies all other values
+// verbatim. Type-level enforcement (e.g. wrapping a string finish_reason
+// into the spec's []string at gen_ai.response.finish_reasons) is the
+// processor's responsibility via otelsemconv.Coerce.
+func Transform(targetKey string, src, dst pcommon.Value) {
+	if targetKey == otelsemconv.GenAIOperationName && src.Type() == pcommon.ValueTypeStr {
+		if mapped, ok := operationNameValues[strings.ToLower(src.Str())]; ok {
+			dst.SetStr(mapped)
 			return
 		}
-	case otelsemconv.GenAIInputMessages,
-		otelsemconv.GenAIOutputMessages,
-		otelsemconv.GenAIToolDefinitions:
-		dst.SetStr(src.AsString())
-		return
 	}
 	src.CopyTo(dst)
 }
