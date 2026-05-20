@@ -107,6 +107,16 @@ all_set:
       enabled: true
     sqlserver.resource_pool.disk.throttled.write.rate:
       enabled: true
+    sqlserver.sql.attention.rate:
+      enabled: true
+    sqlserver.sql.parameterization.rate:
+      enabled: true
+      attributes: ["parameterization.result"]
+    sqlserver.sql.plan_execution.rate:
+      enabled: true
+      attributes: ["plan.guidance"]
+    sqlserver.sql.recompilation.ratio:
+      enabled: true
     sqlserver.table.count:
       enabled: true
       attributes: ["table.state","table.status"]
@@ -260,6 +270,16 @@ reaggregate_set:
       enabled: true
     sqlserver.resource_pool.disk.throttled.write.rate:
       enabled: true
+    sqlserver.sql.attention.rate:
+      enabled: true
+    sqlserver.sql.parameterization.rate:
+      enabled: true
+      attributes: []
+    sqlserver.sql.plan_execution.rate:
+      enabled: true
+      attributes: []
+    sqlserver.sql.recompilation.ratio:
+      enabled: true
     sqlserver.table.count:
       enabled: true
       attributes: []
@@ -412,6 +432,16 @@ none_set:
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: false
     sqlserver.resource_pool.disk.throttled.write.rate:
+      enabled: false
+    sqlserver.sql.attention.rate:
+      enabled: false
+    sqlserver.sql.parameterization.rate:
+      enabled: false
+      attributes: ["parameterization.result"]
+    sqlserver.sql.plan_execution.rate:
+      enabled: false
+      attributes: ["plan.guidance"]
+    sqlserver.sql.recompilation.ratio:
       enabled: false
     sqlserver.table.count:
       enabled: false

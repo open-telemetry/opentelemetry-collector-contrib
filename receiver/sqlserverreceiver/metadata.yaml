@@ -119,6 +119,11 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [cache, total, target, database, stolen, reserved, free]
+  parameterization.result:
+    description: The outcome of an auto-parameterization attempt by the SQL Server query optimizer.
+    type: string
+    requirement_level: recommended
+    enum: [auto_attempted, safe, unsafe, failed, forced]
   performance_counter.object_name:
     description: Category to which this counter belongs
     type: string
@@ -127,6 +132,11 @@ attributes:
     description: The physical filename of the file being monitored.
     type: string
     requirement_level: recommended
+  plan.guidance:
+    description: The plan guide outcome of a SQL Server plan execution.
+    type: string
+    requirement_level: recommended
+    enum: [guided, misguided]
   replica.direction:
     description: The direction of flow of bytes for replica.
     type: string
@@ -812,6 +822,38 @@ metrics:
       input_type: string
     attributes: []
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.sql.attention.rate:
+    enabled: false
+    description: Number of SQL attentions (client cancellation interrupts) received per second.
+    stability: development
+    unit: "{attentions}/s"
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.sql.parameterization.rate:
+    enabled: false
+    description: Rate of auto-parameterization activity, broken down by outcome.
+    stability: development
+    unit: "{params}/s"
+    gauge:
+      value_type: double
+    attributes: [parameterization.result]
+  sqlserver.sql.plan_execution.rate:
+    enabled: false
+    description: Rate of plan executions, classified by plan guide outcome.
+    stability: development
+    unit: "{executions}/s"
+    gauge:
+      value_type: double
+    attributes: [plan.guidance]
+  sqlserver.sql.recompilation.ratio:
+    enabled: false
+    description: Ratio of SQL recompilations to compilations, expressed as a percentage.
+    stability: development
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
   sqlserver.table.count:
     enabled: false
     description: The number of tables.

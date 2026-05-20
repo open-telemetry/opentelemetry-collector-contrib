@@ -618,6 +618,50 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ---------- | --------- |
 | {writes}/s | Gauge | Double | Development |
 
+### sqlserver.sql.attention.rate
+
+Number of SQL attentions (client cancellation interrupts) received per second.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {attentions}/s | Gauge | Double | Development |
+
+### sqlserver.sql.parameterization.rate
+
+Rate of auto-parameterization activity, broken down by outcome.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {params}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| parameterization.result | The outcome of an auto-parameterization attempt by the SQL Server query optimizer. | Str: ``auto_attempted``, ``safe``, ``unsafe``, ``failed``, ``forced`` | Recommended | - |
+
+### sqlserver.sql.plan_execution.rate
+
+Rate of plan executions, classified by plan guide outcome.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {executions}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| plan.guidance | The plan guide outcome of a SQL Server plan execution. | Str: ``guided``, ``misguided`` | Recommended | - |
+
+### sqlserver.sql.recompilation.ratio
+
+Ratio of SQL recompilations to compilations, expressed as a percentage.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
+
 ### sqlserver.table.count
 
 The number of tables.

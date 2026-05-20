@@ -1331,6 +1331,142 @@ func (ms *SqlserverResourcePoolDiskThrottledWriteRateMetricConfig) Unmarshal(par
 	return nil
 }
 
+// SqlserverSQLAttentionRateMetricConfig provides config for the sqlserver.sql.attention.rate metric.
+type SqlserverSQLAttentionRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverSQLAttentionRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverSQLParameterizationRateMetricAttributeKey specifies the key of an attribute for the sqlserver.sql.parameterization.rate metric.
+type SqlserverSQLParameterizationRateMetricAttributeKey string
+
+const (
+	SqlserverSQLParameterizationRateMetricAttributeKeyParameterizationResult SqlserverSQLParameterizationRateMetricAttributeKey = "parameterization.result"
+)
+
+// SqlserverSQLParameterizationRateMetricConfig provides config for the sqlserver.sql.parameterization.rate metric.
+type SqlserverSQLParameterizationRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverSQLParameterizationRateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverSQLParameterizationRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverSQLParameterizationRateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverSQLParameterizationRateMetricAttributeKeyParameterizationResult:
+		default:
+			return fmt.Errorf("metric sqlserver.sql.parameterization.rate doesn't have an attribute %v, valid attributes: [parameterization.result]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverSQLPlanExecutionRateMetricAttributeKey specifies the key of an attribute for the sqlserver.sql.plan_execution.rate metric.
+type SqlserverSQLPlanExecutionRateMetricAttributeKey string
+
+const (
+	SqlserverSQLPlanExecutionRateMetricAttributeKeyPlanGuidance SqlserverSQLPlanExecutionRateMetricAttributeKey = "plan.guidance"
+)
+
+// SqlserverSQLPlanExecutionRateMetricConfig provides config for the sqlserver.sql.plan_execution.rate metric.
+type SqlserverSQLPlanExecutionRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverSQLPlanExecutionRateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverSQLPlanExecutionRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverSQLPlanExecutionRateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverSQLPlanExecutionRateMetricAttributeKeyPlanGuidance:
+		default:
+			return fmt.Errorf("metric sqlserver.sql.plan_execution.rate doesn't have an attribute %v, valid attributes: [plan.guidance]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverSQLRecompilationRatioMetricConfig provides config for the sqlserver.sql.recompilation.ratio metric.
+type SqlserverSQLRecompilationRatioMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverSQLRecompilationRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverTableCountMetricAttributeKey specifies the key of an attribute for the sqlserver.table.count metric.
 type SqlserverTableCountMetricAttributeKey string
 
@@ -1648,6 +1784,10 @@ type MetricsConfig struct {
 	SqlserverResourcePoolDiskOperations         SqlserverResourcePoolDiskOperationsMetricConfig         `mapstructure:"sqlserver.resource_pool.disk.operations"`
 	SqlserverResourcePoolDiskThrottledReadRate  SqlserverResourcePoolDiskThrottledReadRateMetricConfig  `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
 	SqlserverResourcePoolDiskThrottledWriteRate SqlserverResourcePoolDiskThrottledWriteRateMetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
+	SqlserverSQLAttentionRate                   SqlserverSQLAttentionRateMetricConfig                   `mapstructure:"sqlserver.sql.attention.rate"`
+	SqlserverSQLParameterizationRate            SqlserverSQLParameterizationRateMetricConfig            `mapstructure:"sqlserver.sql.parameterization.rate"`
+	SqlserverSQLPlanExecutionRate               SqlserverSQLPlanExecutionRateMetricConfig               `mapstructure:"sqlserver.sql.plan_execution.rate"`
+	SqlserverSQLRecompilationRatio              SqlserverSQLRecompilationRatioMetricConfig              `mapstructure:"sqlserver.sql.recompilation.ratio"`
 	SqlserverTableCount                         SqlserverTableCountMetricConfig                         `mapstructure:"sqlserver.table.count"`
 	SqlserverTransactionDelay                   SqlserverTransactionDelayMetricConfig                   `mapstructure:"sqlserver.transaction.delay"`
 	SqlserverTransactionMirrorWriteRate         SqlserverTransactionMirrorWriteRateMetricConfig         `mapstructure:"sqlserver.transaction.mirror_write.rate"`
@@ -1828,6 +1968,22 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SqlserverResourcePoolDiskThrottledWriteRate: SqlserverResourcePoolDiskThrottledWriteRateMetricConfig{
+			Enabled: false,
+		},
+		SqlserverSQLAttentionRate: SqlserverSQLAttentionRateMetricConfig{
+			Enabled: false,
+		},
+		SqlserverSQLParameterizationRate: SqlserverSQLParameterizationRateMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverSQLParameterizationRateMetricAttributeKey{SqlserverSQLParameterizationRateMetricAttributeKeyParameterizationResult},
+		},
+		SqlserverSQLPlanExecutionRate: SqlserverSQLPlanExecutionRateMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverSQLPlanExecutionRateMetricAttributeKey{SqlserverSQLPlanExecutionRateMetricAttributeKeyPlanGuidance},
+		},
+		SqlserverSQLRecompilationRatio: SqlserverSQLRecompilationRatioMetricConfig{
 			Enabled: false,
 		},
 		SqlserverTableCount: SqlserverTableCountMetricConfig{

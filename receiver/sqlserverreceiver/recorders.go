@@ -46,6 +46,30 @@ var perfCounterRecorders = []perfCounterRecorderConf{
 			"SQL Re-Compilations/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(ts, val)
 			},
+			"SQL Attention rate": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+				mb.RecordSqlserverSQLAttentionRateDataPoint(ts, val)
+			},
+			"Auto-Param Attempts/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+				mb.RecordSqlserverSQLParameterizationRateDataPoint(ts, val, metadata.AttributeParameterizationResultAutoAttempted)
+			},
+			"Safe Auto-Params/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+				mb.RecordSqlserverSQLParameterizationRateDataPoint(ts, val, metadata.AttributeParameterizationResultSafe)
+			},
+			"Unsafe Auto-Params/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+				mb.RecordSqlserverSQLParameterizationRateDataPoint(ts, val, metadata.AttributeParameterizationResultUnsafe)
+			},
+			"Failed Auto-Params/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+				mb.RecordSqlserverSQLParameterizationRateDataPoint(ts, val, metadata.AttributeParameterizationResultFailed)
+			},
+			"Forced Parameterizations/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+				mb.RecordSqlserverSQLParameterizationRateDataPoint(ts, val, metadata.AttributeParameterizationResultForced)
+			},
+			"Guided plan executions/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+				mb.RecordSqlserverSQLPlanExecutionRateDataPoint(ts, val, metadata.AttributePlanGuidanceGuided)
+			},
+			"Misguided plan executions/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+				mb.RecordSqlserverSQLPlanExecutionRateDataPoint(ts, val, metadata.AttributePlanGuidanceMisguided)
+			},
 		},
 	},
 	{
