@@ -19,6 +19,7 @@ func DataPointFunctions() map[string]ottl.Factory[*ottldatapoint.TransformContex
 		newConvertSummarySumValToSumFactory(),
 		newConvertSummaryCountValToSumFactory(),
 		newMergeHistogramBucketsFactory(),
+		newLimitHistogramBucketsFactory(),
 	)
 
 	maps.Copy(functions, datapointFunctions)

@@ -37,6 +37,7 @@ func Test_DataPointFunctions(t *testing.T) {
 			expected["convert_summary_sum_val_to_sum"] = newConvertSummarySumValToSumFactory()
 			expected["convert_summary_count_val_to_sum"] = newConvertSummaryCountValToSumFactory()
 			expected["merge_histogram_buckets"] = newMergeHistogramBucketsFactory()
+			expected["limit_histogram_buckets"] = newLimitHistogramBucketsFactory()
 
 			actual := DataPointFunctions()
 
