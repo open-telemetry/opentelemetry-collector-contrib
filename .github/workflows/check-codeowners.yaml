@@ -53,6 +53,7 @@ jobs:
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+          permission-members: read
 
       - name: Gen CODEOWNERS
         run: |
