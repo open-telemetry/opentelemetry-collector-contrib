@@ -333,9 +333,9 @@ func TestConfig_buildDSN(t *testing.T) {
 			},
 			want: "clickhouse://foo:bar@127.0.0.1:9000?async_insert=true&client_info_product=otelcol%2Ftest&compress=lz4",
 		},
-		{
+		{ //nolint:gosec // the following triggers G101: Potential hardcoded credentials
 			name: "use database name from DSN if not set in config",
-			fields: fields{
+			fields: fields{ //nolint:gosec // the following triggers G101: Potential hardcoded credentials
 				Endpoint: "clickhouse://foo:bar@127.0.0.1:9000/otel",
 				Username: "foo",
 				Password: "bar",
