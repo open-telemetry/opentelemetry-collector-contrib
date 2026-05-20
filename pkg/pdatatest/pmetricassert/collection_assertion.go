@@ -231,7 +231,7 @@ func (a MetricsAssertion) Validate(actualMetrics pmetric.MetricSlice) error {
 		return fmt.Errorf("metrics/count: %w", err)
 	}
 
-	if len(a.Exact) > 0 {
+	if a.Exact != nil {
 		if err := validateMetricExact(a.Exact, actualMetrics); err != nil {
 			return fmt.Errorf("metrics exact assertion failed: %w", err)
 		}
@@ -274,7 +274,7 @@ func (a ResourcesAssertion) Validate(actual []resourceAssertion) error {
 	if err := a.Count.Validate(len(actual)); err != nil {
 		return fmt.Errorf("resources/count: %w", err)
 	}
-	if len(a.Exact) > 0 {
+	if a.Exact != nil {
 		if err := validateExactCollection("resource", a.Exact, actual, func(expected, got resourceAssertion) error {
 			return expected.Matches(got)
 		}); err != nil {
@@ -295,7 +295,7 @@ func (a ScopesAssertion) Validate(actual []scopeAssertion) error {
 	if err := a.Count.Validate(len(actual)); err != nil {
 		return fmt.Errorf("scopes/count: %w", err)
 	}
-	if len(a.Exact) > 0 {
+	if a.Exact != nil {
 		if err := validateExactCollection("scope", a.Exact, actual, func(expected, got scopeAssertion) error {
 			return expected.Matches(got)
 		}); err != nil {
@@ -316,7 +316,7 @@ func (a DatapointsAssertion) Validate(actual []datapointAssertion) error {
 	if err := a.Count.Validate(len(actual)); err != nil {
 		return fmt.Errorf("datapoints/count: %w", err)
 	}
-	if len(a.Exact) > 0 {
+	if a.Exact != nil {
 		if err := validateExactCollection("datapoint", a.Exact, actual, func(expected, got datapointAssertion) error {
 			return expected.Matches(got)
 		}); err != nil {
@@ -454,7 +454,7 @@ func (d datapointAssertion) Matches(actual datapointAssertion) error {
 // Matches validates one actual metric against this expected metric assertion.
 func (m metricAssertion) Matches(actual pmetric.Metric) error {
 	expected := m
-	if len(expected.Datapoints.Exact) == 0 && len(expected.Datapoints.Include) == 0 {
+	if len(expected.Datapoints.Exact) == 0 && len(expected.Datapoints.Include) == 0 && expected.Datapoints.Count == nil {
 		expected.Datapoints.Exact = []datapointAssertion{{}}
 	}
 
@@ -468,7 +468,7 @@ func (m metricAssertion) Matches(actual pmetric.Metric) error {
 
 func (m metricAssertion) MatchesAssertion(actual metricAssertion) error {
 	expected := m
-	if len(expected.Datapoints.Exact) == 0 && len(expected.Datapoints.Include) == 0 {
+	if len(expected.Datapoints.Exact) == 0 && len(expected.Datapoints.Include) == 0 && expected.Datapoints.Count == nil {
 		expected.Datapoints.Exact = []datapointAssertion{{}}
 	}
 	return compareMetric(expected, actual)

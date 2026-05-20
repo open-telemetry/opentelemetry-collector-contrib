@@ -311,7 +311,7 @@ func expandScopeShorthand(s *scopeAssertion) {
 }
 
 func expandMetricShorthand(m *metricAssertion) {
-	if len(m.Datapoints.Exact) == 0 && len(m.Datapoints.Include) == 0 {
+	if len(m.Datapoints.Exact) == 0 && len(m.Datapoints.Include) == 0 && m.Datapoints.Count == nil {
 		m.Datapoints.Exact = []datapointAssertion{{}}
 	}
 }
