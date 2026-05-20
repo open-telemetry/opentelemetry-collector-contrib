@@ -752,3 +752,85 @@ func Test_replaceAllPatterns_invalid_model(t *testing.T) {
 	assert.Nil(t, exprFunc)
 	assert.ErrorContains(t, err, "invalid mode")
 }
+
+func Benchmark_replaceAllPatterns_mode_value(b *testing.B) {
+	input := pcommon.NewMap()
+
+	input.PutStr("password", "12345678")
+
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) { return tCtx, nil },
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+			if v, ok := m.(pcommon.Map); ok {
+				v.CopyTo(tCtx)
+				return nil
+			}
+			return errors.New("expected pcommon.Map")
+		},
+	}
+
+	pattern := &ottl.StandardStringGetter[pcommon.Map]{
+		Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return `sagext`, nil },
+	}
+
+	replacement := &ottl.StandardStringGetter[pcommon.Map]{
+		Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "***", nil },
+	}
+
+	emptyFunc := ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{}
+	emptyFormat := ottl.Optional[ottl.StringGetter[pcommon.Map]]{}
+
+	exprFunc, err := replaceAllPatterns[pcommon.Map](target, modeValue, pattern, replacement, emptyFunc, emptyFormat)
+	require.NoError(b, err)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		freshMap := pcommon.NewMap()
+
+		input.CopyTo(freshMap)
+		_, _ = exprFunc(b.Context(), freshMap)
+	}
+}
+
+func Benchmark_replaceAllPatterns_mode_key(b *testing.B) {
+	input := pcommon.NewMap()
+
+	input.PutStr("password", "12345678")
+
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) { return tCtx, nil },
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+			if v, ok := m.(pcommon.Map); ok {
+				v.CopyTo(tCtx)
+				return nil
+			}
+			return errors.New("expected pcommon.Map")
+		},
+	}
+
+	pattern := &ottl.StandardStringGetter[pcommon.Map]{
+		Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return `password`, nil },
+	}
+
+	replacement := &ottl.StandardStringGetter[pcommon.Map]{
+		Getter: func(_ context.Context, _ pcommon.Map) (any, error) { return "***", nil },
+	}
+
+	emptyFunc := ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{}
+	emptyFormat := ottl.Optional[ottl.StringGetter[pcommon.Map]]{}
+
+	exprFunc, err := replaceAllPatterns[pcommon.Map](target, modeKey, pattern, replacement, emptyFunc, emptyFormat)
+	require.NoError(b, err)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		freshMap := pcommon.NewMap()
+		input.CopyTo(freshMap)
+
+		_, _ = exprFunc(b.Context(), freshMap)
+	}
+}
