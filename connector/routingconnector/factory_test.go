@@ -7,14 +7,32 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
+
+func TestFactoryCreateDefaultConfig(t *testing.T) {
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.ID(), false)
+	})
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.Equal(t, ottl.PropagateError, cfg.(*Config).ErrorMode)
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.ID(), true))
+
+	cfg = factory.CreateDefaultConfig()
+	assert.Equal(t, ottl.IgnoreError, cfg.(*Config).ErrorMode)
+}
 
 func TestConnectorCreatedWithValidConfiguration(t *testing.T) {
 	cfg := &Config{
