@@ -172,12 +172,12 @@ exporters:
 ```
 ### Host Attributes
 
-OpenTelemetry Collector [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover Host Resource attributes, such as `host.name` and provide Resource attributes using environment variables, which can be used for setting AppName and SubSystem fields in Coralogix.
+OpenTelemetry Collector [Resource Detection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover Host Resource attributes, such as `host.name` and provide Resource attributes using environment variables, which can be used for setting AppName and SubSystem fields in Coralogix.
 
 Example: 
 ```yaml
 processors:
-  resourcedetection/system:
+  resource_detection/system:
     detectors: ["system", "env"]
     system:
       hostname_sources: ["os"]
@@ -201,12 +201,12 @@ exporters:
 ```
 ### EC2 Attributes
 
-OpenTelemetry Collector [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover EC2 Resource attributes, such as EC2 tags as resource attributes.
+OpenTelemetry Collector [Resource Detection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor) processor can discover EC2 Resource attributes, such as EC2 tags as resource attributes.
 
 Example: 
 ```yaml
 processors:
- resourcedetection/ec2:
+ resource_detection/ec2:
     detectors: ["ec2"]
     ec2:
       # A list of regex's to match tag keys to add as resource attributes can be specified

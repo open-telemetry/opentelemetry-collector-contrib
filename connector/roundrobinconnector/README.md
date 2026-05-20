@@ -54,7 +54,7 @@ does not support scale well (e.g. prometheusremotewrite).
 receivers:
   otlp:
 processors:
-  resourcedetection:
+  resource_detection:
 exporters:
   prometheusremotewrite/1:
   prometheusremotewrite/2:
@@ -64,7 +64,7 @@ service:
   pipelines:
     metrics:
       receivers: [otlp]
-      processors: [resourcedetection]
+      processors: [resource_detection]
       exporters: [round_robin]
     metrics/1:
       receivers: [round_robin]

@@ -13,7 +13,7 @@ processors:
     check_interval: 2s
     limit_mib: 1800
     spike_limit_mib: 500
-  resourcedetection/system:
+  resource_detection/system:
     detectors: [ "system" ]
     system:
       hostname_sources: [ "os" ]
@@ -49,9 +49,9 @@ service:
   pipelines:
     logs:
       receivers: [ fluentforward, otlp ]
-      processors: [ memory_limiter, resourcedetection/system, resource, batch ]
+      processors: [ memory_limiter, resource_detection/system, resource, batch ]
       exporters: [ clickhouse ]
     traces:
       receivers: [ otlp ]
-      processors: [ memory_limiter, resourcedetection/system, resource, batch ]
+      processors: [ memory_limiter, resource_detection/system, resource, batch ]
       exporters: [ clickhouse ]

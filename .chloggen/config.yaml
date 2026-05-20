@@ -218,7 +218,7 @@ components:
     - processor/redaction
     - processor/remotetap
     - processor/resource
-    - processor/resourcedetection
+    - processor/resource_detection
     - processor/scalewaydetector
     - processor/schema
     - processor/span

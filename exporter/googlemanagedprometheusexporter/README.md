@@ -80,7 +80,7 @@ processors:
         check_interval: 1s
         limit_percentage: 65
         spike_limit_percentage: 20
-    resourcedetection:
+    resource_detection:
         # detect cluster name and location
         detectors: [gcp]
         timeout: 10s
@@ -113,7 +113,7 @@ service:
   pipelines:
     metrics:
       receivers: [prometheus]
-      processors: [memory_limiter, transform, resourcedetection]
+      processors: [memory_limiter, transform, resource_detection]
       exporters: [googlemanagedprometheus]
 ```
 
@@ -135,7 +135,7 @@ monitored resource:
 * instance: [`service.instance.id`]
 
 In the configuration above, `cloud.availability_zone`, `cloud.region`, and
-`k8s.cluster.name` are detected using the `resourcedetection` processor with
+`k8s.cluster.name` are detected using the `resource_detection` processor with
 the `gcp` detector. The prometheus receiver sets `service.name` to the
 configured `job_name`, and `service.instance.id` is set to the scrape target's
 `instance`. The prometheus receiver sets `k8s.namespace.name` when using
@@ -147,7 +147,7 @@ In GMP, the above attributes are used to identify the `prometheus_target`
 monitored resource. As such, it is recommended to avoid writing metric or resource labels
 that match these keys. Doing so can cause errors when exporting metrics to
 GMP or when trying to query from GMP. So, the recommended way to set them
-is with the [resourcedetection processor](../../processor/resourcedetectionprocessor).
+is with the [Resource Detection processor](../../processor/resourcedetectionprocessor).
 
 If you still need to set `location`, `cluster`, or `namespace` labels
 (such as when running in non-GCP environments), you can do so with the
@@ -276,7 +276,7 @@ There are three main root causes for timeseries collisions:
 
 The most common reason is (1), which means that it can be fixed by adding
 resource information. If you are running on GCP, you can use the
-[resourcedetection processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourcedetectionprocessor/README.md)
+[Resource Detection processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourcedetectionprocessor/README.md)
 with the `gcp` detector. If you are running on
 Kubernetes (including GKE), we recommend also using the [k8sattributes](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/k8sattributesprocessor/README.md)
 processor to at least add `k8s.namespace.name` and `k8s.pod.name`. Finally,
