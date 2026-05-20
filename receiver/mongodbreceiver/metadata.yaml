@@ -147,7 +147,7 @@ attributes:
   mongodb.operation.plan_summary:
     description: Summary of the execution plan for the MongoDB operation.
     type: string
-  mongodb.operation.prepare_read_conflict.count:
+  mongodb.operation.prepared_read_conflict.count:
     description: The number of times the MongoDB operation had to wait for a prepared transaction with a write to commit or abort.
     type: int
   mongodb.operation.state:
@@ -245,7 +245,7 @@ events:
       - mongodb.operation.state
       - mongodb.operation.type
       - mongodb.operation.duration
-      - mongodb.operation.prepare_read_conflict.count
+      - mongodb.operation.prepared_read_conflict.count
       - mongodb.operation.write_conflict.count
       - mongodb.operation.yield.count
       - mongodb.operation.waiting_for_lock

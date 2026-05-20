@@ -588,7 +588,7 @@ query sample
 | mongodb.operation.state | Simplified state of the MongoDB operation. | Str: ``active``, ``waiting`` | - |
 | mongodb.operation.type | The low-level MongoDB operation type (e.g. query, insert, update, remove, getmore, command). | Any Str | - |
 | mongodb.operation.duration | The duration of the MongoDB operation in seconds. | Any Double | - |
-| mongodb.operation.prepare_read_conflict.count | The number of times the MongoDB operation had to wait for a prepared transaction with a write to commit or abort. | Any Int | - |
+| mongodb.operation.prepared_read_conflict.count | The number of times the MongoDB operation had to wait for a prepared transaction with a write to commit or abort. | Any Int | - |
 | mongodb.operation.write_conflict.count | The number of times the MongoDB operation conflicted with another write operation on the same document. | Any Int | - |
 | mongodb.operation.yield.count | The number of times the MongoDB operation yielded to allow other operations to complete. | Any Int | - |
 | mongodb.operation.waiting_for_lock | Whether the MongoDB operation is waiting for a lock. | Any Bool | - |

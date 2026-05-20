@@ -1311,7 +1311,7 @@ func TestProcessCurrentOpContentionAttributes(t *testing.T) {
 	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 
 	attrs := records.At(0).Attributes()
-	requireIntAttribute(t, attrs, "mongodb.operation.prepare_read_conflict.count", 2)
+	requireIntAttribute(t, attrs, "mongodb.operation.prepared_read_conflict.count", 2)
 	requireIntAttribute(t, attrs, "mongodb.operation.write_conflict.count", 3)
 	requireIntAttribute(t, attrs, "mongodb.operation.yield.count", 4)
 	requireBoolAttribute(t, attrs, "mongodb.operation.waiting_for_lock", false)

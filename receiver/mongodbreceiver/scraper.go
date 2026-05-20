@@ -245,7 +245,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		command := getValue[bson.D](op, commandKey)
 		opType := getValue[string](op, opKey)
 		commandType, queryTextTruncated := getCommandDetails(command)
-		prepareReadConflictCount := getInt64Value(op, prepareReadConflictsKey)
+		preparedReadConflictCount := getInt64Value(op, prepareReadConflictsKey)
 		writeConflictCount := getInt64Value(op, writeConflictsKey)
 		yieldCount := getInt64Value(op, numYieldsKey)
 		lsid := ""
@@ -318,7 +318,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 			operationState,
 			opType,
 			durationSeconds,
-			prepareReadConflictCount,
+			preparedReadConflictCount,
 			writeConflictCount,
 			yieldCount,
 			waitingForLock,
