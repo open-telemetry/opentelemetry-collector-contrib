@@ -194,10 +194,10 @@ type Supervisor struct {
 	// Default is 30 seconds but can be overridden by the OpAMP server with an OpAMPConnectionSettings message.
 	heartbeatIntervalSeconds uint64
 
-	// firstTimeConnected indicates whether the Supervisor's
+	// initialOpampConnSuccess indicates whether the Supervisor's
 	// OpAMP client achieved a successful connection to the OpAMP server
 	// at least once.
-	firstTimeConnected atomic.Bool
+	initialOpampConnSuccess atomic.Bool
 }
 
 func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
@@ -217,7 +217,7 @@ func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Superviso
 		agentReadyChan:                 make(chan struct{}, 1),
 		metrics:                        &supervisorTelemetry.Metrics{},
 		heartbeatIntervalSeconds:       30,
-		firstTimeConnected:             atomic.Bool{},
+		initialOpampConnSuccess:        atomic.Bool{},
 	}
 
 	s.runCtx, s.runCtxCancel = context.WithCancel(ctx)
@@ -980,8 +980,8 @@ func (*Supervisor) getHeadersFromSettings(protoHeaders *protobufs.Headers) http.
 
 func (s *Supervisor) onConnect(_ context.Context) {
 	s.telemetrySettings.Logger.Info("Connected to the OpAMP server.")
-	opampBackendConnected := s.firstTimeConnected.CompareAndSwap(false, true)
-	if !opampBackendConnected {
+	firstTimeConnected := s.initialOpampConnSuccess.CompareAndSwap(false, true)
+	if !firstTimeConnected {
 		return
 	}
 
@@ -1280,7 +1280,7 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 // merging the last received remote config, last received own metrics config,
 // and any local configs.
 func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
-	if !s.firstTimeConnected.Load() && !s.hasAgentConfigState() && s.config.Agent.FallbackEnabled() && !s.hasPersistedRemoteConfig() {
+	if !s.initialOpampConnSuccess.Load() && !s.hasAgentConfigState() && s.config.Agent.FallbackEnabled() && !s.hasPersistedRemoteConfig() {
 		err := s.loadAndWriteFallbackConfig()
 		if err != nil {
 			return fmt.Errorf("could not switch to fallback config: %w", err)
@@ -1576,7 +1576,7 @@ func (s *Supervisor) loadFallbackExtraConfigs(k *koanf.Koanf) error {
 
 // loadAndWriteFallbackConfig switches the agent to use the fallback configuration.
 func (s *Supervisor) loadAndWriteFallbackConfig() error {
-	if s.firstTimeConnected.Load() {
+	if s.initialOpampConnSuccess.Load() {
 		s.telemetrySettings.Logger.Debug("Already connected to OpAMP backend, skipping switch to fallback config")
 		return nil
 	}
