@@ -420,7 +420,7 @@ func parseDBVersion(versionStr string) (dbVersion, error) {
 	}
 
 	// MySQL: strip any suffix after the first "-"
-	semverStr := strings.SplitN(versionStr, "-", 2)[0]
+	semverStr, _, _ := strings.Cut(versionStr, "-")
 	v, err := version.NewVersion(semverStr)
 	if err != nil {
 		return dbVersion{}, fmt.Errorf("failed to parse db version %q: %w", versionStr, err)

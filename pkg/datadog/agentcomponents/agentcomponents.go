@@ -238,6 +238,13 @@ func WithProxy(cfg *datadogconfig.Config) ConfigOption {
 	}
 }
 
+// WithTLSSetting propagates tls.insecure_skip_verify into the DD-agent forwarder's TLS config
+func WithTLSSetting(cfg *datadogconfig.Config) ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		setTLSSetting(cfg, pkgconfig)
+	}
+}
+
 // WithCustomConfig allows setting arbitrary configuration values
 func WithCustomConfig(key string, value any, source pkgconfigmodel.Source) ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
@@ -268,6 +275,13 @@ func setProxy(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
 		noProxy = append(noProxy, v)
 	}
 	pkgconfig.Set("proxy.no_proxy", noProxy, pkgconfigmodel.SourceEnvVar)
+}
+
+func setTLSSetting(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
+	if cfg.TLS.InsecureSkipVerify {
+		pkgconfig.Set("skip_ssl_validation", cfg.TLS.InsecureSkipVerify, pkgconfigmodel.SourceFile)
+	}
+	pkgconfig.Set("apm_config.skip_ssl_validation", cfg.TLS.InsecureSkipVerify, pkgconfigmodel.SourceFile)
 }
 
 // newForwarderComponent creates a new forwarder that sends payloads to Datadog backend

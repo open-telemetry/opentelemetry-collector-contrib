@@ -69,7 +69,7 @@ spec:
     processors:
 
     exporters:
-      loadbalancing:
+      load_balancing:
         protocol:
           otlp:
             tls:
@@ -85,7 +85,7 @@ spec:
             - otlp
           processors: []
           exporters:
-            - loadbalancing
+            - load_balancing
 ---
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
