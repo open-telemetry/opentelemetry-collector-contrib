@@ -13,3 +13,6 @@ extensions:
 
 service:
   extensions: [opamp]
+  telemetry:
+    resource:
+      "service.instance.id": "{{.InstanceUid}}"

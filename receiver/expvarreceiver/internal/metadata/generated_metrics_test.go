@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -37,6 +38,11 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
 		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
+		},
+		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
 			resAttrsSet: testDataSetNone,
@@ -53,8 +59,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -163,36 +170,44 @@ func TestMetricsBuilder(t *testing.T) {
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
-			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-			rm := metrics.ResourceMetrics().At(0)
-			assert.Equal(t, res, rm.Resource())
-			assert.Equal(t, 1, rm.ScopeMetrics().Len())
-			ms := rm.ScopeMetrics().At(0).Metrics()
+			var allMetricsList []pmetric.Metric
+			totalMetricsCount := 0
+			for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+				rm := metrics.ResourceMetrics().At(ri)
+				assert.Equal(t, 1, rm.ScopeMetrics().Len())
+				ms := rm.ScopeMetrics().At(0).Metrics()
+				totalMetricsCount += ms.Len()
+				for mi := 0; mi < ms.Len(); mi++ {
+					allMetricsList = append(allMetricsList, ms.At(mi))
+				}
+			}
 			if tt.metricsSet == testDataSetDefault {
-				assert.Equal(t, defaultMetricsCount, ms.Len())
+				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
 			}
 			if tt.metricsSet == testDataSetAll {
-				assert.Equal(t, allMetricsCount, ms.Len())
+				assert.Equal(t, allMetricsCount, totalMetricsCount)
 			}
 			validatedMetrics := make(map[string]bool)
-			for i := 0; i < ms.Len(); i++ {
-				switch ms.At(i).Name() {
+			for _, mi := range allMetricsList {
+				switch mi.Name() {
 				case "process.runtime.memstats.buck_hash_sys":
 					assert.False(t, validatedMetrics["process.runtime.memstats.buck_hash_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.buck_hash_sys")
 					validatedMetrics["process.runtime.memstats.buck_hash_sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of memory in profiling bucket hash tables.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes of memory in profiling bucket hash tables.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -200,13 +215,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.frees":
 					assert.False(t, validatedMetrics["process.runtime.memstats.frees"], "Found a duplicate in the metrics slice: process.runtime.memstats.frees")
 					validatedMetrics["process.runtime.memstats.frees"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Cumulative count of heap objects freed.", ms.At(i).Description())
-					assert.Equal(t, "{objects}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Cumulative count of heap objects freed.", mi.Description())
+					assert.Equal(t, "{objects}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -214,11 +229,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.gc_cpu_fraction":
 					assert.False(t, validatedMetrics["process.runtime.memstats.gc_cpu_fraction"], "Found a duplicate in the metrics slice: process.runtime.memstats.gc_cpu_fraction")
 					validatedMetrics["process.runtime.memstats.gc_cpu_fraction"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The fraction of this program's available CPU time used by the GC since the program started.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The fraction of this program's available CPU time used by the GC since the program started.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -226,13 +241,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.gc_sys":
 					assert.False(t, validatedMetrics["process.runtime.memstats.gc_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.gc_sys")
 					validatedMetrics["process.runtime.memstats.gc_sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of memory in garbage collection metadata.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes of memory in garbage collection metadata.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -240,13 +255,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.heap_alloc":
 					assert.False(t, validatedMetrics["process.runtime.memstats.heap_alloc"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_alloc")
 					validatedMetrics["process.runtime.memstats.heap_alloc"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of allocated heap objects.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes of allocated heap objects.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -254,13 +269,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.heap_idle":
 					assert.False(t, validatedMetrics["process.runtime.memstats.heap_idle"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_idle")
 					validatedMetrics["process.runtime.memstats.heap_idle"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes in idle (unused) spans.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes in idle (unused) spans.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -268,13 +283,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.heap_inuse":
 					assert.False(t, validatedMetrics["process.runtime.memstats.heap_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_inuse")
 					validatedMetrics["process.runtime.memstats.heap_inuse"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes in in-use spans.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes in in-use spans.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -282,13 +297,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.heap_objects":
 					assert.False(t, validatedMetrics["process.runtime.memstats.heap_objects"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_objects")
 					validatedMetrics["process.runtime.memstats.heap_objects"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of allocated heap objects.", ms.At(i).Description())
-					assert.Equal(t, "{objects}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of allocated heap objects.", mi.Description())
+					assert.Equal(t, "{objects}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -296,13 +311,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.heap_released":
 					assert.False(t, validatedMetrics["process.runtime.memstats.heap_released"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_released")
 					validatedMetrics["process.runtime.memstats.heap_released"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of physical memory returned to the OS.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes of physical memory returned to the OS.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -310,13 +325,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.heap_sys":
 					assert.False(t, validatedMetrics["process.runtime.memstats.heap_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.heap_sys")
 					validatedMetrics["process.runtime.memstats.heap_sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of heap memory obtained by the OS.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes of heap memory obtained by the OS.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -324,11 +339,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.last_pause":
 					assert.False(t, validatedMetrics["process.runtime.memstats.last_pause"], "Found a duplicate in the metrics slice: process.runtime.memstats.last_pause")
 					validatedMetrics["process.runtime.memstats.last_pause"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The most recent stop-the-world pause time.", ms.At(i).Description())
-					assert.Equal(t, "ns", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The most recent stop-the-world pause time.", mi.Description())
+					assert.Equal(t, "ns", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -336,13 +351,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.lookups":
 					assert.False(t, validatedMetrics["process.runtime.memstats.lookups"], "Found a duplicate in the metrics slice: process.runtime.memstats.lookups")
 					validatedMetrics["process.runtime.memstats.lookups"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of pointer lookups performed by the runtime.", ms.At(i).Description())
-					assert.Equal(t, "{lookups}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of pointer lookups performed by the runtime.", mi.Description())
+					assert.Equal(t, "{lookups}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -350,13 +365,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.mallocs":
 					assert.False(t, validatedMetrics["process.runtime.memstats.mallocs"], "Found a duplicate in the metrics slice: process.runtime.memstats.mallocs")
 					validatedMetrics["process.runtime.memstats.mallocs"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Cumulative count of heap objects allocated.", ms.At(i).Description())
-					assert.Equal(t, "{objects}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Cumulative count of heap objects allocated.", mi.Description())
+					assert.Equal(t, "{objects}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -364,13 +379,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.mcache_inuse":
 					assert.False(t, validatedMetrics["process.runtime.memstats.mcache_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.mcache_inuse")
 					validatedMetrics["process.runtime.memstats.mcache_inuse"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of allocated mcache structures.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes of allocated mcache structures.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -378,13 +393,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.mcache_sys":
 					assert.False(t, validatedMetrics["process.runtime.memstats.mcache_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.mcache_sys")
 					validatedMetrics["process.runtime.memstats.mcache_sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of memory obtained from the OS for mcache structures.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes of memory obtained from the OS for mcache structures.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -392,13 +407,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.mspan_inuse":
 					assert.False(t, validatedMetrics["process.runtime.memstats.mspan_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.mspan_inuse")
 					validatedMetrics["process.runtime.memstats.mspan_inuse"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of allocated mspan structures.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes of allocated mspan structures.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -406,13 +421,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.mspan_sys":
 					assert.False(t, validatedMetrics["process.runtime.memstats.mspan_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.mspan_sys")
 					validatedMetrics["process.runtime.memstats.mspan_sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of memory obtained from the OS for mspan structures.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes of memory obtained from the OS for mspan structures.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -420,13 +435,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.next_gc":
 					assert.False(t, validatedMetrics["process.runtime.memstats.next_gc"], "Found a duplicate in the metrics slice: process.runtime.memstats.next_gc")
 					validatedMetrics["process.runtime.memstats.next_gc"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The target heap size of the next GC cycle.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The target heap size of the next GC cycle.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -434,13 +449,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.num_forced_gc":
 					assert.False(t, validatedMetrics["process.runtime.memstats.num_forced_gc"], "Found a duplicate in the metrics slice: process.runtime.memstats.num_forced_gc")
 					validatedMetrics["process.runtime.memstats.num_forced_gc"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of GC cycles that were forced by the application calling the GC function.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of GC cycles that were forced by the application calling the GC function.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -448,13 +463,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.num_gc":
 					assert.False(t, validatedMetrics["process.runtime.memstats.num_gc"], "Found a duplicate in the metrics slice: process.runtime.memstats.num_gc")
 					validatedMetrics["process.runtime.memstats.num_gc"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of completed GC cycles.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of completed GC cycles.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -462,13 +477,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.other_sys":
 					assert.False(t, validatedMetrics["process.runtime.memstats.other_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.other_sys")
 					validatedMetrics["process.runtime.memstats.other_sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of memory in miscellaneous off-heap runtime allocations.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes of memory in miscellaneous off-heap runtime allocations.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -476,13 +491,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.pause_total":
 					assert.False(t, validatedMetrics["process.runtime.memstats.pause_total"], "Found a duplicate in the metrics slice: process.runtime.memstats.pause_total")
 					validatedMetrics["process.runtime.memstats.pause_total"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The cumulative nanoseconds in GC stop-the-world pauses since the program started.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The cumulative nanoseconds in GC stop-the-world pauses since the program started.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -490,13 +505,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.stack_inuse":
 					assert.False(t, validatedMetrics["process.runtime.memstats.stack_inuse"], "Found a duplicate in the metrics slice: process.runtime.memstats.stack_inuse")
 					validatedMetrics["process.runtime.memstats.stack_inuse"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes in stack spans.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes in stack spans.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -504,13 +519,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.stack_sys":
 					assert.False(t, validatedMetrics["process.runtime.memstats.stack_sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.stack_sys")
 					validatedMetrics["process.runtime.memstats.stack_sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes of stack memory obtained from the OS.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes of stack memory obtained from the OS.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -518,13 +533,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.sys":
 					assert.False(t, validatedMetrics["process.runtime.memstats.sys"], "Found a duplicate in the metrics slice: process.runtime.memstats.sys")
 					validatedMetrics["process.runtime.memstats.sys"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total bytes of memory obtained from the OS.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total bytes of memory obtained from the OS.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -532,13 +547,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.runtime.memstats.total_alloc":
 					assert.False(t, validatedMetrics["process.runtime.memstats.total_alloc"], "Found a duplicate in the metrics slice: process.runtime.memstats.total_alloc")
 					validatedMetrics["process.runtime.memstats.total_alloc"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Cumulative bytes allocated for heap objects.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Cumulative bytes allocated for heap objects.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

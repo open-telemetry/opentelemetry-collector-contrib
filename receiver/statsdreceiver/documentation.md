@@ -10,6 +10,6 @@ The following telemetry is emitted by this component.
 
 Number of statsd metrics received.
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |

@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
@@ -35,22 +34,6 @@ func TestFactory_CreateLogs(t *testing.T) {
 	require.NoError(t, exporter.Shutdown(t.Context()))
 }
 
-func TestFactory_CreateLogsJSON(t *testing.T) {
-	factory := NewFactory()
-	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoint = defaultEndpoint
-	})
-	gatePrev := featureGateJSON.IsEnabled()
-	_ = featuregate.GlobalRegistry().Set(featureGateJSON.ID(), true)
-	params := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := factory.CreateLogs(t.Context(), params, cfg)
-	_ = featuregate.GlobalRegistry().Set(featureGateJSON.ID(), gatePrev)
-	require.NoError(t, err)
-	require.NotNil(t, exporter)
-
-	require.NoError(t, exporter.Shutdown(t.Context()))
-}
-
 func TestFactory_CreateTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
@@ -64,16 +47,28 @@ func TestFactory_CreateTraces(t *testing.T) {
 	require.NoError(t, exporter.Shutdown(t.Context()))
 }
 
-func TestFactory_CreateTracesJSON(t *testing.T) {
+func TestFactory_CreateLogsJSONConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Endpoint = defaultEndpoint
+		cfg.JSON = true
 	})
-	gatePrev := featureGateJSON.IsEnabled()
-	_ = featuregate.GlobalRegistry().Set(featureGateJSON.ID(), true)
+	params := exportertest.NewNopSettings(metadata.Type)
+	exporter, err := factory.CreateLogs(t.Context(), params, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exporter)
+
+	require.NoError(t, exporter.Shutdown(t.Context()))
+}
+
+func TestFactory_CreateTracesJSONConfig(t *testing.T) {
+	factory := NewFactory()
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoint = defaultEndpoint
+		cfg.JSON = true
+	})
 	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
-	_ = featuregate.GlobalRegistry().Set(featureGateJSON.ID(), gatePrev)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 

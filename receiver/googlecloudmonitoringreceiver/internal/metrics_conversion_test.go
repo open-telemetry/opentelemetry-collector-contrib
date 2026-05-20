@@ -43,6 +43,9 @@ func TestConvertGaugeToMetrics(t *testing.T) {
 						},
 					},
 				},
+				Metric: &metric.Metric{
+					Labels: map[string]string{"labelKey": "labelValue"},
+				},
 			},
 			fileNameExpected: "TestConvertGaugeToMetrics_ValidGaugePoints.yaml",
 		},
@@ -62,6 +65,46 @@ func TestConvertGaugeToMetrics(t *testing.T) {
 				},
 			},
 			fileNameExpected: "TestConvertGaugeToMetrics_InvalidEndTime.yaml",
+		},
+		{
+			name: "valid boolean true",
+			ts: &monitoringpb.TimeSeries{
+				Points: []*monitoringpb.Point{
+					{
+						Interval: &monitoringpb.TimeInterval{
+							StartTime: &timestamppb.Timestamp{Seconds: 10},
+							EndTime:   &timestamppb.Timestamp{Seconds: 20},
+						},
+						Value: &monitoringpb.TypedValue{
+							Value: &monitoringpb.TypedValue_BoolValue{BoolValue: true},
+						},
+					},
+				},
+				Metric: &metric.Metric{
+					Labels: map[string]string{"boolKey": "trueValue"},
+				},
+			},
+			fileNameExpected: "TestConvertGaugeToMetrics_ValidBooleanTrue.yaml",
+		},
+		{
+			name: "valid boolean false",
+			ts: &monitoringpb.TimeSeries{
+				Points: []*monitoringpb.Point{
+					{
+						Interval: &monitoringpb.TimeInterval{
+							StartTime: &timestamppb.Timestamp{Seconds: 30},
+							EndTime:   &timestamppb.Timestamp{Seconds: 40},
+						},
+						Value: &monitoringpb.TypedValue{
+							Value: &monitoringpb.TypedValue_BoolValue{BoolValue: false},
+						},
+					},
+				},
+				Metric: &metric.Metric{
+					Labels: map[string]string{"boolKey": "falseValue"},
+				},
+			},
+			fileNameExpected: "TestConvertGaugeToMetrics_ValidBooleanFalse.yaml",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

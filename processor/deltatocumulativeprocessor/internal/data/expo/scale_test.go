@@ -64,7 +64,7 @@ func TestDownscale(t *testing.T) {
 			buckets := make([]Repr[B], len(reprs))
 			for i, r := range reprs {
 				bkt := pmetric.NewExponentialHistogramDataPointBuckets()
-				for _, elem := range strings.Fields(r.bkt) {
+				for elem := range strings.FieldsSeq(r.bkt) {
 					if elem == "ø" {
 						bkt.SetOffset(bkt.Offset() + 1)
 						continue
@@ -99,6 +99,80 @@ func TestDownscale(t *testing.T) {
 	t.Run("panics", func(t *testing.T) {
 		assert.PanicsWithValue(t, "cannot upscale without introducing error (8 -> 12)", func() {
 			expo.Downscale(bins{}.Into(), 8, 12)
+		})
+	})
+
+	t.Run("empty-buckets", func(t *testing.T) {
+		t.Run("odd-offset", func(t *testing.T) {
+			buckets := pmetric.NewExponentialHistogramDataPointBuckets()
+			buckets.SetOffset(1)
+
+			assert.NotPanics(t, func() {
+				expo.Downscale(buckets, 2, 1)
+			})
+
+			assert.Equal(t, int32(0), buckets.Offset())
+			assert.Equal(t, 0, buckets.BucketCounts().Len())
+		})
+
+		t.Run("even-offset", func(t *testing.T) {
+			buckets := pmetric.NewExponentialHistogramDataPointBuckets()
+			buckets.SetOffset(2)
+
+			assert.NotPanics(t, func() {
+				expo.Downscale(buckets, 2, 1)
+			})
+
+			assert.Equal(t, int32(1), buckets.Offset())
+			assert.Equal(t, 0, buckets.BucketCounts().Len())
+		})
+
+		t.Run("zero-offset", func(t *testing.T) {
+			buckets := pmetric.NewExponentialHistogramDataPointBuckets()
+			buckets.SetOffset(0)
+
+			assert.NotPanics(t, func() {
+				expo.Downscale(buckets, 2, 1)
+			})
+
+			assert.Equal(t, int32(0), buckets.Offset())
+			assert.Equal(t, 0, buckets.BucketCounts().Len())
+		})
+
+		t.Run("negative-offset-odd", func(t *testing.T) {
+			buckets := pmetric.NewExponentialHistogramDataPointBuckets()
+			buckets.SetOffset(-3)
+
+			assert.NotPanics(t, func() {
+				expo.Downscale(buckets, 2, 1)
+			})
+
+			assert.Equal(t, int32(-2), buckets.Offset())
+			assert.Equal(t, 0, buckets.BucketCounts().Len())
+		})
+
+		t.Run("negative-offset-even", func(t *testing.T) {
+			buckets := pmetric.NewExponentialHistogramDataPointBuckets()
+			buckets.SetOffset(-4)
+
+			assert.NotPanics(t, func() {
+				expo.Downscale(buckets, 2, 1)
+			})
+
+			assert.Equal(t, int32(-2), buckets.Offset())
+			assert.Equal(t, 0, buckets.BucketCounts().Len())
+		})
+
+		t.Run("multiple-scales", func(t *testing.T) {
+			buckets := pmetric.NewExponentialHistogramDataPointBuckets()
+			buckets.SetOffset(7)
+
+			assert.NotPanics(t, func() {
+				expo.Downscale(buckets, 5, 0)
+			})
+
+			assert.Equal(t, int32(0), buckets.Offset())
+			assert.Equal(t, 0, buckets.BucketCounts().Len())
 		})
 	})
 }

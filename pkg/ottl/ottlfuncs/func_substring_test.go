@@ -5,9 +5,11 @@ package ottlfuncs
 
 import (
 	"context"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -63,7 +65,7 @@ func Test_substring(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := substring(tt.target, tt.start, tt.length)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -163,6 +165,42 @@ func Test_substring_error(t *testing.T) {
 			length: &ottl.StandardIntGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return int64(20), nil
+				},
+			},
+		},
+		{
+			name: "substring with start+length overflowing int64",
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "123456789", nil
+				},
+			},
+			start: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(math.MaxInt64 - 2), nil
+				},
+			},
+			length: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(10), nil
+				},
+			},
+		},
+		{
+			name: "substring with length overflowing int64 while start is in range",
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "123456789", nil
+				},
+			},
+			start: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(5), nil
+				},
+			},
+			length: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(math.MaxInt64), nil
 				},
 			},
 		},

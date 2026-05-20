@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
@@ -32,7 +31,7 @@ import (
 var jaegerAgent = component.NewIDWithName(metadata.Type, "agent_test")
 
 func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalNetworkAddress(t, "udp")
 	testJaegerAgent(t, addr, Protocols{
 		ThriftCompactUDP: configoptional.Some(ProtocolUDP{
 			Endpoint:        addr,
@@ -58,7 +57,7 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 }
 
 func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalNetworkAddress(t, "udp")
 	testJaegerAgent(t, addr, Protocols{
 		ThriftBinaryUDP: configoptional.Some(ProtocolUDP{
 			Endpoint:        addr,
@@ -69,7 +68,7 @@ func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
 
 func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	// This test confirms that the thrift binary port is opened correctly.  This is all we can test at the moment.  See above.
-	addr := testutil.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalNetworkAddress(t, "udp")
 
 	config := Protocols{
 		ThriftBinaryUDP: configoptional.Some(ProtocolUDP{
@@ -84,7 +83,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	assert.NoError(t, jr.startAgent(), "Start failed")
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(t.Context())) })
 
-	l, err := net.Listen("udp", addr)
+	l, err := net.ListenPacket("udp", addr)
 	assert.Error(t, err, "should not have been able to listen to the port")
 
 	if l != nil {
@@ -116,7 +115,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig Protocol
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(t.Context())) })
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		err = jr.Start(t.Context(), componenttest.NewNopHost())
 		if err == nil {
 			break
@@ -164,7 +163,7 @@ func newClientUDP(hostPort string, binary bool) (*agent.AgentClient, error) {
 func generateTraceData() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "test")
+	rs.Resource().Attributes().PutStr("service.name", "test")
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 	span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0})

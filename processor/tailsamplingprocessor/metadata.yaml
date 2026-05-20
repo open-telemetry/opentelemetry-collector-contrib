@@ -1,3 +1,4 @@
+display_name: Tail Sampling Processor
 type: tail_sampling
 
 status:
@@ -6,14 +7,45 @@ status:
     beta: [traces]
   distributions: [contrib, k8s]
   codeowners:
-    active: [portertech]
-    emeritus: [jpkrohling]
+    active: [portertech, jmacd, csmarchbanks, carsonip]
+    emeritus: [jpkrohling, Logiraptor]
     seeking_new: true
+
+feature_gates:
+  - id: "processor.tailsamplingprocessor.disableinvertdecisions"
+    description: When enabled, sampling policy 'invert_match' will result in a SAMPLED or NOT SAMPLED decision instead of INVERT SAMPLED or INVERT NOT SAMPLED.
+    stage: stable
+    from_version: v0.126.0
+    to_version: v0.152.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39833
+
+  - id: "processor.tailsamplingprocessor.metricstatcountspanssampled"
+    description: "When enabled, a new metric stat_count_spans_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of spans sampled or not per sampling policy, where the original counts traces."
+    stage: alpha
+    from_version: v0.95.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30482
+
+  - id: "processor.tailsamplingprocessor.recordpolicy"
+    description: "When enabled, attaches the name of the policy (and if applicable, composite policy) responsible for sampling a trace in the 'tailsampling.policy', 'tailsampling.composite_policy', and `tailsampling.cached_decision` attributes."
+    stage: alpha
+    from_version: v0.120.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35180
+
+  - id: "processor.tailsamplingprocessor.tailstorageextension"
+    description: When enabled, allows configuring tail_storage to use a tail storage extension implementation.
+    stage: alpha
+    from_version: v0.150.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/47331
 
 tests:
   config:
 
 attributes:
+  decision:
+    description: The sampling decision
+    enum: [sampled, not_sampled, dropped]
+    type: string
+
   policy:
     description: Name of the policy
     type: string
@@ -22,62 +54,11 @@ attributes:
     description: Whether the sampling decision was sampled or not, false can mean either not sampled or dropped
     type: bool
 
-  decision:
-    description: The sampling decision
-    enum: [sampled, not_sampled, dropped]
-    type: string
-
 telemetry:
   metrics:
-    processor_tail_sampling_sampling_decision_latency:
-      description: Latency (in microseconds) of a given sampling policy
-      unit: µs
-      enabled: true
-      histogram:
-        value_type: int
-        bucket_boundaries: [1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000]
-
-    processor_tail_sampling_sampling_decision_timer_latency:
-      description: Latency (in milliseconds) of each run of the sampling decision timer
-      unit: ms
-      enabled: true
-      histogram:
-        value_type: int
-        bucket_boundaries: [1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000]
-
-    processor_tail_sampling_sampling_trace_removal_age:
-      description: Time (in seconds) from arrival of a new trace until its removal from memory
-      unit: s
-      enabled: true
-      histogram:
-        value_type: int
-
-    processor_tail_sampling_sampling_late_span_age:
-      description: Time (in seconds) from the sampling decision was taken and the arrival of a late span
-      unit: s
-      enabled: true
-      histogram:
-        value_type: int
-
-    processor_tail_sampling_sampling_policy_evaluation_error:
-      description: Count of sampling policy evaluation errors
-      unit: "{errors}"
-      enabled: true
-      sum:
-        value_type: int
-        monotonic: true
-
-    processor_tail_sampling_count_traces_sampled:
-      description: Count of traces that were sampled or not per sampling policy
-      unit: "{traces}"
-      enabled: true
-      sum:
-        value_type: int
-        monotonic: true
-      attributes: [policy, sampled, decision]
-
     processor_tail_sampling_count_spans_sampled:
       description: Count of spans that were sampled or not per sampling policy
+      stability: development
       unit: "{spans}"
       enabled: true
       sum:
@@ -85,8 +66,29 @@ telemetry:
         monotonic: true
       attributes: [policy, sampled, decision]
 
+    processor_tail_sampling_count_traces_sampled:
+      description: Count of traces that were sampled or not per sampling policy
+      stability: development
+      unit: "{traces}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [policy, sampled, decision]
+
+    processor_tail_sampling_early_releases_from_cache_decision:
+      description: Number of spans that were able to be immediately released due to a decision cache hit.
+      stability: development
+      unit: "{spans}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [sampled]
+
     processor_tail_sampling_global_count_traces_sampled:
       description: Global count of traces that were sampled or not by at least one policy
+      stability: development
       unit: "{traces}"
       enabled: true
       sum:
@@ -94,34 +96,91 @@ telemetry:
         monotonic: true
       attributes: [sampled, decision]
 
-    processor_tail_sampling_sampling_trace_dropped_too_early:
-      description: Count of traces that needed to be dropped before the configured wait time
+    processor_tail_sampling_new_trace_id_received:
+      description: Counts the arrival of new traces
+      stability: development
       unit: "{traces}"
       enabled: true
       sum:
         value_type: int
         monotonic: true
 
-    processor_tail_sampling_new_trace_id_received:
-      description: Counts the arrival of new traces
+    processor_tail_sampling_sampling_decision_timer_latency:
+      description: Latency (in milliseconds) of each run of the sampling decision timer
+      stability: development
+      unit: ms
+      enabled: true
+      histogram:
+        value_type: int
+        bucket_boundaries: [1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000]
+
+    processor_tail_sampling_sampling_late_span_age:
+      description: Time (in seconds) from the sampling decision was taken and the arrival of a late span
+      stability: development
+      unit: s
+      enabled: true
+      histogram:
+        value_type: int
+
+    processor_tail_sampling_sampling_policy_evaluation_error:
+      description: Count of sampling policy evaluation errors
+      stability: development
+      unit: "{errors}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor_tail_sampling_sampling_policy_execution_count:
+      description: Total number of executions of a specific sampling policy
+      stability: development
+      unit: "{executions}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [policy]
+
+    processor_tail_sampling_sampling_policy_execution_time_sum:
+      description: Total time spent (in microseconds) executing a specific sampling policy
+      stability: development
+      unit: µs
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [policy]
+
+    processor_tail_sampling_sampling_trace_dropped_too_early:
+      description: Count of traces that needed to be dropped before the configured wait time
+      stability: development
       unit: "{traces}"
       enabled: true
       sum:
         value_type: int
         monotonic: true
+
+    processor_tail_sampling_sampling_trace_removal_age:
+      description: Time (in seconds) from arrival of a new trace until its removal from memory
+      stability: development
+      unit: s
+      enabled: true
+      histogram:
+        value_type: int
 
     processor_tail_sampling_sampling_traces_on_memory:
       description: Tracks the number of traces current on memory
+      stability: development
       unit: "{traces}"
       enabled: true
       gauge:
         value_type: int
 
-    processor_tail_sampling_early_releases_from_cache_decision:
-      description: Number of spans that were able to be immediately released due to a decision cache hit.
-      unit: "{spans}"
+    processor_tail_sampling_traces_dropped_too_large:
+      description: Count of traces that were dropped because they were too large
+      stability: development
+      unit: "{traces}"
       enabled: true
       sum:
         value_type: int
         monotonic: true
-      attributes: [sampled]

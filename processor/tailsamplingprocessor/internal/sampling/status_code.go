@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -55,16 +56,13 @@ func NewStatusCodeFilter(settings component.TelemetrySettings, statusCodeString 
 func (r *statusCodeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	r.logger.Debug("Evaluating spans in status code filter")
 
-	trace.Lock()
-	defer trace.Unlock()
 	batches := trace.ReceivedBatches
 
 	return hasSpanWithCondition(batches, func(span ptrace.Span) bool {
-		for _, statusCode := range r.statusCodes {
-			if span.Status().Code() == statusCode {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(r.statusCodes, span.Status().Code())
 	}), nil
+}
+
+func (*statusCodeFilter) IsStateful() bool {
+	return false
 }

@@ -67,7 +67,7 @@ func BenchmarkTransform(b *testing.B) {
 				pt.SetTypeStrindex(4)
 				pt.SetUnitStrindex(5)
 
-				s := p.Sample().AppendEmpty()
+				s := p.Samples().AppendEmpty()
 				s.TimestampsUnixNano().Append(42)
 				s.Values().Append(1)
 
@@ -84,8 +84,79 @@ func BenchmarkTransform(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				_, _ = Transform(dic, rp.Resource(), sp.Scope(), p)
+			}
+		})
+	}
+}
+
+func BenchmarkHostResourceData_MarshalJSON(b *testing.B) {
+	testCases := []struct {
+		name string
+		data ResourceData
+	}{
+		{
+			name: "empty data map",
+			data: ResourceData{
+				EcsVersion: EcsVersion{V: EcsVersionString},
+				HostID:     "test-host-id-12345",
+				Data:       map[string]string{},
+			},
+		},
+		{
+			name: "small data map",
+			data: ResourceData{
+				EcsVersion: EcsVersion{V: EcsVersionString},
+				HostID:     "test-host-id-12345",
+				Data: map[string]string{
+					"os.type":    "Linux",
+					"os.version": "5.15.0",
+					"arch":       "amd64",
+				},
+			},
+		},
+		{
+			name: "large data map",
+			data: ResourceData{
+				EcsVersion: EcsVersion{V: EcsVersionString},
+				HostID:     "test-host-id-12345",
+				Data: map[string]string{
+					"os.type":             "Linux",
+					"os.version":          "5.15.0",
+					"arch":                "amd64",
+					"kernel.version":      "5.15.0-91-generic",
+					"hostname":            "production-server-01",
+					"cloud.provider":      "AWS",
+					"cloud.region":        "us-east-1",
+					"cloud.zone":          "us-east-1a",
+					"cloud.instance.id":   "i-1234567890abcdef0",
+					"cloud.instance.type": "m5.xlarge",
+				},
+			},
+		},
+		{
+			name: "data with empty values",
+			data: ResourceData{
+				EcsVersion: EcsVersion{V: EcsVersionString},
+				HostID:     "test-host-id-12345",
+				Data: map[string]string{
+					"os.type":    "Linux",
+					"os.version": "",
+					"arch":       "amd64",
+					"hostname":   "",
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		b.Run(tc.name, func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+
+			for b.Loop() {
+				_, _ = tc.data.MarshalJSON()
 			}
 		})
 	}

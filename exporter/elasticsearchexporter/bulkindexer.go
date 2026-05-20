@@ -9,20 +9,24 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/elastic/elastic-transport-go/v8/elastictransport"
 	"github.com/elastic/go-docappender/v2"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/logging"
@@ -52,32 +56,34 @@ type bulkIndexerSession interface {
 	End()
 
 	// Flush flushes any documents added to the bulk indexing session.
-	//
-	// The behavior of Flush depends on whether the bulk indexer is
-	// synchronous or asynchronous. Calling Flush on an asynchronous bulk
-	// indexer session is effectively a no-op; flushing will be done in
-	// the background. Calling Flush on a synchronous bulk indexer session
-	// will wait for bulk indexing of added documents to complete,
-	// successfully or not.
 	Flush(context.Context) error
 }
 
 const defaultMaxRetries = 2
 
+const (
+	// errorHintKnownIssues is the hint message for errors that are documented in the Known issues section.
+	errorHintKnownIssues = "check the \"Known issues\" section of Elasticsearch Exporter docs"
+	// errorHintOTelMappingMode is the hint message for illegal_argument_exception
+	// related to require_data_stream with incompatible Elasticsearch versions in OTel mode.
+	errorHintOTelMappingMode = "OTel mapping mode requires Elasticsearch 8.12+ (see Known issues in README)"
+	// errorHintECSMappingMode is the hint message for illegal_argument_exception
+	// related to require_data_stream with incompatible Elasticsearch versions in ECS mode.
+	errorHintECSMappingMode = "ECS mapping mode requires Elasticsearch 8.12+ (see Known issues in README)"
+)
+
 func newBulkIndexer(
-	client esapi.Transport,
+	client elastictransport.Interface,
 	config *Config,
 	requireDataStream bool,
 	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
-) (bulkIndexer, error) {
-	if config.Batcher.enabledSet || (config.QueueBatchConfig.Enabled && config.QueueBatchConfig.Batch.HasValue()) {
-		return newSyncBulkIndexer(client, config, requireDataStream, tb, logger), nil
-	}
-	return newAsyncBulkIndexer(client, config, requireDataStream, tb, logger)
+	getErrorHintFunc func(index, errorType string) string,
+) bulkIndexer {
+	return newSyncBulkIndexer(client, config, requireDataStream, tb, logger, getErrorHintFunc)
 }
 
-func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream bool) docappender.BulkIndexerConfig {
+func bulkIndexerConfig(client elastictransport.Interface, config *Config, requireDataStream bool, logger *zap.Logger) docappender.BulkIndexerConfig {
 	var maxDocRetries int
 	if config.Retry.Enabled {
 		maxDocRetries = defaultMaxRetries
@@ -98,7 +104,30 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 		CompressionLevel:        compressionLevel,
 		PopulateFailedDocsInput: config.LogFailedDocsInput,
 		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.IncludeSourceOnError),
+		QueryParams:             getQueryParamsFromEndpoint(config, logger),
+		FilterPath:              config.BulkResponseFilterPath,
 	}
+}
+
+func getQueryParamsFromEndpoint(config *Config, logger *zap.Logger) (queryParams map[string][]string) {
+	endpoints, _ := config.endpoints()
+
+	if len(endpoints) != 0 {
+		// we check the query params set on the first endpoint only
+		// this is enough to replicate to all requests
+		parsedURL, err := url.Parse(endpoints[0])
+		if err != nil {
+			logger.Warn("Failed to parse URL from endpoint", zap.Error(err))
+		}
+
+		rawQuery := parsedURL.RawQuery
+		queryParams, err = url.ParseQuery(rawQuery)
+		if err != nil {
+			logger.Warn("Failed to parse query parameters from endpoint", zap.Error(err))
+		}
+		return queryParams
+	}
+	return nil
 }
 
 func bulkIndexerIncludeSourceOnError(includeSourceOnError *bool) docappender.Value {
@@ -112,38 +141,52 @@ func bulkIndexerIncludeSourceOnError(includeSourceOnError *bool) docappender.Val
 }
 
 func newSyncBulkIndexer(
-	client esapi.Transport,
+	client elastictransport.Interface,
 	config *Config,
 	requireDataStream bool,
 	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
+	getErrorHintFunc func(index, errorType string) string,
 ) *syncBulkIndexer {
+	var maxFlushBytes int64
+	if config.QueueBatchConfig.HasValue() && config.QueueBatchConfig.Get().Batch.HasValue() {
+		batch := config.QueueBatchConfig.Get().Batch.Get()
+		if batch.Sizer == exporterhelper.RequestSizerTypeBytes {
+			maxFlushBytes = batch.MaxSize
+		}
+	}
 	return &syncBulkIndexer{
-		config:                bulkIndexerConfig(client, config, requireDataStream),
-		flushTimeout:          config.Timeout,
-		flushBytes:            config.Flush.Bytes,
-		retryConfig:           config.Retry,
-		metadataKeys:          config.MetadataKeys,
-		telemetryBuilder:      tb,
-		logger:                logger,
-		failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
+		config:                 bulkIndexerConfig(client, config, false, logger),
+		maxFlushBytes:          maxFlushBytes,
+		flushTimeout:           config.Timeout,
+		retryConfig:            config.Retry,
+		metadataKeys:           config.MetadataKeys,
+		telemetryBuilder:       tb,
+		logger:                 logger,
+		failedDocsInputLogger:  newFailedDocsInputLogger(logger, config),
+		getErrorHintFunc:       getErrorHintFunc,
+		requireDataStream:      requireDataStream,
+		suppressConflictErrors: config.SuppressConflictErrors,
 	}
 }
 
 type syncBulkIndexer struct {
-	config                docappender.BulkIndexerConfig
-	flushTimeout          time.Duration
-	flushBytes            int
-	retryConfig           RetrySettings
-	metadataKeys          []string
-	telemetryBuilder      *metadata.TelemetryBuilder
-	logger                *zap.Logger
-	failedDocsInputLogger *zap.Logger
+	config                 docappender.BulkIndexerConfig
+	maxFlushBytes          int64
+	flushTimeout           time.Duration
+	retryConfig            RetrySettings
+	metadataKeys           []string
+	telemetryBuilder       *metadata.TelemetryBuilder
+	logger                 *zap.Logger
+	failedDocsInputLogger  *zap.Logger
+	getErrorHintFunc       func(index, errorType string) string
+	requireDataStream      bool
+	suppressConflictErrors bool
 }
 
 // StartSession creates a new docappender.BulkIndexer, and wraps
 // it with a syncBulkIndexerSession.
-func (s *syncBulkIndexer) StartSession(context.Context) bulkIndexerSession {
+func (s *syncBulkIndexer) StartSession(ctx context.Context) bulkIndexerSession {
 	bi, err := docappender.NewBulkIndexer(s.config)
 	if err != nil {
 		// This should never happen in practice:
@@ -152,7 +195,13 @@ func (s *syncBulkIndexer) StartSession(context.Context) bulkIndexerSession {
 		// always be valid at this point.
 		return errBulkIndexerSession{err: err}
 	}
-	return &syncBulkIndexerSession{s: s, bi: bi}
+	// Compute the docs received attribute set once per session.
+	// Metadata keys are constant within a single request context,
+	// so recomputing them per document is wasteful.
+	docsReceivedAttr := metric.WithAttributeSet(attribute.NewSet(
+		getAttributesFromMetadataKeys(ctx, s.metadataKeys)...,
+	))
+	return &syncBulkIndexerSession{s: s, bi: bi, docsReceivedAttr: docsReceivedAttr}
 }
 
 // Close is a no-op.
@@ -161,33 +210,31 @@ func (*syncBulkIndexer) Close(context.Context) error {
 }
 
 type syncBulkIndexerSession struct {
-	s  *syncBulkIndexer
-	bi *docappender.BulkIndexer
+	s                *syncBulkIndexer
+	bi               *docappender.BulkIndexer
+	docsReceivedAttr metric.MeasurementOption
 }
 
 // Add adds an item to the sync bulk indexer session.
 func (s *syncBulkIndexerSession) Add(ctx context.Context, index, docID, pipeline string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
 	doc := docappender.BulkIndexerItem{
-		Index:            index,
-		Body:             document,
-		DocumentID:       docID,
-		DynamicTemplates: dynamicTemplates,
-		Action:           action,
-		Pipeline:         pipeline,
+		Index:             index,
+		Body:              document,
+		DocumentID:        docID,
+		DynamicTemplates:  dynamicTemplates,
+		Action:            action,
+		Pipeline:          pipeline,
+		RequireDataStream: s.s.requireDataStream,
 	}
 	err := s.bi.Add(doc)
 	if err != nil {
 		return err
 	}
-	s.s.telemetryBuilder.ElasticsearchDocsReceived.Add(
-		ctx, 1,
-		metric.WithAttributeSet(attribute.NewSet(
-			getAttributesFromMetadataKeys(ctx, s.s.metadataKeys)...),
-		),
-	)
-	// flush bytes should operate on uncompressed length
-	// as Elasticsearch http.max_content_length measures uncompressed length.
-	if s.bi.UncompressedLen() >= s.s.flushBytes {
+	s.s.telemetryBuilder.ElasticsearchDocsReceived.Add(ctx, 1, s.docsReceivedAttr)
+	// sending_queue operates on flush sizes based on pdata model whereas bulk
+	// indexers operate on ndjson. Force a flush if the ndjson size is too large.
+	// when the uncompressed length exceeds the configured max flush size.
+	if s.s.maxFlushBytes > 0 && int64(s.bi.UncompressedLen()) >= s.s.maxFlushBytes {
 		return s.Flush(ctx)
 	}
 	return nil
@@ -206,10 +253,13 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 			ctx,
 			s.bi,
 			s.s.flushTimeout,
+			s.s.retryConfig.RetryOnStatus,
 			s.s.metadataKeys,
 			s.s.telemetryBuilder,
 			s.s.logger,
 			s.s.failedDocsInputLogger,
+			s.s.getErrorHintFunc,
+			s.s.suppressConflictErrors,
 		); err != nil {
 			return err
 		}
@@ -237,174 +287,17 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 	}
 }
 
-func newAsyncBulkIndexer(
-	client esapi.Transport,
-	config *Config,
-	requireDataStream bool,
-	tb *metadata.TelemetryBuilder,
-	logger *zap.Logger,
-) (*asyncBulkIndexer, error) {
-	numWorkers := config.NumWorkers
-	if numWorkers == 0 {
-		numWorkers = runtime.NumCPU()
-	}
-
-	pool := &asyncBulkIndexer{
-		wg:               sync.WaitGroup{},
-		items:            make(chan docappender.BulkIndexerItem, config.NumWorkers),
-		telemetryBuilder: tb,
-	}
-	pool.wg.Add(numWorkers)
-
-	for i := 0; i < numWorkers; i++ {
-		bi, err := docappender.NewBulkIndexer(bulkIndexerConfig(client, config, requireDataStream))
-		if err != nil {
-			return nil, err
-		}
-		w := asyncBulkIndexerWorker{
-			indexer:               bi,
-			items:                 pool.items,
-			flushInterval:         config.Flush.Interval,
-			flushTimeout:          config.Timeout,
-			flushBytes:            config.Flush.Bytes,
-			telemetryBuilder:      tb,
-			logger:                logger,
-			failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
-		}
-		go func() {
-			defer pool.wg.Done()
-			w.run()
-		}()
-	}
-	return pool, nil
-}
-
-type asyncBulkIndexer struct {
-	items            chan docappender.BulkIndexerItem
-	wg               sync.WaitGroup
-	telemetryBuilder *metadata.TelemetryBuilder
-}
-
-type asyncBulkIndexerSession struct {
-	*asyncBulkIndexer
-}
-
-// StartSession returns a new asyncBulkIndexerSession.
-func (a *asyncBulkIndexer) StartSession(context.Context) bulkIndexerSession {
-	return asyncBulkIndexerSession{a}
-}
-
-// Close closes the asyncBulkIndexer and any active sessions.
-func (a *asyncBulkIndexer) Close(ctx context.Context) error {
-	close(a.items)
-	doneCh := make(chan struct{})
-	go func() {
-		a.wg.Wait()
-		close(doneCh)
-	}()
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-doneCh:
-		return nil
-	}
-}
-
-// Add adds an item to the async bulk indexer session.
-//
-// Adding an item after a call to Close() will panic.
-func (s asyncBulkIndexerSession) Add(ctx context.Context, index, docID, pipeline string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
-	item := docappender.BulkIndexerItem{
-		Index:            index,
-		Body:             document,
-		DocumentID:       docID,
-		DynamicTemplates: dynamicTemplates,
-		Action:           action,
-		Pipeline:         pipeline,
-	}
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case s.items <- item:
-	}
-	s.telemetryBuilder.ElasticsearchDocsReceived.Add(ctx, 1)
-	return nil
-}
-
-// End is a no-op.
-func (asyncBulkIndexerSession) End() {
-}
-
-// Flush is a no-op.
-func (asyncBulkIndexerSession) Flush(context.Context) error {
-	return nil
-}
-
-type asyncBulkIndexerWorker struct {
-	indexer       *docappender.BulkIndexer
-	items         <-chan docappender.BulkIndexerItem
-	flushInterval time.Duration
-	flushTimeout  time.Duration
-	flushBytes    int
-
-	logger                *zap.Logger
-	failedDocsInputLogger *zap.Logger
-	telemetryBuilder      *metadata.TelemetryBuilder
-}
-
-func (w *asyncBulkIndexerWorker) run() {
-	flushTick := time.NewTicker(w.flushInterval)
-	defer flushTick.Stop()
-	for {
-		select {
-		case item, ok := <-w.items:
-			// if channel is closed, flush and return
-			if !ok {
-				w.flush()
-				return
-			}
-
-			if err := w.indexer.Add(item); err != nil {
-				w.logger.Error("error adding item to bulk indexer", zap.Error(err))
-			}
-
-			// flush bytes should operate on uncompressed length
-			// as Elasticsearch http.max_content_length measures uncompressed length.
-			if w.indexer.UncompressedLen() >= w.flushBytes {
-				w.flush()
-				flushTick.Reset(w.flushInterval)
-			}
-		case <-flushTick.C:
-			// bulk indexer needs to be flushed every flush interval because
-			// there may be pending bytes in bulk indexer buffer due to e.g. document level 429
-			w.flush()
-		}
-	}
-}
-
-func (w *asyncBulkIndexerWorker) flush() {
-	// TODO (lahsivjar): Should use proper context else client metadata will not be accessible
-	ctx := context.Background()
-	// ignore error as we they should be already logged and for async we don't propagate errors
-	_ = flushBulkIndexer(
-		ctx,
-		w.indexer,
-		w.flushTimeout,
-		nil, // async bulk indexer cannot propagate client context/metadata
-		w.telemetryBuilder,
-		w.logger,
-		w.failedDocsInputLogger,
-	)
-}
-
 func flushBulkIndexer(
 	ctx context.Context,
 	bi *docappender.BulkIndexer,
 	timeout time.Duration,
+	retryOnStatus []int,
 	tMetaKeys []string,
 	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
 	failedDocsInputLogger *zap.Logger,
+	getErrorHintFunc func(index, errorType string) string,
+	suppressConflictErrors bool,
 ) error {
 	itemsCount := bi.Items()
 	if itemsCount == 0 {
@@ -415,8 +308,11 @@ func flushBulkIndexer(
 		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
+
+	// Create context with attempt counter to track http requests
+	ctxWithAttempts, counter := newAttemptContext(ctx)
 	startTime := time.Now()
-	stat, err := bi.Flush(ctx)
+	stat, err := bi.Flush(ctxWithAttempts)
 	latency := time.Since(startTime).Seconds()
 	defaultMetaAttrs := getAttributesFromMetadataKeys(ctx, tMetaKeys)
 	defaultAttrsSet := attribute.NewSet(defaultMetaAttrs...)
@@ -427,6 +323,9 @@ func flushBulkIndexer(
 		tb.ElasticsearchFlushedUncompressedBytes.Add(
 			ctx, int64(flushed), metric.WithAttributeSet(defaultAttrsSet),
 		)
+	}
+	if retryCount := counter.Retries(); retryCount > 0 {
+		tb.ElasticsearchDocsRetriedHTTPRequest.Add(ctx, int64(retryCount*itemsCount), metric.WithAttributeSet(defaultAttrsSet))
 	}
 
 	var fields []zap.Field
@@ -445,38 +344,30 @@ func flushBulkIndexer(
 		var bulkFailedErr docappender.ErrorFlushFailed
 		switch {
 		case errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded):
-			attrSet := metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{attribute.String("outcome", "timeout")}, defaultMetaAttrs...)...,
-			))
+			attrSet := metric.WithAttributeSet(attribute.NewSet(append(
+				defaultMetaAttrs, withOutcome("timeout"),
+			)...))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
 			tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, attrSet)
 		case errors.As(err, &bulkFailedErr):
-			var outcome string
 			code := bulkFailedErr.StatusCode()
-			switch {
-			case code == http.StatusTooManyRequests:
-				outcome = "too_many"
-			case code >= 500:
-				outcome = "failed_server"
-			case code >= 400:
-				outcome = "failed_client"
-			}
+			outcome := statusToOutcome(code)
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					semconv.HTTPResponseStatusCode(code),
-					attribute.String("outcome", outcome),
-				}, defaultMetaAttrs...)...,
+				append(defaultMetaAttrs,
+					conventions.HTTPResponseStatusCode(code),
+					withOutcome(outcome),
+				)...,
 			))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
 			tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, attrSet)
 		default:
 			attrSet := metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "internal_server_error"),
-					semconv.HTTPResponseStatusCode(http.StatusInternalServerError),
-				}, defaultMetaAttrs...)...,
+				append(defaultMetaAttrs,
+					withOutcome("internal_server_error"),
+					conventions.HTTPResponseStatusCode(http.StatusInternalServerError),
+				)...,
 			))
 			tb.ElasticsearchDocsProcessed.Add(ctx, int64(itemsCount), attrSet)
 			tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), attrSet)
@@ -485,10 +376,10 @@ func flushBulkIndexer(
 	} else {
 		// Record a successful completed bulk request
 		successAttrSet := metric.WithAttributeSet(attribute.NewSet(
-			append([]attribute.KeyValue{
-				attribute.String("outcome", "success"),
-				semconv.HTTPResponseStatusCode(http.StatusOK),
-			}, defaultMetaAttrs...)...,
+			append(defaultMetaAttrs,
+				withOutcome("success"),
+				conventions.HTTPResponseStatusCode(http.StatusOK),
+			)...,
 		))
 
 		tb.ElasticsearchBulkRequestsCount.Add(ctx, int64(1), successAttrSet)
@@ -497,34 +388,25 @@ func flushBulkIndexer(
 
 	for _, resp := range stat.FailedDocs {
 		// Collect telemetry
-		var outcome string
-		switch {
-		case resp.Status == http.StatusTooManyRequests:
-			outcome = "too_many"
-		case resp.Status >= 500:
-			outcome = "failed_server"
-		case resp.Status >= 400:
-			outcome = "failed_client"
-		}
-
+		outcome := statusToOutcome(resp.Status)
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			int64(1),
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", outcome),
-					attribute.String("error.type", resp.Error.Type),
-				}, defaultMetaAttrs...)...,
-			)),
+			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+				withOutcome(outcome),
+				conventions.HTTPResponseStatusCode(resp.Status),
+				attribute.String("error.type", resp.Error.Type),
+			)...)),
 		)
 
-		if resp.Error.Type == "version_conflict_engine_exception" &&
-			(strings.HasPrefix(resp.Index, ".profiling-stackframes-") ||
-				strings.HasPrefix(resp.Index, ".profiling-stacktraces-")) {
-			// For the Profiling indices .profiling-[stacktraces|stackframes]- the
-			// rejection of duplicates are expected from Elasticsearch. So we do not want
-			// to log these here.
-			continue
+		if resp.Error.Type == "version_conflict_engine_exception" {
+			if suppressConflictErrors ||
+				strings.HasPrefix(resp.Index, ".profiling-stackframes-") ||
+				strings.HasPrefix(resp.Index, ".profiling-stacktraces-") {
+				// Rejection of duplicates are either expected (Profiling indices)
+				// or globally suppressed by the user. Do not log them.
+				continue
+			}
 		}
 
 		// Log failed docs
@@ -532,10 +414,13 @@ func flushBulkIndexer(
 			zap.String("index", resp.Index),
 			zap.String("error.type", resp.Error.Type),
 			zap.String("error.reason", resp.Error.Reason),
+			zap.Int("http.response.status_code", resp.Status),
 		)
 
-		if hint := getErrorHint(resp.Index, resp.Error.Type); hint != "" {
-			fields = append(fields, zap.String("hint", hint))
+		if getErrorHintFunc != nil {
+			if hint := getErrorHintFunc(resp.Index, resp.Error.Type); hint != "" {
+				fields = append(fields, zap.String("hint", hint))
+			}
 		}
 		logger.Error("failed to index document", fields...)
 
@@ -548,53 +433,62 @@ func flushBulkIndexer(
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.Indexed,
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "success"),
-				}, defaultMetaAttrs...)...,
-			)),
+			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+				withOutcome("success"),
+				conventions.HTTPResponseStatusCode(http.StatusOK),
+			)...)),
 		)
 	}
 	if stat.FailureStoreDocs.Used > 0 {
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.FailureStoreDocs.Used,
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "failure_store"),
-					attribute.String("failure_store", string(docappender.FailureStoreStatusUsed)),
-				}, defaultMetaAttrs...)...,
-			)),
+			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+				withOutcome("failure_store"),
+				attribute.String("failure_store",
+					string(docappender.FailureStoreStatusUsed),
+				),
+			)...)),
 		)
 	}
 	if stat.FailureStoreDocs.Failed > 0 {
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.FailureStoreDocs.Failed,
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "failure_store"),
-					attribute.String("failure_store", string(docappender.FailureStoreStatusFailed)),
-				}, defaultMetaAttrs...)...,
-			)),
+			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+				withOutcome("failure_store"),
+				attribute.String("failure_store", string(
+					docappender.FailureStoreStatusFailed,
+				)),
+			)...)),
 		)
 	}
 	if stat.FailureStoreDocs.NotEnabled > 0 {
 		tb.ElasticsearchDocsProcessed.Add(
 			ctx,
 			stat.FailureStoreDocs.NotEnabled,
-			metric.WithAttributeSet(attribute.NewSet(
-				append([]attribute.KeyValue{
-					attribute.String("outcome", "failure_store"),
-					attribute.String("failure_store", string(docappender.FailureStoreStatusNotEnabled)),
-				}, defaultMetaAttrs...)...,
-			)),
+			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+				withOutcome("failure_store"),
+				attribute.String("failure_store", string(
+					docappender.FailureStoreStatusNotEnabled,
+				)),
+			)...)),
 		)
 	}
 	if stat.RetriedDocs > 0 {
-		tb.ElasticsearchDocsRetried.Add(ctx, stat.RetriedDocs, metric.WithAttributeSet(defaultAttrsSet))
+		tb.ElasticsearchDocsRetried.Add(ctx, stat.RetriedDocs,
+			metric.WithAttributeSet(defaultAttrsSet),
+		)
+	}
+	var bulkFailedErr docappender.ErrorFlushFailed
+	if errors.As(err, &bulkFailedErr) && !retryableStatusCode(bulkFailedErr.StatusCode(), retryOnStatus) {
+		return consumererror.NewPermanent(err)
 	}
 	return err
+}
+
+func retryableStatusCode(statusCode int, retryOnStatus []int) bool {
+	return slices.Contains(retryOnStatus, statusCode)
 }
 
 func getAttributesFromMetadataKeys(ctx context.Context, keys []string) []attribute.KeyValue {
@@ -608,9 +502,19 @@ func getAttributesFromMetadataKeys(ctx context.Context, keys []string) []attribu
 	return attrs
 }
 
-func getErrorHint(index, errorType string) string {
+func getErrorHint(mode MappingMode, index, errorType string) string {
 	if strings.HasPrefix(index, ".ds-metrics-") && errorType == "version_conflict_engine_exception" {
-		return "check the \"Known issues\" section of Elasticsearch Exporter docs"
+		return errorHintKnownIssues
+	}
+	if errorType == "illegal_argument_exception" {
+		switch mode {
+		case MappingOTel:
+			return errorHintOTelMappingMode
+		case MappingECS:
+			return errorHintECSMappingMode
+		default:
+			//  no error hint for this mapping mode
+		}
 	}
 	return ""
 }
@@ -626,7 +530,7 @@ type bulkIndexers struct {
 	// wg tracks active sessions
 	wg sync.WaitGroup
 
-	// NOTE(axw) when we get rid of the async bulk indexer there would be
+	// NOTE(axw) we have removed async bulk indexer and there should be
 	// no reason for having one per mode or for different document types.
 	// Instead, the caller can create separate sessions as needed, and we
 	// can either have one for required_data_stream=true and one for false,
@@ -662,36 +566,28 @@ func (b *bulkIndexers) start(
 	}
 
 	for _, mode := range allowedMappingModes {
-		var bi bulkIndexer
-		bi, err = newBulkIndexer(esClient, cfg, mode == MappingOTel, b.telemetryBuilder, set.Logger)
-		if err != nil {
-			return err
+		requireDataStream := mode == MappingOTel || mode == MappingECS
+		modeSpecificErrorHintFunc := func(index, errorType string) string {
+			return getErrorHint(mode, index, errorType)
 		}
+		bi := newBulkIndexer(esClient, cfg, requireDataStream, b.telemetryBuilder, set.Logger, modeSpecificErrorHintFunc)
 		b.modes[mode] = &wgTrackingBulkIndexer{bulkIndexer: bi, wg: &b.wg}
 	}
 
-	profilingEvents, err := newBulkIndexer(esClient, cfg, true, b.telemetryBuilder, set.Logger)
-	if err != nil {
-		return err
+	mappingModeNoneErrorHintFunc := func(index, errorType string) string {
+		return getErrorHint(MappingNone, index, errorType)
 	}
+
+	profilingEvents := newBulkIndexer(esClient, cfg, true, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
 	b.profilingEvents = &wgTrackingBulkIndexer{bulkIndexer: profilingEvents, wg: &b.wg}
 
-	profilingStackTraces, err := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger)
-	if err != nil {
-		return err
-	}
+	profilingStackTraces := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
 	b.profilingStackTraces = &wgTrackingBulkIndexer{bulkIndexer: profilingStackTraces, wg: &b.wg}
 
-	profilingStackFrames, err := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger)
-	if err != nil {
-		return err
-	}
+	profilingStackFrames := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
 	b.profilingStackFrames = &wgTrackingBulkIndexer{bulkIndexer: profilingStackFrames, wg: &b.wg}
 
-	profilingExecutables, err := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger)
-	if err != nil {
-		return err
-	}
+	profilingExecutables := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
 	b.profilingExecutables = &wgTrackingBulkIndexer{bulkIndexer: profilingExecutables, wg: &b.wg}
 	return nil
 }
@@ -772,4 +668,25 @@ func (errBulkIndexerSession) End() {}
 
 func (s errBulkIndexerSession) Flush(context.Context) error {
 	return fmt.Errorf("creating bulk indexer session failed, cannot flush: %w", s.err)
+}
+
+func withOutcome(outcome string) attribute.KeyValue {
+	return attribute.String("outcome", outcome)
+}
+
+func statusToOutcome(statusCode int) string {
+	switch statusCode {
+	case http.StatusTooManyRequests:
+		return "too_many"
+	case http.StatusOK:
+		return "success"
+	}
+	switch {
+	case statusCode >= 500:
+		return "failed_server"
+	case statusCode >= 400:
+		return "failed_client"
+	default:
+		return "unknown"
+	}
 }

@@ -65,7 +65,7 @@ func TestScrape(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			scraper := newProcessesScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			})
 			err := scraper.start(t.Context(), componenttest.NewNopHost())
 			assert.NoError(t, err, "Failed to initialize processes scraper: %v", err)
@@ -154,7 +154,7 @@ func validateRealData(t *testing.T, metrics pmetric.MetricSlice) {
 func validateStartTime(t *testing.T, metrics pmetric.MetricSlice) {
 	startTime, err := host.BootTime()
 	assert.NoError(t, err)
-	for i := 0; i < metricsLength; i++ {
+	for i := range metricsLength {
 		internal.AssertSumMetricStartTimeEquals(t, metrics.At(i), pcommon.Timestamp(startTime*1e9))
 	}
 }

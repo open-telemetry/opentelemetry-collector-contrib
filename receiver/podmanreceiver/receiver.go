@@ -63,7 +63,7 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
-	return scraperhelper.NewMetricsController(&recv.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, scrp))
+	return scraperhelper.NewMetricsController(&recv.config.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, scrp))
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
@@ -158,8 +158,8 @@ func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, stats *contain
 }
 
 func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, stats *containerStats) {
-	r.mb.RecordContainerNetworkIoUsageRxBytesDataPoint(now, int64(stats.NetOutput))
-	r.mb.RecordContainerNetworkIoUsageTxBytesDataPoint(now, int64(stats.NetInput))
+	r.mb.RecordContainerNetworkIoUsageRxBytesDataPoint(now, int64(stats.NetInput))
+	r.mb.RecordContainerNetworkIoUsageTxBytesDataPoint(now, int64(stats.NetOutput))
 }
 
 func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, stats *containerStats) {

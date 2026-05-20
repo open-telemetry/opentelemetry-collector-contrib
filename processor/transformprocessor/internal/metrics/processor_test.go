@@ -59,10 +59,10 @@ func Test_ProcessMetrics_ResourceContext(t *testing.T) {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructMetrics()
 			tt.want(exTd)
@@ -100,10 +100,10 @@ func Test_ProcessMetrics_InferredResourceContext(t *testing.T) {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructMetrics()
 			tt.want(exTd)
@@ -141,10 +141,10 @@ func Test_ProcessMetrics_ScopeContext(t *testing.T) {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructMetrics()
 			tt.want(exTd)
@@ -182,10 +182,10 @@ func Test_ProcessMetrics_InferredScopeContext(t *testing.T) {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructMetrics()
 			tt.want(exTd)
@@ -386,10 +386,10 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 		t.Run(tt.statements[0], func(t *testing.T) {
 			td := constructMetrics()
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "metric", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructMetrics()
 			tt.want(exTd)
@@ -566,10 +566,10 @@ func Test_ProcessMetrics_InferredMetricContext(t *testing.T) {
 
 			td := constructMetrics()
 			processor, err := NewProcessor(contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructMetrics()
 			tt.want(exTd)
@@ -1009,10 +1009,10 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 		t.Run(tt.statements[0], func(t *testing.T) {
 			td := constructMetrics()
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "datapoint", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructMetrics()
 			tt.want(exTd)
@@ -1457,10 +1457,10 @@ func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
 			}
 
 			processor, err := NewProcessor(contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructMetrics()
 			tt.want(exTd)
@@ -1595,10 +1595,10 @@ func Test_ProcessMetrics_MixContext(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructMetrics()
 			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructMetrics()
 			tt.want(exTd)
@@ -1614,19 +1614,19 @@ func Test_ProcessMetrics_ErrorMode(t *testing.T) {
 		context   common.ContextID
 	}{
 		{
-			statement: `set(attributes["test"], ParseJSON(1))`,
+			statement: `set(attributes["test"], ParseJSON("1"))`,
 			context:   "resource",
 		},
 		{
-			statement: `set(attributes["test"], ParseJSON(1))`,
+			statement: `set(attributes["test"], ParseJSON("1"))`,
 			context:   "scope",
 		},
 		{
-			statement: `set(name, ParseJSON(1))`,
+			statement: `set(name, ParseJSON("1"))`,
 			context:   "metric",
 		},
 		{
-			statement: `set(attributes["test"], ParseJSON(1))`,
+			statement: `set(attributes["test"], ParseJSON("1"))`,
 			context:   "datapoint",
 		},
 	}
@@ -1635,7 +1635,7 @@ func Test_ProcessMetrics_ErrorMode(t *testing.T) {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
 			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
 			assert.Error(t, err)
@@ -1655,7 +1655,7 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 			name:      "metric: statements group with error mode",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(metric.name, ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(metric.name, ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(metric.name, "pass") where metric.name == "operationA" `}},
 			},
 			want: func(td pmetric.Metrics) {
@@ -1666,16 +1666,16 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 			name:      "metric: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(metric.name, ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Statements: []string{`set(metric.name, ParseJSON(true))`}},
+				{Statements: []string{`set(metric.name, ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(metric.name, ParseJSON("true"))`}},
 			},
-			wantErrorWith: "expected string but got bool",
+			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
 		{
 			name:      "datapoint: statements group with error mode",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(datapoint.attributes["test"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(datapoint.attributes["test"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(datapoint.attributes["test"], "pass") where metric.name == "operationA" `}},
 			},
 			want: func(td pmetric.Metrics) {
@@ -1687,16 +1687,16 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 			name:      "datapoint: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(datapoint.attributes["test"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Statements: []string{`set(datapoint.attributes["test"], ParseJSON(true))`}},
+				{Statements: []string{`set(datapoint.attributes["test"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(datapoint.attributes["test"], ParseJSON("true"))`}},
 			},
-			wantErrorWith: "expected string but got bool",
+			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
 		{
 			name:      "resource: statements group with error mode",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(resource.attributes["test"], "pass")`}},
 			},
 			want: func(td pmetric.Metrics) {
@@ -1707,16 +1707,16 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 			name:      "resource: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(true))`}},
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("true"))`}},
 			},
-			wantErrorWith: "expected string but got bool",
+			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
 		{
 			name:      "scope: statements group with error mode",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(scope.attributes["test"], "pass")`}},
 			},
 			want: func(td pmetric.Metrics) {
@@ -1727,10 +1727,10 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 			name:      "scope: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
-				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(true))`}},
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("true"))`}},
 			},
-			wantErrorWith: "expected string but got bool",
+			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
 	}
 
@@ -1738,7 +1738,7 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructMetrics()
 			processor, err := NewProcessor(tt.statements, tt.errorMode, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			_, err = processor.ProcessMetrics(t.Context(), td)
 			if tt.wantErrorWith != "" {
 				if err == nil {
@@ -1747,7 +1747,7 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 				assert.Contains(t, err.Error(), tt.wantErrorWith)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			exTd := constructMetrics()
 			tt.want(exTd)
 			assert.Equal(t, exTd, td)
@@ -1901,10 +1901,10 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructMetrics()
 			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructMetrics()
 			tt.want(exTd)
@@ -1958,10 +1958,10 @@ func Test_ProcessMetrics_InferredContextFromConditions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructMetrics()
 			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := constructMetrics()
 			tt.want(exTd)
@@ -2063,8 +2063,8 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		name               string
 		statements         []common.ContextStatements
 		wantErrorWith      string
-		metricFunctions    map[string]ottl.Factory[ottlmetric.TransformContext]
-		dataPointFunctions map[string]ottl.Factory[ottldatapoint.TransformContext]
+		metricFunctions    map[string]ottl.Factory[*ottlmetric.TransformContext]
+		dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext]
 	}
 
 	tests := []testCase{
@@ -2076,9 +2076,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 					Statements: []string{`set(cache["attr"], TestMetricFunc())`},
 				},
 			},
-			metricFunctions: map[string]ottl.Factory[ottlmetric.TransformContext]{
+			metricFunctions: map[string]ottl.Factory[*ottlmetric.TransformContext]{
 				"set":            DefaultMetricFunctions["set"],
-				"TestMetricFunc": NewTestMetricFuncFactory[ottlmetric.TransformContext](),
+				"TestMetricFunc": NewTestMetricFuncFactory[*ottlmetric.TransformContext](),
 			},
 			dataPointFunctions: DefaultDataPointFunctions,
 		},
@@ -2103,9 +2103,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 				},
 			},
 			metricFunctions: DefaultMetricFunctions,
-			dataPointFunctions: map[string]ottl.Factory[ottldatapoint.TransformContext]{
+			dataPointFunctions: map[string]ottl.Factory[*ottldatapoint.TransformContext]{
 				"set":               DefaultDataPointFunctions["set"],
-				"TestDataPointFunc": NewTestDataPointFuncFactory[ottldatapoint.TransformContext](),
+				"TestDataPointFunc": NewTestDataPointFuncFactory[*ottldatapoint.TransformContext](),
 			},
 		},
 		{
@@ -2133,6 +2133,62 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+		})
+	}
+}
+
+// Test_ProcessMetrics_RelaxedMetricNames verifies that OTTL statements can
+// match against and assign instrument names that are disallowed by the
+// current OpenTelemetry instrument-name syntax (`:`, `\`, leading `-`, etc.,
+// and arbitrary UTF-8). It exercises the full statement pipeline: parsing,
+// where-clause comparison, and `set(name, ...)` assignment.
+//
+// This test exists to demonstrate that relaxing the instrument-name
+// restrictions in the OpenTelemetry specification does not require any
+// change to OTTL itself — string literals and the `metric.name` path
+// already accept any UTF-8.
+//
+// See https://github.com/open-telemetry/opentelemetry-specification/issues/4371
+// and https://github.com/open-telemetry/opentelemetry-specification/issues/4736.
+func Test_ProcessMetrics_RelaxedMetricNames(t *testing.T) {
+	tests := []struct {
+		original string
+		renamed  string
+	}{
+		{original: "with:colon", renamed: "renamed:1"},
+		{original: `with\backslash`, renamed: `renamed\backslash`},
+		{original: "with space", renamed: "renamed space"},
+		{original: "-leadingDash", renamed: "renamed-leadingDash"},
+		{original: ".leadingDot", renamed: "renamed.leadingDot"},
+		{original: "with🦀utf8", renamed: "renamed🦀utf8"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.original, func(t *testing.T) {
+			td := pmetric.NewMetrics()
+			m := td.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+			m.SetName(tt.original)
+			m.SetEmptySum().SetIsMonotonic(true)
+
+			// Build a statement that both matches on the original (relaxed)
+			// name and assigns a relaxed name. Use Sprintf with %q to
+			// produce correctly-escaped OTTL string literals.
+			statement := fmt.Sprintf(`set(metric.name, %q) where metric.name == %q`, tt.renamed, tt.original)
+
+			processor, err := NewProcessor(
+				[]common.ContextStatements{{Context: "metric", Statements: []string{statement}}},
+				ottl.PropagateError,
+				componenttest.NewNopTelemetrySettings(),
+				DefaultMetricFunctions,
+				DefaultDataPointFunctions,
+			)
+			require.NoError(t, err, "OTTL must accept string literals containing arbitrary UTF-8 characters: %s", statement)
+
+			_, err = processor.ProcessMetrics(t.Context(), td)
+			require.NoError(t, err)
+
+			gotName := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name()
+			assert.Equal(t, tt.renamed, gotName, "OTTL must assign the new name byte-identically; statement was: %s", statement)
 		})
 	}
 }

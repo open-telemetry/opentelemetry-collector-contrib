@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -60,7 +61,7 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for SignalFx exporter.
 type Config struct {
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	confighttp.ClientConfig   `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
@@ -107,12 +108,12 @@ type Config struct {
 
 	// SyncHostMetadata defines if the exporter should scrape host metadata and
 	// sends it as property updates to SignalFx backend.
-	// IMPORTANT: Host metadata synchronization relies on `resourcedetection` processor.
-	//            If this option is enabled make sure that `resourcedetection` processor
+	// IMPORTANT: Host metadata synchronization relies on `resource_detection` processor.
+	//            If this option is enabled make sure that `resource_detection` processor
 	//            is enabled in the pipeline with one of the cloud provider detectors
 	//            or environment variable detector setting a unique value to
 	//            `host.name` attribute within your k8s cluster. Also keep override
-	//            And keep `override=true` in resourcedetection config.
+	//            And keep `override=true` in resource_detection config.
 	SyncHostMetadata bool `mapstructure:"sync_host_metadata"`
 
 	// RootPath is the host's root directory used when syncing metadata; applies to linux only.
@@ -131,6 +132,11 @@ type Config struct {
 	// ExcludeProperties defines dpfilter.PropertyFilters to prevent inclusion of
 	// properties to include with dimension updates to the SignalFx backend.
 	ExcludeProperties []dpfilters.PropertyFilter `mapstructure:"exclude_properties"`
+
+	// DefaultProperties defines a set of properties to be added to any dimension
+	// updates to the Splunk Observability backend. Any explicit property value
+	// takes precedence over those defaults.
+	DefaultProperties map[string]string `mapstructure:"default_properties"`
 
 	// Correlation configuration for syncing traces service and environment to metrics.
 	Correlation *correlation.Config `mapstructure:"correlation"`
@@ -156,6 +162,8 @@ type DimensionClientConfig struct {
 	MaxConnsPerHost     int           `mapstructure:"max_conns_per_host"`
 	IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
 	Timeout             time.Duration `mapstructure:"timeout"`
+	DropTags            bool          `mapstructure:"drop_tags"`
+	StripK8sLabelPrefix bool          `mapstructure:"strip_k8s_label_prefix"`
 }
 
 func (cfg *Config) getMetricTranslator(done chan struct{}) (*translation.MetricTranslator, error) {
@@ -177,7 +185,7 @@ func (cfg *Config) getMetricTranslator(done chan struct{}) (*translation.MetricT
 func (cfg *Config) getIngestURL() (*url.URL, error) {
 	strURL := cfg.IngestURL
 	if cfg.IngestURL == "" {
-		strURL = fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm)
+		strURL = fmt.Sprintf("https://ingest.%s.observability.splunkcloud.com", cfg.Realm)
 	}
 
 	ingestURL, err := url.Parse(strURL)
@@ -190,7 +198,7 @@ func (cfg *Config) getIngestURL() (*url.URL, error) {
 func (cfg *Config) getAPIURL() (*url.URL, error) {
 	strURL := cfg.APIURL
 	if cfg.APIURL == "" {
-		strURL = fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm)
+		strURL = fmt.Sprintf("https://api.%s.observability.splunkcloud.com", cfg.Realm)
 	}
 
 	apiURL, err := url.Parse(strURL)
@@ -231,6 +239,12 @@ func (cfg *Config) Validate() error {
 	if cfg.SyncHostMetadata {
 		if err := gopsutilenv.ValidateRootPath(cfg.RootPath); err != nil {
 			return fmt.Errorf("invalid root_path: %w", err)
+		}
+	}
+
+	for k, v := range cfg.DefaultProperties {
+		if v == "" {
+			return fmt.Errorf(`"default_properties" contains an empty value under key %q`, k)
 		}
 	}
 	return nil

@@ -57,7 +57,10 @@ endpoint: 1.2.3.4:6379`
 							otelMetricsHints + "/config":  config,
 						},
 					},
-					Port: 6379,
+					Port:           6379,
+					ContainerName:  "redis",
+					ContainerID:    "container-id-redis",
+					ContainerImage: "redis:6.0",
 				},
 			},
 			expectedReceiver: receiverTemplate{
@@ -84,7 +87,10 @@ endpoint: 1.2.3.4:6379`
 							otelMetricsHints + "/config":  config,
 						},
 					},
-					Port: 6379,
+					Port:           6379,
+					ContainerName:  "redis",
+					ContainerID:    "container-id-redis",
+					ContainerImage: "redis:6.0",
 				},
 			},
 			expectedReceiver: receiverTemplate{},
@@ -105,7 +111,10 @@ endpoint: 1.2.3.4:6379`
 							otelMetricsHints + "/scraper": "redis",
 						},
 					},
-					Port: 6379,
+					Port:           6379,
+					ContainerName:  "redis",
+					ContainerID:    "container-id-redis",
+					ContainerImage: "redis:6.0",
 				},
 			},
 			expectedReceiver: receiverTemplate{
@@ -132,7 +141,10 @@ endpoint: 1.2.3.4:6379`
 							otelMetricsHints + ".6379/config":  config,
 						},
 					},
-					Port: 6379,
+					Port:           6379,
+					ContainerName:  "redis",
+					ContainerID:    "container-id-redis",
+					ContainerImage: "redis:6.0",
 				},
 			},
 			expectedReceiver: receiverTemplate{
@@ -160,7 +172,10 @@ endpoint: 1.2.3.4:6379`
 							otelMetricsHints + ".6379/config":  configRedis,
 						},
 					},
-					Port: 6379,
+					Port:           6379,
+					ContainerName:  "redis",
+					ContainerID:    "container-id-redis",
+					ContainerImage: "redis:6.0",
 				},
 			},
 			expectedReceiver: receiverTemplate{
@@ -187,6 +202,9 @@ endpoint: 1.2.3.4:6379`
 							otelMetricsHints + "/config":  config,
 						},
 					},
+					ContainerName:  "redis",
+					ContainerID:    "container-id-redis",
+					ContainerImage: "redis:6.0",
 				},
 			},
 			expectedReceiver: receiverTemplate{},
@@ -221,11 +239,11 @@ func TestK8sHintsBuilderLogs(t *testing.T) {
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))
 
 	id := component.ID{}
-	err := id.UnmarshalText([]byte("filelog/pod-2-UID_redis"))
+	err := id.UnmarshalText([]byte("file_log/pod-2-UID_redis"))
 	assert.NoError(t, err)
 
 	idNginx := component.ID{}
-	err = idNginx.UnmarshalText([]byte("filelog/pod-2-UID_nginx"))
+	err = idNginx.UnmarshalText([]byte("file_log/pod-2-UID_nginx"))
 	assert.NoError(t, err)
 
 	config := `
@@ -566,6 +584,11 @@ include:
 					Enabled:            true,
 					IgnoreReceivers:    test.ignoreReceivers,
 					DefaultAnnotations: test.defaultAnnotations,
+					DefaultFileLogConfig: userConfigMap{
+						"include_file_path": true,
+						"include_file_name": false,
+						"operators":         []any{map[string]any{"id": "container-parser", "type": "container"}},
+					},
 				},
 				logger)
 			env, err := test.inputEndpoint.Env()
@@ -617,7 +640,7 @@ nested_example:
 				"endpoint":            "0.0.0.0:8080",
 				"initial_delay":       "20s",
 				"read_buffer_size":    "10",
-				"nested_example":      userConfigMap{"foo": "bar"},
+				"nested_example":      map[string]any{"foo": "bar"},
 			}, defaultEndpoint: "0.0.0.0:8080",
 			scopeSuffix: "",
 		}, "simple_annotation_case_default_endpoint": {
@@ -628,7 +651,7 @@ nested_example:
 				"collection_interval": "20s",
 				"initial_delay":       "20s",
 				"read_buffer_size":    "10",
-				"nested_example":      userConfigMap{"foo": "bar"},
+				"nested_example":      map[string]any{"foo": "bar"},
 			}, defaultEndpoint: "1.1.1.1:8080",
 			scopeSuffix: "",
 		}, "simple_annotation_case_scoped": {
@@ -640,7 +663,7 @@ nested_example:
 				"endpoint":            "0.0.0.0:8080",
 				"initial_delay":       "20s",
 				"read_buffer_size":    "10",
-				"nested_example":      userConfigMap{"foo": "bar"},
+				"nested_example":      map[string]any{"foo": "bar"},
 			}, defaultEndpoint: "0.0.0.0:8080",
 			scopeSuffix: "8080",
 		}, "simple_annotation_case_with_invalid_endpoint": {
@@ -732,6 +755,9 @@ operators:
 					"my-uid",
 					"my-pod",
 					"my-ns",
+					userConfigMap{
+						"include_file_path": true,
+					},
 					zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))),
 			)
 		})

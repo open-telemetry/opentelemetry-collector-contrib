@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -19,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/ebpf-profiler/libpf"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 // Transform transforms a [pprofile.Profile] into our own
@@ -78,13 +79,11 @@ func checkProfileType(dic pprofile.ProfilesDictionary, profile pprofile.Profile)
 // stackPayloads creates a slice of StackPayloads from the given ResourceProfiles,
 // ScopeProfiles, and ProfileContainer.
 func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) ([]StackPayload, error) {
-	unsymbolizedLeafFramesSet := make(map[frameID]struct{}, profile.Sample().Len())
+	unsymbolizedLeafFramesSet := make(map[frameID]struct{}, profile.Samples().Len())
 	unsymbolizedExecutablesSet := make(map[libpf.FileID]struct{})
-	stackPayload := make([]StackPayload, 0, profile.Sample().Len())
+	stackPayload := make([]StackPayload, 0, profile.Samples().Len())
 
-	hostMetadata := newHostMetadata(dic, resource, scope, profile)
-
-	hostResourceData := populateHostResourceData(resource, scope)
+	commonResourceAttributes := populateResourceData(dic, resource, scope, profile)
 
 	frequency := int64(math.Round(1e9 / float64(profile.Period())))
 	if frequency <= 0 {
@@ -92,7 +91,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 		frequency = 1
 	}
 
-	for _, sample := range profile.Sample().All() {
+	for _, sample := range profile.Samples().All() {
 		frames, frameTypes, leafFrame, err := stackFrames(dic, sample)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create stackframes: %w", err)
@@ -106,14 +105,19 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 			return nil, fmt.Errorf("failed to create stacktrace ID: %w", err)
 		}
 
-		event := stackTraceEvent(dic, traceID, sample, frequency, hostMetadata)
+		event := stackTraceEvent(dic, traceID, sample, frequency, commonResourceAttributes)
 
 		// Set the stacktrace and stackframes to the payload.
 		// The docs only need to be written once.
 		stackPayload = append(stackPayload, StackPayload{
-			StackTrace:   stackTrace(traceID, frames, frameTypes),
-			StackFrames:  symbolizedFrames(frames),
-			HostMetadata: hostResourceData,
+			StackTrace:  stackTrace(traceID, frames, frameTypes),
+			StackFrames: symbolizedFrames(frames),
+			ResourceAttrs: ResourceData{
+				EcsVersion: EcsVersion{
+					V: EcsVersionString,
+				},
+				Data: commonResourceAttributes,
+			},
 		})
 
 		if !isFrameSymbolized(frames[len(frames)-1]) && leafFrame != nil {
@@ -215,17 +219,23 @@ func isFrameSymbolized(frame StackFrame) bool {
 	return len(frame.FileName) > 0 || len(frame.FunctionName) > 0
 }
 
-func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample pprofile.Sample, frequency int64, hostMetadata map[string]string) StackTraceEvent {
+func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample pprofile.Sample, frequency int64,
+	commonResourceAttrs map[string]string,
+) StackTraceEvent {
 	event := StackTraceEvent{
 		EcsVersion:       EcsVersion{V: EcsVersionString},
-		HostID:           hostMetadata[string(semconv.HostIDKey)],
+		HostID:           commonResourceAttrs[string(conventions.HostIDKey)],
 		StackTraceID:     traceID,
-		ContainerID:      hostMetadata[string(semconv.ContainerIDKey)],
-		ContainerName:    hostMetadata[string(semconv.ContainerNameKey)],
-		PodName:          hostMetadata[string(semconv.K8SPodNameKey)],
-		K8sNamespaceName: hostMetadata[string(semconv.K8SNamespaceNameKey)],
+		ContainerID:      commonResourceAttrs[string(conventions.ContainerIDKey)],
+		ContainerName:    commonResourceAttrs[string(conventions.ContainerNameKey)],
+		PodName:          commonResourceAttrs[string(conventions.K8SPodNameKey)],
+		K8sNamespaceName: commonResourceAttrs[string(conventions.K8SNamespaceNameKey)],
 		Count:            1, // Elasticsearch v9.2+ doesn't read the count value any more.
 		Frequency:        frequency,
+		HostName:         commonResourceAttrs[string(conventions.HostNameKey)],
+		ProjectID:        2, // Use a project ID other than 1 to not conflict with ECH default value.
+		ServiceName:      commonResourceAttrs[string(conventions.ServiceNameKey)],
+		ExecutableName:   commonResourceAttrs[string(conventions.ProcessExecutableNameKey)],
 	}
 
 	// Store event-specific attributes.
@@ -236,13 +246,8 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 		attr := dic.AttributeTable().At(int(idx))
 		key := dic.StringTable().At(int(attr.KeyStrindex()))
 
-		switch attribute.Key(key) {
-		case semconv.ThreadNameKey:
+		if attribute.Key(key) == conventions.ThreadNameKey {
 			event.ThreadName = attr.Value().AsString()
-		case semconv.ProcessExecutableNameKey:
-			event.ExecutableName = attr.Value().AsString()
-		case semconv.ServiceNameKey:
-			event.ServiceName = attr.Value().AsString()
 		}
 	}
 
@@ -279,7 +284,7 @@ func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]Sta
 	locations := getLocations(dic, stack)
 	totalFrames := 0
 	for _, location := range locations {
-		totalFrames += location.Line().Len()
+		totalFrames += location.Lines().Len()
 	}
 	frameTypes := make([]libpf.FrameType, 0, totalFrames)
 
@@ -290,17 +295,17 @@ func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]Sta
 			continue
 		}
 
-		frameTypeStr, err := getStringFromAttribute(dic, location, "profile.frame.type")
+		frameTypeStr, err := getStringFromAttribute(dic, location, string(conventions.ProfileFrameTypeKey))
 		if err != nil {
 			return nil, nil, nil, err
 		}
 		frameTypes = append(frameTypes, libpf.FrameTypeFromString(frameTypeStr))
 
-		functionNames := make([]string, 0, location.Line().Len())
-		fileNames := make([]string, 0, location.Line().Len())
-		lineNumbers := make([]int32, 0, location.Line().Len())
+		functionNames := make([]string, 0, location.Lines().Len())
+		fileNames := make([]string, 0, location.Lines().Len())
+		lineNumbers := make([]int32, 0, location.Lines().Len())
 
-		for _, line := range location.Line().All() {
+		for _, line := range location.Lines().All() {
 			if line.FunctionIndex() < int32(dic.FunctionTable().Len()) {
 				functionNames = append(functionNames, getString(dic, int(dic.FunctionTable().At(int(line.FunctionIndex())).NameStrindex())))
 				fileNames = append(fileNames, getString(dic, int(dic.FunctionTable().At(int(line.FunctionIndex())).FilenameStrindex())))
@@ -339,7 +344,7 @@ func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *fr
 	if fileID.IsZero() {
 		// Synthesize a file ID if the htlhash build ID is not available.
 		hasher := xxhash.New()
-		for _, line := range location.Line().All() {
+		for _, line := range location.Lines().All() {
 			f := getFunction(dic, int(line.FunctionIndex()))
 			_, _ = hasher.WriteString(getString(dic, int(f.NameStrindex())))
 			_, _ = hasher.WriteString(getString(dic, int(f.FilenameStrindex())))
@@ -353,8 +358,8 @@ func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *fr
 	var addressOrLineno uint64
 	if location.Address() > 0 {
 		addressOrLineno = location.Address()
-	} else if location.Line().Len() > 0 {
-		addressOrLineno = uint64(location.Line().At(location.Line().Len() - 1).Line())
+	} else if location.Lines().Len() > 0 {
+		addressOrLineno = uint64(location.Lines().At(location.Lines().Len() - 1).Line())
 	}
 
 	fID := newFrameID(fileID, libpf.AddressOrLineno(addressOrLineno))
@@ -373,7 +378,6 @@ var errMissingAttribute = errors.New("missing attribute")
 // of the profile if the attribute key matches the expected attrKey.
 func getStringFromAttribute(dic pprofile.ProfilesDictionary, record attributable, attrKey string) (string, error) {
 	lenAttrTable := dic.AttributeTable().Len()
-
 	for _, idx32 := range record.AttributeIndices().All() {
 		idx := int(idx32)
 
@@ -396,7 +400,7 @@ func getStringFromAttribute(dic pprofile.ProfilesDictionary, record attributable
 // If the build ID attribute is missing, returns a zero FileID and no error.
 func getBuildID(dic pprofile.ProfilesDictionary, mapping pprofile.Mapping) (libpf.FileID, error) {
 	// Fetch build ID from profiles.attribute_table.
-	buildIDStr, err := getStringFromAttribute(dic, mapping, string(semconv.ProcessExecutableBuildIDHtlhashKey))
+	buildIDStr, err := getStringFromAttribute(dic, mapping, string(conventions.ProcessExecutableBuildIDHtlhashKey))
 	switch {
 	case err == nil:
 		return libpf.FileIDFromString(buildIDStr)
@@ -451,7 +455,7 @@ func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice
 func stackTraceID(frames []StackFrame) (string, error) {
 	var buf [24]byte
 	h := fnv.New128a()
-	for i := len(frames) - 1; i >= 0; i-- { // reverse ordered frames, done in stackFrames()
+	for i := range slices.Backward(frames) { // reverse ordered frames, done in stackFrames()
 		fID, err := newFrameIDFromString(frames[i].DocID)
 		if err != nil {
 			return "", fmt.Errorf("failed to create frameID from string: %w", err)
@@ -472,9 +476,8 @@ func stackTraceID(frames []StackFrame) (string, error) {
 
 func getLocations(dic pprofile.ProfilesDictionary, stack pprofile.Stack) []pprofile.Location {
 	locations := make([]pprofile.Location, 0, stack.LocationIndices().Len())
-
-	for i := range stack.LocationIndices().All() {
-		locations = append(locations, dic.LocationTable().At(i))
+	for _, i := range stack.LocationIndices().All() {
+		locations = append(locations, dic.LocationTable().At(int(i)))
 	}
 
 	return locations
@@ -498,20 +501,6 @@ func GetStartOfWeekFromTime(t time.Time) uint32 {
 	return uint32(t.Truncate(time.Hour * 24 * 7).Unix())
 }
 
-func newHostMetadata(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) map[string]string {
-	numAttrs := resource.Attributes().Len() + scope.Attributes().Len() + profile.AttributeIndices().Len()
-	if numAttrs == 0 {
-		return map[string]string{}
-	}
-	attrs := make(map[string]string, numAttrs)
-
-	addEventHostData(attrs, resource.Attributes())
-	addEventHostData(attrs, scope.Attributes())
-	addEventHostData(attrs, pprofile.FromAttributeIndices(dic.AttributeTable(), profile, dic))
-
-	return attrs
-}
-
 func addEventHostData(data map[string]string, attrs pcommon.Map) {
 	for k, v := range attrs.All() {
 		data[k] = v.AsString()
@@ -524,29 +513,16 @@ func int64ToBytes(value int64) []byte {
 	return buf
 }
 
-func populateHostResourceData(resource pcommon.Resource, scope pcommon.InstrumentationScope) HostResourceData {
-	hrd := HostResourceData{
-		Data: make(map[string]string, resource.Attributes().Len()+scope.Attributes().Len()),
+func populateResourceData(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) map[string]string {
+	numAttrs := resource.Attributes().Len() + scope.Attributes().Len() + profile.AttributeIndices().Len()
+	if numAttrs == 0 {
+		return map[string]string{}
 	}
+	attrs := make(map[string]string, numAttrs)
 
-	addEventHostData(hrd.Data, resource.Attributes())
-	addEventHostData(hrd.Data, scope.Attributes())
+	addEventHostData(attrs, resource.Attributes())
+	addEventHostData(attrs, scope.Attributes())
+	addEventHostData(attrs, pprofile.FromAttributeIndices(dic.AttributeTable(), profile, dic))
 
-	// Special case handling for host.id
-	hostID := hrd.Data[string(semconv.HostIDKey)]
-	if hostID == "" {
-		// In further processing host.id is used as unique key.
-		// So if this key is not present, hosts can not be compared.
-		return HostResourceData{
-			Data: map[string]string{},
-		}
-	}
-	hrd.V = EcsVersionString
-	hrd.HostID = hostID
-
-	// Avoid duplicate keys when JSON marshaling this struct
-	// by removing host.ID from hrd.Data
-	delete(hrd.Data, string(semconv.HostIDKey))
-
-	return hrd
+	return attrs
 }

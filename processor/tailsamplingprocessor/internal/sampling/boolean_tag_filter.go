@@ -36,8 +36,6 @@ func NewBooleanAttributeFilter(settings component.TelemetrySettings, key string,
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (baf *booleanAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
-	trace.Lock()
-	defer trace.Unlock()
 	batches := trace.ReceivedBatches
 
 	if baf.invertMatch {
@@ -75,4 +73,8 @@ func (baf *booleanAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID
 			}
 			return false
 		}), nil
+}
+
+func (*booleanAttributeFilter) IsStateful() bool {
+	return false
 }

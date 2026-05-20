@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -48,7 +49,11 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "all_fields"),
 			expected: &Config{
-				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+				QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
+					NumConsumers: 10,
+					QueueSize:    1000,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
+				}),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				APIKey:        "test-apikey",
 				APIURL:        "https://api.testhost.io",
@@ -78,6 +83,45 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "no_markers_supplied"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "path_context_log"),
+			expected: &Config{
+				APIKey: "test-apikey",
+				APIURL: "https://api.honeycomb.io",
+				Markers: []Marker{
+					{
+						Type: "fooType",
+						Rules: Rules{
+							LogConditions: []string{
+								`log.body == "test"`,
+								`log.attributes["level"] == "ERROR"`,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "path_context_mixed"),
+			expected: &Config{
+				APIKey: "test-apikey",
+				APIURL: "https://api.honeycomb.io",
+				Markers: []Marker{
+					{
+						Type: "fooType",
+						Rules: Rules{
+							LogConditions: []string{
+								`body == "test"`,
+								`resource.attributes["service.name"] == "checkout"`,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "path_context_invalid"),
 		},
 	}
 

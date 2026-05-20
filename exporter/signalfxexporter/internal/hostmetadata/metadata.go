@@ -5,6 +5,7 @@ package hostmetadata // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"maps"
 	"sync"
 
 	"github.com/shirou/gopsutil/v4/common"
@@ -45,15 +46,15 @@ func (s *Syncer) Sync(md pmetric.Metrics) {
 }
 
 func (s *Syncer) syncOnResource(res pcommon.Resource) {
-	// If resourcedetection processor is enabled, all the metrics should have resource attributes
+	// If resource_detection processor is enabled, all the metrics should have resource attributes
 	// that can be used to update host metadata.
 	// Based of this assumption we check just one ResourceMetrics object,
 	hostID, ok := splunk.ResourceToHostID(res)
 	if !ok {
-		// if no attributes found, we assume that resourcedetection is not enabled or
+		// if no attributes found, we assume that resource_detection is not enabled or
 		// it doesn't set right attributes, and we do not retry.
 		s.logger.Error("Not found any host attributes. Host metadata synchronization skipped. " +
-			"Make sure that \"resourcedetection\" processor is enabled in the pipeline with one of " +
+			"Make sure that \"resource_detection\" processor is enabled in the pipeline with one of " +
 			"the cloud provider detectors or environment variable detector setting \"host.name\" attribute")
 		return
 	}
@@ -93,27 +94,21 @@ func (s *Syncer) scrapeHostProperties() map[string]string {
 
 	cpu, err := getCPU(ctx)
 	if err == nil {
-		for k, v := range cpu.toStringMap() {
-			props[k] = v
-		}
+		maps.Copy(props, cpu.toStringMap())
 	} else {
 		s.logger.Warn("Failed to scrape host hostCPU metadata", zap.Error(err))
 	}
 
 	mem, err := getMemory(ctx)
 	if err == nil {
-		for k, v := range mem.toStringMap() {
-			props[k] = v
-		}
+		maps.Copy(props, mem.toStringMap())
 	} else {
 		s.logger.Warn("Failed to scrape host memory metadata", zap.Error(err))
 	}
 
 	os, err := getOS(ctx)
 	if err == nil {
-		for k, v := range os.toStringMap() {
-			props[k] = v
-		}
+		maps.Copy(props, os.toStringMap())
 	} else {
 		s.logger.Warn("Failed to scrape host hostOS metadata", zap.Error(err))
 	}

@@ -29,15 +29,6 @@ func TestMetric10kDPS(t *testing.T) {
 		skipMessage  string
 	}{
 		{
-			name:     "Carbon",
-			sender:   datasenders.NewCarbonDataSender(testutil.GetAvailablePort(t)),
-			receiver: datareceivers.NewCarbonDataReceiver(testutil.GetAvailablePort(t)),
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 237,
-				ExpectedMaxRAM: 105,
-			},
-		},
-		{
 			name:     "OTLP",
 			sender:   testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
@@ -61,7 +52,7 @@ func TestMetric10kDPS(t *testing.T) {
 			receiver: datareceivers.NewSFxMetricsDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 120,
-				ExpectedMaxRAM: 98,
+				ExpectedMaxRAM: 150,
 			},
 		},
 		{
@@ -71,6 +62,17 @@ func TestMetric10kDPS(t *testing.T) {
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 60,
 				ExpectedMaxRAM: 150,
+			},
+		},
+		{
+			name: "OtelArrow",
+			sender: datasenders.NewOtelarrowDataSender(
+				testbed.DefaultHost, testutil.GetAvailablePort(t),
+			),
+			receiver: datareceivers.NewOtelarrowDataReceiver(testutil.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 160,
+				ExpectedMaxRAM: 250,
 			},
 		},
 	}

@@ -24,6 +24,7 @@ func TestTranslationSupportedVersion(t *testing.T) {
 		zaptest.NewLogger(t),
 		"https://opentelemetry.io/schemas/1.9.0",
 		LoadTranslationVersion(t, TranslationVersion190),
+		nil,
 	)
 	require.NoError(t, err, "Must not error when creating translator")
 
@@ -106,7 +107,7 @@ func TestTranslationIteratorExact(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.scenario, func(t *testing.T) {
-			tn, err := newTranslator(zaptest.NewLogger(t), tc.target, LoadTranslationVersion(t, TranslationVersion190))
+			tn, err := newTranslator(zaptest.NewLogger(t), tc.target, LoadTranslationVersion(t, TranslationVersion190), nil)
 			require.NoError(t, err, "Must have no error when creating translator")
 
 			_, inVersion, err := GetFamilyAndVersion(tc.income)
@@ -124,7 +125,7 @@ func TestTranslationIteratorExact(t *testing.T) {
 }
 
 func TestTranslationIterator(t *testing.T) {
-	tn, err := newTranslator(zaptest.NewLogger(t), "https://opentelemetry.io/schemas/1.9.0", LoadTranslationVersion(t, TranslationVersion190))
+	tn, err := newTranslator(zaptest.NewLogger(t), "https://opentelemetry.io/schemas/1.9.0", LoadTranslationVersion(t, TranslationVersion190), nil)
 	require.NoError(t, err, "Must have no error when creating translator")
 
 	ver := &Version{1, 0, 0}
@@ -188,6 +189,7 @@ func TestTranslationSpanChanges(t *testing.T) {
 				zaptest.NewLogger(t),
 				joinSchemaFamilyAndVersion("https://example.com/", &tc.target),
 				LoadTranslationVersion(t, "complex_changeset.yml"),
+				nil,
 			)
 			require.NoError(t, err, "Must not error creating translator")
 
@@ -261,6 +263,7 @@ func TestTranslationLogChanges(t *testing.T) {
 				zaptest.NewLogger(t),
 				joinSchemaFamilyAndVersion("https://example.com/", &tc.target),
 				LoadTranslationVersion(t, "complex_changeset.yml"),
+				nil,
 			)
 			require.NoError(t, err, "Must not error creating translator")
 
@@ -333,6 +336,7 @@ func TestTranslationMetricChanges(t *testing.T) {
 				zaptest.NewLogger(t),
 				joinSchemaFamilyAndVersion("https://example.com/", &tc.target),
 				LoadTranslationVersion(t, "complex_changeset.yml"),
+				nil,
 			)
 			require.NoError(t, err, "Must not error creating translator")
 
@@ -363,6 +367,7 @@ func TestTranslationEquvialance_Logs(t *testing.T) {
 		zaptest.NewLogger(t),
 		"https://example.com/1.4.0",
 		LoadTranslationVersion(t, "complex_changeset.yml"),
+		nil,
 	)
 	require.NoError(t, err, "Must not error creating translator")
 
@@ -392,6 +397,7 @@ func TestTranslationEquvialance_Metrics(t *testing.T) {
 		zaptest.NewLogger(t),
 		"https://example.com/1.4.0",
 		LoadTranslationVersion(t, "complex_changeset.yml"),
+		nil,
 	)
 	require.NoError(t, err, "Must not error creating translator")
 
@@ -421,6 +427,7 @@ func TestTranslationEquvialance_Traces(t *testing.T) {
 		zaptest.NewLogger(t),
 		"https://example.com/1.4.0",
 		LoadTranslationVersion(t, "complex_changeset.yml"),
+		nil,
 	)
 	require.NoError(t, err, "Must not error creating translator")
 
@@ -444,14 +451,14 @@ func TestTranslationEquvialance_Traces(t *testing.T) {
 func BenchmarkCreatingTranslation(b *testing.B) {
 	log := zap.NewNop()
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		tn, err := newTranslator(
 			log,
 			"https://opentelemetry.io/schemas/1.9.0",
 			LoadTranslationVersion(b, TranslationVersion190),
+			nil,
 		)
 		assert.NoError(b, err, "Must not error when creating translator")
 		assert.NotNil(b, tn)
@@ -463,15 +470,15 @@ func BenchmarkUpgradingMetrics(b *testing.B) {
 		zap.NewNop(),
 		"https://example.com/1.7.0",
 		LoadTranslationVersion(b, "complex_changeset.yml"),
+		nil,
 	)
 	require.NoError(b, err, "Must not error creating translator")
 
 	metrics := NewExampleMetrics(b, Version{1, 0, 0})
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		b.StopTimer()
 		m := pmetric.NewMetrics()
 		metrics.CopyTo(m)
@@ -494,15 +501,15 @@ func BenchmarkUpgradingTraces(b *testing.B) {
 		zap.NewNop(),
 		"https://example.com/1.7.0",
 		LoadTranslationVersion(b, "complex_changeset.yml"),
+		nil,
 	)
 	require.NoError(b, err, "Must not error creating translator")
 
 	traces := NewExampleSpans(b, Version{1, 0, 0})
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		b.StopTimer()
 		t := ptrace.NewTraces()
 		traces.CopyTo(t)
@@ -525,15 +532,15 @@ func BenchmarkUpgradingLogs(b *testing.B) {
 		zap.NewNop(),
 		"https://example.com/1.7.0",
 		LoadTranslationVersion(b, "complex_changeset.yml"),
+		nil,
 	)
 	require.NoError(b, err, "Must not error creating translator")
 
 	logs := NewExampleLogs(b, Version{1, 0, 0})
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		b.StopTimer()
 		l := plog.NewLogs()
 		logs.CopyTo(l)

@@ -6,10 +6,14 @@ package correctnesstests // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"bufio"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
+
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/dataconnectors"
@@ -33,21 +37,38 @@ func CreateConfigYaml(
 	connector testbed.DataConnector,
 	processors []ProcessorNameAndConfigBody,
 ) string {
+	var plannedPorts []int
+	if sender != nil {
+		if tcpAddr, ok := sender.GetEndpoint().(*net.TCPAddr); ok {
+			plannedPorts = append(plannedPorts, tcpAddr.Port)
+		}
+	}
+
+	// Avoid picking a telemetry port that is already planned for the sender.
+	// This prevents port collisions between the collector's Prometheus telemetry
+	// and the collector's receivers (sender endpoint), which can happen if CreateConfigYaml
+	// is called before the receivers are started (bound).
+	telemetryPort := testutil.GetAvailablePort(tb)
+	for slices.Contains(plannedPorts, telemetryPort) {
+		telemetryPort = testutil.GetAvailablePort(tb)
+	}
+
 	// Prepare extra processor config section and comma-separated list of extra processor
 	// names to use in corresponding "processors" settings.
-	processorsSections := ""
-	processorsList := ""
+	var processorsSectionsBuilder, processorsListBuilder strings.Builder
 	if len(processors) > 0 {
 		first := true
 		for i := range processors {
-			processorsSections += processors[i].Body + "\n"
+			processorsSectionsBuilder.WriteString(processors[i].Body + "\n")
 			if !first {
-				processorsList += ","
+				processorsListBuilder.WriteString(",")
 			}
-			processorsList += processors[i].Name
+			processorsListBuilder.WriteString(processors[i].Name)
 			first = false
 		}
 	}
+	processorsSections := processorsSectionsBuilder.String()
+	processorsList := processorsListBuilder.String()
 
 	var pipeline1 string
 	switch sender.(type) {
@@ -101,7 +122,7 @@ service:
 			receiver.GenConfigYAMLStr(),
 			processorsSections,
 			connector.GenConfigYAMLStr(),
-			testutil.GetAvailablePort(tb),
+			telemetryPort,
 			pipeline1,
 			sender.ProtocolName(),
 			processorsList,
@@ -129,6 +150,8 @@ service:
               prometheus:
                 host: '127.0.0.1'
                 port: %d
+    logs:
+      level: "debug"
   extensions:
   pipelines:
     %s:
@@ -142,7 +165,7 @@ service:
 		sender.GenConfigYAMLStr(),
 		receiver.GenConfigYAMLStr(),
 		processorsSections,
-		testutil.GetAvailablePort(tb),
+		telemetryPort,
 		pipeline1,
 		sender.ProtocolName(),
 		processorsList,
@@ -190,6 +213,14 @@ func LoadPictOutputPipelineDefs(fileName string) ([]PipelineDef, error) {
 	return defs, err
 }
 
+func newDbgLogger() *zap.Logger {
+	logger, err := zap.NewDevelopment(zap.Fields(zap.String("type", "testbed")))
+	if err != nil {
+		panic("Cannot create logger " + err.Error())
+	}
+	return logger
+}
+
 // ConstructTraceSender creates a testbed trace sender from the passed-in trace sender identifier.
 func ConstructTraceSender(t *testing.T, receiver string) testbed.DataSender {
 	var sender testbed.DataSender
@@ -213,7 +244,9 @@ func ConstructMetricsSender(t *testing.T, receiver string) testbed.MetricDataSen
 	case "otlp":
 		sender = testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	case "stef":
-		sender = datasenders.NewStefDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+		s := datasenders.NewStefDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+		s.Logger = newDbgLogger()
+		sender = s
 	case "prometheus":
 		sender = datasenders.NewPrometheusDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	default:
@@ -226,10 +259,12 @@ func ConstructMetricsSender(t *testing.T, receiver string) testbed.MetricDataSen
 func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 	var receiver testbed.DataReceiver
 	switch exporter {
-	case "otlp":
+	case "otlp_grpc":
 		receiver = testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 	case "stef":
-		receiver = datareceivers.NewStefDataReceiver(testutil.GetAvailablePort(t))
+		r := datareceivers.NewStefDataReceiver(testutil.GetAvailablePort(t))
+		r.Logger = newDbgLogger()
+		receiver = r
 	case "jaeger":
 		receiver = datareceivers.NewJaegerDataReceiver(testutil.GetAvailablePort(t))
 	case "zipkin":

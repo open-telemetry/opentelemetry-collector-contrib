@@ -101,6 +101,37 @@ func TestSum(t *testing.T) {
 	testhelper.RunScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
+func TestSumInt(t *testing.T) {
+	script := []*testhelper.MetricsAdjusterTest{
+		{
+			Description: "Sum: round 1 - initial instance, start time is established",
+			Metrics:     testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.IntPoint(k1v1k2v2, t1, t1, 44))),
+			Adjusted:    testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.IntPoint(k1v1k2v2, t1, t1, 44))),
+		},
+		{
+			Description: "Sum: round 2 - instance adjusted based on round 1",
+			Metrics:     testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.IntPoint(k1v1k2v2, t2, t2, 66))),
+			Adjusted:    testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.IntPoint(k1v1k2v2, t1, t2, 66))),
+		},
+		{
+			Description: "Sum: round 3 - instance reset (value less than previous value), start time is reset",
+			Metrics:     testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.IntPoint(k1v1k2v2, t3, t3, 55))),
+			Adjusted:    testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.IntPoint(k1v1k2v2, t2, t3, 55))),
+		},
+		{
+			Description: "Sum: round 4 - instance adjusted based on round 3",
+			Metrics:     testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.IntPoint(k1v1k2v2, t4, t4, 72))),
+			Adjusted:    testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.IntPoint(k1v1k2v2, t2, t4, 72))),
+		},
+		{
+			Description: "Sum: round 5 - instance adjusted based on round 4",
+			Metrics:     testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.IntPoint(k1v1k2v2, t5, t5, 72))),
+			Adjusted:    testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.IntPoint(k1v1k2v2, t2, t5, 72))),
+		},
+	}
+	testhelper.RunScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
+}
+
 func TestSumWithDifferentResources(t *testing.T) {
 	script := []*testhelper.MetricsAdjusterTest{
 		{
@@ -446,6 +477,27 @@ func TestMultiMetrics(t *testing.T) {
 				testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t2, t4, 72)),
 				testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t2, t4, bounds0, []uint64{7, 4, 2, 12})),
 				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t2, t4, 14, 96, percent0, []float64{9, 47, 8})),
+			),
+		},
+	}
+	testhelper.RunScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
+}
+
+func TestStartTimeAlreadySet(t *testing.T) {
+	script := []*testhelper.MetricsAdjusterTest{
+		{
+			Description: "TestStartTimeAlreadySet",
+			Metrics: testhelper.Metrics(
+				testhelper.GaugeMetric(gauge1, testhelper.DoublePoint(k1v1k2v2, t1, t2, 44)),
+				testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t1, t2, 44)),
+				testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{4, 2, 3, 7})),
+				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t1, t2, 10, 40, percent0, []float64{1, 5, 8})),
+			),
+			Adjusted: testhelper.Metrics(
+				testhelper.GaugeMetric(gauge1, testhelper.DoublePoint(k1v1k2v2, t1, t2, 44)),
+				testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t1, t2, 44)),
+				testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{4, 2, 3, 7})),
+				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t1, t2, 10, 40, percent0, []float64{1, 5, 8})),
 			),
 		},
 	}

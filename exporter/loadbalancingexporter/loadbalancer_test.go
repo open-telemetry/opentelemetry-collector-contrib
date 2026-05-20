@@ -6,6 +6,7 @@ package loadbalancingexporter
 import (
 	"context"
 	"errors"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -144,6 +145,14 @@ func TestWithDNSResolverNoEndpoints(t *testing.T) {
 	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
 	require.NotNil(t, p)
 	require.NoError(t, err)
+
+	dnsRes, ok := p.res.(*dnsResolver)
+	require.True(t, ok)
+	dnsRes.resolver = &mockDNSResolver{
+		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
+			return nil, nil
+		},
+	}
 
 	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -328,27 +337,6 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 	// verify
 	assert.Len(t, p.exporters, 1)
 	assert.Contains(t, p.exporters, "endpoint-1:4317")
-}
-
-func TestEndpointFound(t *testing.T) {
-	for _, tt := range []struct {
-		endpoint  string
-		endpoints []string
-		expected  bool
-	}{
-		{
-			"endpoint-1",
-			[]string{"endpoint-1", "endpoint-2"},
-			true,
-		},
-		{
-			"endpoint-3",
-			[]string{"endpoint-1", "endpoint-2"},
-			false,
-		},
-	} {
-		assert.Equal(t, tt.expected, endpointFound(tt.endpoint, tt.endpoints))
-	}
 }
 
 func TestEndpointWithPort(t *testing.T) {

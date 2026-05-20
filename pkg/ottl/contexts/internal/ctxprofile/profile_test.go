@@ -32,6 +32,14 @@ func TestPathGetSetter(t *testing.T) {
 			val:  createValueType(),
 		},
 		{
+			path: "sample_type type",
+			val:  "cpu",
+		},
+		{
+			path: "sample_type unit",
+			val:  "cycles",
+		},
+		{
 			path: "sample",
 			val:  createSampleSlice(),
 		},
@@ -49,19 +57,23 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "duration",
-			val:  time.Now().UTC(),
+			val:  int64(0),
 		},
 		{
 			path: "period_type",
 			val:  createValueType(),
 		},
 		{
-			path: "period",
-			val:  int64(234),
+			path: "period_type type",
+			val:  "heap",
 		},
 		{
-			path: "comment_string_indices",
-			val:  []int64{345},
+			path: "period_type unit",
+			val:  "bytes",
+		},
+		{
+			path: "period",
+			val:  int64(234),
 		},
 		{
 			path: "profile_id",
@@ -164,14 +176,19 @@ func TestPathGetSetter(t *testing.T) {
 			accessor, err := PathGetSetter(path)
 			require.NoError(t, err)
 
-			err = accessor.Set(t.Context(), newProfileContext(profile, dictionary), tt.val)
+			ctx := newProfileContext(profile, dictionary)
+			err = accessor.Set(t.Context(), ctx, tt.val)
 			if tt.setFails {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
 
-			got, err := accessor.Get(t.Context(), newProfileContext(profile, dictionary))
+			// Verify that setting an invalid type returns an error
+			err = accessor.Set(t.Context(), ctx, struct{}{})
+			require.Error(t, err)
+
+			got, err := accessor.Get(t.Context(), ctx)
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.val, got)
@@ -192,13 +209,19 @@ func (p *profileContext) GetProfile() pprofile.Profile {
 	return p.profile
 }
 
+func (p *profileContext) AttributeIndices() pcommon.Int32Slice {
+	return p.profile.AttributeIndices()
+}
+
 func newProfileContext(profile pprofile.Profile, dictionary pprofile.ProfilesDictionary) *profileContext {
-	return &profileContext{profile: profile, dictionary: dictionary}
+	return &profileContext{
+		profile:    profile,
+		dictionary: dictionary,
+	}
 }
 
 func createValueType() pprofile.ValueType {
 	vt := pprofile.NewValueType()
-	vt.SetAggregationTemporality(pprofile.AggregationTemporalityDelta)
 	vt.SetTypeStrindex(2)
 	vt.SetUnitStrindex(3)
 	return vt

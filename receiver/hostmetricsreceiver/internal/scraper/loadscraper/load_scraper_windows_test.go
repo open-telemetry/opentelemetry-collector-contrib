@@ -31,7 +31,7 @@ func Benchmark_SampleLoad(b *testing.B) {
 	s, _ := newSampler(zap.NewNop())
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		s.sampleLoad()
 	}
 }
@@ -50,7 +50,7 @@ func TestSetSkipScrapeOnFailureToStart(t *testing.T) {
 		t.Context(),
 		scrapertest.NewNopSettings(metadata.Type),
 		&Config{
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		},
 	)
 	require.NotNil(t, scraper)
@@ -68,7 +68,7 @@ func TestSetSkipScrapeOnFailureToStart(t *testing.T) {
 
 func TestLoadScrapeWithRealData(t *testing.T) {
 	config := Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	scraper := newLoadScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &config)
 

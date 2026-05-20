@@ -1,0 +1,121 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: resourceName
+          value:
+            stringValue: resourceA
+    scopeLogs:
+      - scope:
+          name: scopeA
+        logRecords:
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordA
+            body:
+              stringValue: value1
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordA
+            body:
+              stringValue: value2
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordB
+            body:
+              stringValue: value1
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordB
+            body:
+              stringValue: value2
+      - scope:
+          name: scopeB
+        logRecords:
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordA
+            body:
+              stringValue: value1
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordA
+            body:
+              stringValue: value2
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordB
+            body:
+              stringValue: value1
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordB
+            body:
+              stringValue: value2
+  - resource:
+      attributes:
+        - key: resourceName
+          value:
+            stringValue: resourceA
+    scopeLogs:
+      - scope:
+          name: scopeB
+        logRecords:
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordA
+            body:
+              stringValue: value1
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordA
+            body:
+              stringValue: value2
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordB
+            body:
+              stringValue: value1
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordB
+            body:
+              stringValue: value2
+      - scope:
+          name: scopeB
+        logRecords:
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordA
+            body:
+              stringValue: value1
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordA
+            body:
+              stringValue: value2
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordB
+            body:
+              stringValue: value1
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: recordB
+            body:
+              stringValue: value2

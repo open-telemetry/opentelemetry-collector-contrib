@@ -4,6 +4,7 @@
 package datadogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -12,10 +13,12 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
-	"github.com/hashicorp/golang-lru/v2/simplelru"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -40,6 +43,7 @@ type datadogReceiver struct {
 
 	nextTracesConsumer  consumer.Traces
 	nextMetricsConsumer consumer.Metrics
+	nextLogsConsumer    consumer.Logs
 
 	metricsTranslator *translator.MetricsTranslator
 	statsTranslator   *translator.StatsTranslator
@@ -47,7 +51,10 @@ type datadogReceiver struct {
 	server    *http.Server
 	tReceiver *receiverhelper.ObsReport
 
-	traceIDCache *simplelru.LRU[uint64, pcommon.TraceID]
+	traceIDCache *lru.Cache[uint64, pcommon.TraceID]
+
+	shutdownCh chan struct{}
+	wg         sync.WaitGroup
 }
 
 // Endpoint specifies an API endpoint definition.
@@ -135,6 +142,19 @@ func (ddr *datadogReceiver) getEndpoints() []endpoint {
 				Pattern: "/v0.6/stats",
 				Handler: ddr.handleStats,
 			},
+			{
+				Pattern: "/api/v0.2/stats",
+				Handler: ddr.handleStatsV2,
+			},
+		}...)
+	}
+
+	if ddr.nextLogsConsumer != nil {
+		endpoints = append(endpoints, []endpoint{
+			{
+				Pattern: "/api/v2/logs",
+				Handler: ddr.handleLogs,
+			},
 		}...)
 	}
 
@@ -154,9 +174,9 @@ func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Set
 		return nil, err
 	}
 
-	var cache *simplelru.LRU[uint64, pcommon.TraceID]
+	var cache *lru.Cache[uint64, pcommon.TraceID]
 	if FullTraceIDFeatureGate.IsEnabled() {
-		cache, err = simplelru.NewLRU[uint64, pcommon.TraceID](config.TraceIDCacheSize, func(k uint64, _ pcommon.TraceID) {
+		cache, err = lru.NewWithEvict(config.TraceIDCacheSize, func(k uint64, _ pcommon.TraceID) {
 			params.Logger.Debug("evicting datadog trace id from cache", zap.Uint64("id", k))
 		})
 		if err != nil {
@@ -190,13 +210,11 @@ func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Set
 		params:             params,
 		config:             config,
 		intakeReverseProxy: intakeReverseProxy,
-		server: &http.Server{
-			ReadTimeout: config.ReadTimeout,
-		},
-		tReceiver:         instance,
-		metricsTranslator: translator.NewMetricsTranslator(params.BuildInfo),
-		statsTranslator:   translator.NewStatsTranslator(),
-		traceIDCache:      cache,
+		tReceiver:          instance,
+		metricsTranslator:  translator.NewMetricsTranslator(params.BuildInfo, config.IdleSeriesTimeout),
+		statsTranslator:    translator.NewStatsTranslator(),
+		traceIDCache:       cache,
+		shutdownCh:         make(chan struct{}),
 	}, nil
 }
 
@@ -211,7 +229,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	var err error
 	ddr.server, err = ddr.config.ToServer(
 		ctx,
-		host,
+		host.GetExtensions(),
 		ddr.params.TelemetrySettings,
 		ddmux,
 	)
@@ -230,10 +248,31 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(fmt.Errorf("error starting datadog receiver: %w", err)))
 		}
 	}()
+
+	// Starts the cleanup loop to remove idle series
+	if ddr.config.IdleSeriesTimeout > 0 {
+		if ddr.config.IdleSeriesCleanupInterval <= 0 {
+			return fmt.Errorf(
+				"idle_series_cleanup_interval must be positive when idle_series_timeout is enabled; found %v",
+				ddr.config.IdleSeriesCleanupInterval,
+			)
+		}
+
+		ddr.wg.Go(ddr.runIdleSeriesCleanup)
+	}
+
 	return nil
 }
 
 func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
+	// Signal background goroutines to stop
+	close(ddr.shutdownCh)
+	// Wait for them to finish
+	ddr.wg.Wait()
+
+	if ddr.server == nil {
+		return nil
+	}
 	return ddr.server.Shutdown(ctx)
 }
 
@@ -262,6 +301,141 @@ func (ddr *datadogReceiver) handleInfo(w http.ResponseWriter, _ *http.Request, i
 	}
 }
 
+func (ddr *datadogReceiver) handleLogs(w http.ResponseWriter, req *http.Request) {
+	if req.ContentLength == 0 { // Ping mechanism of Datadog SDK perform http request with empty body when GET /info not implemented.
+		http.Error(w, "Fake featuresdiscovery", http.StatusBadRequest) // The response code should be different of 404 to be considered ok by Datadog SDK.
+		return
+	}
+	obsCtx := ddr.tReceiver.StartLogsOp(req.Context())
+	var (
+		logCount int
+		err      error
+	)
+	defer func(logCount *int) {
+		ddr.tReceiver.EndLogsOp(obsCtx, "datadog", *logCount, err)
+	}(&logCount)
+
+	if req.Method != http.MethodPost {
+		http.Error(w, "method not allowed, supported: [POST]", http.StatusMethodNotAllowed)
+		return
+	}
+
+	switch contentType := req.Header.Get("Content-Type"); contentType {
+	case "application/json":
+		buf := translator.GetBuffer()
+		defer translator.PutBuffer(buf)
+		if _, err = io.Copy(buf, req.Body); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			ddr.params.Logger.Error(err.Error())
+			return
+		}
+
+		// try parsing as array first, then single record
+		var ddLogs []*translator.DatadogLogPayload
+
+		if err = json.Unmarshal(buf.Bytes(), &ddLogs); err != nil {
+			// now try parsing as a single record
+			var ddLog *translator.DatadogLogPayload
+			if err = json.Unmarshal(buf.Bytes(), &ddLog); err != nil {
+				http.Error(w, "unable to unmarshal logs", http.StatusBadRequest)
+				ddr.params.Logger.Error("unable to unmarshal logs", zap.Error(err))
+				return
+			}
+			ddLogs = append(ddLogs, ddLog)
+		}
+
+		plogs := translator.ToPlog(ddLogs)
+
+		logCount = plogs.LogRecordCount()
+		err = ddr.nextLogsConsumer.ConsumeLogs(obsCtx, plogs)
+		if err != nil {
+			errorutil.HTTPError(w, err)
+			ddr.params.Logger.Error("log consumer errored out", zap.Error(err))
+			return
+		}
+	default:
+		http.Error(w, fmt.Sprintf("unsupported media type '%s', supported: [application/json]", contentType), http.StatusUnsupportedMediaType)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	response := map[string]any{
+		"errors": []string{},
+	}
+	_ = json.NewEncoder(w).Encode(response)
+}
+
+// handleStatsV2 handles incoming stats payloads from datadog agent
+// Stats payloads are sent from the DataDog agent at /api/v0.2/stats
+func (ddr *datadogReceiver) handleStatsV2(w http.ResponseWriter, req *http.Request) {
+	obsCtx := ddr.tReceiver.StartMetricsOp(req.Context())
+	var err error
+	metricsCount := 0
+	defer func(metricsCount *int) {
+		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
+	}(&metricsCount)
+
+	// Get content encoding from header
+	contentEncoding := req.Header.Get("Content-Encoding")
+
+	// Create a reader that handles decompression if needed
+	reader, err := createDecompressingReader(req.Body, contentEncoding)
+	if err != nil {
+		ddr.params.Logger.Error("Error creating decompressing reader", zap.Error(err), zap.String("encoding", contentEncoding))
+		http.Error(w, "Error decompressing payload", http.StatusBadRequest)
+		return
+	}
+	defer reader.Close()
+
+	// Decode the StatsPayload (NOT ClientStatsPayload directly)
+	// The agent wraps ClientStatsPayload(s) inside a StatsPayload
+	statsPayload := &pb.StatsPayload{}
+	err = msgp.Decode(reader, statsPayload)
+	if err != nil {
+		ddr.params.Logger.Error("Error decoding pb.StatsPayload", zap.Error(err))
+		http.Error(w, "Error decoding pb.StatsPayload", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the payload
+	if len(statsPayload.Stats) == 0 {
+		ddr.params.Logger.Warn("Received empty stats payload")
+		_, _ = w.Write([]byte("OK"))
+		return
+	}
+
+	// Process each ClientStatsPayload within the StatsPayload
+	// The agent may send multiple ClientStatsPayload entries in a single request
+	for _, clientStats := range statsPayload.Stats {
+		// Extract metadata from headers (fallback if not in payload)
+		lang := req.Header.Get(header.Lang)
+		tracerVersion := req.Header.Get(header.TracerVersion)
+
+		// Translate each client stats payload to metrics
+		metrics, translateErr := ddr.statsTranslator.TranslateStats(clientStats, lang, tracerVersion)
+		if translateErr != nil {
+			err = translateErr
+			ddr.params.Logger.Error("Error translating stats", zap.Error(err))
+			http.Error(w, "Error translating stats", http.StatusBadRequest)
+			return
+		}
+
+		metricsCount += metrics.DataPointCount()
+
+		// Send to metrics consumer
+		consumeErr := ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
+		if consumeErr != nil {
+			err = consumeErr
+			ddr.params.Logger.Error("Metrics consumer errored out", zap.Error(err))
+			errorutil.HTTPError(w, err)
+			return
+		}
+	}
+
+	_, _ = w.Write([]byte("OK"))
+}
+
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
 	if req.ContentLength == 0 { // Ping mechanism of Datadog SDK perform http request with empty body when GET /info not implemented.
 		http.Error(w, "Fake featuresdiscovery", http.StatusBadRequest) // The response code should be different of 404 to be considered ok by Datadog SDK.
@@ -287,7 +461,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 			ddr.params.Logger.Error("Error converting traces", zap.Error(err))
 			continue
 		}
-		spanCount = otelTraces.SpanCount()
+		spanCount += otelTraces.SpanCount()
 		err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)
 		if err != nil {
 			errorutil.HTTPError(w, err)
@@ -407,13 +581,20 @@ func (ddr *datadogReceiver) handleCheckRun(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
+	// try parsing as array first, then single service check
 	var services []translator.ServiceCheck
 
 	err = json.Unmarshal(buf.Bytes(), &services)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		ddr.params.Logger.Error(err.Error())
-		return
+		// now try parsing as a single service check
+		var service translator.ServiceCheck
+		err = json.Unmarshal(buf.Bytes(), &service)
+		if err != nil {
+			http.Error(w, "unable to unmarshal service checks", http.StatusBadRequest)
+			ddr.params.Logger.Error("unable to unmarshal service checks", zap.Error(err))
+			return
+		}
+		services = append(services, service)
 	}
 
 	metrics := ddr.metricsTranslator.TranslateServices(services)
@@ -541,5 +722,47 @@ func createIntakeReverseProxyDirector(site, key string) func(*http.Request) {
 		// but it appears as though the value of that field does not matter,
 		// at least when it comes to matching the actual `DD-API-KEY` we set in the header above.
 		// So, to avoid a bunch of extra expensive work in the collector, we don't touch the body.
+	}
+}
+
+// runIdleSeriesCleanup runs the loop that checks for and removes idle series.
+func (ddr *datadogReceiver) runIdleSeriesCleanup() {
+	cleanupInterval := ddr.config.IdleSeriesCleanupInterval
+	idleTimeout := ddr.config.IdleSeriesTimeout
+
+	// Assumes validation was done in Start(), so cleanupInterval is positive.
+	ticker := time.NewTicker(cleanupInterval)
+	defer ticker.Stop()
+
+	ddr.params.Logger.Info("Starting idle series cleanup",
+		zap.Duration("idle_series_timeout", idleTimeout),
+		zap.Duration("idle_series_cleanup_interval", cleanupInterval))
+
+	for {
+		select {
+		case <-ddr.shutdownCh:
+			return
+		case <-ticker.C:
+			removedCount := ddr.metricsTranslator.Prune()
+			if removedCount > 0 {
+				ddr.params.Logger.Debug("Pruned idle series from memory",
+					zap.Int("removed_series", removedCount))
+			}
+		}
+	}
+}
+
+// createDecompressingReader creates a reader that handles decompression based on the content encoding.
+// Supported encodings: gzip. Returns the original reader if encoding is empty or unsupported.
+func createDecompressingReader(body io.ReadCloser, contentEncoding string) (io.ReadCloser, error) {
+	switch contentEncoding {
+	case "gzip":
+		gzReader, err := gzip.NewReader(body)
+		if err != nil {
+			return nil, fmt.Errorf("error creating gzip reader: %w", err)
+		}
+		return gzReader, nil
+	default:
+		return body, nil
 	}
 }

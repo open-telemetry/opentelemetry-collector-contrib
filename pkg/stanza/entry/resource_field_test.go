@@ -361,25 +361,25 @@ func TestResourceFieldSet(t *testing.T) {
 
 func TestResourceFieldParent(t *testing.T) {
 	t.Run("Simple", func(t *testing.T) {
-		field := ResourceField{[]string{"child"}}
-		require.Equal(t, ResourceField{[]string{}}, field.Parent())
+		field := ResourceField{Keys: []string{"child"}}
+		require.Equal(t, ResourceField{Keys: []string{}}, field.Parent())
 	})
 
 	t.Run("Root", func(t *testing.T) {
-		field := ResourceField{[]string{}}
-		require.Equal(t, ResourceField{[]string{}}, field.Parent())
+		field := ResourceField{Keys: []string{}}
+		require.Equal(t, ResourceField{Keys: []string{}}, field.Parent())
 	})
 }
 
 func TestResourceFieldChild(t *testing.T) {
-	field := ResourceField{[]string{"parent"}}
-	require.Equal(t, ResourceField{[]string{"parent", "child"}}, field.Child("child"))
+	field := ResourceField{Keys: []string{"parent"}}
+	require.Equal(t, ResourceField{Keys: []string{"parent", "child"}}, field.Child("child"))
 }
 
 func TestResourceFieldMerge(t *testing.T) {
 	entry := &Entry{}
 	entry.Resource = map[string]any{"old": "values"}
-	field := ResourceField{[]string{"embedded"}}
+	field := ResourceField{Keys: []string{"embedded"}}
 	values := map[string]any{"new": "values"}
 	field.Merge(entry, values)
 	expected := map[string]any{"embedded": values, "old": "values"}
@@ -429,7 +429,7 @@ func TestResourceFieldUnmarshal(t *testing.T) {
 			require.Equal(t, tc.keys, fy.Keys)
 
 			var fj ResourceField
-			err = json.Unmarshal([]byte(fmt.Sprintf(`%q`, tc.jsonDot)), &fj)
+			err = json.Unmarshal(fmt.Appendf(nil, `%q`, tc.jsonDot), &fj)
 			require.NoError(t, err)
 			require.Equal(t, tc.keys, fy.Keys)
 		})

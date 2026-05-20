@@ -34,7 +34,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     scs,
 		Config:               config,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -52,5 +52,5 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewMetricsController(&dsr.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, scrp))
+	return scraperhelper.NewMetricsController(&dsr.config.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, scrp))
 }

@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -42,8 +41,10 @@ func TestSyncMetadata(t *testing.T) {
 		{
 			name: "all_stats_available",
 			cpuStat: cpu.InfoStat{
-				Cores:     4,
-				ModelName: "testprocessor",
+				Cores:      1,
+				ModelName:  "testprocessor",
+				PhysicalID: "0",
+				CoreID:     "0",
 			},
 			cpuStatErr: nil,
 			memStat: mem.VirtualMemoryStat{
@@ -57,14 +58,14 @@ func TestSyncMetadata(t *testing.T) {
 			},
 			hostStatErr: nil,
 			pushFail:    false,
-			metricsData: generateSampleMetricsData(map[string]string{string(conventions.HostNameKey): "host1"}),
+			metricsData: generateSampleMetricsData(map[string]string{"host.name": "host1"}),
 			wantMetadataUpdate: []*metadata.MetadataUpdate{
 				{
-					ResourceIDKey: string(conventions.HostNameKey),
+					ResourceIDKey: "host.name",
 					ResourceID:    "host1",
 					MetadataDelta: metadata.MetadataDelta{
 						MetadataToUpdate: map[string]string{
-							"host_cpu_cores":      "4",
+							"host_cpu_cores":      "1",
 							"host_cpu_model":      "testprocessor",
 							"host_logical_cpus":   "1",
 							"host_physical_cpus":  "1",
@@ -85,8 +86,10 @@ func TestSyncMetadata(t *testing.T) {
 		{
 			name: "no_host_stats",
 			cpuStat: cpu.InfoStat{
-				Cores:     4,
-				ModelName: "testprocessor",
+				Cores:      1,
+				ModelName:  "testprocessor",
+				PhysicalID: "0",
+				CoreID:     "0",
 			},
 			cpuStatErr: nil,
 			memStat: mem.VirtualMemoryStat{
@@ -96,14 +99,14 @@ func TestSyncMetadata(t *testing.T) {
 			hostStat:    host.InfoStat{},
 			hostStatErr: errors.New("failed"),
 			pushFail:    false,
-			metricsData: generateSampleMetricsData(map[string]string{string(conventions.HostNameKey): "host1"}),
+			metricsData: generateSampleMetricsData(map[string]string{"host.name": "host1"}),
 			wantMetadataUpdate: []*metadata.MetadataUpdate{
 				{
-					ResourceIDKey: string(conventions.HostNameKey),
+					ResourceIDKey: "host.name",
 					ResourceID:    "host1",
 					MetadataDelta: metadata.MetadataDelta{
 						MetadataToUpdate: map[string]string{
-							"host_cpu_cores":     "4",
+							"host_cpu_cores":     "1",
 							"host_cpu_model":     "testprocessor",
 							"host_logical_cpus":  "1",
 							"host_physical_cpus": "1",
@@ -127,10 +130,10 @@ func TestSyncMetadata(t *testing.T) {
 			hostStat:    host.InfoStat{},
 			hostStatErr: errors.New("failed"),
 			pushFail:    false,
-			metricsData: generateSampleMetricsData(map[string]string{string(conventions.HostNameKey): "host1"}),
+			metricsData: generateSampleMetricsData(map[string]string{"host.name": "host1"}),
 			wantMetadataUpdate: []*metadata.MetadataUpdate{
 				{
-					ResourceIDKey: string(conventions.HostNameKey),
+					ResourceIDKey: "host.name",
 					ResourceID:    "host1",
 					MetadataDelta: metadata.MetadataDelta{
 						MetadataToUpdate: map[string]string{
@@ -152,7 +155,7 @@ func TestSyncMetadata(t *testing.T) {
 			memStatErr:         errors.New("failed"),
 			hostStat:           host.InfoStat{},
 			hostStatErr:        errors.New("failed"),
-			metricsData:        generateSampleMetricsData(map[string]string{string(conventions.HostNameKey): "host1"}),
+			metricsData:        generateSampleMetricsData(map[string]string{"host.name": "host1"}),
 			wantMetadataUpdate: nil,
 			wantLogs: []string{
 				"Failed to scrape host hostCPU metadata",
@@ -174,7 +177,7 @@ func TestSyncMetadata(t *testing.T) {
 			},
 			hostStatErr:        nil,
 			pushFail:           true,
-			metricsData:        generateSampleMetricsData(map[string]string{string(conventions.HostNameKey): "host1"}),
+			metricsData:        generateSampleMetricsData(map[string]string{"host.name": "host1"}),
 			wantMetadataUpdate: nil,
 			wantLogs:           []string{"Failed to push host metadata update"},
 		},
@@ -190,9 +193,9 @@ func TestSyncMetadata(t *testing.T) {
 			hostStatErr: errors.New("failed"),
 			pushFail:    false,
 			metricsData: generateSampleMetricsData(map[string]string{
-				string(conventions.CloudProviderKey):  conventions.CloudProviderGCP.Value.AsString(),
-				string(conventions.CloudAccountIDKey): "1234",
-				string(conventions.HostIDKey):         "i-abc",
+				"cloud.provider":   "gcp",
+				"cloud.account.id": "1234",
+				"host.id":          "i-abc",
 			}),
 			wantMetadataUpdate: []*metadata.MetadataUpdate{
 				{
@@ -220,7 +223,7 @@ func TestSyncMetadata(t *testing.T) {
 			wantMetadataUpdate: nil,
 			wantLogs: []string{
 				"Not found any host attributes. Host metadata synchronization skipped. " +
-					"Make sure that \"resourcedetection\" processor is enabled in the pipeline with one of " +
+					"Make sure that \"resource_detection\" processor is enabled in the pipeline with one of " +
 					"the cloud provider detectors or environment variable detector setting \"host.name\" attribute",
 			},
 		},

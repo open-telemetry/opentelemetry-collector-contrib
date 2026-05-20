@@ -1,4 +1,4 @@
-include-fragments = true
+include_fragments = false
 
 accept = ["200..=299", "429"]
 
@@ -8,8 +8,9 @@ exclude  = [
     "^https://dev.mysql.com",
     "^https://bugs.mysql.com",
     "^https://techdocs.akamai.com",
-    "^https://www.vultr.com"
+    "^https://www.vultr.com",
+    "^https://docs.honeycomb.io"
 ]
 
 # better to be safe and avoid failures
-max-retries = 6
+max_retries = 6

@@ -33,7 +33,7 @@ import (
 )
 
 func TestDefaultConfig(t *testing.T) {
-	factory := newFactoryAdapter()
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NotNil(t, cfg, "failed to create default config")
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
@@ -42,7 +42,7 @@ func TestDefaultConfig(t *testing.T) {
 func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	factory := newFactoryAdapter()
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
@@ -61,7 +61,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 		}(),
 	}
 
-	_, err := newFactoryAdapter().CreateLogs(
+	_, err := NewFactory().CreateLogs(
 		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
@@ -98,7 +98,7 @@ func BenchmarkReadWindowsEventLogger(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				// Set up the receiver and sink.
 				ctx := b.Context()
-				factory := newFactoryAdapter()
+				factory := NewFactory()
 				createSettings := receivertest.NewNopSettings(metadata.Type)
 				cfg := createTestConfig()
 				cfg.InputConfig.StartAt = "beginning"
@@ -128,7 +128,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := t.Context()
-	factory := newFactoryAdapter()
+	factory := NewFactory()
 	createSettings := receivertest.NewNopSettings(metadata.Type)
 	cfg := createTestConfig()
 	sink := new(consumertest.LogsSink)
@@ -162,7 +162,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	eventDataMap, ok := eventData.(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, map[string]any{
-		"data": []any{map[string]any{"": "Test log"}},
+		"param1": "Test log",
 	}, eventDataMap)
 
 	eventID := body["event_id"]
@@ -181,7 +181,7 @@ func TestReadWindowsEventLoggerWithQuery(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := t.Context()
-	factory := newFactoryAdapter()
+	factory := NewFactory()
 	createSettings := receivertest.NewNopSettings(metadata.Type)
 	cfg := createTestConfigWithQuery()
 	sink := new(consumertest.LogsSink)
@@ -215,7 +215,7 @@ func TestReadWindowsEventLoggerWithQuery(t *testing.T) {
 	eventDataMap, ok := eventData.(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, map[string]any{
-		"data": []any{map[string]any{"": "Test log"}},
+		"param1": "Test log",
 	}, eventDataMap)
 
 	eventID := body["event_id"]
@@ -234,7 +234,7 @@ func TestReadWindowsEventLoggerRaw(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := t.Context()
-	factory := newFactoryAdapter()
+	factory := NewFactory()
 	createSettings := receivertest.NewNopSettings(metadata.Type)
 	cfg := createTestConfig()
 	cfg.InputConfig.Raw = true
@@ -299,7 +299,7 @@ func TestExcludeProvider(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := t.Context()
-			factory := newFactoryAdapter()
+			factory := NewFactory()
 			createSettings := receivertest.NewNopSettings(metadata.Type)
 			cfg := createTestConfig()
 			cfg.InputConfig.Raw = tt.raw
@@ -374,25 +374,25 @@ func createTestConfigWithQuery() *WindowsLogConfig {
 
 // assertEventSourceInstallation installs an event source and verifies that the registry key was created.
 // It returns a function that can be used to uninstall the event source, that function is never nil
-func assertEventSourceInstallation(t *testing.T, src string) (uninstallEventSource func(), err error) {
-	err = eventlog.InstallAsEventCreate(src, eventlog.Info|eventlog.Warning|eventlog.Error)
+func assertEventSourceInstallation(t *testing.T, src string) (func(), error) {
+	err := eventlog.InstallAsEventCreate(src, eventlog.Info|eventlog.Warning|eventlog.Error)
 	if err != nil && strings.HasSuffix(err.Error(), " registry key already exists") {
 		// If the event source already exists ignore the error
 		err = nil
 	}
-	uninstallEventSource = func() {
+	uninstallEventSource := func() {
 		assert.NoError(t, eventlog.Remove(src))
 	}
 	assert.NoError(t, err)
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-		rk, err := registry.OpenKey(registry.LOCAL_MACHINE, "SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\"+src, registry.QUERY_VALUE)
-		assert.NoError(c, err)
+		rk, inErr := registry.OpenKey(registry.LOCAL_MACHINE, "SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\"+src, registry.QUERY_VALUE)
+		assert.NoError(c, inErr)
 		defer rk.Close()
 		_, _, err = rk.GetIntegerValue("TypesSupported")
 		assert.NoError(c, err)
 	}, 10*time.Second, 250*time.Millisecond)
 
-	return
+	return uninstallEventSource, err
 }
 
 //nolint:unparam // expectedEventCount might be greater than one in the future
@@ -432,7 +432,7 @@ func filterAllLogRecordsBySource(t *testing.T, sink *consumertest.LogsSink, src 
 		}
 	}
 
-	return
+	return filteredLogRecords
 }
 
 func extractEventSourceFromLogRecord(t *testing.T, logRecord plog.LogRecord) string {

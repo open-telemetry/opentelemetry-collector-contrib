@@ -2,17 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
+
 import (
 	"context"
-	"net/http"
 	"path/filepath"
-	"reflect"
-	"slices"
 	"sync"
 	"testing"
 	"time"
 
-	azfake "github.com/Azure/azure-sdk-for-go/sdk/azcore/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
 	"github.com/stretchr/testify/require"
@@ -23,46 +20,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
 
-type queryResourcesResponseMockParams struct {
-	subscriptionID  string
-	metricNamespace string
-	metricNames     []string
-	resourceIDs     azmetrics.ResourceIDList
-}
-
-func (p queryResourcesResponseMockParams) Evaluate(subscriptionID, metricNamespace string, metricNames []string, resourceIDs azmetrics.ResourceIDList) bool {
-	metricNamesParamClone := slices.Clone(metricNames)
-	metricNamesClone := slices.Clone(p.metricNames)
-	slices.Sort(metricNamesParamClone)
-	slices.Sort(metricNamesClone)
-
-	resourceIDsParamClone := slices.Clone(resourceIDs.ResourceIDs)
-	resourceIDsClone := slices.Clone(p.resourceIDs.ResourceIDs)
-	slices.Sort(resourceIDsParamClone)
-	slices.Sort(resourceIDsClone)
-
-	return p.subscriptionID == subscriptionID && p.metricNamespace == metricNamespace &&
-		reflect.DeepEqual(metricNamesClone, metricNamesParamClone) && reflect.DeepEqual(resourceIDsClone, resourceIDsParamClone)
-}
-
-type queryResourcesResponseMock struct {
-	params   queryResourcesResponseMockParams
-	response azmetrics.QueryResourcesResponse
-}
-
-func newMockMetricsQueryResponse(metricsByParam []queryResourcesResponseMock) func(ctx context.Context, subscriptionID, metricNamespace string, metricNames []string, resourceIDs azmetrics.ResourceIDList, options *azmetrics.QueryResourcesOptions) (resp azfake.Responder[azmetrics.QueryResourcesResponse], errResp azfake.ErrorResponder) {
-	return func(_ context.Context, subscriptionID, metricNamespace string, metricNames []string, resourceIDs azmetrics.ResourceIDList, _ *azmetrics.QueryResourcesOptions) (resp azfake.Responder[azmetrics.QueryResourcesResponse], errResp azfake.ErrorResponder) {
-		for _, param := range metricsByParam {
-			if param.params.Evaluate(subscriptionID, metricNamespace, metricNames, resourceIDs) {
-				resp.SetResponse(http.StatusOK, param.response, nil)
-				return
-			}
-		}
-		errResp.SetResponseError(http.StatusNotImplemented, "error from tests")
-		return
-	}
-}
-
 func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 	return []queryResourcesResponseMock{
 		{
@@ -70,142 +27,114 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 				subscriptionID:  "subscriptionId3",
 				metricNamespace: "type1",
 				metricNames:     []string{"metric7"},
-				resourceIDs:     azmetrics.ResourceIDList{ResourceIDs: []string{"/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1"}},
+				resourceIDs:     []string{"/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1"},
 			},
-			response: azmetrics.QueryResourcesResponse{
-				MetricResults: azmetrics.MetricResults{Values: []azmetrics.MetricData{
-					{
-						ResourceID: to.Ptr("/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1"),
-						Values: []azmetrics.Metric{
-							{
-								Name: &azmetrics.LocalizableString{
-									Value: to.Ptr("metric7"),
-								},
-								Unit: to.Ptr(azmetrics.MetricUnitBitsPerSecond),
-								TimeSeries: []azmetrics.TimeSeriesElement{
+			response: newQueryResourcesResponseMockData([]queryResourceMockInput{
+				{
+					ResourceID: "/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1",
+					Metrics: []metricMockInput{
+						{
+							Name: "metric7",
+							Unit: azmetrics.MetricUnitBitsPerSecond,
+							TimeSeries: []azmetrics.TimeSeriesElement{{
+								Data: []azmetrics.MetricValue{
 									{
-										Data: []azmetrics.MetricValue{
-											{
-												// Send only timestamp with all other values nil is a case that can
-												// happen in the Azure responses.
-												TimeStamp: to.Ptr(time.Now()),
-											},
-											{
-												TimeStamp: to.Ptr(time.Now()),
-												// Keep only Total to make sure that all values are considered.
-												// Not only Average
-												Total: to.Ptr(1.),
-											},
-										},
+										// Send only timestamp with all other values nil is a case that can
+										// happen in the Azure responses.
+										TimeStamp: to.Ptr(time.Now()),
+									},
+									{
+										TimeStamp: to.Ptr(time.Now()),
+										// Keep only Total to make sure that all values are considered.
+										// Not only Average
+										Total: to.Ptr(1.),
 									},
 								},
-							},
+							}},
 						},
 					},
-				}},
-			},
+				},
+			}),
 		},
 		{
 			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId1",
 				metricNamespace: "type1",
 				metricNames:     []string{"metric1", "metric2"},
-				resourceIDs: azmetrics.ResourceIDList{ResourceIDs: []string{
+				resourceIDs: []string{
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2",
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId3",
-				}},
+				},
 			},
-			response: azmetrics.QueryResourcesResponse{
-				MetricResults: azmetrics.MetricResults{Values: []azmetrics.MetricData{
-					{
-						ResourceID: to.Ptr("/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1"),
-						Values: []azmetrics.Metric{
-							{
-								Name: &azmetrics.LocalizableString{
-									Value: to.Ptr("metric1"),
-								},
-								Unit: to.Ptr(azmetrics.MetricUnitPercent),
-								TimeSeries: []azmetrics.TimeSeriesElement{
-									{
-										Data: []azmetrics.MetricValue{
-											{
-												TimeStamp: to.Ptr(time.Now()),
-												Average:   to.Ptr(1.),
-												Count:     to.Ptr(1.),
-												Maximum:   to.Ptr(1.),
-												Minimum:   to.Ptr(1.),
-												Total:     to.Ptr(1.),
-											},
-										},
-									},
-								},
-							},
-							{
-								Name: &azmetrics.LocalizableString{
-									Value: to.Ptr("metric2"),
-								},
-								Unit: to.Ptr(azmetrics.MetricUnitCount),
-								TimeSeries: []azmetrics.TimeSeriesElement{
-									{
-										Data: []azmetrics.MetricValue{
-											{
-												TimeStamp: to.Ptr(time.Now()),
-												Average:   to.Ptr(1.),
-												Count:     to.Ptr(1.),
-												Maximum:   to.Ptr(1.),
-												Minimum:   to.Ptr(1.),
-												Total:     to.Ptr(1.),
-											},
-										},
-									},
-								},
-							},
+			response: newQueryResourcesResponseMockData([]queryResourceMockInput{
+				{
+					ResourceID: "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
+					Metrics: []metricMockInput{
+						{
+							Name: "metric1",
+							Unit: azmetrics.MetricUnitPercent,
+							TimeSeries: []azmetrics.TimeSeriesElement{{
+								Data: []azmetrics.MetricValue{{
+									TimeStamp: to.Ptr(time.Now()),
+									Average:   to.Ptr(1.),
+									Count:     to.Ptr(1.),
+									Maximum:   to.Ptr(1.),
+									Minimum:   to.Ptr(1.),
+									Total:     to.Ptr(1.),
+								}},
+							}},
+						},
+						{
+							Name: "metric2",
+							Unit: azmetrics.MetricUnitCount,
+							TimeSeries: []azmetrics.TimeSeriesElement{{
+								Data: []azmetrics.MetricValue{{
+									TimeStamp: to.Ptr(time.Now()),
+									Average:   to.Ptr(1.),
+									Count:     to.Ptr(1.),
+									Maximum:   to.Ptr(1.),
+									Minimum:   to.Ptr(1.),
+									Total:     to.Ptr(1.),
+								}},
+							}},
 						},
 					},
-				}},
-			},
+				},
+			}),
 		},
 		{
 			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId1",
 				metricNamespace: "type1",
 				metricNames:     []string{"metric3"},
-				resourceIDs: azmetrics.ResourceIDList{ResourceIDs: []string{
+				resourceIDs: []string{
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2",
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId3",
-				}},
+				},
 			},
-			response: azmetrics.QueryResourcesResponse{
-				MetricResults: azmetrics.MetricResults{Values: []azmetrics.MetricData{
-					{
-						ResourceID: to.Ptr("/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2"),
-						Values: []azmetrics.Metric{
-							{
-								Name: &azmetrics.LocalizableString{
-									Value: to.Ptr("metric3"),
-								},
-								Unit: to.Ptr(azmetrics.MetricUnitBytes),
-								TimeSeries: []azmetrics.TimeSeriesElement{
-									{
-										Data: []azmetrics.MetricValue{
-											{
-												TimeStamp: to.Ptr(time.Now()),
-												Average:   to.Ptr(1.),
-												Count:     to.Ptr(1.),
-												Maximum:   to.Ptr(1.),
-												Minimum:   to.Ptr(1.),
-												Total:     to.Ptr(1.),
-											},
-										},
-									},
-								},
-							},
+			response: newQueryResourcesResponseMockData([]queryResourceMockInput{
+				{
+					ResourceID: "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2",
+					Metrics: []metricMockInput{
+						{
+							Name: "metric3",
+							Unit: azmetrics.MetricUnitBytes,
+							TimeSeries: []azmetrics.TimeSeriesElement{{
+								Data: []azmetrics.MetricValue{{
+									TimeStamp: to.Ptr(time.Now()),
+									Average:   to.Ptr(1.),
+									Count:     to.Ptr(1.),
+									Maximum:   to.Ptr(1.),
+									Minimum:   to.Ptr(1.),
+									Total:     to.Ptr(1.),
+								}},
+							}},
 						},
 					},
-				}},
-			},
+				},
+			}),
 		},
 	}
 }
@@ -294,30 +223,20 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 			)
 
 			s := &azureBatchScraper{
-				cfg:                   tt.fields.cfg,
-				mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
-				mutex:                 &sync.Mutex{},
-				time:                  getTimeMock(),
-				clientOptionsResolver: optionsResolver,
-				settings:              settings.TelemetrySettings,
+				cfg:                          tt.fields.cfg,
+				mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
+				mutex:                        &sync.Mutex{},
+				time:                         getTimeMock(),
+				clientOptionsResolver:        optionsResolver,
+				receiverSettings:             settings,
+				settings:                     settings.TelemetrySettings,
+				storageAccountSpecificConfig: newStorageAccountSpecificConfig(tt.fields.cfg.Services),
 
 				// From there, initialize everything that is normally initialized in start() func
-				subscriptions: map[string]*azureSubscription{
-					"subscriptionId1": {SubscriptionID: "subscriptionId1"},
-					"subscriptionId3": {SubscriptionID: "subscriptionId3"},
-				},
-				resources: map[string]map[string]*azureResource{
-					"subscriptionId1": {},
-					"subscriptionId3": {},
-				},
-				regions: map[string]map[string]struct{}{
-					"subscriptionId1": {"location1": {}},
-					"subscriptionId3": {"location1": {}},
-				},
-				resourceTypes: map[string]map[string]*azureType{
-					"subscriptionId1": {},
-					"subscriptionId3": {},
-				},
+				subscriptions: map[string]*azureSubscription{},
+				resources:     map[string]map[string]*azureResource{},
+				regions:       map[string]map[string]struct{}{},
+				resourceTypes: map[string]map[string]*azureType{},
 			}
 
 			metrics, err := s.scrape(tt.args.ctx)
@@ -339,4 +258,63 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 			))
 		})
 	}
+}
+
+// TestAzureScraperBatchScrape_NoDuplicateOnRescrape is a regression test for the
+// "duplicate sample for timestamp" 409 errors emitted by Prometheus-compatible
+// backends (Thanos/Mimir/Cortex) when the batch scraper was re-emitting the
+// same Azure timestamps on every scrape.
+//
+// The batch scraper emits points using the original Azure timestamp
+// (cf. processQueryTimeseriesData). Without a per-(resourceType, compositeKey)
+// temporal guard, calling scrape() faster than the metric's timeGrain would
+// republish the exact same (labels, ts) tuples. This test calls scrape()
+// twice back-to-back; with the guard in place the second call must not emit
+// any data point because the configured timeGrains (PT1M / PT1H in the mocks)
+// are far larger than the wall-clock interval between the two calls.
+func TestAzureScraperBatchScrape_NoDuplicateOnRescrape(t *testing.T) {
+	cfg := createDefaultTestConfig()
+	cfg.MaximumNumberOfMetricsInACall = 2
+	cfg.AppendTagsAsAttributes = []string{}
+	cfg.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	optionsResolver := newMockClientOptionsResolver(
+		getSubscriptionByIDMockData(),
+		getSubscriptionsMockData(),
+		getResourcesMockData(),
+		getMetricsDefinitionsMockData(),
+		nil,
+		getMetricsQueryResponseMockData(),
+	)
+
+	s := &azureBatchScraper{
+		cfg:                          cfg,
+		mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
+		mutex:                        &sync.Mutex{},
+		time:                         getTimeMock(),
+		clientOptionsResolver:        optionsResolver,
+		receiverSettings:             settings,
+		settings:                     settings.TelemetrySettings,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+
+		subscriptions: map[string]*azureSubscription{},
+		resources:     map[string]map[string]*azureResource{},
+		regions:       map[string]map[string]struct{}{},
+		resourceTypes: map[string]map[string]*azureType{},
+	}
+
+	// First scrape: must produce data.
+	first, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Positive(t, first.DataPointCount(), "first scrape should emit at least one data point")
+
+	// Second scrape immediately after: the temporal guard must prevent
+	// re-querying Azure for the same compositeKey, so no new data point
+	// should be emitted (which is what avoids the 409 duplicates downstream).
+	second, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 0, second.DataPointCount(),
+		"second scrape must not re-emit Azure data points (would cause 409 duplicate sample for timestamp on Prometheus remote write backends)")
 }

@@ -10,126 +10,138 @@ The following telemetry is emitted by this component.
 
 Number of configured workers to use to fan out the outgoing requests
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {consumer} | Sum | Int | false |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {consumer} | Sum | Int | false | Development |
 
 ### otelcol_exporter_prometheusremotewrite_failed_translations
 
 Number of translation operations that failed to translate metrics from Otel to Prometheus
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_sent_batches
 
 Number of remote write request batches sent to the remote write endpoint regardless of success or failure
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {batch} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {batch} | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_translated_time_series
 
 Number of Prometheus time series that were translated from OTel metrics
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_wal_bytes_read
 
 Total number of bytes read from the WAL
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| By | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_wal_bytes_written
 
 Total number of bytes written to the WAL
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| By | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_wal_lag
 
 WAL lag
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
 
 ### otelcol_exporter_prometheusremotewrite_wal_read_latency
 
 Response latency in ms for the WAL reads.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | Development |
 
 ### otelcol_exporter_prometheusremotewrite_wal_reads
 
 Number of WAL reads
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_wal_reads_failures
 
 Number of WAL reads that failed
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_wal_write_latency
 
 Response latency in ms for the WAL writes.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Histogram | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| ms | Histogram | Int | Development |
 
 ### otelcol_exporter_prometheusremotewrite_wal_writes
 
 Number of WAL writes
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_wal_writes_failures
 
 Number of WAL writes that failed
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_written_exemplars
 
 Number of Prometheus Exemplars that were successfully written to the remote write endpoint (only available when using remote write v2)
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {exemplar} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {exemplar} | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_written_histograms
 
 Number of Prometheus Histograms that were successfully written to the remote write endpoint (only available when using remote write v2)
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {histogram} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {histogram} | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_written_samples
 
 Number of Prometheus Samples that were successfully written to the remote write endpoint (only available when using remote write v2)
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {sample} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {sample} | Sum | Int | true | Development |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `exporter.prometheusremotewritexporter.EnableMultipleWorkers` | alpha | When enabled and settings configured, the Prometheus remote exporter will spawn multiple workers/goroutines to handle incoming metrics batches concurrently. | v0.118.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/36134) |
+| `exporter.prometheusremotewritexporter.RetryOn429` | alpha | When enabled, the Prometheus remote write exporter will retry 429 http status code. Requires exporter.prometheusremotewritexporter.metrics.RetryOn429 to be enabled. | v0.101.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/31924) |
+| `exporter.prometheusremotewritexporter.enableSendingRW2` | alpha | When enabled, the Prometheus remote write exporter will support sending rw2. Extra configuration is still required besides enabling this feature gate. | v0.125.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/35888) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

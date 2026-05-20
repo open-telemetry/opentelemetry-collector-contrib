@@ -15,10 +15,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -30,6 +30,8 @@ var jmxGathererMainClass = "io.opentelemetry.contrib.jmxmetrics.JmxMetrics"
 var jmxScraperMainClass = "io.opentelemetry.contrib.jmxscraper.JmxScraper"
 
 type Config struct {
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+
 	// The path for the JMX Metric Gatherer or JMX Scraper JAR (/opt/opentelemetry-java-contrib-jmx-metrics.jar by default).
 	// Supported by: jmx-scraper and jmx-metric-gatherer
 	JARPath string `mapstructure:"jar_path"`
@@ -47,10 +49,6 @@ type Config struct {
 	// mandatory when TargetSystem is not set.
 	// Supported by: jmx-scraper
 	JmxConfigs string `mapstructure:"jmx_configs"`
-	// The duration in between groovy script invocations and metric exports (10 seconds by default).
-	// Will be converted to milliseconds.
-	// Supported by: jmx-scraper and jmx-metric-gatherer
-	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// The OTLP exporter settings
 	// Supported by: jmx-scraper and jmx-metric-gatherer
 	OTLPExporterConfig otlpExporterConfig `mapstructure:"otlp"`
@@ -279,8 +277,7 @@ func init() {
 
 func initAdditionalTargetSystems() {
 	if AdditionalTargetSystems != "n/a" {
-		additionalTargets := strings.Split(AdditionalTargetSystems, ",")
-		for _, t := range additionalTargets {
+		for t := range strings.SplitSeq(AdditionalTargetSystems, ",") {
 			validTargetSystems[t] = struct{}{}
 		}
 	}
@@ -340,7 +337,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.TargetSystem != "" {
-		for _, system := range strings.Split(c.TargetSystem, ",") {
+		for system := range strings.SplitSeq(c.TargetSystem, ",") {
 			if _, ok := validTargetSystems[strings.ToLower(system)]; !ok {
 				return fmt.Errorf("`target_system` list may only be a subset of %s", listKeys(validTargetSystems))
 			}

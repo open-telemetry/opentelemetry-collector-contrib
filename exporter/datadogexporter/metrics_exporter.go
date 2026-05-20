@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
@@ -29,8 +31,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
-	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
 )
 
 type metricsExporter struct {
@@ -39,7 +41,7 @@ type metricsExporter struct {
 	agntConfig       *config.AgentConfig
 	ctx              context.Context
 	metricsAPI       *datadogV2.MetricsApi
-	tr               *otlpmetrics.Translator
+	tr               otlpmetrics.Provider
 	scrubber         scrub.Scrubber
 	retrier          *clientutil.Retrier
 	onceMetadata     *sync.Once
@@ -68,18 +70,22 @@ func newMetricsExporter(
 	options = append(options,
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
 		otlpmetrics.WithStatsOut(statsOut))
-	if pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled() {
-		params.Logger.Warn("Metric remapping is disabled in the Datadog exporter. OpenTelemetry metrics must be mapped to Datadog semantics before metrics are exported to Datadog (ex: via a processor).")
-	} else {
+
+	switch {
+	case featuregates.DisableMetricRemappingFeatureGate.IsEnabled():
+		options = append(options, otlpmetrics.WithoutRuntimeMetricMappings())
+	case featuregates.MetricRemappingDisabledFeatureGate.IsEnabled():
+		// Do nothing.
+	default:
 		options = append(options, otlpmetrics.WithRemapping())
 	}
 
-	if inferIntervalDeltaFeatureGate.IsEnabled() {
+	if featuregates.InferIntervalDeltaFeatureGate.IsEnabled() {
 		params.Logger.Info("Metrics interval will be inferred for OTLP delta metrics with a set StartTimestamp.")
 		options = append(options, otlpmetrics.WithInferDeltaInterval())
 	}
 
-	tr, err := otlpmetrics.NewTranslator(params.TelemetrySettings, attrsTranslator, options...)
+	tr, err := otlpmetrics.NewDefaultTranslator(params.TelemetrySettings, attrsTranslator, options...)
 	if err != nil {
 		return nil, err
 	}

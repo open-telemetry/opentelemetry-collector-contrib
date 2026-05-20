@@ -8,12 +8,15 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"os"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
@@ -29,9 +32,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
@@ -54,11 +56,12 @@ type opampAgent struct {
 	cfg    *Config
 	logger *zap.Logger
 
-	agentType     string
-	agentVersion  string
-	resourceAttrs map[string]string
+	serviceName       string
+	serviceVersion    string
+	serviceInstanceID string
+	resourceAttrs     map[string]string
 
-	instanceID uuid.UUID
+	instanceUID uuid.UUID
 
 	eclk            sync.RWMutex
 	effectiveConfig *confmap.Conf
@@ -96,9 +99,9 @@ var (
 	// identifyingAttributes is the list of semantic convention keys that are used
 	// for the agent description's identifying attributes.
 	identifyingAttributes = map[string]struct{}{
-		string(semconv.ServiceNameKey):       {},
-		string(semconv.ServiceVersionKey):    {},
-		string(semconv.ServiceInstanceIDKey): {},
+		string(conventions.ServiceNameKey):       {},
+		string(conventions.ServiceVersionKey):    {},
+		string(conventions.ServiceInstanceIDKey): {},
 	}
 )
 
@@ -131,7 +134,7 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		HeaderFunc:     headerFunc,
 		TLSConfig:      tls,
 		OpAMPServerURL: o.cfg.Server.GetEndpoint(),
-		InstanceUid:    types.InstanceUid(o.instanceID),
+		InstanceUid:    types.InstanceUid(o.instanceUID),
 		Callbacks: types.Callbacks{
 			OnConnect: func(_ context.Context) {
 				o.logger.Debug("Connected to the OpAMP server")
@@ -146,8 +149,8 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 				return o.composeEffectiveConfig(), nil
 			},
 			OnMessage: o.onMessage,
+			OnCommand: o.onCommand,
 		},
-		Capabilities: o.capabilities.toAgentCapabilities(),
 	}
 
 	if err := o.createAgentDescription(); err != nil {
@@ -169,6 +172,11 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		if err := o.opampClient.SetAvailableComponents(o.availableComponents); err != nil {
 			return err
 		}
+	}
+
+	capabilities := o.capabilities.toAgentCapabilities()
+	if err := o.opampClient.SetCapabilities(&capabilities); err != nil {
+		return err
 	}
 
 	o.logger.Debug("Starting OpAMP client...")
@@ -275,39 +283,41 @@ func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
 }
 
 func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
-	agentType := set.BuildInfo.Command
+	serviceName := set.BuildInfo.Command
 
-	sn, ok := set.Resource.Attributes().Get(string(semconv.ServiceNameKey))
+	sn, ok := set.Resource.Attributes().Get(string(conventions.ServiceNameKey))
 	if ok {
-		agentType = sn.AsString()
+		serviceName = sn.AsString()
 	}
 
-	agentVersion := set.BuildInfo.Version
+	serviceVersion := set.BuildInfo.Version
 
-	sv, ok := set.Resource.Attributes().Get(string(semconv.ServiceVersionKey))
+	sv, ok := set.Resource.Attributes().Get(string(conventions.ServiceVersionKey))
 	if ok {
-		agentVersion = sv.AsString()
+		serviceVersion = sv.AsString()
 	}
 
-	uid, err := uuid.NewV7()
-	if err != nil {
-		return nil, fmt.Errorf("could not generate uuidv7: %w", err)
+	serviceInstanceID := ""
+
+	if sid, ok := set.Resource.Attributes().Get(string(conventions.ServiceInstanceIDKey)); ok {
+		serviceInstanceID = sid.Str()
 	}
 
+	var uid uuid.UUID
 	if cfg.InstanceUID != "" {
+		var err error
 		uid, err = parseInstanceIDString(cfg.InstanceUID)
 		if err != nil {
 			return nil, fmt.Errorf("could not parse configured instance id: %w", err)
 		}
 	} else {
-		sid, ok := set.Resource.Attributes().Get(string(semconv.ServiceInstanceIDKey))
-		if ok {
-			uid, err = uuid.Parse(sid.AsString())
-			if err != nil {
-				return nil, err
-			}
+		var err error
+		uid, err = uuid.NewV7()
+		if err != nil {
+			return nil, fmt.Errorf("could not generate uuidv7: %w", err)
 		}
 	}
+
 	resourceAttrs := make(map[string]string, set.Resource.Attributes().Len())
 	set.Resource.Attributes().Range(func(k string, v pcommon.Value) bool {
 		resourceAttrs[k] = v.Str()
@@ -318,9 +328,10 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 	agent := &opampAgent{
 		cfg:                      cfg,
 		logger:                   set.Logger,
-		agentType:                agentType,
-		agentVersion:             agentVersion,
-		instanceID:               uid,
+		serviceName:              serviceName,
+		serviceVersion:           serviceVersion,
+		serviceInstanceID:        serviceInstanceID,
+		instanceUID:              uid,
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
 		resourceAttrs:            resourceAttrs,
@@ -370,22 +381,20 @@ func (o *opampAgent) createAgentDescription() error {
 	description := getOSDescription(o.logger)
 
 	ident := []*protobufs.KeyValue{
-		stringKeyValue(string(semconv.ServiceInstanceIDKey), o.instanceID.String()),
-		stringKeyValue(string(semconv.ServiceNameKey), o.agentType),
-		stringKeyValue(string(semconv.ServiceVersionKey), o.agentVersion),
+		stringKeyValue(string(conventions.ServiceInstanceIDKey), o.serviceInstanceID),
+		stringKeyValue(string(conventions.ServiceNameKey), o.serviceName),
+		stringKeyValue(string(conventions.ServiceVersionKey), o.serviceVersion),
 	}
 
 	// Initially construct using a map to properly deduplicate any keys that
 	// are both automatically determined and defined in the config
 	nonIdentifyingAttributeMap := map[string]string{}
-	nonIdentifyingAttributeMap[string(semconv.OSTypeKey)] = runtime.GOOS
-	nonIdentifyingAttributeMap[string(semconv.HostArchKey)] = runtime.GOARCH
-	nonIdentifyingAttributeMap[string(semconv.HostNameKey)] = hostname
-	nonIdentifyingAttributeMap[string(semconv.OSDescriptionKey)] = description
+	nonIdentifyingAttributeMap[string(conventions.OSTypeKey)] = runtime.GOOS
+	nonIdentifyingAttributeMap[string(conventions.HostArchKey)] = runtime.GOARCH
+	nonIdentifyingAttributeMap[string(conventions.HostNameKey)] = hostname
+	nonIdentifyingAttributeMap[string(conventions.OSDescriptionKey)] = description
 
-	for k, v := range o.cfg.AgentDescription.NonIdentifyingAttributes {
-		nonIdentifyingAttributeMap[k] = v
-	}
+	maps.Copy(nonIdentifyingAttributeMap, o.cfg.AgentDescription.NonIdentifyingAttributes)
 	if o.cfg.AgentDescription.IncludeResourceAttributes {
 		for k, v := range o.resourceAttrs {
 			// skip the attributes that are being used in the identifying attributes.
@@ -397,8 +406,7 @@ func (o *opampAgent) createAgentDescription() error {
 	}
 
 	// Sort the non identifying attributes to give them a stable order for tests
-	keys := maps.Keys(nonIdentifyingAttributeMap)
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(nonIdentifyingAttributeMap))
 
 	nonIdent := make([]*protobufs.KeyValue, 0, len(nonIdentifyingAttributeMap))
 	for _, k := range keys {
@@ -416,9 +424,9 @@ func (o *opampAgent) createAgentDescription() error {
 
 func (o *opampAgent) updateAgentIdentity(instanceID uuid.UUID) {
 	o.logger.Debug("OpAMP agent identity is being changed",
-		zap.String("old_id", o.instanceID.String()),
+		zap.String("old_id", o.instanceUID.String()),
 		zap.String("new_id", instanceID.String()))
-	o.instanceID = instanceID
+	o.instanceUID = instanceID
 }
 
 func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
@@ -461,6 +469,23 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 	if msg.CustomMessage != nil {
 		o.customCapabilityRegistry.ProcessMessage(msg.CustomMessage)
 	}
+}
+
+func (o *opampAgent) onCommand(_ context.Context, command *protobufs.ServerToAgentCommand) error {
+	if command.GetType() != protobufs.CommandType_CommandType_Restart {
+		o.logger.Debug("ignoring non-restart command")
+		return nil
+	}
+
+	if o.capabilities.AcceptsRestartCommand {
+		o.logger.Info("received restart command, sending SIGHUP to reload")
+		collectorProcess, err := os.FindProcess(os.Getpid())
+		if err != nil {
+			return fmt.Errorf("finding current process from pid: %w", err)
+		}
+		return collectorProcess.Signal(syscall.SIGHUP)
+	}
+	return nil
 }
 
 func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {

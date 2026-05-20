@@ -41,7 +41,7 @@ func createDefaultConfig() component.Config {
 		AddrConfig: confignet.AddrConfig{
 			Endpoint: defaultEndpoint,
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -62,6 +62,6 @@ func createMetricsReceiver(
 
 	return scraperhelper.NewMetricsController(
 		&cfg.ControllerConfig, params, consumer,
-		scraperhelper.AddScraper(metadata.Type, scraper),
+		scraperhelper.AddMetricsScraper(metadata.Type, scraper),
 	)
 }

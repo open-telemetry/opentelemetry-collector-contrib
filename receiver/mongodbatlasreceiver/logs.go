@@ -65,9 +65,7 @@ func newMongoDBAtlasLogsReceiver(settings rcvr.Settings, cfg *Config, consumer c
 
 // Log receiver logic
 func (s *logsReceiver) Start(ctx context.Context, _ component.Host) error {
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
+	s.wg.Go(func() {
 		s.start = time.Now().Add(-collectionInterval)
 		s.end = time.Now()
 		for {
@@ -83,7 +81,7 @@ func (s *logsReceiver) Start(ctx context.Context, _ component.Host) error {
 				s.end = time.Now()
 			}
 		}
-	}()
+	})
 	return nil
 }
 
@@ -101,7 +99,7 @@ func parseHostNames(s string, logger *zap.Logger) []string {
 		return []string{}
 	}
 
-	for _, t := range strings.Split(s, ",") {
+	for t := range strings.SplitSeq(s, ",") {
 		// separate hostname from scheme and port
 		host, _, err := net.SplitHostPort(strings.TrimPrefix(t, "mongodb://"))
 		if err != nil {

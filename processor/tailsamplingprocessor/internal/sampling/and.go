@@ -37,9 +37,19 @@ func (c *And) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *samp
 		if err != nil {
 			return samplingpolicy.Unspecified, err
 		}
+		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 		if decision == samplingpolicy.NotSampled || decision == samplingpolicy.InvertNotSampled {
 			return samplingpolicy.NotSampled, nil
 		}
 	}
 	return samplingpolicy.Sampled, nil
+}
+
+func (c *And) IsStateful() bool {
+	for _, sub := range c.subpolicies {
+		if sub.IsStateful() {
+			return true
+		}
+	}
+	return false
 }

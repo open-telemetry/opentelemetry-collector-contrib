@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.uber.org/zap"
@@ -81,9 +80,6 @@ func TestProfilesExporter_Start(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Profiles: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{},
-		},
 	}
 
 	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
@@ -93,7 +89,7 @@ func TestProfilesExporter_Start(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, exp.clientConn)
 	assert.NotNil(t, exp.profilesExporter)
-	assert.Contains(t, exp.config.Profiles.Headers, "Authorization")
+	assert.Len(t, exp.metadata.Get("Authorization"), 1)
 
 	// Test shutdown
 	err = exp.shutdown(t.Context())
@@ -105,8 +101,8 @@ func TestProfilesExporter_EnhanceContext(t *testing.T) {
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
 		Profiles: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{
-				"test-header": "test-value",
+			Headers: configopaque.MapList{
+				{Name: "test-header", Value: "test-value"},
 			},
 		},
 	}
@@ -123,9 +119,6 @@ func TestProfilesExporter_PushProfiles(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Profiles: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{},
-		},
 	}
 
 	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
@@ -172,7 +165,7 @@ func TestProfilesExporter_PushProfiles_WhenCannotSend(t *testing.T) {
 				Domain:     "test.domain.com",
 				PrivateKey: "test-key",
 				Profiles: configgrpc.ClientConfig{
-					Headers: map[string]configopaque.String{},
+					Endpoint: "ingress.test.domain.com:443",
 				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   tt.enabled,
@@ -206,7 +199,7 @@ func TestProfilesExporter_PushProfiles_WhenCannotSend(t *testing.T) {
 			if tt.enabled {
 				assert.Contains(t, err.Error(), "rate limit exceeded")
 			} else {
-				assert.Contains(t, err.Error(), "no such host")
+				assert.Contains(t, err.Error(), "produced zero addresses")
 			}
 		})
 	}
@@ -236,6 +229,8 @@ func (m *mockProfilesServer) Export(ctx context.Context, req pprofileotlp.Export
 		m.t.Errorf("Expected Authorization header 'Bearer test-key', got %s", authHeader[0])
 		return pprofileotlp.NewExportResponse(), errors.New("invalid authorization header")
 	}
+
+	assertAcceptEncodingGzip(m.t, md)
 
 	// Count individual profiles instead of resource profiles
 	for _, rp := range req.Profiles().ResourceProfiles().All() {
@@ -279,7 +274,6 @@ func BenchmarkProfilesExporter_PushProfiles(b *testing.B) {
 			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
-			Headers: map[string]configopaque.String{},
 		},
 		PrivateKey: "test-key",
 	}
@@ -305,17 +299,17 @@ func BenchmarkProfilesExporter_PushProfiles(b *testing.B) {
 	}
 	for _, numProfiles := range testCases {
 		b.Run("numProfiles="+fmt.Sprint(numProfiles), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				profiles := pprofile.NewProfiles()
 				rp := profiles.ResourceProfiles().AppendEmpty()
 				rp.Resource().Attributes().PutStr("service.name", "benchmark-service")
 				sp := rp.ScopeProfiles().AppendEmpty()
-				for j := 0; j < numProfiles; j++ {
+				for j := range numProfiles {
 					profile := sp.Profiles().AppendEmpty()
 					var id [16]byte
 					binary.LittleEndian.PutUint64(id[:8], uint64(j))
 					profile.SetProfileID(id)
-					profile.SetDuration(1000000000) // 1 second in nanoseconds
+					profile.SetDurationNano(uint64(1 * time.Second.Nanoseconds()))
 				}
 				_ = exp.pushProfiles(b.Context(), profiles)
 			}
@@ -334,7 +328,6 @@ func TestProfilesExporter_PushProfiles_PartialSuccess(t *testing.T) {
 			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
-			Headers: map[string]configopaque.String{},
 		},
 		PrivateKey: "test-key",
 	}
@@ -407,7 +400,6 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
-			Headers: map[string]configopaque.String{},
 		},
 		PrivateKey: "test-key",
 		RateLimiter: RateLimiterConfig{
@@ -435,12 +427,12 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 		sp := rp.ScopeProfiles().AppendEmpty()
 
 		profileCount := 3000
-		for i := 0; i < profileCount; i++ {
+		for i := range profileCount {
 			profile := sp.Profiles().AppendEmpty()
 			var id [16]byte
 			binary.LittleEndian.PutUint64(id[:8], uint64(i))
 			profile.SetProfileID(id)
-			profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+			profile.SetDurationNano(uint64(1 * time.Second.Nanoseconds()))
 		}
 
 		start := time.Now()
@@ -455,7 +447,7 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 	t.Run("Over rate limit", func(t *testing.T) {
 		mockSrv.recvCount = 0
 
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			exp.EnableRateLimit()
 		}
 
@@ -465,12 +457,12 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 		sp := rp.ScopeProfiles().AppendEmpty()
 
 		profileCount := 7000
-		for i := 0; i < profileCount; i++ {
+		for i := range profileCount {
 			profile := sp.Profiles().AppendEmpty()
 			var id [16]byte
 			binary.LittleEndian.PutUint64(id[:8], uint64(i))
 			profile.SetProfileID(id)
-			profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+			profile.SetDurationNano(uint64(1 * time.Second.Nanoseconds()))
 		}
 
 		start := time.Now()
@@ -510,12 +502,12 @@ func TestProfilesExporter_PushProfiles_Performance(t *testing.T) {
 		sp := rp.ScopeProfiles().AppendEmpty()
 
 		profileCount := 3000
-		for i := 0; i < profileCount; i++ {
+		for i := range profileCount {
 			profile := sp.Profiles().AppendEmpty()
 			var id [16]byte
 			binary.LittleEndian.PutUint64(id[:8], uint64(i))
 			profile.SetProfileID(id)
-			profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+			profile.SetDurationNano(uint64(1 * time.Second.Nanoseconds()))
 		}
 
 		start := time.Now()
@@ -557,7 +549,7 @@ func TestProfilesExporter_RateLimitErrorCountReset(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		exp.EnableRateLimit()
 	}
 	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
@@ -571,7 +563,7 @@ func TestProfilesExporter_RateLimitErrorCountReset(t *testing.T) {
 	var id [16]byte
 	binary.LittleEndian.PutUint64(id[:8], uint64(1))
 	profile.SetProfileID(id)
-	profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+	profile.SetDurationNano(uint64(1 * time.Second.Nanoseconds()))
 
 	err = exp.pushProfiles(t.Context(), profiles)
 	assert.Error(t, err)
@@ -625,7 +617,7 @@ func TestProfilesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 		var id [16]byte
 		binary.LittleEndian.PutUint64(id[:8], uint64(1))
 		profile.SetProfileID(id)
-		profile.SetDuration(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+		profile.SetDurationNano(uint64(1 * time.Second.Nanoseconds()))
 		return profiles
 	}
 
@@ -638,7 +630,7 @@ func TestProfilesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 	})
 
 	t.Run("Trigger errors below threshold", func(t *testing.T) {
-		for i := 0; i < 4; i++ {
+		for range 4 {
 			exp.EnableRateLimit()
 		}
 		assert.Equal(t, int32(4), exp.rateError.errorCount.Load())

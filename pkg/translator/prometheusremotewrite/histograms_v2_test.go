@@ -387,7 +387,7 @@ func BenchmarkConvertBucketLayoutV2(b *testing.B) {
 	for _, scenario := range scenarios {
 		buckets := pmetric.NewExponentialHistogramDataPointBuckets()
 		buckets.SetOffset(0)
-		for i := 0; i < 1000; i++ {
+		for i := range 1000 {
 			if i%(scenario.gap+1) == 0 {
 				buckets.BucketCounts().Append(10)
 			} else {
@@ -395,7 +395,7 @@ func BenchmarkConvertBucketLayoutV2(b *testing.B) {
 			}
 		}
 		b.Run(fmt.Sprintf("gap %d", scenario.gap), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				convertBucketsLayout(buckets, 0)
 			}
 		})
@@ -550,6 +550,38 @@ func TestExponentialToNativeHistogramV2(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "convert exp. to native histogram with non-zero zero threshold",
+			exponentialHist: func() pmetric.ExponentialHistogramDataPoint {
+				pt := pmetric.NewExponentialHistogramDataPoint()
+				pt.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
+				pt.SetCount(4)
+				pt.SetScale(1)
+				pt.SetZeroCount(1)
+				pt.SetZeroThreshold(0.5)
+
+				pt.Positive().BucketCounts().FromRaw([]uint64{1, 1})
+				pt.Positive().SetOffset(1)
+
+				pt.Negative().BucketCounts().FromRaw([]uint64{1, 1})
+				pt.Negative().SetOffset(1)
+
+				return pt
+			},
+			wantNativeHist: func() writev2.Histogram {
+				return writev2.Histogram{
+					Count:          &writev2.Histogram_CountInt{CountInt: 4},
+					Schema:         1,
+					ZeroThreshold:  0.5,
+					ZeroCount:      &writev2.Histogram_ZeroCountInt{ZeroCountInt: 1},
+					NegativeSpans:  []writev2.BucketSpan{{Offset: 2, Length: 2}},
+					NegativeDeltas: []int64{1, 0},
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 2, Length: 2}},
+					PositiveDeltas: []int64{1, 0},
+					Timestamp:      500,
+				}
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -652,6 +684,10 @@ func TestPrometheusConverterV2_addExponentialHistogramDataPoints(t *testing.T) {
 								PositiveDeltas: []int64{4, -2, -1},
 							},
 						},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 0},
+							{Value: 2, Timestamp: 0},
+						},
 						Metadata: writev2.Metadata{
 							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
 						},
@@ -707,6 +743,9 @@ func TestPrometheusConverterV2_addExponentialHistogramDataPoints(t *testing.T) {
 								PositiveDeltas: []int64{4, -2},
 							},
 						},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 0},
+						},
 						Metadata: writev2.Metadata{
 							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
 						},
@@ -722,6 +761,9 @@ func TestPrometheusConverterV2_addExponentialHistogramDataPoints(t *testing.T) {
 								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
 								NegativeDeltas: []int64{4, -2, -1},
 							},
+						},
+						Exemplars: []writev2.Exemplar{
+							{Value: 2, Timestamp: 0},
 						},
 						Metadata: writev2.Metadata{
 							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
@@ -747,6 +789,7 @@ func TestPrometheusConverterV2_addExponentialHistogramDataPoints(t *testing.T) {
 			require.NoError(t, converter.addExponentialHistogramDataPoints(
 				metric.ExponentialHistogram().DataPoints(),
 				pcommon.NewResource(),
+				pcommon.NewInstrumentationScope(),
 				Settings{},
 				metricName,
 				m,

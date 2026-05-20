@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -69,6 +70,10 @@ func TestPathGetSetter(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.val, got)
+
+			// Verify that setting an invalid type returns an error
+			err = accessor.Set(t.Context(), newProfileSampleContext(sample, dictionary), struct{}{})
+			require.Error(t, err)
 		})
 	}
 }
@@ -86,6 +91,13 @@ func (p *profileSampleContext) GetProfileSample() pprofile.Sample {
 	return p.sample
 }
 
+func (p *profileSampleContext) AttributeIndices() pcommon.Int32Slice {
+	return p.sample.AttributeIndices()
+}
+
 func newProfileSampleContext(sample pprofile.Sample, dictionary pprofile.ProfilesDictionary) *profileSampleContext {
-	return &profileSampleContext{sample: sample, dictionary: dictionary}
+	return &profileSampleContext{
+		sample:     sample,
+		dictionary: dictionary,
+	}
 }

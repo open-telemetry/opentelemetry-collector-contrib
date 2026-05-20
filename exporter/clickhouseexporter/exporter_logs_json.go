@@ -4,9 +4,11 @@
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -18,18 +20,28 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sqltemplates"
 )
 
+// anyLogsExporter is an interface that satisfies both the default map logsExporter and the logsJSONExporter
+type anyLogsExporter interface {
+	start(context.Context, component.Host) error
+	shutdown(context.Context) error
+	pushLogsData(context.Context, plog.Logs) error
+}
+
 type logsJSONExporter struct {
-	cfg       *Config
-	logger    *zap.Logger
-	db        driver.Conn
-	insertSQL string
+	cfg            *Config
+	logger         *zap.Logger
+	db             driver.Conn
+	insertSQL      string
+	schemaFeatures struct {
+		AttributeKeys bool
+		EventName     bool
+	}
 }
 
 func newLogsJSONExporter(logger *zap.Logger, cfg *Config) *logsJSONExporter {
 	return &logsJSONExporter{
-		cfg:       cfg,
-		logger:    logger,
-		insertSQL: renderInsertLogsJSONSQL(cfg),
+		cfg:    cfg,
+		logger: logger,
 	}
 }
 
@@ -45,12 +57,50 @@ func (e *logsJSONExporter) start(ctx context.Context, _ component.Host) error {
 	}
 
 	if e.cfg.shouldCreateSchema() {
-		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString()); err != nil {
-			return err
+		if createDBErr := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString()); createDBErr != nil {
+			return createDBErr
 		}
 
-		if err := createLogsJSONTable(ctx, e.cfg, e.db); err != nil {
-			return err
+		if createTableErr := createLogsJSONTable(ctx, e.cfg, e.db); createTableErr != nil {
+			return createTableErr
+		}
+	}
+
+	err = e.detectSchemaFeatures(ctx)
+	if err != nil {
+		e.logger.Error("schema detection failed", zap.Error(err))
+	}
+
+	if err := e.renderInsertLogsJSONSQL(); err != nil {
+		return fmt.Errorf("render logs json insert sql: %w", err)
+	}
+
+	return nil
+}
+
+const (
+	logsJSONColumnResourceAttributesKeys = "ResourceAttributesKeys"
+	logsJSONColumnScopeAttributesKeys    = "ScopeAttributesKeys"
+	logsJSONColumnLogAttributesKeys      = "LogAttributesKeys"
+	logsJSONColumnEventName              = "EventName"
+)
+
+func (e *logsJSONExporter) detectSchemaFeatures(ctx context.Context) error {
+	columnNames, err := internal.GetTableColumns(ctx, e.db, e.cfg.database(), e.cfg.LogsTableName)
+	if err != nil {
+		return err
+	}
+
+	for _, name := range columnNames {
+		switch name {
+		case logsJSONColumnResourceAttributesKeys:
+			e.schemaFeatures.AttributeKeys = true
+		case logsJSONColumnScopeAttributesKeys:
+			e.schemaFeatures.AttributeKeys = true
+		case logsJSONColumnLogAttributesKeys:
+			e.schemaFeatures.AttributeKeys = true
+		case logsJSONColumnEventName:
+			e.schemaFeatures.EventName = true
 		}
 	}
 
@@ -61,6 +111,7 @@ func (e *logsJSONExporter) shutdown(_ context.Context) error {
 	if e.db != nil {
 		if err := e.db.Close(); err != nil {
 			e.logger.Warn("failed to close json logs db connection", zap.Error(err))
+			return err
 		}
 	}
 
@@ -84,7 +135,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 	var logCount int
 	rsLogs := ld.ResourceLogs()
 	rsLen := rsLogs.Len()
-	for i := 0; i < rsLen; i++ {
+	for i := range rsLen {
 		logs := rsLogs.At(i)
 		res := logs.Resource()
 		resURL := logs.SchemaUrl()
@@ -95,23 +146,35 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 			return fmt.Errorf("failed to marshal json log resource attributes: %w", resAttrErr)
 		}
 
+		var resAttrKeys []string
+		if e.schemaFeatures.AttributeKeys {
+			resAttrKeys = internal.UniqueFlattenedAttributes(resAttr)
+		}
+
 		slLen := logs.ScopeLogs().Len()
-		for j := 0; j < slLen; j++ {
+		for j := range slLen {
 			scopeLog := logs.ScopeLogs().At(j)
 			scopeURL := scopeLog.SchemaUrl()
 			scopeLogScope := scopeLog.Scope()
 			scopeName := scopeLogScope.Name()
 			scopeVersion := scopeLogScope.Version()
 			scopeLogRecords := scopeLog.LogRecords()
-			scopeAttrBytes, scopeAttrErr := json.Marshal(scopeLogScope.Attributes().AsRaw())
+			scopeAttr := scopeLogScope.Attributes()
+			scopeAttrBytes, scopeAttrErr := json.Marshal(scopeAttr.AsRaw())
 			if scopeAttrErr != nil {
 				return fmt.Errorf("failed to marshal json log scope attributes: %w", scopeAttrErr)
 			}
 
+			var scopeAttrKeys []string
+			if e.schemaFeatures.AttributeKeys {
+				scopeAttrKeys = internal.UniqueFlattenedAttributes(scopeAttr)
+			}
+
 			slrLen := scopeLogRecords.Len()
-			for k := 0; k < slrLen; k++ {
+			for k := range slrLen {
 				r := scopeLogRecords.At(k)
-				logAttrBytes, logAttrErr := json.Marshal(r.Attributes().AsRaw())
+				logAttr := r.Attributes()
+				logAttrBytes, logAttrErr := json.Marshal(logAttr.AsRaw())
 				if logAttrErr != nil {
 					return fmt.Errorf("failed to marshal json log attributes: %w", logAttrErr)
 				}
@@ -121,7 +184,8 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 					timestamp = r.ObservedTimestamp()
 				}
 
-				appendErr := batch.Append(
+				columnValues := make([]any, 0, 19)
+				columnValues = append(columnValues,
 					timestamp.AsTime(),
 					r.TraceID().String(),
 					r.SpanID().String(),
@@ -138,6 +202,17 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 					scopeAttrBytes,
 					logAttrBytes,
 				)
+
+				if e.schemaFeatures.AttributeKeys {
+					logAttrKeys := internal.UniqueFlattenedAttributes(logAttr)
+					columnValues = append(columnValues, resAttrKeys, scopeAttrKeys, logAttrKeys)
+				}
+
+				if e.schemaFeatures.EventName {
+					columnValues = append(columnValues, r.EventName())
+				}
+
+				appendErr := batch.Append(columnValues...)
 				if appendErr != nil {
 					return fmt.Errorf("failed to append json log row: %w", appendErr)
 				}
@@ -164,21 +239,69 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 	return nil
 }
 
-func renderInsertLogsJSONSQL(cfg *Config) string {
-	return fmt.Sprintf(sqltemplates.LogsJSONInsert, cfg.database(), cfg.LogsTableName)
+func (e *logsJSONExporter) renderInsertLogsJSONSQL() error {
+	var featureColumnNames strings.Builder
+	var featureColumnPositions strings.Builder
+
+	if e.schemaFeatures.AttributeKeys {
+		featureColumnNames.WriteString(", ")
+		featureColumnNames.WriteString(logsJSONColumnResourceAttributesKeys)
+		featureColumnNames.WriteString(", ")
+		featureColumnNames.WriteString(logsJSONColumnScopeAttributesKeys)
+		featureColumnNames.WriteString(", ")
+		featureColumnNames.WriteString(logsJSONColumnLogAttributesKeys)
+
+		featureColumnPositions.WriteString(", ?, ?, ?")
+	}
+
+	if e.schemaFeatures.EventName {
+		featureColumnNames.WriteString(", ")
+		featureColumnNames.WriteString(logsJSONColumnEventName)
+
+		featureColumnPositions.WriteString(", ?")
+	}
+
+	data := sqltemplates.InsertData{
+		Database:               e.cfg.database(),
+		TableName:              e.cfg.LogsTableName,
+		FeatureColumnNames:     featureColumnNames.String(),
+		FeatureColumnPositions: featureColumnPositions.String(),
+	}
+
+	var buf bytes.Buffer
+	if err := sqltemplates.LogsJSONInsertTmpl.Execute(&buf, data); err != nil {
+		return fmt.Errorf("execute logs json insert template: %w", err)
+	}
+
+	e.insertSQL = buf.String()
+	return nil
 }
 
-func renderCreateLogsJSONTableSQL(cfg *Config) string {
-	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "Timestamp")
-	return fmt.Sprintf(sqltemplates.LogsJSONCreateTable,
-		cfg.database(), cfg.LogsTableName, cfg.clusterString(),
-		cfg.tableEngineString(),
-		ttlExpr,
-	)
+func renderCreateLogsJSONTableSQL(cfg *Config) (string, error) {
+	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
+	data := sqltemplates.CreateTableData{
+		Database:      cfg.database(),
+		TableName:     cfg.LogsTableName,
+		ClusterString: cfg.clusterString(),
+		Engine:        cfg.tableEngineString(),
+		TTL:           ttlExpr,
+	}
+
+	var buf bytes.Buffer
+	if err := sqltemplates.LogsJSONCreateTableTmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("execute logs json create table template: %w", err)
+	}
+
+	return buf.String(), nil
 }
 
 func createLogsJSONTable(ctx context.Context, cfg *Config, db driver.Conn) error {
-	if err := db.Exec(ctx, renderCreateLogsJSONTableSQL(cfg)); err != nil {
+	sql, err := renderCreateLogsJSONTableSQL(cfg)
+	if err != nil {
+		return fmt.Errorf("render create logs json table sql: %w", err)
+	}
+
+	if err := db.Exec(ctx, sql); err != nil {
 		return fmt.Errorf("exec create logs json table sql: %w", err)
 	}
 

@@ -5,18 +5,19 @@ package waf
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
-	gojson "github.com/goccy/go-json"
 	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -39,10 +40,8 @@ func compressToGZIPReader(t *testing.T, buf []byte) io.Reader {
 func readAndCompressLogFile(t *testing.T, dir, file string) io.Reader {
 	data, err := os.ReadFile(filepath.Join(dir, file))
 	require.NoError(t, err)
-	compacted := bytes.NewBuffer([]byte{})
-	err = gojson.Compact(compacted, data)
 	require.NoError(t, err)
-	return compressToGZIPReader(t, compacted.Bytes())
+	return compressToGZIPReader(t, data)
 }
 
 func TestUnmarshalLogs(t *testing.T) {
@@ -68,7 +67,7 @@ func TestUnmarshalLogs(t *testing.T) {
 		},
 	}
 
-	u := wafLogUnmarshaler{buildInfo: component.BuildInfo{}}
+	u := WafLogUnmarshaler{buildInfo: component.BuildInfo{}}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			logs, err := u.UnmarshalAWSLogs(test.reader)
@@ -86,6 +85,66 @@ func TestUnmarshalLogs(t *testing.T) {
 	}
 }
 
+func TestNewLogsDecoder(t *testing.T) {
+	directory := "testdata"
+	expectPattern := "valid_log_multi_%d.yaml"
+
+	tests := []struct {
+		name   string
+		offset int64
+		index  int
+	}{
+		{
+			name:   "Normal streaming",
+			offset: 0,
+			index:  0,
+		},
+		{
+			name:   "Stream with offset",
+			offset: 1983, // skip first record
+			index:  1,    // start from first index
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			input := readAndCompressLogFile(t, directory, "valid_log_multi.json")
+
+			wafUnmarshaler := NewWAFLogUnmarshaler(component.BuildInfo{})
+			// Flush after every log for testing purposes & set offset
+			streamer, err := wafUnmarshaler.NewLogsDecoder(input, encoding.WithFlushItems(1), encoding.WithOffset(tt.offset))
+			require.NoError(t, err)
+
+			index := tt.index
+			for {
+				index++
+
+				var logs plog.Logs
+				logs, err = streamer.DecodeLogs()
+				if err != nil {
+					if errors.Is(err, io.EOF) {
+						break
+					}
+
+					t.Errorf("failed to unmarshal log %d: %v", index, err)
+				}
+
+				// To check or update offset, uncomment offset below
+				// fmt.Println(streamer.Offset())
+
+				var expectedLogs plog.Logs
+				expectedLogs, err = golden.ReadLogs(filepath.Join(directory, fmt.Sprintf(expectPattern, index)))
+				require.NoError(t, err)
+				require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+			}
+
+			// expect EOF after all logs are read
+			_, err = streamer.DecodeLogs()
+			require.ErrorIs(t, err, io.EOF)
+		})
+	}
+}
+
 func TestSetKeyAttributes(t *testing.T) {
 	t.Parallel()
 
@@ -97,9 +156,9 @@ func TestSetKeyAttributes(t *testing.T) {
 		"valid": {
 			webACLID: "arn:aws:wafv2:us-east-1:1234:global/webacl/test-waf/e3132a63",
 			expectsMap: map[string]any{
-				string(conventions.CloudRegionKey):     "us-east-1",
-				string(conventions.CloudAccountIDKey):  "1234",
-				string(conventions.CloudResourceIDKey): "arn:aws:wafv2:us-east-1:1234:global/webacl/test-waf/e3132a63",
+				"cloud.region":      "us-east-1",
+				"cloud.account.id":  "1234",
+				"cloud.resource_id": "arn:aws:wafv2:us-east-1:1234:global/webacl/test-waf/e3132a63",
 			},
 		},
 		"unexpected_prefix": {

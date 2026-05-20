@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package healthcheckv2extension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension"
 
@@ -29,7 +29,7 @@ func createDefaultConfig() component.Config {
 	return healthcheck.NewDefaultConfig()
 }
 
-func createExtension(ctx context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	config := cfg.(*Config)
-	return healthcheck.NewHealthCheckExtension(ctx, *config, set), nil
+	return healthcheck.NewHealthCheckExtension(*config, set), nil
 }

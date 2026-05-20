@@ -24,8 +24,8 @@ func newUnixTime64(t uint64) unixTime64 {
 func (t unixTime64) MarshalJSON() ([]byte, error) {
 	// Nanoseconds, ES does not support 'epoch_nanoseconds' so
 	// we have to pass it a value formatted as 'strict_date_optional_time_nanos'.
-	out := []byte(fmt.Sprintf("%q",
-		time.Unix(0, int64(t)).UTC().Format(time.RFC3339Nano)))
+	out := fmt.Appendf(nil, "%q",
+		time.Unix(0, int64(t)).UTC().Format(time.RFC3339Nano))
 	return out, nil
 }
 

@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 	"sync"
@@ -241,9 +242,7 @@ func (g *cfGardenObserver) containerLabels(info garden.ContainerInfo, app *resou
 		g.logger.Warn("not able to parse container tags into labels", zap.Error(err))
 		return nil
 	}
-	for k, v := range tags {
-		labels[k] = v
-	}
+	maps.Copy(labels, tags)
 
 	if app != nil {
 		for k, v := range app.Metadata.Labels {

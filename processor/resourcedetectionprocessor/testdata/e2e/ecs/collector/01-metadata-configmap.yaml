@@ -1,0 +1,156 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-metadata-config
+  namespace: default
+data:
+  server.py: |
+    import json
+    import os
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    from urllib.parse import urlparse
+
+    # ECS Task Metadata Endpoint V4 format
+    # See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v4.html
+
+    # Container metadata (returned for root path - self container)
+    CONTAINER_METADATA = {
+        "DockerId": "ea32192c8553fbff06c9340478a2ff089b2bb5646fb718b4ee206641c9086571",
+        "Name": "otelcol",
+        "DockerName": "ecs-test-task-1-otelcol",
+        "Image": "otelcontribcol:latest",
+        "ImageID": "sha256:2b7b2e1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e",
+        "Labels": {
+            "com.amazonaws.ecs.cluster": "test-ecs-cluster",
+            "com.amazonaws.ecs.container-name": "otelcol",
+            "com.amazonaws.ecs.task-arn": "arn:aws:ecs:us-west-2:123456789012:task/test-ecs-cluster/abcdef1234567890abcdef1234567890",
+            "com.amazonaws.ecs.task-definition-family": "test-task-family",
+            "com.amazonaws.ecs.task-definition-version": "5"
+        },
+        "DesiredStatus": "RUNNING",
+        "KnownStatus": "RUNNING",
+        "Limits": {
+            "CPU": 256,
+            "Memory": 512
+        },
+        "CreatedAt": "2024-01-15T10:30:00.000000000Z",
+        "StartedAt": "2024-01-15T10:30:05.000000000Z",
+        "Type": "NORMAL",
+        "Networks": [
+            {
+                "NetworkMode": "awsvpc",
+                "IPv4Addresses": ["10.0.0.100"]
+            }
+        ],
+        "ContainerARN": "arn:aws:ecs:us-west-2:123456789012:container/test-ecs-cluster/abcdef1234567890abcdef1234567890/otelcol-id",
+        "LogDriver": "awslogs",
+        "LogOptions": {
+            "awslogs-group": "otelcol-logs",
+            "awslogs-region": "us-west-2",
+            "awslogs-stream": "ecs/otelcol/abcdef1234567890"
+        }
+    }
+
+    # Application container metadata
+    APP_CONTAINER_METADATA = {
+        "DockerId": "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+        "Name": "application",
+        "DockerName": "ecs-test-task-1-application",
+        "Image": "my-app:latest",
+        "ImageID": "sha256:1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
+        "Labels": {
+            "com.amazonaws.ecs.cluster": "test-ecs-cluster",
+            "com.amazonaws.ecs.container-name": "application",
+            "com.amazonaws.ecs.task-arn": "arn:aws:ecs:us-west-2:123456789012:task/test-ecs-cluster/abcdef1234567890abcdef1234567890",
+            "com.amazonaws.ecs.task-definition-family": "test-task-family",
+            "com.amazonaws.ecs.task-definition-version": "5"
+        },
+        "DesiredStatus": "RUNNING",
+        "KnownStatus": "RUNNING",
+        "Limits": {
+            "CPU": 512,
+            "Memory": 1024
+        },
+        "CreatedAt": "2024-01-15T10:30:00.000000000Z",
+        "StartedAt": "2024-01-15T10:30:05.000000000Z",
+        "Type": "NORMAL",
+        "Networks": [
+            {
+                "NetworkMode": "awsvpc",
+                "IPv4Addresses": ["10.0.0.100"]
+            }
+        ],
+        "ContainerARN": "arn:aws:ecs:us-west-2:123456789012:container/test-ecs-cluster/abcdef1234567890abcdef1234567890/app-id",
+        "LogDriver": "awslogs",
+        "LogOptions": {
+            "awslogs-group": "application-logs",
+            "awslogs-region": "us-west-2",
+            "awslogs-stream": "ecs/application/abcdef1234567890"
+        }
+    }
+
+    # Task metadata (returned for /task path)
+    TASK_METADATA = {
+        "Cluster": "test-ecs-cluster",
+        "TaskARN": "arn:aws:ecs:us-west-2:123456789012:task/test-ecs-cluster/abcdef1234567890abcdef1234567890",
+        "Family": "test-task-family",
+        "Revision": "5",
+        "DesiredStatus": "RUNNING",
+        "KnownStatus": "RUNNING",
+        "Limits": {
+            "CPU": 1.0,
+            "Memory": 2048
+        },
+        "PullStartedAt": "2024-01-15T10:29:55.000000000Z",
+        "PullStoppedAt": "2024-01-15T10:30:00.000000000Z",
+        "AvailabilityZone": "us-west-2a",
+        "LaunchType": "FARGATE",
+        "Containers": [CONTAINER_METADATA, APP_CONTAINER_METADATA]
+    }
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            parsed = urlparse(self.path)
+            path = parsed.path
+
+            # Health check endpoint
+            if path == "/healthz":
+                body = b"ok"
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
+            # ECS Task Metadata Endpoint V4 - Task metadata
+            if path == "/task":
+                body = json.dumps(TASK_METADATA).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
+            # ECS Task Metadata Endpoint V4 - Container metadata (root path)
+            if path == "/" or path == "":
+                body = json.dumps(CONTAINER_METADATA).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
+            # Not found
+            self.send_response(404)
+            self.end_headers()
+
+        def log_message(self, fmt, *args):
+            return
+
+    if __name__ == "__main__":
+        port = int(os.environ.get("PORT", "80"))
+        server = HTTPServer(("", port), Handler)
+        server.serve_forever()

@@ -94,7 +94,7 @@ func Test_logAggregatorReset(t *testing.T) {
 	require.NoError(t, err)
 
 	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder, nil)
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		resource := pcommon.NewResource()
 		resource.Attributes().PutInt("i", int64(i))
 		key := getResourceKey(resource)
@@ -285,7 +285,7 @@ func Test_getLogKey(t *testing.T) {
 				)
 				expectedMulti := pdatautil.Hash64(
 					pdatautil.WithString(dedupValue),
-					pdatautil.WithString(dedupValue),
+					pdatautil.WithString(dedupValue), //nolint:gocritic // Intentional: testing multi-key deduplication with same value
 				)
 
 				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))

@@ -225,16 +225,14 @@ func benchParseInput() (patterns []string) {
 // pod name, namespace, container name, container.
 const benchParsePattern = `^(?P<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?P<namespace>[^_]+)_(?P<container_name>.+)-(?P<container_id>[a-z0-9]{64})\.log$`
 
-var benchParsePatterns = benchParseInput()
-
-func newTestBenchParser(t *testing.T, cacheSize uint16) *Parser {
+func newTestBenchParser(b *testing.B, cacheSize uint16) *Parser {
 	cfg := NewConfigWithID("bench")
 	cfg.Regex = benchParsePattern
 	cfg.Cache.Size = cacheSize
 
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
-	require.NoError(t, err)
+	require.NoError(b, err)
 	return op.(*Parser)
 }
 
@@ -263,76 +261,31 @@ func benchmarkParse(b *testing.B, parser *Parser, input []string) {
 	}
 }
 
-// No cache
-func BenchmarkParseNoCache(b *testing.B) {
-	parser := newTestBenchParser(&testing.T{}, 0)
-	for n := 0; n < b.N; n++ {
-		benchmarkParseThreaded(b, parser, benchParsePatterns)
-	}
-}
+func BenchmarkParse(b *testing.B) {
+	benchParsePatterns := benchParseInput()
 
-// Memory cache at capacity
-func BenchmarkParseWithMemoryCache(b *testing.B) {
-	parser := newTestBenchParser(&testing.T{}, 100)
-	for n := 0; n < b.N; n++ {
-		benchmarkParseThreaded(b, parser, benchParsePatterns)
-	}
-}
-
-// Memory cache over capacity by one
-func BenchmarkParseWithMemoryCacheFullByOne(b *testing.B) {
-	parser := newTestBenchParser(&testing.T{}, 99)
-	for n := 0; n < b.N; n++ {
-		benchmarkParseThreaded(b, parser, benchParsePatterns)
-	}
-}
-
-// Memory cache over capacity by 10
-func BenchmarkParseWithMemoryCacheFullBy10(b *testing.B) {
-	parser := newTestBenchParser(&testing.T{}, 90)
-	for n := 0; n < b.N; n++ {
-		benchmarkParseThreaded(b, parser, benchParsePatterns)
-	}
-}
-
-// Memory cache over capacity by 50
-func BenchmarkParseWithMemoryCacheFullBy50(b *testing.B) {
-	parser := newTestBenchParser(&testing.T{}, 50)
-	for n := 0; n < b.N; n++ {
-		benchmarkParseThreaded(b, parser, benchParsePatterns)
-	}
-}
-
-// Memory cache over capacity by 90
-func BenchmarkParseWithMemoryCacheFullBy90(b *testing.B) {
-	parser := newTestBenchParser(&testing.T{}, 10)
-	for n := 0; n < b.N; n++ {
-		benchmarkParseThreaded(b, parser, benchParsePatterns)
-	}
-}
-
-// Memory cache over capacity by 99
-func BenchmarkParseWithMemoryCacheFullBy99(b *testing.B) {
-	parser := newTestBenchParser(&testing.T{}, 1)
-	for n := 0; n < b.N; n++ {
-		benchmarkParseThreaded(b, parser, benchParsePatterns)
-	}
-}
-
-// No cache one file
-func BenchmarkParseNoCacheOneFile(b *testing.B) {
-	parser := newTestBenchParser(&testing.T{}, 0)
-	for n := 0; n < b.N; n++ {
-		pattern := []string{benchParsePatterns[0]}
-		benchmarkParse(b, parser, pattern)
-	}
-}
-
-// Memory cache one file
-func BenchmarkParseWithMemoryCacheOneFile(b *testing.B) {
-	parser := newTestBenchParser(&testing.T{}, 100)
-	for n := 0; n < b.N; n++ {
-		pattern := []string{benchParsePatterns[0]}
-		benchmarkParse(b, parser, pattern)
+	for _, c := range []struct {
+		name      string
+		cacheSize uint16
+		input     []string
+		benchFunc func(*testing.B, *Parser, []string)
+	}{
+		{name: "NoCache", cacheSize: 0, input: benchParsePatterns, benchFunc: benchmarkParseThreaded},
+		{name: "WithMemoryCache", cacheSize: 100, input: benchParsePatterns, benchFunc: benchmarkParseThreaded},
+		{name: "WithMemoryCacheFullByOne", cacheSize: 99, input: benchParsePatterns, benchFunc: benchmarkParseThreaded},
+		{name: "WithMemoryCacheFullBy10", cacheSize: 90, input: benchParsePatterns, benchFunc: benchmarkParseThreaded},
+		{name: "WithMemoryCacheFullBy50", cacheSize: 50, input: benchParsePatterns, benchFunc: benchmarkParseThreaded},
+		{name: "WithMemoryCacheFullBy90", cacheSize: 10, input: benchParsePatterns, benchFunc: benchmarkParseThreaded},
+		{name: "WithMemoryCacheFullBy99", cacheSize: 1, input: benchParsePatterns, benchFunc: benchmarkParseThreaded},
+		{name: "NoCacheOneFile", cacheSize: 0, input: []string{benchParsePatterns[0]}, benchFunc: benchmarkParse},
+		{name: "WithMemoryCacheOneFile", cacheSize: 100, input: []string{benchParsePatterns[0]}, benchFunc: benchmarkParse},
+	} {
+		b.Run(c.name, func(b *testing.B) {
+			parser := newTestBenchParser(b, c.cacheSize)
+			defer require.NoError(b, parser.Stop())
+			for b.Loop() {
+				c.benchFunc(b, parser, c.input)
+			}
+		})
 	}
 }

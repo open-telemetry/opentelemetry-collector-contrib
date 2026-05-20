@@ -54,14 +54,13 @@ func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsear
 	}
 
 	allowedMappingModes := cfg.allowedMappingModes()
-	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
 	exporter := &elasticsearchExporter{
 		set:                 set,
 		config:              cfg,
 		index:               index,
 		logstashFormat:      cfg.LogstashFormat,
 		allowedMappingModes: allowedMappingModes,
-		defaultMappingMode:  defaultMappingMode,
+		defaultMappingMode:  MappingOTel,
 		bufferPool:          pool.NewBufferPool(),
 		bulkIndexers:        bulkIndexers{telemetryBuilder: telemetryBuilder},
 		telemetryBuilder:    telemetryBuilder,
@@ -158,14 +157,18 @@ func (e *elasticsearchExporter) pushLogRecord(
 	record plog.LogRecord,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
+	ctrl := extractControlAttrs(record.Attributes(), e.config.LogsDynamicID.Enabled, e.config.LogsDynamicPipeline.Enabled)
+	if ctrl.noindex {
+		return nil
+	}
 	index, err := router.routeLogRecord(ec.resource, ec.scope, record.Attributes())
 	if err != nil {
 		return err
 	}
 
 	buf := e.bufferPool.NewPooledBuffer()
-	docID := e.extractDocumentIDAttribute(record.Attributes())
-	pipeline := e.extractDocumentPipelineAttribute(record.Attributes())
+	docID := ctrl.docID
+	pipeline := ctrl.pipeline
 	if err := encoder.encodeLog(ec, record, index, buf.Buffer); err != nil {
 		buf.Recycle()
 		return fmt.Errorf("failed to encode log event: %w", err)
@@ -225,6 +228,9 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 			hasher.UpdateScope(scope)
 			for _, metric := range scopeMetrics.Metrics().All() {
 				upsertDataPoint := func(dp datapoints.DataPoint) error {
+					if dp.HasMappingHint(elasticsearch.HintNoIndex) {
+						return nil
+					}
 					index, err := router.routeDataPoint(resource, scope, dp.Attributes())
 					if err != nil {
 						return err
@@ -416,18 +422,23 @@ func (e *elasticsearchExporter) pushTraceRecord(
 	span ptrace.Span,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
+	ctrl := extractControlAttrs(span.Attributes(), e.config.TracesDynamicID.Enabled, false)
+	if ctrl.noindex {
+		return nil
+	}
 	index, err := router.routeSpan(ec.resource, ec.scope, span.Attributes())
 	if err != nil {
 		return err
 	}
 
 	buf := e.bufferPool.NewPooledBuffer()
+	docID := ctrl.docID
 	if err := encoder.encodeSpan(ec, span, index, buf.Buffer); err != nil {
 		buf.Recycle()
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, "", "", buf, nil, docappender.ActionCreate)
+	return bulkIndexerSession.Add(ctx, index.Index, docID, "", buf, nil, docappender.ActionCreate)
 }
 
 func (e *elasticsearchExporter) pushSpanEvent(
@@ -439,42 +450,78 @@ func (e *elasticsearchExporter) pushSpanEvent(
 	spanEvent ptrace.SpanEvent,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
+	ctrl := extractControlAttrs(spanEvent.Attributes(), e.config.TracesDynamicID.Enabled, false)
+	if ctrl.noindex {
+		return nil
+	}
 	index, err := router.routeSpanEvent(ec.resource, ec.scope, spanEvent.Attributes())
 	if err != nil {
 		return err
 	}
 
 	buf := e.bufferPool.NewPooledBuffer()
+	docID := ctrl.docID
 	if err := encoder.encodeSpanEvent(ec, span, spanEvent, index, buf.Buffer); err != nil || buf.Buffer.Len() == 0 {
 		buf.Recycle()
 		return err
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, "", "", buf, nil, docappender.ActionCreate)
+	return bulkIndexerSession.Add(ctx, index.Index, docID, "", buf, nil, docappender.ActionCreate)
 }
 
-func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string {
-	if !e.config.LogsDynamicID.Enabled {
-		return ""
-	}
-
-	v, ok := m.Get(elasticsearch.DocumentIDAttributeName)
-	if !ok {
-		return ""
-	}
-	return v.AsString()
+// controlAttrs holds the values of control-channel attributes the orchestrator
+// needs before encoding a doc: whether to skip indexing entirely (_noindex
+// mapping hint), the dynamic document ID, and the dynamic ingest pipeline.
+type controlAttrs struct {
+	noindex  bool
+	docID    string
+	pipeline string
 }
 
-func (e *elasticsearchExporter) extractDocumentPipelineAttribute(m pcommon.Map) string {
-	if !e.config.LogsDynamicPipeline.Enabled {
-		return ""
+// extractControlAttrs walks attrs once, collecting every control-channel value
+// the push functions would otherwise read via separate pcommon.Map.Get calls.
+// captureDocID and capturePipeline mirror the existing config gates
+// (Logs/TracesDynamicID.Enabled, LogsDynamicPipeline.Enabled): when false, the
+// corresponding value is left empty even if the attribute is present.
+func extractControlAttrs(attrs pcommon.Map, captureDocID, capturePipeline bool) controlAttrs {
+	var c controlAttrs
+	remaining := 1 // MappingHintsAttrKey is always a candidate
+	if captureDocID {
+		remaining++
 	}
-
-	v, ok := m.Get(elasticsearch.DocumentPipelineAttributeName)
-	if !ok {
-		return ""
+	if capturePipeline {
+		remaining++
 	}
-	return v.AsString()
+	for k, v := range attrs.All() {
+		switch k {
+		case elasticsearch.MappingHintsAttrKey:
+			remaining--
+			if v.Type() != pcommon.ValueTypeSlice {
+				break
+			}
+			for _, h := range v.Slice().All() {
+				if h.Str() == string(elasticsearch.HintNoIndex) {
+					c.noindex = true
+					// If _noindex is specified, nothing else matters.
+					return c
+				}
+			}
+		case elasticsearch.DocumentIDAttributeName:
+			if captureDocID {
+				remaining--
+				c.docID = v.AsString()
+			}
+		case elasticsearch.DocumentPipelineAttributeName:
+			if capturePipeline {
+				remaining--
+				c.pipeline = v.AsString()
+			}
+		}
+		if remaining == 0 {
+			break
+		}
+	}
+	return c
 }
 
 func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofile.Profiles) error {

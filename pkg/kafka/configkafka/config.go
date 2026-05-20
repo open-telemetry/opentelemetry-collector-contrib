@@ -8,7 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/IBM/sarama"
+	"github.com/twmb/franz-go/pkg/kversion"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -19,14 +20,30 @@ const (
 	EarliestOffset = "earliest"
 )
 
+// GroupRebalanceStrategy defines the strategy to use for partition assignment.
+type GroupRebalanceStrategy string
+
+const (
+	// RangeBalanceStrategy assigns partitions on a per-topic basis.
+	RangeBalanceStrategy GroupRebalanceStrategy = "range"
+	// RoundRobinBalanceStrategy assigns partitions to all consumers in a round-robin fashion.
+	RoundRobinBalanceStrategy GroupRebalanceStrategy = "roundrobin"
+	// StickyBalanceStrategy attempts to preserve previous assignments when rebalancing.
+	StickyBalanceStrategy GroupRebalanceStrategy = "sticky"
+	// CooperativeStickyBalanceStrategy is similar to sticky but uses cooperative rebalancing.
+	CooperativeStickyBalanceStrategy GroupRebalanceStrategy = "cooperative-sticky"
+)
+
 type ClientConfig struct {
 	// Brokers holds the list of Kafka bootstrap servers (default localhost:9092).
 	Brokers []string `mapstructure:"brokers"`
 
-	// ResolveCanonicalBootstrapServersOnly configures the Kafka client to perform
-	// a DNS lookup on each of the provided brokers, and then perform a reverse
-	// lookup on the resulting IPs to obtain the canonical hostnames to use as the
-	// bootstrap servers. This can be required in SASL environments.
+	// ResolveCanonicalBootstrapServersOnly is ignored, and exists for
+	// backwards compatibility in config parsing.
+	//
+	// Deprecated [v0.153.0]: this field is a no-op since the migration to franz-go,
+	// which has no direct equivalent to the associated Sarama config. This config
+	// will be removed in a future release.
 	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
 
 	// ProtocolVersion defines the Kafka protocol version that the client will
@@ -53,13 +70,27 @@ type ClientConfig struct {
 	// replica selection when supported by the brokers. This maps to Kafka's
 	// standard "client.rack" setting. By default, this is empty.
 	RackID string `mapstructure:"rack_id"`
+
+	// When enabled, the consumer uses the leader epoch returned by brokers (KIP-320)
+	// to detect log truncation. Setting this to false clears the leader epoch from
+	// fetch offsets, disabling KIP-320. Disabling can improve compatibility with
+	// brokers that don’t fully support leader epochs (e.g., Azure Event Hubs),
+	// at the cost of losing automatic log-truncation safety.
+	//
+	// NOTE: this is experimental and may be removed in a future release.
+	UseLeaderEpoch bool `mapstructure:"use_leader_epoch"`
+
+	// ConnIdleTimeout specifies the time after which idle connections are not reused and may be closed.
+	ConnIdleTimeout time.Duration `mapstructure:"conn_idle_timeout"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
-		Brokers:  []string{"localhost:9092"},
-		ClientID: "otel-collector",
-		Metadata: NewDefaultMetadataConfig(),
+		Brokers:         []string{"localhost:9092"},
+		ClientID:        "otel-collector",
+		Metadata:        NewDefaultMetadataConfig(),
+		UseLeaderEpoch:  true,
+		ConnIdleTimeout: 9 * time.Minute,
 	}
 }
 
@@ -68,9 +99,12 @@ func (c ClientConfig) Validate() error {
 		return errors.New("brokers must be specified")
 	}
 	if c.ProtocolVersion != "" {
-		if _, err := sarama.ParseKafkaVersion(c.ProtocolVersion); err != nil {
-			return fmt.Errorf("invalid protocol version: %w", err)
+		if kversion.FromString(c.ProtocolVersion) == nil {
+			return fmt.Errorf("invalid protocol version: %q", c.ProtocolVersion)
 		}
+	}
+	if c.ConnIdleTimeout <= 0 {
+		return fmt.Errorf("conn_idle_timeout (%s) must be positive", c.ConnIdleTimeout)
 	}
 	return nil
 }
@@ -99,19 +133,24 @@ type ConsumerConfig struct {
 	// The minimum bytes per fetch from Kafka (default "1")
 	MinFetchSize int32 `mapstructure:"min_fetch_size"`
 
-	// The default bytes per fetch from Kafka (default "1048576")
-	DefaultFetchSize int32 `mapstructure:"default_fetch_size"`
-
-	// The maximum bytes per fetch from Kafka (default "0", no limit)
+	// The maximum bytes per fetch from Kafka (default "1048576")
 	MaxFetchSize int32 `mapstructure:"max_fetch_size"`
 
 	// The maximum amount of time to wait for MinFetchSize bytes to be
 	// available before the broker returns a response (default 250ms)
 	MaxFetchWait time.Duration `mapstructure:"max_fetch_wait"`
-	// RebalanceStrategy specifies the strategy to use for partition assignment.
-	// Possible values are "range", "roundrobin", and "sticky".
-	// Defaults to "range".
-	GroupRebalanceStrategy string `mapstructure:"group_rebalance_strategy,omitempty"`
+
+	// MaxPartitionFetchSize defines the maximum number of bytes to fetch
+	// per partition (default "1048576")
+	MaxPartitionFetchSize int32 `mapstructure:"max_partition_fetch_size"`
+
+	// GroupRebalanceStrategy specifies the strategy to use for partition assignment.
+	// Built-in values are "range", "roundrobin", "sticky", and "cooperative-sticky".
+	// Any other value is treated as the component ID of a registered extension
+	// that implements kgo.GroupBalancer.
+	//
+	// Defaults to "cooperative-sticky".
+	GroupRebalanceStrategy GroupRebalanceStrategy `mapstructure:"group_rebalance_strategy,omitempty"`
 
 	// GroupInstanceID specifies the ID of the consumer
 	GroupInstanceID string `mapstructure:"group_instance_id,omitempty"`
@@ -127,10 +166,10 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 			Enable:   true,
 			Interval: time.Second,
 		},
-		MinFetchSize:     1,
-		MaxFetchSize:     0,
-		MaxFetchWait:     250 * time.Millisecond,
-		DefaultFetchSize: 1048576,
+		MinFetchSize:          1,
+		MaxFetchSize:          1048576,
+		MaxFetchWait:          250 * time.Millisecond,
+		MaxPartitionFetchSize: 1048576,
 	}
 }
 
@@ -147,15 +186,41 @@ func (c ConsumerConfig) Validate() error {
 
 	if c.GroupRebalanceStrategy != "" {
 		switch c.GroupRebalanceStrategy {
-		case sarama.RangeBalanceStrategyName, sarama.RoundRobinBalanceStrategyName, sarama.StickyBalanceStrategyName:
-			// Valid
+		case RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy:
+			// Built-in strategy, valid.
 		default:
-			return fmt.Errorf(
-				"rebalance_strategy should be one of 'range', 'roundrobin', or 'sticky'. configured value %v",
-				c.GroupRebalanceStrategy,
-			)
+			// Accept any value that parses as a component ID; the extension
+			// will be resolved at runtime by the consumer client.
+			var id component.ID
+			if err := id.UnmarshalText([]byte(c.GroupRebalanceStrategy)); err != nil {
+				return fmt.Errorf(
+					"group_rebalance_strategy %q is not a built-in strategy (%s, %s, %s, %s) or a valid extension ID: %w",
+					c.GroupRebalanceStrategy,
+					RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy,
+					err,
+				)
+			}
 		}
 	}
+
+	// Validate fetch size constraints
+	if c.MinFetchSize < 0 {
+		return fmt.Errorf("min_fetch_size (%d) must be non-negative", c.MinFetchSize)
+	}
+	if c.MaxFetchSize < 0 {
+		return fmt.Errorf("max_fetch_size (%d) must be non-negative", c.MaxFetchSize)
+	}
+	if c.MaxPartitionFetchSize < 0 {
+		return fmt.Errorf("max_partition_fetch_size (%d) must be non-negative", c.MaxPartitionFetchSize)
+	}
+	if c.MaxFetchSize < c.MinFetchSize {
+		return fmt.Errorf(
+			"max_fetch_size (%d) cannot be less than min_fetch_size (%d)",
+			c.MaxFetchSize,
+			c.MinFetchSize,
+		)
+	}
+
 	return nil
 }
 
@@ -186,7 +251,7 @@ type ProducerConfig struct {
 	RequiredAcks RequiredAcks `mapstructure:"required_acks"`
 
 	// Compression Codec used to produce messages
-	// https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#CompressionCodec
+	// https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#CompressionCodec
 	// The options are: 'none' (default), 'gzip', 'snappy', 'lz4', and 'zstd'
 	Compression string `mapstructure:"compression"`
 
@@ -194,13 +259,17 @@ type ProducerConfig struct {
 	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params"`
 
 	// The maximum number of messages the producer will send in a single
-	// broker request. Defaults to 0 for unlimited. Similar to
+	// broker request. Defaults to 10000 (franz-go default). Similar to
 	// `queue.buffering.max.messages` in the JVM producer.
 	FlushMaxMessages int `mapstructure:"flush_max_messages"`
 
 	// Whether or not to allow automatic topic creation.
 	// (default enabled).
 	AllowAutoTopicCreation bool `mapstructure:"allow_auto_topic_creation"`
+
+	// Linger controls the linger time for the producer.
+	// (default 10ms).
+	Linger time.Duration `mapstructure:"linger"`
 }
 
 func NewDefaultProducerConfig() ProducerConfig {
@@ -208,8 +277,9 @@ func NewDefaultProducerConfig() ProducerConfig {
 		MaxMessageBytes:        1000000,
 		RequiredAcks:           WaitForLocal,
 		Compression:            "none",
-		FlushMaxMessages:       0,
+		FlushMaxMessages:       10000,
 		AllowAutoTopicCreation: true,
+		Linger:                 10 * time.Millisecond,
 	}
 }
 
@@ -217,17 +287,22 @@ func (c ProducerConfig) Validate() error {
 	switch c.Compression {
 	case "none", "gzip", "snappy", "lz4", "zstd":
 		ct := configcompression.Type(c.Compression)
-		if !ct.IsCompressed() {
-			return nil
-		}
-		if err := ct.ValidateParams(c.CompressionParams); err != nil {
-			return err
+		if ct.IsCompressed() {
+			if err := ct.ValidateParams(c.CompressionParams); err != nil {
+				return err
+			}
 		}
 	default:
 		return fmt.Errorf(
 			"compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value is %q",
 			c.Compression,
 		)
+	}
+	if c.MaxMessageBytes < 0 {
+		return fmt.Errorf("max_message_bytes (%d) must be non-negative", c.MaxMessageBytes)
+	}
+	if c.FlushMaxMessages < 1 {
+		return fmt.Errorf("flush_max_messages (%d) must be at least 1", c.FlushMaxMessages)
 	}
 	return nil
 }
@@ -249,7 +324,7 @@ func (c *ProducerConfig) Unmarshal(conf *confmap.Conf) error {
 	return conf.Unmarshal(c)
 }
 
-// RequiredAcks defines record acknowledgement behavior for for producers.
+// RequiredAcks defines record acknowledgement behavior for producers.
 type RequiredAcks int
 
 const (
@@ -340,12 +415,20 @@ type SASLConfig struct {
 	Username string `mapstructure:"username"`
 	// Password to be used on authentication
 	Password string `mapstructure:"password"`
-	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, SCRAM-SHA-256 or SCRAM-SHA-512).
+	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER,
+	// SCRAM-SHA-256 or SCRAM-SHA-512).
 	Mechanism string `mapstructure:"mechanism"`
-	// SASL Protocol Version to be used, possible values are: (0, 1). Defaults to 0.
+	// Version is ignored, and exists for backwards compatibility in config parsing.
+	//
+	// Deprecated [v0.153.0]: this field is a no-op since the migration to franz-go,
+	// which negotiates the SASL handshake version automatically. This config will be
+	// removed in a future release.
 	Version int `mapstructure:"version"`
 	// AWSMSK holds configuration specific to AWS MSK.
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
+	// ID of type "extension" providing a TokenSource for OAUTHBEARER Mechanism,
+	// typically named "oauth2client"
+	OAuthBearerTokenSource component.ID `mapstructure:"oauthbearer_token_source,omitempty"`
 }
 
 func (c SASLConfig) Validate() error {
@@ -359,6 +442,10 @@ func (c SASLConfig) Validate() error {
 		}
 		if c.Password == "" {
 			return errors.New("password is required")
+		}
+	case "OAUTHBEARER":
+		if c.OAuthBearerTokenSource == (component.ID{}) {
+			return errors.New("oauth2authclient extension is required")
 		}
 	default:
 		return fmt.Errorf(
@@ -377,6 +464,8 @@ func (c SASLConfig) Validate() error {
 type AWSMSKConfig struct {
 	// Region is the AWS region the MSK cluster is based in
 	Region string `mapstructure:"region"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // KerberosConfig defines kerberos configuration.

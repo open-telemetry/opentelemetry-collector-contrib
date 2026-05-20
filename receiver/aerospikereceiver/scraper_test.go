@@ -20,7 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/mocks"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/mocks"
 )
 
 func TestNewAerospikeReceiver_BadEndpoint(t *testing.T) {
@@ -63,7 +63,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	require.NoError(t, err)
 	now := pcommon.NewTimestampFromTime(time.Now().UTC())
 
-	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+	expectedMB := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
 	rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
 
 	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "22", metadata.AttributeConnectionTypeClient))
@@ -138,7 +138,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	receiver := &aerospikeReceiver{
 		clientFactory: clientFactory,
-		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		mb:            metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 		logger:        logger.Sugar(),
 		config: &Config{
 			CollectClusterMetrics: true,
@@ -160,7 +160,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	receiverConnErr := &aerospikeReceiver{
 		clientFactory: clientFactoryNeg,
-		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		mb:            metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 		logger:        logger.Sugar(),
 		config: &Config{
 			CollectClusterMetrics: true,

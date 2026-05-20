@@ -2,7 +2,7 @@ groups:
   - id: ntp.offset
     type: metric
     metric_name: ntp.offset
-    stability: beta
+    stability: development
     brief: "Time difference between local and NTP server clocks"
     unit: "ns"
     instrument: "gauge"

@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -60,7 +61,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		ClientConfig:  clientConfig,
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
@@ -76,6 +77,7 @@ func createDefaultConfig() component.Config {
 			MaxIdleConnsPerHost: defaultDimMaxIdleConnsPerHost,
 			IdleConnTimeout:     idleConnTimeout,
 			Timeout:             timeout,
+			StripK8sLabelPrefix: true,
 		},
 	}
 }
@@ -173,7 +175,8 @@ func createLogsExporter(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(expCfg.BackOffConfig),
 		exporterhelper.WithQueue(expCfg.QueueSettings),
-		exporterhelper.WithStart(exp.startLogs))
+		exporterhelper.WithStart(exp.startLogs),
+		exporterhelper.WithShutdown(exp.shutdown))
 	if err != nil {
 		return nil, err
 	}

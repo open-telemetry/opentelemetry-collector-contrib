@@ -9,6 +9,9 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"sync"
@@ -19,7 +22,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	collectortraces "go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
 	"google.golang.org/grpc"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 )
 
 // mockTracesReceiver is a mock gRPC receiver for testing
@@ -80,17 +88,18 @@ func startMockReceiver(t *testing.T) (*grpc.Server, string, *mockTracesReceiver)
 
 // TestTelemetrygenIntegration tests the actual behavior of the telemetrygen tool
 func TestTelemetrygenIntegration(t *testing.T) {
+	// Create unique binary name to avoid conflicts between tests
+	binaryName := fmt.Sprintf("telemetrygen-test-%d", time.Now().UnixNano())
 	buildDir := "../../../telemetrygen"
-	buildCmd := exec.Command("go", "build", "-o", "telemetrygen-test", ".")
+	buildCmd := exec.Command("go", "build", "-o", binaryName, ".")
 	buildCmd.Dir = buildDir
 	err := buildCmd.Run()
 	require.NoError(t, err, "Failed to build telemetrygen")
 
-	defer os.Remove("../../../telemetrygen/telemetrygen-test")
+	testBinaryPath := fmt.Sprintf("../../../telemetrygen/%s", binaryName)
+	defer os.Remove(testBinaryPath)
 
-	testBinaryPath := "../../../telemetrygen/telemetrygen-test"
-
-	t.Run("RespectsTracesParameter", func(t *testing.T) {
+	t.Run("RespectsTracesParameterWithBatching", func(t *testing.T) {
 		server, endpoint, receiver := startMockReceiver(t)
 		defer func() {
 			server.Stop()
@@ -104,19 +113,80 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		// Add timeout to prevent hanging
 		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, testBinaryPath, "traces", "--traces", "3", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure")
+		cmd := exec.CommandContext(ctx, testBinaryPath, "traces", "--traces", "5", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch", "--batch-size", "2")
 
 		start := time.Now()
 		err := cmd.Run()
 		duration := time.Since(start)
 
-		assert.NoError(t, err, "telemetrygen should complete successfully with --traces parameter")
-		assert.Less(t, duration, 6*time.Second, "Should complete quickly without connection issues")
+		assert.NoError(t, err, "telemetrygen should complete successfully with batching enabled")
+		assert.Less(t, duration, 10*time.Second, "Should complete quickly without connection issues")
 
 		// Wait for all traces to be processed
 		time.Sleep(500 * time.Millisecond)
 		traces := receiver.GetTraces()
-		assert.Len(t, traces, 3, "Should have received exactly 3 traces")
+
+		// Count unique trace IDs across all received traces
+		traceIDs := make(map[string]bool)
+		for _, trace := range traces {
+			for i := 0; i < trace.ResourceSpans().Len(); i++ {
+				resourceSpan := trace.ResourceSpans().At(i)
+				for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
+					scopeSpan := resourceSpan.ScopeSpans().At(j)
+					for k := 0; k < scopeSpan.Spans().Len(); k++ {
+						span := scopeSpan.Spans().At(k)
+						traceIDs[span.TraceID().String()] = true
+					}
+				}
+			}
+		}
+
+		assert.Len(t, traceIDs, 5, "Should have received exactly 5 unique traces with batching enabled")
+	})
+
+	t.Run("RespectsTracesParameterWithoutBatching", func(t *testing.T) {
+		server, endpoint, receiver := startMockReceiver(t)
+		defer func() {
+			server.Stop()
+			// Wait for server to fully stop and connections to close
+			time.Sleep(200 * time.Millisecond)
+		}()
+
+		// Reset receiver to ensure clean state
+		receiver.Reset()
+
+		// Add timeout to prevent hanging
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, testBinaryPath, "traces", "--traces", "4", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch=false")
+
+		start := time.Now()
+		err := cmd.Run()
+		duration := time.Since(start)
+
+		assert.NoError(t, err, "telemetrygen should complete successfully with batching disabled")
+		assert.Less(t, duration, 10*time.Second, "Should complete quickly without connection issues")
+
+		// Wait for all traces to be processed
+		time.Sleep(500 * time.Millisecond)
+		traces := receiver.GetTraces()
+
+		// Count unique trace IDs across all received traces
+		traceIDs := make(map[string]bool)
+		for _, trace := range traces {
+			for i := 0; i < trace.ResourceSpans().Len(); i++ {
+				resourceSpan := trace.ResourceSpans().At(i)
+				for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
+					scopeSpan := resourceSpan.ScopeSpans().At(j)
+					for k := 0; k < scopeSpan.Spans().Len(); k++ {
+						span := scopeSpan.Spans().At(k)
+						traceIDs[span.TraceID().String()] = true
+					}
+				}
+			}
+		}
+
+		assert.Len(t, traceIDs, 4, "Should have received exactly 4 unique traces with batching disabled")
 	})
 
 	t.Run("DurationOverridesTraces", func(t *testing.T) {
@@ -188,4 +258,115 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		traces := receiver.GetTraces()
 		assert.NotEmpty(t, traces, "Should have generated some traces")
 	})
+}
+
+func TestHTTPExporterOptions_Timeout(t *testing.T) {
+	for name, tc := range map[string]struct {
+		timeout      time.Duration
+		handlerDelay time.Duration
+		expectError  bool
+	}{
+		"TimeoutElapsed": {
+			timeout:      50 * time.Millisecond,
+			handlerDelay: 500 * time.Millisecond,
+			expectError:  true,
+		},
+		"TimeoutNotElapsed": {
+			timeout:     500 * time.Millisecond,
+			expectError: false,
+		},
+		"NoTimeout": {
+			timeout:     0,
+			expectError: false,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+				if tc.handlerDelay > 0 {
+					time.Sleep(tc.handlerDelay)
+				}
+			}))
+			defer srv.Close()
+			srvURL, _ := url.Parse(srv.URL)
+
+			cfg := Config{
+				Config: config.Config{
+					Insecure:       true,
+					CustomEndpoint: srvURL.Host,
+					Timeout:        tc.timeout,
+				},
+			}
+			opts, err := httpExporterOptions(&cfg)
+			require.NoError(t, err)
+			client := otlptracehttp.NewClient(opts...)
+
+			err = client.UploadTraces(t.Context(), []*tracepb.ResourceSpans{{}})
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestGRPCExporterOptions_Timeout(t *testing.T) {
+	for name, tc := range map[string]struct {
+		timeout      time.Duration
+		handlerDelay time.Duration
+		expectError  bool
+	}{
+		"TimeoutElapsed": {
+			timeout:      50 * time.Millisecond,
+			handlerDelay: 500 * time.Millisecond,
+			expectError:  true,
+		},
+		"TimeoutNotElapsed": {
+			timeout:     500 * time.Millisecond,
+			expectError: false,
+		},
+		"NoTimeout": {
+			timeout:     0,
+			expectError: false,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv := grpc.NewServer(grpc.UnaryInterceptor(func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+				if tc.handlerDelay > 0 {
+					select {
+					case <-ctx.Done():
+						return nil, ctx.Err()
+					case <-time.After(tc.handlerDelay):
+					}
+				}
+				return handler(ctx, req)
+			}))
+			collectortraces.RegisterGRPCServer(srv, &mockTracesReceiver{})
+			lis, err := net.Listen("tcp", "localhost:0")
+			require.NoError(t, err)
+			go srv.Serve(lis) //nolint:errcheck
+			defer srv.Stop()
+
+			cfg := Config{
+				Config: config.Config{
+					Insecure:       true,
+					CustomEndpoint: lis.Addr().String(),
+					Timeout:        tc.timeout,
+				},
+			}
+			opts, err := grpcExporterOptions(&cfg)
+			require.NoError(t, err)
+			client := otlptracegrpc.NewClient(opts...)
+			err = client.Start(t.Context())
+			require.NoError(t, err)
+			defer func() { _ = client.Stop(t.Context()) }()
+
+			err = client.UploadTraces(t.Context(), []*tracepb.ResourceSpans{{}})
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }

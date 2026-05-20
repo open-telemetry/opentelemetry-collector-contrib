@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -21,13 +20,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NtpOffset: MetricConfig{Enabled: true},
+					NtpOffset: NtpOffsetMetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					NtpHost: ResourceAttributeConfig{Enabled: true},
@@ -38,7 +39,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NtpOffset: MetricConfig{Enabled: false},
+					NtpOffset: NtpOffsetMetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					NtpHost: ResourceAttributeConfig{Enabled: false},
@@ -49,7 +52,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(NtpOffsetMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -60,7 +63,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

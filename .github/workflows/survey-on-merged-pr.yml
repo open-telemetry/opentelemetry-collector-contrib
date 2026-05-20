@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.merged == true
     steps:
-      - uses: actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b # v2.1.1
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}
@@ -43,6 +43,6 @@ jobs:
           
           # Add survey comment for external contributor
           echo "Adding survey comment for external contributor: $USERNAME"
-          gh pr comment "${PR_NUM}" --repo ${{ github.repository }} --body "Thank you for your contribution @${USERNAME}! 🎉 We would like to hear from you about your experience contributing to OpenTelemetry by taking a few minutes to fill out this [survey](${SURVEY_URL})."
+          gh pr comment "${PR_NUM}" --repo ${{ github.repository }} --body "Thank you for your contribution @${USERNAME}! 🎉 We would like to hear from you about your experience contributing to OpenTelemetry by taking a few minutes to fill out this [survey](${SURVEY_URL}). If you are getting started contributing, you can also join the CNCF Slack channel [#opentelemetry-new-contributors](https://cloud-native.slack.com/archives/C09H3MNMBQV) to ask for guidance and get help."
         env:
           GH_TOKEN: ${{ steps.otelbot-token.outputs.token }}

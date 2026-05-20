@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,8 +20,11 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.uber.org/goleak"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/common"
@@ -153,6 +157,16 @@ type teststep struct {
 }
 
 func TestStatus(t *testing.T) {
+	// These goroutines are part of the http.Client's connection pool management.
+	// They don't accept context.Context and are managed by the transport's lifecycle,
+	// not our test lifecycle. They'll be cleaned up when the transport is garbage collected.
+	opts := []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop"),
+	}
+	goleak.VerifyNone(t, opts...)
+
 	var server *Server
 	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
@@ -169,7 +183,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -386,7 +403,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -808,7 +828,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -1032,7 +1055,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -1354,7 +1380,7 @@ func TestStatus(t *testing.T) {
 							componentstatus.StatusStopped,
 						)
 					},
-					queryParams:        "verbose",
+					queryParams:        "",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
@@ -1398,7 +1424,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -1619,7 +1648,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -1939,7 +1971,7 @@ func TestStatus(t *testing.T) {
 							componentstatus.StatusStopped,
 						)
 					},
-					queryParams:        "verbose",
+					queryParams:        "",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
@@ -1983,7 +2015,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2207,7 +2242,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2529,7 +2567,7 @@ func TestStatus(t *testing.T) {
 							componentstatus.StatusStopped,
 						)
 					},
-					queryParams:        "verbose",
+					queryParams:        "",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
@@ -2573,7 +2611,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2600,7 +2641,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2634,7 +2678,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2680,7 +2727,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2697,7 +2747,10 @@ func TestStatus(t *testing.T) {
 			name: "legacy - default response",
 			legacyConfig: LegacyConfig{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Path: "/status",
 			},
@@ -2816,7 +2869,10 @@ func TestStatus(t *testing.T) {
 			name: "legacy - custom response",
 			legacyConfig: LegacyConfig{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Path:         "/status",
 				ResponseBody: &ResponseBodyConfig{Healthy: "ALL OK", Unhealthy: "NOT OK"},
@@ -2945,16 +3001,40 @@ func TestStatus(t *testing.T) {
 			)
 
 			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
-			defer func() { require.NoError(t, server.Shutdown(t.Context())) }()
+			ts := httptest.NewServer(server.mux)
 
-			var url string
+			// Ensure cleanup happens in the correct order
+			defer func() {
+				ts.Close()
+				http.DefaultTransport.(*http.Transport).CloseIdleConnections()
+				require.NoError(t, server.Shutdown(t.Context()))
+			}()
+
+			var path string
 			if tc.legacyConfig.UseV2 {
-				url = fmt.Sprintf("http://%s%s", tc.config.Endpoint, tc.config.Status.Path)
+				path = tc.config.Status.Path
 			} else {
-				url = fmt.Sprintf("http://%s%s", tc.legacyConfig.Endpoint, tc.legacyConfig.Path)
+				path = tc.legacyConfig.Path
+			}
+			url := ts.URL + path
+
+			// Create a custom client with aggressive timeouts
+			transport := &http.Transport{DisableKeepAlives: true, MaxConnsPerHost: 1}
+			defer transport.CloseIdleConnections()
+			client := &http.Client{
+				Timeout:   100 * time.Millisecond,
+				Transport: transport,
 			}
 
-			client := &http.Client{}
+			// Wait for server to be ready before starting test steps
+			require.Eventually(t, func() bool {
+				resp, err := client.Get(ts.URL)
+				if err != nil {
+					return false
+				}
+				resp.Body.Close()
+				return true
+			}, time.Second, 10*time.Millisecond, "server failed to become ready")
 
 			for _, ts := range tc.teststeps {
 				if ts.step != nil {
@@ -2968,21 +3048,29 @@ func TestStatus(t *testing.T) {
 
 				var err error
 				var resp *http.Response
+				var body []byte
 
 				if ts.eventually {
 					assert.EventuallyWithT(t, func(tt *assert.CollectT) {
-						resp, err = client.Get(stepURL)
-						require.NoError(tt, err)
-						assert.Equal(tt, ts.expectedStatusCode, resp.StatusCode)
+						localResp, localErr := client.Get(stepURL)
+						require.NoError(tt, localErr)
+						defer localResp.Body.Close()
+						assert.Equal(tt, ts.expectedStatusCode, localResp.StatusCode)
 					}, time.Second, 10*time.Millisecond)
+					// Make a final request to get the body for assertions
+					resp, err = client.Get(stepURL)
+					require.NoError(t, err)
+					body, err = io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					require.NoError(t, resp.Body.Close())
 				} else {
 					resp, err = client.Get(stepURL)
 					require.NoError(t, err)
+					body, err = io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					require.NoError(t, resp.Body.Close())
 					assert.Equal(t, ts.expectedStatusCode, resp.StatusCode)
 				}
-
-				body, err := io.ReadAll(resp.Body)
-				require.NoError(t, err)
 
 				assert.Contains(t, string(body), ts.expectedBody)
 
@@ -3046,6 +3134,16 @@ func assertStatusSimple(
 }
 
 func TestConfig(t *testing.T) {
+	// These goroutines are part of the http.Client's connection pool management.
+	// They don't accept context.Context and are managed by the transport's lifecycle,
+	// not our test lifecycle. They'll be cleaned up when the transport is garbage collected.
+	opts := []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop"),
+	}
+	goleak.VerifyNone(t, opts...)
+
 	var server *Server
 	confMap, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -3063,7 +3161,10 @@ func TestConfig(t *testing.T) {
 			name: "config not notified",
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{
 					Enabled: true,
@@ -3080,7 +3181,10 @@ func TestConfig(t *testing.T) {
 			name: "config notified",
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{
 					Enabled: true,
@@ -3100,7 +3204,10 @@ func TestConfig(t *testing.T) {
 			name: "config disabled",
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{
 					Enabled: false,
@@ -3123,10 +3230,27 @@ func TestConfig(t *testing.T) {
 			)
 
 			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
-			defer func() { require.NoError(t, server.Shutdown(t.Context())) }()
+			ts := httptest.NewServer(server.mux)
 
-			client := &http.Client{}
-			url := fmt.Sprintf("http://%s%s", tc.config.Endpoint, tc.config.Config.Path)
+			// Ensure cleanup happens in the correct order
+			defer func() {
+				ts.Close()
+				require.NoError(t, server.Shutdown(t.Context()))
+			}()
+
+			// Use a single client for all requests in this test
+			transport := &http.Transport{
+				DisableKeepAlives:   true,
+				MaxIdleConnsPerHost: -1,
+				DisableCompression:  true,
+				MaxConnsPerHost:     -1,
+				IdleConnTimeout:     1 * time.Millisecond,
+				TLSHandshakeTimeout: 1 * time.Millisecond,
+			}
+			client := &http.Client{Transport: transport}
+			defer transport.CloseIdleConnections()
+
+			url := ts.URL + tc.config.Config.Path
 
 			if tc.setup != nil {
 				tc.setup()
@@ -3134,6 +3258,7 @@ func TestConfig(t *testing.T) {
 
 			resp, err := client.Get(url)
 			require.NoError(t, err)
+			defer resp.Body.Close()
 			assert.Equal(t, tc.expectedStatusCode, resp.StatusCode)
 
 			body, err := io.ReadAll(resp.Body)
@@ -3141,4 +3266,255 @@ func TestConfig(t *testing.T) {
 			assert.Equal(t, tc.expectedBody, body)
 		})
 	}
+}
+
+func TestStatusIncludesAttributesWhenEnabled(t *testing.T) {
+	// These goroutines are part of the http.Client's connection pool management.
+	// They don't accept context.Context and are managed by the transport's lifecycle,
+	// not our test lifecycle. They'll be cleaned up when the transport is garbage collected.
+	opts := []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop"),
+	}
+	goleak.VerifyNone(t, opts...)
+
+	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
+
+	config := &Config{
+		ServerConfig: confighttp.ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  testutil.GetAvailableLocalAddress(t),
+			},
+		},
+		Config: PathConfig{Enabled: false},
+		Status: PathConfig{
+			Enabled:           true,
+			Path:              "/status",
+			IncludeAttributes: true,
+		},
+	}
+
+	aggregator := status.NewAggregator(status.PriorityPermanent)
+	server := NewServer(
+		config,
+		LegacyConfig{UseV2: true},
+		nil,
+		componenttest.NewNopTelemetrySettings(),
+		aggregator,
+	)
+
+	require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
+	ts := httptest.NewServer(server.mux)
+
+	defer func() {
+		ts.Close()
+		require.NoError(t, server.Shutdown(t.Context()))
+	}()
+
+	testhelpers.SeedAggregator(aggregator, traces.InstanceIDs(), componentstatus.StatusOK)
+	testhelpers.SeedAggregator(aggregator, metrics.InstanceIDs(), componentstatus.StatusOK)
+
+	attrs := pcommon.NewMap()
+	attrs.PutStr("error_msg", "not enough permissions to read cpu data")
+	scrapers := attrs.PutEmptySlice("scrapers")
+	for _, scraper := range []string{"cpu", "memory", "network"} {
+		scrapers.AppendEmpty().SetStr(scraper)
+	}
+
+	aggregator.RecordStatus(
+		metrics.ExporterID,
+		componentstatus.NewEvent(
+			componentstatus.StatusRecoverableError,
+			componentstatus.WithError(assert.AnError),
+			componentstatus.WithAttributes(attrs),
+		),
+	)
+
+	transport := &http.Transport{DisableKeepAlives: true}
+	client := &http.Client{Transport: transport}
+	defer transport.CloseIdleConnections()
+
+	resp, err := client.Get(ts.URL + config.Status.Path + "?verbose")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	st := &serializableStatus{}
+	require.NoError(t, json.Unmarshal(body, st))
+
+	expectedAttrs := map[string]any{
+		"error_msg": "not enough permissions to read cpu data",
+		"scrapers":  []any{"cpu", "memory", "network"},
+	}
+
+	assert.Equal(t, expectedAttrs, st.Attributes)
+
+	metricsStatus, ok := st.ComponentStatuses["pipeline:"+metrics.PipelineID.String()]
+	require.True(t, ok)
+	assert.Equal(t, expectedAttrs, metricsStatus.Attributes)
+
+	exporterKey := "exporter:" + metrics.ExporterID.ComponentID().String()
+	exporterStatus, ok := metricsStatus.ComponentStatuses[exporterKey]
+	require.True(t, ok)
+	assert.Equal(t, expectedAttrs, exporterStatus.Attributes)
+}
+
+func TestStatusNonVerboseIncludesAttributes(t *testing.T) {
+	// These goroutines are part of the http.Client's connection pool management.
+	opts := []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop"),
+	}
+	goleak.VerifyNone(t, opts...)
+
+	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
+
+	config := &Config{
+		ServerConfig: confighttp.ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  testutil.GetAvailableLocalAddress(t),
+			},
+		},
+		Config: PathConfig{Enabled: false},
+		Status: PathConfig{
+			Enabled:           true,
+			Path:              "/status",
+			IncludeAttributes: true,
+		},
+	}
+
+	aggregator := status.NewAggregator(status.PriorityPermanent)
+	server := NewServer(
+		config,
+		LegacyConfig{UseV2: true},
+		nil,
+		componenttest.NewNopTelemetrySettings(),
+		aggregator,
+	)
+
+	require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
+	ts := httptest.NewServer(server.mux)
+
+	defer func() {
+		ts.Close()
+		require.NoError(t, server.Shutdown(t.Context()))
+	}()
+
+	testhelpers.SeedAggregator(aggregator, metrics.InstanceIDs(), componentstatus.StatusOK)
+
+	attrs := pcommon.NewMap()
+	attrs.PutStr("error_msg", "test error")
+	aggregator.RecordStatus(
+		metrics.ExporterID,
+		componentstatus.NewEvent(
+			componentstatus.StatusRecoverableError,
+			componentstatus.WithError(assert.AnError),
+			componentstatus.WithAttributes(attrs),
+		),
+	)
+
+	transport := &http.Transport{DisableKeepAlives: true}
+	client := &http.Client{Transport: transport}
+	defer transport.CloseIdleConnections()
+
+	// Request with include_attributes enabled - attributes should be included
+	resp, err := client.Get(ts.URL + config.Status.Path)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	st := &serializableStatus{}
+	require.NoError(t, json.Unmarshal(body, st))
+
+	expectedAttrs := map[string]any{
+		"error_msg": "test error",
+	}
+	assert.Equal(t, expectedAttrs, st.Attributes)
+}
+
+func TestStatusExcludesAttributesWhenConfigDisabled(t *testing.T) {
+	// These goroutines are part of the http.Client's connection pool management.
+	opts := []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop"),
+	}
+	goleak.VerifyNone(t, opts...)
+
+	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
+
+	config := &Config{
+		ServerConfig: confighttp.ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  testutil.GetAvailableLocalAddress(t),
+			},
+		},
+		Config: PathConfig{Enabled: false},
+		Status: PathConfig{
+			Enabled:           true,
+			Path:              "/status",
+			IncludeAttributes: false,
+		},
+	}
+
+	aggregator := status.NewAggregator(status.PriorityPermanent)
+	server := NewServer(
+		config,
+		LegacyConfig{UseV2: true},
+		nil,
+		componenttest.NewNopTelemetrySettings(),
+		aggregator,
+	)
+
+	require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
+	ts := httptest.NewServer(server.mux)
+
+	defer func() {
+		ts.Close()
+		require.NoError(t, server.Shutdown(t.Context()))
+	}()
+
+	testhelpers.SeedAggregator(aggregator, metrics.InstanceIDs(), componentstatus.StatusOK)
+
+	attrs := pcommon.NewMap()
+	attrs.PutStr("error_msg", "test error")
+	aggregator.RecordStatus(
+		metrics.ExporterID,
+		componentstatus.NewEvent(
+			componentstatus.StatusRecoverableError,
+			componentstatus.WithError(assert.AnError),
+			componentstatus.WithAttributes(attrs),
+		),
+	)
+
+	transport := &http.Transport{DisableKeepAlives: true}
+	client := &http.Client{Transport: transport}
+	defer transport.CloseIdleConnections()
+
+	// Request with include_attributes=false - attributes should not be included
+	resp, err := client.Get(ts.URL + config.Status.Path)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	st := &serializableStatus{}
+	require.NoError(t, json.Unmarshal(body, st))
+
+	// Attributes should be empty map when include_attributes is false
+	assert.Empty(t, st.Attributes)
 }

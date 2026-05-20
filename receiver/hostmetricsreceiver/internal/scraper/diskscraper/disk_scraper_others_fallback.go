@@ -12,5 +12,5 @@ import (
 
 const systemSpecificMetricsLen = 0
 
-func (s *diskScraper) recordSystemSpecificDataPoints(_ pcommon.Timestamp, _ map[string]disk.IOCountersStat) {
+func (*diskScraper) recordSystemSpecificDataPoints(_ pcommon.Timestamp, _ map[string]disk.IOCountersStat) {
 }

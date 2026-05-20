@@ -126,7 +126,7 @@ func TestInputJournald(t *testing.T) {
 	}
 }
 
-func TestBuildConfig(t *testing.T) {
+func TestBuildConfigArgs(t *testing.T) {
 	testCases := []struct {
 		Name          string
 		Config        func(_ *Config)
@@ -136,7 +136,7 @@ func TestBuildConfig(t *testing.T) {
 		{
 			Name:     "empty config",
 			Config:   func(_ *Config) {},
-			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info"},
+			Expected: []string{"--utc", "--output=json", "--follow", "--lines=0", "--priority", "info"},
 		},
 		{
 			Name: "units",
@@ -146,7 +146,7 @@ func TestBuildConfig(t *testing.T) {
 					"user@1000.service",
 				}
 			},
-			Expected: []string{"--utc", "--output=json", "--follow", "--unit", "dbus.service", "--unit", "user@1000.service", "--priority", "info"},
+			Expected: []string{"--utc", "--output=json", "--follow", "--lines=0", "--unit", "dbus.service", "--unit", "user@1000.service", "--priority", "info"},
 		},
 		{
 			Name: "matches",
@@ -161,7 +161,7 @@ func TestBuildConfig(t *testing.T) {
 					},
 				}
 			},
-			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "_SYSTEMD_UNIT=dbus.service", "+", "_SYSTEMD_UNIT=user@1000.service", "_UID=1000"},
+			Expected: []string{"--utc", "--output=json", "--follow", "--lines=0", "--priority", "info", "_SYSTEMD_UNIT=dbus.service", "+", "_SYSTEMD_UNIT=user@1000.service", "_UID=1000"},
 		},
 		{
 			Name: "invalid match",
@@ -184,49 +184,56 @@ func TestBuildConfig(t *testing.T) {
 					},
 				}
 			},
-			Expected: []string{"--utc", "--output=json", "--follow", "--unit", "ssh", "--priority", "info", "_SYSTEMD_UNIT=dbus.service"},
+			Expected: []string{"--utc", "--output=json", "--follow", "--lines=0", "--unit", "ssh", "--priority", "info", "_SYSTEMD_UNIT=dbus.service"},
 		},
 		{
 			Name: "identifiers",
 			Config: func(cfg *Config) {
 				cfg.Identifiers = []string{"wireplumber", "systemd"}
 			},
-			Expected: []string{"--utc", "--output=json", "--follow", "--identifier", "wireplumber", "--identifier", "systemd", "--priority", "info"},
+			Expected: []string{"--utc", "--output=json", "--follow", "--lines=0", "--identifier", "wireplumber", "--identifier", "systemd", "--priority", "info"},
 		},
 		{
 			Name: "grep",
 			Config: func(cfg *Config) {
 				cfg.Grep = "test_grep"
 			},
-			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--grep", "test_grep"},
+			Expected: []string{"--utc", "--output=json", "--follow", "--lines=0", "--priority", "info", "--grep", "test_grep"},
 		},
 		{
 			Name: "namespace",
 			Config: func(cfg *Config) {
 				cfg.Namespace = "foo"
 			},
-			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--namespace", "foo"},
+			Expected: []string{"--utc", "--output=json", "--follow", "--lines=0", "--priority", "info", "--namespace", "foo"},
 		},
 		{
 			Name: "dmesg",
 			Config: func(cfg *Config) {
 				cfg.Dmesg = true
 			},
-			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--dmesg"},
+			Expected: []string{"--utc", "--output=json", "--follow", "--lines=0", "--priority", "info", "--dmesg"},
 		},
 		{
 			Name: "all",
 			Config: func(cfg *Config) {
 				cfg.All = true
 			},
-			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--all"},
+			Expected: []string{"--utc", "--output=json", "--follow", "--lines=0", "--priority", "info", "--all"},
 		},
 		{
 			Name: "merge",
 			Config: func(cfg *Config) {
 				cfg.Merge = true
 			},
-			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--merge"},
+			Expected: []string{"--utc", "--output=json", "--follow", "--lines=0", "--priority", "info", "--merge"},
+		},
+		{
+			Name: "start_at beginning",
+			Config: func(cfg *Config) {
+				cfg.StartAt = "beginning"
+			},
+			Expected: []string{"--utc", "--output=json", "--follow", "--no-tail", "--priority", "info"},
 		},
 	}
 
@@ -243,6 +250,144 @@ func TestBuildConfig(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.Expected, args)
+		})
+	}
+}
+
+func TestBuildConfigCmd(t *testing.T) {
+	testCases := []struct {
+		Name       string
+		Config     func(_ *Config)
+		RequireCmd func(*exec.Cmd)
+	}{
+		{
+			Name:   "empty config",
+			Config: func(_ *Config) {},
+			RequireCmd: func(cmd *exec.Cmd) {
+				require.Nil(t, cmd.SysProcAttr)
+				require.NotEmpty(t, cmd.Args)
+				assert.Equal(t, "journalctl", cmd.Args[0])
+			},
+		},
+		{
+			Name: "custom root_path",
+			Config: func(cfg *Config) {
+				cfg.RootPath = "/host"
+			},
+			RequireCmd: func(cmd *exec.Cmd) {
+				require.NotNil(t, cmd.SysProcAttr)
+				assert.Equal(t, "/host", cmd.SysProcAttr.Chroot)
+			},
+		},
+		{
+			Name: "custom journalctl_path",
+			Config: func(cfg *Config) {
+				cfg.JournalctlPath = "/usr/bin/journalctl"
+			},
+			RequireCmd: func(cmd *exec.Cmd) {
+				require.NotEmpty(t, cmd.Args)
+				assert.Equal(t, "/usr/bin/journalctl", cmd.Args[0])
+			},
+		},
+		{
+			Name: "custom root_path and journalctl_path",
+			Config: func(cfg *Config) {
+				cfg.RootPath = "/host"
+				cfg.JournalctlPath = "/usr/bin/journalctl"
+			},
+			RequireCmd: func(cmd *exec.Cmd) {
+				require.NotNil(t, cmd.SysProcAttr)
+				require.NotEmpty(t, cmd.Args)
+				assert.Equal(t, "/host", cmd.SysProcAttr.Chroot)
+				// root_path should *not* be prepended to journalctl_path
+				assert.Equal(t, "/usr/bin/journalctl", cmd.Args[0])
+			},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			cfg := NewConfigWithID("my_journald_input")
+			tt.Config(cfg)
+			newCmdFunc, err := cfg.buildNewCmdFunc(zap.NewNop())
+
+			require.NoError(t, err)
+			cmd := newCmdFunc(t.Context(), nil).(*exec.Cmd)
+			tt.RequireCmd(cmd)
+		})
+	}
+}
+
+func TestBuildConfigCmdCursor(t *testing.T) {
+	cfg := NewConfigWithID("my_journald_input")
+	newCmdFunc, err := cfg.buildNewCmdFunc(zap.NewNop())
+	require.NoError(t, err)
+
+	cmd := newCmdFunc(t.Context(), []byte("cursor-value")).(*exec.Cmd)
+	assert.Contains(t, cmd.Args, "--after-cursor")
+	assert.Contains(t, cmd.Args, "cursor-value")
+
+	cmd = newCmdFunc(t.Context(), []byte("  ")).(*exec.Cmd)
+	assert.NotContains(t, cmd.Args, "--after-cursor")
+
+	cmd = newCmdFunc(t.Context(), []byte{}).(*exec.Cmd)
+	assert.NotContains(t, cmd.Args, "--after-cursor")
+}
+
+func TestConfigValidation(t *testing.T) {
+	testCases := []struct {
+		Name          string
+		Config        func(_ *Config)
+		ExpectedError string
+	}{
+		{
+			Name:   "empty config",
+			Config: func(_ *Config) {},
+		},
+		{
+			Name: "invalid journalctl_path",
+			Config: func(cfg *Config) {
+				cfg.JournalctlPath = " "
+			},
+			ExpectedError: "'journalctl_path' must be non-whitespace",
+		},
+		{
+			Name: "invalid root_path",
+			Config: func(cfg *Config) {
+				cfg.RootPath = "not/absolute"
+				cfg.JournalctlPath = "/usr/bin/journalctl"
+			},
+			ExpectedError: "'root_path' must be an absolute path",
+		},
+		{
+			Name: "invalid journalctl_path with valid root_path",
+			Config: func(cfg *Config) {
+				cfg.RootPath = "/host"
+				cfg.JournalctlPath = "journalctl"
+			},
+			ExpectedError: "'journalctl_path' must be an absolute path when 'root_path' is set",
+		},
+		{
+			Name: "invalid start_at",
+			Config: func(cfg *Config) {
+				cfg.StartAt = "middle"
+			},
+			ExpectedError: "invalid value 'middle' for parameter 'start_at'",
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			cfg := NewConfigWithID("my_journald_input")
+			tt.Config(cfg)
+			err := cfg.validate()
+
+			if tt.ExpectedError != "" {
+				require.Error(t, err)
+				require.ErrorContains(t, err, tt.ExpectedError)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }

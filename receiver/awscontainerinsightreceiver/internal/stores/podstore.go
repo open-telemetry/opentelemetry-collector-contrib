@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"maps"
 	"regexp"
 	"strings"
 	"sync"
@@ -553,9 +554,7 @@ func addContainerID(pod *corev1.Pod, metric CIMetric, kubernetesBlob map[string]
 
 func addLabels(pod *corev1.Pod, kubernetesBlob map[string]any) {
 	labels := make(map[string]string)
-	for k, v := range pod.Labels {
-		labels[k] = v
-	}
+	maps.Copy(labels, pod.Labels)
 	if len(labels) > 0 {
 		kubernetesBlob["labels"] = labels
 	}

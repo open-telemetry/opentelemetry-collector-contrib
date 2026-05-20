@@ -15,17 +15,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DeRuina/timberjack"
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	"gopkg.in/natefinch/lumberjack.v2"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -537,6 +539,13 @@ func TestFileProfilesExporter(t *testing.T) {
 				assert.NoError(t, fe.Shutdown(t.Context()))
 			}()
 
+			// Create expected by marshaling and unmarshaling pd the same way
+			// This ensures the internal dictionary structure matches
+			expectedBuf, err := profilesMarshalers[tt.args.conf.FormatType].MarshalProfiles(testdata.GenerateProfilesTwoProfilesSameResource())
+			assert.NoError(t, err)
+			expected, err := tt.args.unmarshaler.UnmarshalProfiles(expectedBuf)
+			assert.NoError(t, err)
+
 			fi, err := os.Open(fe.writer.path)
 			assert.NoError(t, err)
 			defer fi.Close()
@@ -557,7 +566,7 @@ func TestFileProfilesExporter(t *testing.T) {
 				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalProfiles(buf)
 				assert.NoError(t, err)
-				assert.Equal(t, pd, got)
+				assert.Equal(t, expected, got)
 			}
 		})
 	}
@@ -593,7 +602,7 @@ func TestExportMessageAsBuffer(t *testing.T) {
 		},
 		writer: &fileWriter{
 			path: path,
-			file: &lumberjack.Logger{
+			file: &timberjack.Logger{
 				Filename: path,
 				MaxSize:  1,
 			},
@@ -736,7 +745,12 @@ func TestConcurrentlyCompress(t *testing.T) {
 	profilesUnmarshaler := &pprofile.JSONUnmarshaler{}
 	gotPd, err := profilesUnmarshaler.UnmarshalProfiles(buf)
 	assert.NoError(t, err)
-	assert.Equal(t, pd, gotPd)
+	// Create expected by marshaling and unmarshaling pd the same way
+	expectedBuf, err := profilesMarshalers[formatTypeJSON].MarshalProfiles(testdata.GenerateProfilesTwoProfilesSameResource())
+	assert.NoError(t, err)
+	expectedPd, err := profilesUnmarshaler.UnmarshalProfiles(expectedBuf)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedPd, gotPd)
 }
 
 // tsBuffer is a thread safe buffer to prevent race conditions in the CI/CD.
@@ -904,4 +918,116 @@ func TestAppend(t *testing.T) {
 	bComplete = append(bComplete, b2...)
 	assert.Equal(t, bComplete, bbuf.Bytes())
 	assert.NoError(t, fe.Shutdown(ctx))
+}
+
+func TestCreateDirectoryOption(t *testing.T) {
+	t.Run("create_directory=false should fail when parent missing", func(t *testing.T) {
+		base := t.TempDir()
+		nonExistingDir := filepath.Join(base, "nested", "dir")
+		path := filepath.Join(nonExistingDir, "out.log")
+		cfg := &Config{
+			Path:            path,
+			FormatType:      formatTypeJSON,
+			CreateDirectory: false,
+		}
+		exp, err := createLogsExporter(
+			t.Context(),
+			exportertest.NewNopSettings(metadata.Type),
+			cfg)
+		require.NoError(t, err)
+		err = exp.Start(t.Context(), componenttest.NewNopHost())
+		require.Error(t, err)
+	})
+
+	t.Run("create_directory=true should create parent and succeed", func(t *testing.T) {
+		base := t.TempDir()
+		nonExistingDir := filepath.Join(base, "nested", "dir2")
+		path := filepath.Join(nonExistingDir, "out.log")
+		cfg := &Config{
+			Path:                 path,
+			FormatType:           formatTypeJSON,
+			CreateDirectory:      true,
+			DirectoryPermissions: "0755",
+			FlushInterval:        time.Second,
+		}
+		exp, err := createLogsExporter(
+			t.Context(),
+			exportertest.NewNopSettings(metadata.Type),
+			cfg)
+		require.NoError(t, err)
+		err = exp.Start(t.Context(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		defer func() { _ = exp.Shutdown(t.Context()) }()
+		// Directory should exist
+		_, statErr := os.Stat(nonExistingDir)
+		require.NoError(t, statErr)
+	})
+}
+
+func TestFileAppendLogsExporter(t *testing.T) {
+	type args struct {
+		conf        *Config
+		unmarshaler plog.Unmarshaler
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "json: compression and append configuration",
+			args: args{
+				conf: &Config{
+					Path:          tempFileName(t),
+					FormatType:    "json",
+					Compression:   compressionZSTD,
+					Append:        true,
+					FlushInterval: 100 * time.Millisecond,
+				},
+				unmarshaler: &plog.JSONUnmarshaler{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conf := tt.args.conf
+			fe := &fileExporter{
+				conf: conf,
+			}
+			require.NotNil(t, fe)
+
+			assert.NoError(t, fe.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() {
+				assert.NoError(t, fe.Shutdown(t.Context()))
+			}()
+
+			batches := []plog.Logs{testdata.GenerateLogsTwoLogRecordsSameResource(), testdata.GenerateLogsOneLogRecord()}
+			for i, batch := range batches {
+				assert.NoError(t, fe.consumeLogs(t.Context(), batch))
+				time.Sleep(2 * time.Second)
+
+				fi, err := os.Open(fe.writer.path)
+				assert.NoError(t, err)
+				defer fi.Close()
+				br := bufio.NewReader(fi)
+
+				for j := 0; j < i+1; j++ {
+					assert.NoError(t, err)
+					buf, _, err := func() ([]byte, bool, error) {
+						if fe.marshaller.formatType == formatTypeJSON && fe.marshaller.compression == "" {
+							return readJSONMessage(br)
+						}
+						return readMessageFromStream(br)
+					}()
+					assert.NoError(t, err)
+
+					decoder := buildUnCompressor(fe.marshaller.compression)
+					buf, err = decoder(buf)
+					assert.NoError(t, err)
+					got, err := tt.args.unmarshaler.UnmarshalLogs(buf)
+					assert.NoError(t, err)
+					assert.Equal(t, batches[j], got)
+				}
+			}
+		})
+	}
 }

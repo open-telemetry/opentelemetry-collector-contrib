@@ -8,23 +8,29 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"sort"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap/zaptest/observer"
+	"golang.org/x/oauth2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
@@ -45,7 +51,8 @@ func TestNewFranzSyncProducer_SASL(t *testing.T) {
 			Version:   1, // kfake only supports version 1
 		}
 		tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-		client, err := NewFranzSyncProducer(t.Context(), clientConfig,
+		client, err := NewFranzSyncProducer(
+			t.Context(), componenttest.NewNopHost(), clientConfig,
 			configkafka.NewDefaultProducerConfig(), time.Second, tl,
 		)
 		if err != nil {
@@ -116,13 +123,17 @@ func TestNewFranzSyncProducer_TLS(t *testing.T) {
 	serverTLS := httpServer.TLS
 	caCert := httpServer.Certificate() // self-signed
 
+	core, observedLogs := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
+
 	_, clientConfig := kafkatest.NewCluster(t, kfake.TLS(serverTLS))
-	tryConnect := func(cfg configtls.ClientConfig) error {
+	tryConnect := func(cfg *configtls.ClientConfig) error {
+		observedLogs.TakeAll()       // drop existing logs
 		clientConfig := clientConfig // copy
-		clientConfig.TLS = &cfg
-		tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-		client, err := NewFranzSyncProducer(t.Context(), clientConfig,
-			configkafka.NewDefaultProducerConfig(), time.Second, tl,
+		clientConfig.TLS = cfg
+		client, err := NewFranzSyncProducer(
+			t.Context(), componenttest.NewNopHost(), clientConfig,
+			configkafka.NewDefaultProducerConfig(), time.Second, logger,
 		)
 		if err != nil {
 			return err
@@ -132,33 +143,38 @@ func TestNewFranzSyncProducer_TLS(t *testing.T) {
 	}
 
 	t.Run("tls_valid_ca", func(t *testing.T) {
-		t.Parallel()
 		tlsConfig := configtls.NewDefaultClientConfig()
 		tlsConfig.CAPem = configopaque.String(
 			pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caCert.Raw}),
 		)
-		assert.NoError(t, tryConnect(tlsConfig))
+		require.NoError(t, tryConnect(&tlsConfig))
+		assert.Empty(t, observedLogs.All())
 	})
 
 	t.Run("tls_insecure_skip_verify", func(t *testing.T) {
 		t.Parallel()
 		tlsConfig := configtls.NewDefaultClientConfig()
 		tlsConfig.InsecureSkipVerify = true
-		require.NoError(t, tryConnect(tlsConfig))
+		require.NoError(t, tryConnect(&tlsConfig))
+		assert.Empty(t, observedLogs.All())
 	})
 
 	t.Run("tls_unknown_ca", func(t *testing.T) {
-		t.Parallel()
 		config := configtls.NewDefaultClientConfig()
-		err := tryConnect(config)
+		err := tryConnect(&config)
 		require.Error(t, err)
 		assert.ErrorContains(t, err, "x509: certificate signed by unknown authority")
+		assert.NotEmpty(t, observedLogs.All())
 	})
 
 	t.Run("plaintext", func(t *testing.T) {
-		t.Parallel()
 		// Should fail because the server expects TLS.
-		require.Error(t, tryConnect(configtls.ClientConfig{}))
+		require.Error(t, tryConnect(nil))
+		filtered := observedLogs.FilterMessage(
+			// franz-go logs this warning message:
+			"read from broker received EOF during api versions discovery, which often happens when the broker requires TLS and the client is not using it (is TLS misconfigured?)",
+		)
+		assert.NotEmpty(t, filtered.All())
 	})
 }
 
@@ -175,7 +191,10 @@ func TestNewFranzSyncProducerCompression(t *testing.T) {
 			prodCfg.Compression = compressionAlgo
 
 			tl := zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))
-			client, err := NewFranzSyncProducer(t.Context(), clientConfig, prodCfg, time.Second, tl)
+			client, err := NewFranzSyncProducer(
+				t.Context(), componenttest.NewNopHost(), clientConfig,
+				prodCfg, time.Second, tl,
+			)
 			require.NoError(t, err)
 			defer client.Close()
 
@@ -242,7 +261,10 @@ func TestNewFranzSyncProducerRequiredAcks(t *testing.T) {
 			prodCfg.RequiredAcks = ack
 
 			tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-			client, err := NewFranzSyncProducer(t.Context(), clientConfig, prodCfg, time.Second, tl)
+			client, err := NewFranzSyncProducer(
+				t.Context(), componenttest.NewNopHost(), clientConfig,
+				prodCfg, time.Second, tl,
+			)
 			require.NoError(t, err)
 			defer client.Close()
 
@@ -275,63 +297,6 @@ func acksToString(tb testing.TB, acks configkafka.RequiredAcks) string {
 	default:
 		tb.Fatalf("unknown RequiredAcks value: %v", acks)
 		return "" // Unreachable, but required.
-	}
-}
-
-// TODO(marclop): Remove this test once we completely remove Sarama so
-// we can get rid of the sarama dependency.
-func Test_saramaCompatHasher(t *testing.T) {
-	cases := []struct {
-		name       string
-		key        []byte
-		topic      string
-		partitions int32
-	}{
-		{"empty topic", []byte("key1"), "", 3},
-		{"single partition", []byte("key2"), "topic2", 1},
-		{"large partitions", []byte("key3"), "topic3", 100},
-		{"unicode key", []byte("ключ"), "topic4", 5},
-		{"unicode topic", []byte("key5"), "тема", 4},
-		{"zero partitions", []byte("key6"), "topic6", 1},
-		{"long key", []byte("thisisaverylongkeythatexceedstypicallengths"), "topic7", 8},
-		{"long topic", []byte("key8"), "averylongtopicnamethatexceedstypicallengths", 10},
-		{"special chars key", []byte("!@#$%^&*()_+"), "topic9", 7},
-		{"case sensitivity", []byte("Key11"), "Topic11", 11},
-		{"case sensitivity 2", []byte("key11"), "topic11", 11},
-		{"max int32 partitions", []byte("key12"), "topic12", 2147483647},
-		// Original cases for coverage
-		{"orig case 1", []byte("key1"), "topic1", 3},
-		{"orig case 2", []byte("key2"), "topic2", 5},
-		{"orig case 3", []byte("key3"), "topic3", 7},
-		{"orig case 4", []byte("key4"), "topic4", 2},
-		{"orig case 5", []byte("key5"), "topic5", 4},
-		{"orig case 6", []byte("key6"), "topic6", 6},
-		{"orig case 7", []byte("key7"), "topic7", 8},
-		{"orig case 8", []byte("key8"), "topic8", 10},
-		{"orig case 9", []byte("key9"), "topic9", 1},
-		{"orig case 10", []byte("key10"), "topic10", 9},
-		{"orig case 11", []byte("key11"), "topic11", 11},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			message := "test message"
-			// Sarama result
-			r, err := sarama.NewHashPartitioner(tc.topic).Partition(&sarama.ProducerMessage{
-				Topic: tc.topic,
-				Key:   sarama.ByteEncoder(tc.key),
-				Value: sarama.ByteEncoder(message),
-			}, tc.partitions)
-			require.NoError(t, err, "failed to hash partition")
-			saramaResult := int(r)
-
-			// Franz-go result
-			franzResult := newSaramaCompatPartitioner().ForTopic(tc.topic).Partition(&kgo.Record{
-				Topic: tc.topic,
-				Key:   tc.key,
-				Value: []byte(message),
-			}, int(tc.partitions))
-			assert.Equal(t, saramaResult, franzResult, "partitioning results do not match")
-		})
 	}
 }
 
@@ -438,6 +403,77 @@ func TestNewFranzKafkaConsumer_InitialOffset(t *testing.T) {
 	}
 }
 
+func TestBalancerOptFromStrategy(t *testing.T) {
+	balancerExtID := component.MustNewID("my_balancer")
+	type testcase struct {
+		strategy configkafka.GroupRebalanceStrategy
+		host     component.Host
+		wantNil  bool
+		wantErr  string
+	}
+	for name, tc := range map[string]testcase{
+		"empty": {
+			strategy: "",
+			host:     componenttest.NewNopHost(),
+			wantNil:  true,
+		},
+		"range": {
+			strategy: configkafka.RangeBalanceStrategy,
+			host:     componenttest.NewNopHost(),
+		},
+		"roundrobin": {
+			strategy: configkafka.RoundRobinBalanceStrategy,
+			host:     componenttest.NewNopHost(),
+		},
+		"sticky": {
+			strategy: configkafka.StickyBalanceStrategy,
+			host:     componenttest.NewNopHost(),
+		},
+		"cooperative-sticky": {
+			strategy: configkafka.CooperativeStickyBalanceStrategy,
+			host:     componenttest.NewNopHost(),
+		},
+		"extension_not_found": {
+			strategy: "my_balancer",
+			host:     componenttest.NewNopHost(),
+			wantErr:  `group_rebalance_strategy extension "my_balancer" not found`,
+		},
+		"extension_wrong_type": {
+			strategy: "my_balancer",
+			host: &mockHost{extensions: map[component.ID]component.Component{
+				balancerExtID: &nopComponent{},
+			}},
+			wantErr: `does not implement kgo.GroupBalancer`,
+		},
+		"extension_ok": {
+			strategy: "my_balancer",
+			host: &mockHost{extensions: map[component.ID]component.Component{
+				balancerExtID: &mockGroupBalancer{},
+			}},
+		},
+		"invalid_id": {
+			strategy: "!!!invalid!!!",
+			host:     componenttest.NewNopHost(),
+			wantErr:  "is not a built-in strategy or a valid extension ID",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			opt, err := balancerOptFromStrategy(tc.strategy, tc.host)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			if tc.wantNil {
+				assert.Nil(t, opt)
+			} else {
+				assert.NotNil(t, opt)
+			}
+		})
+	}
+}
+
 func fetchRecords(ctx context.Context, client *kgo.Client, wantRecords int) <-chan kgo.Fetches {
 	fetchChan := make(chan kgo.Fetches)
 	go func() {
@@ -474,8 +510,9 @@ func mustNewFranzConsumerGroup(t *testing.T,
 	// up and avoid waiting for too long.
 	minAge := 10 * time.Millisecond
 	opts = append(opts, kgo.MetadataMinAge(minAge), kgo.MetadataMaxAge(minAge*2))
-	client, err := NewFranzConsumerGroup(t.Context(), clientConfig, consumerConfig,
-		topics, zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)), opts...,
+	client, err := NewFranzConsumerGroup(
+		t.Context(), componenttest.NewNopHost(), clientConfig, consumerConfig,
+		topics, nil, zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)), opts...,
 	)
 	require.NoError(t, err)
 	t.Cleanup(client.Close)
@@ -496,7 +533,8 @@ func TestFranzClient_MetadataRefreshInterval(t *testing.T) {
 			name: "producer",
 			setupClient: func(t *testing.T, clientConfig configkafka.ClientConfig, _ string, metadataMinAge time.Duration) {
 				tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-				client, err := NewFranzSyncProducer(t.Context(), clientConfig,
+				client, err := NewFranzSyncProducer(
+					t.Context(), componenttest.NewNopHost(), clientConfig,
 					configkafka.NewDefaultProducerConfig(), time.Second, tl,
 					kgo.MetadataMinAge(metadataMinAge),
 				)
@@ -548,4 +586,217 @@ func TestFranzClient_MetadataRefreshInterval(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFranzClient_ProtocolVersion(t *testing.T) {
+	type testcase struct {
+		protocolVersion string
+		expectedVersion int
+	}
+	tests := map[string]testcase{
+		"without protocol version": {
+			expectedVersion: 4, // maximum
+		},
+		"with protocol version": {
+			protocolVersion: "2.1.0",
+			expectedVersion: 2,
+		},
+	}
+
+	for name, testcase := range tests {
+		t.Run(name, func(t *testing.T) {
+			var calls int
+			cluster, clientConfig := kafkatest.NewCluster(t)
+			cluster.ControlKey(int16(kmsg.ApiVersions), func(req kmsg.Request) (kmsg.Response, error, bool) {
+				calls++
+				assert.Equal(t, int16(testcase.expectedVersion), req.GetVersion())
+				return nil, nil, false
+			})
+
+			clientConfig.ProtocolVersion = testcase.protocolVersion
+			t.Run("consumer", func(t *testing.T) {
+				consumeConfig := configkafka.NewDefaultConsumerConfig()
+				client := mustNewFranzConsumerGroup(t, clientConfig, consumeConfig, []string{})
+				assert.NoError(t, client.Ping(t.Context()))
+			})
+			t.Run("producer", func(t *testing.T) {
+				client, err := NewFranzSyncProducer(
+					t.Context(), componenttest.NewNopHost(), clientConfig,
+					configkafka.NewDefaultProducerConfig(), time.Second, zap.NewNop(),
+				)
+				require.NoError(t, err)
+				require.NoError(t, client.Ping(t.Context())) // trigger an API call
+				client.Close()
+			})
+			assert.Equal(t, 2, calls)
+		})
+	}
+}
+
+func TestNewFranzClient_And_Admin(t *testing.T) {
+	_, clientCfg := kafkatest.NewCluster(t, kfake.SeedTopics(1, "meta-topic"))
+	tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+
+	// Plain client
+	cl, err := NewFranzClient(t.Context(), componenttest.NewNopHost(), clientCfg, tl)
+	require.NoError(t, err)
+	t.Cleanup(cl.Close)
+
+	// Admin from fresh client
+	ad, cl2, err := NewFranzClusterAdminClient(t.Context(), componenttest.NewNopHost(), clientCfg, tl)
+	require.NoError(t, err)
+	t.Cleanup(func() { ad.Close(); cl2.Close() })
+
+	// Metadata via admin should return brokers & topic
+	md, err := ad.Metadata(t.Context(), "meta-topic")
+	require.NoError(t, err)
+	assert.NotEmpty(t, md.Brokers)
+	_, ok := md.Topics["meta-topic"]
+	assert.True(t, ok)
+}
+
+func TestConfigureKgoKerberos(t *testing.T) {
+	for name, tc := range map[string]struct {
+		cfg         configkafka.KerberosConfig
+		wantErrIs   error
+		wantErrText string
+	}{
+		"password_auth": {
+			cfg: configkafka.KerberosConfig{
+				ServiceName: "kafka",
+				Realm:       "EXAMPLE.COM",
+				Username:    "user",
+				Password:    "pass",
+			},
+		},
+		"disable_fast_negotiation": {
+			cfg: configkafka.KerberosConfig{
+				ServiceName:     "kafka",
+				Username:        "user",
+				Password:        "pass",
+				DisablePAFXFAST: true,
+			},
+		},
+		"bad_config_path": {
+			cfg: configkafka.KerberosConfig{
+				ServiceName: "kafka",
+				ConfigPath:  filepath.Join("nonexistent", "krb5.conf"),
+			},
+			wantErrText: "configuration file could not be opened",
+		},
+		"bad_keytab_path": {
+			cfg: configkafka.KerberosConfig{
+				ServiceName: "kafka",
+				Username:    "user",
+				KeyTabPath:  filepath.Join("nonexistent", "krb5.keytab"),
+			},
+			wantErrIs: fs.ErrNotExist,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			opt, err := configureKgoKerberos(&tc.cfg)
+			if tc.wantErrIs != nil {
+				require.ErrorIs(t, err, tc.wantErrIs)
+				return
+			}
+			if tc.wantErrText != "" {
+				require.ErrorContains(t, err, tc.wantErrText)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, opt)
+		})
+	}
+}
+
+func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER(t *testing.T) {
+	opt, err := configureKgoSASL(&configkafka.SASLConfig{
+		Mechanism: AWSMSKIAMOAUTHBEARER,
+		AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
+	}, componenttest.NewNopHost())
+	require.NoError(t, err)
+	require.NotNil(t, opt)
+}
+
+func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
+	extID := component.MustNewID("oauth2client")
+
+	t.Run("missing_extension", func(t *testing.T) {
+		_, err := configureKgoSASL(&configkafka.SASLConfig{
+			Mechanism:              OAUTHBEARER,
+			OAuthBearerTokenSource: extID,
+		}, componenttest.NewNopHost())
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "is not configured")
+	})
+
+	t.Run("present_extension", func(t *testing.T) {
+		host := &mockHost{extensions: map[component.ID]component.Component{
+			extID: &mockTokenSource{token: "tok"},
+		}}
+		opt, err := configureKgoSASL(&configkafka.SASLConfig{
+			Mechanism:              OAUTHBEARER,
+			OAuthBearerTokenSource: extID,
+		}, host)
+		require.NoError(t, err)
+		require.NotNil(t, opt)
+	})
+}
+
+func TestConfigureKgoSASL_UnsupportedMechanism(t *testing.T) {
+	_, err := configureKgoSASL(&configkafka.SASLConfig{
+		Mechanism: "BOGUS",
+	}, componenttest.NewNopHost())
+	require.ErrorContains(t, err, "unsupported SASL mechanism")
+}
+
+// mockHost is a minimal component.Host that returns a fixed extension map.
+type mockHost struct {
+	extensions map[component.ID]component.Component
+}
+
+func (m *mockHost) GetExtensions() map[component.ID]component.Component {
+	return m.extensions
+}
+
+// nopComponent is a component.Component that does not implement GroupBalancer.
+type nopComponent struct {
+	extension.Extension
+}
+
+// mockTokenSource is a contextTokenSource extension used to test OAUTHBEARER.
+type mockTokenSource struct {
+	extension.Extension
+	token string
+}
+
+func (m *mockTokenSource) Token(context.Context) (*oauth2.Token, error) {
+	return &oauth2.Token{AccessToken: m.token}, nil
+}
+
+// mockGroupBalancer is a no-op kgo.GroupBalancer used in tests.
+type mockGroupBalancer struct {
+	extension.Extension
+}
+
+var _ kgo.GroupBalancer = (*mockGroupBalancer)(nil)
+
+func (*mockGroupBalancer) ProtocolName() string {
+	return "mock"
+}
+
+func (*mockGroupBalancer) JoinGroupMetadata([]string, map[string][]int32, int32) []byte {
+	return nil
+}
+
+func (*mockGroupBalancer) ParseSyncAssignment([]byte) (map[string][]int32, error) {
+	return nil, nil
+}
+
+func (*mockGroupBalancer) MemberBalancer([]kmsg.JoinGroupResponseMember) (kgo.GroupMemberBalancer, map[string]struct{}, error) {
+	return nil, nil, nil
+}
+
+func (*mockGroupBalancer) IsCooperative() bool {
+	return false
 }

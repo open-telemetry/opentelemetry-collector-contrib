@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -32,6 +33,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -128,6 +131,9 @@ func setupSupervisorConfig(t *testing.T, configuration string) config.Supervisor
 	cfg, err := config.Load(cfgPath)
 	require.NoError(t, err)
 
+	err = confmap.Validate(cfg)
+	require.NoError(t, err)
+
 	t.Cleanup(func() {
 		require.NoError(t, os.Chmod(tmpDir, 0o700))
 		require.NoError(t, os.RemoveAll(tmpDir))
@@ -186,7 +192,7 @@ func Test_NewSupervisorFailedStorageCreation(t *testing.T) {
 func Test_composeEffectiveConfig(t *testing.T) {
 	fileLogConfig := `
 receivers:
-  filelog:
+  file_log:
     include: ['/test/logs/input.log']
     start_at: "beginning"
 
@@ -197,7 +203,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       exporters: [file]`
 
 	// load expected effective config bytes once
@@ -552,7 +558,8 @@ service:
                 - stderr
             output_paths:
                 - stdout
-        resource: null
+        resource:
+            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 
 		remoteConfig := &protobufs.AgentRemoteConfig{
@@ -653,7 +660,8 @@ service:
                 - stderr
             output_paths:
                 - stdout
-        resource: null
+        resource:
+            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 
 		remoteConfig := &protobufs.AgentRemoteConfig{
@@ -839,7 +847,8 @@ service:
                 - stderr
             output_paths:
                 - stdout
-        resource: null
+        resource:
+            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 
 		// store the initial remote config message so the supervisor is initialized with it
@@ -1720,6 +1729,7 @@ service:
                             endpoint: localhost-metrics
                             protocol: http/protobuf
         resource:
+            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
             service.name: otelcol
         traces:
             processors:
@@ -1802,7 +1812,7 @@ service:
 		require.NoError(t, s.createTemplates())
 		require.NoError(t, s.loadAndWriteInitialMergedConfig())
 
-		assert.Equal(t, remoteCfg.String(), s.remoteConfig.String())
+		assert.Equal(t, remoteCfg.String(), s.remoteConfig.Load().String())
 
 		gotMergedConfig := s.cfgState.Load().(*configState).mergedConfig
 		gotMergedConfig = strings.ReplaceAll(gotMergedConfig, "\r\n", "\n")
@@ -1839,6 +1849,9 @@ service:
                 - nop
             receivers:
                 - nop
+    telemetry:
+        resource:
+            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 	s := Supervisor{
 		persistentState: &persistentState{
@@ -1882,6 +1895,9 @@ service:
                 - nop
             receivers:
                 - nop
+    telemetry:
+        resource:
+            service.instance.id: 018fee23-4a51-7303-a441-73faed7d9deb
 `
 	s := Supervisor{
 		persistentState: &persistentState{
@@ -2113,7 +2129,10 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		s.config = config.Supervisor{
 			HealthCheck: config.HealthCheck{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:23233",
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  "localhost:23233",
+					},
 				},
 			},
 		}
@@ -2189,6 +2208,7 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 
 	t.Run("Health check server errors out if port is in-use", func(t *testing.T) {
 		newSupervisor := &Supervisor{
+			runCtx:            t.Context(),
 			telemetrySettings: newNopTelemetrySettings(),
 			persistentState:   &persistentState{InstanceID: testUUID},
 			cfgState:          &atomic.Value{},
@@ -2196,7 +2216,10 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 			config: config.Supervisor{
 				HealthCheck: config.HealthCheck{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "localhost:23233",
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  "localhost:23233",
+						},
 					},
 				},
 			},
@@ -2217,4 +2240,61 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		_, err = sendHealthCheckRequest()
 		assert.Error(t, err)
 	})
+}
+
+func TestRemoteConfigConcurrentAccess(t *testing.T) {
+	cfg := setupSupervisorConfig(t, configTemplate)
+	s, err := NewSupervisor(t.Context(), nil, cfg)
+	require.NoError(t, err)
+
+	config1 := &protobufs.AgentRemoteConfig{
+		Config: &protobufs.AgentConfigMap{
+			ConfigMap: map[string]*protobufs.AgentConfigFile{
+				"test.yaml": {
+					Body: []byte("receivers:\n  nop:\nprocessors:\n  nop:\nexporters:\n  nop:\nservice:\n  pipelines:\n    logs:\n      receivers: [nop]\n      processors: [nop]\n      exporters: [nop]"),
+				},
+			},
+		},
+		ConfigHash: []byte("confighash1"),
+	}
+
+	config2 := &protobufs.AgentRemoteConfig{
+		Config: &protobufs.AgentConfigMap{
+			ConfigMap: map[string]*protobufs.AgentConfigFile{
+				"test.yaml": {
+					Body: []byte("receivers:\n  nop:\nprocessors:\n  batch:\nexporters:\n  nop:\nservice:\n  pipelines:\n    logs:\n      receivers: [nop]\n      processors: [batch]\n      exporters: [nop]"),
+				},
+			},
+		},
+		ConfigHash: []byte("confighash2"),
+	}
+
+	s.remoteConfig.Store(config1)
+
+	startSignal := make(chan struct{})
+	var wg sync.WaitGroup
+
+	wg.Go(func() {
+		<-startSignal
+		for i := range 1000 {
+			if i%2 == 0 {
+				s.remoteConfig.Store(config1)
+			} else {
+				s.remoteConfig.Store(config2)
+			}
+		}
+	})
+
+	wg.Go(func() {
+		<-startSignal
+		for range 1000 {
+			cfg := s.remoteConfig.Load()
+			if cfg != nil {
+				_ = cfg.GetConfigHash()
+			}
+		}
+	})
+
+	close(startSignal)
+	wg.Wait()
 }

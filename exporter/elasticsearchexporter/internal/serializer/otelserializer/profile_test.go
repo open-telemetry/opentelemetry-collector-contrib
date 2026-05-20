@@ -20,21 +20,18 @@ import (
 )
 
 func basicProfiles() pprofiletest.Profiles {
+	r := pcommon.NewResource()
+	r.Attributes().PutStr("key1", "value1")
 	return pprofiletest.Profiles{
 		ResourceProfiles: []pprofiletest.ResourceProfile{
 			{
-				Resource: pprofiletest.Resource{
-					Attributes: []pprofiletest.Attribute{
-						{Key: "key1", Value: "value1"},
-					},
-				},
+				Resource: r,
 				ScopeProfiles: []pprofiletest.ScopeProfile{
 					{
-						Profile: []pprofiletest.Profile{
+						Scope: pcommon.NewInstrumentationScope(),
+						Profiles: []pprofiletest.Profile{
 							{
-								SampleType: []pprofiletest.ValueType{
-									{Typ: "samples", Unit: "count"},
-								},
+								SampleType: pprofiletest.ValueType{Typ: "samples", Unit: "count"},
 								PeriodType: pprofiletest.ValueType{Typ: "cpu", Unit: "nanoseconds"},
 								Attributes: []pprofiletest.Attribute{
 									{Key: "process.executable.build_id.htlhash", Value: "600DCAFE4A110000F2BF38C493F5FB92"},
@@ -89,10 +86,6 @@ func TestSerializeProfile(t *testing.T) {
 				a.SetKeyStrindex(6)
 				dic.StringTable().Append("host.id")
 				a.Value().SetStr("localhost")
-				a = dic.AttributeTable().AppendEmpty()
-				a.SetKeyStrindex(7)
-				dic.StringTable().Append("process.executable.name")
-				a.Value().SetStr("libc.so.6")
 
 				dic.MappingTable().AppendEmpty()
 				m := dic.MappingTable().AppendEmpty()
@@ -108,7 +101,7 @@ func TestSerializeProfile(t *testing.T) {
 
 				return dic
 			},
-			profileCustomizer: func(_ pcommon.Resource, _ pcommon.InstrumentationScope, profile pprofile.Profile) {
+			profileCustomizer: func(r pcommon.Resource, _ pcommon.InstrumentationScope, profile pprofile.Profile) {
 				st := profile.SampleType()
 				st.SetTypeStrindex(0)
 				st.SetUnitStrindex(1)
@@ -119,10 +112,12 @@ func TestSerializeProfile(t *testing.T) {
 
 				profile.AttributeIndices().Append(2)
 
-				sample := profile.Sample().AppendEmpty()
+				sample := profile.Samples().AppendEmpty()
 				sample.TimestampsUnixNano().Append(0)
-				sample.AttributeIndices().Append(3)
+				sample.AttributeIndices().Append(2)
 				sample.SetStackIndex(0)
+
+				r.Attributes().PutStr("process.executable.name", "libc.so.6")
 			},
 			wantErr: false,
 			expected: []map[string]any{
@@ -140,6 +135,7 @@ func TestSerializeProfile(t *testing.T) {
 					"host.id":                       "localhost",
 					"process.executable.name":       "libc.so.6",
 					"process.thread.name":           "",
+					"profiling.project.id":          json.Number("2"),
 				},
 				{
 					"script": map[string]any{
@@ -234,9 +230,8 @@ func BenchmarkSerializeProfile(b *testing.B) {
 	}
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = ser.SerializeProfile(profiles.Dictionary(), resource.Resource(), scope.Scope(), profile, pushData)
 	}
 }

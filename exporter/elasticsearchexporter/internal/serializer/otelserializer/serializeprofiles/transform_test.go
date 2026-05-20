@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/ebpf-profiler/libpf"
-	semconv "go.opentelemetry.io/otel/semconv/v1.22.0"
 )
 
 var (
@@ -50,7 +49,7 @@ func formatFileIDFormat(hi, lo uint64) (fileID libpf.FileID, fileIDHex, fileIDBa
 	fileID = libpf.NewFileID(hi, lo)
 	fileIDHex = fileID.StringNoQuotes()
 	fileIDBase64 = fileID.Base64()
-	return
+	return fileID, fileIDHex, fileIDBase64
 }
 
 func TestTransform(t *testing.T) {
@@ -88,7 +87,7 @@ func TestTransform(t *testing.T) {
 				pt.SetTypeStrindex(2)
 				pt.SetUnitStrindex(3)
 
-				p.Sample().AppendEmpty()
+				p.Samples().AppendEmpty()
 
 				return rp
 			},
@@ -115,7 +114,7 @@ func TestTransform(t *testing.T) {
 				st.SetTypeStrindex(0)
 				st.SetUnitStrindex(1)
 
-				p.Sample().AppendEmpty()
+				p.Samples().AppendEmpty()
 
 				return rp
 			},
@@ -147,7 +146,7 @@ func TestTransform(t *testing.T) {
 				pt.SetTypeStrindex(2)
 				pt.SetUnitStrindex(3)
 
-				s := p.Sample().AppendEmpty()
+				s := p.Samples().AppendEmpty()
 				s.TimestampsUnixNano().Append(42)
 
 				return rp
@@ -199,6 +198,7 @@ func TestTransform(t *testing.T) {
 			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
+				rp.Resource().Attributes().PutStr("service.name", "my_service.name")
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
@@ -211,7 +211,7 @@ func TestTransform(t *testing.T) {
 				pt.SetTypeStrindex(4)
 				pt.SetUnitStrindex(5)
 
-				s := p.Sample().AppendEmpty()
+				s := p.Samples().AppendEmpty()
 				s.TimestampsUnixNano().Append(42)
 				s.Values().Append(1)
 				s.SetStackIndex(0)
@@ -264,8 +264,11 @@ func TestTransform(t *testing.T) {
 							FileID:     []string{buildID2Base64},
 						},
 					},
-					HostMetadata: HostResourceData{
-						Data: map[string]string{},
+					ResourceAttrs: ResourceData{
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						Data: map[string]string{
+							"service.name": "my_service.name",
+						},
 					},
 				},
 				{
@@ -273,10 +276,12 @@ func TestTransform(t *testing.T) {
 						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    42000000000,
 						StackTraceID: wantedTraceID,
+						ServiceName:  "my_service.name",
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
-					HostMetadata: HostResourceData{},
+					ResourceAttrs: ResourceData{},
 				},
 			},
 			wantErr: nil,
@@ -360,7 +365,7 @@ func TestStackPayloads(t *testing.T) {
 				p := sp.Profiles().AppendEmpty()
 				p.SetPeriod(1e9 / 20)
 
-				s := p.Sample().AppendEmpty()
+				s := p.Samples().AppendEmpty()
 				s.TimestampsUnixNano().Append(1)
 				s.Values().Append(1)
 				s.SetStackIndex(0)
@@ -413,8 +418,9 @@ func TestStackPayloads(t *testing.T) {
 							FileID:     []string{buildID2Base64},
 						},
 					},
-					HostMetadata: HostResourceData{
-						Data: map[string]string{},
+					ResourceAttrs: ResourceData{
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						Data:       map[string]string{},
 					},
 				},
 				{
@@ -424,8 +430,9 @@ func TestStackPayloads(t *testing.T) {
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
-					HostMetadata: HostResourceData{},
+					ResourceAttrs: ResourceData{},
 				},
 			},
 		},
@@ -475,7 +482,7 @@ func TestStackPayloads(t *testing.T) {
 				p := sp.Profiles().AppendEmpty()
 				p.SetPeriod(1e9 / 20)
 
-				s := p.Sample().AppendEmpty()
+				s := p.Samples().AppendEmpty()
 				s.TimestampsUnixNano().Append(1)
 				s.Values().Append(2)
 
@@ -527,8 +534,9 @@ func TestStackPayloads(t *testing.T) {
 							FileID:     []string{buildID2Base64},
 						},
 					},
-					HostMetadata: HostResourceData{
-						Data: map[string]string{},
+					ResourceAttrs: ResourceData{
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						Data:       map[string]string{},
 					},
 				},
 				{
@@ -538,6 +546,7 @@ func TestStackPayloads(t *testing.T) {
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 				},
 				{
@@ -547,6 +556,7 @@ func TestStackPayloads(t *testing.T) {
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 				},
 			},
@@ -600,7 +610,7 @@ func TestStackPayloads(t *testing.T) {
 				p := sp.Profiles().AppendEmpty()
 				p.SetPeriod(1e9 / 20)
 
-				s := p.Sample().AppendEmpty()
+				s := p.Samples().AppendEmpty()
 				s.TimestampsUnixNano().Append(1)
 				s.Values().Append(1)
 
@@ -654,8 +664,9 @@ func TestStackPayloads(t *testing.T) {
 						},
 						// Note: no unsymbolized executable for the mapping without build ID
 					},
-					HostMetadata: HostResourceData{
-						Data: map[string]string{},
+					ResourceAttrs: ResourceData{
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						Data:       map[string]string{},
 					},
 				},
 				{
@@ -665,6 +676,7 @@ func TestStackPayloads(t *testing.T) {
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 				},
 			},
@@ -705,13 +717,13 @@ func TestStackTraceEvent(t *testing.T) {
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 				_ = rp.Resource().Attributes().FromRaw(map[string]any{
-					string(semconv.ServiceVersionKey): "1.2.0",
+					"service.version": "1.2.0",
 				})
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
-				p.Sample().AppendEmpty()
+				p.Samples().AppendEmpty()
 
 				return rp
 			},
@@ -721,6 +733,7 @@ func TestStackTraceEvent(t *testing.T) {
 				StackTraceID: stacktraceIDBase64,
 				Frequency:    20,
 				Count:        1,
+				ProjectID:    2,
 			},
 		},
 		{
@@ -737,7 +750,7 @@ func TestStackTraceEvent(t *testing.T) {
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
-				p.Sample().AppendEmpty()
+				p.Samples().AppendEmpty()
 
 				return rp
 			},
@@ -748,6 +761,7 @@ func TestStackTraceEvent(t *testing.T) {
 				StackTraceID: stacktraceIDBase64,
 				Frequency:    20,
 				Count:        1,
+				ProjectID:    2,
 			},
 		},
 		{
@@ -763,7 +777,7 @@ func TestStackTraceEvent(t *testing.T) {
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
-				p.Sample().AppendEmpty()
+				p.Samples().AppendEmpty()
 
 				return rp
 			},
@@ -773,6 +787,7 @@ func TestStackTraceEvent(t *testing.T) {
 				StackTraceID: stacktraceIDBase64,
 				Frequency:    20,
 				Count:        1,
+				ProjectID:    2,
 			},
 		},
 		{
@@ -782,30 +797,30 @@ func TestStackTraceEvent(t *testing.T) {
 				dic.StringTable().Append(stacktraceIDBase64)
 				dic.StackTable().AppendEmpty()
 
+				dic.AttributeTable().AppendEmpty()
+
 				a := dic.AttributeTable().AppendEmpty()
 				a.SetKeyStrindex(1)
-				dic.StringTable().Append(string(semconv.ThreadNameKey))
+				dic.StringTable().Append("thread.name")
 				a.Value().SetStr("my_thread")
-				a = dic.AttributeTable().AppendEmpty()
-				a.SetKeyStrindex(2)
-				dic.StringTable().Append(string(semconv.ServiceNameKey))
-				a.Value().SetStr("my_service")
 
 				return dic
 			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 				_ = rp.Resource().Attributes().FromRaw(map[string]any{
-					string(semconv.K8SPodNameKey):       "my_pod",
-					string(semconv.ContainerNameKey):    "my_container",
-					string(semconv.ContainerIDKey):      "my_container_id",
-					string(semconv.K8SNamespaceNameKey): "my_k8s_namespace_name",
+					"k8s.pod.name":       "my_pod",
+					"container.name":     "my_container",
+					"container.id":       "my_container_id",
+					"k8s.namespace.name": "my_k8s_namespace_name",
+					"host.name":          "my_host_name",
+					"service.name":       "my_service",
 				})
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
-				s := p.Sample().AppendEmpty()
-				s.AttributeIndices().Append(0, 1)
+				s := p.Samples().AppendEmpty()
+				s.AttributeIndices().Append(1)
 
 				return rp
 			},
@@ -818,9 +833,11 @@ func TestStackTraceEvent(t *testing.T) {
 				ContainerID:      "my_container_id",
 				ThreadName:       "my_thread",
 				ServiceName:      "my_service",
+				HostName:         "my_host_name",
 				StackTraceID:     stacktraceIDBase64,
 				Frequency:        20,
 				Count:            1,
+				ProjectID:        2,
 			},
 		},
 	} {
@@ -828,10 +845,10 @@ func TestStackTraceEvent(t *testing.T) {
 			dic := tt.buildDictionary()
 			rp := tt.buildResourceProfiles()
 			p := rp.ScopeProfiles().At(0).Profiles().At(0)
-			s := p.Sample().At(0)
+			s := p.Samples().At(0)
 
-			hostMetadata := newHostMetadata(dic, rp.Resource(), rp.ScopeProfiles().At(0).Scope(), p)
-			event := stackTraceEvent(dic, stacktraceIDBase64, s, 20, hostMetadata)
+			resourceAttrs := populateResourceData(dic, rp.Resource(), rp.ScopeProfiles().At(0).Scope(), p)
+			event := stackTraceEvent(dic, stacktraceIDBase64, s, 20, resourceAttrs)
 			event.TimeStamp = newUnixTime64(tt.timestamp)
 
 			assert.Equal(t, tt.wantEvent, event)
@@ -898,9 +915,9 @@ func TestStackTrace(t *testing.T) {
 				l.SetAddress(address3)
 				l.AttributeIndices().Append(2)
 
-				li := l.Line().AppendEmpty()
+				li := l.Lines().AppendEmpty()
 				li.SetLine(1)
-				li = l.Line().AppendEmpty()
+				li = l.Lines().AppendEmpty()
 				li.SetLine(3)
 
 				// Create a location without build ID
@@ -912,7 +929,7 @@ func TestStackTrace(t *testing.T) {
 				locWithoutBuildID := dic.LocationTable().AppendEmpty()
 				locWithoutBuildID.SetMappingIndex(0)
 				locWithoutBuildID.AttributeIndices().Append(0)
-				li = locWithoutBuildID.Line().AppendEmpty()
+				li = locWithoutBuildID.Lines().AppendEmpty()
 				li.SetLine(99)
 				stack.LocationIndices().Append(0, 1, 2, 3)
 
@@ -928,7 +945,7 @@ func TestStackTrace(t *testing.T) {
 			},
 			buildProfile: func() pprofile.Profile {
 				p := pprofile.NewProfile()
-				p.Sample().AppendEmpty()
+				p.Samples().AppendEmpty()
 
 				return p
 			},
@@ -948,7 +965,7 @@ func TestStackTrace(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			dic := tt.buildDictionary()
 			p := tt.buildProfile()
-			s := p.Sample().At(0)
+			s := p.Samples().At(0)
 
 			frames, frameTypes, _, err := stackFrames(dic, s)
 			require.NoError(t, err)
@@ -959,6 +976,36 @@ func TestStackTrace(t *testing.T) {
 			assert.Len(t, frameTypes, len(frames))
 		})
 	}
+}
+
+func TestGetLocations(t *testing.T) {
+	dic := pprofile.NewProfilesDictionary()
+
+	// By convention location_table[0] is always present with a default value.
+	dic.LocationTable().AppendEmpty()
+	// Add three locations to the dictionary
+	loc1 := dic.LocationTable().AppendEmpty()
+	loc1.SetAddress(0x1000)
+	loc2 := dic.LocationTable().AppendEmpty()
+	loc2.SetAddress(0x2000)
+	loc3 := dic.LocationTable().AppendEmpty()
+	loc3.SetAddress(0x3000)
+
+	// Create a stack with indices to the locations
+	stack := dic.StackTable().AppendEmpty()
+	stack.LocationIndices().Append(1, 2, 3)
+
+	// Call getLocations and check the result
+	locations := getLocations(dic, stack)
+	require.Len(t, locations, 3)
+	assert.Equal(t, uint64(0x1000), locations[0].Address())
+	assert.Equal(t, uint64(0x2000), locations[1].Address())
+	assert.Equal(t, uint64(0x3000), locations[2].Address())
+
+	// Test with empty stack
+	emptyStack := dic.StackTable().AppendEmpty()
+	locations = getLocations(dic, emptyStack)
+	assert.Empty(t, locations)
 }
 
 // frameTypesToString converts a slice of FrameType to a RLE encoded string as stored in ES.
@@ -981,7 +1028,7 @@ func mkStackTraceID(t *testing.T, frameIDs []frameID) string {
 	for i := range frameIDs {
 		indices[i] = int32(i)
 	}
-	s := p.Sample().AppendEmpty()
+	s := p.Samples().AppendEmpty()
 
 	a := dic.AttributeTable().AppendEmpty()
 	a.SetKeyStrindex(0)

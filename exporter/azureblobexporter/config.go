@@ -7,7 +7,9 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 type TelemetryConfig struct {
@@ -26,9 +28,13 @@ type BlobNameFormat struct {
 	MetricsFormat            string            `mapstructure:"metrics_format"`
 	LogsFormat               string            `mapstructure:"logs_format"`
 	TracesFormat             string            `mapstructure:"traces_format"`
+	SerialNumEnabled         bool              `mapstructure:"serial_num_enabled"`
 	SerialNumRange           int64             `mapstructure:"serial_num_range"`
 	SerialNumBeforeExtension bool              `mapstructure:"serial_num_before_extension"`
+	Timezone                 string            `mapstructure:"timezone"`
 	TemplateEnabled          bool              `mapstructure:"template_enabled"`
+	TimeParserEnabled        bool              `mapstructure:"time_parser_enabled"`
+	TimeParserRanges         []string          `mapstructure:"time_parser_ranges"`
 	Params                   map[string]string `mapstructure:"params"`
 }
 
@@ -69,6 +75,9 @@ const (
 
 // Config contains the main configuration options for the azure storage blob exporter
 type Config struct {
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
+
 	// URL is the endpoint to the azure storage account. This is only required until there is an azure auth extension in the future.
 	URL string `mapstructure:"url"`
 

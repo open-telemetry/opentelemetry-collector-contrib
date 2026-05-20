@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/pool"
 )
 
 type logExporter struct {
@@ -26,15 +28,22 @@ type logExporter struct {
 }
 
 func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
-	model := &encodeModel{
-		dedup:             cfg.Dedup,
-		dedot:             cfg.Dedot,
-		sso:               cfg.Mode == MappingSS4O.String(),
-		flattenAttributes: cfg.Mode == MappingFlattenAttributes.String(),
-		timestampField:    cfg.TimestampField,
-		unixTime:          cfg.UnixTimestamp,
-		dataset:           cfg.Dataset,
-		namespace:         cfg.Namespace,
+	var model mappingModel
+	if cfg.Mode == MappingBodyMap.String() {
+		model = &bodyMapMappingModel{
+			bufferPool: pool.NewBufferPool(),
+		}
+	} else {
+		model = &encodeModel{
+			dedup:             cfg.Dedup,
+			dedot:             cfg.Dedot,
+			sso:               cfg.Mode == MappingSS4O.String(),
+			flattenAttributes: cfg.Mode == MappingFlattenAttributes.String(),
+			timestampField:    cfg.TimestampField,
+			unixTime:          cfg.UnixTimestamp,
+			dataset:           cfg.Dataset,
+			namespace:         cfg.Namespace,
+		}
 	}
 
 	return &logExporter{
@@ -43,12 +52,12 @@ func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
 		httpSettings:  cfg.ClientConfig,
 		model:         model,
 		config:        cfg,
-		indexResolver: newIndexResolver(),
+		indexResolver: newIndexResolver("ss4o_logs", cfg.Dataset, cfg.Namespace),
 	}
 }
 
 func (l *logExporter) Start(ctx context.Context, host component.Host) error {
-	httpClient, err := l.httpSettings.ToClient(ctx, host, l.telemetry)
+	httpClient, err := l.httpSettings.ToClient(ctx, host.GetExtensions(), l.telemetry)
 	if err != nil {
 		return err
 	}
@@ -63,18 +72,15 @@ func (l *logExporter) Start(ctx context.Context, host component.Host) error {
 }
 
 func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	indexer := newLogBulkIndexer("", l.bulkAction, l.model)
+	indexer := newLogBulkIndexer(l.bulkAction, l.model, l.config.Pipeline)
 	startErr := indexer.start(l.client)
 	if startErr != nil {
 		return startErr
 	}
 
-	// Resolve index name using the common index resolver
+	// Use timestamp for index resolution
 	logTimestamp := time.Now() // Replace with actual log timestamp extraction
-	indexName := l.indexResolver.ResolveLogIndex(l.config, ld, logTimestamp)
-
-	indexer.index = indexName
-	indexer.submit(ctx, ld)
+	indexer.submit(ctx, ld, l.indexResolver, l.config, logTimestamp)
 	indexer.close(ctx)
 	return indexer.joinedError()
 }

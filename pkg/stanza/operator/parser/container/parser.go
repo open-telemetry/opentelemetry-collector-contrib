@@ -64,23 +64,132 @@ type Parser struct {
 	format                  string
 	addMetadataFromFilepath bool
 	criLogEmitter           *helper.BatchingLogEmitter
-	asyncConsumerStarted    bool
-	criConsumerStartOnce    sync.Once
-	criConsumers            *sync.WaitGroup
+	recombineStarted        bool
+	recombineStartOnce      sync.Once
 	timeLayout              string
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return p.TransformerOperator.ProcessBatchWith(ctx, entries, p.Process)
+	processedEntries := make([]*entry.Entry, 0, len(entries))
+	write := func(_ context.Context, ent *entry.Entry) error {
+		processedEntries = append(processedEntries, ent)
+		return nil
+	}
+	var errs []error
+	var criEntries []*entry.Entry
+
+	for _, ent := range entries {
+		skip, err := p.Skip(ctx, ent)
+		if err != nil {
+			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+			continue
+		}
+		if skip {
+			_ = write(ctx, ent)
+			continue
+		}
+
+		format := p.format
+		if format == "" {
+			format, err = p.detectFormat(ent)
+			if err != nil {
+				errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, fmt.Errorf("failed to detect a valid container log format: %w", err), write))
+				continue
+			}
+		}
+
+		switch format {
+		case dockerFormat:
+			p.timeLayout = goTimeLayout
+			if err = p.ParseWith(ctx, ent, p.parseDocker, write); err != nil {
+				if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+					errs = append(errs, fmt.Errorf("failed to process the docker log: %w", err))
+				}
+				continue
+			}
+			if err = p.handleTimeAndAttributeMappings(ent); err != nil {
+				errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+				continue
+			}
+			_ = write(ctx, ent)
+
+		case containerdFormat, crioFormat:
+			p.recombineStartOnce.Do(func() {
+				err = p.criLogEmitter.Start(nil)
+				if err != nil {
+					p.Logger().Error("unable to start the internal LogEmitter", zap.Error(err))
+					return
+				}
+				err = p.recombineParser.Start(nil)
+				if err != nil {
+					p.Logger().Error("unable to start the internal recombine operator", zap.Error(err))
+					return
+				}
+				p.recombineStarted = true
+			})
+
+			if format == containerdFormat {
+				err = p.ParseWith(ctx, ent, p.parseContainerd, write)
+				if err != nil {
+					if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+						errs = append(errs, fmt.Errorf("failed to parse containerd log: %w", err))
+					}
+					continue
+				}
+				p.timeLayout = goTimeLayout
+			} else {
+				err = p.ParseWith(ctx, ent, p.parseCRIO, write)
+				if err != nil {
+					if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+						errs = append(errs, fmt.Errorf("failed to parse crio log: %w", err))
+					}
+					continue
+				}
+				p.timeLayout = crioTimeLayout
+			}
+
+			if err = p.handleTimeAndAttributeMappings(ent); err != nil {
+				errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+				continue
+			}
+			criEntries = append(criEntries, ent)
+
+		default:
+			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, errors.New("failed to detect a valid container log format"), write))
+		}
+	}
+
+	// Send CRI entries as a batch to recombine
+	if len(criEntries) > 0 {
+		if err := p.recombineParser.ProcessBatch(ctx, criEntries); err != nil {
+			errs = append(errs, fmt.Errorf("failed to recombine cri logs: %w", err))
+		}
+	}
+
+	// Write all docker/skipped entries as a batch
+	if len(processedEntries) > 0 {
+		errs = append(errs, p.WriteBatch(ctx, processedEntries))
+	}
+
+	return errors.Join(errs...)
 }
 
 // Process will parse an entry of Container logs
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
+	// Short circuit if the "if" condition does not match
+	skip, err := p.Skip(ctx, entry)
+	if err != nil {
+		return p.HandleEntryError(ctx, entry, err)
+	}
+	if skip {
+		return p.Write(ctx, entry)
+	}
+
 	format := p.format
 	if format == "" {
 		format, err = p.detectFormat(entry)
 		if err != nil {
-			return fmt.Errorf("failed to detect a valid container log format: %w", err)
+			return p.HandleEntryError(ctx, entry, fmt.Errorf("failed to detect a valid container log format: %w", err))
 		}
 	}
 
@@ -92,7 +201,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			return fmt.Errorf("failed to process the docker log: %w", err)
 		}
 	case containerdFormat, crioFormat:
-		p.criConsumerStartOnce.Do(func() {
+		p.recombineStartOnce.Do(func() {
 			err = p.criLogEmitter.Start(nil)
 			if err != nil {
 				p.Logger().Error("unable to start the internal LogEmitter", zap.Error(err))
@@ -103,17 +212,8 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 				p.Logger().Error("unable to start the internal recombine operator", zap.Error(err))
 				return
 			}
-			p.asyncConsumerStarted = true
+			p.recombineStarted = true
 		})
-
-		// Short circuit if the "if" condition does not match
-		skip, err := p.Skip(ctx, entry)
-		if err != nil {
-			return p.HandleEntryError(ctx, entry, err)
-		}
-		if skip {
-			return p.Write(ctx, entry)
-		}
 
 		if format == containerdFormat {
 			// parse the message
@@ -148,11 +248,10 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 	return nil
 }
 
-// Stop ensures that the internal recombineParser, the internal criLogEmitter and
-// the crioConsumer are stopped in the proper order without being affected by
-// any possible race conditions
+// Stop ensures that the internal recombineParser and criLogEmitter are stopped
+// in the proper order without being affected by any possible race conditions.
 func (p *Parser) Stop() error {
-	if !p.asyncConsumerStarted {
+	if !p.recombineStarted {
 		// nothing is started return
 		return nil
 	}
@@ -160,14 +259,9 @@ func (p *Parser) Stop() error {
 	if err := p.recombineParser.Stop(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("unable to stop the internal recombine operator: %w", err))
 	}
-	// the recombineParser will call the Process of the criLogEmitter synchronously so the entries will be first
-	// written to the channel before the Stop of the recombineParser returns. Then since the criLogEmitter handles
-	// the entries synchronously it is safe to call its Stop.
-	// After criLogEmitter is stopped the crioConsumer will consume the remaining messages and return.
 	if err := p.criLogEmitter.Stop(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("unable to stop the internal LogEmitter: %w", err))
 	}
-	p.criConsumers.Wait()
 	return errs
 }
 
@@ -272,7 +366,14 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 		return nil
 	}
 
-	logPath := e.Attributes[logPathField]
+	logPath, ok := e.Attributes[logPathField]
+	if !ok {
+		return fmt.Errorf(
+			"operator '%s' has 'add_metadata_from_filepath' enabled, but the log record attribute '%s' is missing. Perhaps enable the 'include_file_path' option?",
+			p.OperatorID,
+			logPathField)
+	}
+
 	rawLogPath, ok := logPath.(string)
 	if !ok {
 		return fmt.Errorf("type '%T' cannot be parsed as log path field", logPath)
@@ -293,11 +394,8 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 }
 
 func (p *Parser) consumeEntries(ctx context.Context, entries []*entry.Entry) {
-	for _, e := range entries {
-		err := p.Write(ctx, e)
-		if err != nil {
-			p.Logger().Error("failed to write entry", zap.Error(err))
-		}
+	if err := p.WriteBatch(ctx, entries); err != nil {
+		p.Logger().Error("failed to write batch of entries", zap.Error(err))
 	}
 }
 

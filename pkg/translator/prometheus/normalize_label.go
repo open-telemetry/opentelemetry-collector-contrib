@@ -7,15 +7,10 @@ import (
 	"strings"
 	"unicode"
 
-	"go.opentelemetry.io/collector/featuregate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus/internal/metadata"
 )
 
-var dropSanitizationGate = featuregate.GlobalRegistry().MustRegister(
-	"pkg.translator.prometheus.PermissiveLabelSanitization",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950"),
-)
+var DropSanitizationGate = metadata.PkgTranslatorPrometheusPermissiveLabelSanitizationFeatureGate
 
 // Normalizes the specified label to follow Prometheus label names standard
 //
@@ -36,7 +31,7 @@ func NormalizeLabel(label string) string {
 	// If label starts with a number, prepend with "key_"
 	if unicode.IsDigit(rune(label[0])) {
 		label = "key_" + label
-	} else if strings.HasPrefix(label, "_") && !strings.HasPrefix(label, "__") && !dropSanitizationGate.IsEnabled() {
+	} else if strings.HasPrefix(label, "_") && !strings.HasPrefix(label, "__") && !DropSanitizationGate.IsEnabled() {
 		label = "key" + label
 	}
 

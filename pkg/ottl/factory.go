@@ -3,7 +3,11 @@
 
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
-import "go.opentelemetry.io/collector/component"
+import (
+	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
+)
 
 // Arguments holds the arguments for an OTTL function, with arguments
 // specified as fields on a struct. Argument ordering is defined
@@ -81,6 +85,11 @@ func CreateFactoryMap[K any](factories ...Factory[K]) map[string]Factory[K] {
 	factoryMap := map[string]Factory[K]{}
 
 	for _, fn := range factories {
+		if metadata.OttlPanicDuplicateNameFeatureGate.IsEnabled() {
+			if _, ok := factoryMap[fn.Name()]; ok {
+				panic("duplicate factory name: " + fn.Name())
+			}
+		}
 		factoryMap[fn.Name()] = fn
 	}
 

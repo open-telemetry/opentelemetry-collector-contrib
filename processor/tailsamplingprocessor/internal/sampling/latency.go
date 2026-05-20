@@ -35,8 +35,6 @@ func NewLatency(settings component.TelemetrySettings, thresholdMs, upperThreshol
 func (l *latency) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	l.logger.Debug("Evaluating spans in latency filter")
 
-	traceData.Lock()
-	defer traceData.Unlock()
 	batches := traceData.ReceivedBatches
 
 	var minTime pcommon.Timestamp
@@ -56,4 +54,12 @@ func (l *latency) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *samp
 		}
 		return (l.thresholdMs < duration.Milliseconds() && duration.Milliseconds() <= l.upperThresholdMs)
 	}), nil
+}
+
+// IsStateful determines if an evaluator can be used for ingest time decisions.
+// In the case of a latency evaluator that is only possible if no upper
+// threshold is set as a trace can always get longer in duration and become
+// NotSampled.
+func (l *latency) IsStateful() bool {
+	return l.upperThresholdMs > 0
 }

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 // EcsVersionString is the value for the `ecs.version` metrics field.
@@ -31,7 +31,7 @@ type StackPayload struct {
 	StackFrames     []StackFrame
 	Executables     []ExeMetadata
 
-	HostMetadata HostResourceData
+	ResourceAttrs ResourceData
 
 	UnsymbolizedLeafFrames  []UnsymbolizedLeafFrame
 	UnsymbolizedExecutables []UnsymbolizedExecutable
@@ -56,6 +56,8 @@ type StackTraceEvent struct {
 	ServiceName      string `json:"service.name,omitempty"`
 	Frequency        int64  `json:"Stacktrace.sampling_frequency"`
 	Count            uint16 `json:"Stacktrace.count"`
+	ProjectID        uint32 `json:"profiling.project.id,omitempty"`
+	HostName         string `json:"host.name,omitempty"`
 }
 
 // StackTrace represents a stacktrace serializable into the stacktraces index.
@@ -81,20 +83,20 @@ type StackFrame struct {
 	FunctionOffset []int32  `json:"Stackframe.function.offset,omitempty"`
 }
 
-// HostResourceData represents the resources metadata related to a host for the
+// ResourceData represents the resources metadata related to a sample for the
 // profiling-hosts index.
-type HostResourceData struct {
+type ResourceData struct {
 	EcsVersion
 	HostID string `json:"host.id"`
 	Data   map[string]string
 }
 
 // MarshalJSON customizes the JSON marshaling for HostResourceData.
-func (h HostResourceData) MarshalJSON() ([]byte, error) {
+func (h ResourceData) MarshalJSON() ([]byte, error) {
 	// Create a temporary map to hold the combined data
 	combinedData := make(map[string]any)
 
-	combinedData[string(semconv.HostIDKey)] = h.HostID
+	combinedData[string(conventions.HostIDKey)] = h.HostID
 	combinedData["ecs.version"] = h.V
 	// The ES index profiling-hosts expects a second-precise timestamp
 	combinedData["@timestamp"] = time.Now().UTC().Unix()
@@ -109,7 +111,7 @@ func (h HostResourceData) MarshalJSON() ([]byte, error) {
 	}
 
 	// Marshal the combined map into JSON
-	return json.MarshalIndent(combinedData, "", "  ")
+	return json.Marshal(combinedData)
 }
 
 // Script written in Painless that will both create a new document (if DocID does not exist),

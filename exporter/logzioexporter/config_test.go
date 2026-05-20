@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -37,8 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 	expected.BackOffConfig = configretry.NewDefaultBackOffConfig()
 	expected.MaxInterval = 5 * time.Second
-	expected.QueueSettings = exporterhelper.NewDefaultQueueConfig()
-	expected.QueueSettings.Enabled = false
+	expected.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = 30 * time.Second
 	clientConfig.Compression = configcompression.TypeGzip
@@ -61,7 +61,7 @@ func TestDefaultLoadConfig(t *testing.T) {
 		Token: "logzioTESTtoken",
 	}
 	expected.BackOffConfig = configretry.NewDefaultBackOffConfig()
-	expected.QueueSettings = exporterhelper.NewDefaultQueueConfig()
+	expected.QueueSettings = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = 30 * time.Second
 	clientConfig.Compression = configcompression.TypeGzip
@@ -77,7 +77,7 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 	clientConfig.WriteBufferSize = 512 * 1024
 	// Config with legacy options
 	actualCfg := &Config{
-		QueueSettings:  exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings:  configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		BackOffConfig:  configretry.NewDefaultBackOffConfig(),
 		Token:          "logzioTESTtoken",
 		CustomEndpoint: "https://api.example.com",
@@ -104,10 +104,10 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 		QueueMaxLength: 10,
 		DrainInterval:  10,
 		BackOffConfig:  configretry.NewDefaultBackOffConfig(),
-		QueueSettings:  exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings:  configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		ClientConfig:   clientConfigEndpoint,
 	}
-	expected.QueueSettings.QueueSize = 10
+	expected.QueueSettings.Get().QueueSize = 10
 	assert.Equal(t, expected, actualCfg)
 }
 

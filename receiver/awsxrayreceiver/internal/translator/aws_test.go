@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -21,7 +20,7 @@ func TestAddAWSToResource(t *testing.T) {
 	}{
 		"WithNil": {
 			want: map[string]any{
-				string(conventions.CloudProviderKey): "unknown",
+				"cloud.provider": "unknown",
 			},
 		},
 		"WithCloudWatchLogs": {
@@ -38,12 +37,12 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				string(conventions.CloudProviderKey): conventions.CloudProviderAWS.Value.AsString(),
-				string(conventions.AWSLogGroupARNsKey): []any{
+				"cloud.provider": "aws",
+				"aws.log.group.arns": []any{
 					"arn:aws:logs:<region>:<account>:log-group:<log-group-1>:*",
 					"arn:aws:logs:<region>:<account>:log-group:<log-group-2>:*",
 				},
-				string(conventions.AWSLogGroupNamesKey): []any{"<log-group-1>", "<log-group-2>"},
+				"aws.log.group.names": []any{"<log-group-1>", "<log-group-2>"},
 			},
 		},
 		"WithEC2": {
@@ -56,11 +55,11 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				string(conventions.CloudProviderKey):         conventions.CloudProviderAWS.Value.AsString(),
-				string(conventions.CloudAvailabilityZoneKey): "<ec2-az>",
-				string(conventions.HostIDKey):                "<instance-id>",
-				string(conventions.HostTypeKey):              "<instance-size>",
-				string(conventions.HostImageIDKey):           "<ami>",
+				"cloud.provider":          "aws",
+				"cloud.availability_zone": "<ec2-az>",
+				"host.id":                 "<instance-id>",
+				"host.type":               "<instance-size>",
+				"host.image.id":           "<ami>",
 			},
 		},
 		"WithECS": {
@@ -72,10 +71,10 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				string(conventions.CloudProviderKey):         conventions.CloudProviderAWS.Value.AsString(),
-				string(conventions.CloudAvailabilityZoneKey): "<ecs-az>",
-				string(conventions.ContainerNameKey):         "<container-name>",
-				string(conventions.ContainerIDKey):           "<ecs-container-id>",
+				"cloud.provider":          "aws",
+				"cloud.availability_zone": "<ecs-az>",
+				"container.name":          "<container-name>",
+				"container.id":            "<ecs-container-id>",
 			},
 		},
 		"WithEKS": {
@@ -87,10 +86,10 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				string(conventions.CloudProviderKey):  conventions.CloudProviderAWS.Value.AsString(),
-				string(conventions.K8SPodNameKey):     "<pod>",
-				string(conventions.K8SClusterNameKey): "<cluster-name>",
-				string(conventions.ContainerIDKey):    "<eks-container-id>",
+				"cloud.provider":   "aws",
+				"k8s.pod.name":     "<pod>",
+				"k8s.cluster.name": "<cluster-name>",
+				"container.id":     "<eks-container-id>",
 			},
 		},
 		"WithBeanstalk": {
@@ -102,10 +101,10 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				string(conventions.CloudProviderKey):     conventions.CloudProviderAWS.Value.AsString(),
-				string(conventions.ServiceNamespaceKey):  "<environment>",
-				string(conventions.ServiceInstanceIDKey): "1",
-				string(conventions.ServiceVersionKey):    "<version-label>",
+				"cloud.provider":      "aws",
+				"service.namespace":   "<environment>",
+				"service.instance.id": "1",
+				"service.version":     "<version-label>",
 			},
 		},
 	}

@@ -39,11 +39,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/namespace"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/persistentvolume"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/persistentvolumeclaim"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicaset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicationcontroller"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/service"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/statefulset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
 type sharedInformer interface {
@@ -107,6 +109,13 @@ func (rw *resourceWatcher) initialize() error {
 	return nil
 }
 
+// shouldWatchResourceForMetadataOnly returns true if a resource should be watched even though
+// its metrics are disabled. This is the case when metadata exporters are configured or
+// entity events are enabled (entityLogConsumer is set).
+func (rw *resourceWatcher) shouldWatchResourceForMetadataOnly() bool {
+	return len(rw.config.MetadataExporters) > 0 || rw.entityLogConsumer != nil
+}
+
 func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 	factories := rw.getInformerFactories()
 
@@ -128,6 +137,20 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 		"Job":                     {gvk.Job},
 		"CronJob":                 {gvk.CronJob},
 		"HorizontalPodAutoscaler": {gvk.HorizontalPodAutoscaler},
+	}
+
+	// Only watch EndpointSlice if any service endpoint metrics are enabled
+	if rw.shouldWatchEndpointSlice() {
+		supportedKinds["EndpointSlice"] = []schema.GroupVersionKind{gvk.EndpointSlice}
+	}
+
+	// Resources with all metrics disabled by default.
+	// Only watch these if any of their metrics are explicitly enabled or if metadata/entity destinations are configured.
+	if rw.shouldWatchPersistentVolume() {
+		supportedKinds["PersistentVolume"] = []schema.GroupVersionKind{gvk.PersistentVolume}
+	}
+	if rw.shouldWatchPersistentVolumeClaim() {
+		supportedKinds["PersistentVolumeClaim"] = []schema.GroupVersionKind{gvk.PersistentVolumeClaim}
 	}
 
 	for kind, gvks := range supportedKinds {
@@ -158,6 +181,26 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 	}
 
 	return nil
+}
+
+// shouldWatchEndpointSlice returns true if the service endpoint count metric is enabled
+func (rw *resourceWatcher) shouldWatchEndpointSlice() bool {
+	return rw.config.Metrics.K8sServiceEndpointCount.Enabled
+}
+
+// shouldWatchPersistentVolume returns true if any PV metric is enabled or metadata/entity destinations are configured.
+func (rw *resourceWatcher) shouldWatchPersistentVolume() bool {
+	return rw.config.Metrics.K8sPersistentvolumeStatusPhase.Enabled ||
+		rw.config.Metrics.K8sPersistentvolumeStorageCapacity.Enabled ||
+		rw.shouldWatchResourceForMetadataOnly()
+}
+
+// shouldWatchPersistentVolumeClaim returns true if any PVC metric is enabled or metadata/entity destinations are configured.
+func (rw *resourceWatcher) shouldWatchPersistentVolumeClaim() bool {
+	return rw.config.Metrics.K8sPersistentvolumeclaimStatusPhase.Enabled ||
+		rw.config.Metrics.K8sPersistentvolumeclaimStorageCapacity.Enabled ||
+		rw.config.Metrics.K8sPersistentvolumeclaimStorageRequest.Enabled ||
+		rw.shouldWatchResourceForMetadataOnly()
 }
 
 // getInformerFactories creates the informer factories which are used to set up the informers for the
@@ -249,6 +292,21 @@ func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, fa
 	case gvk.Service:
 		for ns, factory := range factories {
 			rw.setupInformer(kind, ns, factory.Core().V1().Services().Informer())
+		}
+	case gvk.EndpointSlice:
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Discovery().V1().EndpointSlices().Informer())
+		}
+	case gvk.PersistentVolume:
+		// PersistentVolumes are cluster-scoped, so only use cluster-wide informer
+		if len(rw.config.Namespaces) == 0 && rw.config.Namespace == "" && len(factories) >= 1 {
+			if factory, ok := factories[metadata.ClusterWideInformerKey]; ok {
+				rw.setupInformer(kind, metadata.ClusterWideInformerKey, factory.Core().V1().PersistentVolumes().Informer())
+			}
+		}
+	case gvk.PersistentVolumeClaim:
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Core().V1().PersistentVolumeClaims().Informer())
 		}
 	case gvk.DaemonSet:
 		for ns, factory := range factories {
@@ -366,6 +424,8 @@ func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.R
 		return node.GetMetadata(o)
 	case *corev1.ReplicationController:
 		return replicationcontroller.GetMetadata(o)
+	case *corev1.Service:
+		return service.GetMetadata(o)
 	case *appsv1.Deployment:
 		return deployment.GetMetadata(o)
 	case *appsv1.ReplicaSet:
@@ -382,6 +442,10 @@ func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.R
 		return hpa.GetMetadata(o)
 	case *corev1.Namespace:
 		return namespace.GetMetadata(o)
+	case *corev1.PersistentVolume:
+		return persistentvolume.GetMetadata(o)
+	case *corev1.PersistentVolumeClaim:
+		return persistentvolumeclaim.GetMetadata(o)
 	}
 	return nil
 }
@@ -406,7 +470,7 @@ func (rw *resourceWatcher) setupMetadataExporters(
 ) error {
 	var out []metadataConsumer
 
-	metadataExportersSet := utils.StringSliceToMap(metadataExportersFromConfig)
+	metadataExportersSet := stringSliceToMap(metadataExportersFromConfig)
 	if err := validateMetadataExporters(metadataExportersSet, exporters); err != nil {
 		return fmt.Errorf("failed to configure metadata_exporters: %w", err)
 	}
@@ -478,4 +542,13 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[exper
 			}
 		}
 	}
+}
+
+// stringSliceToMap converts a slice of strings into a map with keys from the slice
+func stringSliceToMap(strings []string) map[string]bool {
+	ret := map[string]bool{}
+	for _, s := range strings {
+		ret[s] = true
+	}
+	return ret
 }

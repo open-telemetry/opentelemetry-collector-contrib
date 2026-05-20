@@ -1,6 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// github.com/DataDog/datadog-agent/comp/core/config is not suppported on AIX
+//go:build !aix
+
 package agentcomponents // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 
 import (
@@ -15,6 +18,7 @@ import (
 	pkgconfigsetup "github.com/DataDog/datadog-agent/pkg/config/setup"
 	pkgconfigutils "github.com/DataDog/datadog-agent/pkg/config/utils"
 	"github.com/DataDog/datadog-agent/pkg/config/viperconfig"
+	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/serializer"
 	zlib "github.com/DataDog/datadog-agent/pkg/util/compression/impl-zlib"
 	"go.opentelemetry.io/collector/component"
@@ -34,6 +38,8 @@ type SerializerWithForwarder interface {
 	Start() error
 	State() uint32
 	Stop()
+	// SendSeriesWithMetadata sends a metrics series to Datadog
+	SendSeriesWithMetadata(series metrics.Series) error
 }
 
 // forwarderWithLifecycle extends the defaultforwarder.Forwarder interface
@@ -71,6 +77,45 @@ func (ds *datadogSerializer) State() uint32 {
 // Stop delegates to the underlying forwarder's Stop method
 func (ds *datadogSerializer) Stop() {
 	ds.forwarder.Stop()
+}
+
+// seriesSource wraps a metrics.Series to implement the metrics.SerieSource interface
+type seriesSource struct {
+	series metrics.Series
+	index  int
+}
+
+// MoveNext moves to the next serie in the collection
+func (s *seriesSource) MoveNext() bool {
+	s.index++
+	return s.index < len(s.series)
+}
+
+// Current returns the current serie
+func (s *seriesSource) Current() *metrics.Serie {
+	if s.index < 0 || s.index >= len(s.series) {
+		return nil
+	}
+	return s.series[s.index]
+}
+
+// Count returns the total number of series
+func (s *seriesSource) Count() uint64 {
+	return uint64(len(s.series))
+}
+
+// SendSeriesWithMetadata sends a metrics series to Datadog
+// This method wraps the series in a SerieSource and uses the serializer's SendIterableSeries
+func (ds *datadogSerializer) SendSeriesWithMetadata(series metrics.Series) error {
+	if len(series) == 0 {
+		return nil
+	}
+	// Wrap the series in a SerieSource
+	source := &seriesSource{
+		series: series,
+		index:  -1, // Start before the first element
+	}
+	return ds.SendIterableSeries(source)
 }
 
 // NewLogComponent creates a new log component for collector that uses the provided telemetry settings.
@@ -193,6 +238,13 @@ func WithProxy(cfg *datadogconfig.Config) ConfigOption {
 	}
 }
 
+// WithTLSSetting propagates tls.insecure_skip_verify into the DD-agent forwarder's TLS config
+func WithTLSSetting(cfg *datadogconfig.Config) ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		setTLSSetting(cfg, pkgconfig)
+	}
+}
+
 // WithCustomConfig allows setting arbitrary configuration values
 func WithCustomConfig(key string, value any, source pkgconfigmodel.Source) ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
@@ -219,10 +271,17 @@ func setProxy(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
 	// this config during secrets resolution. It unmarshals empty yaml lists to type
 	// []any, which will then conflict with type []string and fail to merge.
 	var noProxy []any
-	for _, v := range strings.Split(proxyConfig.NoProxy, ",") {
+	for v := range strings.SplitSeq(proxyConfig.NoProxy, ",") {
 		noProxy = append(noProxy, v)
 	}
 	pkgconfig.Set("proxy.no_proxy", noProxy, pkgconfigmodel.SourceEnvVar)
+}
+
+func setTLSSetting(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
+	if cfg.TLS.InsecureSkipVerify {
+		pkgconfig.Set("skip_ssl_validation", cfg.TLS.InsecureSkipVerify, pkgconfigmodel.SourceFile)
+	}
+	pkgconfig.Set("apm_config.skip_ssl_validation", cfg.TLS.InsecureSkipVerify, pkgconfigmodel.SourceFile)
 }
 
 // newForwarderComponent creates a new forwarder that sends payloads to Datadog backend

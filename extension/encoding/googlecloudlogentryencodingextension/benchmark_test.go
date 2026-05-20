@@ -23,9 +23,8 @@ func BenchmarkTest(b *testing.B) {
 
 	ex := &ext{}
 
-	b.ResetTimer()
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := ex.UnmarshalLogs(dest.Bytes())
 		require.NoError(b, err)
 	}

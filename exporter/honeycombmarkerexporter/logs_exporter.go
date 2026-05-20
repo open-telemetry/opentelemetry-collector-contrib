@@ -34,7 +34,7 @@ const (
 
 type marker struct {
 	Marker
-	logBoolExpr *ottl.ConditionSequence[ottllog.TransformContext]
+	logBoolExpr *ottl.ConditionSequence[*ottllog.TransformContext]
 }
 
 type honeycombLogsExporter struct {
@@ -55,7 +55,7 @@ func newHoneycombLogsExporter(set exporter.Settings, config *Config) (*honeycomb
 	telemetrySettings := set.TelemetrySettings
 	markers := make([]marker, len(config.Markers))
 	for i, m := range config.Markers {
-		matchLogConditions, err := filterottl.NewBoolExprForLog(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, telemetrySettings)
+		matchLogConditions, err := filterottl.NewBoolExprForLogWithPathContextNames(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, telemetrySettings)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse log conditions: %w", err)
 		}
@@ -83,19 +83,22 @@ func (e *honeycombLogsExporter) exportMarkers(ctx context.Context, ld plog.Logs)
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				logRecord := logs.At(k)
-				tCtx := ottllog.NewTransformContext(logRecord, slogs.Scope(), rlogs.Resource(), slogs, rlogs)
+				tCtx := ottllog.NewTransformContextPtr(rlogs, slogs, logRecord)
 				for _, m := range e.markers {
 					match, err := m.logBoolExpr.Eval(ctx, tCtx)
 					if err != nil {
+						tCtx.Close()
 						return err
 					}
 					if match {
-						err := e.sendMarker(ctx, m, logRecord)
+						err = e.sendMarker(ctx, m, logRecord)
 						if err != nil {
+							tCtx.Close()
 							return err
 						}
 					}
 				}
+				tCtx.Close()
 			}
 		}
 	}
@@ -158,7 +161,7 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, m marker, logRec
 }
 
 func (e *honeycombLogsExporter) start(ctx context.Context, host component.Host) (err error) {
-	client, err := e.httpClientSettings.ToClient(ctx, host, e.set)
+	client, err := e.httpClientSettings.ToClient(ctx, host.GetExtensions(), e.set)
 	if err != nil {
 		return err
 	}

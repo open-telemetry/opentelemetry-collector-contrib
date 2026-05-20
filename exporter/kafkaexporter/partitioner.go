@@ -4,37 +4,51 @@
 package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 
 import (
-	"bytes"
-	"context"
+	"fmt"
 
-	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
-type metadataKeysPartitioner struct {
-	keys []string
+// RecordPartitionerExtension is implemented by extensions that supply a custom Kafka record
+// partitioner for use with the kafka exporter.
+type RecordPartitionerExtension interface {
+	component.Component
+
+	GetPartitioner() kgo.Partitioner
 }
 
-func (p metadataKeysPartitioner) GetKey(
-	ctx context.Context,
-	_ xexporterhelper.Request,
-) string {
-	var kb bytes.Buffer
-	meta := client.FromContext(ctx).Metadata
-
-	var afterFirst bool
-	for _, k := range p.keys {
-		if values := meta.Get(k); len(values) != 0 {
-			if afterFirst {
-				kb.WriteByte(0)
-			}
-			kb.WriteString(k)
-			afterFirst = true
-			for _, val := range values {
-				kb.WriteByte(0)
-				kb.WriteString(val)
-			}
+func buildPartitionerOpt(cfg RecordPartitionerConfig, host component.Host) (kgo.Opt, error) {
+	if cfg.StickyKey != nil {
+		switch cfg.StickyKey.Hasher {
+		case HasherSaramaCompat:
+			return kgo.RecordPartitioner(kgo.StickyKeyPartitioner(kafka.NewSaramaCompatHasher())), nil
+		case HasherMurmur2:
+			return kgo.RecordPartitioner(kgo.StickyKeyPartitioner(nil)), nil
+		default:
+			return nil, fmt.Errorf("unknown sticky key hasher type %q", cfg.StickyKey.Hasher)
 		}
 	}
-	return kb.String()
+	if cfg.RoundRobin != nil {
+		return kgo.RecordPartitioner(kgo.RoundRobinPartitioner()), nil
+	}
+	if cfg.LeastBackup != nil {
+		return kgo.RecordPartitioner(kgo.LeastBackupPartitioner()), nil
+	}
+	if cfg.Extension != nil {
+		ext, ok := host.GetExtensions()[*cfg.Extension]
+		if !ok {
+			return nil, fmt.Errorf("partitioner extension %q not found", *cfg.Extension)
+		}
+		partExt, ok := ext.(RecordPartitionerExtension)
+		if !ok {
+			return nil, fmt.Errorf("extension %q does not implement RecordPartitionerExtension", *cfg.Extension)
+		}
+		return kgo.RecordPartitioner(partExt.GetPartitioner()), nil
+	}
+	// in practice, this shouldn't happen.
+	// The config validation should catch the case where no partitioner is set.
+	return nil, errRecordPartitionerMissing
 }

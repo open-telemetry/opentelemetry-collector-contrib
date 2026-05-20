@@ -10,22 +10,40 @@ The following telemetry is emitted by this component.
 
 Number of metric data points dropped by the filter processor
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_processor_filter_logs.filtered
 
 Number of logs dropped by the filter processor
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol_processor_filter_profiles.filtered
+
+Number of profiles dropped by the filter processor
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_processor_filter_spans.filtered
 
 Number of spans dropped by the filter processor
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `processor.filter.defaultErrorModeIgnore` | beta | Changes the default error_mode of the filter processor from propagate to ignore | v0.150.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47232) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

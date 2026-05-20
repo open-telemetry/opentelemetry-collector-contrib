@@ -30,8 +30,13 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id:       component.NewIDWithName(metadata.Type, ""),
-			expected: &Config{},
+			id: component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				FlowControlConfig: FlowControlConfig{
+					TriggerAckBatchDuration: 10 * time.Second,
+					StreamAckDeadline:       60 * time.Second,
+				},
+			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "customname"),
@@ -42,6 +47,10 @@ func TestLoadConfig(t *testing.T) {
 					Timeout: 20 * time.Second,
 				},
 				Subscription: "projects/my-project/subscriptions/otlp-subscription",
+				FlowControlConfig: FlowControlConfig{
+					TriggerAckBatchDuration: 10 * time.Second,
+					StreamAckDeadline:       60 * time.Second,
+				},
 			},
 		},
 	}
@@ -70,4 +79,16 @@ func TestConfigValidation(t *testing.T) {
 	assert.Error(t, c.validate())
 	c.Subscription = "projects/my-project/subscriptions/my-subscription"
 	assert.NoError(t, c.validate())
+	// Test for project IDs with a single colon (not at start, not at end)
+	c.Subscription = "projects/s3ns:my-project/subscriptions/my-subscription"
+	assert.NoError(t, c.validate())
+	// Invalid: colon at the start
+	c.Subscription = "projects/:invalid/subscriptions/my-subscription"
+	assert.Error(t, c.validate())
+	// Invalid: colon at the end
+	c.Subscription = "projects/invalid:/subscriptions/my-subscription"
+	assert.Error(t, c.validate())
+	// Invalid: multiple colons
+	c.Subscription = "projects/s3ns:invalid:invalid/subscriptions/my-subscription"
+	assert.Error(t, c.validate())
 }

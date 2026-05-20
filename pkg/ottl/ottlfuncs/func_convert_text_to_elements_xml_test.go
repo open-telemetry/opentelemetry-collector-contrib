@@ -5,9 +5,11 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -89,10 +91,10 @@ func Test_ConvertTextToElementsXML(t *testing.T) {
 				ElementName: ottl.NewTestingOptional(tt.elementName),
 			}
 			exprFunc, err := factory.CreateFunction(ottl.FunctionContext{}, args)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			result, err := exprFunc(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})
 	}
@@ -120,8 +122,25 @@ func TestCreateConvertTextToElementsXMLFunc(t *testing.T) {
 		fCtx, &ConvertTextToElementsXMLArguments[any]{
 			Target: invalidXMLGetter(),
 		})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
+}
+
+func TestConvertTextToElementsXMLMaxDepth(t *testing.T) {
+	exprFunc := convertTextToElementsXML(
+		ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				const depth = maxXMLElementDepth + 2
+				return strings.Repeat("<a>", depth) + strings.Repeat("</a>", depth), nil
+			},
+		},
+		"/",
+		"value",
+	)
+
+	_, err := exprFunc(t.Context(), nil)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "exceeded maximum XML nesting depth")
 }

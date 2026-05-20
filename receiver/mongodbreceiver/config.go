@@ -27,12 +27,16 @@ type Config struct {
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// Deprecated - Transport option will be removed in v0.102.0
-	Hosts            []confignet.TCPAddrConfig `mapstructure:"hosts"`
-	Username         string                    `mapstructure:"username"`
-	Password         configopaque.String       `mapstructure:"password"`
-	ReplicaSet       string                    `mapstructure:"replica_set,omitempty"`
-	Timeout          time.Duration             `mapstructure:"timeout"`
-	DirectConnection bool                      `mapstructure:"direct_connection"`
+	Hosts                   []confignet.TCPAddrConfig `mapstructure:"hosts"`
+	Scheme                  string                    `mapstructure:"scheme"`
+	Username                string                    `mapstructure:"username"`
+	Password                configopaque.String       `mapstructure:"password"`
+	AuthMechanism           string                    `mapstructure:"auth_mechanism,omitempty"`
+	AuthSource              string                    `mapstructure:"auth_source,omitempty"`
+	AuthMechanismProperties map[string]string         `mapstructure:"auth_mechanism_properties,omitempty"`
+	ReplicaSet              string                    `mapstructure:"replica_set,omitempty"`
+	Timeout                 time.Duration             `mapstructure:"timeout"`
+	DirectConnection        bool                      `mapstructure:"direct_connection"`
 }
 
 func (c *Config) Validate() error {
@@ -45,6 +49,14 @@ func (c *Config) Validate() error {
 		if host.Endpoint == "" {
 			err = multierr.Append(err, errors.New("no endpoint specified for one of the hosts"))
 		}
+	}
+
+	if c.Scheme != "" && c.Scheme != "mongodb" && c.Scheme != "mongodb+srv" {
+		err = multierr.Append(err, fmt.Errorf("invalid scheme %q, must be \"mongodb\" or \"mongodb+srv\"", c.Scheme))
+	}
+
+	if c.Scheme == "mongodb+srv" && len(c.Hosts) != 1 {
+		err = multierr.Append(err, errors.New("mongodb+srv scheme requires exactly one host"))
 	}
 
 	if c.Username != "" && c.Password == "" {
@@ -72,17 +84,21 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 			clientOptions.SetConnectTimeout(c.Timeout)
 		}
 
-		if c.Username != "" && c.Password != "" {
-			clientOptions.SetAuth(options.Credential{
-				Username: c.Username,
-				Password: string(c.Password),
-			})
+		// Set up authentication if username/password are provided or if an auth mechanism is specified
+		// Some mechanisms (e.g., MONGODB-X509, MONGODB-AWS with IAM) don't require username/password
+		if c.Username != "" && c.Password != "" || c.AuthMechanism != "" {
+			credential := c.buildCredential()
+			clientOptions.SetAuth(credential)
 		}
 
 		return clientOptions
 	}
 	clientOptions := options.Client()
-	connString := "mongodb://" + strings.Join(c.hostlist(), ",")
+	scheme := c.Scheme
+	if scheme == "" {
+		scheme = "mongodb"
+	}
+	connString := scheme + "://" + strings.Join(c.hostlist(), ",")
 	clientOptions.ApplyURI(connString)
 
 	if c.Timeout > 0 {
@@ -102,14 +118,37 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 		clientOptions.SetDirect(c.DirectConnection)
 	}
 
-	if c.Username != "" && c.Password != "" {
-		clientOptions.SetAuth(options.Credential{
-			Username: c.Username,
-			Password: string(c.Password),
-		})
+	// Set up authentication if username/password are provided or if an auth mechanism is specified
+	// Some mechanisms (e.g., MONGODB-X509, MONGODB-AWS with IAM) don't require username/password
+	if c.Username != "" && c.Password != "" || c.AuthMechanism != "" {
+		credential := c.buildCredential()
+		clientOptions.SetAuth(credential)
 	}
 
 	return clientOptions
+}
+
+func (c *Config) buildCredential() options.Credential {
+	credential := options.Credential{}
+	if c.Username != "" {
+		credential.Username = c.Username
+	}
+	if c.Password != "" {
+		credential.Password = string(c.Password)
+		// PasswordSet is required for GSSAPI (Kerberos) when a password is explicitly provided.
+		// For other mechanisms, this field is ignored by the driver.
+		credential.PasswordSet = true
+	}
+	if c.AuthMechanism != "" {
+		credential.AuthMechanism = c.AuthMechanism
+	}
+	if c.AuthSource != "" {
+		credential.AuthSource = c.AuthSource
+	}
+	if len(c.AuthMechanismProperties) > 0 {
+		credential.AuthMechanismProperties = c.AuthMechanismProperties
+	}
+	return credential
 }
 
 func (c *Config) hostlist() []string {

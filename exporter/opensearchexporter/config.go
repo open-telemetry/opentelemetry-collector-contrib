@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -32,7 +33,7 @@ type Config struct {
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	MappingsSettings          `mapstructure:"mapping"`
-	QueueConfig               exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueConfig               configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// The Observability indices would follow the recommended for immutable data stream ingestion pattern using
 	// the data_stream concepts. See https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
@@ -57,18 +58,20 @@ type Config struct {
 	// BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here.
 	// If not specified, the default value `create` will be used.
 	BulkAction string `mapstructure:"bulk_action"`
+
+	// Pipeline is the optional ID of an ingest pipeline to apply when indexing documents.
+	// https://opensearch.org/docs/latest/ingest-pipelines/
+	Pipeline string `mapstructure:"pipeline"`
 }
 
 var (
-	errConfigNoEndpoint              = errors.New("endpoint must be specified")
-	errDatasetNoValue                = errors.New("dataset must be specified")
-	errNamespaceNoValue              = errors.New("namespace must be specified")
-	errBulkActionInvalid             = errors.New("bulk_action can either be `create` or `index`")
-	errMappingModeInvalid            = errors.New("mapping.mode is invalid")
-	errLogsIndexInvalidPlaceholder   = errors.New("logs_index can only have one attribute or context key placeholder")
-	errLogsIndexTimeFormatInvalid    = errors.New("logs_index_time_format contains unsupported or invalid tokens")
-	errTracesIndexInvalidPlaceholder = errors.New("traces_index can only have one attribute or context key placeholder")
-	errTracesIndexTimeFormatInvalid  = errors.New("traces_index_time_format contains unsupported or invalid tokens")
+	errConfigNoEndpoint             = errors.New("endpoint must be specified")
+	errDatasetNoValue               = errors.New("dataset must be specified")
+	errNamespaceNoValue             = errors.New("namespace must be specified")
+	errBulkActionInvalid            = errors.New("bulk_action can either be `create` or `index`")
+	errMappingModeInvalid           = errors.New("mapping.mode is invalid")
+	errLogsIndexTimeFormatInvalid   = errors.New("logs_index_time_format contains unsupported or invalid tokens")
+	errTracesIndexTimeFormatInvalid = errors.New("traces_index_time_format contains unsupported or invalid tokens")
 )
 
 type MappingsSettings struct {
@@ -85,6 +88,11 @@ type MappingsSettings struct {
 	//
 	//   flatten_attributes: uses the ECS mapping but flattens all resource and
 	//   log attributes in the record to the top-level.
+	//
+	//   bodymap: supports only logs and uses the "body" of a log record as the exact content
+	//   of the OpenSearch document, without any transformation.
+	//   This mapping mode is intended for use cases where the client wishes to have complete control over the
+	//   OpenSearch document structure.
 	Mode string `mapstructure:"mode"`
 
 	// Additional field mappings.
@@ -112,6 +120,7 @@ const (
 	MappingSS4O MappingMode = iota
 	MappingECS
 	MappingFlattenAttributes
+	MappingBodyMap
 )
 
 func (m MappingMode) String() string {
@@ -122,6 +131,8 @@ func (m MappingMode) String() string {
 		return "ecs"
 	case MappingFlattenAttributes:
 		return "flatten_attributes"
+	case MappingBodyMap:
+		return "bodymap"
 	default:
 		return "ss4o"
 	}
@@ -133,6 +144,7 @@ var mappingModes = func() map[string]MappingMode {
 		MappingECS,
 		MappingSS4O,
 		MappingFlattenAttributes,
+		MappingBodyMap,
 	} {
 		table[strings.ToLower(m.String())] = m
 	}
@@ -154,26 +166,10 @@ func (cfg *Config) Validate() error {
 		multiErr = append(multiErr, errNamespaceNoValue)
 	}
 
-	// Validate logs index configuration only contains one placeholder
-	if cfg.LogsIndex != "" {
-		placeholderCount := strings.Count(cfg.LogsIndex, "%{")
-		if placeholderCount > 1 {
-			multiErr = append(multiErr, errLogsIndexInvalidPlaceholder)
-		}
-	}
-
 	// Validate LogsIndexTimeFormat if set
 	if cfg.LogsIndexTimeFormat != "" {
 		if err := validateTimeFormat(cfg.LogsIndexTimeFormat); err != nil {
 			multiErr = append(multiErr, errLogsIndexTimeFormatInvalid)
-		}
-	}
-
-	// Validate traces index configuration only contains one placeholder
-	if cfg.TracesIndex != "" {
-		placeholderCount := strings.Count(cfg.TracesIndex, "%{")
-		if placeholderCount > 1 {
-			multiErr = append(multiErr, errTracesIndexInvalidPlaceholder)
 		}
 	}
 

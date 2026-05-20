@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -32,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
@@ -77,11 +77,11 @@ func createMetricsData(resourcesNum, dataPointsNum int) pmetric.Metrics {
 	doubleVal := 1234.5678
 	metrics := pmetric.NewMetrics()
 
-	for i := 0; i < resourcesNum; i++ {
+	for i := range resourcesNum {
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().PutStr("k0", fmt.Sprintf("v%d", i))
 		rm.Resource().Attributes().PutStr("k1", "v1")
-		for j := 0; j < dataPointsNum; j++ {
+		for j := range dataPointsNum {
 			count := i*dataPointsNum + j
 			tsUnix := time.Unix(int64(count), int64(count)*time.Millisecond.Nanoseconds())
 			ilm := rm.ScopeMetrics().AppendEmpty()
@@ -104,11 +104,11 @@ func createTraceData(resourcesNum, spansNum int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 
-	for i := 0; i < resourcesNum; i++ {
+	for i := range resourcesNum {
 		rs.Resource().Attributes().PutStr("resource", fmt.Sprintf("R%d", i))
 		ils := rs.ScopeSpans().AppendEmpty()
 		ils.Spans().EnsureCapacity(spansNum)
-		for j := 0; j < spansNum; j++ {
+		for j := range spansNum {
 			span := ils.Spans().AppendEmpty()
 			span.SetName("root")
 			count := i*spansNum + j
@@ -155,10 +155,10 @@ func repeatableString(length int) string {
 func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords []int) plog.Logs {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().EnsureCapacity(numResources)
-	for i := 0; i < numResources; i++ {
+	for i := range numResources {
 		rl := logs.ResourceLogs().AppendEmpty()
 		rl.ScopeLogs().EnsureCapacity(len(libraries))
-		for j := 0; j < len(libraries); j++ {
+		for j := range libraries {
 			sl := rl.ScopeLogs().AppendEmpty()
 			sl.Scope().SetName(libraries[j])
 			sl.LogRecords().EnsureCapacity(numRecords[j])
@@ -170,7 +170,7 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 				logRecord.Attributes().PutStr(splunk.DefaultSourceLabel, "myapp")
 				logRecord.Attributes().PutStr(splunk.DefaultSourceTypeLabel, "myapp-type")
 				logRecord.Attributes().PutStr(splunk.DefaultIndexLabel, "myindex")
-				logRecord.Attributes().PutStr(string(conventions.HostNameKey), "myhost")
+				logRecord.Attributes().PutStr("host.name", "myhost")
 				logRecord.Attributes().PutStr("custom", "custom")
 				logRecord.SetTimestamp(ts)
 			}
@@ -954,6 +954,24 @@ func TestReceiveLogEvent(t *testing.T) {
 	compareWithTestData(t, actual[0].body, "testdata/hec_log_event.json")
 }
 
+func TestLogEventTimestampMicrosecondPrecision(t *testing.T) {
+	// Verify that nanosecond timestamp precision is turned to microseconds in the HEC payload
+	logs := plog.NewLogs()
+	logRecord := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	logRecord.Body().SetStr("test log")
+	logRecord.SetTimestamp(pcommon.Timestamp(1574092046011123456))
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.DisableCompression = true
+
+	actual, err := runLogExport(t, cfg, logs, 1)
+	assert.NoError(t, err)
+	assert.Len(t, actual, 1)
+
+	// time field in raw JSON should preserve microsecond precision
+	assert.Contains(t, string(actual[0].body), "1574092046.011123")
+}
+
 func TestReceiveMetricEvent(t *testing.T) {
 	metrics := createMetricsData(1, 1)
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
@@ -1294,7 +1312,7 @@ func TestErrorReceived(t *testing.T) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.DisableCompression = true
@@ -1346,7 +1364,7 @@ func TestErrorReceivedForbidden(t *testing.T) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.DisableCompression = true
@@ -1400,7 +1418,7 @@ func TestInvalidURL(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.Endpoint = "ftp://example.com:134"
@@ -1439,7 +1457,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.DisableCompression = true
@@ -1480,7 +1498,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.DisableCompression = true
@@ -1515,7 +1533,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
 	cfg.Enabled = false
 	cfg.DisableCompression = true
@@ -1696,7 +1714,6 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 
 	err := c.pushLogData(t.Context(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.Logs{}, err)
 
 	// Only the record that was not successfully sent should be returned
 	var logsErr consumererror.Logs
@@ -1821,9 +1838,8 @@ func benchPushLogData(b *testing.B, numResources, numRecords int, bufSize uint, 
 	logs := createLogData(numResources, 1, numRecords)
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := exp.ConsumeLogs(b.Context(), logs)
 		require.NoError(b, err)
 	}
@@ -1963,9 +1979,8 @@ func benchPushMetricData(b *testing.B, numResources, numRecords int, bufSize uin
 	metrics := createMetricsData(numResources, numRecords)
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := exp.ConsumeMetrics(b.Context(), metrics)
 		require.NoError(b, err)
 	}
@@ -1984,9 +1999,8 @@ func BenchmarkConsumeLogsRejected(b *testing.B) {
 	logs := createLogData(10, 1, 100)
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := exp.ConsumeLogs(b.Context(), logs)
 		require.Error(b, err)
 	}
@@ -2147,6 +2161,108 @@ func TestPushLogsRetryableFailureMultipleResources(t *testing.T) {
 	require.ErrorContains(t, err, "503")
 	require.ErrorAs(t, err, &expectedErr)
 	assert.Equal(t, logs, expectedErr.Data())
+}
+
+// runBatchedLogExport is a variant of runLogExport that enables the
+// exporterhelper batcher and collects all requests received until n have
+// arrived or a 10-second timeout.  Shutdown is used to force-flush pending
+// batcher items before waiting.
+func runBatchedLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatchesNum int) []receivedRequest {
+	t.Helper()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Token = "1234-1234"
+
+	// Buffered channel so the async handler goroutines never block.
+	rr := make(chan receivedRequest, 64)
+	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
+	s := &http.Server{
+		Handler:           &capture,
+		ReadHeaderTimeout: 20 * time.Second,
+	}
+	go func() {
+		if e := s.Serve(listener); e != http.ErrServerClosed {
+			assert.NoError(t, e)
+		}
+	}()
+	defer s.Close()
+
+	params := exportertest.NewNopSettings(metadata.Type)
+	exp, err := NewFactory().CreateLogs(t.Context(), params, cfg)
+	require.NoError(t, err)
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+
+	require.NoError(t, exp.ConsumeLogs(t.Context(), ld))
+
+	// Shutdown flushes all pending batcher items before returning.
+	require.NoError(t, exp.Shutdown(t.Context()))
+
+	// Collect exactly expectedBatchesNum requests, with a generous timeout to
+	// account for the async handler goroutine scheduling.
+	var requests []receivedRequest
+	deadline := time.After(10 * time.Second)
+	for len(requests) < expectedBatchesNum {
+		select {
+		case req := <-rr:
+			requests = append(requests, req)
+		case <-deadline:
+			require.Len(t, requests, expectedBatchesNum, "timed out waiting for HTTP requests")
+			return requests
+		}
+	}
+	return requests
+}
+
+// TestBatcherPartitionsByHecToken verifies that when the exporterhelper batcher
+// is enabled, log resources with different HEC tokens are sent as separate HTTP
+// requests (different Authorization headers), while resources sharing the same
+// token are batched into a single request.
+func TestBatcherPartitionsByHecToken(t *testing.T) {
+	makeCfg := func() *Config {
+		cfg := createDefaultConfig().(*Config)
+		cfg.QueueSettings.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
+			FlushTimeout: 200 * time.Millisecond,
+			Sizer:        exporterhelper.RequestSizerTypeItems,
+			MinSize:      2,
+		})
+		return cfg
+	}
+
+	t.Run("different tokens produce separate HTTP requests", func(t *testing.T) {
+		ld := plog.NewLogs()
+
+		rl0 := ld.ResourceLogs().AppendEmpty()
+		rl0.Resource().Attributes().PutStr(splunk.HecTokenLabel, "token-A")
+		rl0.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log from A")
+
+		rl1 := ld.ResourceLogs().AppendEmpty()
+		rl1.Resource().Attributes().PutStr(splunk.HecTokenLabel, "token-B")
+		rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log from B")
+
+		requests := runBatchedLogExport(t, makeCfg(), ld, 2)
+
+		authHeaders := []string{
+			requests[0].headers.Get("Authorization"),
+			requests[1].headers.Get("Authorization"),
+		}
+		sort.Strings(authHeaders)
+		assert.Equal(t, []string{"Splunk token-A", "Splunk token-B"}, authHeaders)
+	})
+
+	t.Run("same token resources are batched into one request", func(t *testing.T) {
+		ld := plog.NewLogs()
+		for range 2 {
+			rl := ld.ResourceLogs().AppendEmpty()
+			rl.Resource().Attributes().PutStr(splunk.HecTokenLabel, "token-same")
+			rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log")
+		}
+
+		requests := runBatchedLogExport(t, makeCfg(), ld, 1)
+		assert.Equal(t, "Splunk token-same", requests[0].headers.Get("Authorization"))
+	})
 }
 
 // validateCompressedContains validates that GZipped `got` contains `expected` strings

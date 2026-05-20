@@ -4,29 +4,29 @@
 package elasticsearchexporter
 
 import (
-	"errors"
+	"compress/gzip"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync/atomic"
 	"testing"
-	"time"
 
+	"github.com/elastic/elastic-transport-go/v8/elastictransport"
 	"github.com/elastic/go-docappender/v2"
-	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configcompression"
-	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
@@ -63,562 +63,7 @@ const successResp = `{
   ]
 }`
 
-func TestAsyncBulkIndexer_flushOnClose(t *testing.T) {
-	cfg := Config{NumWorkers: 1, Flush: FlushSettings{Interval: time.Hour, Bytes: 2 << 30}}
-	client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
-		RoundTripFunc: func(*http.Request) (*http.Response, error) {
-			return &http.Response{
-				Header: http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-				Body:   io.NopCloser(strings.NewReader(successResp)),
-			}, nil
-		},
-	}})
-	require.NoError(t, err)
-
-	runBulkIndexerOnce(t, &cfg, client)
-}
-
-func TestAsyncBulkIndexer_flush(t *testing.T) {
-	tests := []struct {
-		name   string
-		config Config
-	}{
-		{
-			name:   "flush.bytes",
-			config: Config{NumWorkers: 1, Flush: FlushSettings{Interval: time.Hour, Bytes: 1}},
-		},
-		{
-			name:   "flush.interval",
-			config: Config{NumWorkers: 1, Flush: FlushSettings{Interval: 50 * time.Millisecond, Bytes: 2 << 30}},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
-				RoundTripFunc: func(*http.Request) (*http.Response, error) {
-					return &http.Response{
-						Header: http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-						Body:   io.NopCloser(strings.NewReader(successResp)),
-					}, nil
-				},
-			}})
-			require.NoError(t, err)
-
-			ct := componenttest.NewTelemetry()
-			tb, err := metadata.NewTelemetryBuilder(
-				metadatatest.NewSettings(ct).TelemetrySettings,
-			)
-			require.NoError(t, err)
-			bulkIndexer, err := newAsyncBulkIndexer(client, &tt.config, false, tb, zap.NewNop())
-			require.NoError(t, err)
-
-			session := bulkIndexer.StartSession(t.Context())
-			assert.NoError(t, session.Add(t.Context(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
-			// should flush
-			time.Sleep(100 * time.Millisecond)
-			assert.NoError(t, session.Flush(t.Context()))
-			session.End()
-			assert.NoError(t, bulkIndexer.Close(t.Context()))
-			// Assert internal telemetry metrics
-			metadatatest.AssertEqualElasticsearchBulkRequestsCount(t, ct, []metricdata.DataPoint[int64]{
-				{
-					Value: 1,
-					Attributes: attribute.NewSet(
-						attribute.String("outcome", "success"),
-						semconv.HTTPResponseStatusCode(http.StatusOK),
-					),
-				},
-			}, metricdatatest.IgnoreTimestamp())
-			metadatatest.AssertEqualElasticsearchDocsReceived(t, ct, []metricdata.DataPoint[int64]{
-				{Value: 1},
-			}, metricdatatest.IgnoreTimestamp())
-			metadatatest.AssertEqualElasticsearchDocsProcessed(t, ct, []metricdata.DataPoint[int64]{
-				{
-					Value: 1,
-					Attributes: attribute.NewSet(
-						attribute.String("outcome", "success"),
-					),
-				},
-			}, metricdatatest.IgnoreTimestamp())
-			metadatatest.AssertEqualElasticsearchFlushedUncompressedBytes(t, ct, []metricdata.DataPoint[int64]{
-				{Value: 43}, // hard-coding the flush bytes since the input is fixed
-			}, metricdatatest.IgnoreTimestamp())
-			metadatatest.AssertEqualElasticsearchFlushedBytes(t, ct, []metricdata.DataPoint[int64]{
-				{Value: 43}, // hard-coding the flush bytes since the input is fixed
-			}, metricdatatest.IgnoreTimestamp())
-			metadatatest.AssertEqualElasticsearchBulkRequestsCount(t, ct, []metricdata.DataPoint[int64]{
-				{
-					Attributes: attribute.NewSet(
-						attribute.String("outcome", "success"),
-						semconv.HTTPResponseStatusCode(http.StatusOK),
-					),
-				},
-			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-		})
-	}
-}
-
-func TestAsyncBulkIndexer_flush_error(t *testing.T) {
-	tests := []struct {
-		name                string
-		roundTripFunc       func(*http.Request) (*http.Response, error)
-		logFailedDocsInput  bool
-		retrySettings       RetrySettings
-		wantMessage         string
-		wantFields          []zap.Field
-		wantESBulkReqs      *metricdata.DataPoint[int64]
-		wantESDocsProcessed *metricdata.DataPoint[int64]
-		wantESDocsRetried   *metricdata.DataPoint[int64]
-		wantESLatency       *metricdata.HistogramDataPoint[float64]
-	}{
-		{
-			name: "500",
-			roundTripFunc: func(*http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusInternalServerError,
-					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-					Body:       io.NopCloser(strings.NewReader("error")),
-				}, nil
-			},
-			wantMessage: "bulk indexer flush error",
-			wantESBulkReqs: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "failed_server"),
-					semconv.HTTPResponseStatusCode(500),
-				),
-			},
-			wantESDocsProcessed: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "failed_server"),
-					semconv.HTTPResponseStatusCode(500),
-				),
-			},
-			wantESLatency: &metricdata.HistogramDataPoint[float64]{
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "failed_server"),
-					semconv.HTTPResponseStatusCode(500),
-				),
-			},
-		},
-		{
-			name: "429",
-			roundTripFunc: func(*http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusTooManyRequests,
-					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-					Body:       io.NopCloser(strings.NewReader("error")),
-				}, nil
-			},
-			wantMessage: "bulk indexer flush error",
-			wantESBulkReqs: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "too_many"),
-					semconv.HTTPResponseStatusCode(429),
-				),
-			},
-			wantESDocsProcessed: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "too_many"),
-					semconv.HTTPResponseStatusCode(429),
-				),
-			},
-			wantESLatency: &metricdata.HistogramDataPoint[float64]{
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "too_many"),
-					semconv.HTTPResponseStatusCode(429),
-				),
-			},
-		},
-		{
-			name: "429/with_retry",
-			roundTripFunc: func(*http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-					Body: io.NopCloser(strings.NewReader(
-						`{"items":[{"create":{"_index":"test","status":429}}]}`)),
-				}, nil
-			},
-			retrySettings: RetrySettings{Enabled: true, MaxRetries: 5, RetryOnStatus: []int{429}},
-			wantESBulkReqs: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "success"),
-					semconv.HTTPResponseStatusCode(http.StatusOK),
-				),
-			},
-			wantESDocsRetried: &metricdata.DataPoint[int64]{Value: 1},
-			wantESLatency: &metricdata.HistogramDataPoint[float64]{
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "success"),
-					semconv.HTTPResponseStatusCode(http.StatusOK),
-				),
-			},
-		},
-		{
-			name: "500/doc_level",
-			roundTripFunc: func(*http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-					Body: io.NopCloser(strings.NewReader(
-						`{"items":[{"create":{"_index":"test","status":500,"error":{"type":"internal_server_error","reason":""}}}]}`)),
-				}, nil
-			},
-			wantESBulkReqs: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "success"),
-					semconv.HTTPResponseStatusCode(http.StatusOK),
-				),
-			},
-			wantESDocsProcessed: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "failed_server"),
-					attribute.String("error.type", "internal_server_error"),
-				),
-			},
-			wantESLatency: &metricdata.HistogramDataPoint[float64]{
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "success"),
-					semconv.HTTPResponseStatusCode(http.StatusOK),
-				),
-			},
-		},
-		{
-			name: "transport error",
-			roundTripFunc: func(*http.Request) (*http.Response, error) {
-				return nil, errors.New("transport error")
-			},
-			wantMessage: "bulk indexer flush error",
-			wantESBulkReqs: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "internal_server_error"),
-					semconv.HTTPResponseStatusCode(http.StatusInternalServerError),
-				),
-			},
-			wantESDocsProcessed: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "internal_server_error"),
-					semconv.HTTPResponseStatusCode(http.StatusInternalServerError),
-				),
-			},
-			wantESLatency: &metricdata.HistogramDataPoint[float64]{
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "internal_server_error"),
-					semconv.HTTPResponseStatusCode(http.StatusInternalServerError),
-				),
-			},
-		},
-		{
-			name: "known version conflict error",
-			roundTripFunc: func(*http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-					Body: io.NopCloser(strings.NewReader(
-						`{"items":[{"create":{"_index":".ds-metrics-generic.otel-default","status":400,"error":{"type":"version_conflict_engine_exception","reason":""}}}]}`)),
-				}, nil
-			},
-			wantMessage: "failed to index document",
-			wantFields:  []zap.Field{zap.String("hint", "check the \"Known issues\" section of Elasticsearch Exporter docs")},
-			wantESBulkReqs: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "success"),
-					semconv.HTTPResponseStatusCode(http.StatusOK),
-				),
-			},
-			wantESDocsProcessed: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "failed_client"),
-					attribute.String("error.type", "version_conflict_engine_exception"),
-				),
-			},
-			wantESLatency: &metricdata.HistogramDataPoint[float64]{
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "success"),
-					semconv.HTTPResponseStatusCode(http.StatusOK),
-				),
-			},
-		},
-		{
-			name: "known version conflict error with logFailedDocsInput",
-			roundTripFunc: func(*http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-					Body: io.NopCloser(strings.NewReader(
-						`{"items":[{"create":{"_index":".ds-metrics-generic.otel-default","status":400,"error":{"type":"version_conflict_engine_exception","reason":""}}}]}`)),
-				}, nil
-			},
-			logFailedDocsInput: true,
-			wantMessage:        "failed to index document; input may contain sensitive data",
-			wantFields: []zap.Field{
-				zap.String("hint", "check the \"Known issues\" section of Elasticsearch Exporter docs"),
-				zap.String("input", `{"create":{"_index":"foo"}}
-{"foo": "bar"}
-`),
-			},
-			wantESBulkReqs: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "success"),
-					semconv.HTTPResponseStatusCode(http.StatusOK),
-				),
-			},
-			wantESDocsProcessed: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "failed_client"),
-					attribute.String("error.type", "version_conflict_engine_exception"),
-				),
-			},
-			wantESLatency: &metricdata.HistogramDataPoint[float64]{
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "success"),
-					semconv.HTTPResponseStatusCode(http.StatusOK),
-				),
-			},
-		},
-		{
-			name: "skip profiling version conflict logging",
-			roundTripFunc: func(*http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-					Body: io.NopCloser(strings.NewReader(
-						`{"items":[{"create":{"_index":".profiling-stackframes-2024.06.01","status":400,"error":{"type":"version_conflict_engine_exception","reason":"document already exists"}}}]}`)),
-				}, nil
-			},
-			wantMessage: "",
-			wantESBulkReqs: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "success"),
-					semconv.HTTPResponseStatusCode(200),
-				),
-			},
-			wantESDocsProcessed: &metricdata.DataPoint[int64]{
-				Value: 1,
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "failed_client"),
-					attribute.String("error.type", "version_conflict_engine_exception"),
-				),
-			},
-			wantESLatency: &metricdata.HistogramDataPoint[float64]{
-				Attributes: attribute.NewSet(
-					attribute.String("outcome", "success"),
-					semconv.HTTPResponseStatusCode(200),
-				),
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			cfg := Config{
-				NumWorkers:   1,
-				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1},
-				Retry:        tt.retrySettings,
-				MetadataKeys: []string{"x-test"},
-			}
-			if tt.logFailedDocsInput {
-				cfg.LogFailedDocsInput = true
-			}
-			esClient, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
-				RoundTripFunc: tt.roundTripFunc,
-			}})
-			require.NoError(t, err)
-			core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
-
-			ct := componenttest.NewTelemetry()
-			tb, err := metadata.NewTelemetryBuilder(
-				metadatatest.NewSettings(ct).TelemetrySettings,
-			)
-			require.NoError(t, err)
-			bulkIndexer, err := newAsyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core))
-			require.NoError(t, err)
-			defer bulkIndexer.Close(t.Context())
-
-			// Client metadata are not added to the telemetry for async bulk indexer
-			info := client.Info{Metadata: client.NewMetadata(map[string][]string{"x-test": {"test"}})}
-			ctx := client.NewContext(t.Context(), info)
-			session := bulkIndexer.StartSession(ctx)
-			assert.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
-			// should flush
-			time.Sleep(100 * time.Millisecond)
-			if tt.wantMessage != "" {
-				messages := observed.FilterMessage(tt.wantMessage)
-				require.Equal(t, 1, messages.Len(), "message not found; observed.All()=%v", observed.All())
-				for _, wantField := range tt.wantFields {
-					assert.Equal(t, 1, messages.FilterField(wantField).Len(), "message with field not found; observed.All()=%v", observed.All())
-				}
-			}
-			assert.NoError(t, session.Flush(t.Context()))
-			session.End()
-			// Assert internal telemetry metrics
-			if tt.wantESBulkReqs != nil {
-				metadatatest.AssertEqualElasticsearchBulkRequestsCount(
-					t, ct,
-					[]metricdata.DataPoint[int64]{*tt.wantESBulkReqs},
-					metricdatatest.IgnoreTimestamp(),
-				)
-			}
-			if tt.wantESDocsProcessed != nil {
-				metadatatest.AssertEqualElasticsearchDocsProcessed(
-					t, ct,
-					[]metricdata.DataPoint[int64]{*tt.wantESDocsProcessed},
-					metricdatatest.IgnoreTimestamp(),
-				)
-			}
-			if tt.wantESDocsRetried != nil {
-				metadatatest.AssertEqualElasticsearchDocsRetried(
-					t, ct,
-					[]metricdata.DataPoint[int64]{*tt.wantESDocsRetried},
-					metricdatatest.IgnoreTimestamp(),
-				)
-			}
-			if tt.wantESLatency != nil {
-				metadatatest.AssertEqualElasticsearchBulkRequestsLatency(
-					t, ct,
-					[]metricdata.HistogramDataPoint[float64]{*tt.wantESLatency},
-					metricdatatest.IgnoreTimestamp(),
-					metricdatatest.IgnoreValue(),
-				)
-			}
-		})
-	}
-}
-
-func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
-	tests := []struct {
-		name   string
-		config Config
-	}{
-		{
-			name: "compression none",
-			config: Config{
-				NumWorkers:   1,
-				ClientConfig: confighttp.ClientConfig{Compression: "none"},
-				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
-			},
-		},
-		{
-			name: "compression gzip",
-			config: Config{
-				NumWorkers:   1,
-				ClientConfig: confighttp.ClientConfig{Compression: "gzip"},
-				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
-			},
-		},
-		{
-			name: "compression gzip - level 5",
-			config: Config{
-				NumWorkers:   1,
-				ClientConfig: confighttp.ClientConfig{Compression: "gzip", CompressionParams: configcompression.CompressionParams{Level: 5}},
-				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			loggerCore, logObserver := observer.New(zap.DebugLevel)
-
-			esLogger := clientLogger{
-				Logger:          zap.New(loggerCore),
-				logRequestBody:  true,
-				logResponseBody: true,
-			}
-
-			client, err := elasticsearch.NewClient(elasticsearch.Config{
-				Transport: &mockTransport{
-					RoundTripFunc: func(*http.Request) (*http.Response, error) {
-						return &http.Response{
-							Header: http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-							Body:   io.NopCloser(strings.NewReader(successResp)),
-						}, nil
-					},
-				},
-				Logger: &esLogger,
-			})
-			require.NoError(t, err)
-
-			runBulkIndexerOnce(t, &tt.config, client)
-
-			records := logObserver.AllUntimed()
-			require.Len(t, records, 1)
-
-			assert.Equal(t, "/_bulk", records[0].ContextMap()["path"])
-			assert.Equal(t, "{\"create\":{\"_index\":\"foo\"}}\n{\"foo\": \"bar\"}\n", records[0].ContextMap()["request_body"])
-			assert.JSONEq(t, successResp, records[0].ContextMap()["response_body"].(string))
-		})
-	}
-}
-
-func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Client) *asyncBulkIndexer {
-	ct := componenttest.NewTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(
-		metadatatest.NewSettings(ct).TelemetrySettings,
-	)
-	require.NoError(t, err)
-	bulkIndexer, err := newAsyncBulkIndexer(client, config, false, tb, zap.NewNop())
-	require.NoError(t, err)
-
-	session := bulkIndexer.StartSession(t.Context())
-	assert.NoError(t, session.Add(t.Context(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
-	assert.NoError(t, session.Flush(t.Context()))
-	session.End()
-	assert.NoError(t, bulkIndexer.Close(t.Context()))
-	// Assert internal telemetry metrics
-	metadatatest.AssertEqualElasticsearchBulkRequestsCount(t, ct, []metricdata.DataPoint[int64]{
-		{
-			Value: 1,
-			Attributes: attribute.NewSet(
-				attribute.String("outcome", "success"),
-				semconv.HTTPResponseStatusCode(http.StatusOK),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualElasticsearchDocsReceived(t, ct, []metricdata.DataPoint[int64]{
-		{Value: 1},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualElasticsearchDocsProcessed(t, ct, []metricdata.DataPoint[int64]{
-		{
-			Value: 1,
-			Attributes: attribute.NewSet(
-				attribute.String("outcome", "success"),
-			),
-		},
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualElasticsearchFlushedUncompressedBytes(t, ct, []metricdata.DataPoint[int64]{
-		{Value: 43}, // hard-coding the flush bytes since the input is fixed
-	}, metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualElasticsearchFlushedBytes(
-		t, ct,
-		[]metricdata.DataPoint[int64]{{}},
-		metricdatatest.IgnoreTimestamp(),
-		metricdatatest.IgnoreValue(), // compression can change in test, ignore value
-	)
-
-	return bulkIndexer
-}
-
-func TestSyncBulkIndexer_flushBytes(t *testing.T) {
+func TestSyncBulkIndexer(t *testing.T) {
 	tests := []struct {
 		name         string
 		responseBody string
@@ -641,22 +86,26 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var reqCnt atomic.Int64
 			cfg := Config{
-				NumWorkers:   1,
-				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1},
+				QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{
+					NumConsumers: 1,
+				}),
 				MetadataKeys: []string{"x-test"},
 			}
-			esClient, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
-				RoundTripFunc: func(r *http.Request) (*http.Response, error) {
-					if r.URL.Path == "/_bulk" {
-						reqCnt.Add(1)
-					}
-					return &http.Response{
-						Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-						Body:       io.NopCloser(strings.NewReader(tt.responseBody)),
-						StatusCode: http.StatusOK,
-					}, nil
+			esClient, err := elastictransport.New(elastictransport.Config{
+				URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+				Transport: &mockTransport{
+					RoundTripFunc: func(r *http.Request) (*http.Response, error) {
+						if r.URL.Path == "/_bulk" {
+							reqCnt.Add(1)
+						}
+						return &http.Response{
+							Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+							Body:       io.NopCloser(strings.NewReader(tt.responseBody)),
+							StatusCode: http.StatusOK,
+						}, nil
+					},
 				},
-			}})
+			})
 			require.NoError(t, err)
 
 			ct := componenttest.NewTelemetry()
@@ -666,14 +115,15 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 			require.NoError(t, err)
 
 			core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
-			bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core))
+			bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core), nil)
 
 			info := client.Info{Metadata: client.NewMetadata(map[string][]string{"x-test": {"test"}})}
 			ctx := client.NewContext(t.Context(), info)
 			session := bi.StartSession(ctx)
 			assert.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
-			assert.Equal(t, int64(1), reqCnt.Load())
+			assert.Equal(t, int64(0), reqCnt.Load()) // requests will not flush unless flush is called explicitly
 			assert.NoError(t, session.Flush(ctx))
+			assert.Equal(t, int64(1), reqCnt.Load())
 			session.End()
 			assert.NoError(t, bi.Close(ctx))
 
@@ -683,7 +133,7 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 					Attributes: attribute.NewSet(
 						attribute.String("outcome", "success"), // bulk request itself is successful
 						attribute.StringSlice("x-test", []string{"test"}),
-						semconv.HTTPResponseStatusCode(http.StatusOK),
+						attribute.Int("http.response.status_code", http.StatusOK),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())
@@ -700,11 +150,13 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 			attrs := []attribute.KeyValue{
 				attribute.StringSlice("x-test", []string{"test"}),
 				attribute.String("outcome", "success"),
+				attribute.Int("http.response.status_code", http.StatusOK),
 			}
 			if tt.wantMessage != "" {
 				attrs = []attribute.KeyValue{
 					attribute.StringSlice("x-test", []string{"test"}),
 					attribute.String("outcome", "failed_client"),
+					attribute.Int("http.response.status_code", http.StatusBadRequest),
 					attribute.String("error.type", "version_conflict_engine_exception"),
 				}
 			}
@@ -743,130 +195,516 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 	}
 }
 
-func TestNewBulkIndexer(t *testing.T) {
-	for _, tc := range []struct {
-		name                  string
-		config                map[string]any
-		expectSyncBulkIndexer bool
+func TestSyncBulkIndexerRequestRetriesMetric(t *testing.T) {
+	tests := []struct {
+		name               string
+		retryOnStatus      []int
+		responseStatusCode int
+		docsCount          int
+		retryCount         int
 	}{
 		{
-			name: "batcher_enabled_unset",
-			config: map[string]any{
-				"batcher": map[string]any{
-					"min_size": 100,
-					"max_size": 200,
-				},
-			},
-			expectSyncBulkIndexer: false,
+			name:               "retry_on_429_should_increment_retried_count",
+			retryOnStatus:      []int{429},
+			responseStatusCode: http.StatusTooManyRequests,
+			docsCount:          3,
+			retryCount:         6,
 		},
-		{
-			name: "batcher_enabled=true",
-			config: map[string]any{
-				"batcher": map[string]any{
-					"enabled":  true,
-					"min_size": 100,
-					"max_size": 200,
-				},
-			},
-			expectSyncBulkIndexer: true,
-		},
-		{
-			name: "batcher_enabled=true",
-			config: map[string]any{
-				"batcher": map[string]any{
-					"enabled":  false,
-					"min_size": 100,
-					"max_size": 200,
-				},
-			},
-			expectSyncBulkIndexer: true,
-		},
-		{
-			name: "sending_queue_enabled_without_batcher",
-			config: map[string]any{
-				"sending_queue": map[string]any{
-					"enabled": true,
-				},
-			},
-			expectSyncBulkIndexer: false,
-		},
-		{
-			name: "sending_queue__with_batch_enabled",
-			config: map[string]any{
-				"sending_queue": map[string]any{
-					"enabled": true,
-					"batch": map[string]any{
-						"min_size": 100,
-						"max_size": 200,
-					},
-				},
-			},
-			expectSyncBulkIndexer: true,
-		},
-		{
-			name: "sending_queue_disabled_but_batch_configured",
-			config: map[string]any{
-				"sending_queue": map[string]any{
-					"enabled": false,
-					"batch": map[string]any{
-						"min_size": 100,
-						"max_size": 200,
-					},
-				},
-				"batcher": map[string]any{
-					// no enabled set
-					"min_size": 100,
-					"max_size": 200,
-				},
-			},
-			expectSyncBulkIndexer: false,
-		},
-		{
-			name: "sending_queue_overrides_batcher",
-			config: map[string]any{
-				"sending_queue": map[string]any{
-					"enabled": true,
-					"batch": map[string]any{
-						"min_size": 100,
-						"max_size": 200,
-					},
-				},
-				"batcher": map[string]any{
-					"enabled":  true,
-					"min_size": 100,
-					"max_size": 200,
-				},
-			},
-			expectSyncBulkIndexer: true,
-		},
-		{
-			name: "sending_queue_without_batch_with_batcher_enabled",
-			config: map[string]any{
-				"sending_queue": map[string]any{
-					"enabled": true,
-				},
-				"batcher": map[string]any{
-					"enabled":  true,
-					"min_size": 100,
-					"max_size": 200,
-				},
-			},
-			expectSyncBulkIndexer: true,
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			client, err := elasticsearch.NewDefaultClient()
-			require.NoError(t, err)
-			cfg := createDefaultConfig()
-			cm := confmap.NewFromStringMap(tc.config)
-			require.NoError(t, cm.Unmarshal(cfg))
+	}
 
-			bi, err := newBulkIndexer(client, cfg.(*Config), true, nil, nil)
-			require.NoError(t, err)
-			t.Cleanup(func() { bi.Close(t.Context()) })
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var reqCnt atomic.Int64
+			cfg := Config{
+				QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{
+					NumConsumers: 1,
+				}),
+				MetadataKeys: []string{"x-test"},
+				Retry: RetrySettings{
+					Enabled:       true,
+					RetryOnStatus: tt.retryOnStatus,
+					MaxRetries:    tt.retryCount,
+				},
+			}
 
-			_, ok := bi.(*syncBulkIndexer)
-			assert.Equal(t, tc.expectSyncBulkIndexer, ok)
+			esClient, err := elastictransport.New(elastictransport.Config{
+				EnableMetrics: true,
+				URLs:          []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+				RetryOnStatus: cfg.Retry.RetryOnStatus,
+				MaxRetries:    cfg.Retry.MaxRetries,
+				DisableRetry:  !cfg.Retry.Enabled,
+				Interceptors: []elastictransport.InterceptorFunc{
+					countRetriesInterceptor(),
+				},
+				Transport: &mockTransport{
+					RoundTripFunc: func(r *http.Request) (*http.Response, error) {
+						if r.URL.Path == "/_bulk" {
+							reqCnt.Add(1)
+
+							if reqCnt.Load() <= int64(tt.retryCount) {
+								return &http.Response{
+									Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+									Body:       io.NopCloser(strings.NewReader("{}")),
+									StatusCode: tt.responseStatusCode,
+								}, nil
+							}
+						}
+
+						return &http.Response{
+							Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+							Body:       io.NopCloser(strings.NewReader(successResp)),
+							StatusCode: http.StatusOK,
+						}, nil
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			expectedRequestCount := int64(tt.retryCount + 1) // retry attempts + success
+
+			ct := componenttest.NewTelemetry()
+			tb, err := metadata.NewTelemetryBuilder(
+				metadatatest.NewSettings(ct).TelemetrySettings,
+			)
+			require.NoError(t, err)
+
+			core, _ := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
+			bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core), nil)
+
+			info := client.Info{Metadata: client.NewMetadata(map[string][]string{"x-test": {"test"}})}
+			ctx := client.NewContext(t.Context(), info)
+			session := bi.StartSession(ctx)
+
+			// Add multiple documents to test batch retry count
+			for i := 0; i < tt.docsCount; i++ {
+				assert.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+			}
+
+			assert.Equal(t, int64(0), reqCnt.Load()) // requests will not flush unless flush is called explicitly
+			assert.NoError(t, session.Flush(ctx))    // After retries, flush should succeed
+			assert.Equal(t, expectedRequestCount, reqCnt.Load())
+			session.End()
+			assert.NoError(t, bi.Close(ctx))
+
+			// Assert elasticsearch docs retried metric
+			metadatatest.AssertEqualElasticsearchDocsRetriedHTTPRequest(t, ct, []metricdata.DataPoint[int64]{
+				{
+					Value: int64(tt.retryCount * tt.docsCount), // all docs in the batch are retried for each retry attempt
+					Attributes: attribute.NewSet(
+						attribute.StringSlice("x-test", []string{"test"}),
+					),
+				},
+			}, metricdatatest.IgnoreTimestamp())
 		})
 	}
+}
+
+func TestSyncBulkIndexerFlushErrorPermanence(t *testing.T) {
+	tests := []struct {
+		name               string
+		responseStatusCode int
+		retryOnStatus      []int
+		wantPermanent      bool
+	}{
+		{
+			name:               "non-retryable status is permanent",
+			responseStatusCode: http.StatusUnauthorized,
+			retryOnStatus:      []int{http.StatusTooManyRequests},
+			wantPermanent:      true,
+		},
+		{
+			name:               "retryable status is not permanent",
+			responseStatusCode: http.StatusTooManyRequests,
+			retryOnStatus:      []int{http.StatusTooManyRequests},
+			wantPermanent:      false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{
+				QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{NumConsumers: 1}),
+				Retry: RetrySettings{
+					Enabled:       false,
+					RetryOnStatus: tt.retryOnStatus,
+				},
+			}
+
+			esClient, err := elastictransport.New(elastictransport.Config{
+				URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+				Transport: &mockTransport{RoundTripFunc: func(*http.Request) (*http.Response, error) {
+					return &http.Response{
+						Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+						Body:       io.NopCloser(strings.NewReader(`{"error":"boom"}`)),
+						StatusCode: tt.responseStatusCode,
+					}, nil
+				}},
+			})
+			require.NoError(t, err)
+
+			ct := componenttest.NewTelemetry()
+			tb, err := metadata.NewTelemetryBuilder(
+				metadatatest.NewSettings(ct).TelemetrySettings,
+			)
+			require.NoError(t, err)
+
+			bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.NewNop(), nil)
+
+			session := bi.StartSession(t.Context())
+			require.NoError(t, session.Add(t.Context(), "foo", "", "", strings.NewReader(`{"foo":"bar"}`), nil, docappender.ActionCreate))
+
+			err = session.Flush(t.Context())
+			require.Error(t, err)
+			assert.Equal(t, tt.wantPermanent, consumererror.IsPermanent(err))
+
+			var flushErr docappender.ErrorFlushFailed
+			assert.ErrorAs(t, err, &flushErr)
+
+			session.End()
+			assert.NoError(t, bi.Close(t.Context()))
+		})
+	}
+}
+
+func TestBulkIndexerLogsStatusCode(t *testing.T) {
+	responseBody := `{"errors": true, "items":[
+		{"create":{"_index":"foo-200","status":200}},
+		{"create":{"_index":"foo-400","status":400,"error":{"type":"error_400","reason":"status 400"}}},
+		{"create":{"_index":"foo-401","status":401,"error":{"type":"error_401","reason":"status 401"}}},
+		{"create":{"_index":"foo-429","status":429,"error":{"type":"error_429","reason":"status 429"}}},
+		{"create":{"_index":"foo-500","status":500,"error":{"type":"error_500","reason":"status 500"}}}
+	]}`
+	statuses := []int{400, 401, 429, 500}
+
+	cfg := Config{
+		QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{
+			NumConsumers: 1,
+		}),
+	}
+	esClient, err := elastictransport.New(elastictransport.Config{
+		URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+		Transport: &mockTransport{
+			RoundTripFunc: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+					Body:       io.NopCloser(strings.NewReader(responseBody)),
+					StatusCode: http.StatusOK,
+				}, nil
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	ct := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(
+		metadatatest.NewSettings(ct).TelemetrySettings,
+	)
+	require.NoError(t, err)
+
+	core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
+	bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core), nil)
+
+	ctx := t.Context()
+	session := bi.StartSession(ctx)
+	// Add initial document to ensure we have at least one document to process.
+	require.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+	for range statuses {
+		require.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+	}
+	require.NoError(t, session.Flush(ctx))
+	session.End()
+	assert.NoError(t, bi.Close(ctx))
+
+	messages := observed.FilterMessage("failed to index document").FilterFieldKey("http.response.status_code")
+	require.Equal(t, len(statuses), messages.Len(), "message not found; observed.All()=%v", observed.All())
+	for i, status := range statuses {
+		if i >= messages.Len() {
+			t.Errorf("expected at least %d log messages, got %d", i+1, messages.Len())
+			continue
+		}
+		msg := messages.All()[i]
+		statusCode, ok := msg.ContextMap()["http.response.status_code"]
+		if !ok {
+			t.Errorf("http.response.status_code missing in log at index %d; msg: %+v", i, msg.ContextMap())
+			continue
+		}
+		assert.Equal(t, int64(status), statusCode, "http.response.status_code does not match at index %d; msg: %s", i, msg.Message)
+	}
+}
+
+func TestQueryParamsParsedFromEndpoints(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoints = []string{"http://localhost:9200?pipeline=test-pipeline&pretty=false&require_data_stream=true"}
+
+	client, err := newElasticsearchClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewTelemetry().NewTelemetrySettings(), "")
+	require.NoError(t, err)
+
+	bi := bulkIndexerConfig(client, cfg, true, zaptest.NewLogger(t))
+	require.Equal(t, map[string][]string{
+		"pipeline":            {"test-pipeline"},
+		"pretty":              {"false"},
+		"require_data_stream": {"true"},
+	}, bi.QueryParams)
+}
+
+func TestNewBulkIndexer(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoints = []string{"http://localhost:9200"}
+
+	client, err := newElasticsearchClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewTelemetry().NewTelemetrySettings(), "")
+	require.NoError(t, err)
+
+	bi := newBulkIndexer(client, cfg, true, nil, nil, nil)
+	t.Cleanup(func() { bi.Close(t.Context()) })
+}
+
+func TestBulkResponseFilterPath(t *testing.T) {
+	tests := []struct {
+		name                   string
+		bulkResponseFilterPath string
+		wantFilterPath         string
+	}{
+		{
+			name:                   "default filter_path when not set",
+			bulkResponseFilterPath: "",
+			wantFilterPath:         docappender.DefaultFilterPath,
+		},
+		{
+			name:                   "custom filter_path when set",
+			bulkResponseFilterPath: "items.*.status,items.*.error",
+			wantFilterPath:         "items.*.status,items.*.error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoints = []string{"http://localhost:9200"}
+			cfg.BulkResponseFilterPath = tt.bulkResponseFilterPath
+
+			client, err := newElasticsearchClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewTelemetry().NewTelemetrySettings(), "")
+			require.NoError(t, err)
+
+			// Verify the FilterPath is correctly set in the BulkIndexerConfig.
+			bi := bulkIndexerConfig(client, cfg, false, zaptest.NewLogger(t))
+			require.Equal(t, tt.bulkResponseFilterPath, bi.FilterPath)
+
+			// Verify the filter_path query param is sent correctly in the HTTP request.
+			var gotFilterPath string
+			esClient, err := elastictransport.New(elastictransport.Config{
+				URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+				Transport: &mockTransport{
+					RoundTripFunc: func(r *http.Request) (*http.Response, error) {
+						if r.URL.Path == "/_bulk" {
+							gotFilterPath = r.URL.Query().Get("filter_path")
+						}
+						return &http.Response{
+							Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+							Body:       io.NopCloser(strings.NewReader(successResp)),
+							StatusCode: http.StatusOK,
+						}, nil
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			ct := componenttest.NewTelemetry()
+			tb, err := metadata.NewTelemetryBuilder(metadatatest.NewSettings(ct).TelemetrySettings)
+			require.NoError(t, err)
+
+			syncBI := newSyncBulkIndexer(esClient, cfg, false, tb, zaptest.NewLogger(t), nil)
+			ctx := t.Context()
+			session := syncBI.StartSession(ctx)
+			require.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+			require.NoError(t, session.Flush(ctx))
+			session.End()
+			require.NoError(t, syncBI.Close(ctx))
+
+			assert.Equal(t, tt.wantFilterPath, gotFilterPath)
+		})
+	}
+}
+
+func TestGetErrorHint(t *testing.T) {
+	tests := []struct {
+		name      string
+		mode      MappingMode
+		index     string
+		errorType string
+		want      string
+	}{
+		{
+			name:      "version_conflict_engine_exception with .ds-metrics- prefix",
+			mode:      MappingNone,
+			index:     ".ds-metrics-foo",
+			errorType: "version_conflict_engine_exception",
+			want:      errorHintKnownIssues,
+		},
+		{
+			name:      "illegal_argument_exception in OTel mode",
+			mode:      MappingOTel,
+			index:     "logs-generic.otel-default",
+			errorType: "illegal_argument_exception",
+			want:      errorHintOTelMappingMode,
+		},
+		{
+			name:      "other error type in OTel mode",
+			mode:      MappingOTel,
+			index:     "logs-generic.otel-default",
+			errorType: "mapper_parsing_exception",
+			want:      "",
+		},
+		{
+			name:      "version_conflict_engine_exception without .ds-metrics- prefix",
+			mode:      MappingNone,
+			index:     "logs-foo",
+			errorType: "version_conflict_engine_exception",
+			want:      "",
+		},
+		{
+			name:      "empty index and error type",
+			mode:      MappingNone,
+			index:     "",
+			errorType: "",
+			want:      "",
+		},
+		{
+			name:      "illegal_argument_exception in ECS mode",
+			mode:      MappingECS,
+			index:     "metrics.apm.app-default",
+			errorType: "illegal_argument_exception",
+			want:      errorHintECSMappingMode,
+		},
+		{
+			name:      "illegal_argument_exception in none mode",
+			mode:      MappingNone,
+			index:     "logs-generic-default",
+			errorType: "illegal_argument_exception",
+			want:      "",
+		},
+		{
+			name:      "illegal_argument_exception in raw mode",
+			mode:      MappingRaw,
+			index:     "logs-generic-default",
+			errorType: "illegal_argument_exception",
+			want:      "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getErrorHint(tt.mode, tt.index, tt.errorType)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+// BenchmarkRequireDataStreamPayloadOverhead benchmarks the payload size
+// overhead of encoding require_data_stream at the document level vs
+// omitting it, and reports compression impact on payload size.
+func BenchmarkRequireDataStreamPayloadOverhead(b *testing.B) {
+	for _, tc := range []struct {
+		name              string
+		requireDataStream bool
+		numItems          int
+		compressionLevel  int
+	}{
+		{name: "no_compression/without_rds/10_items", requireDataStream: false, numItems: 10},
+		{name: "no_compression/with_rds/10_items", requireDataStream: true, numItems: 10},
+		{name: "no_compression/without_rds/100_items", requireDataStream: false, numItems: 100},
+		{name: "no_compression/with_rds/100_items", requireDataStream: true, numItems: 100},
+		{name: "no_compression/without_rds/1000_items", requireDataStream: false, numItems: 1000},
+		{name: "no_compression/with_rds/1000_items", requireDataStream: true, numItems: 1000},
+		{name: "gzip_best_speed/without_rds/1000_items", requireDataStream: false, numItems: 1000, compressionLevel: gzip.BestSpeed},
+		{name: "gzip_best_speed/with_rds/1000_items", requireDataStream: true, numItems: 1000, compressionLevel: gzip.BestSpeed},
+		{name: "gzip_best_compression/without_rds/1000_items", requireDataStream: false, numItems: 1000, compressionLevel: gzip.BestCompression},
+		{name: "gzip_best_compression/with_rds/1000_items", requireDataStream: true, numItems: 1000, compressionLevel: gzip.BestCompression},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				biCfg := newBenchBulkIndexerConfig(b, tc.compressionLevel)
+				bi, err := docappender.NewBulkIndexer(biCfg)
+				require.NoError(b, err)
+				for range tc.numItems {
+					doc := strings.NewReader(`{"@timestamp":"2024-01-01T00:00:00Z","message":"test log message with some realistic content"}`)
+					err := bi.Add(docappender.BulkIndexerItem{
+						Index:             "logs-generic-default",
+						Body:              doc,
+						Action:            "create",
+						RequireDataStream: tc.requireDataStream,
+					})
+					require.NoError(b, err)
+				}
+				b.ReportMetric(float64(bi.UncompressedLen()), "uncompressed_payload_bytes")
+				b.ReportMetric(float64(bi.Len()), "payload_bytes")
+			}
+		})
+	}
+}
+
+func newBenchBulkIndexerConfig(tb testing.TB, compressionLevel int) docappender.BulkIndexerConfig {
+	tb.Helper()
+	client, err := elastictransport.New(elastictransport.Config{
+		URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+		Transport: &mockTransport{
+			RoundTripFunc: func(_ *http.Request) (*http.Response, error) {
+				return &http.Response{
+					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+					Body:       io.NopCloser(strings.NewReader(`{"items":[]}`)),
+					StatusCode: http.StatusOK,
+				}, nil
+			},
+		},
+	})
+	require.NoError(tb, err)
+	return docappender.BulkIndexerConfig{
+		Client:           client,
+		CompressionLevel: compressionLevel,
+	}
+}
+
+func TestSyncBulkIndexer_SuppressConflictErrors(t *testing.T) {
+	responseBody := `{"items":[{"create":{"_index":"foo","status":409,"error":{"type":"version_conflict_engine_exception","reason":"document already exists"}}}]}`
+
+	cfg := Config{
+		QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{
+			NumConsumers: 1,
+		}),
+		SuppressConflictErrors: true,
+	}
+
+	esClient, err := elastictransport.New(elastictransport.Config{
+		URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+		Transport: &mockTransport{
+			RoundTripFunc: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+					Body:       io.NopCloser(strings.NewReader(responseBody)),
+					StatusCode: http.StatusOK,
+				}, nil
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	ct := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(
+		metadatatest.NewSettings(ct).TelemetrySettings,
+	)
+	require.NoError(t, err)
+
+	core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
+	bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core), nil)
+
+	ctx := t.Context()
+	session := bi.StartSession(ctx)
+	require.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+
+	require.NoError(t, session.Flush(ctx))
+	session.End()
+	require.NoError(t, bi.Close(ctx))
+
+	messages := observed.FilterMessage("failed to index document")
+	assert.Equal(t, 0, messages.Len(), "expected no error logs for version_conflict_engine_exception when SuppressConflictErrors is true")
 }

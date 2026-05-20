@@ -1,14 +1,18 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
 import (
 	"context"
+	"runtime"
 	"sync"
 	"time"
 
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
+	ddMetrics "github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
@@ -16,18 +20,24 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
-const payloadSendingInterval = 30 * time.Minute
+const (
+	payloadSendingInterval = 5 * time.Minute
+	payloadTTL             = payloadSendingInterval * 3
+)
 
 // uuidProvider defines an interface for generating UUIDs, allowing for mocking in tests.
 type uuidProvider interface {
@@ -49,11 +59,12 @@ type configs struct {
 }
 
 type info struct {
-	host           source.Source
-	hostnameSource string
-	uuid           string
-	build          component.BuildInfo
-	modules        service.ModuleInfos
+	host               source.Source
+	hostnameSource     string
+	uuid               string
+	build              component.BuildInfo
+	modules            service.ModuleInfos
+	resourceAttributes map[string]string
 }
 
 type payloadSender struct {
@@ -71,11 +82,15 @@ type datadogExtension struct {
 	configs *configs
 
 	// components to assist in payload sending/logging
-	logger     *zap.Logger
-	serializer agentcomponents.SerializerWithForwarder
+	logger            *zap.Logger
+	serializer        agentcomponents.SerializerWithForwarder
+	telemetrySettings component.TelemetrySettings
 
 	// struct to store extension info
 	info *info
+
+	// host stores the component host for use when creating the HTTP server
+	host component.Host
 
 	otelCollectorMetadata *payload.OtelCollector
 	httpServer            *httpserver.Server
@@ -117,8 +132,16 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		e.info.build.Version, // This is the same version from buildInfo; it is possible we could want to set a different version here in the future
 		e.configs.extension.API.Site,
 		fullConfig,
+		e.configs.extension.DeploymentType,
+		e.configs.extension.InstallationMethod,
 		buildInfo,
+		int64(payloadTTL),
+		e.configs.extension.GatewayService,
+		e.configs.extension.GatewayDestination,
 	)
+
+	// Populate resource attributes collected from TelemetrySettings.Resource
+	otelCollectorPayload.CollectorResourceAttributes = e.info.resourceAttributes
 
 	// Populate the full list of components available in the collector build
 	moduleInfoJSON, err := componentchecker.PopulateFullComponentsJSON(e.info.modules, e.configs.collector)
@@ -129,7 +152,7 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 	}
 
 	// Populate the list of components that are active in a pipeline
-	activeComponents, err := componentchecker.PopulateActiveComponents(e.configs.collector, moduleInfoJSON)
+	activeComponents, err := componentchecker.PopulateActiveComponents(e.logger, e.configs.collector, moduleInfoJSON)
 	if err != nil {
 		e.logger.Warn("Failed to populate active components list", zap.Error(err))
 	} else if activeComponents != nil {
@@ -153,8 +176,12 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		e.info.host.Identifier,
 		e.info.uuid,
 		otelCollectorPayload,
+		e.telemetrySettings,
 	)
-	e.httpServer.Start()
+	startErr := e.httpServer.Start(context.Background(), e.host)
+	if startErr != nil {
+		return startErr
+	}
 	_, err = e.httpServer.SendPayload()
 	if err != nil {
 		return err
@@ -185,6 +212,9 @@ func (*datadogExtension) ComponentStatusChanged(
 
 // Start starts the extension via the component interface.
 func (e *datadogExtension) Start(_ context.Context, host component.Host) error {
+	// Store host for later use when creating the HTTP server
+	e.host = host
+
 	// Retrieve module information from the host
 	if mi, ok := host.(hostcapabilities.ModuleInfo); ok {
 		e.info.modules = mi.GetModuleInfos()
@@ -219,26 +249,82 @@ func (e *datadogExtension) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+// sendLivenessMetric sends the otel.datadog_extension.running metric to indicate the extension is active
+func (e *datadogExtension) sendLivenessMetric(_ context.Context) error {
+	now := pcommon.NewTimestampFromTime(time.Now())
+	timestamp := uint64(now)
+	buildTags := metrics.TagsFromBuildInfo(e.info.build)
+
+	// Add hostname source tag to indicate whether hostname was configured or inferred
+	allTags := append([]string{}, buildTags...)
+	allTags = append(allTags, "hostname_source:"+e.info.hostnameSource)
+
+	// Create the liveness metric serie directly in agent format
+	serie := metrics.CreateLivenessSerie(e.info.host.Identifier, timestamp, allTags)
+
+	// Send using the serializer (forwarder handles retries internally)
+	err := e.serializer.SendSeriesWithMetadata(ddMetrics.Series{serie})
+	if err != nil {
+		e.logger.Error("Failed to send extension liveness metric", zap.Error(err))
+		return err
+	}
+
+	e.logger.Debug("Successfully sent extension liveness metric",
+		zap.String("hostname", e.info.host.Identifier),
+		zap.String("hostname_source", e.info.hostnameSource))
+	return nil
+}
+
 // startPeriodicPayloadSending starts a goroutine that sends payloads on payloadSendingInterval
 func (e *datadogExtension) startPeriodicPayloadSending() {
 	e.payloadSender.once.Do(func() {
 		go func() {
 			defer e.payloadSender.ticker.Stop()
+
+			// Send initial liveness metric on startup
+			if err := e.sendLivenessMetric(e.payloadSender.ctx); err != nil {
+				e.logger.Warn("Failed to send initial liveness metric", zap.Error(err))
+			}
+
 			for {
 				select {
 				case <-e.payloadSender.ticker.C:
-					e.logger.Debug("Sending periodic payload to Datadog")
-					if _, err := e.httpServer.SendPayload(); err != nil {
-						e.logger.Error("Failed to send periodic payload", zap.Error(err))
-					} else {
-						e.logger.Debug("Successfully sent periodic payload to Datadog")
+					e.logger.Debug("Sending periodic payloads to Datadog")
+
+					// Send liveness metric first
+					if err := e.sendLivenessMetric(e.payloadSender.ctx); err != nil {
+						e.logger.Error("Failed to send periodic liveness metric", zap.Error(err))
 					}
+
+					// Wait 1 minute before sending metadata payload
+					e.logger.Debug("Waiting 1 minute before sending metadata payload")
+					select {
+					case <-time.After(1 * time.Minute):
+						// Send metadata payload after delay
+						if _, err := e.httpServer.SendPayload(); err != nil {
+							e.logger.Error("Failed to send periodic payload", zap.Error(err))
+						} else {
+							e.logger.Debug("Successfully sent periodic payload to Datadog")
+						}
+					case <-e.payloadSender.ctx.Done():
+						e.logger.Debug("Stopping periodic payload sending during delay")
+						return
+					}
+
 				case <-e.payloadSender.ctx.Done():
 					e.logger.Debug("Stopping periodic payload sending")
 					return
 				case <-e.payloadSender.channel:
 					// Allow manual triggering of payload sending if needed
+					// Manual triggers should send immediately without delay
 					e.logger.Debug("Manually triggered payload send")
+
+					// Send liveness metric first
+					if err := e.sendLivenessMetric(e.payloadSender.ctx); err != nil {
+						e.logger.Error("Failed to send manually triggered liveness metric", zap.Error(err))
+					}
+
+					// Send metadata payload immediately on manual trigger
 					if _, err := e.httpServer.SendPayload(); err != nil {
 						e.logger.Error("Failed to send manually triggered payload", zap.Error(err))
 					}
@@ -313,21 +399,37 @@ func newExtension(
 	logComponent := agentcomponents.NewLogComponent(set.TelemetrySettings)
 	serializer := agentcomponents.NewSerializerComponent(configComponent, logComponent, host.Identifier)
 
+	// Collect resource attributes from TelemetrySettings.Resource
+	// Format: map[string]string
+	resourceMap := make(map[string]string)
+	if attrs := set.Resource.Attributes(); attrs.Len() > 0 {
+		attrs.Range(func(k string, v pcommon.Value) bool {
+			resourceMap[k] = v.AsString()
+			return true
+		})
+	}
+	// Ensure os.type is always present; defer to any value already set by a resource detector
+	if _, ok := resourceMap[string(conventions.OSTypeKey)]; !ok {
+		resourceMap[string(conventions.OSTypeKey)] = runtime.GOOS
+	}
+
 	// configure payloadSender struct
 	ctxWithCancel, cancel := context.WithCancel(ctx)
 	ticker := time.NewTicker(payloadSendingInterval)
 	channel := make(chan struct{}, 1)
 
 	e := &datadogExtension{
-		configs:    &configs{extension: cfg},
-		logger:     set.Logger,
-		serializer: serializer,
+		configs:           &configs{extension: cfg},
+		logger:            set.Logger,
+		serializer:        serializer,
+		telemetrySettings: set.TelemetrySettings,
 		info: &info{
-			host:           host,
-			hostnameSource: hostnameSource,
-			uuid:           uuidProvider.NewString(),
-			build:          set.BuildInfo,
-			modules:        service.ModuleInfos{}, // moduleInfos will be populated in Start()
+			host:               host,
+			hostnameSource:     hostnameSource,
+			uuid:               uuidProvider.NewString(),
+			build:              set.BuildInfo,
+			modules:            service.ModuleInfos{}, // moduleInfos will be populated in Start()
+			resourceAttributes: resourceMap,
 		},
 		payloadSender: &payloadSender{
 			ctx:     ctxWithCancel,

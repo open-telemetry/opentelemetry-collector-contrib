@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/url"
 	"strconv"
+	"time"
 
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
@@ -29,8 +30,9 @@ var (
 )
 
 type TopQueryCollection struct {
-	MaxQuerySampleCount uint `mapstructure:"max_query_sample_count"`
-	TopQueryCount       uint `mapstructure:"top_query_count"`
+	MaxQuerySampleCount uint          `mapstructure:"max_query_sample_count"`
+	TopQueryCount       uint          `mapstructure:"top_query_count"`
+	CollectionInterval  time.Duration `mapstructure:"collection_interval"`
 }
 
 type QuerySample struct {

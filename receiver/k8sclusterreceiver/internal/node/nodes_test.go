@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -168,7 +167,7 @@ func TestNodeMetrics(t *testing.T) {
 	n := testutils.NewNode("1")
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sNodeCondition.Enabled = true
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(mb, n, ts)
@@ -358,8 +357,8 @@ func TestNodeMetadata(t *testing.T) {
 			ResourceIDKey: "k8s.node.uid",
 			ResourceID:    experimentalmetricmetadata.ResourceID("test-node-uid"),
 			Metadata: map[string]string{
-				"env":                                "production",
-				string(conventions.K8SNodeNameKey):   "test-node",
+				"k8s.node.label.env":                 "production",
+				"k8s.node.name":                      "test-node",
 				"k8s.node.condition_ready":           "true",
 				"k8s.node.condition_memory_pressure": "false",
 				"k8s.node.condition_disk_pressure":   "false",

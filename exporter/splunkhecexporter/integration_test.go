@@ -8,12 +8,12 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"crypto/tls"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"net/url"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"testing"
 	"time"
 
@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -145,11 +144,11 @@ func startSplunk() splunkContainerConfig {
 	}
 
 	// Use the container's host and port for your tests
-	logger.Info("Splunk running at:", zap.String("host", host), zap.Int("uiPort", uiPort.Int()), zap.Int("hecPort", hecPort.Int()), zap.Int("managementPort", managementPort.Int()))
+	logger.Info("Splunk running at:", zap.String("host", host), zap.String("uiPort", uiPort.String()), zap.String("hecPort", hecPort.String()), zap.String("managementPort", managementPort.Port()))
 	integrationtestutils.SetConfigVariable("HOST", host)
-	integrationtestutils.SetConfigVariable("UI_PORT", strconv.Itoa(uiPort.Int()))
-	integrationtestutils.SetConfigVariable("HEC_PORT", strconv.Itoa(hecPort.Int()))
-	integrationtestutils.SetConfigVariable("MANAGEMENT_PORT", strconv.Itoa(managementPort.Int()))
+	integrationtestutils.SetConfigVariable("UI_PORT", uiPort.Port())
+	integrationtestutils.SetConfigVariable("HEC_PORT", hecPort.Port())
+	integrationtestutils.SetConfigVariable("MANAGEMENT_PORT", managementPort.Port())
 	cfg := splunkContainerConfig{
 		conCtx:    conContext,
 		container: container,
@@ -166,7 +165,7 @@ func prepareLogs() plog.Logs {
 	logRecord := sl.LogRecords().AppendEmpty()
 	logRecord.Body().SetStr("test log")
 	logRecord.Attributes().PutStr(splunk.DefaultNameLabel, "test- label")
-	logRecord.Attributes().PutStr(string(conventions.HostNameKey), "myhost")
+	logRecord.Attributes().PutStr("host.name", "myhost")
 	logRecord.Attributes().PutStr("custom", "custom")
 	logRecord.SetTimestamp(ts)
 	return logs
@@ -185,7 +184,7 @@ func prepareLogsNonDefaultParams(index, source, sourcetype, event string) plog.L
 	logRecord.Attributes().PutStr(splunk.DefaultSourceLabel, source)
 	logRecord.Attributes().PutStr(splunk.DefaultSourceTypeLabel, sourcetype)
 	logRecord.Attributes().PutStr(splunk.DefaultIndexLabel, index)
-	logRecord.Attributes().PutStr(string(conventions.HostNameKey), "myhost")
+	logRecord.Attributes().PutStr("host.name", "myhost")
 	logRecord.Attributes().PutStr("custom", "custom")
 	logRecord.SetTimestamp(ts)
 	return logs
@@ -394,4 +393,30 @@ func TestSplunkHecExporter(t *testing.T) {
 
 func waitForEventToBeIndexed() {
 	time.Sleep(3 * time.Second)
+}
+
+func initSpan(name string, ts pcommon.Timestamp, span ptrace.Span) {
+	span.Attributes().PutStr("foo", "bar")
+	span.SetName(name)
+	span.SetStartTimestamp(ts)
+	spanLink := span.Links().AppendEmpty()
+	spanLink.TraceState().FromRaw("OK")
+	bytes, _ := hex.DecodeString("12345678")
+	var traceID [16]byte
+	copy(traceID[:], bytes)
+	spanLink.SetTraceID(traceID)
+	bytes, _ = hex.DecodeString("1234")
+	var spanID [8]byte
+	copy(spanID[:], bytes)
+	spanLink.SetSpanID(spanID)
+	spanLink.Attributes().PutInt("foo", 1)
+	spanLink.Attributes().PutBool("bar", false)
+	foobarContents := spanLink.Attributes().PutEmptySlice("foobar")
+	foobarContents.AppendEmpty().SetStr("a")
+	foobarContents.AppendEmpty().SetStr("b")
+
+	spanEvent := span.Events().AppendEmpty()
+	spanEvent.Attributes().PutStr("foo", "bar")
+	spanEvent.SetName("myEvent")
+	spanEvent.SetTimestamp(ts + 3)
 }

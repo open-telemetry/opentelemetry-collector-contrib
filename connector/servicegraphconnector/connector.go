@@ -20,7 +20,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
+	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
@@ -46,10 +48,10 @@ var (
 	}
 
 	defaultPeerAttributes = []string{
-		string(semconv.PeerServiceKey), string(semconv.DBNameKey), string(semconv.DBSystemKey),
+		string(conventionsv138.PeerServiceKey), string(conventionsv125.DBNameKey), string(conventionsv128.DBSystemKey),
 	}
 
-	defaultDatabaseNameAttributes = []string{string(semconv.DBNameKey)}
+	defaultDatabaseNameAttributes = []string{string(conventionsv125.DBNameKey)}
 
 	defaultMetricsFlushInterval = 60 * time.Second // 1 DPM
 )
@@ -93,10 +95,6 @@ type serviceGraphConnector struct {
 
 func newConnector(set component.TelemetrySettings, config component.Config, next consumer.Metrics) (*serviceGraphConnector, error) {
 	pConfig := config.(*Config)
-
-	if pConfig.MetricsExporter != "" {
-		set.Logger.Warn("'metrics_exporter' is deprecated and will be removed in a future release. Please remove it from the configuration.")
-	}
 
 	var bounds []float64
 	if pConfig.ExponentialHistogramMaxSize == 0 {
@@ -159,10 +157,10 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 	}, nil
 }
 
-func (p *serviceGraphConnector) Start(context.Context, component.Host) error {
+func (p *serviceGraphConnector) Start(ctx context.Context, _ component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
-	go p.metricFlushLoop(*p.config.MetricsFlushInterval)
+	go p.metricFlushLoop(ctx, *p.config.MetricsFlushInterval)
 
 	go p.cacheLoop(p.config.CacheLoop)
 
@@ -172,7 +170,7 @@ func (p *serviceGraphConnector) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (p *serviceGraphConnector) metricFlushLoop(flushInterval time.Duration) {
+func (p *serviceGraphConnector) metricFlushLoop(ctx context.Context, flushInterval time.Duration) {
 	if flushInterval <= 0 {
 		return
 	}
@@ -183,7 +181,7 @@ func (p *serviceGraphConnector) metricFlushLoop(flushInterval time.Duration) {
 	for {
 		select {
 		case <-ticker.C:
-			if err := p.flushMetrics(context.Background()); err != nil {
+			if err := p.flushMetrics(ctx); err != nil {
 				p.logger.Error("failed to flush metrics", zap.Error(err))
 			}
 		case <-p.shutdownCh:
@@ -587,6 +585,7 @@ func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 }
 
 func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMetrics) error {
+	timestamp := pcommon.NewTimestampFromTime(p.nowWithOffset())
 	mDuration := pmetric.NewMetric()
 	mDuration.SetName("traces_service_graph_request_client")
 	mDuration.SetUnit(secondsUnit)
@@ -598,6 +597,7 @@ func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMet
 		mDuration.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		for key, expHistogram := range p.reqClientDurationExpHistogram {
 			dpDuration := mDuration.ExponentialHistogram().DataPoints().AppendEmpty()
+			dpDuration.SetTimestamp(timestamp)
 			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 			dimensions, ok := p.dimensionsForSeries(key)
 			if !ok {

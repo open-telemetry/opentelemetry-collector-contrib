@@ -42,7 +42,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ControllerConfig:     cfg,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		QuerySample: QuerySample{
 			MaxRowsPerQuery: 100,
@@ -50,6 +50,7 @@ func createDefaultConfig() component.Config {
 		TopQueryCollection: TopQueryCollection{
 			MaxQuerySampleCount: 1000,
 			TopQueryCount:       200,
+			CollectionInterval:  time.Minute,
 		},
 	}
 }
@@ -81,7 +82,7 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 		if err != nil {
 			return nil, err
 		}
-		opt := scraperhelper.AddScraper(metadata.Type, mp)
+		opt := scraperhelper.AddMetricsScraper(metadata.Type, mp)
 
 		return scraperhelper.NewMetricsController(
 			&sqlCfg.ControllerConfig,

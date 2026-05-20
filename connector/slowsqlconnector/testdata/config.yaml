@@ -1,0 +1,12 @@
+# default configuration
+slow_sql/default:
+
+# configuration with all possible parameters
+slow_sql/full:
+  threshold: 600ms
+  db_system:
+    - h2
+    - mysql
+  dimensions:
+    - name: k8s.namespace.name
+    - name: k8s.pod.name

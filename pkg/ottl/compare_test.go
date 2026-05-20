@@ -192,8 +192,8 @@ func Test_comparison(t *testing.T) {
 func BenchmarkCompareEQInt64(b *testing.B) {
 	c := NewValueComparator()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		c.compare(i64a, i64b, eq)
 	}
 }
@@ -201,8 +201,8 @@ func BenchmarkCompareEQInt64(b *testing.B) {
 func BenchmarkCompareEQFloat(b *testing.B) {
 	c := NewValueComparator()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		c.compare(f64a, f64b, eq)
 	}
 }
@@ -210,8 +210,8 @@ func BenchmarkCompareEQFloat(b *testing.B) {
 func BenchmarkCompareEQString(b *testing.B) {
 	c := NewValueComparator()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		c.compare(sa, sb, eq)
 	}
 }
@@ -219,8 +219,8 @@ func BenchmarkCompareEQString(b *testing.B) {
 func BenchmarkCompareEQPString(b *testing.B) {
 	c := NewValueComparator()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		c.compare(&sa, &sb, eq)
 	}
 }
@@ -228,8 +228,8 @@ func BenchmarkCompareEQPString(b *testing.B) {
 func BenchmarkCompareEQBytes(b *testing.B) {
 	c := NewValueComparator()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		c.compare(ba, bb, eq)
 	}
 }
@@ -237,8 +237,8 @@ func BenchmarkCompareEQBytes(b *testing.B) {
 func BenchmarkCompareEQNil(b *testing.B) {
 	c := NewValueComparator()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		c.compare(nil, nil, eq)
 	}
 }
@@ -246,8 +246,8 @@ func BenchmarkCompareEQNil(b *testing.B) {
 func BenchmarkCompareNEInt(b *testing.B) {
 	c := NewValueComparator()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		c.compare(i64a, i64b, ne)
 	}
 }
@@ -255,8 +255,8 @@ func BenchmarkCompareNEInt(b *testing.B) {
 func BenchmarkCompareNEFloat(b *testing.B) {
 	c := NewValueComparator()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		c.compare(f64a, f64b, ne)
 	}
 }
@@ -264,8 +264,8 @@ func BenchmarkCompareNEFloat(b *testing.B) {
 func BenchmarkCompareNEString(b *testing.B) {
 	c := NewValueComparator()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		c.compare(sa, sb, ne)
 	}
 }
@@ -273,8 +273,8 @@ func BenchmarkCompareNEString(b *testing.B) {
 func BenchmarkCompareLTFloat(b *testing.B) {
 	c := NewValueComparator()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		c.compare(f64a, f64b, lt)
 	}
 }
@@ -282,8 +282,8 @@ func BenchmarkCompareLTFloat(b *testing.B) {
 func BenchmarkCompareLTString(b *testing.B) {
 	c := NewValueComparator()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		c.compare(sa, sb, lt)
 	}
 }
@@ -291,8 +291,8 @@ func BenchmarkCompareLTString(b *testing.B) {
 func BenchmarkCompareLTNil(b *testing.B) {
 	c := NewValueComparator()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		c.compare(nil, nil, lt)
 	}
 }
@@ -311,7 +311,7 @@ func compareEq(a, b any, op compareOp) bool {
 }
 
 func BenchmarkCompareEQFunction(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		compareEq(sa, sb, eq)
 	}
 }

@@ -8,15 +8,16 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for alertmanager exporter.
 type Config struct {
-	TimeoutSettings exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings   exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
-	BackoffConfig   configretry.BackOffConfig       `mapstructure:"retry_on_failure"`
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackoffConfig   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 
 	confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	GeneratorURL            string                   `mapstructure:"generator_url"`

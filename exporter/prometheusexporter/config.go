@@ -10,7 +10,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -18,6 +19,9 @@ import (
 // Config defines configuration for Prometheus exporter.
 type Config struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
+
+	// QueueBatchConfig defines the queue configuration.
+	QueueBatchConfig configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// Namespace if set, exports metrics under the provided value.
 	Namespace string `mapstructure:"namespace"`
@@ -37,7 +41,11 @@ type Config struct {
 	// EnableOpenMetrics enables the use of the OpenMetrics encoding option for the prometheus exporter.
 	EnableOpenMetrics bool `mapstructure:"enable_open_metrics"`
 
+	// WithoutScopeInfo controls the addition of labels for the instrumentation scope.
+	WithoutScopeInfo bool `mapstructure:"without_scope_info"`
+
 	// AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true.
+	//
 	// Deprecated: Use TranslationStrategy instead. This setting is ignored when TranslationStrategy is explicitly set.
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
 
@@ -76,11 +84,4 @@ const (
 
 	// noTranslation bypasses all metric and label name translation, passing them through unaltered
 	noTranslation translationStrategy = "NoTranslation"
-)
-
-var disableAddMetricSuffixesFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusexporter.DisableAddMetricSuffixes",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the deprecated add_metric_suffixes configuration option is ignored and translation_strategy is always used"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-specification/pull/4533"),
 )

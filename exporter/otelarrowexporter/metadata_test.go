@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -46,7 +47,7 @@ func TestSendTracesWithMetadata(t *testing.T) {
 		},
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 
 	cfg.MetadataCardinalityLimit = 10
 	cfg.MetadataKeys = []string{"key1", "key2"}
@@ -89,10 +90,10 @@ func TestSendTracesWithMetadata(t *testing.T) {
 	spansPerRequest := 33
 	var wg sync.WaitGroup
 	wg.Add(requestCount)
-	for requestNum := 0; requestNum < requestCount; requestNum++ {
+	for requestNum := range requestCount {
 		td := testdata.GenerateTraces(spansPerRequest)
 		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
+		for spanIndex := range spansPerRequest {
 			spans.At(spanIndex).SetName(fmt.Sprintf("%d-%d", requestNum, spanIndex))
 		}
 
@@ -153,7 +154,7 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
 
 	// disable queue settings to allow for error backpropagation.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 
 	cfg.MetadataCardinalityLimit = cardLimit
 	cfg.MetadataKeys = []string{"key1", "key2"}
@@ -173,7 +174,7 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
-	for requestNum := 0; requestNum < cardLimit; requestNum++ {
+	for requestNum := range cardLimit {
 		td := testdata.GenerateTraces(1)
 		ctx := client.NewContext(bg, client.Info{
 			Metadata: client.NewMetadata(map[string][]string{

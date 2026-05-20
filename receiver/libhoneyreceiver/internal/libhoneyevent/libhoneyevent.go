@@ -4,6 +4,7 @@
 package libhoneyevent // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
@@ -15,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -72,15 +74,64 @@ func (l *LibhoneyEvent) UnmarshalJSON(j []byte) error {
 	if err != nil {
 		return err
 	}
-	if tmp.MsgPackTimestamp.IsZero() && tmp.Time == "none" {
-		// neither timestamp was set. give it right now.
-		tmp.Time = tstr
-		tnow := time.Now()
-		tmp.MsgPackTimestamp = &tnow
+	if tmp.MsgPackTimestamp == nil || tmp.MsgPackTimestamp.IsZero() {
+		if tmp.Time == "none" {
+			tmp.Time = tstr
+			tnow := time.Now()
+			tmp.MsgPackTimestamp = &tnow
+		} else {
+			propertime := eventtime.GetEventTime(tmp.Time)
+			tmp.MsgPackTimestamp = &propertime
+		}
 	}
-	if tmp.MsgPackTimestamp.IsZero() {
-		propertime := eventtime.GetEventTime(tmp.Time)
-		tmp.MsgPackTimestamp = &propertime
+
+	*l = LibhoneyEvent(tmp)
+	return nil
+}
+
+// UnmarshalMsgpack overrides the unmarshall to make sure the MsgPackTimestamp is set
+func (l *LibhoneyEvent) UnmarshalMsgpack(data []byte) error {
+	type _libhoneyEvent LibhoneyEvent
+	tstr := eventtime.GetEventTimeDefaultString()
+	tzero := time.Time{}
+	tmp := _libhoneyEvent{Time: "none", MsgPackTimestamp: &tzero, Samplerate: 1}
+
+	// Use a temporary struct to avoid recursion
+	type tempEvent struct {
+		Samplerate       int            `msgpack:"samplerate"`
+		MsgPackTimestamp *time.Time     `msgpack:"time"`
+		Time             string         `msgpack:"-"` // Ignore during msgpack unmarshal
+		Data             map[string]any `msgpack:"data"`
+	}
+
+	var tmpEvent tempEvent
+	// First unmarshal into the temp struct
+	decoder := msgpack.NewDecoder(bytes.NewReader(data))
+	decoder.UseLooseInterfaceDecoding(true)
+	err := decoder.Decode(&tmpEvent)
+	if err != nil {
+		return err
+	}
+
+	// Copy fields to our tmp struct
+	tmp.Samplerate = tmpEvent.Samplerate
+	tmp.MsgPackTimestamp = tmpEvent.MsgPackTimestamp
+	tmp.Data = tmpEvent.Data
+
+	// Check if Time field exists in Data and extract it
+	if timeStr, ok := tmpEvent.Data["time"].(string); ok {
+		tmp.Time = timeStr
+	}
+
+	if tmp.MsgPackTimestamp == nil || tmp.MsgPackTimestamp.IsZero() {
+		if tmp.Time == "none" {
+			tmp.Time = tstr
+			tnow := time.Now()
+			tmp.MsgPackTimestamp = &tnow
+		} else {
+			propertime := eventtime.GetEventTime(tmp.Time)
+			tmp.MsgPackTimestamp = &propertime
+		}
 	}
 
 	*l = LibhoneyEvent(tmp)
@@ -218,12 +269,34 @@ type ServiceHistory struct {
 
 // ToPLogRecord converts a LibhoneyEvent to a Pdata LogRecord
 func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *[]string, logger zap.Logger) error {
-	timeNs := l.MsgPackTimestamp.UnixNano()
+	// Handle cases where MsgPackTimestamp might be nil (e.g., JSON data from Refinery)
+	var timeNs int64
+	if l.MsgPackTimestamp != nil {
+		timeNs = l.MsgPackTimestamp.UnixNano()
+	} else {
+		// Parse time from Time field or use current time
+		if l.Time != "" {
+			parsedTime, err := time.Parse(time.RFC3339, l.Time)
+			if err == nil {
+				timeNs = parsedTime.UnixNano()
+			} else {
+				timeNs = time.Now().UnixNano()
+			}
+		} else {
+			timeNs = time.Now().UnixNano()
+		}
+	}
 	logger.Debug("processing log with", zap.Int64("timestamp", timeNs))
 	newLog.SetTimestamp(pcommon.Timestamp(timeNs))
 
 	if logSevCode, ok := l.Data["severity_code"]; ok {
-		logSevInt := int32(logSevCode.(int64))
+		var logSevInt int32
+		switch v := logSevCode.(type) {
+		case int64:
+			logSevInt = int32(v)
+		case uint64:
+			logSevInt = int32(v)
+		}
 		newLog.SetSeverityNumber(plog.SeverityNumber(logSevInt))
 	}
 
@@ -232,7 +305,13 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 	}
 
 	if logFlags, ok := l.Data["flags"]; ok {
-		logFlagsUint := uint32(logFlags.(uint64))
+		var logFlagsUint uint32
+		switch v := logFlags.(type) {
+		case int64:
+			logFlagsUint = uint32(v)
+		case uint64:
+			logFlagsUint = uint32(v)
+		}
 		newLog.SetFlags(plog.LogRecordFlags(logFlagsUint))
 	}
 
@@ -259,6 +338,8 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 		case int64, int16, int32:
 			intv := v.(int64)
 			newLog.Attributes().PutInt(k, intv)
+		case uint64:
+			newLog.Attributes().PutInt(k, int64(v))
 		case float64:
 			newLog.Attributes().PutDouble(k, v)
 		case bool:
@@ -294,7 +375,23 @@ func (l *LibhoneyEvent) GetParentID(fieldName string) (trc.SpanID, error) {
 
 // ToPTraceSpan converts a LibhoneyEvent to a Pdata Span
 func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]string, cfg FieldMapConfig, logger zap.Logger) error {
-	timeNs := l.MsgPackTimestamp.UnixNano()
+	// Handle cases where MsgPackTimestamp might be nil (e.g., JSON data from Refinery)
+	var timeNs int64
+	if l.MsgPackTimestamp != nil {
+		timeNs = l.MsgPackTimestamp.UnixNano()
+	} else {
+		// Parse time from Time field or use current time
+		if l.Time != "" {
+			parsedTime, err := time.Parse(time.RFC3339, l.Time)
+			if err == nil {
+				timeNs = parsedTime.UnixNano()
+			} else {
+				timeNs = time.Now().UnixNano()
+			}
+		} else {
+			timeNs = time.Now().UnixNano()
+		}
+	}
 	logger.Debug("processing trace with", zap.Int64("timestamp", timeNs))
 
 	if pid, ok := l.Data[cfg.Attributes.ParentID]; ok {
@@ -390,6 +487,8 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 		case int64, int16, int32:
 			intv := v.(int64)
 			newSpan.Attributes().PutInt(k, intv)
+		case uint64:
+			newSpan.Attributes().PutInt(k, int64(v))
 		case float64:
 			newSpan.Attributes().PutDouble(k, v)
 		case bool:

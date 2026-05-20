@@ -19,9 +19,6 @@ exporters:
   debug:
     verbosity: detailed
 
-processors:
-  batch:
-
 extensions:
   health_check:
   pprof:
@@ -37,5 +34,4 @@ service:
   pipelines:
     metrics:
       receivers: [prometheus_simple]
-      processors: [batch]
       exporters: [debug]

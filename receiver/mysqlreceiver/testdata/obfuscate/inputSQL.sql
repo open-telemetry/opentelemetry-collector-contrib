@@ -1,0 +1,13 @@
+SELECT
+    COALESCE(`schema_name`, ''),
+    COALESCE(`digest`, ''),
+    COALESCE(`digest_text`, ''),
+    `count_star`,
+    `sum_timer_wait`,
+    `query_sample_text`
+FROM performance_schema.events_statements_summary_by_digest
+WHERE `last_seen` >= NOW() - INTERVAL 10000 second
+  AND ((`digest_text` NOT LIKE 'EXPLAIN %' AND `digest_text` NOT LIKE '/* otel-collector-ignore */%')
+   OR `digest_text` IS NULL)
+ORDER BY `count_star` DESC
+LIMIT 100

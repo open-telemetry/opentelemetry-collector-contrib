@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/stretchr/testify/assert"
@@ -22,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -45,7 +48,10 @@ var queryResponses = map[string][]metricRow{
 		{"RESOURCE_NAME": "processes", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "100", "LIMIT_VALUE": "100"},
 		{"RESOURCE_NAME": "locks", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "-1", "LIMIT_VALUE": "-1"},
 	},
-	tablespaceUsageSQL: {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
+	tablespaceUsageSQL:  {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
+	dataDictHitRatioSQL: {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
+	recycleBinSizeSQL:   {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
+	storageUsageSQL:     {{"USED_DB_SIZE": "5368709120", "ALLOCATED_DB_SIZE": "10737418240"}},
 }
 
 var cacheValue = map[string]int64{
@@ -65,6 +71,7 @@ var cacheValue = map[string]int64{
 	"PHYSICAL_WRITE_REQUESTS": 120,
 	"ROWS_PROCESSED":          200413,
 	"USER_IO_WAIT_TIME":       200,
+	"PROCEDURE_EXECUTIONS":    200413,
 }
 
 func TestScraper_Scrape(t *testing.T) {
@@ -151,7 +158,7 @@ func TestScraper_Scrape(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cfg := metadata.DefaultMetricsBuilderConfig()
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
 			cfg.Metrics.OracledbConsistentGets.Enabled = true
 			cfg.Metrics.OracledbDbBlockGets.Enabled = true
 
@@ -163,7 +170,7 @@ func TestScraper_Scrape(t *testing.T) {
 				},
 				clientProviderFunc:   test.dbclientFn,
 				id:                   component.ID{},
-				metricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			}
 			err := scrpr.start(t.Context(), componenttest.NewNopHost())
 			defer func() {
@@ -193,6 +200,86 @@ func TestScraper_Scrape(t *testing.T) {
 				}
 			}
 			assert.Equal(t, int64(78944), found.Sum().DataPoints().At(0).IntValue())
+		})
+	}
+}
+
+func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
+	const floatDelta = 0.01
+
+	tests := []struct {
+		name       string
+		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted  string
+	}{
+		{
+			name: "valid operational metrics",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{
+					Responses: [][]metricRow{
+						queryResponses[s],
+					},
+				}
+			},
+		},
+		{
+			name: "bad data dictionary hit ratio value",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == dataDictHitRatioSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{{"DATA_DICTIONARY_HIT_RATIO": "not_a_number"}},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{
+					queryResponses[s],
+				}}
+			},
+			errWanted: `failed to parse float64 for OracledbDataDictionaryHitRatio, value was not_a_number`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
+			cfg.Metrics.OracledbDataDictionaryHitRatio.Enabled = true
+			cfg.Metrics.OracledbRecycleBinLimit.Enabled = true
+			cfg.Metrics.OracledbStorageUsage.Enabled = true
+			cfg.Metrics.OracledbStorageUtilization.Enabled = true
+
+			scrpr := oracleScraper{
+				logger: zap.NewNop(),
+				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc:   test.dbclientFn,
+				id:                   component.ID{},
+				metricsBuilderConfig: cfg,
+			}
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(t.Context()))
+			}()
+			require.NoError(t, err)
+			m, err := scrpr.scrape(t.Context())
+			if test.errWanted != "" {
+				require.True(t, scrapererror.IsPartialScrapeError(err))
+				require.Contains(t, err.Error(), test.errWanted)
+			} else {
+				require.NoError(t, err)
+				metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+
+				metricMap := make(map[string]float64)
+				for i := 0; i < metrics.Len(); i++ {
+					metric := metrics.At(i)
+					if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
+						metricMap[metric.Name()] = metric.Gauge().DataPoints().At(0).DoubleValue()
+					}
+				}
+				assert.InDelta(t, 98.75, metricMap["oracledb.data_dictionary.hit_ratio"], floatDelta)
+				assert.InDelta(t, 13107200.0, metricMap["oracledb.recycle_bin.limit"], floatDelta)
+				assert.InDelta(t, 5368709120.0, metricMap["oracledb.storage.usage"], floatDelta)
+				assert.InDelta(t, 0.5, metricMap["oracledb.storage.utilization"], floatDelta)
+			}
 		})
 	}
 }
@@ -260,7 +347,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 			logsCfg := metadata.DefaultLogsBuilderConfig()
 			logsCfg.ResourceAttributes.HostName.Enabled = true
 			logsCfg.Events.DbServerTopQuery.Enabled = true
-			metricsCfg := metadata.DefaultMetricsBuilderConfig()
+			metricsCfg := metadata.NewDefaultMetricsBuilderConfig()
 			lruCache, _ := lru.New[string, map[string]int64](500)
 			lruCache.Add("fxk8aq3nds8aw:0", cacheValue)
 
@@ -273,13 +360,14 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 				},
 				clientProviderFunc:   test.dbclientFn,
 				id:                   component.ID{},
-				metricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				logsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 				metricCache:          lruCache,
 				topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
-				instanceName:         "oracle-instance-sample-1",
-				hostName:             "oracle-host-sample-1",
+				instanceName:         "oraclehost:1521/ORCL",
+				hostName:             "oraclehost:1521",
 				obfuscator:           newObfuscator(),
+				serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
 			}
 
 			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
@@ -290,6 +378,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 			}()
 			require.NoError(t, err)
 			expectedQueryPlanFile := filepath.Join("testdata", "expectedQueryTextAndPlanQuery.yaml")
+			assert.True(t, scrpr.lastExecutionTimestamp.IsZero(), "No value exists on lastExecutionTimestamp before any collection.")
 
 			logs, err := scrpr.scrapeLogs(t.Context())
 
@@ -303,6 +392,8 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 				assert.NoError(t, errs)
 				assert.Equal(t, "db.server.top_query", logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 				assert.NoError(t, errs)
+
+				assert.False(t, scrpr.lastExecutionTimestamp.IsZero(), "lastExecutionTimestamp hasn't set after a successful collection.")
 			}
 		})
 	}
@@ -310,9 +401,10 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 
 var samplesQueryResponses = map[string][]metricRow{
 	samplesQuery: {{
-		"ACTION": "00-0af7651916cd43dd8448eb211c80319c-a7ad6b7169203331-01", "MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y", "WAIT_CLASS": "ONE", "OBJECT_NAME": "BLAH", "CHILD_ADDRESS": "SDF3SDF1234D",
-		"SQL_CHILD_NUMBER": "0", "SID": "675", "SERIAL#": "51295", "SQL_FULLTEXT": "test_query", "OSUSER": "test-user", "PROCESS": "1115", "OBJECT_TYPE": "OBJECT_TYPE-A",
-		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "4199919568", "DURATION_SEC": "1",
+		"ACTION": "00-0af7651916cd43dd8448eb211c80319c-a7ad6b7169203331-01", "MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y", "WAIT_CLASS": "ONE", "WAIT_TIME_SEC": "0.5", "PROCEDURE_NAME": "BLAH", "CHILD_ADDRESS": "SDF3SDF1234D",
+		"SQL_CHILD_NUMBER": "0", "SID": "675", "SERIAL#": "51295", "SQL_FULLTEXT": "test_query", "OSUSER": "test-user", "PROCESS": "1115", "PROCEDURE_TYPE": "PROCEDURE_TYPE-A", "PROCEDURE_ID": "12345",
+		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "4199919568", "DURATION_SEC": "1", "SERVICE_NAME": "",
+		"SQL_EXEC_START": "2026-01-01T12:00:00Z", "LOGON_TIME": "2026-01-01T12:00:00Z", "SESSION_DURATION_SEC": "0",
 	}},
 	"invalidQuery": {{
 		"MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y",
@@ -329,10 +421,10 @@ func TestSamplesQuery(t *testing.T) {
 	}{
 		{
 			name: "valid",
-			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
 				return &fakeDbClient{
 					Responses: [][]metricRow{
-						samplesQueryResponses[s],
+						samplesQueryResponses[samplesQuery],
 					},
 				}
 			},
@@ -364,6 +456,8 @@ func TestSamplesQuery(t *testing.T) {
 				lb:                 metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
 				logsBuilderConfig:  metadata.DefaultLogsBuilderConfig(),
 				obfuscator:         newObfuscator(),
+				instanceName:       "oraclehost:1521/ORCL",
+				serviceInstanceID:  getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
 			}
 			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = false
 			scrpr.logsBuilderConfig.Events.DbServerQuerySample.Enabled = true
@@ -388,6 +482,410 @@ func TestSamplesQuery(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetInstanceId(t *testing.T) {
+	localhostName, _ := os.Hostname()
+
+	instanceString := "example.com:1521/XE"
+	instanceID := getInstanceID(instanceString, zap.NewNop())
+	assert.Equal(t, "example.com:1521/XE", instanceID)
+
+	localHostStringUppercase := "Localhost:1521/XE"
+	localInstanceID := getInstanceID(localHostStringUppercase, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":1521/XE", localInstanceID)
+
+	localHostString := "127.0.0.1:1521/XE"
+	localInstanceID = getInstanceID(localHostString, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":1521/XE", localInstanceID)
+
+	localHostStringIPV6 := "[::1]:1521/XE"
+	localInstanceID = getInstanceID(localHostStringIPV6, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":1521/XE", localInstanceID)
+
+	hostWithoutService := "127.0.0.1:1521"
+	localInstanceID = getInstanceID(hostWithoutService, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, localhostName+":1521", localInstanceID)
+
+	hostNameErrorSample := ""
+	localInstanceID = getInstanceID(hostNameErrorSample, zap.NewNop())
+	assert.NotNil(t, localInstanceID)
+	assert.Equal(t, "unknown:1521", localInstanceID)
+}
+
+func TestTopNLogsDiscardedWhenExecutionCountUnchanged(t *testing.T) {
+	var metricRowData []metricRow
+	var logRowData []metricRow
+
+	// Cache value with same EXECUTIONS as mock data (300413) but different other metrics.
+	// This simulates: execution count unchanged, but other metrics have positive deltas.
+	cacheValueSameExecCount := map[string]int64{
+		"APPLICATION_WAIT_TIME":   0,
+		"BUFFER_GETS":             3808197,
+		"CLUSTER_WAIT_TIME":       1000,
+		"CONCURRENCY_WAIT_TIME":   20,
+		"CPU_TIME":                29821063,
+		"DIRECT_READS":            3,
+		"DIRECT_WRITES":           6,
+		"DISK_READS":              12,
+		"ELAPSED_TIME":            38172810,
+		"EXECUTIONS":              300413, // same as mock data — delta will be 0
+		"PHYSICAL_READ_BYTES":     300,
+		"PHYSICAL_READ_REQUESTS":  100,
+		"PHYSICAL_WRITE_BYTES":    12,
+		"PHYSICAL_WRITE_REQUESTS": 120,
+		"ROWS_PROCESSED":          200413,
+		"USER_IO_WAIT_TIME":       200,
+		"PROCEDURE_EXECUTIONS":    300413,
+	}
+
+	logsCfg := metadata.DefaultLogsBuilderConfig()
+	logsCfg.ResourceAttributes.HostName.Enabled = true
+	logsCfg.Events.DbServerTopQuery.Enabled = true
+	metricsCfg := metadata.NewDefaultMetricsBuilderConfig()
+	lruCache, _ := lru.New[string, map[string]int64](500)
+	lruCache.Add("fxk8aq3nds8aw:0", cacheValueSameExecCount)
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(metricsCfg, receivertest.NewNopSettings(metadata.Type)),
+		lb:     metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			if strings.Contains(s, "V$SQL_PLAN") {
+				metricRowFile := readFile("oracleQueryPlanData.txt")
+				_ = json.Unmarshal(metricRowFile, &logRowData)
+				return &fakeDbClient{Responses: [][]metricRow{logRowData}}
+			}
+			metricRowFile := readFile("oracleQueryMetricsData.txt")
+			_ = json.Unmarshal(metricRowFile, &metricRowData)
+			return &fakeDbClient{Responses: [][]metricRow{metricRowData}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		logsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
+		metricCache:          lruCache,
+		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
+		instanceName:         "oraclehost:1521/ORCL",
+		hostName:             "oraclehost:1521",
+		obfuscator:           newObfuscator(),
+		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+	}
+
+	scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	}()
+	require.NoError(t, err)
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+	// No top query records should be emitted when execution count delta is zero
+	assert.Equal(t, 0, logs.ResourceLogs().Len(), "No top query logs should be emitted when execution count has not increased")
+}
+
+func TestTopNLogsProcedureNameEmpty(t *testing.T) {
+	metricsData := []metricRow{
+		{
+			"APPLICATION_WAIT_TIME": "0", "BUFFER_GETS": "4000000", "CHILD_ADDRESS": "ADDR1",
+			"CHILD_NUMBER": "0", "CLUSTER_WAIT_TIME": "0", "CONCURRENCY_WAIT_TIME": "0",
+			"CPU_TIME": "40000000", "DIRECT_READS": "0", "DIRECT_WRITES": "0", "DISK_READS": "0",
+			"ELAPSED_TIME": "50000000", "EXECUTIONS": "500", "PHYSICAL_READ_BYTES": "0",
+			"PHYSICAL_READ_REQUESTS": "0", "PHYSICAL_WRITE_BYTES": "0", "PHYSICAL_WRITE_REQUESTS": "0",
+			"ROWS_PROCESSED": "500", "SQL_FULLTEXT": "SELECT 1 FROM DUAL",
+			"SQL_ID": "abc123", "USER_IO_WAIT_TIME": "0",
+			"PROGRAM_ID": "", "PROCEDURE_NAME": "", "PROCEDURE_TYPE": "", "PROCEDURE_EXECUTIONS": "0",
+			"COMMAND_TYPE": "3",
+		},
+		{
+			"APPLICATION_WAIT_TIME": "0", "BUFFER_GETS": "5000000", "CHILD_ADDRESS": "ADDR2",
+			"CHILD_NUMBER": "0", "CLUSTER_WAIT_TIME": "0", "CONCURRENCY_WAIT_TIME": "0",
+			"CPU_TIME": "50000000", "DIRECT_READS": "0", "DIRECT_WRITES": "0", "DISK_READS": "0",
+			"ELAPSED_TIME": "60000000", "EXECUTIONS": "600", "PHYSICAL_READ_BYTES": "0",
+			"PHYSICAL_READ_REQUESTS": "0", "PHYSICAL_WRITE_BYTES": "0", "PHYSICAL_WRITE_REQUESTS": "0",
+			"ROWS_PROCESSED": "600", "SQL_FULLTEXT": "SELECT * FROM ADMIN.EMP",
+			"SQL_ID": "def456", "USER_IO_WAIT_TIME": "0",
+			"PROGRAM_ID": "98765", "PROCEDURE_NAME": "ADMIN.MY_PROC", "PROCEDURE_TYPE": "PROCEDURE", "PROCEDURE_EXECUTIONS": "600",
+			"COMMAND_TYPE": "3",
+		},
+	}
+
+	planData := []metricRow{}
+
+	logsCfg := metadata.DefaultLogsBuilderConfig()
+	logsCfg.ResourceAttributes.HostName.Enabled = true
+	logsCfg.Events.DbServerTopQuery.Enabled = true
+	metricsCfg := metadata.NewDefaultMetricsBuilderConfig()
+
+	lruCache, _ := lru.New[string, map[string]int64](500)
+	lruCache.Add("abc123:0", map[string]int64{
+		"APPLICATION_WAIT_TIME": 0, "BUFFER_GETS": 3000000, "CLUSTER_WAIT_TIME": 0,
+		"CONCURRENCY_WAIT_TIME": 0, "CPU_TIME": 30000000, "DIRECT_READS": 0, "DIRECT_WRITES": 0,
+		"DISK_READS": 0, "ELAPSED_TIME": 40000000, "EXECUTIONS": 400, "PHYSICAL_READ_BYTES": 0,
+		"PHYSICAL_READ_REQUESTS": 0, "PHYSICAL_WRITE_BYTES": 0, "PHYSICAL_WRITE_REQUESTS": 0,
+		"ROWS_PROCESSED": 400, "USER_IO_WAIT_TIME": 0, "PROCEDURE_EXECUTIONS": 0,
+	})
+	lruCache.Add("def456:0", map[string]int64{
+		"APPLICATION_WAIT_TIME": 0, "BUFFER_GETS": 4000000, "CLUSTER_WAIT_TIME": 0,
+		"CONCURRENCY_WAIT_TIME": 0, "CPU_TIME": 40000000, "DIRECT_READS": 0, "DIRECT_WRITES": 0,
+		"DISK_READS": 0, "ELAPSED_TIME": 50000000, "EXECUTIONS": 500, "PHYSICAL_READ_BYTES": 0,
+		"PHYSICAL_READ_REQUESTS": 0, "PHYSICAL_WRITE_BYTES": 0, "PHYSICAL_WRITE_REQUESTS": 0,
+		"ROWS_PROCESSED": 500, "USER_IO_WAIT_TIME": 0, "PROCEDURE_EXECUTIONS": 500,
+	})
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(metricsCfg, receivertest.NewNopSettings(metadata.Type)),
+		lb:     metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			if strings.Contains(s, "V$SQL_PLAN") {
+				return &fakeDbClient{Responses: [][]metricRow{planData}}
+			}
+			return &fakeDbClient{Responses: [][]metricRow{metricsData}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		logsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
+		metricCache:          lruCache,
+		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
+		instanceName:         "oraclehost:1521/ORCL",
+		hostName:             "oraclehost:1521",
+		obfuscator:           newObfuscator(),
+		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+	}
+
+	scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	}()
+	require.NoError(t, err)
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+	require.Positive(t, logs.ResourceLogs().Len())
+
+	scopeLogs := logs.ResourceLogs().At(0).ScopeLogs().At(0)
+	require.Equal(t, 2, scopeLogs.LogRecords().Len(), "Expected 2 top query records")
+
+	for i := range scopeLogs.LogRecords().Len() {
+		lr := scopeLogs.LogRecords().At(i)
+		procName, _ := lr.Attributes().Get("oracledb.procedure_name")
+		assert.NotEqual(t, ".", procName.Str(),
+			"Procedure name must not be '.' — should be empty or a valid name (record %d)", i)
+	}
+}
+
+func TestScrapesTopNLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
+	var metricRowData []metricRow
+	var logRowData []metricRow
+	tests := []struct {
+		name       string
+		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted  string
+	}{
+		{
+			name: "valid collection",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if strings.Contains(s, "V$SQL_PLAN") {
+					metricRowFile := readFile("oracleQueryPlanData.txt")
+					unmarshalErr := json.Unmarshal(metricRowFile, &logRowData)
+					if unmarshalErr == nil {
+						return &fakeDbClient{
+							Responses: [][]metricRow{
+								logRowData,
+							},
+						}
+					}
+				} else {
+					metricRowFile := readFile("oracleQueryMetricsData.txt")
+					unmarshalErr := json.Unmarshal(metricRowFile, &metricRowData)
+					if unmarshalErr == nil {
+						return &fakeDbClient{
+							Responses: [][]metricRow{
+								metricRowData,
+							},
+						}
+					}
+				}
+				return nil
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			logsCfg := metadata.DefaultLogsBuilderConfig()
+			logsCfg.Events.DbServerTopQuery.Enabled = true
+			metricsCfg := metadata.NewDefaultMetricsBuilderConfig()
+			lruCache, _ := lru.New[string, map[string]int64](500)
+			lruCache.Add("fxk8aq3nds8aw:0", cacheValue)
+
+			scrpr := oracleScraper{
+				logger: zap.NewNop(),
+				mb:     metadata.NewMetricsBuilder(metricsCfg, receivertest.NewNopSettings(metadata.Type)),
+				lb:     metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc:   test.dbclientFn,
+				metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				logsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
+				metricCache:          lruCache,
+				topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
+				obfuscator:           newObfuscator(),
+			}
+
+			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+			scrpr.topQueryCollectCfg.CollectionInterval = 1 * time.Minute
+
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(t.Context()))
+			}()
+			require.NoError(t, err)
+
+			assert.True(t, scrpr.lastExecutionTimestamp.IsZero(), "No value should be set for lastExecutionTimestamp before a successful collection")
+			logsCol1, _ := scrpr.scrapeLogs(t.Context())
+			assert.Equal(t, 1, logsCol1.ResourceLogs().At(0).ScopeLogs().Len(), "Collection should run when lastExecutionTimestamp is not available")
+			assert.False(t, scrpr.lastExecutionTimestamp.IsZero(), "A value should be set for lastExecutionTimestamp after a successful collection")
+
+			scrpr.lastExecutionTimestamp = scrpr.lastExecutionTimestamp.Add(-10 * time.Second)
+			logsCol2, err := scrpr.scrapeLogs(t.Context())
+			assert.Equal(t, 0, logsCol2.ResourceLogs().Len(), "top_query should not be collected until %s elapsed.", scrpr.topQueryCollectCfg.CollectionInterval.String())
+			require.NoError(t, err)
+		})
+	}
+}
+
+// TestObfuscateCacheHitsSkipsInvalidEntriesWithWarning verifies that when a SQL
+// query text fails to obfuscate (e.g. due to a truncated string literal from
+// Oracle's CLOB display limit), the affected entry is skipped with a Warn log
+// and the remaining entries are still emitted. The whole scrape must not abort.
+func TestObfuscateCacheHitsSkipsInvalidEntriesWithWarning(t *testing.T) {
+	// Build two metric rows: one with valid SQL and one with a truncated
+	// string literal that the obfuscator cannot parse.
+	metricsData := []metricRow{
+		{
+			"APPLICATION_WAIT_TIME": "0", "BUFFER_GETS": "4000000", "CHILD_ADDRESS": "ADDR1",
+			"CHILD_NUMBER": "0", "CLUSTER_WAIT_TIME": "0", "CONCURRENCY_WAIT_TIME": "0",
+			"CPU_TIME": "40000000", "DIRECT_READS": "0", "DIRECT_WRITES": "0", "DISK_READS": "0",
+			"ELAPSED_TIME": "50000000", "EXECUTIONS": "500", "PHYSICAL_READ_BYTES": "0",
+			"PHYSICAL_READ_REQUESTS": "0", "PHYSICAL_WRITE_BYTES": "0", "PHYSICAL_WRITE_REQUESTS": "0",
+			"ROWS_PROCESSED": "500", "SQL_FULLTEXT": "SELECT 1 FROM DUAL",
+			"SQL_ID": "valid001", "USER_IO_WAIT_TIME": "0",
+			"PROGRAM_ID": "", "PROCEDURE_NAME": "", "PROCEDURE_TYPE": "", "PROCEDURE_EXECUTIONS": "0",
+			"COMMAND_TYPE": "3",
+		},
+		{
+			// Truncated mid-string-literal — obfuscator will return an error.
+			"APPLICATION_WAIT_TIME": "0", "BUFFER_GETS": "5000000", "CHILD_ADDRESS": "ADDR2",
+			"CHILD_NUMBER": "0", "CLUSTER_WAIT_TIME": "0", "CONCURRENCY_WAIT_TIME": "0",
+			"CPU_TIME": "50000000", "DIRECT_READS": "0", "DIRECT_WRITES": "0", "DISK_READS": "0",
+			"ELAPSED_TIME": "60000000", "EXECUTIONS": "600", "PHYSICAL_READ_BYTES": "0",
+			"PHYSICAL_READ_REQUESTS": "0", "PHYSICAL_WRITE_BYTES": "0", "PHYSICAL_WRITE_REQUESTS": "0",
+			"ROWS_PROCESSED": "600", "SQL_FULLTEXT": "SELECT 'unterminated",
+			"SQL_ID": "trunc01", "USER_IO_WAIT_TIME": "0",
+			"PROGRAM_ID": "", "PROCEDURE_NAME": "", "PROCEDURE_TYPE": "", "PROCEDURE_EXECUTIONS": "0",
+			"COMMAND_TYPE": "3",
+		},
+	}
+
+	logsCfg := metadata.DefaultLogsBuilderConfig()
+	logsCfg.ResourceAttributes.HostName.Enabled = true
+	logsCfg.Events.DbServerTopQuery.Enabled = true
+	metricsCfg := metadata.NewDefaultMetricsBuilderConfig()
+
+	lruCache, _ := lru.New[string, map[string]int64](500)
+	lruCache.Add("valid001:0", map[string]int64{
+		"APPLICATION_WAIT_TIME": 0, "BUFFER_GETS": 3000000, "CLUSTER_WAIT_TIME": 0,
+		"CONCURRENCY_WAIT_TIME": 0, "CPU_TIME": 30000000, "DIRECT_READS": 0, "DIRECT_WRITES": 0,
+		"DISK_READS": 0, "ELAPSED_TIME": 40000000, "EXECUTIONS": 400, "PHYSICAL_READ_BYTES": 0,
+		"PHYSICAL_READ_REQUESTS": 0, "PHYSICAL_WRITE_BYTES": 0, "PHYSICAL_WRITE_REQUESTS": 0,
+		"ROWS_PROCESSED": 400, "USER_IO_WAIT_TIME": 0, "PROCEDURE_EXECUTIONS": 0,
+	})
+	lruCache.Add("trunc01:0", map[string]int64{
+		"APPLICATION_WAIT_TIME": 0, "BUFFER_GETS": 4000000, "CLUSTER_WAIT_TIME": 0,
+		"CONCURRENCY_WAIT_TIME": 0, "CPU_TIME": 40000000, "DIRECT_READS": 0, "DIRECT_WRITES": 0,
+		"DISK_READS": 0, "ELAPSED_TIME": 50000000, "EXECUTIONS": 500, "PHYSICAL_READ_BYTES": 0,
+		"PHYSICAL_READ_REQUESTS": 0, "PHYSICAL_WRITE_BYTES": 0, "PHYSICAL_WRITE_REQUESTS": 0,
+		"ROWS_PROCESSED": 500, "USER_IO_WAIT_TIME": 0, "PROCEDURE_EXECUTIONS": 0,
+	})
+
+	core, observedLogs := observer.New(zapcore.WarnLevel)
+	observedLogger := zap.New(core)
+
+	scrpr := oracleScraper{
+		logger: observedLogger,
+		mb:     metadata.NewMetricsBuilder(metricsCfg, receivertest.NewNopSettings(metadata.Type)),
+		lb:     metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			if strings.Contains(s, "V$SQL_PLAN") {
+				return &fakeDbClient{Responses: [][]metricRow{{}}}
+			}
+			return &fakeDbClient{Responses: [][]metricRow{metricsData}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		logsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
+		metricCache:          lruCache,
+		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
+		instanceName:         "oraclehost:1521/ORCL",
+		hostName:             "oraclehost:1521",
+		obfuscator:           newObfuscator(),
+		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+	}
+
+	scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	}()
+	require.NoError(t, err)
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	// The scrape must succeed even though one entry failed to obfuscate.
+	require.NoError(t, err)
+
+	// Exactly one valid log record (for "valid001") should be emitted.
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	require.Equal(t, 1, records.Len(), "Only the valid entry should be emitted; the truncated-SQL entry should be skipped")
+
+	// A Warn log must have been emitted for the skipped entry.
+	warnLogs := observedLogs.FilterMessage("oracleScraper failed to obfuscate SQL query, skipping entry")
+	assert.Equal(t, 1, warnLogs.Len(), "Expected exactly one Warn log for the failed obfuscation")
+	assert.Equal(t, "trunc01", warnLogs.All()[0].ContextMap()["sql_id"], "Warn log should identify the failing sql_id")
+}
+
+func TestCalculateLookbackSeconds(t *testing.T) {
+	collectionInterval := 20 * time.Second
+	vsqlRefreshLagSec := 10 * time.Second
+	expectedMinimumLookbackTime := int((collectionInterval + vsqlRefreshLagSec).Seconds())
+	currentCollectionTime := time.Now()
+
+	scrpr := oracleScraper{
+		lastExecutionTimestamp: currentCollectionTime.Add(-collectionInterval),
+	}
+	lookbackTime := scrpr.calculateLookbackSeconds()
+
+	assert.LessOrEqual(t, expectedMinimumLookbackTime, lookbackTime, "`lookbackTime` should be minimum %d", expectedMinimumLookbackTime)
 }
 
 func readFile(fname string) []byte {

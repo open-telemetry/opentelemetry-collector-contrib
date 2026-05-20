@@ -30,9 +30,11 @@ func TestLoadConfig(t *testing.T) {
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				Exclude:   ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}},
 				Extract: ExtractConfig{
-					Metadata: enabledAttributes(),
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
 				},
 				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
 			},
 		},
 		{
@@ -50,6 +52,7 @@ func TestLoadConfig(t *testing.T) {
 						{TagName: "l1", Key: "label1", From: "pod"},
 						{TagName: "l2", Key: "label2", From: kube.MetadataFromPod},
 					},
+					DeploymentNameFromReplicaSet: true,
 				},
 				Filter: FilterConfig{
 					Namespace:      "ns2",
@@ -105,6 +108,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
 			},
 		},
 		{
@@ -119,7 +123,8 @@ func TestLoadConfig(t *testing.T) {
 					Labels: []FieldExtractConfig{
 						{KeyRegex: "opentel.*", From: kube.MetadataFromPod},
 					},
-					Metadata: enabledAttributes(),
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
 				},
 				Exclude: ExcludeConfig{
 					Pods: []ExcludePodConfig{
@@ -128,6 +133,33 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "deployment_name_from_replicaset"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "deployment_name_from_replicaset_false"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: false,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
 			},
 		},
 		{
@@ -157,6 +189,252 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "bad_filter_field_op"),
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "otel_annotations"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata:                     enabledAttributes(),
+					OtelAnnotations:              true,
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "wait_for_metadata"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadata:        true,
+				WaitForMetadataTimeout: 30 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "passthrough_mode"),
+			expected: &Config{
+				APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Passthrough: true,
+				Extract: ExtractConfig{
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "filter_label_exists"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
+				},
+				Filter: FilterConfig{
+					Labels: []FieldFilterConfig{
+						{Key: "app", Op: "exists"},
+					},
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "filter_label_does_not_exist"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
+				},
+				Filter: FilterConfig{
+					Labels: []FieldFilterConfig{
+						{Key: "deprecated-label", Op: "does-not-exist"},
+					},
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "extract_from_namespace"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata: enabledAttributes(),
+					Labels: []FieldExtractConfig{
+						{TagName: "ns_label", Key: "team", From: "namespace"},
+					},
+					Annotations: []FieldExtractConfig{
+						{TagName: "ns_annotation", Key: "owner", From: "namespace"},
+					},
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "extract_from_node"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata: []string{"k8s.node.name", "k8s.node.uid"},
+					Labels: []FieldExtractConfig{
+						{TagName: "node_label", Key: "node-role", From: "node"},
+					},
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "extract_from_deployment"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata: enabledAttributes(),
+					Labels: []FieldExtractConfig{
+						{TagName: "deployment_label", Key: "app", From: "deployment"},
+					},
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "extract_from_statefulset"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata: enabledAttributes(),
+					Labels: []FieldExtractConfig{
+						{TagName: "statefulset_label", Key: "app", From: "statefulset"},
+					},
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "extract_from_daemonset"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata: enabledAttributes(),
+					Labels: []FieldExtractConfig{
+						{TagName: "daemonset_label", Key: "app", From: "daemonset"},
+					},
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "extract_from_job"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata: enabledAttributes(),
+					Labels: []FieldExtractConfig{
+						{TagName: "job_label", Key: "app", From: "job"},
+					},
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "all_metadata_fields"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata: []string{
+						"k8s.namespace.name", "k8s.pod.name", "k8s.pod.uid", "k8s.pod.hostname",
+						"k8s.pod.start_time", "k8s.pod.ip", "k8s.deployment.name", "k8s.deployment.uid",
+						"k8s.replicaset.name", "k8s.replicaset.uid", "k8s.daemonset.name", "k8s.daemonset.uid",
+						"k8s.statefulset.name", "k8s.statefulset.uid", "k8s.job.name", "k8s.job.uid",
+						"k8s.cronjob.name", "k8s.cronjob.uid", "k8s.node.name", "k8s.node.uid",
+						"k8s.container.name", "container.id", "container.image.name", "container.image.tag",
+						"container.image.repo_digests", "service.namespace", "service.name",
+						"service.version", "service.instance.id", "k8s.cluster.uid",
+					},
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "both_container_image_tags"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata: []string{
+						"container.image.tag", "container.image.tags",
+					},
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_metadata_field"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "custom_intervals"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        20 * time.Second,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_watch_sync_period"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "disable_watch_sync"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        0,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -178,6 +456,7 @@ func TestLoadConfig(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
+
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})

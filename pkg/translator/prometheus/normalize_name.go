@@ -4,19 +4,11 @@
 package prometheus // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 
 import (
+	"slices"
 	"strings"
 	"unicode"
 
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-)
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"pkg.translator.prometheus.NormalizeName",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("Controls whether metrics names are automatically normalized to follow Prometheus naming convention"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950"),
-	featuregate.WithRegisterToVersion("v0.130.0"),
 )
 
 // BuildCompliantName builds a Prometheus-compliant metric name for the specified metric
@@ -61,10 +53,10 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 
 	// Append unit if it exists
 	promUnit, promUnitRate := buildCompliantMainUnit(metric.Unit()), buildCompliantPerUnit(metric.Unit())
-	if promUnit != "" && !contains(nameTokens, promUnit) {
+	if promUnit != "" && !slices.Contains(nameTokens, promUnit) {
 		nameTokens = append(nameTokens, promUnit)
 	}
-	if promUnitRate != "" && !contains(nameTokens, promUnitRate) {
+	if promUnitRate != "" && !slices.Contains(nameTokens, promUnitRate) {
 		nameTokens = append(append(nameTokens, "per"), promUnitRate)
 	}
 
@@ -160,16 +152,6 @@ func removeSuffix(tokens []string, suffix string) []string {
 
 func RemovePromForbiddenRunes(s string) string {
 	return strings.Join(strings.FieldsFunc(s, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' && r != ':' }), "_")
-}
-
-// Returns whether the slice contains the specified value
-func contains(slice []string, value string) bool {
-	for _, sliceEntry := range slice {
-		if sliceEntry == value {
-			return true
-		}
-	}
-	return false
 }
 
 // Remove the specified value from the slice

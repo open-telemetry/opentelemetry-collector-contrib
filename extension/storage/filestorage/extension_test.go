@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -63,28 +64,28 @@ func TestExtensionIntegrity(t *testing.T) {
 		myBytes := []byte(n.Name())
 
 		// Set my values
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			err := c.Set(ctx, keys[i], myBytes)
 			require.NoError(t, err)
 		}
 
 		// Repeatedly thrash client
-		for j := 0; j < 100; j++ {
+		for range 100 {
 			// Make sure my values are still mine
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				v, err := c.Get(ctx, keys[i])
 				require.NoError(t, err)
 				require.Equal(t, myBytes, v)
 			}
 
 			// Delete my values
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				err := c.Delete(ctx, keys[i])
 				require.NoError(t, err)
 			}
 
 			// Reset my values
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				err := c.Set(ctx, keys[i], myBytes)
 				require.NoError(t, err)
 			}
@@ -366,7 +367,7 @@ func TestCompaction(t *testing.T) {
 	require.Less(t, stats.Size(), newStats.Size())
 
 	// remove data from database
-	for i = 0; i < numEntries; i++ {
+	for i = range numEntries {
 		key = fmt.Sprintf("key_%d", i)
 		err = c.Delete(ctx, key)
 		require.NoError(t, err)
@@ -631,7 +632,7 @@ func TestRecreate(t *testing.T) {
 		se, ok := ext.(storage.Extension)
 		require.True(t, ok)
 
-		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("filelog"), "")
+		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("file_log"), "")
 		require.NoError(t, err)
 		require.NotNil(t, client)
 
@@ -654,7 +655,7 @@ func TestRecreate(t *testing.T) {
 		se, ok := ext.(storage.Extension)
 		require.True(t, ok)
 
-		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("filelog"), "")
+		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("file_log"), "")
 		require.NoError(t, err)
 		require.NotNil(t, client)
 
@@ -685,7 +686,7 @@ func TestRecreate(t *testing.T) {
 		se, ok := ext.(storage.Extension)
 		require.True(t, ok)
 
-		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("filelog"), "")
+		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("file_log"), "")
 		require.NoError(t, err)
 		require.NotNil(t, client)
 
@@ -695,5 +696,53 @@ func TestRecreate(t *testing.T) {
 
 		require.NoError(t, client.Close(ctx))
 		require.NoError(t, ext.Shutdown(ctx))
+	}
+}
+
+func TestHashing(t *testing.T) {
+	longNameErr := "file name too long"
+	if runtime.GOOS == "windows" {
+		longNameErr = "The filename, directory name, or volume label syntax is incorrect"
+	}
+	tests := []struct {
+		name        string
+		input       string
+		expectedErr string
+	}{
+		{
+			name:  "short name",
+			input: "short_filename.txt",
+		},
+		{
+			name:  "exactly max length",
+			input: strings.Repeat("a", 255),
+		},
+		{
+			name:        "exceeds max length",
+			input:       strings.Repeat("b", 1000),
+			expectedErr: longNameErr,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			file, err := os.OpenFile(filepath.Join(tempDir, tt.input), os.O_RDWR|os.O_CREATE, 0o644)
+			if tt.expectedErr != "" {
+				if !strings.Contains(err.Error(), tt.expectedErr) {
+					require.ErrorContains(t, err, tt.expectedErr)
+				}
+				require.Nil(t, file)
+				truncated := hash(tt.input)
+				file, err = os.OpenFile(filepath.Join(tempDir, truncated), os.O_RDWR|os.O_CREATE, 0o644)
+				require.NoError(t, err)
+				require.NotNil(t, file)
+				require.NoError(t, file.Close())
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, file)
+				require.NoError(t, file.Close())
+			}
+		})
 	}
 }

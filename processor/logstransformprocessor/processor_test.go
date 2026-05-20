@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -147,7 +148,7 @@ func TestLogsTransformProcessor(t *testing.T) {
 			require.NoError(t, err)
 			assert.True(t, ltp.Capabilities().MutatesData)
 
-			err = ltp.Start(t.Context(), nil)
+			err = ltp.Start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			sourceLogData := generateLogData(tt.sourceMessages)
@@ -265,14 +266,14 @@ func TestProcessorShutdownWithSlowOperator(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, ltp.Capabilities().MutatesData)
 
-	err = ltp.Start(t.Context(), nil)
+	err = ltp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	testLog := plog.NewLogs()
 	scopeLogs := testLog.ResourceLogs().AppendEmpty().
 		ScopeLogs().AppendEmpty()
 
-	for i := 0; i < 500; i++ {
+	for range 500 {
 		lr := scopeLogs.LogRecords().AppendEmpty()
 		lr.Body().SetStr("Test message")
 	}

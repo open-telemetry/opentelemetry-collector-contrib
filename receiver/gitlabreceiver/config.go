@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/multierr"
@@ -60,6 +61,10 @@ type WebHook struct {
 	GitlabHeaders   GitlabHeaders                  `mapstructure:",squash"`          // GitLab headers set by default
 
 	Secret string `mapstructure:"secret"` // secret for webhook
+
+	// IncludeUserAttributes controls whether user information (commit author, pipeline actor) is included
+	// Default: false (user information is excluded by default for privacy)
+	IncludeUserAttributes bool `mapstructure:"include_user_attributes"`
 }
 
 type GitlabHeaders struct {
@@ -71,10 +76,13 @@ type GitlabHeaders struct {
 }
 
 func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	netAddr.Endpoint = defaultEndpoint
 	return &Config{
 		WebHook: WebHook{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint:     defaultEndpoint,
+				NetAddr:      netAddr,
 				ReadTimeout:  defaultReadTimeout,
 				WriteTimeout: defaultWriteTimeout,
 			},
@@ -90,8 +98,9 @@ func createDefaultConfig() component.Config {
 					defaultIdempotencyKeyHeader:    "",
 				},
 			},
-			Path:       defaultPath,
-			HealthPath: defaultHealthPath,
+			Path:                  defaultPath,
+			HealthPath:            defaultHealthPath,
+			IncludeUserAttributes: false,
 		},
 	}
 }

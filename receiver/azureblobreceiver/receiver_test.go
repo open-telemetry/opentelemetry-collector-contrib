@@ -4,6 +4,7 @@
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,48 +21,67 @@ var (
 	tracesJSON = []byte(`{"resourceSpans":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"FilterModule"}},{"key":"service.instance.id","value":{"stringValue":"7020adec-62a0-4cc6-9878-876fec16e961"}},{"key":"telemetry.sdk.name","value":{"stringValue":"opentelemetry"}},{"key":"telemetry.sdk.language","value":{"stringValue":"dotnet"}},{"key":"telemetry.sdk.version","value":{"stringValue":"1.2.0.268"}}]},"scopeSpans":[{"scope":{"name":"IoTSample.FilterModule"},"spans":[{"traceId":"b8c21a8a5aeb50b98f38d548cedc7068","spanId":"4951aca774f96da6","parentSpanId":"c4ad1e000ef8bb19","name":"Upstream","kind":"SPAN_KIND_CLIENT","startTimeUnixNano":"1645750319674336500","endTimeUnixNano":"1645750319678074800","status":{}},{"traceId":"b8c21a8a5aeb50b98f38d548cedc7068","spanId":"c4ad1e000ef8bb19","parentSpanId":"22ba720ac011163b","name":"FilterTemperature","kind":"SPAN_KIND_SERVER","startTimeUnixNano":"1645750319674157400","endTimeUnixNano":"1645750319678086500","attributes":[{"key":"MessageString","value":{"stringValue":"{\"machine\":{\"temperature\":100.2142046553614,\"pressure\":10.024403062003197},\"ambient\":{\"temperature\":20.759989948598662,\"humidity\":24},\"timeCreated\":\"2022-02-25T00:51:59.6685152Z\"}"}},{"key":"MachineTemperature","value":{"doubleValue":100.2142046553614}},{"key":"TemperatureThreshhold","value":{"intValue":"25"}}],"events":[{"timeUnixNano":"1645750319674315300","name":"Machine temperature 100.2142046553614 exceeds threshold 25"},{"timeUnixNano":"1645750319674324100","name":"Message passed threshold"}],"status":{}}]}]}]}`)
 )
 
+var testModes = []string{"eventhub", "polling"}
+
 func TestNewReceiver(t *testing.T) {
-	receiver, err := getBlobReceiver(t)
+	for _, mode := range testModes {
+		t.Run(mode, func(tt *testing.T) {
+			receiver, err := getBlobReceiver(tt, mode)
 
-	require.NoError(t, err)
+			require.NoError(tt, err)
 
-	assert.NotNil(t, receiver)
+			assert.NotNil(tt, receiver)
+		})
+	}
 }
 
 func TestConsumeLogsJSON(t *testing.T) {
-	receiver, _ := getBlobReceiver(t)
+	for _, mode := range testModes {
+		t.Run(mode, func(tt *testing.T) {
+			receiver, _ := getBlobReceiver(tt, mode)
 
-	logsSink := new(consumertest.LogsSink)
-	logsConsumer, ok := receiver.(logsDataConsumer)
-	require.True(t, ok)
+			logsSink := new(consumertest.LogsSink)
+			logsConsumer, ok := receiver.(logsDataConsumer)
+			require.True(tt, ok)
 
-	logsConsumer.setNextLogsConsumer(logsSink)
+			logsConsumer.setNextLogsConsumer(logsSink)
 
-	err := logsConsumer.consumeLogsJSON(t.Context(), logsJSON)
-	require.NoError(t, err)
-	assert.Equal(t, 1, logsSink.LogRecordCount())
+			err := logsConsumer.consumeLogsJSON(tt.Context(), logsJSON)
+			require.NoError(tt, err)
+			assert.Equal(tt, 1, logsSink.LogRecordCount())
+		})
+	}
 }
 
 func TestConsumeTracesJSON(t *testing.T) {
-	receiver, _ := getBlobReceiver(t)
+	for _, mode := range testModes {
+		t.Run(mode, func(tt *testing.T) {
+			receiver, _ := getBlobReceiver(tt, mode)
 
-	tracesSink := new(consumertest.TracesSink)
-	tracesConsumer, ok := receiver.(tracesDataConsumer)
-	require.True(t, ok)
+			tracesSink := new(consumertest.TracesSink)
+			tracesConsumer, ok := receiver.(tracesDataConsumer)
+			require.True(tt, ok)
 
-	tracesConsumer.setNextTracesConsumer(tracesSink)
+			tracesConsumer.setNextTracesConsumer(tracesSink)
 
-	err := tracesConsumer.consumeTracesJSON(t.Context(), tracesJSON)
-	require.NoError(t, err)
-	assert.Equal(t, 2, tracesSink.SpanCount())
+			err := tracesConsumer.consumeTracesJSON(tt.Context(), tracesJSON)
+			require.NoError(tt, err)
+			assert.Equal(tt, 2, tracesSink.SpanCount())
+		})
+	}
 }
 
-func getBlobReceiver(t *testing.T) (component.Component, error) {
+func getBlobReceiver(t *testing.T, mode string) (component.Component, error) {
 	set := receivertest.NewNopSettings(metadata.Type)
-
-	blobClient := newMockBlobClient()
-	blobEventHandler := getBlobEventHandler(t, blobClient)
-
-	getBlobEventHandler(t, blobClient)
-	return newReceiver(set, blobEventHandler)
+	if mode == "eventhub" {
+		blobClient := newMockBlobClient()
+		blobEventHandler := getEventHubEventHandler(t, blobClient)
+		return newReceiver(set, blobEventHandler)
+	}
+	if mode == "polling" {
+		blobClient := newMockBlobClient()
+		blobEventHandler := getBlobEventHandler(t, blobClient)
+		return newReceiver(set, blobEventHandler)
+	}
+	return nil, errors.New("invalid mode")
 }

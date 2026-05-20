@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -26,6 +27,7 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
+		ServerConfig:      confighttp.NewDefaultServerConfig(),
 		ConstLabels:       map[string]string{},
 		SendTimestamps:    false,
 		MetricExpiration:  time.Minute * 5,
@@ -53,6 +55,7 @@ func createMetricsExporter(
 		prometheus.ConsumeMetrics,
 		exporterhelper.WithStart(prometheus.Start),
 		exporterhelper.WithShutdown(prometheus.Shutdown),
+		exporterhelper.WithQueue(pcfg.QueueBatchConfig),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 	)
 	if err != nil {

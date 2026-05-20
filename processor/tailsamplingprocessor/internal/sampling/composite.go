@@ -61,8 +61,7 @@ func NewComposite(
 	recordSubPolicy bool,
 ) samplingpolicy.Evaluator {
 	var subpolicies []*subpolicy
-
-	for i := 0; i < len(subPolicyParams); i++ {
+	for i := range subPolicyParams {
 		sub := &subpolicy{}
 		sub.evaluator = subPolicyParams[i].Evaluator
 		sub.allocatedSPS = subPolicyParams[i].MaxSpansPerSecond
@@ -107,11 +106,12 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 			return samplingpolicy.Unspecified, err
 		}
 
+		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 		if decision == samplingpolicy.Sampled || decision == samplingpolicy.InvertSampled {
 			// The subpolicy made a decision to Sample. Now we need to make our decision.
 
 			// Calculate resulting SPS counter if we decide to sample this trace
-			spansInSecondIfSampled := sub.sampledSPS + trace.SpanCount.Load()
+			spansInSecondIfSampled := sub.sampledSPS + trace.SpanCount
 
 			// Check if the rate will be within the allocated bandwidth.
 			if spansInSecondIfSampled <= sub.allocatedSPS && spansInSecondIfSampled <= c.maxTotalSPS {
@@ -119,7 +119,7 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 
 				// Let the sampling happen
 				if c.recordSubPolicy {
-					SetAttrOnScopeSpans(trace, "tailsampling.composite_policy", sub.name)
+					SetAttrOnScopeSpans(trace.ReceivedBatches, "tailsampling.composite_policy", sub.name)
 				}
 				return samplingpolicy.Sampled, nil
 			}
@@ -133,4 +133,13 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 	}
 
 	return samplingpolicy.NotSampled, nil
+}
+
+func (c *Composite) IsStateful() bool {
+	for _, sub := range c.subpolicies {
+		if sub.evaluator.IsStateful() {
+			return true
+		}
+	}
+	return false
 }

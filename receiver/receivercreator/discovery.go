@@ -6,10 +6,12 @@ package receivercreator // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"net/url"
 	"strings"
 
 	"github.com/go-viper/mapstructure/v2"
+	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 
@@ -29,15 +31,16 @@ const (
 	scraperHint          = "scraper"
 	configHint           = "config"
 
-	logsReceiver          = "filelog"
+	logsReceiver          = "file_log"
 	defaultLogPathPattern = "/var/log/pods/%s_%s_%s/%s/*.log"
 )
 
 // k8sHintsBuilder creates configurations from hints provided as Pod's annotations.
 type k8sHintsBuilder struct {
-	logger             *zap.Logger
-	ignoreReceivers    map[string]bool
-	defaultAnnotations map[string]string
+	logger               *zap.Logger
+	ignoreReceivers      map[string]bool
+	defaultAnnotations   map[string]string
+	defaultFileLogConfig userConfigMap
 }
 
 func createK8sHintsBuilder(config DiscoveryConfig, logger *zap.Logger) k8sHintsBuilder {
@@ -46,9 +49,10 @@ func createK8sHintsBuilder(config DiscoveryConfig, logger *zap.Logger) k8sHintsB
 		ignoreReceivers[r] = true
 	}
 	return k8sHintsBuilder{
-		logger:             logger,
-		ignoreReceivers:    ignoreReceivers,
-		defaultAnnotations: config.DefaultAnnotations,
+		logger:               logger,
+		ignoreReceivers:      ignoreReceivers,
+		defaultAnnotations:   config.DefaultAnnotations,
+		defaultFileLogConfig: config.DefaultFileLogConfig,
 	}
 }
 
@@ -128,7 +132,7 @@ func (builder *k8sHintsBuilder) createScraper(
 	}
 
 	recTemplate, err := newReceiverTemplate(fmt.Sprintf("%v/%v_%v", subreceiverKey, pod.UID, port), userConfMap)
-	recTemplate.signals = receiverSignals{metrics: true, logs: false, traces: false}
+	recTemplate.signals = receiverSignals{metrics: true, logs: false, traces: false, profiles: false}
 
 	return &recTemplate, err
 }
@@ -167,10 +171,11 @@ func (builder *k8sHintsBuilder) createLogsReceiver(
 		pod.UID,
 		pod.Name,
 		pod.Namespace,
+		builder.defaultFileLogConfig,
 		builder.logger)
 
 	recTemplate, err := newReceiverTemplate(fmt.Sprintf("%v/%v_%v", subreceiverKey, pod.UID, containerName), userConfMap)
-	recTemplate.signals = receiverSignals{metrics: false, logs: true, traces: false}
+	recTemplate.signals = receiverSignals{metrics: false, logs: true, traces: false, profiles: false}
 
 	return &recTemplate, err
 }
@@ -186,7 +191,13 @@ func getScraperConfFromAnnotations(
 		return userConfigMap{}, nil
 	}
 	conf := userConfigMap{}
-	if err := yaml.Unmarshal([]byte(configStr), &conf); err != nil {
+
+	var rawConf map[string]any
+	if err := yaml.Unmarshal([]byte(configStr), &rawConf); err != nil {
+		return nil, err
+	}
+	cm := confmap.NewFromStringMap(rawConf)
+	if err := cm.Unmarshal(&conf); err != nil {
 		return userConfigMap{}, fmt.Errorf("could not unmarshal configuration from hint: %v", zap.Error(err))
 	}
 
@@ -214,17 +225,12 @@ func getScraperConfFromAnnotations(
 func createLogsConfig(
 	annotations map[string]string,
 	containerName, podUID, podName, namespace string,
+	defaultConfMap userConfigMap,
 	logger *zap.Logger,
 ) userConfigMap {
 	scopeSuffix := containerName
 	logPath := fmt.Sprintf(defaultLogPathPattern, namespace, podName, podUID, containerName)
-	cont := []any{map[string]any{"id": "container-parser", "type": "container"}}
-	defaultConfMap := userConfigMap{
-		"include":           []string{logPath},
-		"include_file_path": true,
-		"include_file_name": false,
-		"operators":         cont,
-	}
+	defaultConfMap["include"] = []string{logPath}
 
 	configStr, found := getHintAnnotation(annotations, otelLogsHints, configHint, scopeSuffix)
 	if !found || configStr == "" {
@@ -305,12 +311,8 @@ func validateEndpoint(endpoint, defaultEndpoint string) error {
 func mergeAnnotations(podAnnotations, defaultAnnotations map[string]string) map[string]string {
 	annotations := make(map[string]string)
 	// Start with defaultAnnotations (lower priority)
-	for k, v := range defaultAnnotations {
-		annotations[k] = v
-	}
+	maps.Copy(annotations, defaultAnnotations)
 	// Overwrite with podAnnotations (higher priority)
-	for k, v := range podAnnotations {
-		annotations[k] = v
-	}
+	maps.Copy(annotations, podAnnotations)
 	return annotations
 }

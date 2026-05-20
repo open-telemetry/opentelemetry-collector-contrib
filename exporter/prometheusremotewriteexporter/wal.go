@@ -156,10 +156,12 @@ func newWAL(walConfig *WALConfig, set exporter.Settings, exportSink func(context
 		exportSink: exportSink,
 		walConfig:  walConfig,
 		stopChan:   make(chan struct{}),
-		rNotify:    make(chan struct{}),
-		rWALIndex:  &atomic.Uint64{},
-		wWALIndex:  &atomic.Uint64{},
-		telemetry:  telemetryPRWWal,
+		// Buffered to avoid lost wake-ups when the writer signals before the
+		// reader starts waiting on notifications.
+		rNotify:   make(chan struct{}, 1),
+		rWALIndex: &atomic.Uint64{},
+		wWALIndex: &atomic.Uint64{},
+		telemetry: telemetryPRWWal,
 	}, nil
 }
 
@@ -168,6 +170,7 @@ func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
 	log, err := wal.Open(walPath, &wal.Options{
 		SegmentCacheSize: wc.bufferSize(),
 		NoCopy:           true,
+		AllowEmpty:       true,
 	})
 	if err != nil {
 		return nil, "", fmt.Errorf("prometheusremotewriteexporter: failed to open WAL: %w", err)
@@ -227,12 +230,12 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 	var logger *zap.Logger
 	logger, err = loggerFromContext(ctx)
 	if err != nil {
-		return
+		return err
 	}
 
 	if err = prweWAL.retrieveWALIndices(); err != nil {
 		logger.Error("unable to start write-ahead log", zap.Error(err))
-		return
+		return err
 	}
 
 	runCtx, cancel := context.WithCancel(ctx)
@@ -431,18 +434,22 @@ func (prweWAL *prweWAL) persistToWAL(ctx context.Context, requests []*prompb.Wri
 		batch.Write(wIndex, protoBlob)
 	}
 
+	if err := prweWAL.wal.WriteBatch(batch); err != nil {
+		return err
+	}
+
 	// Notify reader go routine that is possibly waiting for writes.
 	select {
 	case prweWAL.rNotify <- struct{}{}:
 	default:
 	}
 
-	return prweWAL.wal.WriteBatch(batch)
+	return nil
 }
 
 func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wreq *prompb.WriteRequest, err error) {
 	var protoBlob []byte
-	for i := 0; i < 12; i++ {
+	for range 12 {
 		// Firstly check if we've been terminated, then exit if so.
 		select {
 		case <-ctx.Done():

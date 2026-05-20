@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
@@ -105,7 +106,23 @@ func TestExport_ErrorConsumer(t *testing.T) {
 
 	metricsClient, selfExp, selfProv := makeMetricsServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := metricsClient.Export(t.Context(), req)
-	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
+	// Non-permanent errors should be mapped to Unavailable (retryable), not Unknown.
+	assert.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
+	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
+
+	// One self-tracing spans is issued.
+	require.NoError(t, selfProv.ForceFlush(t.Context()))
+	require.Len(t, selfExp.GetSpans(), 1)
+}
+
+func TestExport_PermanentErrorConsumer(t *testing.T) {
+	md := testdata.GenerateMetrics(1)
+	req := pmetricotlp.NewExportRequestFromMetrics(md)
+
+	metricsClient, selfExp, selfProv := makeMetricsServiceClient(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("bad data"))))
+	resp, err := metricsClient.Export(t.Context(), req)
+	// Permanent errors should be mapped to Internal, not Unknown.
+	assert.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: bad data")
 	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
 
 	// One self-tracing spans is issued.
@@ -141,7 +158,7 @@ func TestExport_AdmissionLimitExceeded(t *testing.T) {
 
 	var expectSuccess atomic.Int32
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		go func() {
 			defer wait.Done()
 			_, err := metricsClient.Export(t.Context(), req)

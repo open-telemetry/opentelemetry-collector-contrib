@@ -103,7 +103,6 @@ func TestLoadConfig(t *testing.T) {
 				DetectorConfig: systemConfig,
 				ClientConfig:   cfg,
 				Override:       false,
-				Attributes:     []string{"a", "b"},
 			},
 		},
 		{
@@ -131,6 +130,16 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: resourceAttributesConfig,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "refresh"),
+			expected: &Config{
+				Detectors:       []string{"system"},
+				ClientConfig:    cfg,
+				Override:        false,
+				DetectorConfig:  detectorCreateDefaultConfig(),
+				RefreshInterval: 5 * time.Second,
 			},
 		},
 		{
@@ -218,4 +227,75 @@ func TestGetConfigFromType(t *testing.T) {
 			assert.Equal(t, tt.expectedConfig, output)
 		})
 	}
+}
+
+// TestGetConfigFromType_AllDetectors tests GetConfigFromType for all detector types
+// to ensure complete coverage of the switch statement
+func TestGetConfigFromType_AllDetectors(t *testing.T) {
+	defaultConfig := detectorCreateDefaultConfig()
+
+	tests := []struct {
+		name         string
+		detectorType internal.DetectorType
+	}{
+		{"ECS", "ecs"},
+		{"EKS", "eks"},
+		{"ElasticBeanstalk", "elastic_beanstalk"},
+		{"Azure", "azure"},
+		{"AKS", "aks"},
+		{"Consul", "consul"},
+		{"DigitalOcean", "digitalocean"},
+		{"Docker", "docker"},
+		{"GCP", "gcp"},
+		{"Hetzner", "hetzner"},
+		{"OpenShift", "openshift"},
+		{"Nova", "nova"},
+		{"OracleCloud", "oraclecloud"},
+		{"K8sNode", "k8snode"},
+		{"Kubeadm", "kubeadm"},
+		{"Akamai", "akamai"},
+		{"Scaleway", "scaleway"},
+		{"Upcloud", "upcloud"},
+		{"Vultr", "vultr"},
+		{"AlibabaECS", "alibaba_ecs"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := defaultConfig.GetConfigFromType(tt.detectorType)
+			assert.NotNil(t, config, "config should not be nil for %s detector", tt.detectorType)
+		})
+	}
+}
+
+// TestDetectorCreateDefaultConfig tests that detectorCreateDefaultConfig creates
+// valid default configurations for all detectors
+func TestDetectorCreateDefaultConfig(t *testing.T) {
+	config := detectorCreateDefaultConfig()
+
+	// Verify all detector configs are initialized
+	assert.NotNil(t, config.EC2Config)
+	assert.NotNil(t, config.ECSConfig)
+	assert.NotNil(t, config.EKSConfig)
+	assert.NotNil(t, config.ElasticbeanstalkConfig)
+	assert.NotNil(t, config.LambdaConfig)
+	assert.NotNil(t, config.AzureConfig)
+	assert.NotNil(t, config.AksConfig)
+	assert.NotNil(t, config.ConsulConfig)
+	assert.NotNil(t, config.DigitalOceanConfig)
+	assert.NotNil(t, config.DockerConfig)
+	assert.NotNil(t, config.GcpConfig)
+	assert.NotNil(t, config.HerokuConfig)
+	assert.NotNil(t, config.HetznerConfig)
+	assert.NotNil(t, config.SystemConfig)
+	assert.NotNil(t, config.OpenShiftConfig)
+	assert.NotNil(t, config.OpenStackNovaConfig)
+	assert.NotNil(t, config.OracleCloudConfig)
+	assert.NotNil(t, config.K8SNodeConfig)
+	assert.NotNil(t, config.KubeadmConfig)
+	assert.NotNil(t, config.AkamaiConfig)
+	assert.NotNil(t, config.ScalewayConfig)
+	assert.NotNil(t, config.UpcloudConfig)
+	assert.NotNil(t, config.VultrConfig)
+	assert.NotNil(t, config.AlibabaECSConfig)
 }

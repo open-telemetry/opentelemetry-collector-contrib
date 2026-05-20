@@ -5,6 +5,7 @@ package healthcheck // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -32,6 +33,7 @@ type HealthCheckExtension struct {
 	eventCh       chan *eventSourcePair
 	readyCh       chan struct{}
 	host          component.Host
+	shutdownOnce  sync.Once
 }
 
 var (
@@ -41,7 +43,6 @@ var (
 )
 
 func NewHealthCheckExtension(
-	ctx context.Context,
 	config Config,
 	set extension.Settings,
 ) *HealthCheckExtension {
@@ -88,7 +89,7 @@ func NewHealthCheckExtension(
 
 	// Start processing events in the background so that our status watcher doesn't
 	// block others before the extension starts.
-	go hc.eventLoop(ctx)
+	go hc.eventLoop()
 
 	return hc
 }
@@ -110,17 +111,18 @@ func (hc *HealthCheckExtension) Start(ctx context.Context, host component.Host) 
 
 // Shutdown implements the component.Component interface.
 func (hc *HealthCheckExtension) Shutdown(ctx context.Context) error {
-	// Preemptively send the stopped event, so it can be exported before shutdown
-	componentstatus.ReportStatus(hc.host, componentstatus.NewEvent(componentstatus.StatusStopped))
-
-	close(hc.eventCh)
-	hc.aggregator.Close()
-
 	var err error
-	for _, comp := range hc.subcomponents {
-		err = multierr.Append(err, comp.Shutdown(ctx))
-	}
+	hc.shutdownOnce.Do(func() {
+		// Preemptively send the stopped event, so it can be exported before shutdown
+		componentstatus.ReportStatus(hc.host, componentstatus.NewEvent(componentstatus.StatusStopped))
 
+		close(hc.eventCh)
+		hc.aggregator.Close()
+
+		for _, comp := range hc.subcomponents {
+			err = multierr.Append(err, comp.Shutdown(ctx))
+		}
+	})
 	return err
 }
 
@@ -167,7 +169,7 @@ func (*HealthCheckExtension) NotReady() error {
 	return nil
 }
 
-func (hc *HealthCheckExtension) eventLoop(ctx context.Context) {
+func (hc *HealthCheckExtension) eventLoop() {
 	// Record events with component.StatusStarting, but queue other events until
 	// PipelineWatcher.Ready is called. This prevents aggregate statuses from
 	// flapping between StatusStarting and StatusOK as components are started
@@ -191,21 +193,11 @@ func (hc *HealthCheckExtension) eventLoop(ctx context.Context) {
 			}
 			eventQueue = nil
 			loop = false
-		case <-ctx.Done():
-			return
 		}
 	}
 
 	// After PipelineWatcher.Ready, record statuses as they are received.
-	for {
-		select {
-		case esp, ok := <-hc.eventCh:
-			if !ok {
-				return
-			}
-			hc.aggregator.RecordStatus(esp.source, esp.event)
-		case <-ctx.Done():
-			return
-		}
+	for esp := range hc.eventCh {
+		hc.aggregator.RecordStatus(esp.source, esp.event)
 	}
 }

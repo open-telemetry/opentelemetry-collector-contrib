@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -22,11 +21,11 @@ type extractSumMetricArguments struct {
 	Suffix    ottl.Optional[string]
 }
 
-func newExtractSumMetricFactory() ottl.Factory[ottlmetric.TransformContext] {
+func newExtractSumMetricFactory() ottl.Factory[*ottlmetric.TransformContext] {
 	return ottl.NewFactory(sumFuncName, &extractSumMetricArguments{}, createExtractSumMetricFunction)
 }
 
-func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	args, ok := oArgs.(*extractSumMetricArguments)
 
 	if !ok {
@@ -36,22 +35,12 @@ func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments
 	return extractSumMetric(args.Monotonic, args.Suffix)
 }
 
-// SumCountDataPoint interface helps unify the logic for extracting data from different histogram types
-// all supported metric types' datapoints implement it
-type SumCountDataPoint interface {
-	Attributes() pcommon.Map
-	Sum() float64
-	Count() uint64
-	StartTimestamp() pcommon.Timestamp
-	Timestamp() pcommon.Timestamp
-}
-
-func extractSumMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func extractSumMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	metricNameSuffix := "_sum"
 	if !suffix.IsEmpty() {
 		metricNameSuffix = suffix.Get()
 	}
-	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+	return func(_ context.Context, tCtx *ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 		aggTemp := getAggregationTemporality(metric)
 		if aggTemp == pmetric.AggregationTemporalityUnspecified {
@@ -100,7 +89,7 @@ func extractSumMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFu
 	}, nil
 }
 
-func addSumDataPoint(dataPoint SumCountDataPoint, destination pmetric.NumberDataPointSlice) {
+func addSumDataPoint(dataPoint sumCountDataPoint, destination pmetric.NumberDataPointSlice) {
 	newDp := destination.AppendEmpty()
 	dataPoint.Attributes().CopyTo(newDp.Attributes())
 	newDp.SetDoubleValue(dataPoint.Sum())

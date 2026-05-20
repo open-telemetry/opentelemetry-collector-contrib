@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -32,6 +33,8 @@ const (
 	defaultPartitionMetricsByResourceAttributesEnabled = false
 	// partitioning logs by resource attributes is disabled by default
 	defaultPartitionLogsByResourceAttributesEnabled = false
+	// partitioning logs by trace id is disabled by default
+	defaultPartitionLogsByTraceIDEnabled = false
 )
 
 // NewFactory creates Kafka exporter factory.
@@ -50,7 +53,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
 		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
-		QueueBatchConfig: exporterhelper.NewDefaultQueueConfig(),
+		QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		ClientConfig:     configkafka.NewDefaultClientConfig(),
 		Producer:         configkafka.NewDefaultProducerConfig(),
 		Logs: SignalConfig{
@@ -71,6 +74,12 @@ func createDefaultConfig() component.Config {
 		},
 		PartitionMetricsByResourceAttributes: defaultPartitionMetricsByResourceAttributesEnabled,
 		PartitionLogsByResourceAttributes:    defaultPartitionLogsByResourceAttributesEnabled,
+		PartitionLogsByTraceID:               defaultPartitionLogsByTraceIDEnabled,
+		RecordPartitioner: RecordPartitionerConfig{
+			StickyKey: &StickyKeyPartitionerConfig{
+				Hasher: HasherSaramaCompat,
+			},
+		},
 	}
 }
 
@@ -160,14 +169,9 @@ func exporterhelperOptions(
 	startFunc component.StartFunc,
 	shutdownFunc component.ShutdownFunc,
 ) []exporterhelper.Option {
-	if len(cfg.IncludeMetadataKeys) > 0 {
-		qbs.Partitioner = metadataKeysPartitioner{keys: cfg.IncludeMetadataKeys}
-	}
 	return []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
-		// and will rely on the sarama Producer Timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		xexporterhelper.WithQueueBatch(cfg.QueueBatchConfig, qbs),
 		exporterhelper.WithStart(startFunc),

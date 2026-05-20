@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.uber.org/zap"
@@ -28,11 +29,9 @@ func TestProfile_MarshalLogObject(t *testing.T) {
 				dic := pprofile.NewProfilesDictionary()
 				p := &pprofiletest.Profile{
 					ProfileID: pprofile.ProfileID([]byte("profileid1111111")),
-					SampleType: []pprofiletest.ValueType{
-						{
-							Typ:  "test",
-							Unit: "foobar",
-						},
+					SampleType: pprofiletest.ValueType{
+						Typ:  "test",
+						Unit: "foobar",
 					},
 					Sample: []pprofiletest.Sample{
 						{
@@ -63,7 +62,6 @@ func TestProfile_MarshalLogObject(t *testing.T) {
 						},
 					},
 					Attributes: []pprofiletest.Attribute{{Key: "container-attr1", Value: "value1"}},
-					Comment:    []string{"comment1", "comment2"},
 				}
 				return dic, p.Transform(dic, pprofile.NewScopeProfiles())
 			},
@@ -82,7 +80,7 @@ func TestProfile_MarshalLogObject(t *testing.T) {
 			dic, prof := tt.profile()
 			encoder := zapcore.NewJSONEncoder(zapcore.EncoderConfig{})
 			buf, err := encoder.EncodeEntry(zapcore.Entry{}, []zapcore.Field{zap.Object("profile", Profile{prof, dic})})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			for _, s := range tt.contains {
 				assert.Contains(t, buf.String(), s)

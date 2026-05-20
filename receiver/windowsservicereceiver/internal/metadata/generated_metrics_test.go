@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -37,6 +38,11 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
 		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
+		},
+		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
 			resAttrsSet: testDataSetNone,
@@ -53,8 +59,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -65,44 +72,52 @@ func TestMetricsBuilder(t *testing.T) {
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
-			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-			rm := metrics.ResourceMetrics().At(0)
-			assert.Equal(t, res, rm.Resource())
-			assert.Equal(t, 1, rm.ScopeMetrics().Len())
-			ms := rm.ScopeMetrics().At(0).Metrics()
+			var allMetricsList []pmetric.Metric
+			totalMetricsCount := 0
+			for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+				rm := metrics.ResourceMetrics().At(ri)
+				assert.Equal(t, 1, rm.ScopeMetrics().Len())
+				ms := rm.ScopeMetrics().At(0).Metrics()
+				totalMetricsCount += ms.Len()
+				for mi := 0; mi < ms.Len(); mi++ {
+					allMetricsList = append(allMetricsList, ms.At(mi))
+				}
+			}
 			if tt.metricsSet == testDataSetDefault {
-				assert.Equal(t, defaultMetricsCount, ms.Len())
+				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
 			}
 			if tt.metricsSet == testDataSetAll {
-				assert.Equal(t, allMetricsCount, ms.Len())
+				assert.Equal(t, allMetricsCount, totalMetricsCount)
 			}
 			validatedMetrics := make(map[string]bool)
-			for i := 0; i < ms.Len(); i++ {
-				switch ms.At(i).Name() {
+			for _, mi := range allMetricsList {
+				switch mi.Name() {
 				case "windows.service.status":
 					assert.False(t, validatedMetrics["windows.service.status"], "Found a duplicate in the metrics slice: windows.service.status")
 					validatedMetrics["windows.service.status"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge value containing service status as an integer value.", ms.At(i).Description())
-					assert.Equal(t, "{status}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge value containing service status as an integer value.", mi.Description())
+					assert.Equal(t, "{status}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("name")
+					nameAttrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.Equal(t, "name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("startup_mode")
+					assert.Equal(t, "name-val", nameAttrVal.Str())
+					startupModeAttrVal, ok := dp.Attributes().Get("startup_mode")
 					assert.True(t, ok)
-					assert.Equal(t, "boot_start", attrVal.Str())
+					assert.Equal(t, "boot_start", startupModeAttrVal.Str())
 				}
 			}
 		})

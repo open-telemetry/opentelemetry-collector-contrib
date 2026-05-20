@@ -7,6 +7,433 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.152.0
+
+### 💡 Enhancements 💡
+
+- `pkg/faro`: Emit `k6_testRunId` in the log body when `meta.k6.testRunId` is present in the Faro payload. (#47935)
+  Surfaces the k6 test run identifier that the Faro Web SDK already
+  forwards from `window.k6.testRunId`, alongside the existing
+  `k6_isK6Browser` key. The reverse (logs -> Faro) translator extracts
+  it back into `Meta.K6.TestRunID` for round-trip parity.
+  
+- `pkg/translator/pprof`: Expose the `ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error)` method (#48014)
+- `receiver/couchdb`: Enables dynamic metric reaggregation in the CouchDB receiver. This does not break existing configuration files. (#46351)
+- `receiver/kafka`: Add support for custom consumer-group partition-assignment strategies via extensions that implement `kgo.GroupBalancer`. Set `group_rebalance_strategy` to the component ID of a registered extension to use a custom balancer. (#48096)
+  The four built-in strategies (`range`, `roundrobin`, `sticky`, `cooperative-sticky`) continue to work unchanged.
+  Any other value for `group_rebalance_strategy` is now resolved as an extension component ID at runtime.
+  
+- `receiver/memcached`: Enables dynamic metric reaggregation in the Memcached receiver. This does not break existing configuration files. (#46364)
+
+<!-- previous-version -->
+
+## v0.151.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/splunk_hec`: Remove deprecated `batcher` config field. Use `sending_queue::batch` instead. (#47737)
+- `pkg/ottl`: OTTL API breaking change in `ottlscope.NewTransformContextPtr`: the function signature now requires schema URL items for scope and resource. (#47784)
+  What changed:
+  - Old: NewTransformContextPtr(instrumentationScope, resource, schemaURLItem, options...)
+  - New: NewTransformContextPtr(instrumentationScope, resource, scopeSchemaURLItem, resourceSchemaURLItem, options...)
+  
+  Migration:
+  - If you previously passed one shared schema URL item, pass it to both new parameters.
+  - If scope and resource schema URLs differ, pass distinct items for each.
+  
+  Example migration:
+  - Before:
+    tCtx := ottlscope.NewTransformContextPtr(scope, resource, schemaURLItem)
+  - After (independent items):
+    tCtx := ottlscope.NewTransformContextPtr(scope, resource, scopeSchemaURLItem, resourceSchemaURLItem)
+  
+- `pkg/stanza`: Remove deprecated packages `pkg/stanza/errors`, `pkg/stanza/operator/parser/json` and `pkg/stanza/operator/parser/time`. (#45006)
+  These packages were renamed to `pkg/stanza/stanzaerrors`, `pkg/stanza/operator/parser/jsonparser` and `pkg/stanza/operator/parser/timeparser`.
+- `processor/filter`: Change `With*Functions` and `Default*Functions` to use pointer-based transform context signatures (#47975)
+  The filter processor function options `With*Functions` and `Default*Functions` now use pointer-based transform context signatures
+  and are no longer deprecated. As a result, they are not compatible with older non-pointer signatures anymore and must be updated to 
+  use the new signature.
+  
+- `processor/transform`: Change `With*Functions` and `Default*Functions` to use pointer-based transform context signatures (#47970)
+  The transform processor function options `With*Functions` and `Default*Functions` now use pointer-based transform context signatures
+  and are no longer deprecated. As a result, they are not compatible with older non-pointer signatures anymore and must be updated to 
+  use the new signature.
+  
+- `receiver/prometheus`: Remove `receiver.prometheusreceiver.EnableNativeHistograms`, `receiver.prometheusreceiver.RemoveStartTimeAdjustment` and `receiver.prometheusreceiver.UseCreatedMetric` feature gates. (#40606)
+
+### 🚩 Deprecations 🚩
+
+- `processor/filter`: Deprecate custom function options suffixed with `New` in favor of the existing pointer-based options (#47975)
+  The `With*FunctionsNew` and `Default*FunctionsNew` variants are now deprecated and will be removed in a future release.
+  If you register custom filter processor functions, migrate:
+    - `With*FunctionsNew` -> `With*Functions`
+    - `Default*FunctionsNew` -> `Default*Functions`
+  
+- `processor/transform`: Deprecate custom function options suffixed with `New` in favor of the existing pointer-based options (#47970)
+  The `With*FunctionsNew` and `Default*FunctionsNew` variants are now deprecated and will be removed in a future release.
+  If you register custom transform processor functions, migrate:
+    - `With*FunctionsNew` -> `With*Functions`
+    - `Default*FunctionsNew` -> `Default*Functions`
+  
+
+### 💡 Enhancements 💡
+
+- `exporter/awss3`: Add support for retry_on_failure (#47592)
+- `internal/aws`: Migrate internal AWS proxy module from AWS SDK Go v1 to v2 (#40461, #37728)
+  This removes the dependency on the deprecated `github.com/aws/aws-sdk-go` (v1)
+  and migrates to `github.com/aws/aws-sdk-go-v2`.
+  
+- `pkg/batchperresourceattr`: Add `WithMetadataInjection()` option to inject batched resource attribute values as `client.Metadata` into the context passed to the next consumer. (#47695)
+- `receiver/chrony`: Enables dynamic metric reaggregation in the Chrony receiver. This does not break existing configuration files. (#46350)
+- `receiver/redfish`: Enables dynamic metric reaggregation in the Redfish receiver. This does not break existing configuration files. (#46375)
+- `receiver/ssh_check`: Enables dynamic metric reaggregation in the SSH Check receiver. This does not break existing configuration files. (#46380)
+
+<!-- previous-version -->
+
+## v0.150.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: Return errors when OTTL context accessors receive values of the wrong type (part 2) (#40198)
+  Setters in OTTL contexts now validate that values are of the expected type and return
+  descriptive errors when type mismatches occur. This is the continuation of work done in
+  \#43505, addressing remaining contexts: datapoint, profile, profilesample, resource, span,
+  and spanevent.
+  
+  Changes include:
+  - Slice setters (explicit_bounds, bucket_counts, positive.bucket_counts, negative.bucket_counts)
+    now use SetCommonTypedSliceValues/SetCommonIntSliceValues for better type handling.
+  - SetMap now returns an error for invalid value types instead of silently ignoring them.
+  
+  **Note:** Users may see new errors from OTTL statements that were previously silently failing
+  due to type mismatches. These errors indicate pre-existing issues in OTTL configurations that
+  were not being applied as expected.
+  
+
+### 💡 Enhancements 💡
+
+- `receiver/active_directory_ds`: Enables dynamic metric reaggregation in the Active Directory Domain Services receiver. This does not break existing configuration files. (#46346)
+
+<!-- previous-version -->
+
+## v0.149.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza`: Change signature of `adapter.NewFactory` to accept `xreceiver.FactoryOption`s (#45339)
+  While the change is technically breaking, the existing calls to `adapter.NewFactory` will continue to work.
+
+### 💡 Enhancements 💡
+
+- `pkg/expohisto`: Move Go exponential histogram data structure into collector-contrib repository (#46646)
+- `receiver/docker_stats`: Add TLS configuration support for connecting to the Docker daemon over HTTPS with client and server certificates. (#33557)
+  A new optional `tls` configuration block is available in `docker_stats` receiver config (and the
+  shared `internal/docker` package). When omitted the connection remains insecure (plain HTTP or
+  Unix socket), preserving existing behavior. When provided it supports the standard
+  `configtls.ClientConfig` fields: `ca_file`, `cert_file`, `key_file`, `insecure_skip_verify`,
+  `min_version`, and `max_version`.
+  A warning is now emitted when a plain `tcp://` or `http://` endpoint is used without TLS,
+  reflecting Docker's deprecation of unauthenticated TCP connections since Docker v26.0
+  (see https://docs.docker.com/engine/deprecated/#unauthenticated-tcp-connections).
+  
+- `receiver/docker_stats`: Add "stream_stats" config option to maintain a persistent Docker stats stream per container instead of opening a new connection on every scrape cycle. (#46493)
+  When `stream_stats: true` is set, each container maintains a persistent open Docker stats
+  stream instead of opening and closing a new connection on every scrape cycle. The scraper
+  reads from the cached latest value, which reduces connection overhead.
+  
+- `receiver/sqlquery`: Add `row_condition` to metric configuration for filtering result rows by column value (#45862)
+  Enables extracting individual metrics from pivot-style result sets where each row
+  represents a different metric (e.g. pgbouncer's `SHOW LISTS` command). When
+  `row_condition` is configured on a metric, only rows where the specified column
+  equals the specified value are used; all other rows are silently skipped.
+  
+
+<!-- previous-version -->
+
+## v0.148.0
+
+### 💡 Enhancements 💡
+
+- `pkg/azurelogs`: Remove semconv v1.28.0 and v1.34.0 dependencies, migrating to v1.38.0 via paired feature gates (#45033, #45034)
+  Two new alpha feature gates control the migration:
+  `pkg.translator.azurelogs.EmitV1LogConventions` emits stable attribute names (`code.function.name`, `code.file.path`, `eventName` per log record).
+  `pkg.translator.azurelogs.DontEmitV0LogConventions` suppresses the old names (`code.function`, `code.filepath`, `event.name` on resource).
+  Both gates default to off; enable `EmitV1LogConventions` first for a dual-emit migration window.
+  
+- `pkg/datadog`: Expose feature gate to infer intervals for delta metrics. (#46851)
+- `pkg/xstreamencoding`: Add stream decoding adapters for unmarshaler interfaces (#46754)
+- `processor/tail_sampling`: Add hooks to call when a sampling decision is made for a trace. (#46161)
+- `receiver/github`: Enables dynamic metric reaggregation in the GitHub receiver. This does not break existing configuration files. (#46385)
+
+<!-- previous-version -->
+
+## v0.147.0
+
+### 💡 Enhancements 💡
+
+- `extension/oauth2client`: Expose a context-aware Token method from oauth2clientauth extension (#45917)
+  This change exposes a `Token(ctx context.Context) (*oauth2.Token, error)` method that
+  clients can use to obtain a Token. This may be used by components that are not HTTP-based,
+  such as the Kafka components for use with SASL/OAUTHBEARER.
+  
+- `pkg/pdatatest`: Add entity references comparison to CompareResource and IgnoreResourceEntityRefs option (#46345)
+- `pkg/xk8stest`: Display pod events and logs on collector startup timeout for easier diagnosis of e2e failures. (#46305)
+- `receiver/splunkenterprise`: Enables dynamic metric reaggregation in the Splunk Enterprise receiver. This does not break existing configuration files. (#45396)
+
+<!-- previous-version -->
+
+## v0.146.0
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Package "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json" has been deprecated. Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/jsonparser" instead (#45006)
+- `pkg/stanza`: Package "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors" has been deprecated. Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors" instead (#45006)
+- `pkg/stanza`: Package "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/time" has been deprecated. Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/timeparser" instead (#45006)
+
+### 💡 Enhancements 💡
+
+- `processor/filter`: Introduces inferred context conditions for filtering (#37904)
+  Introduces three new top-level config fields [metric_conditions, log_conditions, trace_conditions].
+  A user can supply OTTL conditions for each without needing to supply context.
+  
+- `receiver/pprof`: Implement the functionality of transforming pprof to OTel Profiles (#45411)
+
+### 🧰 Bug fixes 🧰
+
+- `processor/sumologic`: Export config types to allow programmatic configuration via Go API (#45880)
+- `receiver/filestats`: Ensure that bsd build tags are respected by renaming filestats_darwin.go to filestats_bsd.go (#42645)
+
+<!-- previous-version -->
+
+## v0.145.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/translator/azure`: Updated OpenTelemetry semantic conversion to the latest version 1.38.0 in azure pkg. (#44801)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/ottl`: Use pointer when passing TransformContext around or calling into. (#44944)
+  Change Expr/Parser/Getter/Setter and all ottl related funcs to accept pointers to avoid unnecessary copy of a large
+  TransformContext(96B). Avoid allocating a new pcommon.Map every time a new context is created by using a Borrow/Return
+  pattern and reuse objects between calls. Deprecated funcs are:
+  - `ottlprofile.NewTransformContext` in favor of `ottlprofile.NewTransformContextPtr`;
+  - `ottlprofilesample.NewTransformContext` in favor of `ottlprofilesample.NewTransformContextPtr`;
+  - `filterprocessor.DefaultProfileFunctions` in favor of `filterprocessor.DefaultProfileFunctionsNew`
+  - `filterprocessor.WithProfileFunctions` in favor of `filterprocessor.WithProfileFunctionsNew`
+  - `transformprocessor.DefaultProfileFunctions` in favor of `transformprocessor.DefaultProfileFunctionsNew`
+  - `transformprocessor.WithProfileFunctions` in favor of `transformprocessor.WithProfileFunctionsNew`
+  
+
+### 💡 Enhancements 💡
+
+- `connector/routing`: Update existing util functions to reduce allocs. (#45061)
+- `connector/routing`: Add new util functions to copy data in routing connector. (#45061)
+- `receiver/snowflake`: Enables dynamic metric reaggregation in the Splunk Enterprise receiver. This does not break existing configuration files. (#45396)
+- `receiver/windowsservice`: Enables dynamic metric reaggregation in the Splunk Enterprise receiver. This does not break existing configuration files. (#45396)
+
+<!-- previous-version -->
+
+## v0.144.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: add unix socket support to HTTP server components (#45308)
+  HTTP server components (namely receivers) now support listening
+  on Unix domain sockets in addition to TCP addresses, by configuring
+  `transport: unix` and setting `endpoint` to a Unix socket path.
+  
+  This is a breaking change to the config structs, but is not breaking
+  for end users. Existing YAML configuration options remain unchanged.
+  
+- `receiver/aerospike`: Move mock structs to internal package. (#43995)
+
+<!-- previous-version -->
+
+## v0.143.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Delete the package pkg/translator/opencensus (#45083)
+  The opencensus translator is no longer used by the project.
+  It was previously deprecated, and is now deleted.
+  
+- `exporter/sapm`: Deprecate the SAPM exporter code ahead of its removal. (#45062)
+  This exporter has been deprecated since 2024-12-19.
+  Please use the OTLP exporter instead.
+  With this change, the Go module is declared deprecated.
+  
+- `pkg/ottl`: Make BoolExpr to be private to allow extending and implementing literals support. (#44954, #45096)
+  Improve BoolExpr evaluation by evaluating literals at compile time.
+- `pkg/ottl`: Remove deprecated NewTransformContext funcs (#45043)
+- `processor/tail_sampling`: Add support for caching the policy name involved in a sampling decision. (#45040)
+  This change allows the `tailsampling.policy` attribute to be set on the spans in a trace when a sampling decision is cached.
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate stanza/errors Wrap function in favor of standard fmt.Errorf (#44949)
+
+### 🚀 New components 🚀
+
+- `pkg/translator/splunk`: Introduce package for translating OTel to HEC format (#45011)
+
+### 💡 Enhancements 💡
+
+- `receiver/awscloudwatch`: Add support for filtering log groups by account ID. (#38391)
+
+<!-- previous-version -->
+
+## v0.142.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: It's recommended to change the field type in your component configuration to be `configoptional.Optional[exporterhelper.QueueBatchConfig]` to keep the `enabled` subfield. Use configoptional.Some(exporterhelper.NewDefaultQueueConfig()) to enable by default. Use configoptional.Default(exporterhelper.NewDefaultQueueConfig()) to disable by default. (#44320)
+- `pkg/pdatatest`: apply recent breaking changes to pprofiletest (#44758)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/ottl`: Use pointer when passing TransformContext around or calling into. (#44541)
+  Change Expr/Parser/Getter/Setter and all ottl related funcs to accept pointers to avoid unnecessary copy of a large
+  TransformContext(96B). Avoid allocating a new pcommon.Map every time a new context is created by using a Borrow/Return
+  pattern and reuse objects between calls. Deprecated funcs are:
+  - `ottldatapoint.NewTransformContext` in favor of `ottldatapoint.NewTransformContextPtr`;
+  - `ottllog.NewTransformContext` in favor of `ottllog.NewTransformContextPtr`;
+  - `ottlmetric.NewTransformContext` in favor of `ottlmetric.NewTransformContextPtr`;
+  - `ottlspan.NewTransformContext` in favor of `ottlspan.NewTransformContextPtr`;
+  - `ottlspanevent.NewTransformContext` in favor of `ottlspanevent.NewTransformContextPtr`;
+  - `filterprocessor.WithResourceFunctions` in favor of `filterprocessor.WithResourceFunctionsNew`
+  - `filterprocessor.DefaultDataPointFunctions` in favor of `filtermprocessor.DefaultDataPointFunctionsNew`
+  - `filterprocessor.WithDataPointFunctions` in favor of `filterprocessor.WithDataPointFunctionsNew`
+  - `filterprocessor.DefaultLogFunctions` in favor of `filterprocessor.DefaultLogFunctionsNew`
+  - `filterprocessor.WithLogFunctions` in favor of `filterprocessor.WithLogFunctionsNew`
+  - `filterprocessor.DefaultMetricFunctions` in favor of `filterprocessor.DefaultMetricFunctionsNew`
+  - `filterprocessor.WithMetricFunctions` in favor of `filterprocessor.WithMetricFunctionsNew`
+  - `filterprocessor.DefaultSpanFunctions` in favor of `filterprocessor.DefaultSpanFunctionsNew`
+  - `filterprocessor.WithSpanFunctions` in favor of `filterprocessor.WithSpanFunctionsNew`
+  - `filtermprocessor.DefaultSpanEventFunctions` in favor of `filtermprocessor.DefaultSpanEventFunctionsNew`
+  - `filtermprocessor.WithSpanEventFunctions` in favor of `filtermprocessor.WithSpanEventFunctionsNew`
+  - `transformprocessor.DefaultDataPointFunctions` in favor of `transformprocessor.DefaultDataPointFunctionsNew`
+  - `transformprocessor.WithDataPointFunctions` in favor of `transformprocessor.WithDataPointFunctionsNew`
+  - `transformprocessor.DefaultLogFunctions` in favor of `transformprocessor.DefaultLogFunctionsNew`
+  - `transformprocessor.WithLogFunctions` in favor of `transformprocessor.WithLogFunctionsNew`
+  - `transformprocessor.DefaultMetricFunctions` in favor of `transformprocessor.DefaultMetricFunctionsNew`
+  - `transformprocessor.WithMetricFunctions` in favor of `transformprocessor.WithMetricFunctionsNew`
+  - `transformprocessor.DefaultSpanFunctions` in favor of `transformprocessor.DefaultSpanFunctionsNew`
+  - `transformprocessor.WithSpanFunctions` in favor of `transformprocessor.WithSpanFunctionsNew`
+  - `transformprocessor.DefaultSpanEventFunctions` in favor of `transformprocessor.DefaultSpanEventFunctionsNew`
+  - `transformprocessor.WithSpanEventFunctions` in favor of `transformprocessor.WithSpanEventFunctionsNew`
+  
+
+### 💡 Enhancements 💡
+
+- `exporter/datadog`: introduce a container tags buffer in the stats writer, which is disabled by default. (#44661)
+- `pkg/ottl`: Add PSliceGetSetter interface to allow OTTL functions to accept typed accessors for `pcommon.Slice` paths. (#44421)
+
+<!-- previous-version -->
+
+## v0.141.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: fix pprofile DurationNano to be a TypeUint64 (#44397)
+- `processor/tail_sampling`: Remove only internally relevant fields from samplingpolicy.TraceData. (#44435)
+- `processor/tail_sampling`: Simplify the locking used by the tail sampling (#41656, #43671)
+  There are two small breaking changes as part of this work:
+  1. Pending traces are now passed through the decision logic during shutdown by default. If this is not desired it can be turned off using `drop_pending_traces_on_shutdown`.
+  2. The mutex in `samplingpolicy.TraceData` has been removed and `samplingpolicy.SpanCount` is now an `int64` instead of `*atomic.Int64`. Custom extensions using these fields will need to be updated.
+  
+
+### 🚩 Deprecations 🚩
+
+- `pkg/translator/opencensus`: Deprecate the package (#44641)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/ottl`: Return errors when OTTL context setters receive values of the wrong type (#40198)
+  Introduces `ctxutil.ExpectType` and updates log, metric, and scope setters to surface type assertion failures.
+  
+
+<!-- previous-version -->
+
+## v0.140.1
+
+<!-- previous-version -->
+
+## v0.140.0
+
+### 🛑 Breaking changes 🛑
+
+- `receiver/carbon`: unexport structs ParsedPath, PlaintextPathParser, function NewParser (#43966)
+- `receiver/carbon`: Unexport PathParserHelper (#43997)
+- `receiver/googlecloudpubsub`: Delete and inline functions used for tests (#43964)
+
+### 💡 Enhancements 💡
+
+- `pkg/datadog`: add orchestrator explorer support in pkg/datadog/config (#44105)
+- `pkg/datadog`: Expose NewConnectorFactory method to instantiate the Datadog connector with injected dependencies. (#43980)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/translator/zipkin`: Restore Zipkin->OTLP translation API (#44004)
+- `receiver/vcenter`: Skip vSAN collection and logging when all vSAN metrics are disabled (#38489)
+
+<!-- previous-version -->
+
+## v0.139.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/opampsupervisor`: Remove common package, moving code where it is used instead. (#43885)
+- `extension/sumologic`: Move api and credentials packages to internal (#43789)
+- `pkg/translator/zipkin`: Unexport ToTranslator (#43852)
+- `receiver/aerospike`: Unexport mocks (#43788)
+- `receiver/azuremonitor`: unexport NewMutexMapImpl and NewSyncMapImpl (#43925)
+- `receiver/jmx`: unexport InsertDefault (#43965)
+
+<!-- previous-version -->
+
+## v0.138.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/tencentcloud_logservice`: Unexport Log_Content, LogTag, Log, LogGroupList, LogGroup (#43138)
+- `pkg/datadog`: Move feature gates ReceiveResourceSpansV2FeatureGate, OperationAndResourceNameV2FeatureGate, and MetricRemappingDisabledFeatureGate from pkg/datadog to new submodule pkg/datadog/featuregates (#43631)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/datadog`: Remove `logs::dump_payloads` config option from `pkg/datadog` config. (#43427)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add support for literal getters (#40222)
+  This enhancement introduces the `ottl.GetLiteralValue` function to OTTL, enabling compile-time optimization for getters that 
+  contain literal values. When a getter is identified as containing a literal value, OTTL functions can now access that value 
+  at build time rather than runtime, improving performance for common use cases like pattern matching with static strings.
+  
+- `processor/filter`: Add profiles support (#42762)
+- `receiver/hostmetrics`: Add metrics, Linux scraper, and tests to hostmetricsreceiver's nfsscraper (#40134)
+
+<!-- previous-version -->
+
+## v0.137.0
+
+### 🛑 Breaking changes 🛑
+
+- `libhoneyreceiver`: Unexport JSONEncoder (#43133)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/datadog, exporter/datadog, extension/datadog`: Deprecates StaticAPIKeyCheck, stops doing validation for API key characters in Datadog exporter and extension. (#42677)
+  This was causing issues to users since validation of secrets is challenging
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Create ctxprofilecommon for common attribute handling in various profiling sub messages (#42107)
+- `logicmonitorexporter`: Send log level along with log data (#41923)
+
+<!-- previous-version -->
+
 ## v0.136.0
 
 ### 🛑 Breaking changes 🛑

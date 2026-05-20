@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
@@ -37,10 +38,11 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	netAddr.Endpoint = defaultEndpoint
 	return &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: defaultEndpoint,
-		},
+		ServerConfig: confighttp.ServerConfig{NetAddr: netAddr},
 	}
 }
 
@@ -70,14 +72,6 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	rCfg := cfg.(*Config)
 
-	if rCfg.AccessTokenPassthrough {
-		params.Logger.Warn(
-			"access_token_passthrough is deprecated. " +
-				"Please enable include_metadata in the receiver and add " +
-				"`metadata_keys: [X-Sf-Token]` to the batch processor",
-		)
-	}
-
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
@@ -103,14 +97,6 @@ func createLogsReceiver(
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
 	rCfg := cfg.(*Config)
-
-	if rCfg.AccessTokenPassthrough {
-		params.Logger.Warn(
-			"access_token_passthrough is deprecated. " +
-				"Please enable include_metadata in the receiver and add " +
-				"`metadata_keys: [X-Sf-Token]` to the batch processor",
-		)
-	}
 
 	receiverLock.Lock()
 	r := receivers[rCfg]

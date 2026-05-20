@@ -15,7 +15,10 @@ import (
 const numMetricTypes = 4
 
 // ToTranslator converts from SignalFx proto data model to pdata.
-type ToTranslator struct{}
+type ToTranslator struct {
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
 
 // ToMetrics converts SignalFx proto data points to pmetric.Metrics.
 func (*ToTranslator) ToMetrics(sfxDataPoints []*model.DataPoint) (pmetric.Metrics, error) {

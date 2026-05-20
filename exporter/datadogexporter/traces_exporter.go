@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
@@ -22,25 +24,18 @@ import (
 	"github.com/DataDog/datadog-go/v5/statsd"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
-)
-
-var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.TraceExportUseCustomHTTPClient",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, trace export uses the HTTP client from the exporter HTTP configs"),
-	featuregate.WithRegisterFromVersion("v0.105.0"),
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
 )
 
 type traceExporter struct {
@@ -129,12 +124,16 @@ func (exp *traceExporter) consumeTraces(
 	hosts := make(map[string]struct{})
 	tags := make(map[string]struct{})
 	header := make(http.Header)
-	if noAPMStatsFeatureGate.IsEnabled() {
+	if metadata.ExporterDatadogexporterDisableAPMStatsFeatureGate.IsEnabled() {
 		header[headerComputedStats] = []string{"true"}
 	}
 	for i := 0; i < rspans.Len(); i++ {
 		rspan := rspans.At(i)
-		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, header, exp.gatewayUsage)
+		var src source.Source
+		src, err = exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, header, exp.gatewayUsage)
+		if err != nil {
+			return err
+		}
 		switch src.Kind {
 		case source.HostnameKind:
 			hosts[src.Identifier] = struct{}{}
@@ -206,13 +205,13 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 	acfg.PeerTagsAggregation = cfg.Traces.PeerTagsAggregation
 	acfg.PeerTags = cfg.Traces.PeerTags
 	acfg.MaxSenderRetries = 4
-	if traceCustomHTTPFeatureGate.IsEnabled() {
-		params.Logger.Info("Experimental feature: datadog exporter trace export uses a custom HTTP client from the exporter HTTP configs")
-		acfg.HTTPClientFunc = func() *http.Client {
-			return clientutil.NewHTTPClient(cfg.ClientConfig)
+	if metadata.ExporterDatadogexporterTraceExportUseCustomHTTPClientFeatureGate.IsEnabled() {
+		params.Logger.Info("Experimental feature: datadog exporter trace export uses a custom HTTP transport from the exporter HTTP configs")
+		acfg.HTTPTransportFunc = func() *http.Transport {
+			return clientutil.NewHTTPTransport(cfg.ClientConfig)
 		}
 	}
-	if !datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
+	if !featuregates.OperationAndResourceNameV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_operation_and_resource_name_logic_v2"] = struct{}{}
 	}
 	if v := cfg.Traces.GetFlushInterval(); v > 0 {
@@ -227,7 +226,7 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 	if cfg.Traces.ComputeTopLevelBySpanKind {
 		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
 	}
-	if !datadog.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
+	if !featuregates.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
 	}
 	tracelog.SetLogger(&agentcomponents.ZapLogger{Logger: params.Logger}) // TODO: This shouldn't be a singleton

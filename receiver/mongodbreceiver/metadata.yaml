@@ -1,4 +1,11 @@
+display_name: MongoDB Receiver
 type: mongodb
+reaggregation_enabled: true
+
+description: |
+  This receiver fetches stats from a MongoDB instance using the 
+  [golang mongo driver](https://github.com/mongodb/mongo-go-driver). Stats are collected via MongoDB's `dbStats` and
+  `serverStatus` commands.
 
 status:
   class: receiver
@@ -6,7 +13,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [justinianvoss22]
+    active: [justinianvoss22, dyl10s, ishleenk17]
     seeking_new: true
 
 resource_attributes:
@@ -18,8 +25,8 @@ resource_attributes:
     description: The port of the MongoDB host.
     enabled: false
     type: int
-  database:
-    description: The name of a database.
+  service.instance.id:
+    description: A unique identifier of the MongoDB resource as a UUID v5, derived from server address and port.
     enabled: true
     type: string
 
@@ -27,16 +34,55 @@ attributes:
   collection:
     description: The name of a collection.
     type: string
+    requirement_level: recommended
+  connection_type:
+    name_override: type
+    description: The status of the connection.
+    type: string
+    requirement_level: recommended
+    enum:
+      - active
+      - available
+      - current
+  db.namespace:
+    description: The name of a database.
+    type: string
+    requirement_level: recommended
+  lock_mode:
+    description: The mode of Lock which denotes the degree of access
+    type: string
+    requirement_level: recommended
+    enum:
+      - shared
+      - exclusive
+      - intent_shared
+      - intent_exclusive
+
+  lock_type:
+    description: The Resource over which the Lock controls access
+    type: string
+    requirement_level: recommended
+    enum:
+      - parallel_batch_write_mode
+      - replication_state_transition
+      - global
+      - database
+      - collection
+      - mutex
+      - metadata
+      - oplog
   memory_type:
     name_override: type
     description: The type of memory used.
     type: string
+    requirement_level: recommended
     enum:
       - resident
       - virtual
   operation:
     description: The MongoDB operation being counted.
     type: string
+    requirement_level: recommended
     enum:
       - insert
       - query
@@ -48,48 +94,43 @@ attributes:
     name_override: operation
     description: The MongoDB operation with regards to latency
     type: string
+    requirement_level: recommended
     enum:
       - read
       - write
       - command
-  connection_type:
-    name_override: type
-    description: The status of the connection.
-    type: string
-    enum:
-      - active
-      - available
-      - current
   type:
     description: The result of a cache request.
     type: string
+    requirement_level: recommended
     enum:
       - hit
       - miss
-  lock_type:
-    description: The Resource over which the Lock controls access
-    type: string
-    enum:
-      - parallel_batch_write_mode
-      - replication_state_transition
-      - global
-      - database
-      - collection
-      - mutex
-      - metadata
-      - oplog
-  lock_mode:
-    description: The mode of Lock which denotes the degree of access
-    type: string
-    enum:
-      - shared
-      - exclusive
-      - intent_shared
-      - intent_exclusive
 
 metrics:
+  mongodb.active.reads:
+    description: The number of read operations currently being processed.
+    stability: development
+    unit: "{reads}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
+  mongodb.active.writes:
+    description: The number of write operations currently being processed.
+    stability: development
+    unit: "{writes}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
   mongodb.cache.operations:
     description: The number of cache operations of the instance.
+    stability: development
     unit: "{operations}"
     enabled: true
     sum:
@@ -99,194 +140,36 @@ metrics:
     attributes: [type]
   mongodb.collection.count:
     description: The number of collections.
+    stability: development
     unit: "{collections}"
     enabled: true
     sum:
       aggregation_temporality: cumulative
       value_type: int
       monotonic: false
-    attributes: []
-  mongodb.data.size:
-    description: The size of the collection. Data compression does not affect this value.
-    unit: By
-    enabled: true
-    sum:
-      aggregation_temporality: cumulative
-      value_type: int
+    attributes: [db.namespace]
+  mongodb.commands.rate:
+    description: The number of commands executed per second.
+    stability: development
+    unit: "{command}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
       monotonic: false
-    attributes: []
   mongodb.connection.count:
     description: The number of connections.
+    stability: development
     unit: "{connections}"
     enabled: true
     sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
-    attributes: [connection_type]
-  mongodb.extent.count:
-    description: The number of extents.
-    unit: "{extents}"
-    enabled: true
-    sum:
-      aggregation_temporality: cumulative
-      value_type: int
-      monotonic: false
-    attributes: []
-  mongodb.global_lock.time:
-    description: The time the global lock has been held.
-    unit: ms
-    enabled: true
-    sum:
-      aggregation_temporality: cumulative
-      value_type: int
-      monotonic: true
-    attributes: []
-  mongodb.index.count:
-    description: The number of indexes.
-    unit: "{indexes}"
-    enabled: true
-    sum:
-      aggregation_temporality: cumulative
-      value_type: int
-      monotonic: false
-    attributes: []
-  mongodb.index.size:
-    description: Sum of the space allocated to all indexes in the database, including free index space.
-    unit: By
-    enabled: true
-    sum:
-      aggregation_temporality: cumulative
-      value_type: int
-      monotonic: false
-    attributes: []
-  mongodb.memory.usage:
-    description: The amount of memory used.
-    unit: By
-    enabled: true
-    sum:
-      aggregation_temporality: cumulative
-      value_type: int
-      monotonic: false
-    attributes: [memory_type]
-  mongodb.object.count:
-    description: The number of objects.
-    unit: "{objects}"
-    enabled: true
-    sum:
-      aggregation_temporality: cumulative
-      value_type: int
-      monotonic: false
-    attributes: []
-  mongodb.operation.latency.time:
-    description: The latency of operations.
-    unit: us
-    enabled: false
-    gauge:
-      value_type: int
-    attributes: [operation_latency]
-  mongodb.operation.count:
-    description: The number of operations executed.
-    unit: "{operations}"
-    enabled: true
-    sum:
-      aggregation_temporality: cumulative
-      value_type: int
-      monotonic: true
-    attributes: [operation]
-  mongodb.operation.repl.count:
-    description: The number of replicated operations executed.
-    unit: "{operations}"
-    enabled: false
-    sum:
-      aggregation_temporality: cumulative
-      value_type: int
-      monotonic: true
-    attributes: [operation]
-  mongodb.storage.size:
-    description: The total amount of storage allocated to this collection.
-    extended_documentation: If collection data is compressed it reflects the compressed size.
-    unit: By
-    enabled: true
-    sum:
-      aggregation_temporality: cumulative
-      value_type: int
-      monotonic: true
-    attributes: []
-  mongodb.database.count:
-    description: The number of existing databases.
-    unit: "{databases}"
-    enabled: true
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-    attributes: []
-  mongodb.index.access.count:
-    description: The number of times an index has been accessed.
-    unit: "{accesses}"
-    enabled: true
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-    attributes: [collection]
-  mongodb.document.operation.count:
-    description: The number of document operations executed.
-    unit: "{documents}"
-    enabled: true
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-    attributes: [operation]
-  mongodb.network.io.receive:
-    description: The number of bytes received.
-    unit: By
-    enabled: true
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-    attributes: []
-  mongodb.network.io.transmit:
-    description: The number of by transmitted.
-    unit: By
-    enabled: true
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-    attributes: []
-  mongodb.network.request.count:
-    description: The number of requests received by the server.
-    unit: "{requests}"
-    enabled: true
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-    attributes: []
-  mongodb.operation.time:
-    description: The total time spent performing operations.
-    unit: ms
-    enabled: true
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-    attributes: [operation]
-  mongodb.session.count:
-    description: The total number of active sessions.
-    unit: "{sessions}"
-    enabled: true
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-    attributes: []
+    attributes: [connection_type, db.namespace]
   mongodb.cursor.count:
     description: The number of open cursors maintained for clients.
+    stability: development
     unit: "{cursors}"
     enabled: true
     sum:
@@ -296,6 +179,7 @@ metrics:
     attributes: []
   mongodb.cursor.timeout.count:
     description: The number of cursors that have timed out.
+    stability: development
     unit: "{cursors}"
     enabled: true
     sum:
@@ -303,127 +187,59 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
     attributes: []
-  mongodb.lock.acquire.count:
-    description: Number of times the lock was acquired in the specified mode.
-    unit: "{count}"
-    enabled: false
+  mongodb.data.size:
+    description: The size of the collection. Data compression does not affect this value.
+    stability: development
+    unit: By
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      value_type: int
+      monotonic: false
+    attributes: [db.namespace]
+  mongodb.database.count:
+    description: The number of existing databases.
+    stability: development
+    unit: "{databases}"
+    enabled: true
     sum:
       value_type: int
       aggregation_temporality: cumulative
-      monotonic: true
-    attributes: [lock_type, lock_mode]
-  mongodb.lock.acquire.wait_count:
-    description: Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode.
-    unit: "{count}"
-    enabled: false
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-    attributes: [lock_type, lock_mode]
-  mongodb.lock.acquire.time:
-    description: Cumulative wait time for the lock acquisitions.
-    unit: "microseconds"
-    enabled: false
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-    attributes: [lock_type, lock_mode]
-  mongodb.lock.deadlock.count:
-    description: Number of times the lock acquisitions encountered deadlocks.
-    unit: "{count}"
-    enabled: false
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-    attributes: [lock_type, lock_mode]
-  mongodb.health:
-    enabled: false
-    description: The health status of the server.
-    extended_documentation: A value of '1' indicates healthy.
-      A value of '0' indicates unhealthy.
-    unit: "1"
-    gauge:
-      value_type: int
+      monotonic: false
     attributes: []
-  mongodb.uptime:
-    enabled: false
-    description: The amount of time that the server has been running.
-    unit: ms
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: []
-  mongodb.repl_queries_per_sec:
-    description: The number of replicated queries executed per second.
-    unit: "{query}/s"
-    enabled: false
-    gauge:
-      value_type: double
-      aggregation_temporality: delta
-      monotonic: false
-  mongodb.repl_inserts_per_sec:
-    description: The number of replicated insertions executed per second.
-    unit: "{insert}/s"
-    enabled: false
-    gauge:
-      value_type: double
-      aggregation_temporality: delta
-      monotonic: false
-  mongodb.repl_commands_per_sec:
-    description: The number of replicated commands executed per second.
-    unit: "{command}/s"
-    enabled: false
-    gauge:
-      value_type: double
-      aggregation_temporality: delta
-      monotonic: false
-  mongodb.repl_getmores_per_sec:
-    description: The number of replicated getmores executed per second.
-    unit: "{getmore}/s"
-    enabled: false
-    gauge:
-      value_type: double
-      aggregation_temporality: delta
-      monotonic: false
-  mongodb.repl_deletes_per_sec:
-    description: The number of replicated deletes executed per second.
+  mongodb.deletes.rate:
+    description: The number of deletes executed per second.
+    stability: development
     unit: "{delete}/s"
     enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
       monotonic: false
-  mongodb.repl_updates_per_sec:
-    description: The number of replicated updates executed per second.
-    unit: "{update}/s"
-    enabled: false
-    gauge:
-      value_type: double
-      aggregation_temporality: delta
+  mongodb.document.operation.count:
+    description: The number of document operations executed.
+    stability: development
+    unit: "{documents}"
+    enabled: true
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
       monotonic: false
-  mongodb.queries.rate:
-    description: The number of queries executed per second.
-    unit: "{query}/s"
-    enabled: false
-    gauge:
-      value_type: double
-      aggregation_temporality: delta
+    attributes: [operation, db.namespace]
+  mongodb.extent.count:
+    description: The number of extents.
+    stability: development
+    unit: "{extents}"
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      value_type: int
       monotonic: false
-  mongodb.inserts.rate:
-    description: The number of insertions executed per second.
-    unit: "{insert}/s"
-    enabled: false
-    gauge:
-      value_type: double
-      aggregation_temporality: delta
-      monotonic: false
-  mongodb.commands.rate:
-    description: The number of commands executed per second.
-    unit: "{command}/s"
+    attributes: [db.namespace]
+  mongodb.flushes.rate:
+    description: The number of flushes executed per second.
+    stability: development
+    unit: "{flush}/s"
     enabled: false
     gauge:
       value_type: double
@@ -431,66 +247,316 @@ metrics:
       monotonic: false
   mongodb.getmores.rate:
     description: The number of getmores executed per second.
+    stability: development
     unit: "{getmore}/s"
     enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
       monotonic: false
-  mongodb.deletes.rate:
-    description: The number of deletes executed per second.
-    unit: "{delete}/s"
+  mongodb.global_lock.time:
+    description: The time the global lock has been held.
+    stability: development
+    unit: ms
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      value_type: int
+      monotonic: true
+    attributes: []
+  mongodb.health:
+    enabled: false
+    description: The health status of the server.
+    extended_documentation: A value of '1' indicates healthy. A value of '0' indicates unhealthy.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: []
+  mongodb.index.access.count:
+    description: The number of times an index has been accessed.
+    stability: development
+    unit: "{accesses}"
+    enabled: true
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [collection, db.namespace]
+  mongodb.index.count:
+    description: The number of indexes.
+    stability: development
+    unit: "{indexes}"
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      value_type: int
+      monotonic: false
+    attributes: [db.namespace]
+  mongodb.index.size:
+    description: Sum of the space allocated to all indexes in the database, including free index space.
+    stability: development
+    unit: By
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      value_type: int
+      monotonic: false
+    attributes: [db.namespace]
+  mongodb.inserts.rate:
+    description: The number of insertions executed per second.
+    stability: development
+    unit: "{insert}/s"
     enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
       monotonic: false
-  mongodb.updates.rate:
-    description: The number of updates executed per second.
-    unit: "{update}/s"
+  mongodb.lock.acquire.count:
+    description: Number of times the lock was acquired in the specified mode.
+    stability: development
+    unit: "{count}"
     enabled: false
-    gauge:
-      value_type: double
-      aggregation_temporality: delta
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [lock_type, lock_mode, db.namespace]
+  mongodb.lock.acquire.time:
+    description: Cumulative wait time for the lock acquisitions.
+    stability: development
+    unit: "microseconds"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [lock_type, lock_mode, db.namespace]
+  mongodb.lock.acquire.wait_count:
+    description: Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode.
+    stability: development
+    unit: "{count}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [lock_type, lock_mode, db.namespace]
+  mongodb.lock.deadlock.count:
+    description: Number of times the lock acquisitions encountered deadlocks.
+    stability: development
+    unit: "{count}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [lock_type, lock_mode, db.namespace]
+  mongodb.memory.usage:
+    description: The amount of memory used.
+    stability: development
+    unit: By
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      value_type: int
       monotonic: false
-  mongodb.flushes.rate:
-    description: The number of flushes executed per second.
-    unit: "{flush}/s"
-    enabled: false
-    gauge:
-      value_type: double
-      aggregation_temporality: delta
-      monotonic: false
-  mongodb.active.writes:
-    description: The number of write operations currently being processed.
-    unit: "{writes}"
-    enabled: false
+    attributes: [memory_type, db.namespace]
+  mongodb.network.io.receive:
+    description: The number of bytes received.
+    stability: development
+    unit: By
+    enabled: true
     sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
     attributes: []
-  mongodb.active.reads:
-    description: The number of read operations currently being processed.
-    unit: "{reads}"
-    enabled: false
+  mongodb.network.io.transmit:
+    description: The number of by transmitted.
+    stability: development
+    unit: By
+    enabled: true
     sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
     attributes: []
-  mongodb.wtcache.bytes.read:
-    description: The number of bytes read into the WiredTiger cache.
-    unit: "By"
+  mongodb.network.request.count:
+    description: The number of requests received by the server.
+    stability: development
+    unit: "{requests}"
+    enabled: true
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
+  mongodb.object.count:
+    description: The number of objects.
+    stability: development
+    unit: "{objects}"
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      value_type: int
+      monotonic: false
+    attributes: [db.namespace]
+  mongodb.operation.count:
+    description: The number of operations executed.
+    stability: development
+    unit: "{operations}"
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      value_type: int
+      monotonic: true
+    attributes: [operation]
+  mongodb.operation.latency.time:
+    description: The latency of operations.
+    stability: development
+    unit: us
+    enabled: false
+    gauge:
+      value_type: int
+    attributes: [operation_latency]
+  mongodb.operation.repl.count:
+    description: The number of replicated operations executed.
+    stability: development
+    unit: "{operations}"
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      value_type: int
+      monotonic: true
+    attributes: [operation]
+  mongodb.operation.time:
+    description: The total time spent performing operations.
+    stability: development
+    unit: ms
+    enabled: true
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [operation]
+  mongodb.page_faults:
+    description: The number of page faults.
+    stability: development
+    unit: "{faults}"
     enabled: false
     sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
     attributes: []
-  mongodb.page_faults:
-    description: The number of page faults.
-    unit: "{faults}"
+  mongodb.queries.rate:
+    description: The number of queries executed per second.
+    stability: development
+    unit: "{query}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.repl_commands_per_sec:
+    description: The number of replicated commands executed per second.
+    stability: development
+    unit: "{command}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.repl_deletes_per_sec:
+    description: The number of replicated deletes executed per second.
+    stability: development
+    unit: "{delete}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.repl_getmores_per_sec:
+    description: The number of replicated getmores executed per second.
+    stability: development
+    unit: "{getmore}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.repl_inserts_per_sec:
+    description: The number of replicated insertions executed per second.
+    stability: development
+    unit: "{insert}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.repl_queries_per_sec:
+    description: The number of replicated queries executed per second.
+    stability: development
+    unit: "{query}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.repl_updates_per_sec:
+    description: The number of replicated updates executed per second.
+    stability: development
+    unit: "{update}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.session.count:
+    description: The total number of active sessions.
+    stability: development
+    unit: "{sessions}"
+    enabled: true
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
+  mongodb.storage.size:
+    description: The total amount of storage allocated to this collection.
+    extended_documentation: If collection data is compressed it reflects the compressed size.
+    stability: development
+    unit: By
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      value_type: int
+      monotonic: true
+    attributes: [db.namespace]
+  mongodb.updates.rate:
+    description: The number of updates executed per second.
+    stability: development
+    unit: "{update}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.uptime:
+    enabled: false
+    description: The amount of time that the server has been running.
+    stability: development
+    unit: ms
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
+  mongodb.wtcache.bytes.read:
+    description: The number of bytes read into the WiredTiger cache.
+    stability: development
+    unit: "By"
     enabled: false
     sum:
       value_type: int

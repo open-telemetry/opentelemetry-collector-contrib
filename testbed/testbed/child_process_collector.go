@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strconv"
 	"sync"
@@ -495,12 +496,7 @@ func (cp *childProcessCollector) GetTotalConsumption() *ResourceConsumption {
 }
 
 func containsConfig(s []string) bool {
-	for _, a := range s {
-		if a == "--config" {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(s, "--config")
 }
 
 // Copied from cpu.TimesStat.Total(), since that func is deprecated.

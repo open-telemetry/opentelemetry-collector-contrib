@@ -1,4 +1,6 @@
-type: resourcedetection
+display_name: Resource Detection Processor
+type: resource_detection
+deprecated_type: resourcedetection
 
 status:
   class: processor
@@ -8,3 +10,15 @@ status:
   distributions: [contrib, k8s]
   codeowners:
     active: [Aneurysm9, dashpole]
+    seeking_new: true
+
+tests:
+  goleak:
+    ignore:
+      any:
+        - "net/http.(*persistConn).readLoop"
+        - "net/http.(*persistConn).writeLoop"
+        - "golang.org/x/net/http2.(*ClientConn).readLoop"
+        - "golang.org/x/net/http2.(*clientConnReadLoop).run"
+        - "crypto/tls.(*Conn).readRecordOrCCS"
+        - "crypto/tls.(*Conn).Read"

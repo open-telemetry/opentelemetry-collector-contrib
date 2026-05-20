@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
@@ -26,10 +27,12 @@ var errConfigNotAzureMonitor = errors.New("Config was not a Azure Monitor receiv
 
 // NewFactory creates a new receiver factory
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 // createDefaultConfig creates the default configuration for the receiver
@@ -68,5 +71,5 @@ func createMetricsReceiver(_ context.Context, params receiver.Settings, rConf co
 	if err != nil {
 		return nil, err
 	}
-	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, metrics))
+	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, metrics))
 }

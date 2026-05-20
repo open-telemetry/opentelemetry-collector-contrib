@@ -23,18 +23,27 @@ type CustomBuildInfo struct {
 }
 
 type OtelCollector struct {
-	HostKey           string             `json:"host_key"`
-	Hostname          string             `json:"hostname"`
-	HostnameSource    string             `json:"hostname_source"`
-	CollectorID       string             `json:"collector_id"`
-	CollectorVersion  string             `json:"collector_version"`
-	ConfigSite        string             `json:"config_site"`
-	APIKeyUUID        string             `json:"api_key_uuid"`
-	FullComponents    []CollectorModule  `json:"full_components"`
-	ActiveComponents  []ServiceComponent `json:"active_components"`
-	BuildInfo         CustomBuildInfo    `json:"build_info"`
-	FullConfiguration string             `json:"full_configuration"` // JSON passed as string
-	HealthStatus      string             `json:"health_status"`      // JSON passed as string
+	HostKey                     string             `json:"host_key"`
+	Hostname                    string             `json:"hostname"`
+	HostnameSource              string             `json:"hostname_source"`
+	CollectorID                 string             `json:"collector_id"`
+	CollectorVersion            string             `json:"collector_version"`
+	ConfigSite                  string             `json:"config_site"`
+	APIKeyUUID                  string             `json:"api_key_uuid"`
+	FullComponents              []CollectorModule  `json:"full_components"`
+	ActiveComponents            []ServiceComponent `json:"active_components"`
+	BuildInfo                   CustomBuildInfo    `json:"build_info"`
+	FullConfiguration           string             `json:"full_configuration"` // JSON passed as string
+	HealthStatus                string             `json:"health_status"`      // JSON passed as string
+	CollectorResourceAttributes map[string]string  `json:"collector_resource_attributes"`
+	CollectorDeploymentType     string             `json:"collector_deployment_type"`     // deployment type: gateway, daemonset, or unknown
+	CollectorInstallationMethod string             `json:"collector_installation_method"` // installation method: kubernetes, bare-metal, docker, ecs-fargate, eks-fargate, or ""
+	// Gateway topology fields (RFC: Gateway Topology View in Fleet Automation)
+	// GatewayService is set by gateway collectors: the k8s Service fronting the gateway pods.
+	GatewayService string `json:"gateway_service,omitempty"`
+	// GatewayDestination is set by agent/daemonset collectors: the k8s Service they forward telemetry to.
+	GatewayDestination string `json:"gateway_destination,omitempty"`
+	TTL                int64  `json:"ttl"`
 }
 
 type CollectorModule struct {
@@ -86,18 +95,28 @@ func PrepareOtelCollectorMetadata(
 	extensionUUID,
 	version,
 	site,
-	fullConfig string,
+	fullConfig,
+	deploymentType string,
+	installationMethod string,
 	buildInfo CustomBuildInfo,
+	ttl int64,
+	gatewayService string,
+	gatewayDestination string,
 ) OtelCollector {
 	return OtelCollector{
-		HostKey:           "",
-		Hostname:          hostname,
-		HostnameSource:    hostnameSource,
-		CollectorID:       hostname + "-" + extensionUUID,
-		CollectorVersion:  version,
-		ConfigSite:        site,
-		APIKeyUUID:        "",
-		BuildInfo:         buildInfo,
-		FullConfiguration: fullConfig,
+		HostKey:                     "",
+		Hostname:                    hostname,
+		HostnameSource:              hostnameSource,
+		CollectorID:                 hostname + "-" + extensionUUID,
+		CollectorVersion:            version,
+		ConfigSite:                  site,
+		APIKeyUUID:                  "",
+		BuildInfo:                   buildInfo,
+		FullConfiguration:           fullConfig,
+		CollectorDeploymentType:     deploymentType,
+		CollectorInstallationMethod: installationMethod,
+		GatewayService:              gatewayService,
+		GatewayDestination:          gatewayDestination,
+		TTL:                         ttl,
 	}
 }

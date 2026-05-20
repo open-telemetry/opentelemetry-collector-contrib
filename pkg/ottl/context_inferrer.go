@@ -7,12 +7,12 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
 )
 
 var defaultContextInferPriority = []string{
@@ -124,7 +124,7 @@ func (s *priorityContextInferrer) infer(statements, conditions, valueExprs []str
 	}
 	if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
 		s.telemetrySettings.Logger.Debug("Inferring OTTL context",
-			zap.Strings("candidates", maps.Keys(s.contextCandidate)),
+			zap.Strings("candidates", slices.Collect(maps.Keys(s.contextCandidate))),
 			zap.Any("priority", s.contextPriority),
 			zap.Strings("statements", statements),
 			zap.Strings("conditions", conditions),
@@ -166,9 +166,13 @@ func (s *priorityContextInferrer) inferFromHints(hints []priorityContextInferrer
 			requiredEnums[enum] = struct{}{}
 		}
 	}
-	// No inferred context or nothing left to verify.
-	if inferredContext == "" || (len(requiredFunctions) == 0 && len(requiredEnums) == 0) {
-		s.telemetrySettings.Logger.Debug("No context candidate found in the ottls")
+	// No inferred context
+	if inferredContext == "" {
+		s.telemetrySettings.Logger.Debug("No OTTL context candidate found")
+		return "", nil
+	}
+	// If no functions or enums are required, return the inferred context directly.
+	if len(requiredFunctions) == 0 && len(requiredEnums) == 0 {
 		return inferredContext, nil
 	}
 	if err = s.validateContextCandidate(inferredContext, requiredFunctions, requiredEnums); err == nil {

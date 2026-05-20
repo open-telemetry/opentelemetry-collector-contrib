@@ -5,18 +5,20 @@ package metrics
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/validate"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 // Config describes the test scenario.
 type Config struct {
-	common.Config
+	config.Config
 	NumMetrics              int
 	MetricName              string
 	MetricType              MetricType
@@ -80,14 +82,18 @@ func (c *Config) Validate() error {
 		return errors.New("either `metrics` or `duration` must be greater than 0")
 	}
 
+	if c.LoadSize < 0 {
+		return fmt.Errorf("load size must be non-negative, found %d", c.LoadSize)
+	}
+
 	if c.TraceID != "" {
-		if err := common.ValidateTraceID(c.TraceID); err != nil {
+		if err := validate.TraceID(c.TraceID); err != nil {
 			return err
 		}
 	}
 
 	if c.SpanID != "" {
-		if err := common.ValidateSpanID(c.SpanID); err != nil {
+		if err := validate.SpanID(c.SpanID); err != nil {
 			return err
 		}
 	}

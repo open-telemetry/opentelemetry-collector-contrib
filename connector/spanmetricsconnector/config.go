@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 )
 
@@ -38,10 +39,10 @@ type Dimension struct {
 type Config struct {
 	// Dimensions defines the list of additional dimensions on top of the provided:
 	// - service.name
-	// - span.kind
+	// - span.name
 	// - span.kind
 	// - status.code
-	// - collector.instance.id This dimensions never added unless enable feature-gate connector.spanmetrics.includeCollectorInstanceID
+	// - collector.instance.id
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
 	Dimensions        []Dimension `mapstructure:"dimensions"`
@@ -79,6 +80,10 @@ type Config struct {
 	// Default value (0) means that the metrics will never expire.
 	MetricsExpiration time.Duration `mapstructure:"metrics_expiration"`
 
+	// SeriesExpiration is the time period after which individual metric series are considered stale and will no longer be exported.
+	// Default value (0) means that individual metric series will never expire.
+	SeriesExpiration time.Duration `mapstructure:"series_expiration"`
+
 	// TimestampCacheSize controls the size of the cache used to keep track of delta metrics' TimestampUnixNano the last time it was flushed
 	TimestampCacheSize *int `mapstructure:"metric_timestamp_cache_size"`
 
@@ -94,6 +99,15 @@ type Config struct {
 	IncludeInstrumentationScope []string `mapstructure:"include_instrumentation_scope"`
 
 	AggregationCardinalityLimit int `mapstructure:"aggregation_cardinality_limit"`
+
+	// Add the resource attributes to the resulting metrics (disabled by default)
+	// This option enables the old behavior
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103
+	AddResourceAttributes bool `mapstructure:"add_resource_attributes"`
+
+	// EnableMetricsSamplingMethod adds the sampling.method attribute ("extrapolated" or "counted") to metrics.
+	// When false (default), the attribute is not added.
+	EnableMetricsSamplingMethod bool `mapstructure:"enable_metrics_sampling_method"`
 }
 
 type HistogramConfig struct {
@@ -158,6 +172,10 @@ func (c Config) Validate() error {
 		return fmt.Errorf("invalid metrics_expiration: %v, the duration should be positive", c.MetricsExpiration)
 	}
 
+	if c.SeriesExpiration < 0 {
+		return fmt.Errorf("invalid series_expiration: %v, the duration should be positive", c.SeriesExpiration)
+	}
+
 	if c.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta && c.GetDeltaTimestampCacheSize() <= 0 {
 		return fmt.Errorf(
 			"invalid delta timestamp cache size: %v, the maximum number of the items in the cache should be positive",
@@ -196,7 +214,7 @@ func (c Config) GetDeltaTimestampCacheSize() int {
 func validateDimensions(dimensions []Dimension) error {
 	labelNames := make(map[string]struct{})
 	intervalLabels := []string{serviceNameKey, spanKindKey, statusCodeKey, spanNameKey}
-	if includeCollectorInstanceID.IsEnabled() {
+	if metadata.ConnectorSpanmetricsIncludeCollectorInstanceIDFeatureGate.IsEnabled() {
 		intervalLabels = append(intervalLabels, collectorInstanceKey)
 	}
 

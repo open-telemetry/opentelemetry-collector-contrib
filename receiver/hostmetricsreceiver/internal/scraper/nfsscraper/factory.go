@@ -27,13 +27,13 @@ func NewFactory() scraper.Factory {
 // createDefaultConfig creates the default configuration for the Scraper.
 func createDefaultConfig() component.Config {
 	return &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 }
 
 // createMetricsScraper creates a resource scraper based on provided config.
 func createMetricsScraper(
-	ctx context.Context,
+	_ context.Context,
 	settings scraper.Settings,
 	cfg component.Config,
 ) (scraper.Metrics, error) {
@@ -41,7 +41,7 @@ func createMetricsScraper(
 		return nil, errUnsupportedOS
 	}
 
-	nfsScraper := newNfsScraper(ctx, settings, cfg.(*Config))
+	nfsScraper := newNfsScraper(settings, cfg.(*Config))
 
 	return scraper.NewMetrics(
 		nfsScraper.scrape,

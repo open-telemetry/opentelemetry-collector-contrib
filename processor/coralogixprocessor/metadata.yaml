@@ -1,4 +1,7 @@
+display_name: Coralogix Processor
 type: coralogix
+
+description: The Coralogix processor adds attributes to spans that enable features in Coralogix.
 
 status:
   class: processor

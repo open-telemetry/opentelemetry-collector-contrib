@@ -5,6 +5,7 @@ package clickhouseexporter
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -77,13 +79,13 @@ func TestLoadConfig(t *testing.T) {
 					ExponentialHistogram: metrics.MetricTypeConfig{Name: "otel_metrics_custom_exp_histogram"},
 				},
 				ConnectionParams: map[string]string{},
-				QueueSettings: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
-					NumConsumers: 10,
-					QueueSize:    100,
-					StorageID:    &storageID,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				},
+				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.NumConsumers = 10
+					queue.QueueSize = 100
+					queue.StorageID = &storageID
+					return queue
+				}()),
 				AsyncInsert: true,
 				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
@@ -94,6 +96,18 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 	}
+
+	jsonCfg := createDefaultConfig()
+	jsonCfg.(*Config).Endpoint = defaultEndpoint
+	jsonCfg.(*Config).JSON = true
+
+	tests = append(tests, struct {
+		id       component.ID
+		expected component.Config
+	}{
+		id:       component.NewIDWithName(metadata.Type, "json"),
+		expected: jsonCfg,
+	})
 
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
@@ -639,11 +653,19 @@ func TestClusterString(t *testing.T) {
 		},
 		{
 			input:    "cluster_a_b",
-			expected: "ON CLUSTER cluster_a_b",
+			expected: "ON CLUSTER `cluster_a_b`",
 		},
 		{
 			input:    "cluster a b",
-			expected: "ON CLUSTER cluster a b",
+			expected: "ON CLUSTER `cluster a b`",
+		},
+		{
+			input:    "ch-cluster",
+			expected: "ON CLUSTER `ch-cluster`",
+		},
+		{
+			input:    "my`cluster",
+			expected: "ON CLUSTER `my``cluster`",
 		},
 	}
 
@@ -755,4 +777,33 @@ func TestConfigDatabase(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+// TestBuildClickHouseOptions_WithCAFileOnly verifies that when only a CAFile is provided,
+// buildClickHouseOptions returns a clean TLS error instead of crashing.
+func TestBuildClickHouseOptions_WithCAFileOnly(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	// Use a valid DSN to ensure parsing succeeds before TLS setup.
+	cfg.Endpoint = "clickhouse://default:password@localhost:9000/default?secure=true"
+
+	// Create a dummy CA file (intentionally invalid to trigger TLS error).
+	tmpFile, err := os.CreateTemp(t.TempDir(), "ca*.pem")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = tmpFile.WriteString("-----BEGIN CERTIFICATE-----\nINVALID\n-----END CERTIFICATE-----")
+	require.NoError(t, err)
+	tmpFile.Close()
+
+	cfg.TLS.CAFile = tmpFile.Name()
+
+	// Run buildClickHouseOptions.
+	opt, err := cfg.buildClickHouseOptions()
+
+	// We expect an error since the CA file is invalid.
+	require.Error(t, err, "expected error due to invalid CA file")
+
+	// No panic, but options may be nil since TLS setup failed early.
+	require.Nil(t, opt, "expected nil options when TLS setup fails cleanly")
 }

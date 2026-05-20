@@ -16,9 +16,10 @@ import (
 )
 
 func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
-	resource pcommon.Resource, settings Settings, name string, metadata metadata,
+	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, name string, metadata metadata,
 ) error {
 	var errs error
+	symbolize := func(s string) uint32 { return c.symbolTable.Symbolize(s) }
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 
@@ -28,7 +29,7 @@ func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pme
 			continue
 		}
 
-		lbls, err := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false, c.labelNamer, model.MetricNameLabel, name)
+		lbls, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -37,7 +38,8 @@ func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pme
 		ts := c.getOrCreateTimeSeries(lbls, metadata)
 		ts.Histograms = append(ts.Histograms, histogram)
 
-		// TODO handle exemplars
+		exemplars := getPromExemplarsV2[pmetric.ExponentialHistogramDataPoint](pt, symbolize)
+		ts.Exemplars = append(ts.Exemplars, exemplars...)
 	}
 
 	return errs
@@ -62,6 +64,11 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 	pSpans, pDeltas := convertBucketsLayoutV2(p.Positive(), scaleDown)
 	nSpans, nDeltas := convertBucketsLayoutV2(p.Negative(), scaleDown)
 
+	zeroThreshold := p.ZeroThreshold()
+	if zeroThreshold == 0 {
+		zeroThreshold = defaultZeroThreshold
+	}
+
 	h := writev2.Histogram{
 		// The counter reset detection must be compatible with Prometheus to
 		// safely set ResetHint to NO. This is not ensured currently.
@@ -75,10 +82,8 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 		ResetHint: writev2.Histogram_RESET_HINT_UNSPECIFIED,
 		Schema:    scale,
 
-		ZeroCount: &writev2.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
-		// TODO use zero_threshold, if set, see
-		// https://github.com/open-telemetry/opentelemetry-proto/pull/441
-		ZeroThreshold: defaultZeroThreshold,
+		ZeroCount:     &writev2.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
+		ZeroThreshold: zeroThreshold,
 
 		PositiveSpans:  pSpans,
 		PositiveDeltas: pDeltas,
@@ -140,7 +145,7 @@ func convertBucketsLayoutV2(buckets pmetric.ExponentialHistogramDataPointBuckets
 		Length: 0,
 	})
 
-	for i := 0; i < numBuckets; i++ {
+	for i := range numBuckets {
 		// The offset is scaled and adjusted by 1 as described above.
 		nextBucketIdx := (int32(i)+buckets.Offset())>>scaleDown + 1
 		if bucketIdx == nextBucketIdx { // We have not collected enough buckets to merge yet.
@@ -164,7 +169,7 @@ func convertBucketsLayoutV2(buckets pmetric.ExponentialHistogramDataPointBuckets
 		} else {
 			// We have found a small gap (or no gap at all).
 			// Insert empty buckets as needed.
-			for j := int32(0); j < gap; j++ {
+			for range gap {
 				appendDelta(0)
 			}
 		}
@@ -185,7 +190,7 @@ func convertBucketsLayoutV2(buckets pmetric.ExponentialHistogramDataPointBuckets
 	} else {
 		// We have found a small gap (or no gap at all).
 		// Insert empty buckets as needed.
-		for j := int32(0); j < gap; j++ {
+		for range gap {
 			appendDelta(0)
 		}
 	}

@@ -4,10 +4,10 @@
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
+	"slices"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"golang.org/x/exp/slices"
 )
 
 // fields represents metadata
@@ -73,7 +73,7 @@ func (f fields) string() string {
 // sanitizeFields sanitize field (key or value) to be correctly parsed by sumologic receiver
 // It modifies the field in place.
 func (fields) sanitizeField(fld []byte) {
-	for i := 0; i < len(fld); i++ {
+	for i := range fld {
 		switch fld[i] {
 		case ',':
 			fld[i] = '_'

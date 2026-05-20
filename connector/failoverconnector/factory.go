@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -28,7 +29,7 @@ func NewFactory() connector.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		RetryInterval: 10 * time.Minute,
 		RetryGap:      0,
 		MaxRetries:    0,
@@ -54,7 +55,7 @@ func createTracesToTraces(
 	oCfg := cfg.(*Config)
 
 	// If queue is disabled, return the raw failover connector
-	if !oCfg.QueueSettings.Enabled {
+	if !oCfg.QueueSettings.HasValue() {
 		return t, nil
 	}
 
@@ -91,7 +92,7 @@ func createMetricsToMetrics(
 	oCfg := cfg.(*Config)
 
 	// If queue is disabled, return the raw failover connector directly (original behavior)
-	if !oCfg.QueueSettings.Enabled {
+	if !oCfg.QueueSettings.HasValue() {
 		return t, nil
 	}
 
@@ -128,7 +129,7 @@ func createLogsToLogs(
 	oCfg := cfg.(*Config)
 
 	// If queue is disabled, return the raw failover connector directly (original behavior)
-	if !oCfg.QueueSettings.Enabled {
+	if !oCfg.QueueSettings.HasValue() {
 		return t, nil
 	}
 

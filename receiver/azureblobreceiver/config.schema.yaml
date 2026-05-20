@@ -1,0 +1,61 @@
+$defs:
+  auth_type:
+    type: string
+  cloud_type:
+    type: string
+  event_hub_config:
+    type: object
+    properties:
+      endpoint:
+        description: Azure Event Hub endpoint triggering on the `Blob Create` event
+        type: string
+  logs_config:
+    type: object
+    properties:
+      container_name:
+        description: Name of the blob container with the logs (default = "logs")
+        type: string
+  service_principal_config:
+    type: object
+    properties:
+      client_id:
+        description: Client ID, used with Service Principal authentication
+        type: string
+      client_secret:
+        description: Client secret, used with Service Principal authentication
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      tenant_id:
+        description: Tenant ID, used with Service Principal authentication
+        type: string
+  traces_config:
+    type: object
+    properties:
+      container_name:
+        description: Name of the blob container with the traces (default = "traces")
+        type: string
+type: object
+properties:
+  auth:
+    description: Type of authentication to use
+    $ref: auth_type
+  cloud:
+    description: Azure Cloud to authenticate against, used with Service Principal authentication
+    $ref: cloud_type
+  connection_string:
+    description: Azure Blob Storage connection key, which can be found in the Azure Blob Storage resource on the Azure Portal. (no default)
+    type: string
+  event_hub:
+    description: Configurations of Azure Event Hub triggering on the `Blob Create` event
+    $ref: event_hub_config
+  logs:
+    description: Logs related configurations
+    $ref: logs_config
+  service_principal:
+    description: Configuration for the Service Principal credentials
+    $ref: service_principal_config
+  storage_account_url:
+    description: Storage Account URL, used with Service Principal authentication
+    type: string
+  traces:
+    description: Traces related configurations
+    $ref: traces_config

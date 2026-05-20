@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor/internal/metadata"
@@ -22,10 +23,11 @@ var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Metrics transform processor.
 func NewFactory() processor.Factory {
-	return processor.NewFactory(
+	return xprocessor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability))
+		xprocessor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		xprocessor.WithDeprecatedTypeAlias(metadata.DeprecatedType))
 }
 
 func createDefaultConfig() component.Config {
@@ -193,7 +195,7 @@ func createFilter(filterConfig filterConfig) (internalFilter, error) {
 // createLabelValueMapping creates the labelValue rename mappings based on the valueActions
 func createLabelValueMapping(valueActions []valueAction, version string) map[string]string {
 	mapping := make(map[string]string)
-	for i := 0; i < len(valueActions); i++ {
+	for i := range valueActions {
 		valueActions[i].NewValue = strings.ReplaceAll(valueActions[i].NewValue, "{{version}}", version)
 		mapping[valueActions[i].Value] = valueActions[i].NewValue
 	}

@@ -8,7 +8,9 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 
@@ -40,7 +42,7 @@ func (zs *zipkinDataSender) Start() error {
 	// Disable retries, we should push data and if error just log it.
 	cfg.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
 	params := exportertest.NewNopSettings(factory.Type())
 	params.Logger = zap.L()
 

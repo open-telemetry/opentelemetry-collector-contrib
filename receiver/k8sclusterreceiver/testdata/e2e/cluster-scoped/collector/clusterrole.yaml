@@ -13,6 +13,8 @@ rules:
       - namespaces/status
       - nodes
       - nodes/spec
+      - persistentvolumes
+      - persistentvolumeclaims
       - pods
       - pods/status
       - replicationcontrollers
@@ -57,6 +59,14 @@ rules:
       - autoscaling
     resources:
       - horizontalpodautoscalers
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - discovery.k8s.io
+    resources:
+      - endpointslices
     verbs:
       - get
       - list

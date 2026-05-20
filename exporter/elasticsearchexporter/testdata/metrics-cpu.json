@@ -10,6 +10,12 @@
             }
           },
           {
+            "key": "host.hostname",
+            "value": {
+              "stringValue": "my-hostname"
+            }
+          },
+          {
             "key": "os.type",
             "value": {
               "stringValue": "linux"

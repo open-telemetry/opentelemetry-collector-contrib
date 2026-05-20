@@ -9,18 +9,15 @@ import (
 	"math"
 	"time"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofilecommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 )
 
-var (
-	errMaxValueExceed   = errors.New("exceeded max value")
-	errInvalidValueType = errors.New("invalid value type")
-)
+var errMaxValueExceed = errors.New("exceeded max value")
 
 func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
@@ -38,10 +35,13 @@ func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	case "timestamps":
 		return accessTimestamps[K](), nil
 	case "attributes":
-		if path.Keys() == nil {
-			return accessAttributes[K](), nil
+		attributable := func(ctx K) (pprofile.ProfilesDictionary, ctxprofilecommon.ProfileAttributable) {
+			return ctx.GetProfilesDictionary(), ctx.GetProfileSample()
 		}
-		return accessAttributesKey(path.Keys()), nil
+		if path.Keys() == nil {
+			return ctxprofilecommon.AccessAttributes[K](attributable), nil
+		}
+		return ctxprofilecommon.AccessAttributesKey[K](path.Keys(), attributable), nil
 	default:
 		return nil, ctxerror.New(path.Name(), path.String(), Name, DocRef)
 	}
@@ -75,14 +75,15 @@ func accessLinkIndex[K Context]() ottl.StandardGetSetter[K] {
 			return int64(tCtx.GetProfileSample().LinkIndex()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.(int64); ok {
-				if v >= math.MaxInt32 {
-					return errMaxValueExceed
-				}
-				tCtx.GetProfileSample().SetLinkIndex(int32(v))
-				return nil
+			v, err := ctxutil.ExpectType[int64](val)
+			if err != nil {
+				return err
 			}
-			return errInvalidValueType
+			if v >= math.MaxInt32 {
+				return errMaxValueExceed
+			}
+			tCtx.GetProfileSample().SetLinkIndex(int32(v))
+			return nil
 		},
 	}
 }
@@ -108,72 +109,15 @@ func accessTimestamps[K Context]() ottl.StandardGetSetter[K] {
 			return ts, nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if ts, ok := val.([]time.Time); ok {
-				tCtx.GetProfileSample().TimestampsUnixNano().FromRaw([]uint64{})
-				for _, t := range ts {
-					tCtx.GetProfileSample().TimestampsUnixNano().Append(uint64(t.UTC().UnixNano()))
-				}
+			ts, err := ctxutil.ExpectType[[]time.Time](val)
+			if err != nil {
+				return err
+			}
+			tCtx.GetProfileSample().TimestampsUnixNano().FromRaw([]uint64{})
+			for _, t := range ts {
+				tCtx.GetProfileSample().TimestampsUnixNano().Append(uint64(t.UTC().UnixNano()))
 			}
 			return nil
 		},
 	}
-}
-
-func accessAttributes[K Context]() ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return pprofile.FromAttributeIndices(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfileSample(), tCtx.GetProfilesDictionary()), nil
-		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
-			m, err := ctxutil.GetMap(val)
-			if err != nil {
-				return err
-			}
-			tCtx.GetProfileSample().AttributeIndices().FromRaw([]int32{})
-			for k, v := range m.All() {
-				if err := pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfileSample(), tCtx.GetProfilesDictionary(), k, v); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	}
-}
-
-func accessAttributesKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (any, error) {
-			return ctxutil.GetMapValue[K](ctx, tCtx, pprofile.FromAttributeIndices(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfileSample(), tCtx.GetProfilesDictionary()), key)
-		},
-		Setter: func(ctx context.Context, tCtx K, val any) error {
-			newKey, err := ctxutil.GetMapKeyName(ctx, tCtx, key[0])
-			if err != nil {
-				return err
-			}
-			v := getAttributeValue(tCtx, *newKey)
-			if err := ctxutil.SetIndexableValue[K](ctx, tCtx, v, val, key[1:]); err != nil {
-				return err
-			}
-			return pprofile.PutAttribute(tCtx.GetProfilesDictionary().AttributeTable(), tCtx.GetProfileSample(), tCtx.GetProfilesDictionary(), *newKey, v)
-		},
-	}
-}
-
-func getAttributeValue[K Context](tCtx K, key string) pcommon.Value {
-	// Find the index of the attribute in the profile's attribute indices
-	// and return the corresponding value from the attribute table.
-	table := tCtx.GetProfilesDictionary().AttributeTable()
-	strTable := tCtx.GetProfilesDictionary().StringTable()
-
-	for _, tableIndex := range tCtx.GetProfileSample().AttributeIndices().All() {
-		attr := table.At(int(tableIndex))
-		if strTable.At(int(attr.KeyStrindex())) == key {
-			// Copy the value because OTTL expects to do inplace updates for the values.
-			v := pcommon.NewValueEmpty()
-			attr.Value().CopyTo(v)
-			return v
-		}
-	}
-
-	return pcommon.NewValueEmpty()
 }

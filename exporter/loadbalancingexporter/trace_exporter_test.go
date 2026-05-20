@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
@@ -67,6 +66,7 @@ func TestTracesExporterStart(t *testing.T) {
 			"ok",
 			func() *traceExporterImp {
 				p, _ := newTracesExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
+				p.loadBalancer.res = &mockResolver{}
 				return p
 			}(),
 			nil,
@@ -261,9 +261,9 @@ func TestAttributeBasedRouting(t *testing.T) {
 			batch: simpleTracesWithServiceName(),
 
 			res: map[string]bool{
-				"service-name-1": true,
-				"service-name-2": true,
-				"service-name-3": true,
+				"service.name=service-name-1|": true,
+				"service.name=service-name-2|": true,
+				"service.name=service-name-3|": true,
 			},
 		},
 		{
@@ -281,7 +281,7 @@ func TestAttributeBasedRouting(t *testing.T) {
 				return traces
 			}(),
 			res: map[string]bool{
-				"/foo/bar/baz": true,
+				"span.name=/foo/bar/baz|": true,
 			},
 		},
 		{
@@ -299,7 +299,7 @@ func TestAttributeBasedRouting(t *testing.T) {
 				return traces
 			}(),
 			res: map[string]bool{
-				"Client": true,
+				"span.kind=Client|": true,
 			},
 		},
 		{
@@ -321,7 +321,7 @@ func TestAttributeBasedRouting(t *testing.T) {
 				return traces
 			}(),
 			res: map[string]bool{
-				"service-name-1Client": true,
+				"service.name=service-name-1|span.kind=Client|": true,
 			},
 		},
 		{
@@ -340,7 +340,7 @@ func TestAttributeBasedRouting(t *testing.T) {
 				return traces
 			}(),
 			res: map[string]bool{
-				"Server": true,
+				"missing.attribute=|span.kind=Server|": true,
 			},
 		},
 		{
@@ -358,7 +358,7 @@ func TestAttributeBasedRouting(t *testing.T) {
 				return traces
 			}(),
 			res: map[string]bool{
-				"/foo/bar/baz": true,
+				"http.path=/foo/bar/baz|": true,
 			},
 		},
 		{
@@ -382,7 +382,7 @@ func TestAttributeBasedRouting(t *testing.T) {
 				return traces
 			}(),
 			res: map[string]bool{
-				"service-name-1Client/foo/bar/baz": true,
+				"service.name=service-name-1|span.kind=Client|http.path=/foo/bar/baz|": true,
 			},
 		},
 	} {
@@ -392,6 +392,46 @@ func TestAttributeBasedRouting(t *testing.T) {
 			assert.Equal(t, res, tc.res)
 		})
 	}
+}
+
+func TestAttributeBasedRoutingStableEncodingAvoidsConcatenationCollisions(t *testing.T) {
+	traces := ptrace.NewTraces()
+
+	rs1 := traces.ResourceSpans().AppendEmpty()
+	rs1.Resource().Attributes().PutStr("a", "foo")
+	rs1.Resource().Attributes().PutStr("b", "bar")
+	rs1.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+	rs2 := traces.ResourceSpans().AppendEmpty()
+	rs2.Resource().Attributes().PutStr("a", "foob")
+	rs2.Resource().Attributes().PutStr("b", "ar")
+	rs2.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+	res, err := routingIdentifiersFromTraces(traces, attrRouting, []string{"a", "b"})
+	require.NoError(t, err)
+	assert.Equal(t, map[string]bool{
+		"a=foo|b=bar|": true,
+		"a=foob|b=ar|": true,
+	}, res)
+}
+
+func TestAttributeBasedRoutingNonStringValues(t *testing.T) {
+	traces := ptrace.NewTraces()
+
+	rs1 := traces.ResourceSpans().AppendEmpty()
+	rs1.Resource().Attributes().PutInt("shard", 1)
+	rs1.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+	rs2 := traces.ResourceSpans().AppendEmpty()
+	rs2.Resource().Attributes().PutInt("shard", 2)
+	rs2.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+	res, err := routingIdentifiersFromTraces(traces, attrRouting, []string{"shard"})
+	require.NoError(t, err)
+	assert.Equal(t, map[string]bool{
+		"shard=1|": true,
+		"shard=2|": true,
+	}, res)
 }
 
 func TestUnsupportedRoutingKeyInRouting(t *testing.T) {
@@ -417,7 +457,7 @@ func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
 			"same trace id and different services - service based routing",
 			twoServicesWithSameTraceID(),
 			svcRouting,
-			map[string]bool{"ad-service-1": true, "get-recommendations-7": true},
+			map[string]bool{"service.name=ad-service-1|": true, "service.name=get-recommendations-7|": true},
 		},
 		{
 			"same trace id and different services - trace id routing",
@@ -699,11 +739,9 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 				consumeCh <- struct{}{}
 				return
 			case <-ticker.C:
-				waitWG.Add(1)
-				go func() {
+				waitWG.Go(func() {
 					assert.NoError(t, p.ConsumeTraces(ctx, randomTraces()))
-					waitWG.Done()
-				}()
+				})
 			}
 		}
 	}(ctx)
@@ -735,7 +773,7 @@ func benchConsumeTraces(b *testing.B, endpointsCount, tracesCount int) {
 	}
 
 	endpoints := []string{}
-	for i := 0; i < endpointsCount; i++ {
+	for i := range endpointsCount {
 		endpoints = append(endpoints, fmt.Sprintf("endpoint-%d", i))
 	}
 
@@ -760,16 +798,14 @@ func benchConsumeTraces(b *testing.B, endpointsCount, tracesCount int) {
 
 	trace1 := ptrace.NewTraces()
 	trace2 := ptrace.NewTraces()
-	for i := 0; i < endpointsCount; i++ {
+	for i := range endpointsCount {
 		for j := 0; j < tracesCount/endpointsCount; j++ {
 			appendSimpleTraceWithID(trace2.ResourceSpans().AppendEmpty(), [16]byte{1, 2, 6, byte(i)})
 		}
 	}
 	td := mergeTraces(trace1, trace2)
 
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err = p.ConsumeTraces(b.Context(), td)
 		require.NoError(b, err)
 	}
@@ -832,15 +868,15 @@ func simpleTracesWithServiceName() ptrace.Traces {
 	traces.ResourceSpans().EnsureCapacity(1)
 
 	rspans := traces.ResourceSpans().AppendEmpty()
-	rspans.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "service-name-1")
+	rspans.Resource().Attributes().PutStr("service.name", "service-name-1")
 	rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
 
 	bspans := traces.ResourceSpans().AppendEmpty()
-	bspans.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "service-name-2")
+	bspans.Resource().Attributes().PutStr("service.name", "service-name-2")
 	bspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
 
 	aspans := traces.ResourceSpans().AppendEmpty()
-	aspans.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "service-name-3")
+	aspans.Resource().Attributes().PutStr("service.name", "service-name-3")
 	aspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 5})
 
 	return traces
@@ -850,10 +886,10 @@ func twoServicesWithSameTraceID() ptrace.Traces {
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(2)
 	rs1 := traces.ResourceSpans().AppendEmpty()
-	rs1.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "ad-service-1")
+	rs1.Resource().Attributes().PutStr("service.name", "ad-service-1")
 	appendSimpleTraceWithID(rs1, [16]byte{1, 2, 3, 4})
 	rs2 := traces.ResourceSpans().AppendEmpty()
-	rs2.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "get-recommendations-7")
+	rs2.Resource().Attributes().PutStr("service.name", "get-recommendations-7")
 	appendSimpleTraceWithID(rs2, [16]byte{1, 2, 3, 4})
 	return traces
 }

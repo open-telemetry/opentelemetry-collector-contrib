@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -18,10 +19,11 @@ import (
 
 // NewFactory creates a new factory for the processor.
 func NewFactory() processor.Factory {
-	return processor.NewFactory(
+	return xprocessor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		xprocessor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		xprocessor.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
@@ -44,7 +46,7 @@ func createLogsProcessor(_ context.Context, settings processor.Settings, cfg com
 	if len(processorCfg.Conditions) == 0 {
 		processor.conditions = nil
 	} else {
-		conditions, err := filterottl.NewBoolExprForLog(
+		conditions, err := filterottl.NewBoolExprForLogWithPathContextNames(
 			processorCfg.Conditions,
 			filterottl.StandardLogFuncs(),
 			ottl.PropagateError,

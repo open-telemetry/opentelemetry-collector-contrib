@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
@@ -44,6 +46,7 @@ var (
 		loadscraper.NewFactory(),
 		memoryscraper.NewFactory(),
 		networkscraper.NewFactory(),
+		nfsscraper.NewFactory(),
 		pagingscraper.NewFactory(),
 		processesscraper.NewFactory(),
 		processscraper.NewFactory(),
@@ -64,11 +67,13 @@ func mustMakeFactories(factories ...scraper.Factory) map[component.Type]scraper.
 
 // NewFactory creates a new factory for host metrics receiver.
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
+		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithDeprecatedTypeAlias((metadata.DeprecatedType)),
+	)
 }
 
 // createDefaultConfig creates the default configuration for receiver.

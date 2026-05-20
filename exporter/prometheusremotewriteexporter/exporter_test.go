@@ -19,7 +19,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
-	"github.com/prometheus/prometheus/config"
+	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -124,7 +124,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
-			cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV1
+			cfg.RemoteWriteProtoMsg = remoteapi.WriteV1MessageType
 			prwe, err := newPRWExporter(cfg, tt.set)
 
 			if tt.returnErrorOnCreate {
@@ -214,7 +214,7 @@ func Test_Start(t *testing.T) {
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
 			cfg.ClientConfig = tt.clientSettings
-			cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV1
+			cfg.RemoteWriteProtoMsg = remoteapi.WriteV1MessageType
 
 			prwe, err := newPRWExporter(cfg, tt.set)
 			assert.NoError(t, err)
@@ -225,6 +225,9 @@ func Test_Start(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
+			defer func() {
+				assert.NoError(t, prwe.Shutdown(t.Context()))
+			}()
 			assert.NotNil(t, prwe.client)
 		})
 	}
@@ -240,12 +243,10 @@ func Test_Shutdown(t *testing.T) {
 	err := prwe.Shutdown(t.Context())
 	require.NoError(t, err)
 	errChan := make(chan error, 5)
-	for i := 0; i < 5; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 5 {
+		wg.Go(func() {
 			errChan <- prwe.PushMetrics(t.Context(), pmetric.NewMetrics())
-		}()
+		})
 	}
 	wg.Wait()
 	close(errChan)
@@ -384,6 +385,9 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	if err := prwe.Start(context.Background(), componenttest.NewNopHost()); err != nil {
 		return err
 	}
+	defer func() {
+		_ = prwe.Shutdown(context.Background())
+	}()
 
 	return prwe.handleExport(context.Background(), testmap, nil)
 }
@@ -757,12 +761,12 @@ func Test_PushMetrics(t *testing.T) {
 					}
 
 					if tt.enableSendingRW2 {
-						cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV2
-						oldValue := enableSendingRW2FeatureGate.IsEnabled()
-						testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, tt.enableSendingRW2)
-						defer testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, oldValue)
+						cfg.RemoteWriteProtoMsg = remoteapi.WriteV2MessageType
+						oldValue := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.IsEnabled()
+						testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, tt.enableSendingRW2)
+						defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, oldValue)
 					} else {
-						cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV1
+						cfg.RemoteWriteProtoMsg = remoteapi.WriteV1MessageType
 					}
 
 					if useWAL {
@@ -1251,7 +1255,7 @@ func benchmarkExecute(b *testing.B, numSample int) {
 
 	generateSamples := func(n int) []prompb.Sample {
 		samples := make([]prompb.Sample, 0, n)
-		for i := 0; i < n; i++ {
+		for i := range n {
 			samples = append(samples, prompb.Sample{
 				Timestamp: int64(i),
 				Value:     float64(i),
@@ -1262,7 +1266,7 @@ func benchmarkExecute(b *testing.B, numSample int) {
 
 	generateHistograms := func(n int) []prompb.Histogram {
 		histograms := make([]prompb.Histogram, 0, n)
-		for i := 0; i < n; i++ {
+		for i := range n {
 			histograms = append(histograms, prompb.Histogram{
 				Timestamp:      int64(i),
 				Count:          &prompb.Histogram_CountInt{CountInt: uint64(i)},
@@ -1274,7 +1278,7 @@ func benchmarkExecute(b *testing.B, numSample int) {
 
 	reqs := make([]*prompb.WriteRequest, 0, b.N)
 	const labelValue = "abcdefg'hijlmn234!@#$%^&*()_+~`\"{}[],./<>?hello0123hiOlá你好Dzieńdobry9Zd8ra765v4stvuyte"
-	for n := 0; n < b.N; n++ {
+	for n := 0; b.Loop(); n++ {
 		num := strings.Repeat(strconv.Itoa(n), 16)
 		req := &prompb.WriteRequest{
 			Metadata: []prompb.MetricMetadata{
@@ -1373,7 +1377,7 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 	require.NoError(b, err)
 
 	var metrics []pmetric.Metrics
-	for n := 0; n < b.N; n++ {
+	for n := 0; b.Loop(); n++ {
 		actualNumMetrics := numMetrics
 		if numMetrics == -1 {
 			actualNumMetrics = int(math.Pow(10, float64(n%4+1)))

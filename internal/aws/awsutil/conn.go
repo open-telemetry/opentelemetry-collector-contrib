@@ -10,11 +10,12 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 )
@@ -30,8 +31,7 @@ func newHTTPClient(logger *zap.Logger, maxIdle, requestTimeout int, noVerify boo
 		InsecureSkipVerify: noVerify,
 	}
 
-	finalProxyAddress := getProxyAddress(proxyAddress)
-	proxyURL, err := getProxyURL(finalProxyAddress)
+	proxyFunc, err := GetProxyFunc(proxyAddress)
 	if err != nil {
 		logger.Error("unable to obtain proxy URL", zap.Error(err))
 		return nil, err
@@ -39,7 +39,7 @@ func newHTTPClient(logger *zap.Logger, maxIdle, requestTimeout int, noVerify boo
 	transport := &http.Transport{
 		MaxIdleConnsPerHost: maxIdle,
 		TLSClientConfig:     tls,
-		Proxy:               http.ProxyURL(proxyURL),
+		Proxy:               proxyFunc,
 	}
 
 	// is not enabled by default as we configure TLSClientConfig for supporting SSL to data plane.
@@ -56,34 +56,31 @@ func newHTTPClient(logger *zap.Logger, maxIdle, requestTimeout int, noVerify boo
 	return http, err
 }
 
-func getProxyAddress(proxyAddress string) string {
-	var finalProxyAddress string
-	switch {
-	case proxyAddress != "":
-		finalProxyAddress = proxyAddress
-
-	case proxyAddress == "" && os.Getenv("HTTPS_PROXY") != "":
-		finalProxyAddress = os.Getenv("HTTPS_PROXY")
-	default:
-		finalProxyAddress = ""
+// GetProxyFunc returns a proxy function for use in http.Transport.
+// When an explicit proxy address is configured, it returns http.ProxyURL.
+// Otherwise, it returns http.ProxyFromEnvironment which respects NO_PROXY.
+func GetProxyFunc(proxyAddress string) (func(*http.Request) (*url.URL, error), error) {
+	if proxyAddress == "" {
+		return http.ProxyFromEnvironment, nil
 	}
-	return finalProxyAddress
+	proxyURL, err := url.Parse(proxyAddress)
+	if err != nil {
+		return nil, err
+	}
+	return http.ProxyURL(proxyURL), nil
 }
 
-func getProxyURL(finalProxyAddress string) (*url.URL, error) {
-	var proxyURL *url.URL
-	var err error
-	if finalProxyAddress != "" {
-		proxyURL, err = url.Parse(finalProxyAddress)
-	} else {
-		proxyURL = nil
-		err = nil
-	}
-	return proxyURL, err
-}
-
-// GetAWSConfig returns AWS config instance.
 func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionSettings) (aws.Config, error) {
+	getSTSClient := func(cfg aws.Config) stscreds.AssumeRoleAPIClient {
+		return sts.NewFromConfig(cfg)
+	}
+
+	return getAWSConfig(ctx, logger, settings, getSTSClient)
+}
+
+// getAWSConfig returns AWS config instance. This is separated from GetAWSConfig to allow
+// easier testing with mocked AssumeRoleAPIClient.
+func getAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionSettings, getAssumeRoleAPIClient func(getAssumeRoleAPIClient aws.Config) stscreds.AssumeRoleAPIClient) (aws.Config, error) {
 	http, err := newHTTPClient(logger, settings.NumberOfWorkers, settings.RequestTimeoutSeconds, settings.NoVerifySSL, settings.ProxyAddress)
 	if err != nil {
 		logger.Error("unable to obtain proxy URL", zap.Error(err))
@@ -101,6 +98,20 @@ func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionS
 	cfg, err := config.LoadDefaultConfig(ctx, options...)
 	if err != nil {
 		return aws.Config{}, err
+	}
+
+	if settings.RoleARN != "" {
+		stsClient := getAssumeRoleAPIClient(cfg)
+
+		assumeRoleOpts := func(o *stscreds.AssumeRoleOptions) {
+			if settings.ExternalID != "" {
+				o.ExternalID = &settings.ExternalID
+			}
+		}
+
+		cfg.Credentials = aws.NewCredentialsCache(
+			stscreds.NewAssumeRoleProvider(stsClient, settings.RoleARN, assumeRoleOpts),
+		)
 	}
 
 	if cfg.Region == "" {

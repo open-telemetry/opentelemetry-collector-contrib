@@ -1,9 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
-// Package awscloudwatchlogsexporter provides a logging exporter for the OpenTelemetry collector.
+// Package awscloudwatchlogsexporter provides an AWS CloudWatch Logs exporter for the OpenTelemetry collector.
 // This package is subject to change and may break configuration settings and behavior.
 package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 
@@ -12,6 +12,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -35,7 +36,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings:      queueSettings,
+		QueueSettings:      configoptional.Some(queueSettings),
 	}
 }
 

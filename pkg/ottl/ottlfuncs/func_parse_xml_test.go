@@ -6,9 +6,9 @@ package ottlfuncs
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -280,6 +280,18 @@ func Test_ParseXML(t *testing.T) {
 			oArgs:       nil,
 			createError: "ParseXMLFactory args must be of type *ParseXMLArguments[K]",
 		},
+		{
+			name: "Exceeds max nesting depth",
+			oArgs: &ParseXMLArguments[any]{
+				Target: ottl.StandardStringGetter[any]{
+					Getter: func(context.Context, any) (any, error) {
+						const depth = maxXMLElementDepth + 2
+						return strings.Repeat("<a>", depth) + strings.Repeat("</a>", depth), nil
+					},
+				},
+			},
+			parseError: "exceeded maximum XML nesting depth",
+		},
 	}
 
 	for _, tt := range tests {
@@ -298,7 +310,7 @@ func Test_ParseXML(t *testing.T) {
 				return
 			}
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			resultMap, ok := result.(pcommon.Map)
 			require.True(t, ok)

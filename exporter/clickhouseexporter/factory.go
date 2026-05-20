@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
@@ -11,12 +11,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
-
-var featureGateJSON = featuregate.GlobalRegistry().MustRegister("clickhouse.json", featuregate.StageAlpha)
 
 // NewFactory creates a factory for the ClickHouse exporter.
 func NewFactory() exporter.Factory {
@@ -37,23 +34,12 @@ func createLogsExporter(
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
 
-	if featureGateJSON.IsEnabled() {
-		exp := newLogsJSONExporter(set.Logger, c)
-
-		return exporterhelper.NewLogs(
-			ctx,
-			set,
-			cfg,
-			exp.pushLogsData,
-			exporterhelper.WithStart(exp.start),
-			exporterhelper.WithShutdown(exp.shutdown),
-			exporterhelper.WithTimeout(c.TimeoutSettings),
-			exporterhelper.WithQueue(c.QueueSettings),
-			exporterhelper.WithRetry(c.BackOffConfig),
-		)
+	var exp anyLogsExporter
+	if c.JSON {
+		exp = newLogsJSONExporter(set.Logger, c)
+	} else {
+		exp = newLogsExporter(set.Logger, c)
 	}
-
-	exp := newLogsExporter(set.Logger, c)
 
 	return exporterhelper.NewLogs(
 		ctx,
@@ -76,23 +62,12 @@ func createTracesExporter(
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
 
-	if featureGateJSON.IsEnabled() {
-		exp := newTracesJSONExporter(set.Logger, c)
-
-		return exporterhelper.NewTraces(
-			ctx,
-			set,
-			cfg,
-			exp.pushTraceData,
-			exporterhelper.WithStart(exp.start),
-			exporterhelper.WithShutdown(exp.shutdown),
-			exporterhelper.WithTimeout(c.TimeoutSettings),
-			exporterhelper.WithQueue(c.QueueSettings),
-			exporterhelper.WithRetry(c.BackOffConfig),
-		)
+	var exp anyTracesExporter
+	if c.JSON {
+		exp = newTracesJSONExporter(set.Logger, c)
+	} else {
+		exp = newTracesExporter(set.Logger, c)
 	}
-
-	exp := newTracesExporter(set.Logger, c)
 
 	return exporterhelper.NewTraces(
 		ctx,

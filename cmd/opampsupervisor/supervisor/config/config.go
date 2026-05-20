@@ -18,8 +18,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -28,16 +31,21 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/extensions"
 )
+
+var _ confmap.Validator = (*Supervisor)(nil)
 
 // Supervisor is the Supervisor config file format.
 type Supervisor struct {
-	Server       OpAMPServer  `mapstructure:"server"`
-	Agent        Agent        `mapstructure:"agent"`
-	Capabilities Capabilities `mapstructure:"capabilities"`
-	Storage      Storage      `mapstructure:"storage"`
-	Telemetry    Telemetry    `mapstructure:"telemetry"`
-	HealthCheck  HealthCheck  `mapstructure:"healthcheck"`
+	Server       OpAMPServer       `mapstructure:"server"`
+	Agent        Agent             `mapstructure:"agent"`
+	Capabilities Capabilities      `mapstructure:"capabilities"`
+	Storage      Storage           `mapstructure:"storage"`
+	Telemetry    Telemetry         `mapstructure:"telemetry"`
+	HealthCheck  HealthCheck       `mapstructure:"healthcheck"`
+	Extensions   extensions.Config `mapstructure:"extensions,omitempty"`
 }
 
 // Load loads the Supervisor config from a file.
@@ -71,32 +79,18 @@ func Load(configFile string) (Supervisor, error) {
 		return Supervisor{}, err
 	}
 
-	if err := cfg.Validate(); err != nil {
-		return Supervisor{}, fmt.Errorf("cannot validate supervisor config %s: %w", configFile, err)
-	}
-
 	return cfg, nil
 }
 
-func (s Supervisor) Validate() error {
-	if err := s.Server.Validate(); err != nil {
-		return err
-	}
-
-	if err := s.Agent.Validate(); err != nil {
-		return err
-	}
-
-	if err := s.HealthCheck.Validate(); err != nil {
-		return err
-	}
-
+func (Supervisor) Validate() error {
 	return nil
 }
 
 type Storage struct {
 	// Directory is the directory where the Supervisor will store its data.
 	Directory string `mapstructure:"directory"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Capabilities is the set of capabilities that the Supervisor supports.
@@ -112,6 +106,8 @@ type Capabilities struct {
 	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
 	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
 	ReportsHeartbeat               bool `mapstructure:"reports_heartbeat"`
+	AcceptsPackages                bool `mapstructure:"accepts_packages"`
+	ReportsPackageStatuses         bool `mapstructure:"reports_package_statuses"`
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -160,6 +156,16 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
 	}
 
+	// AcceptsPackages and ReportsPackageStatuses are not yet fully implemented.
+	// They are included here for completeness.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272
+	if c.AcceptsPackages {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages
+	}
+	if c.ReportsPackageStatuses {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
+	}
+
 	return supportedCapabilities
 }
 
@@ -167,6 +173,21 @@ type OpAMPServer struct {
 	Endpoint string                 `mapstructure:"endpoint"`
 	Headers  http.Header            `mapstructure:"headers"`
 	TLS      configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+func (o OpAMPServer) OpaqueHeaders() map[string][]configopaque.String {
+	opaque := make(map[string][]configopaque.String, len(o.Headers))
+
+	for key, values := range o.Headers {
+		opaque[key] = make([]configopaque.String, len(values))
+		for i, val := range values {
+			opaque[key][i] = configopaque.String(val)
+		}
+	}
+
+	return opaque
 }
 
 func (o OpAMPServer) Validate() error {
@@ -195,6 +216,7 @@ func (o OpAMPServer) Validate() error {
 
 type Agent struct {
 	Executable              string            `mapstructure:"executable"`
+	InstanceID              string            `mapstructure:"instance_id"`
 	OrphanDetectionInterval time.Duration     `mapstructure:"orphan_detection_interval"`
 	Description             AgentDescription  `mapstructure:"description"`
 	ConfigApplyTimeout      time.Duration     `mapstructure:"config_apply_timeout"`
@@ -202,6 +224,7 @@ type Agent struct {
 	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
 	UseHUPConfigReload      bool              `mapstructure:"use_hup_config_reload"`
+	ValidateConfig          bool              `mapstructure:"validate_config"`
 	ConfigFiles             []string          `mapstructure:"config_files"`
 	Arguments               []string          `mapstructure:"args"`
 	Env                     map[string]string `mapstructure:"env"`
@@ -218,6 +241,12 @@ func (a Agent) Validate() error {
 
 	if a.OpAMPServerPort < 0 || a.OpAMPServerPort > 65535 {
 		return errors.New("agent::opamp_server_port must be a valid port number")
+	}
+
+	if a.InstanceID != "" {
+		if _, err := uuid.Parse(a.InstanceID); err != nil {
+			return fmt.Errorf("agent::instance_id must be a valid UUID string when set: %w", err)
+		}
 	}
 
 	if a.Executable == "" {
@@ -266,6 +295,8 @@ var SpecialConfigFiles = []SpecialConfigFile{
 type AgentDescription struct {
 	IdentifyingAttributes    map[string]string `mapstructure:"identifying_attributes"`
 	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Telemetry struct {
@@ -275,15 +306,21 @@ type Telemetry struct {
 	Metrics Metrics                        `mapstructure:"metrics"`
 	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
-	Resource map[string]*string `mapstructure:"resource"`
+	Resource otelconftelemetry.ResourceConfig `mapstructure:"resource"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
+
+type ResourceConfig = otelconftelemetry.ResourceConfig
 
 type HealthCheck struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (h HealthCheck) Port() int64 {
-	_, port, err := net.SplitHostPort(h.Endpoint)
+	_, port, err := net.SplitHostPort(h.NetAddr.Endpoint)
 	if err != nil {
 		return 0
 	}
@@ -314,6 +351,8 @@ type Logs struct {
 type Metrics struct {
 	Level   configtelemetry.Level `mapstructure:"level"`
 	Readers []config.MetricReader `mapstructure:"readers"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // DefaultSupervisor returns the default supervisor config
@@ -344,6 +383,8 @@ func DefaultSupervisor() Supervisor {
 			ReportsRemoteConfig:            false,
 			ReportsAvailableComponents:     false,
 			ReportsHeartbeat:               true,
+			AcceptsPackages:                false,
+			ReportsPackageStatuses:         false,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,
@@ -353,12 +394,20 @@ func DefaultSupervisor() Supervisor {
 			ConfigApplyTimeout:      5 * time.Second,
 			BootstrapTimeout:        3 * time.Second,
 			PassthroughLogs:         false,
+			ValidateConfig:          false,
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{
 				Level:            zapcore.InfoLevel,
 				OutputPaths:      []string{"stdout"},
 				ErrorOutputPaths: []string{"stderr"},
+			},
+		},
+		HealthCheck: HealthCheck{
+			ServerConfig: confighttp.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+				},
 			},
 		},
 	}
