@@ -6,12 +6,13 @@ package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentele
 import (
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"golang.org/x/exp/maps"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
@@ -23,7 +24,7 @@ var validMetricTypes = map[string]bool{
 	strings.ToLower(pmetric.MetricTypeExponentialHistogram.String()): true,
 }
 
-var validMetricTypeList = maps.Keys(validMetricTypes)
+var validMetricTypeList = slices.Collect(maps.Keys(validMetricTypes))
 
 // Config defines the configuration for the processor.
 type Config struct {
