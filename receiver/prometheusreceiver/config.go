@@ -48,13 +48,6 @@ func (cfg *Config) Validate() error {
 		return errors.New("no Prometheus scrape_configs or target_allocator set")
 	}
 
-	if cfg.APIServer.HasValue() {
-		apiCfg := cfg.APIServer.Get()
-		if err := apiCfg.Validate(); err != nil {
-			return fmt.Errorf("invalid API server configuration settings: %w", err)
-		}
-	}
-
 	return nil
 }
 

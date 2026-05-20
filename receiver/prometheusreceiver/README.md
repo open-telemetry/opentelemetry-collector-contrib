@@ -279,7 +279,6 @@ The Prometheus API server hosts information about active targets, service discov
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `enabled` | bool | `false` | Whether the API server is enabled. |
-| `lookback_delta` | duration | `5m` | How far back the `/api/v1` query endpoints look when resolving data. |
 | `max_connections` | int | `512` | Maximum number of simultaneous HTTP connections the server accepts. |
 | `server_config` | [confighttp.ServerConfig](https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp) | endpoint: `127.0.0.1:9090`, read_timeout: `10m` | HTTP server settings including endpoint, TLS, CORS, and timeouts. |
 
@@ -288,7 +287,6 @@ receivers:
   prometheus:
     api_server:
       enabled: true
-      lookback_delta: 5m
       max_connections: 512
       server_config:
         endpoint: "127.0.0.1:9090"

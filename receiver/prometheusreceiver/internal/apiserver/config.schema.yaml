@@ -2,9 +2,6 @@ $defs:
   config:
     type: object
     properties:
-      lookback_delta:
-        type: string
-        format: duration
       max_connections:
         type: integer
       server_config:

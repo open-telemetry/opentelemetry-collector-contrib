@@ -13,6 +13,8 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/grafana/regexp"
 	"github.com/prometheus/client_golang/prometheus"
@@ -37,9 +39,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/sharedpromconfig"
 )
 
+// defaultLookbackDelta is the Prometheus default. PromQL queries are not
+// supported by this receiver so the value has no practical effect; it is
+// only passed to satisfy the API v1 constructor signature.
+const defaultLookbackDelta = 5 * time.Minute
+
 type Manager struct {
 	settings      receiver.Settings
 	shutdown      chan struct{}
+	shutdownOnce  sync.Once
 	cfg           *Config
 	promCfg       *sharedpromconfig.Config
 	scrapeManager *scrape.Manager
@@ -168,7 +176,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, scrapeManager 
 		o.ConvertOTLPDelta,
 		o.NativeOTLPDeltaIngestion,
 		o.STZeroIngestionEnabled,
-		m.cfg.LookbackDelta,
+		defaultLookbackDelta,
 		o.EnableTypeAndUnitLabels,
 		false, // appendMetadata from remote write
 		nil,   // OverrideErrorCode
@@ -222,11 +230,9 @@ func (m *Manager) Start(ctx context.Context, host component.Host, scrapeManager 
 }
 
 func (m *Manager) Shutdown(ctx context.Context) error {
-	select {
-	case <-m.shutdown:
-	default:
+	m.shutdownOnce.Do(func() {
 		close(m.shutdown)
-	}
+	})
 
 	if m.server == nil {
 		return nil

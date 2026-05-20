@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"testing"
-	"time"
 
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/prometheus/config"
@@ -69,7 +68,6 @@ func TestPrometheusAPIServer(t *testing.T) {
 		}
 		receiver, _ := newTestReceiver(t, &Config{
 			PrometheusConfig: cfg,
-			skipOffsetting:   true,
 			APIServer:        configoptional.Some(apiCfg),
 		})
 		endpointsToReceivers[endpoint] = receiver
@@ -89,8 +87,7 @@ func TestPrometheusAPIServer(t *testing.T) {
 }
 
 func callAPI(endpoint, path string) (*apiResponse, error) {
-	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Get(fmt.Sprintf("http://%s/api/v1%s", endpoint, path))
+	resp, err := http.Get(fmt.Sprintf("http://%s/api/v1%s", endpoint, path))
 	if err != nil {
 		return nil, err
 	}

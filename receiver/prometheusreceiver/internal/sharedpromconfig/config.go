@@ -33,7 +33,9 @@ func (s *Config) Get() promconfig.Config {
 }
 
 // Mutate calls fn while holding the write lock, allowing safe in-place
-// modification of the underlying config.
+// modification of the underlying config. The function should only replace
+// top-level fields (e.g. cfg.ScrapeConfigs = newConfigs), not mutate
+// elements within existing slices or maps.
 func (s *Config) Mutate(fn func(cfg *promconfig.Config)) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

@@ -5,7 +5,6 @@ package apiserver // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,7 +22,6 @@ func TestConfigDefaults(t *testing.T) {
 	assert.Equal(t, confignet.TransportTypeTCP, cfg.ServerConfig.NetAddr.Transport)
 	assert.Equal(t, defaultEndpoint, cfg.ServerConfig.NetAddr.Endpoint)
 	assert.Equal(t, defaultReadTimeout, cfg.ServerConfig.ReadTimeout)
-	assert.Equal(t, defaultLookbackDelta, cfg.LookbackDelta)
 	assert.Equal(t, defaultMaxConnections, cfg.MaxConnections)
 }
 
@@ -69,13 +67,6 @@ func TestConfigValidate(t *testing.T) {
 			assertCfg: func(t *testing.T, cfg Config) {
 				assert.Empty(t, cfg.ServerConfig.NetAddr.Endpoint)
 			},
-		},
-		{
-			name: "negative lookback delta",
-			cfg: Config{
-				LookbackDelta: -time.Second,
-			},
-			expectErr: "lookback_delta must be non-negative",
 		},
 	}
 
