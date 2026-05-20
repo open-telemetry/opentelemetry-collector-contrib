@@ -14,6 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 // Config defines configuration for k8s attributes processor.
@@ -57,6 +58,11 @@ type Config struct {
 func (cfg *Config) Validate() error {
 	if err := cfg.APIConfig.Validate(); err != nil {
 		return err
+	}
+
+	if metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() &&
+		!metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		return errors.New("it is an error to disable both old and new schemas for k8sattributes telemetry")
 	}
 
 	if cfg.WatchSyncPeriod < 0 {
