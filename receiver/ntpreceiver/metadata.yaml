@@ -2,6 +2,8 @@ display_name: NTP Receiver
 type: ntp
 reaggregation_enabled: true
 
+reaggregation_enabled: true
+
 description: |
   This receiver periodically retrieves the clock offset from a NTP server.
 
