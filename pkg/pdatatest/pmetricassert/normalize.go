@@ -73,13 +73,12 @@ func normalize(m pmetric.Metrics) *document {
 					}
 					sAgg.metrics[metric.Name()] = mAgg
 				}
-				for _, dpAttrs := range extractDatapointAttributes(metric) {
-					raw := attrMapToRaw(dpAttrs)
-					key := dpKey{attrs: canonKey(raw)}
+				for _, da := range extractDatapoints(metric) {
+					key := dpKey{attrs: canonKey(da.Attributes)}
 					if _, dup := mAgg.datapoints[key]; dup {
 						continue
 					}
-					mAgg.datapoints[key] = datapointAssertion{Attributes: raw}
+					mAgg.datapoints[key] = da
 				}
 			}
 		}
@@ -178,33 +177,57 @@ func temporalityString(t pmetric.AggregationTemporality) string {
 	}
 }
 
-func extractDatapointAttributes(metric pmetric.Metric) []pcommon.Map {
-	var out []pcommon.Map
+func extractDatapoints(metric pmetric.Metric) []datapointAssertion {
+	var out []datapointAssertion
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		dps := metric.Gauge().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			out = append(out, dps.At(i).Attributes())
+			out = append(out, datapointAssertion{Attributes: attrMapToRaw(dps.At(i).Attributes())})
 		}
 	case pmetric.MetricTypeSum:
 		dps := metric.Sum().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			out = append(out, dps.At(i).Attributes())
+			out = append(out, datapointAssertion{Attributes: attrMapToRaw(dps.At(i).Attributes())})
 		}
 	case pmetric.MetricTypeHistogram:
 		dps := metric.Histogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			out = append(out, dps.At(i).Attributes())
+			dp := dps.At(i)
+			da := datapointAssertion{
+				Attributes: attrMapToRaw(dp.Attributes()),
+			}
+			count := dp.Count()
+			da.Count = &count
+			if dp.HasSum() {
+				sum := dp.Sum()
+				da.Sum = &sum
+			}
+			if dp.HasMin() {
+				minVal := dp.Min()
+				da.Min = &minVal
+			}
+			if dp.HasMax() {
+				maxVal := dp.Max()
+				da.Max = &maxVal
+			}
+			if dp.ExplicitBounds().Len() > 0 {
+				da.ExplicitBounds = dp.ExplicitBounds().AsRaw()
+			}
+			if dp.BucketCounts().Len() > 0 {
+				da.BucketCounts = dp.BucketCounts().AsRaw()
+			}
+			out = append(out, da)
 		}
 	case pmetric.MetricTypeExponentialHistogram:
 		dps := metric.ExponentialHistogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			out = append(out, dps.At(i).Attributes())
+			out = append(out, datapointAssertion{Attributes: attrMapToRaw(dps.At(i).Attributes())})
 		}
 	case pmetric.MetricTypeSummary:
 		dps := metric.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			out = append(out, dps.At(i).Attributes())
+			out = append(out, datapointAssertion{Attributes: attrMapToRaw(dps.At(i).Attributes())})
 		}
 	}
 	return out
