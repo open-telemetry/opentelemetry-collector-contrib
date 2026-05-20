@@ -1,3 +1,7 @@
+$defs:
+  timestamp_mode:
+    description: TimestampMode defines how the timestamp of the emitted log record is set.
+    type: string
 description: Config is the config of the processor.
 type: object
 properties:
@@ -18,5 +22,7 @@ properties:
     format: duration
   log_count_attribute:
     type: string
+  timestamp_mode:
+    $ref: timestamp_mode
   timezone:
     type: string

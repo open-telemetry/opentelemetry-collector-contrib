@@ -14,10 +14,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
-// Attributes names for first and last observed timestamps
+// Attribute names added to each emitted log record.
 const (
-	firstObservedTSAttr = "first_observed_timestamp"
-	lastObservedTSAttr  = "last_observed_timestamp"
+	firstObservedTSAttr     = "first_observed_timestamp"
+	lastObservedTSAttr      = "last_observed_timestamp"
+	firstEventTimestampAttr = "first_event_timestamp"
+	lastEventTimestampAttr  = "last_event_timestamp"
+
+	// numAddedAttributes is the number of attributes added to each emitted log record,
+	// used to pre-allocate capacity. Must be updated if attributes are added or removed.
+	numAddedAttributes = 5 // log_count, first_observed_timestamp, last_observed_timestamp, first_event_timestamp, last_event_timestamp
 )
 
 // timeNow can be reassigned for testing
@@ -30,16 +36,18 @@ type logAggregator struct {
 	timezone          *time.Location
 	telemetryBuilder  *metadata.TelemetryBuilder
 	dedupFields       []string
+	timestampMode     TimestampMode
 }
 
 // newLogAggregator creates a new LogCounter.
-func newLogAggregator(logCountAttribute string, timezone *time.Location, telemetryBuilder *metadata.TelemetryBuilder, dedupFields []string) *logAggregator {
+func newLogAggregator(logCountAttribute string, timezone *time.Location, telemetryBuilder *metadata.TelemetryBuilder, dedupFields []string, timestampMode TimestampMode) *logAggregator {
 	return &logAggregator{
 		resources:         make(map[uint64]*resourceAggregator),
 		logCountAttribute: logCountAttribute,
 		timezone:          timezone,
 		telemetryBuilder:  telemetryBuilder,
 		dedupFields:       dedupFields,
+		timestampMode:     timestampMode,
 	}
 }
 
@@ -62,17 +70,28 @@ func (l *logAggregator) Export(ctx context.Context) plog.Logs {
 				lr := sl.LogRecords().AppendEmpty()
 				logAggregator.logRecord.CopyTo(lr)
 
-				// Set log record timestamps
-				lr.SetTimestamp(pcommon.NewTimestampFromTime(timeNow()))
+				// Set observed timestamp to when the record was first seen
 				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(logAggregator.firstObservedTimestamp))
 
-				// Add attributes for log count and first/last observed timestamps
-				lr.Attributes().EnsureCapacity(lr.Attributes().Len() + 3)
+				// Capture the first event timestamp before any timestamp mode-based overwrite.
+				firstEventTimestamp := lr.Timestamp()
+
+				// Observed mode sets the timestamp to when the aggregated log was emitted.
+				if l.timestampMode == TimestampModeObserved {
+					lr.SetTimestamp(pcommon.NewTimestampFromTime(timeNow()))
+				}
+
+				// Add attributes for log count, first/last observed timestamps, and first/last event timestamps
+				lr.Attributes().EnsureCapacity(lr.Attributes().Len() + numAddedAttributes)
 				lr.Attributes().PutInt(l.logCountAttribute, logAggregator.count)
-				firstTimestampStr := logAggregator.firstObservedTimestamp.In(l.timezone).Format(time.RFC3339)
-				lr.Attributes().PutStr(firstObservedTSAttr, firstTimestampStr)
-				lastTimestampStr := logAggregator.lastObservedTimestamp.In(l.timezone).Format(time.RFC3339)
-				lr.Attributes().PutStr(lastObservedTSAttr, lastTimestampStr)
+				firstObservedTimestampStr := logAggregator.firstObservedTimestamp.In(l.timezone).Format(time.RFC3339)
+				lr.Attributes().PutStr(firstObservedTSAttr, firstObservedTimestampStr)
+				lastObservedTimestampStr := logAggregator.lastObservedTimestamp.In(l.timezone).Format(time.RFC3339)
+				lr.Attributes().PutStr(lastObservedTSAttr, lastObservedTimestampStr)
+				firstEventTimestampStr := firstEventTimestamp.AsTime().In(l.timezone).Format(time.RFC3339)
+				lr.Attributes().PutStr(firstEventTimestampAttr, firstEventTimestampStr)
+				lastEventTimestampStr := logAggregator.lastEventTimestamp.AsTime().In(l.timezone).Format(time.RFC3339)
+				lr.Attributes().PutStr(lastEventTimestampAttr, lastEventTimestampStr)
 			}
 		}
 	}
@@ -150,6 +169,8 @@ func (s *scopeAggregator) Add(logRecord plog.LogRecord) {
 	if !ok {
 		lc = newLogCounter(logRecord)
 		s.logCounters[key] = lc
+	} else {
+		lc.lastEventTimestamp = logRecord.Timestamp()
 	}
 	lc.Increment()
 }
@@ -159,6 +180,7 @@ type logCounter struct {
 	logRecord              plog.LogRecord
 	firstObservedTimestamp time.Time
 	lastObservedTimestamp  time.Time
+	lastEventTimestamp     pcommon.Timestamp
 	count                  int64
 }
 
@@ -172,6 +194,7 @@ func newLogCounter(logRecord plog.LogRecord) *logCounter {
 		count:                  0,
 		firstObservedTimestamp: timeNow().UTC(),
 		lastObservedTimestamp:  timeNow().UTC(),
+		lastEventTimestamp:     movedLogRecord.Timestamp(),
 	}
 }
 
