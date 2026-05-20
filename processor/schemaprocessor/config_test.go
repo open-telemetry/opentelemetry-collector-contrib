@@ -34,6 +34,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		ClientConfig:    confighttp.NewDefaultClientConfig(),
+		CacheTTL:        24 * time.Hour,
 		CacheCooldown:   10 * time.Minute,
 		CacheRetryLimit: 3,
 		Prefetch: []string{
@@ -152,10 +153,18 @@ func TestConfigurationValidation_CacheFields(t *testing.T) {
 	t.Parallel()
 
 	cfg := &Config{
+		Targets:  []string{"https://opentelemetry.io/schemas/1.9.0"},
+		CacheTTL: -1 * time.Second,
+	}
+	err := xconfmap.Validate(cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cache_ttl must not be negative")
+
+	cfg = &Config{
 		Targets:       []string{"https://opentelemetry.io/schemas/1.9.0"},
 		CacheCooldown: -1 * time.Minute,
 	}
-	err := xconfmap.Validate(cfg)
+	err = xconfmap.Validate(cfg)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cache_cooldown must not be negative")
 

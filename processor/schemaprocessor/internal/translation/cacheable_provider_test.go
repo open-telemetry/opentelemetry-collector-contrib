@@ -79,7 +79,7 @@ func TestCacheableProviderCounters(t *testing.T) {
 			tb, err := metadata.NewTelemetryBuilder(metadatatest.NewSettings(testTel).TelemetrySettings)
 			require.NoError(t, err)
 
-			cp := NewCacheableProvider(&staticProvider{value: "result"}, 0, 5, tb)
+			cp := NewCacheableProvider(&staticProvider{value: "result"}, 0, 5, 0, tb)
 
 			for _, key := range tt.retrievals {
 				_, err := cp.Retrieve(t.Context(), key)
@@ -118,7 +118,7 @@ func BenchmarkCacheableProviderConcurrentFetch(b *testing.B) {
 	)
 
 	for range b.N {
-		cp := NewCacheableProvider(&slowProvider{delay: providerDelay}, time.Minute, 10, tb)
+		cp := NewCacheableProvider(&slowProvider{delay: providerDelay}, time.Minute, 10, 0, tb)
 		var wg sync.WaitGroup
 		for g := range goroutines {
 			wg.Add(1)
@@ -153,7 +153,7 @@ func (p *alwaysErrorProvider) Retrieve(_ context.Context, _ string) (string, err
 func TestCacheableProviderRateLimit(t *testing.T) {
 	provider := &alwaysErrorProvider{}
 	tb, _ := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
-	cp := NewCacheableProvider(provider, time.Hour, 3, tb).(*CacheableProvider)
+	cp := NewCacheableProvider(provider, time.Hour, 3, 0, tb).(*CacheableProvider)
 
 	// Exhaust the limit: 3 calls should reach the provider.
 	for range 3 {
@@ -203,7 +203,7 @@ func TestCacheableProvider(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a new cacheable provider
 			tb, _ := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
-			provider := NewCacheableProvider(&firstErrorProvider{}, 0*time.Nanosecond, tt.limit, tb)
+			provider := NewCacheableProvider(&firstErrorProvider{}, 0*time.Nanosecond, tt.limit, 0, tb)
 
 			var p string
 			var err error
@@ -218,4 +218,72 @@ func TestCacheableProvider(t *testing.T) {
 			require.Equal(t, "key", p, "value is key")
 		})
 	}
+}
+
+// countingProvider counts how many times Retrieve is called.
+type countingProvider struct {
+	mu    sync.Mutex
+	calls int
+}
+
+func (p *countingProvider) Retrieve(_ context.Context, key string) (string, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.calls++
+	return key, nil
+}
+
+func (p *countingProvider) Calls() int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.calls
+}
+
+// TestCacheableProviderTTL verifies that entries expire after the configured TTL
+// and cause the underlying provider to be called again on the next access.
+func TestCacheableProviderTTL(t *testing.T) {
+	tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	ttl := 50 * time.Millisecond
+	underlying := &countingProvider{}
+	cp := NewCacheableProvider(underlying, 0, 5, ttl, tb)
+
+	// First call — cache miss, hits the underlying provider.
+	v, err := cp.Retrieve(t.Context(), "key")
+	require.NoError(t, err)
+	require.Equal(t, "key", v)
+	require.Equal(t, 1, underlying.Calls(), "first call should reach the provider")
+
+	// Immediate second call — cache hit, should not reach the underlying provider.
+	v, err = cp.Retrieve(t.Context(), "key")
+	require.NoError(t, err)
+	require.Equal(t, "key", v)
+	require.Equal(t, 1, underlying.Calls(), "second call should be served from cache")
+
+	// Wait for the TTL to expire.
+	time.Sleep(2 * ttl)
+
+	// Call after TTL — cache miss, hits the underlying provider again.
+	v, err = cp.Retrieve(t.Context(), "key")
+	require.NoError(t, err)
+	require.Equal(t, "key", v)
+	require.Equal(t, 2, underlying.Calls(), "call after TTL expiry should reach the provider again")
+}
+
+// TestCacheableProviderNoTTL verifies that a zero TTL (the default) means
+// entries never expire — the underlying provider is only called once.
+func TestCacheableProviderNoTTL(t *testing.T) {
+	tb, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	underlying := &countingProvider{}
+	cp := NewCacheableProvider(underlying, 0, 5, 0, tb)
+
+	for range 5 {
+		v, retrieveErr := cp.Retrieve(t.Context(), "key")
+		require.NoError(t, retrieveErr)
+		require.Equal(t, "key", v)
+	}
+	require.Equal(t, 1, underlying.Calls(), "zero TTL: provider should only be called once")
 }

@@ -27,6 +27,12 @@ var (
 type Config struct {
 	confighttp.ClientConfig `mapstructure:",squash"`
 
+	// CacheTTL controls how long a successfully fetched schema is kept in
+	// the in-memory cache before it is evicted and re-fetched from the
+	// upstream provider on next access. A value of 0 (the default) means
+	// entries never expire, which matches the previous behaviour.
+	CacheTTL time.Duration `mapstructure:"cache_ttl"`
+
 	// CacheCooldown is the duration to wait before retrying schema fetches
 	// after the retry limit has been reached. Defaults to 5 minutes.
 	CacheCooldown time.Duration `mapstructure:"cache_cooldown"`
@@ -73,6 +79,9 @@ type MigrationEntry struct {
 }
 
 func (c *Config) Validate() error {
+	if c.CacheTTL < 0 {
+		return errors.New("cache_ttl must not be negative")
+	}
 	if c.CacheCooldown < 0 {
 		return errors.New("cache_cooldown must not be negative")
 	}

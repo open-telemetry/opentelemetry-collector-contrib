@@ -1,4 +1,5 @@
 schema/with-all-options:
+  cache_ttl: 24h
   cache_cooldown: 10m
   cache_retry_limit: 3
   # Prefetch is an optional field that allows

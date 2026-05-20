@@ -64,6 +64,7 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 		set.Logger.Named("schema-manager"),
 		cfg.CacheCooldown,
 		cfg.CacheRetryLimit,
+		cfg.CacheTTL,
 		telemetryBuilder,
 		migrationMap,
 	)
