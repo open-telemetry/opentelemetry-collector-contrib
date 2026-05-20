@@ -526,22 +526,22 @@ func TestSessionWaitEventsQuery(t *testing.T) {
 			},
 		},
 		{
-			name: "bad event.waits data",
+			name: "bad wait.count data",
 			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
 				return &fakeDbClient{Responses: [][]metricRow{
 					sessionEventQueryResponses["invalidSessionEventQuery"],
 				}}
 			},
-			errWanted: `failed to parse int64 for oracledb.event.waits, value was invalid: strconv.ParseInt: parsing "invalid": invalid syntax`,
+			errWanted: `failed to parse int64 for oracledb.wait.count, value was invalid: strconv.ParseInt: parsing "invalid": invalid syntax`,
 		},
 		{
-			name: "bad event.duration data",
+			name: "bad wait.duration data",
 			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
 				return &fakeDbClient{Responses: [][]metricRow{
 					sessionEventQueryResponses["invalidTimeSessionEventQuery"],
 				}}
 			},
-			errWanted: `failed to parse float64 for oracledb.event.duration, value was invalid: strconv.ParseFloat: parsing "invalid": invalid syntax`,
+			errWanted: `failed to parse float64 for oracledb.wait.duration, value was invalid: strconv.ParseFloat: parsing "invalid": invalid syntax`,
 		},
 	}
 	for _, test := range tests {

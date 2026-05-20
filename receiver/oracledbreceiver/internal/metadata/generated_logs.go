@@ -84,7 +84,7 @@ type eventDbServerSessionWaitSample struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerSessionWaitSample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbEventAttributeValue string, oracledbWaitClassAttributeValue string, oracledbEventWaitsAttributeValue int64, oracledbEventDurationAttributeValue float64) {
+func (e *eventDbServerSessionWaitSample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbEventAttributeValue string, oracledbWaitClassAttributeValue string, oracledbWaitCountAttributeValue int64, oracledbWaitDurationAttributeValue float64) {
 	if !e.config.Enabled {
 		return
 	}
@@ -100,8 +100,8 @@ func (e *eventDbServerSessionWaitSample) recordEvent(ctx context.Context, timest
 	dp.Attributes().PutStr("oracledb.serial", oracledbSerialAttributeValue)
 	dp.Attributes().PutStr("oracledb.event", oracledbEventAttributeValue)
 	dp.Attributes().PutStr("oracledb.wait_class", oracledbWaitClassAttributeValue)
-	dp.Attributes().PutInt("oracledb.event.waits", oracledbEventWaitsAttributeValue)
-	dp.Attributes().PutDouble("oracledb.event.duration", oracledbEventDurationAttributeValue)
+	dp.Attributes().PutInt("oracledb.wait.count", oracledbWaitCountAttributeValue)
+	dp.Attributes().PutDouble("oracledb.wait.duration", oracledbWaitDurationAttributeValue)
 
 }
 
@@ -320,8 +320,8 @@ func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, times
 }
 
 // RecordDbServerSessionWaitSampleEvent adds a log record of db.server.session.wait_sample event.
-func (lb *LogsBuilder) RecordDbServerSessionWaitSampleEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbEventAttributeValue string, oracledbWaitClassAttributeValue string, oracledbEventWaitsAttributeValue int64, oracledbEventDurationAttributeValue float64) {
-	lb.eventDbServerSessionWaitSample.recordEvent(ctx, timestamp, oracledbSidAttributeValue, oracledbSerialAttributeValue, oracledbEventAttributeValue, oracledbWaitClassAttributeValue, oracledbEventWaitsAttributeValue, oracledbEventDurationAttributeValue)
+func (lb *LogsBuilder) RecordDbServerSessionWaitSampleEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbEventAttributeValue string, oracledbWaitClassAttributeValue string, oracledbWaitCountAttributeValue int64, oracledbWaitDurationAttributeValue float64) {
+	lb.eventDbServerSessionWaitSample.recordEvent(ctx, timestamp, oracledbSidAttributeValue, oracledbSerialAttributeValue, oracledbEventAttributeValue, oracledbWaitClassAttributeValue, oracledbWaitCountAttributeValue, oracledbWaitDurationAttributeValue)
 }
 
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.

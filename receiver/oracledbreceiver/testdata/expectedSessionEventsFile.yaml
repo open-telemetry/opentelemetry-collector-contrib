@@ -25,10 +25,10 @@ resourceLogs:
               - key: oracledb.wait_class
                 value:
                   stringValue: User I/O
-              - key: oracledb.event.waits
+              - key: oracledb.wait.count
                 value:
                   intValue: "1500"
-              - key: oracledb.event.duration
+              - key: oracledb.wait.duration
                 value:
                   doubleValue: 25.5
             body: {}
@@ -47,10 +47,10 @@ resourceLogs:
               - key: oracledb.wait_class
                 value:
                   stringValue: Commit
-              - key: oracledb.event.waits
+              - key: oracledb.wait.count
                 value:
                   intValue: "800"
-              - key: oracledb.event.duration
+              - key: oracledb.wait.duration
                 value:
                   doubleValue: 12.3
             body: {}

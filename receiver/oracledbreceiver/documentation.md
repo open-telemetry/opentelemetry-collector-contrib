@@ -481,8 +481,8 @@ Per-session wait event statistics from v$session_event showing total time waited
 | oracledb.serial | Serial number associated with a session. | Any Str | - |
 | oracledb.event | The specific wait event that a query or session is currently experiencing. | Any Str | - |
 | oracledb.wait_class | The category of wait events a query or session is currently experiencing in Oracle Database. | Any Str | - |
-| oracledb.event.waits | Total number of waits for the wait event across all sessions. | Any Int | - |
-| oracledb.event.duration | Total time waited in seconds for the wait event. | Any Double | - |
+| oracledb.wait.count | Total number of waits for the wait event across all sessions. | Any Int | - |
+| oracledb.wait.duration | Total time waited in seconds for the wait event. | Any Double | - |
 
 ### db.server.top_query
 

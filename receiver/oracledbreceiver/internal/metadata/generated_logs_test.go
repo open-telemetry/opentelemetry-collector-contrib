@@ -134,7 +134,7 @@ func TestLogsBuilder(t *testing.T) {
 			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "db.query.text-val", "db.system.name-val", "user.name-val", "db.namespace-val", "client.address-val", 11, "network.peer.address-val", 17, "oracledb.plan_hash_value-val", "oracledb.sql_id-val", "oracledb.child_number-val", "oracledb.child_address-val", "oracledb.sid-val", "oracledb.serial-val", "oracledb.process-val", "oracledb.schemaname-val", "oracledb.program-val", "oracledb.module-val", "oracledb.status-val", "oracledb.state-val", "oracledb.wait_class-val", "oracledb.event-val", 24.100000, 21, "oracledb.procedure_name-val", "oracledb.procedure_type-val", "oracledb.osuser-val", 21.100000, "oracledb.query.started-val", "oracledb.session.started-val", 25.100000)
 
 			allEventsCount++
-			lb.RecordDbServerSessionWaitSampleEvent(ctx, timestamp, "oracledb.sid-val", "oracledb.serial-val", "oracledb.event-val", "oracledb.wait_class-val", 20, 23.100000)
+			lb.RecordDbServerSessionWaitSampleEvent(ctx, timestamp, "oracledb.sid-val", "oracledb.serial-val", "oracledb.event-val", "oracledb.wait_class-val", 19, 22.100000)
 
 			allEventsCount++
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, "db.system.name-val", "db.server.name-val", "db.query.text-val", "oracledb.query_plan-val", "oracledb.sql_id-val", "oracledb.child_number-val", "oracledb.child_address-val", 30.100000, 20, 26.100000, 21, 30.100000, 17.100000, 21, 22, 19, 21.100000, 19, 28, 31, 29, 32, 23, 26.100000, 34, 21, "oracledb.procedure_name-val", "oracledb.procedure_type-val")
@@ -284,12 +284,12 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("oracledb.wait_class")
 					assert.True(t, ok)
 					assert.Equal(t, "oracledb.wait_class-val", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("oracledb.event.waits")
+					attrVal, ok = lr.Attributes().Get("oracledb.wait.count")
 					assert.True(t, ok)
-					assert.EqualValues(t, 20, attrVal.Int())
-					attrVal, ok = lr.Attributes().Get("oracledb.event.duration")
+					assert.EqualValues(t, 19, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("oracledb.wait.duration")
 					assert.True(t, ok)
-					assert.Equal(t, 23.100000, attrVal.Double())
+					assert.Equal(t, 22.100000, attrVal.Double())
 				case "db.server.top_query":
 					assert.False(t, validatedEvents["db.server.top_query"], "Found a duplicate in the events slice: db.server.top_query")
 					validatedEvents["db.server.top_query"] = true

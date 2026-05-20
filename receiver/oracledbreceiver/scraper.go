@@ -939,13 +939,13 @@ func (s *oracleScraper) collectSessionWaitEvents(ctx context.Context, logs plog.
 	for _, row := range rows {
 		totalWaitsVal, err := strconv.ParseInt(row[totalWaits], 10, 64)
 		if err != nil {
-			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for oracledb.event.waits, value was %s: %w", row[totalWaits], err))
+			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for oracledb.wait.count, value was %s: %w", row[totalWaits], err))
 			continue
 		}
 
 		totalTimeWaitedSecsVal, err := strconv.ParseFloat(row[totalTimeWaitedSecs], 64)
 		if err != nil {
-			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse float64 for oracledb.event.duration, value was %s: %w", row[totalTimeWaitedSecs], err))
+			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse float64 for oracledb.wait.duration, value was %s: %w", row[totalTimeWaitedSecs], err))
 			continue
 		}
 
