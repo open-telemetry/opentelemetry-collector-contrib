@@ -420,7 +420,7 @@ func parseDBVersion(versionStr string) (dbVersion, error) {
 	}
 
 	// MySQL: strip any suffix after the first "-"
-	semverStr := strings.SplitN(versionStr, "-", 2)[0]
+	semverStr, _, _ := strings.Cut(versionStr, "-")
 	v, err := version.NewVersion(semverStr)
 	if err != nil {
 		return dbVersion{}, fmt.Errorf("failed to parse db version %q: %w", versionStr, err)
@@ -1026,7 +1026,7 @@ func (c *mySQLClient) explainQuery(digestText, sampleStatement, schema, digest s
 	}
 
 	var plan string
-	err := c.client.QueryRow("EXPLAIN FORMAT=json " + strings.TrimSpace(sampleStatement)).Scan(&plan)
+	err := c.client.QueryRow("/* otel-collector-ignore */ EXPLAIN FORMAT=json " + strings.TrimSpace(sampleStatement)).Scan(&plan)
 	if err != nil {
 		logger.Warn("unable to execute explain statement", zap.String("digest", digest), zap.Error(err))
 		return ""

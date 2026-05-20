@@ -9,6 +9,8 @@
 // snapshot (resource attributes, scope identity, metric metadata, datapoint
 // attributes) and lets the test opt into additional fields (values,
 // timestamps, exemplars).
+// Attribute keys may use /exists when the key must be present but its value is
+// volatile.
 //
 // See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48079
 // for the design discussion and roadmap of operator-suffix grammar
