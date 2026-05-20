@@ -84,6 +84,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerCPUThrottlingDataThrottledTime: ContainerCPUThrottlingDataThrottledTimeMetricConfig{
 						Enabled: true,
 					},
+					ContainerCPUTime: ContainerCPUTimeMetricConfig{
+						Enabled: true,
+					},
 					ContainerCPUUsageKernelmode: ContainerCPUUsageKernelmodeMetricConfig{
 						Enabled: true,
 					},
@@ -207,6 +210,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					ContainerMemoryUnevictable: ContainerMemoryUnevictableMetricConfig{
+						Enabled: true,
+					},
+					ContainerMemoryUsage: ContainerMemoryUsageMetricConfig{
 						Enabled: true,
 					},
 					ContainerMemoryUsageLimit: ContainerMemoryUsageLimitMetricConfig{
@@ -347,6 +353,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerCPUThrottlingDataThrottledTime: ContainerCPUThrottlingDataThrottledTimeMetricConfig{
 						Enabled: false,
 					},
+					ContainerCPUTime: ContainerCPUTimeMetricConfig{
+						Enabled: false,
+					},
 					ContainerCPUUsageKernelmode: ContainerCPUUsageKernelmodeMetricConfig{
 						Enabled: false,
 					},
@@ -472,6 +481,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerMemoryUnevictable: ContainerMemoryUnevictableMetricConfig{
 						Enabled: false,
 					},
+					ContainerMemoryUsage: ContainerMemoryUsageMetricConfig{
+						Enabled: false,
+					},
 					ContainerMemoryUsageLimit: ContainerMemoryUsageLimitMetricConfig{
 						Enabled: false,
 					},
@@ -552,7 +564,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ContainerBlockioIoMergedRecursiveMetricConfig{}, ContainerBlockioIoQueuedRecursiveMetricConfig{}, ContainerBlockioIoServiceBytesRecursiveMetricConfig{}, ContainerBlockioIoServiceTimeRecursiveMetricConfig{}, ContainerBlockioIoServicedRecursiveMetricConfig{}, ContainerBlockioIoTimeRecursiveMetricConfig{}, ContainerBlockioIoWaitTimeRecursiveMetricConfig{}, ContainerBlockioSectorsRecursiveMetricConfig{}, ContainerCPULimitMetricConfig{}, ContainerCPULogicalCountMetricConfig{}, ContainerCPUSharesMetricConfig{}, ContainerCPUThrottlingDataPeriodsMetricConfig{}, ContainerCPUThrottlingDataThrottledPeriodsMetricConfig{}, ContainerCPUThrottlingDataThrottledTimeMetricConfig{}, ContainerCPUUsageKernelmodeMetricConfig{}, ContainerCPUUsagePercpuMetricConfig{}, ContainerCPUUsageSystemMetricConfig{}, ContainerCPUUsageTotalMetricConfig{}, ContainerCPUUsageUsermodeMetricConfig{}, ContainerCPUUtilizationMetricConfig{}, ContainerMemoryActiveAnonMetricConfig{}, ContainerMemoryActiveFileMetricConfig{}, ContainerMemoryAnonMetricConfig{}, ContainerMemoryCacheMetricConfig{}, ContainerMemoryDirtyMetricConfig{}, ContainerMemoryFailsMetricConfig{}, ContainerMemoryFileMetricConfig{}, ContainerMemoryHierarchicalMemoryLimitMetricConfig{}, ContainerMemoryHierarchicalMemswLimitMetricConfig{}, ContainerMemoryInactiveAnonMetricConfig{}, ContainerMemoryInactiveFileMetricConfig{}, ContainerMemoryMappedFileMetricConfig{}, ContainerMemoryPercentMetricConfig{}, ContainerMemoryPgfaultMetricConfig{}, ContainerMemoryPgmajfaultMetricConfig{}, ContainerMemoryPgpginMetricConfig{}, ContainerMemoryPgpgoutMetricConfig{}, ContainerMemoryRssMetricConfig{}, ContainerMemoryRssHugeMetricConfig{}, ContainerMemoryTotalActiveAnonMetricConfig{}, ContainerMemoryTotalActiveFileMetricConfig{}, ContainerMemoryTotalCacheMetricConfig{}, ContainerMemoryTotalDirtyMetricConfig{}, ContainerMemoryTotalInactiveAnonMetricConfig{}, ContainerMemoryTotalInactiveFileMetricConfig{}, ContainerMemoryTotalMappedFileMetricConfig{}, ContainerMemoryTotalPgfaultMetricConfig{}, ContainerMemoryTotalPgmajfaultMetricConfig{}, ContainerMemoryTotalPgpginMetricConfig{}, ContainerMemoryTotalPgpgoutMetricConfig{}, ContainerMemoryTotalRssMetricConfig{}, ContainerMemoryTotalRssHugeMetricConfig{}, ContainerMemoryTotalUnevictableMetricConfig{}, ContainerMemoryTotalWritebackMetricConfig{}, ContainerMemoryUnevictableMetricConfig{}, ContainerMemoryUsageLimitMetricConfig{}, ContainerMemoryUsageMaxMetricConfig{}, ContainerMemoryUsageTotalMetricConfig{}, ContainerMemoryWritebackMetricConfig{}, ContainerNetworkIoUsageRxBytesMetricConfig{}, ContainerNetworkIoUsageRxDroppedMetricConfig{}, ContainerNetworkIoUsageRxErrorsMetricConfig{}, ContainerNetworkIoUsageRxPacketsMetricConfig{}, ContainerNetworkIoUsageTxBytesMetricConfig{}, ContainerNetworkIoUsageTxDroppedMetricConfig{}, ContainerNetworkIoUsageTxErrorsMetricConfig{}, ContainerNetworkIoUsageTxPacketsMetricConfig{}, ContainerPidsCountMetricConfig{}, ContainerPidsLimitMetricConfig{}, ContainerRestartsMetricConfig{}, ContainerUptimeMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ContainerBlockioIoMergedRecursiveMetricConfig{}, ContainerBlockioIoQueuedRecursiveMetricConfig{}, ContainerBlockioIoServiceBytesRecursiveMetricConfig{}, ContainerBlockioIoServiceTimeRecursiveMetricConfig{}, ContainerBlockioIoServicedRecursiveMetricConfig{}, ContainerBlockioIoTimeRecursiveMetricConfig{}, ContainerBlockioIoWaitTimeRecursiveMetricConfig{}, ContainerBlockioSectorsRecursiveMetricConfig{}, ContainerCPULimitMetricConfig{}, ContainerCPULogicalCountMetricConfig{}, ContainerCPUSharesMetricConfig{}, ContainerCPUThrottlingDataPeriodsMetricConfig{}, ContainerCPUThrottlingDataThrottledPeriodsMetricConfig{}, ContainerCPUThrottlingDataThrottledTimeMetricConfig{}, ContainerCPUTimeMetricConfig{}, ContainerCPUUsageKernelmodeMetricConfig{}, ContainerCPUUsagePercpuMetricConfig{}, ContainerCPUUsageSystemMetricConfig{}, ContainerCPUUsageTotalMetricConfig{}, ContainerCPUUsageUsermodeMetricConfig{}, ContainerCPUUtilizationMetricConfig{}, ContainerMemoryActiveAnonMetricConfig{}, ContainerMemoryActiveFileMetricConfig{}, ContainerMemoryAnonMetricConfig{}, ContainerMemoryCacheMetricConfig{}, ContainerMemoryDirtyMetricConfig{}, ContainerMemoryFailsMetricConfig{}, ContainerMemoryFileMetricConfig{}, ContainerMemoryHierarchicalMemoryLimitMetricConfig{}, ContainerMemoryHierarchicalMemswLimitMetricConfig{}, ContainerMemoryInactiveAnonMetricConfig{}, ContainerMemoryInactiveFileMetricConfig{}, ContainerMemoryMappedFileMetricConfig{}, ContainerMemoryPercentMetricConfig{}, ContainerMemoryPgfaultMetricConfig{}, ContainerMemoryPgmajfaultMetricConfig{}, ContainerMemoryPgpginMetricConfig{}, ContainerMemoryPgpgoutMetricConfig{}, ContainerMemoryRssMetricConfig{}, ContainerMemoryRssHugeMetricConfig{}, ContainerMemoryTotalActiveAnonMetricConfig{}, ContainerMemoryTotalActiveFileMetricConfig{}, ContainerMemoryTotalCacheMetricConfig{}, ContainerMemoryTotalDirtyMetricConfig{}, ContainerMemoryTotalInactiveAnonMetricConfig{}, ContainerMemoryTotalInactiveFileMetricConfig{}, ContainerMemoryTotalMappedFileMetricConfig{}, ContainerMemoryTotalPgfaultMetricConfig{}, ContainerMemoryTotalPgmajfaultMetricConfig{}, ContainerMemoryTotalPgpginMetricConfig{}, ContainerMemoryTotalPgpgoutMetricConfig{}, ContainerMemoryTotalRssMetricConfig{}, ContainerMemoryTotalRssHugeMetricConfig{}, ContainerMemoryTotalUnevictableMetricConfig{}, ContainerMemoryTotalWritebackMetricConfig{}, ContainerMemoryUnevictableMetricConfig{}, ContainerMemoryUsageMetricConfig{}, ContainerMemoryUsageLimitMetricConfig{}, ContainerMemoryUsageMaxMetricConfig{}, ContainerMemoryUsageTotalMetricConfig{}, ContainerMemoryWritebackMetricConfig{}, ContainerNetworkIoUsageRxBytesMetricConfig{}, ContainerNetworkIoUsageRxDroppedMetricConfig{}, ContainerNetworkIoUsageRxErrorsMetricConfig{}, ContainerNetworkIoUsageRxPacketsMetricConfig{}, ContainerNetworkIoUsageTxBytesMetricConfig{}, ContainerNetworkIoUsageTxDroppedMetricConfig{}, ContainerNetworkIoUsageTxErrorsMetricConfig{}, ContainerNetworkIoUsageTxPacketsMetricConfig{}, ContainerPidsCountMetricConfig{}, ContainerPidsLimitMetricConfig{}, ContainerRestartsMetricConfig{}, ContainerUptimeMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

@@ -49,6 +49,7 @@ var (
 		cfg.ContainerCPUThrottlingDataPeriods.Enabled = true
 		cfg.ContainerCPUThrottlingDataThrottledPeriods.Enabled = true
 		cfg.ContainerCPUThrottlingDataThrottledTime.Enabled = true
+		cfg.ContainerCPUTime.Enabled = true
 		cfg.ContainerCPUUsageKernelmode.Enabled = true
 		cfg.ContainerCPUUsagePercpu.Enabled = true
 		cfg.ContainerCPUUsageSystem.Enabled = true
@@ -90,6 +91,7 @@ var (
 		cfg.ContainerMemoryTotalUnevictable.Enabled = true
 		cfg.ContainerMemoryTotalWriteback.Enabled = true
 		cfg.ContainerMemoryUnevictable.Enabled = true
+		cfg.ContainerMemoryUsage.Enabled = true
 		cfg.ContainerMemoryUsageLimit.Enabled = true
 		cfg.ContainerMemoryUsageMax.Enabled = true
 		cfg.ContainerMemoryUsageTotal.Enabled = true

@@ -246,6 +246,37 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: ns
+          - description: Total CPU time consumed.
+            name: container.cpu.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: "0.043620018"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "0.01"
+                  attributes:
+                    - key: cpu.mode
+                      value:
+                        stringValue: kernel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "120830.55"
+                  attributes:
+                    - key: cpu.mode
+                      value:
+                        stringValue: system
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "0.01"
+                  attributes:
+                    - key: cpu.mode
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
           - description: Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
             name: container.cpu.usage.kernelmode
             sum:
@@ -659,6 +690,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Memory usage of the container.
+            name: container.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "724992"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By

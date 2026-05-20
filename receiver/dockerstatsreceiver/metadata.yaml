@@ -65,6 +65,10 @@ attributes:
     description: "The CPU core number when utilising per-CPU metrics."
     type: string
     requirement_level: recommended
+  cpu.mode:
+    description: "The CPU mode for this data point."
+    type: string
+    requirement_level: conditionally_required
   device_major:
     description: "Device major number for block IO operations."
     type: string
@@ -251,6 +255,17 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+  container.cpu.time:
+    enabled: false
+    stability: development
+    description: "Total CPU time consumed."
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes:
+      - cpu.mode
   container.cpu.usage.kernelmode:
     enabled: true
     stability: development
@@ -632,6 +647,15 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+  container.memory.usage:
+    enabled: false
+    stability: development
+    description: "Memory usage of the container."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
   container.memory.usage.limit:
     enabled: true
     stability: development
@@ -799,3 +823,10 @@ metrics:
     unit: s
     gauge:
       value_type: double
+
+feature_gates:
+  - id: receiver.dockerstatsreceiver.enableSemConvMetrics
+    description: 'Enable new container metrics that align with new container semantic convention'
+    stage: alpha
+    from_version: 'v0.152.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649'

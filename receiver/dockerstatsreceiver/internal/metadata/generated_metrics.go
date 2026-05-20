@@ -64,6 +64,9 @@ var MetricsInfo = metricsInfo{
 	ContainerCPUThrottlingDataThrottledTime: metricInfo{
 		Name: "container.cpu.throttling_data.throttled_time",
 	},
+	ContainerCPUTime: metricInfo{
+		Name: "container.cpu.time",
+	},
 	ContainerCPUUsageKernelmode: metricInfo{
 		Name: "container.cpu.usage.kernelmode",
 	},
@@ -187,6 +190,9 @@ var MetricsInfo = metricsInfo{
 	ContainerMemoryUnevictable: metricInfo{
 		Name: "container.memory.unevictable",
 	},
+	ContainerMemoryUsage: metricInfo{
+		Name: "container.memory.usage",
+	},
 	ContainerMemoryUsageLimit: metricInfo{
 		Name: "container.memory.usage.limit",
 	},
@@ -252,6 +258,7 @@ type metricsInfo struct {
 	ContainerCPUThrottlingDataPeriods          metricInfo
 	ContainerCPUThrottlingDataThrottledPeriods metricInfo
 	ContainerCPUThrottlingDataThrottledTime    metricInfo
+	ContainerCPUTime                           metricInfo
 	ContainerCPUUsageKernelmode                metricInfo
 	ContainerCPUUsagePercpu                    metricInfo
 	ContainerCPUUsageSystem                    metricInfo
@@ -293,6 +300,7 @@ type metricsInfo struct {
 	ContainerMemoryTotalUnevictable            metricInfo
 	ContainerMemoryTotalWriteback              metricInfo
 	ContainerMemoryUnevictable                 metricInfo
+	ContainerMemoryUsage                       metricInfo
 	ContainerMemoryUsageLimit                  metricInfo
 	ContainerMemoryUsageMax                    metricInfo
 	ContainerMemoryUsageTotal                  metricInfo
@@ -313,6 +321,22 @@ type metricsInfo struct {
 
 type metricInfo struct {
 	Name string
+}
+
+type MetricAttributeOption interface {
+	apply(pmetric.NumberDataPoint)
+}
+
+type metricAttributeOptionFunc func(pmetric.NumberDataPoint)
+
+func (maof metricAttributeOptionFunc) apply(dp pmetric.NumberDataPoint) {
+	maof(dp)
+}
+
+func WithCPUModeMetricAttribute(cpuModeAttributeValue string) MetricAttributeOption {
+	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
+		dp.Attributes().PutStr("cpu.mode", cpuModeAttributeValue)
+	})
 }
 
 type metricContainerBlockioIoMergedRecursive struct {
@@ -1389,6 +1413,62 @@ func (m *metricContainerCPUThrottlingDataThrottledTime) emit(metrics pmetric.Met
 
 func newMetricContainerCPUThrottlingDataThrottledTime(cfg ContainerCPUThrottlingDataThrottledTimeMetricConfig) metricContainerCPUThrottlingDataThrottledTime {
 	m := metricContainerCPUThrottlingDataThrottledTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricContainerCPUTime struct {
+	data     pmetric.Metric               // data buffer for generated metric.
+	config   ContainerCPUTimeMetricConfig // metric config provided by user.
+	capacity int                          // max observed number of data points added to the metric.
+}
+
+// init fills container.cpu.time metric with initial data.
+func (m *metricContainerCPUTime) init() {
+	m.data.SetName("container.cpu.time")
+	m.data.SetDescription("Total CPU time consumed.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricContainerCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, options ...MetricAttributeOption) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	for _, op := range options {
+		op.apply(dp)
+	}
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerCPUTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerCPUTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerCPUTime(cfg ContainerCPUTimeMetricConfig) metricContainerCPUTime {
+	m := metricContainerCPUTime{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3564,6 +3644,58 @@ func newMetricContainerMemoryUnevictable(cfg ContainerMemoryUnevictableMetricCon
 	return m
 }
 
+type metricContainerMemoryUsage struct {
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   ContainerMemoryUsageMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
+}
+
+// init fills container.memory.usage metric with initial data.
+func (m *metricContainerMemoryUsage) init() {
+	m.data.SetName("container.memory.usage")
+	m.data.SetDescription("Memory usage of the container.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricContainerMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerMemoryUsage) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerMemoryUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerMemoryUsage(cfg ContainerMemoryUsageMetricConfig) metricContainerMemoryUsage {
+	m := metricContainerMemoryUsage{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricContainerMemoryUsageLimit struct {
 	data     pmetric.Metric                        // data buffer for generated metric.
 	config   ContainerMemoryUsageLimitMetricConfig // metric config provided by user.
@@ -4730,6 +4862,7 @@ type MetricsBuilder struct {
 	metricContainerCPUThrottlingDataPeriods          metricContainerCPUThrottlingDataPeriods
 	metricContainerCPUThrottlingDataThrottledPeriods metricContainerCPUThrottlingDataThrottledPeriods
 	metricContainerCPUThrottlingDataThrottledTime    metricContainerCPUThrottlingDataThrottledTime
+	metricContainerCPUTime                           metricContainerCPUTime
 	metricContainerCPUUsageKernelmode                metricContainerCPUUsageKernelmode
 	metricContainerCPUUsagePercpu                    metricContainerCPUUsagePercpu
 	metricContainerCPUUsageSystem                    metricContainerCPUUsageSystem
@@ -4771,6 +4904,7 @@ type MetricsBuilder struct {
 	metricContainerMemoryTotalUnevictable            metricContainerMemoryTotalUnevictable
 	metricContainerMemoryTotalWriteback              metricContainerMemoryTotalWriteback
 	metricContainerMemoryUnevictable                 metricContainerMemoryUnevictable
+	metricContainerMemoryUsage                       metricContainerMemoryUsage
 	metricContainerMemoryUsageLimit                  metricContainerMemoryUsageLimit
 	metricContainerMemoryUsageMax                    metricContainerMemoryUsageMax
 	metricContainerMemoryUsageTotal                  metricContainerMemoryUsageTotal
@@ -4826,6 +4960,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricContainerCPUThrottlingDataPeriods:          newMetricContainerCPUThrottlingDataPeriods(mbc.Metrics.ContainerCPUThrottlingDataPeriods),
 		metricContainerCPUThrottlingDataThrottledPeriods: newMetricContainerCPUThrottlingDataThrottledPeriods(mbc.Metrics.ContainerCPUThrottlingDataThrottledPeriods),
 		metricContainerCPUThrottlingDataThrottledTime:    newMetricContainerCPUThrottlingDataThrottledTime(mbc.Metrics.ContainerCPUThrottlingDataThrottledTime),
+		metricContainerCPUTime:                           newMetricContainerCPUTime(mbc.Metrics.ContainerCPUTime),
 		metricContainerCPUUsageKernelmode:                newMetricContainerCPUUsageKernelmode(mbc.Metrics.ContainerCPUUsageKernelmode),
 		metricContainerCPUUsagePercpu:                    newMetricContainerCPUUsagePercpu(mbc.Metrics.ContainerCPUUsagePercpu),
 		metricContainerCPUUsageSystem:                    newMetricContainerCPUUsageSystem(mbc.Metrics.ContainerCPUUsageSystem),
@@ -4867,6 +5002,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricContainerMemoryTotalUnevictable:            newMetricContainerMemoryTotalUnevictable(mbc.Metrics.ContainerMemoryTotalUnevictable),
 		metricContainerMemoryTotalWriteback:              newMetricContainerMemoryTotalWriteback(mbc.Metrics.ContainerMemoryTotalWriteback),
 		metricContainerMemoryUnevictable:                 newMetricContainerMemoryUnevictable(mbc.Metrics.ContainerMemoryUnevictable),
+		metricContainerMemoryUsage:                       newMetricContainerMemoryUsage(mbc.Metrics.ContainerMemoryUsage),
 		metricContainerMemoryUsageLimit:                  newMetricContainerMemoryUsageLimit(mbc.Metrics.ContainerMemoryUsageLimit),
 		metricContainerMemoryUsageMax:                    newMetricContainerMemoryUsageMax(mbc.Metrics.ContainerMemoryUsageMax),
 		metricContainerMemoryUsageTotal:                  newMetricContainerMemoryUsageTotal(mbc.Metrics.ContainerMemoryUsageTotal),
@@ -5012,6 +5148,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricContainerCPUThrottlingDataPeriods.emit(ils.Metrics())
 	mb.metricContainerCPUThrottlingDataThrottledPeriods.emit(ils.Metrics())
 	mb.metricContainerCPUThrottlingDataThrottledTime.emit(ils.Metrics())
+	mb.metricContainerCPUTime.emit(ils.Metrics())
 	mb.metricContainerCPUUsageKernelmode.emit(ils.Metrics())
 	mb.metricContainerCPUUsagePercpu.emit(ils.Metrics())
 	mb.metricContainerCPUUsageSystem.emit(ils.Metrics())
@@ -5053,6 +5190,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricContainerMemoryTotalUnevictable.emit(ils.Metrics())
 	mb.metricContainerMemoryTotalWriteback.emit(ils.Metrics())
 	mb.metricContainerMemoryUnevictable.emit(ils.Metrics())
+	mb.metricContainerMemoryUsage.emit(ils.Metrics())
 	mb.metricContainerMemoryUsageLimit.emit(ils.Metrics())
 	mb.metricContainerMemoryUsageMax.emit(ils.Metrics())
 	mb.metricContainerMemoryUsageTotal.emit(ils.Metrics())
@@ -5168,6 +5306,11 @@ func (mb *MetricsBuilder) RecordContainerCPUThrottlingDataThrottledPeriodsDataPo
 // RecordContainerCPUThrottlingDataThrottledTimeDataPoint adds a data point to container.cpu.throttling_data.throttled_time metric.
 func (mb *MetricsBuilder) RecordContainerCPUThrottlingDataThrottledTimeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricContainerCPUThrottlingDataThrottledTime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordContainerCPUTimeDataPoint adds a data point to container.cpu.time metric.
+func (mb *MetricsBuilder) RecordContainerCPUTimeDataPoint(ts pcommon.Timestamp, val float64, options ...MetricAttributeOption) {
+	mb.metricContainerCPUTime.recordDataPoint(mb.startTime, ts, val, options...)
 }
 
 // RecordContainerCPUUsageKernelmodeDataPoint adds a data point to container.cpu.usage.kernelmode metric.
@@ -5373,6 +5516,11 @@ func (mb *MetricsBuilder) RecordContainerMemoryTotalWritebackDataPoint(ts pcommo
 // RecordContainerMemoryUnevictableDataPoint adds a data point to container.memory.unevictable metric.
 func (mb *MetricsBuilder) RecordContainerMemoryUnevictableDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricContainerMemoryUnevictable.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordContainerMemoryUsageDataPoint adds a data point to container.memory.usage metric.
+func (mb *MetricsBuilder) RecordContainerMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricContainerMemoryUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordContainerMemoryUsageLimitDataPoint adds a data point to container.memory.usage.limit metric.
