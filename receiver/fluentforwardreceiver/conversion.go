@@ -283,8 +283,6 @@ func (melr *messageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
 }
 
 func parseOptions(dc *msgp.Reader) (optionsMap, error) {
-	setMsgpackReaderLimits(dc)
-
 	var optionLen uint32
 	optionLen, err := dc.ReadMapHeader()
 	if err != nil {
