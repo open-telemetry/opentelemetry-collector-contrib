@@ -145,6 +145,39 @@ func TestRetentionValidateWrong(t *testing.T) {
 	assert.Error(t, xconfmap.Validate(wrongcfg))
 }
 
+func TestMaxEventPayloadBytesValidate(t *testing.T) {
+	defaultBackOffConfig := configretry.NewDefaultBackOffConfig()
+	base := func(maxBytes int) *Config {
+		return &Config{
+			BackOffConfig:        defaultBackOffConfig,
+			LogGroupName:         "test-1",
+			LogStreamName:        "testing",
+			AWSSessionSettings:   awsutil.CreateDefaultSessionConfig(),
+			MaxEventPayloadBytes: maxBytes,
+			QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
+				NumConsumers: 1,
+				QueueSize:    1000,
+			}),
+		}
+	}
+
+	t.Run("zero is allowed (means use default)", func(t *testing.T) {
+		assert.NoError(t, xconfmap.Validate(base(0)))
+	})
+	t.Run("256 KiB is allowed", func(t *testing.T) {
+		assert.NoError(t, xconfmap.Validate(base(1024*256)))
+	})
+	t.Run("1 MiB is allowed (post 2025-04-02 service limit)", func(t *testing.T) {
+		assert.NoError(t, xconfmap.Validate(base(1024*1024)))
+	})
+	t.Run("below minimum is rejected", func(t *testing.T) {
+		assert.Error(t, xconfmap.Validate(base(10)))
+	})
+	t.Run("above 1 MiB is rejected", func(t *testing.T) {
+		assert.Error(t, xconfmap.Validate(base(1024*1024+1)))
+	})
+}
+
 func TestValidateTags(t *testing.T) {
 	defaultBackOffConfig := configretry.NewDefaultBackOffConfig()
 

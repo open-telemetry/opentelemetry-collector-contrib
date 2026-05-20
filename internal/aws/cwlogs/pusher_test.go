@@ -306,6 +306,51 @@ func TestLogPusherConcurrentAddAndFlush(t *testing.T) {
 	wg.Wait()
 }
 
+func TestPusher_perPusherMaxEventPayloadBytes(t *testing.T) {
+	// Build a payload that fits within a 512 KiB per-pusher cap but exceeds
+	// the package default (256 KiB). With WithMaxEventPayloadBytes(512 KiB) the
+	// payload must pass through unmodified; without the option it would be
+	// truncated to the 256 KiB default.
+	largeSize := defaultMaxEventPayloadBytes + 1024 // 256 KiB + 1 KiB
+	body := strings.Repeat("b", largeSize)
+
+	t.Run("per-pusher cap raises ceiling above package default", func(t *testing.T) {
+		p := newLogPusher(StreamKey{
+			LogGroupName:  logGroup,
+			LogStreamName: logStreamName,
+		}, Client{svc: &mockCloudWatchClient{}}, zap.NewNop(),
+			WithMaxEventPayloadBytes(defaultMaxEventPayloadBytes*2))
+
+		ev := NewEvent(timestampMs, body)
+		require.NoError(t, p.AddLogEntry(t.Context(), ev))
+		assert.Equal(t, largeSize, len(*ev.InputLogEvent.Message),
+			"event should pass through untruncated because the per-pusher cap is large enough")
+	})
+
+	t.Run("no per-pusher option falls back to package default", func(t *testing.T) {
+		p := newLogPusher(StreamKey{
+			LogGroupName:  logGroup,
+			LogStreamName: logStreamName,
+		}, Client{svc: &mockCloudWatchClient{}}, zap.NewNop())
+
+		ev := NewEvent(timestampMs, body)
+		require.NoError(t, p.AddLogEntry(t.Context(), ev))
+		assert.NotEqual(t, largeSize, len(*ev.InputLogEvent.Message),
+			"event should be truncated to package default when no per-pusher cap is set")
+		assert.Contains(t, *ev.InputLogEvent.Message, truncatedSuffix)
+	})
+
+	t.Run("zero per-pusher option falls back to package default", func(t *testing.T) {
+		p := newLogPusher(StreamKey{
+			LogGroupName:  logGroup,
+			LogStreamName: logStreamName,
+		}, Client{svc: &mockCloudWatchClient{}}, zap.NewNop(),
+			WithMaxEventPayloadBytes(0))
+
+		assert.Equal(t, maxEventPayloadBytes, p.effectiveMaxEventPayloadBytes())
+	})
+}
+
 func TestByTimestampLessNilTimestamp(t *testing.T) {
 	events := ByTimestamp{
 		{Timestamp: aws.Int64(1000), Message: aws.String("a")},
