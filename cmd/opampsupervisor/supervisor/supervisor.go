@@ -1076,6 +1076,16 @@ func (s *Supervisor) addSpecialConfigFiles() {
 	}
 }
 
+func (s *Supervisor) hasNonSpecialConfigFiles() bool {
+	for _, file := range s.config.Agent.ConfigFiles {
+		if !strings.HasPrefix(file, "$") {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (s *Supervisor) composeNoopPipeline() ([]byte, error) {
 	var cfg bytes.Buffer
 
@@ -1439,8 +1449,10 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 
 	// Check if supervisor's merged config is changed.
 	newConfigState := &configState{
-		mergedConfig:     string(newMergedConfigBytes),
-		configMapIsEmpty: (incomingConfig != nil && !hasIncomingConfigMap),
+		mergedConfig: string(newMergedConfigBytes),
+		configMapIsEmpty: incomingConfig != nil &&
+			!hasIncomingConfigMap &&
+			!s.hasNonSpecialConfigFiles(),
 	}
 
 	configChanged = false
