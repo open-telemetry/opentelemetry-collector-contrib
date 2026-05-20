@@ -51,6 +51,7 @@ users:
 `
 	tmpfile, err := os.CreateTemp(t.TempDir(), "kubeconfig")
 	require.NoError(t, err)
+	require.NoError(t, tmpfile.Close())
 	require.NoError(t, os.WriteFile(tmpfile.Name(), []byte(content), 0o600))
 	// overwrite the default kube config path
 	kubeConfigPath = tmpfile.Name()
