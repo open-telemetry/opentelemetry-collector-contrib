@@ -312,7 +312,6 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 			obfuscatedCursorOriginatingCommand,
 			cursorTailable,
 			lsid,
-			namespace,
 			operationID,
 			planSummary,
 			queryFramework,

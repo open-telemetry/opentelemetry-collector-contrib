@@ -129,9 +129,6 @@ attributes:
   mongodb.lsid.id:
     description: The UUID portion of the logical session identifier associated with the MongoDB operation.
     type: string
-  mongodb.namespace:
-    description: The MongoDB namespace reported by the server, typically <database>.<collection>.
-    type: string
   mongodb.operation.duration:
     description: The duration of the MongoDB operation in seconds.
     type: double
@@ -153,9 +150,6 @@ attributes:
   mongodb.operation.prepare_read_conflict.count:
     description: The number of times the MongoDB operation had to wait for a prepared transaction with a write to commit or abort.
     type: int
-  mongodb.operation.query_framework:
-    description: Query framework used by the MongoDB operation.
-    type: string
   mongodb.operation.state:
     description: Simplified state of the MongoDB operation.
     type: string
@@ -183,6 +177,10 @@ attributes:
   mongodb.operation.yield.count:
     description: The number of times the MongoDB operation yielded to allow other operations to complete.
     type: int
+  mongodb.query.framework:
+    description: |
+      The MongoDB query execution engine that processed this operation. Only present for operations that flow through the query subsystem (reads, read-modify-writes, and getMore continuations); absent for pure inserts, index management, and administrative commands. Known values include `classic` and `sbe`.
+    type: string
   mongodb.query.text.truncated:
     description: Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output.
     type: bool
@@ -241,10 +239,9 @@ events:
       - mongodb.cursor.originating_command
       - mongodb.cursor.tailable
       - mongodb.lsid.id
-      - mongodb.namespace
       - mongodb.operation.id
       - mongodb.operation.plan_summary
-      - mongodb.operation.query_framework
+      - mongodb.query.framework
       - mongodb.operation.state
       - mongodb.operation.type
       - mongodb.operation.duration

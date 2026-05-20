@@ -581,10 +581,10 @@ query sample
 | mongodb.cursor.originating_command | The obfuscated command that originally created the cursor. | Any Str | - |
 | mongodb.cursor.tailable | Whether the cursor is a tailable cursor. | Any Bool | - |
 | mongodb.lsid.id | The UUID portion of the logical session identifier associated with the MongoDB operation. | Any Str | - |
-| mongodb.namespace | The MongoDB namespace reported by the server, typically <database>.<collection>. | Any Str | - |
 | mongodb.operation.id | Identifier of the MongoDB operation. | Any Str | - |
 | mongodb.operation.plan_summary | Summary of the execution plan for the MongoDB operation. | Any Str | - |
-| mongodb.operation.query_framework | Query framework used by the MongoDB operation. | Any Str | - |
+| mongodb.query.framework | The MongoDB query execution engine that processed this operation. Only present for operations that flow through the query subsystem (reads, read-modify-writes, and getMore continuations); absent for pure inserts, index management, and administrative commands. Known values include `classic` and `sbe`.
+ | Any Str | - |
 | mongodb.operation.state | Simplified state of the MongoDB operation. | Str: ``active``, ``waiting`` | - |
 | mongodb.operation.type | The low-level MongoDB operation type (e.g. query, insert, update, remove, getmore, command). | Any Str | - |
 | mongodb.operation.duration | The duration of the MongoDB operation in seconds. | Any Double | - |

@@ -96,7 +96,7 @@ func createLogsReceiver(_ context.Context, params receiver.Settings, rConf compo
 					scraper.NewFactory(
 						metadata.Type, nil, scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
 							return s, nil
-						}, component.StabilityLevelAlpha)), nil))
+						}, metadata.LogsStability)), nil))
 		}
 	}
 	return scraperhelper.NewLogsController(
