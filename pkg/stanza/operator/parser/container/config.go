@@ -6,7 +6,6 @@ package container // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"errors"
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/component"
 
@@ -72,13 +71,10 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		}
 	}
 
-	wg := sync.WaitGroup{}
-
 	p := &Parser{
 		ParserOperator:          parserOperator,
 		format:                  c.Format,
 		addMetadataFromFilepath: c.AddMetadataFromFilePath,
-		criConsumers:            &wg,
 	}
 
 	cLogEmitter := helper.NewBatchingLogEmitter(set, p.consumeEntries)
