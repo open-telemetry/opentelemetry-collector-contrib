@@ -75,15 +75,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []SqlserverDatabaseOperationsMetricAttributeKey{SqlserverDatabaseOperationsMetricAttributeKeyPhysicalFilename, SqlserverDatabaseOperationsMetricAttributeKeyLogicalFilename, SqlserverDatabaseOperationsMetricAttributeKeyFileType, SqlserverDatabaseOperationsMetricAttributeKeyDirection},
 					},
-					SqlserverDatabaseSecurityPrincipalsCount: SqlserverDatabaseSecurityPrincipalsCountMetricConfig{
+					SqlserverDatabaseSecurityPrincipalCount: SqlserverDatabaseSecurityPrincipalCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKey{SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKeyDbNamespace},
+						EnabledAttributes:   []SqlserverDatabaseSecurityPrincipalCountMetricAttributeKey{SqlserverDatabaseSecurityPrincipalCountMetricAttributeKeyDbNamespace},
 					},
-					SqlserverDatabaseSecurityRoleMembersCount: SqlserverDatabaseSecurityRoleMembersCountMetricConfig{
+					SqlserverDatabaseSecurityRoleMembershipCount: SqlserverDatabaseSecurityRoleMembershipCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey{SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyDbNamespace, SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyRole},
+						EnabledAttributes:   []SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKey{SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKeyDbNamespace, SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKeyRole},
 					},
 					SqlserverDatabaseTempdbSpace: SqlserverDatabaseTempdbSpaceMetricConfig{
 						Enabled:             true,
@@ -183,13 +183,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverResourcePoolDiskThrottledWriteRate: SqlserverResourcePoolDiskThrottledWriteRateMetricConfig{
 						Enabled: true,
 					},
-					SqlserverSecurityPrincipalsCount: SqlserverSecurityPrincipalsCountMetricConfig{
+					SqlserverServerSecurityPrincipalCount: SqlserverServerSecurityPrincipalCountMetricConfig{
 						Enabled: true,
 					},
-					SqlserverSecurityRoleMembersCount: SqlserverSecurityRoleMembersCountMetricConfig{
+					SqlserverServerSecurityRoleMembershipCount: SqlserverServerSecurityRoleMembershipCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverSecurityRoleMembersCountMetricAttributeKey{SqlserverSecurityRoleMembersCountMetricAttributeKeyRole},
+						EnabledAttributes:   []SqlserverServerSecurityRoleMembershipCountMetricAttributeKey{SqlserverServerSecurityRoleMembershipCountMetricAttributeKeyRole},
 					},
 					SqlserverTableCount: SqlserverTableCountMetricConfig{
 						Enabled:             true,
@@ -294,15 +294,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []SqlserverDatabaseOperationsMetricAttributeKey{SqlserverDatabaseOperationsMetricAttributeKeyPhysicalFilename, SqlserverDatabaseOperationsMetricAttributeKeyLogicalFilename, SqlserverDatabaseOperationsMetricAttributeKeyFileType, SqlserverDatabaseOperationsMetricAttributeKeyDirection},
 					},
-					SqlserverDatabaseSecurityPrincipalsCount: SqlserverDatabaseSecurityPrincipalsCountMetricConfig{
+					SqlserverDatabaseSecurityPrincipalCount: SqlserverDatabaseSecurityPrincipalCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKey{SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKeyDbNamespace},
+						EnabledAttributes:   []SqlserverDatabaseSecurityPrincipalCountMetricAttributeKey{SqlserverDatabaseSecurityPrincipalCountMetricAttributeKeyDbNamespace},
 					},
-					SqlserverDatabaseSecurityRoleMembersCount: SqlserverDatabaseSecurityRoleMembersCountMetricConfig{
+					SqlserverDatabaseSecurityRoleMembershipCount: SqlserverDatabaseSecurityRoleMembershipCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey{SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyDbNamespace, SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyRole},
+						EnabledAttributes:   []SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKey{SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKeyDbNamespace, SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKeyRole},
 					},
 					SqlserverDatabaseTempdbSpace: SqlserverDatabaseTempdbSpaceMetricConfig{
 						Enabled:             false,
@@ -402,13 +402,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverResourcePoolDiskThrottledWriteRate: SqlserverResourcePoolDiskThrottledWriteRateMetricConfig{
 						Enabled: false,
 					},
-					SqlserverSecurityPrincipalsCount: SqlserverSecurityPrincipalsCountMetricConfig{
+					SqlserverServerSecurityPrincipalCount: SqlserverServerSecurityPrincipalCountMetricConfig{
 						Enabled: false,
 					},
-					SqlserverSecurityRoleMembersCount: SqlserverSecurityRoleMembersCountMetricConfig{
+					SqlserverServerSecurityRoleMembershipCount: SqlserverServerSecurityRoleMembershipCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverSecurityRoleMembersCountMetricAttributeKey{SqlserverSecurityRoleMembersCountMetricAttributeKeyRole},
+						EnabledAttributes:   []SqlserverServerSecurityRoleMembershipCountMetricAttributeKey{SqlserverServerSecurityRoleMembershipCountMetricAttributeKeyRole},
 					},
 					SqlserverTableCount: SqlserverTableCountMetricConfig{
 						Enabled:             false,
@@ -464,7 +464,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SqlserverBatchRequestRateMetricConfig{}, SqlserverBatchSQLCompilationRateMetricConfig{}, SqlserverBatchSQLRecompilationRateMetricConfig{}, SqlserverComputerUptimeMetricConfig{}, SqlserverCPUCountMetricConfig{}, SqlserverDatabaseBackupOrRestoreRateMetricConfig{}, SqlserverDatabaseCountMetricConfig{}, SqlserverDatabaseExecutionErrorsMetricConfig{}, SqlserverDatabaseFileSizeMetricConfig{}, SqlserverDatabaseFullScanRateMetricConfig{}, SqlserverDatabaseIoMetricConfig{}, SqlserverDatabaseLatencyMetricConfig{}, SqlserverDatabaseOperationsMetricConfig{}, SqlserverDatabaseSecurityPrincipalsCountMetricConfig{}, SqlserverDatabaseSecurityRoleMembersCountMetricConfig{}, SqlserverDatabaseTempdbSpaceMetricConfig{}, SqlserverDatabaseTempdbVersionStoreSizeMetricConfig{}, SqlserverDatabaseTransactionsActiveMetricConfig{}, SqlserverDeadlockRateMetricConfig{}, SqlserverIndexSearchRateMetricConfig{}, SqlserverLockTimeoutRateMetricConfig{}, SqlserverLockWaitCountMetricConfig{}, SqlserverLockWaitRateMetricConfig{}, SqlserverLockWaitTimeAvgMetricConfig{}, SqlserverLoginRateMetricConfig{}, SqlserverLogoutRateMetricConfig{}, SqlserverMemoryGrantsPendingCountMetricConfig{}, SqlserverMemoryTargetMetricConfig{}, SqlserverMemoryUsageMetricConfig{}, SqlserverOsWaitDurationMetricConfig{}, SqlserverPageBufferCacheFreeListStallsRateMetricConfig{}, SqlserverPageBufferCacheHitRatioMetricConfig{}, SqlserverPageCheckpointFlushRateMetricConfig{}, SqlserverPageLazyWriteRateMetricConfig{}, SqlserverPageLifeExpectancyMetricConfig{}, SqlserverPageLookupRateMetricConfig{}, SqlserverPageOperationRateMetricConfig{}, SqlserverPageSplitRateMetricConfig{}, SqlserverProcessesBlockedMetricConfig{}, SqlserverReplicaDataRateMetricConfig{}, SqlserverResourcePoolDiskOperationsMetricConfig{}, SqlserverResourcePoolDiskThrottledReadRateMetricConfig{}, SqlserverResourcePoolDiskThrottledWriteRateMetricConfig{}, SqlserverSecurityPrincipalsCountMetricConfig{}, SqlserverSecurityRoleMembersCountMetricConfig{}, SqlserverTableCountMetricConfig{}, SqlserverTransactionDelayMetricConfig{}, SqlserverTransactionMirrorWriteRateMetricConfig{}, SqlserverTransactionRateMetricConfig{}, SqlserverTransactionWriteRateMetricConfig{}, SqlserverTransactionLogFlushDataRateMetricConfig{}, SqlserverTransactionLogFlushRateMetricConfig{}, SqlserverTransactionLogFlushWaitRateMetricConfig{}, SqlserverTransactionLogGrowthCountMetricConfig{}, SqlserverTransactionLogShrinkCountMetricConfig{}, SqlserverTransactionLogUsageMetricConfig{}, SqlserverUserConnectionCountMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SqlserverBatchRequestRateMetricConfig{}, SqlserverBatchSQLCompilationRateMetricConfig{}, SqlserverBatchSQLRecompilationRateMetricConfig{}, SqlserverComputerUptimeMetricConfig{}, SqlserverCPUCountMetricConfig{}, SqlserverDatabaseBackupOrRestoreRateMetricConfig{}, SqlserverDatabaseCountMetricConfig{}, SqlserverDatabaseExecutionErrorsMetricConfig{}, SqlserverDatabaseFileSizeMetricConfig{}, SqlserverDatabaseFullScanRateMetricConfig{}, SqlserverDatabaseIoMetricConfig{}, SqlserverDatabaseLatencyMetricConfig{}, SqlserverDatabaseOperationsMetricConfig{}, SqlserverDatabaseSecurityPrincipalCountMetricConfig{}, SqlserverDatabaseSecurityRoleMembershipCountMetricConfig{}, SqlserverDatabaseTempdbSpaceMetricConfig{}, SqlserverDatabaseTempdbVersionStoreSizeMetricConfig{}, SqlserverDatabaseTransactionsActiveMetricConfig{}, SqlserverDeadlockRateMetricConfig{}, SqlserverIndexSearchRateMetricConfig{}, SqlserverLockTimeoutRateMetricConfig{}, SqlserverLockWaitCountMetricConfig{}, SqlserverLockWaitRateMetricConfig{}, SqlserverLockWaitTimeAvgMetricConfig{}, SqlserverLoginRateMetricConfig{}, SqlserverLogoutRateMetricConfig{}, SqlserverMemoryGrantsPendingCountMetricConfig{}, SqlserverMemoryTargetMetricConfig{}, SqlserverMemoryUsageMetricConfig{}, SqlserverOsWaitDurationMetricConfig{}, SqlserverPageBufferCacheFreeListStallsRateMetricConfig{}, SqlserverPageBufferCacheHitRatioMetricConfig{}, SqlserverPageCheckpointFlushRateMetricConfig{}, SqlserverPageLazyWriteRateMetricConfig{}, SqlserverPageLifeExpectancyMetricConfig{}, SqlserverPageLookupRateMetricConfig{}, SqlserverPageOperationRateMetricConfig{}, SqlserverPageSplitRateMetricConfig{}, SqlserverProcessesBlockedMetricConfig{}, SqlserverReplicaDataRateMetricConfig{}, SqlserverResourcePoolDiskOperationsMetricConfig{}, SqlserverResourcePoolDiskThrottledReadRateMetricConfig{}, SqlserverResourcePoolDiskThrottledWriteRateMetricConfig{}, SqlserverServerSecurityPrincipalCountMetricConfig{}, SqlserverServerSecurityRoleMembershipCountMetricConfig{}, SqlserverTableCountMetricConfig{}, SqlserverTransactionDelayMetricConfig{}, SqlserverTransactionMirrorWriteRateMetricConfig{}, SqlserverTransactionRateMetricConfig{}, SqlserverTransactionWriteRateMetricConfig{}, SqlserverTransactionLogFlushDataRateMetricConfig{}, SqlserverTransactionLogFlushRateMetricConfig{}, SqlserverTransactionLogFlushWaitRateMetricConfig{}, SqlserverTransactionLogGrowthCountMetricConfig{}, SqlserverTransactionLogShrinkCountMetricConfig{}, SqlserverTransactionLogUsageMetricConfig{}, SqlserverUserConnectionCountMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

@@ -90,19 +90,19 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerDatabaseSizeQuery(cfg.InstanceName))
 	}
 
-	if cfg.Metrics.SqlserverSecurityPrincipalsCount.Enabled {
+	if cfg.Metrics.SqlserverServerSecurityPrincipalCount.Enabled {
 		queries = append(queries, getSQLServerSecurityPrincipalsQuery(cfg.InstanceName))
 	}
 
-	if cfg.Metrics.SqlserverSecurityRoleMembersCount.Enabled {
+	if cfg.Metrics.SqlserverServerSecurityRoleMembershipCount.Enabled {
 		queries = append(queries, getSQLServerSecurityRoleMembersQuery(cfg.InstanceName))
 	}
 
-	if cfg.Metrics.SqlserverDatabaseSecurityPrincipalsCount.Enabled {
+	if cfg.Metrics.SqlserverDatabaseSecurityPrincipalCount.Enabled {
 		queries = append(queries, getSQLServerDatabaseSecurityPrincipalsQuery(cfg.InstanceName))
 	}
 
-	if cfg.Metrics.SqlserverDatabaseSecurityRoleMembersCount.Enabled {
+	if cfg.Metrics.SqlserverDatabaseSecurityRoleMembershipCount.Enabled {
 		queries = append(queries, getSQLServerDatabaseSecurityRoleMembersQuery(cfg.InstanceName))
 	}
 

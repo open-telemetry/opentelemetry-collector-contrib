@@ -350,7 +350,7 @@ This metric is only available when the receiver is configured to directly connec
 | file_type | The type of file being monitored. | Any Str | Recommended | - |
 | direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` | Recommended | - |
 
-### sqlserver.database.security.principals.count
+### sqlserver.database.security.principal.count
 
 Number of security principals (logins, users) at the database level.
 
@@ -366,7 +366,7 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The database name. | Any Str | Recommended | - |
 
-### sqlserver.database.security.role_members.count
+### sqlserver.database.security.role_membership.count
 
 Number of members in a database role.
 
@@ -590,7 +590,7 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ---------- | --------- |
 | {writes}/s | Gauge | Double | Development |
 
-### sqlserver.security.principals.count
+### sqlserver.server.security.principal.count
 
 Number of security principals (logins, users) at the server level.
 
@@ -600,7 +600,7 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ---------- | --------- |
 | {principals} | Gauge | Int | Development |
 
-### sqlserver.security.role_members.count
+### sqlserver.server.security.role_membership.count
 
 Number of members in a server role.
 

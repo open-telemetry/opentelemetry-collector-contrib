@@ -24,7 +24,7 @@ resourceMetrics:
                 - asInt: "45"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.security.principals.count
+            name: sqlserver.server.security.principal.count
             unit: '{principals}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver

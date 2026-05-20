@@ -72,8 +72,8 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.database.io"] = mb.metricSqlserverDatabaseIo.config.AggregationStrategy
 			aggMap["sqlserver.database.latency"] = mb.metricSqlserverDatabaseLatency.config.AggregationStrategy
 			aggMap["sqlserver.database.operations"] = mb.metricSqlserverDatabaseOperations.config.AggregationStrategy
-			aggMap["sqlserver.database.security.principals.count"] = mb.metricSqlserverDatabaseSecurityPrincipalsCount.config.AggregationStrategy
-			aggMap["sqlserver.database.security.role_members.count"] = mb.metricSqlserverDatabaseSecurityRoleMembersCount.config.AggregationStrategy
+			aggMap["sqlserver.database.security.principal.count"] = mb.metricSqlserverDatabaseSecurityPrincipalCount.config.AggregationStrategy
+			aggMap["sqlserver.database.security.role_membership.count"] = mb.metricSqlserverDatabaseSecurityRoleMembershipCount.config.AggregationStrategy
 			aggMap["sqlserver.database.tempdb.space"] = mb.metricSqlserverDatabaseTempdbSpace.config.AggregationStrategy
 			aggMap["sqlserver.database.transactions.active"] = mb.metricSqlserverDatabaseTransactionsActive.config.AggregationStrategy
 			aggMap["sqlserver.os.wait.duration"] = mb.metricSqlserverOsWaitDuration.config.AggregationStrategy
@@ -81,7 +81,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.page.operation.rate"] = mb.metricSqlserverPageOperationRate.config.AggregationStrategy
 			aggMap["sqlserver.replica.data.rate"] = mb.metricSqlserverReplicaDataRate.config.AggregationStrategy
 			aggMap["sqlserver.resource_pool.disk.operations"] = mb.metricSqlserverResourcePoolDiskOperations.config.AggregationStrategy
-			aggMap["sqlserver.security.role_members.count"] = mb.metricSqlserverSecurityRoleMembersCount.config.AggregationStrategy
+			aggMap["sqlserver.server.security.role_membership.count"] = mb.metricSqlserverServerSecurityRoleMembershipCount.config.AggregationStrategy
 			aggMap["sqlserver.table.count"] = mb.metricSqlserverTableCount.config.AggregationStrategy
 
 			expectedWarnings := 0
@@ -150,15 +150,15 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverDatabaseSecurityPrincipalsCountDataPoint(ts, "1", "db.namespace-val")
+			mb.RecordSqlserverDatabaseSecurityPrincipalCountDataPoint(ts, "1", "db.namespace-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverDatabaseSecurityPrincipalsCountDataPoint(ts, "3", "db.namespace-val-2")
+				mb.RecordSqlserverDatabaseSecurityPrincipalCountDataPoint(ts, "3", "db.namespace-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverDatabaseSecurityRoleMembersCountDataPoint(ts, "1", "db.namespace-val", "role-val")
+			mb.RecordSqlserverDatabaseSecurityRoleMembershipCountDataPoint(ts, "1", "db.namespace-val", "role-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverDatabaseSecurityRoleMembersCountDataPoint(ts, "3", "db.namespace-val-2", "role-val-2")
+				mb.RecordSqlserverDatabaseSecurityRoleMembershipCountDataPoint(ts, "3", "db.namespace-val-2", "role-val-2")
 			}
 
 			allMetricsCount++
@@ -275,12 +275,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverResourcePoolDiskThrottledWriteRateDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordSqlserverSecurityPrincipalsCountDataPoint(ts, "1")
+			mb.RecordSqlserverServerSecurityPrincipalCountDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordSqlserverSecurityRoleMembersCountDataPoint(ts, "1", "role-val")
+			mb.RecordSqlserverServerSecurityRoleMembershipCountDataPoint(ts, "1", "role-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverSecurityRoleMembersCountDataPoint(ts, "3", "role-val-2")
+				mb.RecordSqlserverServerSecurityRoleMembershipCountDataPoint(ts, "3", "role-val-2")
 			}
 
 			allMetricsCount++
@@ -347,8 +347,8 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverDatabaseIo.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseLatency.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseOperations.aggDataPoints)
-				assert.Empty(t, mb.metricSqlserverDatabaseSecurityPrincipalsCount.aggDataPoints)
-				assert.Empty(t, mb.metricSqlserverDatabaseSecurityRoleMembersCount.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverDatabaseSecurityPrincipalCount.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverDatabaseSecurityRoleMembershipCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseTempdbSpace.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseTransactionsActive.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverOsWaitDuration.aggDataPoints)
@@ -356,7 +356,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverPageOperationRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverReplicaDataRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverResourcePoolDiskOperations.aggDataPoints)
-				assert.Empty(t, mb.metricSqlserverSecurityRoleMembersCount.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverServerSecurityRoleMembershipCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverTableCount.aggDataPoints)
 			}
 
@@ -743,10 +743,10 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("direction")
 						assert.False(t, ok)
 					}
-				case "sqlserver.database.security.principals.count":
+				case "sqlserver.database.security.principal.count":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.database.security.principals.count"], "Found a duplicate in the metrics slice: sqlserver.database.security.principals.count")
-						validatedMetrics["sqlserver.database.security.principals.count"] = true
+						assert.False(t, validatedMetrics["sqlserver.database.security.principal.count"], "Found a duplicate in the metrics slice: sqlserver.database.security.principal.count")
+						validatedMetrics["sqlserver.database.security.principal.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Number of security principals (logins, users) at the database level.", mi.Description())
@@ -760,8 +760,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["sqlserver.database.security.principals.count"], "Found a duplicate in the metrics slice: sqlserver.database.security.principals.count")
-						validatedMetrics["sqlserver.database.security.principals.count"] = true
+						assert.False(t, validatedMetrics["sqlserver.database.security.principal.count"], "Found a duplicate in the metrics slice: sqlserver.database.security.principal.count")
+						validatedMetrics["sqlserver.database.security.principal.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Number of security principals (logins, users) at the database level.", mi.Description())
@@ -770,7 +770,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["sqlserver.database.security.principals.count"] {
+						switch aggMap["sqlserver.database.security.principal.count"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -783,10 +783,10 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
 					}
-				case "sqlserver.database.security.role_members.count":
+				case "sqlserver.database.security.role_membership.count":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.database.security.role_members.count"], "Found a duplicate in the metrics slice: sqlserver.database.security.role_members.count")
-						validatedMetrics["sqlserver.database.security.role_members.count"] = true
+						assert.False(t, validatedMetrics["sqlserver.database.security.role_membership.count"], "Found a duplicate in the metrics slice: sqlserver.database.security.role_membership.count")
+						validatedMetrics["sqlserver.database.security.role_membership.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Number of members in a database role.", mi.Description())
@@ -803,8 +803,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.True(t, ok)
 						assert.Equal(t, "role-val", roleAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["sqlserver.database.security.role_members.count"], "Found a duplicate in the metrics slice: sqlserver.database.security.role_members.count")
-						validatedMetrics["sqlserver.database.security.role_members.count"] = true
+						assert.False(t, validatedMetrics["sqlserver.database.security.role_membership.count"], "Found a duplicate in the metrics slice: sqlserver.database.security.role_membership.count")
+						validatedMetrics["sqlserver.database.security.role_membership.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Number of members in a database role.", mi.Description())
@@ -813,7 +813,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["sqlserver.database.security.role_members.count"] {
+						switch aggMap["sqlserver.database.security.role_membership.count"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -1379,9 +1379,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "sqlserver.security.principals.count":
-					assert.False(t, validatedMetrics["sqlserver.security.principals.count"], "Found a duplicate in the metrics slice: sqlserver.security.principals.count")
-					validatedMetrics["sqlserver.security.principals.count"] = true
+				case "sqlserver.server.security.principal.count":
+					assert.False(t, validatedMetrics["sqlserver.server.security.principal.count"], "Found a duplicate in the metrics slice: sqlserver.server.security.principal.count")
+					validatedMetrics["sqlserver.server.security.principal.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of security principals (logins, users) at the server level.", mi.Description())
@@ -1391,10 +1391,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "sqlserver.security.role_members.count":
+				case "sqlserver.server.security.role_membership.count":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.security.role_members.count"], "Found a duplicate in the metrics slice: sqlserver.security.role_members.count")
-						validatedMetrics["sqlserver.security.role_members.count"] = true
+						assert.False(t, validatedMetrics["sqlserver.server.security.role_membership.count"], "Found a duplicate in the metrics slice: sqlserver.server.security.role_membership.count")
+						validatedMetrics["sqlserver.server.security.role_membership.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Number of members in a server role.", mi.Description())
@@ -1408,8 +1408,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.True(t, ok)
 						assert.Equal(t, "role-val", roleAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["sqlserver.security.role_members.count"], "Found a duplicate in the metrics slice: sqlserver.security.role_members.count")
-						validatedMetrics["sqlserver.security.role_members.count"] = true
+						assert.False(t, validatedMetrics["sqlserver.server.security.role_membership.count"], "Found a duplicate in the metrics slice: sqlserver.server.security.role_membership.count")
+						validatedMetrics["sqlserver.server.security.role_membership.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Number of members in a server role.", mi.Description())
@@ -1418,7 +1418,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["sqlserver.security.role_members.count"] {
+						switch aggMap["sqlserver.server.security.role_membership.count"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":

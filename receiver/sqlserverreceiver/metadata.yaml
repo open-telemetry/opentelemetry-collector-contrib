@@ -501,7 +501,7 @@ metrics:
       input_type: string
     attributes: [physical_filename, logical_filename, file_type, direction]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
-  sqlserver.database.security.principals.count:
+  sqlserver.database.security.principal.count:
     enabled: false
     description: Number of security principals (logins, users) at the database level.
     stability: development
@@ -511,7 +511,7 @@ metrics:
       input_type: string
     attributes: [db.namespace]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks database-level security principals including database users, roles, and application roles. The db.namespace attribute contains the database name. Useful for security auditing and access management. Available on SQL Server 2012+.
-  sqlserver.database.security.role_members.count:
+  sqlserver.database.security.role_membership.count:
     enabled: false
     description: Number of members in a database role.
     stability: development
@@ -766,7 +766,7 @@ metrics:
       input_type: string
     attributes: []
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
-  sqlserver.security.principals.count:
+  sqlserver.server.security.principal.count:
     enabled: false
     description: Number of security principals (logins, users) at the server level.
     stability: development
@@ -776,7 +776,7 @@ metrics:
       input_type: string
     attributes: []
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Tracks server-level security principals including SQL logins, Windows logins, and server roles. Essential for security monitoring and compliance auditing. Available on SQL Server 2012+.
-  sqlserver.security.role_members.count:
+  sqlserver.server.security.role_membership.count:
     enabled: false
     description: Number of members in a server role.
     stability: development

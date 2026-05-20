@@ -419,23 +419,23 @@ func (ms *SqlserverDatabaseOperationsMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKey specifies the key of an attribute for the sqlserver.database.security.principals.count metric.
-type SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKey string
+// SqlserverDatabaseSecurityPrincipalCountMetricAttributeKey specifies the key of an attribute for the sqlserver.database.security.principal.count metric.
+type SqlserverDatabaseSecurityPrincipalCountMetricAttributeKey string
 
 const (
-	SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKeyDbNamespace SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKey = "db.namespace"
+	SqlserverDatabaseSecurityPrincipalCountMetricAttributeKeyDbNamespace SqlserverDatabaseSecurityPrincipalCountMetricAttributeKey = "db.namespace"
 )
 
-// SqlserverDatabaseSecurityPrincipalsCountMetricConfig provides config for the sqlserver.database.security.principals.count metric.
-type SqlserverDatabaseSecurityPrincipalsCountMetricConfig struct {
+// SqlserverDatabaseSecurityPrincipalCountMetricConfig provides config for the sqlserver.database.security.principal.count metric.
+type SqlserverDatabaseSecurityPrincipalCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverDatabaseSecurityPrincipalCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SqlserverDatabaseSecurityPrincipalsCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverDatabaseSecurityPrincipalCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -449,12 +449,12 @@ func (ms *SqlserverDatabaseSecurityPrincipalsCountMetricConfig) Unmarshal(parser
 	return nil
 }
 
-func (ms *SqlserverDatabaseSecurityPrincipalsCountMetricConfig) Validate() error {
+func (ms *SqlserverDatabaseSecurityPrincipalCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKeyDbNamespace:
+		case SqlserverDatabaseSecurityPrincipalCountMetricAttributeKeyDbNamespace:
 		default:
-			return fmt.Errorf("metric sqlserver.database.security.principals.count doesn't have an attribute %v, valid attributes: [db.namespace]", val)
+			return fmt.Errorf("metric sqlserver.database.security.principal.count doesn't have an attribute %v, valid attributes: [db.namespace]", val)
 		}
 	}
 
@@ -467,24 +467,24 @@ func (ms *SqlserverDatabaseSecurityPrincipalsCountMetricConfig) Validate() error
 	return nil
 }
 
-// SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey specifies the key of an attribute for the sqlserver.database.security.role_members.count metric.
-type SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey string
+// SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKey specifies the key of an attribute for the sqlserver.database.security.role_membership.count metric.
+type SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKey string
 
 const (
-	SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyDbNamespace SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey = "db.namespace"
-	SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyRole        SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey = "role"
+	SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKeyDbNamespace SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKey = "db.namespace"
+	SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKeyRole        SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKey = "role"
 )
 
-// SqlserverDatabaseSecurityRoleMembersCountMetricConfig provides config for the sqlserver.database.security.role_members.count metric.
-type SqlserverDatabaseSecurityRoleMembersCountMetricConfig struct {
+// SqlserverDatabaseSecurityRoleMembershipCountMetricConfig provides config for the sqlserver.database.security.role_membership.count metric.
+type SqlserverDatabaseSecurityRoleMembershipCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SqlserverDatabaseSecurityRoleMembersCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverDatabaseSecurityRoleMembershipCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -498,12 +498,12 @@ func (ms *SqlserverDatabaseSecurityRoleMembersCountMetricConfig) Unmarshal(parse
 	return nil
 }
 
-func (ms *SqlserverDatabaseSecurityRoleMembersCountMetricConfig) Validate() error {
+func (ms *SqlserverDatabaseSecurityRoleMembershipCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyDbNamespace, SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyRole:
+		case SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKeyDbNamespace, SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKeyRole:
 		default:
-			return fmt.Errorf("metric sqlserver.database.security.role_members.count doesn't have an attribute %v, valid attributes: [db.namespace, role]", val)
+			return fmt.Errorf("metric sqlserver.database.security.role_membership.count doesn't have an attribute %v, valid attributes: [db.namespace, role]", val)
 		}
 	}
 
@@ -1273,13 +1273,13 @@ func (ms *SqlserverResourcePoolDiskThrottledWriteRateMetricConfig) Unmarshal(par
 	return nil
 }
 
-// SqlserverSecurityPrincipalsCountMetricConfig provides config for the sqlserver.security.principals.count metric.
-type SqlserverSecurityPrincipalsCountMetricConfig struct {
+// SqlserverServerSecurityPrincipalCountMetricConfig provides config for the sqlserver.server.security.principal.count metric.
+type SqlserverServerSecurityPrincipalCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SqlserverSecurityPrincipalsCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverServerSecurityPrincipalCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1293,23 +1293,23 @@ func (ms *SqlserverSecurityPrincipalsCountMetricConfig) Unmarshal(parser *confma
 	return nil
 }
 
-// SqlserverSecurityRoleMembersCountMetricAttributeKey specifies the key of an attribute for the sqlserver.security.role_members.count metric.
-type SqlserverSecurityRoleMembersCountMetricAttributeKey string
+// SqlserverServerSecurityRoleMembershipCountMetricAttributeKey specifies the key of an attribute for the sqlserver.server.security.role_membership.count metric.
+type SqlserverServerSecurityRoleMembershipCountMetricAttributeKey string
 
 const (
-	SqlserverSecurityRoleMembersCountMetricAttributeKeyRole SqlserverSecurityRoleMembersCountMetricAttributeKey = "role"
+	SqlserverServerSecurityRoleMembershipCountMetricAttributeKeyRole SqlserverServerSecurityRoleMembershipCountMetricAttributeKey = "role"
 )
 
-// SqlserverSecurityRoleMembersCountMetricConfig provides config for the sqlserver.security.role_members.count metric.
-type SqlserverSecurityRoleMembersCountMetricConfig struct {
+// SqlserverServerSecurityRoleMembershipCountMetricConfig provides config for the sqlserver.server.security.role_membership.count metric.
+type SqlserverServerSecurityRoleMembershipCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverSecurityRoleMembersCountMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverServerSecurityRoleMembershipCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SqlserverSecurityRoleMembersCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverServerSecurityRoleMembershipCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1323,12 +1323,12 @@ func (ms *SqlserverSecurityRoleMembersCountMetricConfig) Unmarshal(parser *confm
 	return nil
 }
 
-func (ms *SqlserverSecurityRoleMembersCountMetricConfig) Validate() error {
+func (ms *SqlserverServerSecurityRoleMembershipCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverSecurityRoleMembersCountMetricAttributeKeyRole:
+		case SqlserverServerSecurityRoleMembershipCountMetricAttributeKeyRole:
 		default:
-			return fmt.Errorf("metric sqlserver.security.role_members.count doesn't have an attribute %v, valid attributes: [role]", val)
+			return fmt.Errorf("metric sqlserver.server.security.role_membership.count doesn't have an attribute %v, valid attributes: [role]", val)
 		}
 	}
 
@@ -1612,63 +1612,63 @@ func (ms *SqlserverUserConnectionCountMetricConfig) Unmarshal(parser *confmap.Co
 
 // MetricsConfig provides config for sqlserver metrics.
 type MetricsConfig struct {
-	SqlserverBatchRequestRate                   SqlserverBatchRequestRateMetricConfig                   `mapstructure:"sqlserver.batch.request.rate"`
-	SqlserverBatchSQLCompilationRate            SqlserverBatchSQLCompilationRateMetricConfig            `mapstructure:"sqlserver.batch.sql_compilation.rate"`
-	SqlserverBatchSQLRecompilationRate          SqlserverBatchSQLRecompilationRateMetricConfig          `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
-	SqlserverComputerUptime                     SqlserverComputerUptimeMetricConfig                     `mapstructure:"sqlserver.computer.uptime"`
-	SqlserverCPUCount                           SqlserverCPUCountMetricConfig                           `mapstructure:"sqlserver.cpu.count"`
-	SqlserverDatabaseBackupOrRestoreRate        SqlserverDatabaseBackupOrRestoreRateMetricConfig        `mapstructure:"sqlserver.database.backup_or_restore.rate"`
-	SqlserverDatabaseCount                      SqlserverDatabaseCountMetricConfig                      `mapstructure:"sqlserver.database.count"`
-	SqlserverDatabaseExecutionErrors            SqlserverDatabaseExecutionErrorsMetricConfig            `mapstructure:"sqlserver.database.execution.errors"`
-	SqlserverDatabaseFileSize                   SqlserverDatabaseFileSizeMetricConfig                   `mapstructure:"sqlserver.database.file.size"`
-	SqlserverDatabaseFullScanRate               SqlserverDatabaseFullScanRateMetricConfig               `mapstructure:"sqlserver.database.full_scan.rate"`
-	SqlserverDatabaseIo                         SqlserverDatabaseIoMetricConfig                         `mapstructure:"sqlserver.database.io"`
-	SqlserverDatabaseLatency                    SqlserverDatabaseLatencyMetricConfig                    `mapstructure:"sqlserver.database.latency"`
-	SqlserverDatabaseOperations                 SqlserverDatabaseOperationsMetricConfig                 `mapstructure:"sqlserver.database.operations"`
-	SqlserverDatabaseSecurityPrincipalsCount    SqlserverDatabaseSecurityPrincipalsCountMetricConfig    `mapstructure:"sqlserver.database.security.principals.count"`
-	SqlserverDatabaseSecurityRoleMembersCount   SqlserverDatabaseSecurityRoleMembersCountMetricConfig   `mapstructure:"sqlserver.database.security.role_members.count"`
-	SqlserverDatabaseTempdbSpace                SqlserverDatabaseTempdbSpaceMetricConfig                `mapstructure:"sqlserver.database.tempdb.space"`
-	SqlserverDatabaseTempdbVersionStoreSize     SqlserverDatabaseTempdbVersionStoreSizeMetricConfig     `mapstructure:"sqlserver.database.tempdb.version_store.size"`
-	SqlserverDatabaseTransactionsActive         SqlserverDatabaseTransactionsActiveMetricConfig         `mapstructure:"sqlserver.database.transactions.active"`
-	SqlserverDeadlockRate                       SqlserverDeadlockRateMetricConfig                       `mapstructure:"sqlserver.deadlock.rate"`
-	SqlserverIndexSearchRate                    SqlserverIndexSearchRateMetricConfig                    `mapstructure:"sqlserver.index.search.rate"`
-	SqlserverLockTimeoutRate                    SqlserverLockTimeoutRateMetricConfig                    `mapstructure:"sqlserver.lock.timeout.rate"`
-	SqlserverLockWaitCount                      SqlserverLockWaitCountMetricConfig                      `mapstructure:"sqlserver.lock.wait.count"`
-	SqlserverLockWaitRate                       SqlserverLockWaitRateMetricConfig                       `mapstructure:"sqlserver.lock.wait.rate"`
-	SqlserverLockWaitTimeAvg                    SqlserverLockWaitTimeAvgMetricConfig                    `mapstructure:"sqlserver.lock.wait_time.avg"`
-	SqlserverLoginRate                          SqlserverLoginRateMetricConfig                          `mapstructure:"sqlserver.login.rate"`
-	SqlserverLogoutRate                         SqlserverLogoutRateMetricConfig                         `mapstructure:"sqlserver.logout.rate"`
-	SqlserverMemoryGrantsPendingCount           SqlserverMemoryGrantsPendingCountMetricConfig           `mapstructure:"sqlserver.memory.grants.pending.count"`
-	SqlserverMemoryTarget                       SqlserverMemoryTargetMetricConfig                       `mapstructure:"sqlserver.memory.target"`
-	SqlserverMemoryUsage                        SqlserverMemoryUsageMetricConfig                        `mapstructure:"sqlserver.memory.usage"`
-	SqlserverOsWaitDuration                     SqlserverOsWaitDurationMetricConfig                     `mapstructure:"sqlserver.os.wait.duration"`
-	SqlserverPageBufferCacheFreeListStallsRate  SqlserverPageBufferCacheFreeListStallsRateMetricConfig  `mapstructure:"sqlserver.page.buffer_cache.free_list.stalls.rate"`
-	SqlserverPageBufferCacheHitRatio            SqlserverPageBufferCacheHitRatioMetricConfig            `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
-	SqlserverPageCheckpointFlushRate            SqlserverPageCheckpointFlushRateMetricConfig            `mapstructure:"sqlserver.page.checkpoint.flush.rate"`
-	SqlserverPageLazyWriteRate                  SqlserverPageLazyWriteRateMetricConfig                  `mapstructure:"sqlserver.page.lazy_write.rate"`
-	SqlserverPageLifeExpectancy                 SqlserverPageLifeExpectancyMetricConfig                 `mapstructure:"sqlserver.page.life_expectancy"`
-	SqlserverPageLookupRate                     SqlserverPageLookupRateMetricConfig                     `mapstructure:"sqlserver.page.lookup.rate"`
-	SqlserverPageOperationRate                  SqlserverPageOperationRateMetricConfig                  `mapstructure:"sqlserver.page.operation.rate"`
-	SqlserverPageSplitRate                      SqlserverPageSplitRateMetricConfig                      `mapstructure:"sqlserver.page.split.rate"`
-	SqlserverProcessesBlocked                   SqlserverProcessesBlockedMetricConfig                   `mapstructure:"sqlserver.processes.blocked"`
-	SqlserverReplicaDataRate                    SqlserverReplicaDataRateMetricConfig                    `mapstructure:"sqlserver.replica.data.rate"`
-	SqlserverResourcePoolDiskOperations         SqlserverResourcePoolDiskOperationsMetricConfig         `mapstructure:"sqlserver.resource_pool.disk.operations"`
-	SqlserverResourcePoolDiskThrottledReadRate  SqlserverResourcePoolDiskThrottledReadRateMetricConfig  `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
-	SqlserverResourcePoolDiskThrottledWriteRate SqlserverResourcePoolDiskThrottledWriteRateMetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
-	SqlserverSecurityPrincipalsCount            SqlserverSecurityPrincipalsCountMetricConfig            `mapstructure:"sqlserver.security.principals.count"`
-	SqlserverSecurityRoleMembersCount           SqlserverSecurityRoleMembersCountMetricConfig           `mapstructure:"sqlserver.security.role_members.count"`
-	SqlserverTableCount                         SqlserverTableCountMetricConfig                         `mapstructure:"sqlserver.table.count"`
-	SqlserverTransactionDelay                   SqlserverTransactionDelayMetricConfig                   `mapstructure:"sqlserver.transaction.delay"`
-	SqlserverTransactionMirrorWriteRate         SqlserverTransactionMirrorWriteRateMetricConfig         `mapstructure:"sqlserver.transaction.mirror_write.rate"`
-	SqlserverTransactionRate                    SqlserverTransactionRateMetricConfig                    `mapstructure:"sqlserver.transaction.rate"`
-	SqlserverTransactionWriteRate               SqlserverTransactionWriteRateMetricConfig               `mapstructure:"sqlserver.transaction.write.rate"`
-	SqlserverTransactionLogFlushDataRate        SqlserverTransactionLogFlushDataRateMetricConfig        `mapstructure:"sqlserver.transaction_log.flush.data.rate"`
-	SqlserverTransactionLogFlushRate            SqlserverTransactionLogFlushRateMetricConfig            `mapstructure:"sqlserver.transaction_log.flush.rate"`
-	SqlserverTransactionLogFlushWaitRate        SqlserverTransactionLogFlushWaitRateMetricConfig        `mapstructure:"sqlserver.transaction_log.flush.wait.rate"`
-	SqlserverTransactionLogGrowthCount          SqlserverTransactionLogGrowthCountMetricConfig          `mapstructure:"sqlserver.transaction_log.growth.count"`
-	SqlserverTransactionLogShrinkCount          SqlserverTransactionLogShrinkCountMetricConfig          `mapstructure:"sqlserver.transaction_log.shrink.count"`
-	SqlserverTransactionLogUsage                SqlserverTransactionLogUsageMetricConfig                `mapstructure:"sqlserver.transaction_log.usage"`
-	SqlserverUserConnectionCount                SqlserverUserConnectionCountMetricConfig                `mapstructure:"sqlserver.user.connection.count"`
+	SqlserverBatchRequestRate                    SqlserverBatchRequestRateMetricConfig                    `mapstructure:"sqlserver.batch.request.rate"`
+	SqlserverBatchSQLCompilationRate             SqlserverBatchSQLCompilationRateMetricConfig             `mapstructure:"sqlserver.batch.sql_compilation.rate"`
+	SqlserverBatchSQLRecompilationRate           SqlserverBatchSQLRecompilationRateMetricConfig           `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
+	SqlserverComputerUptime                      SqlserverComputerUptimeMetricConfig                      `mapstructure:"sqlserver.computer.uptime"`
+	SqlserverCPUCount                            SqlserverCPUCountMetricConfig                            `mapstructure:"sqlserver.cpu.count"`
+	SqlserverDatabaseBackupOrRestoreRate         SqlserverDatabaseBackupOrRestoreRateMetricConfig         `mapstructure:"sqlserver.database.backup_or_restore.rate"`
+	SqlserverDatabaseCount                       SqlserverDatabaseCountMetricConfig                       `mapstructure:"sqlserver.database.count"`
+	SqlserverDatabaseExecutionErrors             SqlserverDatabaseExecutionErrorsMetricConfig             `mapstructure:"sqlserver.database.execution.errors"`
+	SqlserverDatabaseFileSize                    SqlserverDatabaseFileSizeMetricConfig                    `mapstructure:"sqlserver.database.file.size"`
+	SqlserverDatabaseFullScanRate                SqlserverDatabaseFullScanRateMetricConfig                `mapstructure:"sqlserver.database.full_scan.rate"`
+	SqlserverDatabaseIo                          SqlserverDatabaseIoMetricConfig                          `mapstructure:"sqlserver.database.io"`
+	SqlserverDatabaseLatency                     SqlserverDatabaseLatencyMetricConfig                     `mapstructure:"sqlserver.database.latency"`
+	SqlserverDatabaseOperations                  SqlserverDatabaseOperationsMetricConfig                  `mapstructure:"sqlserver.database.operations"`
+	SqlserverDatabaseSecurityPrincipalCount      SqlserverDatabaseSecurityPrincipalCountMetricConfig      `mapstructure:"sqlserver.database.security.principal.count"`
+	SqlserverDatabaseSecurityRoleMembershipCount SqlserverDatabaseSecurityRoleMembershipCountMetricConfig `mapstructure:"sqlserver.database.security.role_membership.count"`
+	SqlserverDatabaseTempdbSpace                 SqlserverDatabaseTempdbSpaceMetricConfig                 `mapstructure:"sqlserver.database.tempdb.space"`
+	SqlserverDatabaseTempdbVersionStoreSize      SqlserverDatabaseTempdbVersionStoreSizeMetricConfig      `mapstructure:"sqlserver.database.tempdb.version_store.size"`
+	SqlserverDatabaseTransactionsActive          SqlserverDatabaseTransactionsActiveMetricConfig          `mapstructure:"sqlserver.database.transactions.active"`
+	SqlserverDeadlockRate                        SqlserverDeadlockRateMetricConfig                        `mapstructure:"sqlserver.deadlock.rate"`
+	SqlserverIndexSearchRate                     SqlserverIndexSearchRateMetricConfig                     `mapstructure:"sqlserver.index.search.rate"`
+	SqlserverLockTimeoutRate                     SqlserverLockTimeoutRateMetricConfig                     `mapstructure:"sqlserver.lock.timeout.rate"`
+	SqlserverLockWaitCount                       SqlserverLockWaitCountMetricConfig                       `mapstructure:"sqlserver.lock.wait.count"`
+	SqlserverLockWaitRate                        SqlserverLockWaitRateMetricConfig                        `mapstructure:"sqlserver.lock.wait.rate"`
+	SqlserverLockWaitTimeAvg                     SqlserverLockWaitTimeAvgMetricConfig                     `mapstructure:"sqlserver.lock.wait_time.avg"`
+	SqlserverLoginRate                           SqlserverLoginRateMetricConfig                           `mapstructure:"sqlserver.login.rate"`
+	SqlserverLogoutRate                          SqlserverLogoutRateMetricConfig                          `mapstructure:"sqlserver.logout.rate"`
+	SqlserverMemoryGrantsPendingCount            SqlserverMemoryGrantsPendingCountMetricConfig            `mapstructure:"sqlserver.memory.grants.pending.count"`
+	SqlserverMemoryTarget                        SqlserverMemoryTargetMetricConfig                        `mapstructure:"sqlserver.memory.target"`
+	SqlserverMemoryUsage                         SqlserverMemoryUsageMetricConfig                         `mapstructure:"sqlserver.memory.usage"`
+	SqlserverOsWaitDuration                      SqlserverOsWaitDurationMetricConfig                      `mapstructure:"sqlserver.os.wait.duration"`
+	SqlserverPageBufferCacheFreeListStallsRate   SqlserverPageBufferCacheFreeListStallsRateMetricConfig   `mapstructure:"sqlserver.page.buffer_cache.free_list.stalls.rate"`
+	SqlserverPageBufferCacheHitRatio             SqlserverPageBufferCacheHitRatioMetricConfig             `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
+	SqlserverPageCheckpointFlushRate             SqlserverPageCheckpointFlushRateMetricConfig             `mapstructure:"sqlserver.page.checkpoint.flush.rate"`
+	SqlserverPageLazyWriteRate                   SqlserverPageLazyWriteRateMetricConfig                   `mapstructure:"sqlserver.page.lazy_write.rate"`
+	SqlserverPageLifeExpectancy                  SqlserverPageLifeExpectancyMetricConfig                  `mapstructure:"sqlserver.page.life_expectancy"`
+	SqlserverPageLookupRate                      SqlserverPageLookupRateMetricConfig                      `mapstructure:"sqlserver.page.lookup.rate"`
+	SqlserverPageOperationRate                   SqlserverPageOperationRateMetricConfig                   `mapstructure:"sqlserver.page.operation.rate"`
+	SqlserverPageSplitRate                       SqlserverPageSplitRateMetricConfig                       `mapstructure:"sqlserver.page.split.rate"`
+	SqlserverProcessesBlocked                    SqlserverProcessesBlockedMetricConfig                    `mapstructure:"sqlserver.processes.blocked"`
+	SqlserverReplicaDataRate                     SqlserverReplicaDataRateMetricConfig                     `mapstructure:"sqlserver.replica.data.rate"`
+	SqlserverResourcePoolDiskOperations          SqlserverResourcePoolDiskOperationsMetricConfig          `mapstructure:"sqlserver.resource_pool.disk.operations"`
+	SqlserverResourcePoolDiskThrottledReadRate   SqlserverResourcePoolDiskThrottledReadRateMetricConfig   `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
+	SqlserverResourcePoolDiskThrottledWriteRate  SqlserverResourcePoolDiskThrottledWriteRateMetricConfig  `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
+	SqlserverServerSecurityPrincipalCount        SqlserverServerSecurityPrincipalCountMetricConfig        `mapstructure:"sqlserver.server.security.principal.count"`
+	SqlserverServerSecurityRoleMembershipCount   SqlserverServerSecurityRoleMembershipCountMetricConfig   `mapstructure:"sqlserver.server.security.role_membership.count"`
+	SqlserverTableCount                          SqlserverTableCountMetricConfig                          `mapstructure:"sqlserver.table.count"`
+	SqlserverTransactionDelay                    SqlserverTransactionDelayMetricConfig                    `mapstructure:"sqlserver.transaction.delay"`
+	SqlserverTransactionMirrorWriteRate          SqlserverTransactionMirrorWriteRateMetricConfig          `mapstructure:"sqlserver.transaction.mirror_write.rate"`
+	SqlserverTransactionRate                     SqlserverTransactionRateMetricConfig                     `mapstructure:"sqlserver.transaction.rate"`
+	SqlserverTransactionWriteRate                SqlserverTransactionWriteRateMetricConfig                `mapstructure:"sqlserver.transaction.write.rate"`
+	SqlserverTransactionLogFlushDataRate         SqlserverTransactionLogFlushDataRateMetricConfig         `mapstructure:"sqlserver.transaction_log.flush.data.rate"`
+	SqlserverTransactionLogFlushRate             SqlserverTransactionLogFlushRateMetricConfig             `mapstructure:"sqlserver.transaction_log.flush.rate"`
+	SqlserverTransactionLogFlushWaitRate         SqlserverTransactionLogFlushWaitRateMetricConfig         `mapstructure:"sqlserver.transaction_log.flush.wait.rate"`
+	SqlserverTransactionLogGrowthCount           SqlserverTransactionLogGrowthCountMetricConfig           `mapstructure:"sqlserver.transaction_log.growth.count"`
+	SqlserverTransactionLogShrinkCount           SqlserverTransactionLogShrinkCountMetricConfig           `mapstructure:"sqlserver.transaction_log.shrink.count"`
+	SqlserverTransactionLogUsage                 SqlserverTransactionLogUsageMetricConfig                 `mapstructure:"sqlserver.transaction_log.usage"`
+	SqlserverUserConnectionCount                 SqlserverUserConnectionCountMetricConfig                 `mapstructure:"sqlserver.user.connection.count"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -1722,15 +1722,15 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []SqlserverDatabaseOperationsMetricAttributeKey{SqlserverDatabaseOperationsMetricAttributeKeyPhysicalFilename, SqlserverDatabaseOperationsMetricAttributeKeyLogicalFilename, SqlserverDatabaseOperationsMetricAttributeKeyFileType, SqlserverDatabaseOperationsMetricAttributeKeyDirection},
 		},
-		SqlserverDatabaseSecurityPrincipalsCount: SqlserverDatabaseSecurityPrincipalsCountMetricConfig{
+		SqlserverDatabaseSecurityPrincipalCount: SqlserverDatabaseSecurityPrincipalCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKey{SqlserverDatabaseSecurityPrincipalsCountMetricAttributeKeyDbNamespace},
+			EnabledAttributes:   []SqlserverDatabaseSecurityPrincipalCountMetricAttributeKey{SqlserverDatabaseSecurityPrincipalCountMetricAttributeKeyDbNamespace},
 		},
-		SqlserverDatabaseSecurityRoleMembersCount: SqlserverDatabaseSecurityRoleMembersCountMetricConfig{
+		SqlserverDatabaseSecurityRoleMembershipCount: SqlserverDatabaseSecurityRoleMembershipCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKey{SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyDbNamespace, SqlserverDatabaseSecurityRoleMembersCountMetricAttributeKeyRole},
+			EnabledAttributes:   []SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKey{SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKeyDbNamespace, SqlserverDatabaseSecurityRoleMembershipCountMetricAttributeKeyRole},
 		},
 		SqlserverDatabaseTempdbSpace: SqlserverDatabaseTempdbSpaceMetricConfig{
 			Enabled:             false,
@@ -1830,13 +1830,13 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverResourcePoolDiskThrottledWriteRate: SqlserverResourcePoolDiskThrottledWriteRateMetricConfig{
 			Enabled: false,
 		},
-		SqlserverSecurityPrincipalsCount: SqlserverSecurityPrincipalsCountMetricConfig{
+		SqlserverServerSecurityPrincipalCount: SqlserverServerSecurityPrincipalCountMetricConfig{
 			Enabled: false,
 		},
-		SqlserverSecurityRoleMembersCount: SqlserverSecurityRoleMembersCountMetricConfig{
+		SqlserverServerSecurityRoleMembershipCount: SqlserverServerSecurityRoleMembershipCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverSecurityRoleMembersCountMetricAttributeKey{SqlserverSecurityRoleMembersCountMetricAttributeKeyRole},
+			EnabledAttributes:   []SqlserverServerSecurityRoleMembershipCountMetricAttributeKey{SqlserverServerSecurityRoleMembershipCountMetricAttributeKeyRole},
 		},
 		SqlserverTableCount: SqlserverTableCountMetricConfig{
 			Enabled:             false,

@@ -195,8 +195,8 @@ $defs:
               - "logical_filename"
               - "file_type"
               - "direction"
-      sqlserver.database.security.principals.count:
-        description: "SqlserverDatabaseSecurityPrincipalsCountMetricConfig provides config for the sqlserver.database.security.principals.count metric."
+      sqlserver.database.security.principal.count:
+        description: "SqlserverDatabaseSecurityPrincipalCountMetricConfig provides config for the sqlserver.database.security.principal.count metric."
         type: object
         properties:
           enabled:
@@ -218,8 +218,8 @@ $defs:
                 - "db.namespace"
             default:
               - "db.namespace"
-      sqlserver.database.security.role_members.count:
-        description: "SqlserverDatabaseSecurityRoleMembersCountMetricConfig provides config for the sqlserver.database.security.role_members.count metric."
+      sqlserver.database.security.role_membership.count:
+        description: "SqlserverDatabaseSecurityRoleMembershipCountMetricConfig provides config for the sqlserver.database.security.role_membership.count metric."
         type: object
         properties:
           enabled:
@@ -553,15 +553,15 @@ $defs:
           enabled:
             type: boolean
             default: false
-      sqlserver.security.principals.count:
-        description: "SqlserverSecurityPrincipalsCountMetricConfig provides config for the sqlserver.security.principals.count metric."
+      sqlserver.server.security.principal.count:
+        description: "SqlserverServerSecurityPrincipalCountMetricConfig provides config for the sqlserver.server.security.principal.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
-      sqlserver.security.role_members.count:
-        description: "SqlserverSecurityRoleMembersCountMetricConfig provides config for the sqlserver.security.role_members.count metric."
+      sqlserver.server.security.role_membership.count:
+        description: "SqlserverServerSecurityRoleMembershipCountMetricConfig provides config for the sqlserver.server.security.role_membership.count metric."
         type: object
         properties:
           enabled:

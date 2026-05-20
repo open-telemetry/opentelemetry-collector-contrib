@@ -28,7 +28,7 @@ resourceMetrics:
                         stringValue: db_owner
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.database.security.role_members.count
+            name: sqlserver.database.security.role_membership.count
             unit: '{members}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -62,7 +62,7 @@ resourceMetrics:
                         stringValue: db_datareader
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.database.security.role_members.count
+            name: sqlserver.database.security.role_membership.count
             unit: '{members}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -96,7 +96,7 @@ resourceMetrics:
                         stringValue: db_datawriter
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.database.security.role_members.count
+            name: sqlserver.database.security.role_membership.count
             unit: '{members}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -130,7 +130,7 @@ resourceMetrics:
                         stringValue: db_owner
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.database.security.role_members.count
+            name: sqlserver.database.security.role_membership.count
             unit: '{members}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver

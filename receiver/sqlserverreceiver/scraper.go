@@ -1380,8 +1380,8 @@ func (s *sqlServerScraperHelper) recordSecurityPrincipalsMetrics(ctx context.Con
 	for i, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 
-		if err := s.mb.RecordSqlserverSecurityPrincipalsCountDataPoint(now, row[principalCount]); err != nil {
-			errs = append(errs, fmt.Errorf("failed to parse security principals count for row %d: %w", i, err))
+		if err := s.mb.RecordSqlserverServerSecurityPrincipalCountDataPoint(now, row[principalCount]); err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse server security principal count for row %d: %w", i, err))
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
@@ -1409,8 +1409,8 @@ func (s *sqlServerScraperHelper) recordSecurityRoleMembersMetrics(ctx context.Co
 	for i, row := range rows {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 
-		if err := s.mb.RecordSqlserverSecurityRoleMembersCountDataPoint(now, row[roleMemberCount], row[roleName]); err != nil {
-			errs = append(errs, fmt.Errorf("failed to parse security role members count for row %d: %w", i, err))
+		if err := s.mb.RecordSqlserverServerSecurityRoleMembershipCountDataPoint(now, row[roleMemberCount], row[roleName]); err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse server security role membership count for row %d: %w", i, err))
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
@@ -1439,8 +1439,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSecurityPrincipalsMetrics(ctx con
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 		rb.SetSqlserverDatabaseName(row[databaseName])
 
-		if err := s.mb.RecordSqlserverDatabaseSecurityPrincipalsCountDataPoint(now, row[principalCount], row[databaseName]); err != nil {
-			errs = append(errs, fmt.Errorf("failed to parse database security principals count for row %d: %w", i, err))
+		if err := s.mb.RecordSqlserverDatabaseSecurityPrincipalCountDataPoint(now, row[principalCount], row[databaseName]); err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse database security principal count for row %d: %w", i, err))
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
@@ -1470,8 +1470,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSecurityRoleMembersMetrics(ctx co
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 		rb.SetSqlserverDatabaseName(row[databaseName])
 
-		if err := s.mb.RecordSqlserverDatabaseSecurityRoleMembersCountDataPoint(now, row[roleMemberCount], row[databaseName], row[roleName]); err != nil {
-			errs = append(errs, fmt.Errorf("failed to parse database security role members count for row %d: %w", i, err))
+		if err := s.mb.RecordSqlserverDatabaseSecurityRoleMembershipCountDataPoint(now, row[roleMemberCount], row[databaseName], row[roleName]); err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse database security role membership count for row %d: %w", i, err))
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))

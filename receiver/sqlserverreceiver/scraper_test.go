@@ -47,8 +47,8 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverDatabaseIo.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseLatency.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseOperations.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseSecurityPrincipalsCount.Enabled = enabled
-	cfg.Metrics.SqlserverDatabaseSecurityRoleMembersCount.Enabled = enabled
+	cfg.Metrics.SqlserverDatabaseSecurityPrincipalCount.Enabled = enabled
+	cfg.Metrics.SqlserverDatabaseSecurityRoleMembershipCount.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseTransactionsActive.Enabled = enabled
@@ -77,8 +77,8 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverResourcePoolDiskOperations.Enabled = enabled
 	cfg.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled = enabled
 	cfg.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = enabled
-	cfg.Metrics.SqlserverSecurityPrincipalsCount.Enabled = enabled
-	cfg.Metrics.SqlserverSecurityRoleMembersCount.Enabled = enabled
+	cfg.Metrics.SqlserverServerSecurityPrincipalCount.Enabled = enabled
+	cfg.Metrics.SqlserverServerSecurityRoleMembershipCount.Enabled = enabled
 	cfg.Metrics.SqlserverTableCount.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionDelay.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionLogFlushDataRate.Enabled = enabled

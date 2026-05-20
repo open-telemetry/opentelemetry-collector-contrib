@@ -31,7 +31,7 @@ resourceMetrics:
                         stringValue: testdb
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.database.security.principals.count
+            name: sqlserver.database.security.principal.count
             unit: '{principals}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
