@@ -828,6 +828,7 @@ agent:
   bootstrap_timeout: 8s
   opamp_server_port: 8090
   passthrough_logs: true
+  automatic_config_rollback: true
 
 telemetry:
   logs:
@@ -874,6 +875,7 @@ telemetry:
 						BootstrapTimeout:        8 * time.Second,
 						OpAMPServerPort:         8090,
 						PassthroughLogs:         true,
+						AutomaticConfigRollback: true,
 						ValidateConfig:          DefaultSupervisor().Agent.ValidateConfig,
 					},
 					Telemetry: Telemetry{

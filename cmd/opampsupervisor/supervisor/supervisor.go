@@ -71,6 +71,7 @@ var (
 	ownTelemetryTpl string
 
 	lastRecvRemoteConfigFile       = "last_recv_remote_config.dat"
+	lastWorkingRemoteConfigFile    = "last_working_remote_config.dat"
 	lastRecvOwnTelemetryConfigFile = "last_recv_own_telemetry_config.dat"
 
 	errNonMatchingInstanceUID = errors.New("received collector instance UID does not match expected UID set by the supervisor")
@@ -148,6 +149,11 @@ type Supervisor struct {
 
 	// Last received remote config.
 	remoteConfig atomic.Pointer[protobufs.AgentRemoteConfig]
+	// Last known-good remote config.
+	lastWorkingRemoteConfig atomic.Pointer[protobufs.AgentRemoteConfig]
+	// If true, we are starting from a last known-good remote configuration.
+	// This is used to help control behavior that must be different in this scenario.
+	usingLastWorkingRemoteConfig atomic.Bool
 
 	// A channel to indicate there is a new config to apply.
 	hasNewConfig chan struct{}
@@ -884,6 +890,7 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 			s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
 		}
 		if !s.agentReady.Load() && message.Health.Healthy {
+			s.usingLastWorkingRemoteConfig.Store(false)
 			s.markAgentReady()
 		}
 	}
@@ -1290,24 +1297,66 @@ func (s *Supervisor) loadRemoteConfig() {
 		return
 	}
 
-	// Try to load the last received remote config if it exists.
-	var lastRecvRemoteConfig []byte
-	var err error
-	lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
+	if s.config.Agent.AutomaticConfigRollback {
+		lastWorkingRemoteConfig, err := s.loadPersistedRemoteConfig(lastWorkingRemoteConfigFile)
+		switch {
+		case err == nil && lastWorkingRemoteConfig != nil:
+			s.lastWorkingRemoteConfig.Store(lastWorkingRemoteConfig)
+		case errors.Is(err, os.ErrNotExist):
+		case err != nil:
+			s.telemetrySettings.Logger.Error("Cannot parse last working remote config", zap.Error(err))
+		}
+	}
+
+	lastReceivedRemoteConfig, err := s.loadPersistedRemoteConfig(lastRecvRemoteConfigFile)
 	switch {
-	case err == nil:
-		config := &protobufs.AgentRemoteConfig{}
-		err = proto.Unmarshal(lastRecvRemoteConfig, config)
-		if err != nil {
-			s.telemetrySettings.Logger.Error("Cannot parse last received remote config", zap.Error(err))
+	case err == nil && lastReceivedRemoteConfig != nil:
+		if s.config.Agent.AutomaticConfigRollback {
+			s.remoteConfig.Store(s.remoteConfigForStartup(lastReceivedRemoteConfig))
 		} else {
-			s.remoteConfig.Store(config)
+			s.remoteConfig.Store(lastReceivedRemoteConfig)
 		}
 	case errors.Is(err, os.ErrNotExist):
 		s.telemetrySettings.Logger.Info("No last received remote config found")
 	default:
 		s.telemetrySettings.Logger.Error("error while reading last received config", zap.Error(err))
 	}
+}
+
+func (s *Supervisor) loadPersistedRemoteConfig(fileName string) (*protobufs.AgentRemoteConfig, error) {
+	cfg, err := os.ReadFile(filepath.Join(s.config.Storage.Directory, fileName))
+	if err != nil {
+		return nil, err
+	}
+
+	config := &protobufs.AgentRemoteConfig{}
+	if err := proto.Unmarshal(cfg, config); err != nil {
+		return nil, fmt.Errorf("parse %s: %w", fileName, err)
+	}
+
+	return config, nil
+}
+
+func (s *Supervisor) remoteConfigForStartup(lastReceivedRemoteConfig *protobufs.AgentRemoteConfig) *protobufs.AgentRemoteConfig {
+	if lastReceivedRemoteConfig == nil {
+		return nil
+	}
+
+	lastReceivedStatus := s.persistentState.GetLastRemoteConfigStatus()
+	if lastReceivedStatus == nil || lastReceivedStatus.Status != protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED {
+		return lastReceivedRemoteConfig
+	}
+	if !bytes.Equal(lastReceivedStatus.LastRemoteConfigHash, lastReceivedRemoteConfig.GetConfigHash()) {
+		return lastReceivedRemoteConfig
+	}
+
+	lastWorkingRemoteConfig := s.lastWorkingRemoteConfig.Load()
+	if lastWorkingRemoteConfig == nil {
+		return lastReceivedRemoteConfig
+	}
+
+	s.usingLastWorkingRemoteConfig.Store(true)
+	return lastWorkingRemoteConfig
 }
 
 // loadLastReceivedOwnTelemetryConfig loads the last received own telemetry config from file if the capability is supported.
@@ -1903,6 +1952,21 @@ func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig)
 	return os.WriteFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile), cfg, 0o600)
 }
 
+func (s *Supervisor) saveLastWorkingRemoteConfig(config *protobufs.AgentRemoteConfig) error {
+	if config == nil {
+		return nil
+	}
+
+	clonedConfig := proto.Clone(config).(*protobufs.AgentRemoteConfig)
+	cfg, err := proto.Marshal(clonedConfig)
+	if err != nil {
+		return err
+	}
+
+	s.lastWorkingRemoteConfig.Store(clonedConfig)
+	return os.WriteFile(filepath.Join(s.config.Storage.Directory, lastWorkingRemoteConfigFile), cfg, 0o600)
+}
+
 func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.ConnectionSettingsOffers, filePath string) error {
 	cfg, err := proto.Marshal(set)
 	if err != nil {
@@ -1932,7 +1996,11 @@ func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStat
 	if err := s.persistentState.SetLastRemoteConfigStatus(rcs); err != nil {
 		s.telemetrySettings.Logger.Error("Could not save last remote config status", zap.Error(err))
 	}
-	// report status to server
+	if s.config.Agent.AutomaticConfigRollback && status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED {
+		if err := s.saveLastWorkingRemoteConfig(remoteConfig); err != nil {
+			s.telemetrySettings.Logger.Error("Could not save last working remote config", zap.Error(err))
+		}
+	}
 	if err := s.opampClient.SetRemoteConfigStatus(rcs); err != nil {
 		s.telemetrySettings.Logger.Error("Could not report OpAMP remote config status", zap.Error(err))
 	}
@@ -2028,6 +2096,8 @@ func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protob
 		s.telemetrySettings.Logger.Warn("Got remote config message, but the agent does not accept remote config. Ignoring remote config.")
 		return false
 	}
+
+	s.usingLastWorkingRemoteConfig.Store(false)
 
 	if err := s.saveLastReceivedConfig(msg); err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not save last received remote config: %s", err.Error()))
