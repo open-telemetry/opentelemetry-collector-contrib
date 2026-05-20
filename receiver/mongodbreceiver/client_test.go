@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/go-version"
@@ -265,6 +266,63 @@ func TestCurrentOp(t *testing.T) {
 	require.Len(t, ops, 2)
 	require.Equal(t, "query", ops[0]["op"])
 	require.Equal(t, "insert", ops[1]["op"])
+}
+
+func TestCurrentOpPipelineStages(t *testing.T) {
+	pipeline := currentOpPipeline()
+	require.Len(t, pipeline, 2, "pipeline should contain $currentOp and $match stages")
+
+	require.Equal(t, "$currentOp", pipeline[0][0].Key)
+
+	require.Equal(t, "$match", pipeline[1][0].Key)
+	match, ok := pipeline[1][0].Value.(bson.M)
+	require.True(t, ok, "$match value should be a bson.M")
+
+	nsFilter, ok := match["ns"].(bson.M)
+	require.True(t, ok, "$match should constrain ns")
+	require.Equal(t, true, nsFilter["$exists"])
+	require.Equal(t, "", nsFilter["$ne"])
+	nsNot, ok := nsFilter["$not"].(bson.M)
+	require.True(t, ok)
+	require.Equal(t, currentOpNamespaceFilterRegex, nsNot["$regex"])
+
+	commandFilter, ok := match["command"].(bson.M)
+	require.True(t, ok, "$match should constrain command existence")
+	require.Equal(t, true, commandFilter["$exists"])
+
+	for _, key := range []string{"command.hello", "command.ping", "command.isMaster"} {
+		filter, ok := match[key].(bson.M)
+		require.Truef(t, ok, "$match should constrain %q", key)
+		require.Equalf(t, false, filter["$exists"], "%q should require $exists: false", key)
+	}
+}
+
+func TestCurrentOpNamespaceFilterRegex(t *testing.T) {
+	re := regexp.MustCompile(currentOpNamespaceFilterRegex)
+
+	excluded := []string{
+		"admin.system.version",
+		"admin.$cmd",
+		"admin.system.users",
+		"admin",
+		"local.oplog.rs",
+		"local.startup_log",
+		"local",
+	}
+	for _, ns := range excluded {
+		require.Truef(t, re.MatchString(ns), "regex should match internal namespace %q", ns)
+	}
+
+	preserved := []string{
+		"mydb.users",
+		"administrative.audit",
+		"localized.data",
+		"adminuser",
+		"localhost.metrics",
+	}
+	for _, ns := range preserved {
+		require.Falsef(t, re.MatchString(ns), "regex should NOT match user namespace %q", ns)
+	}
 }
 
 func TestGetVersionFailures(t *testing.T) {

@@ -836,11 +836,15 @@ func TestScrapeLogs(t *testing.T) {
 			},
 		},
 		{
-			desc: "Successful scrape with no matching operations",
+			// The $currentOp pipeline now drops internal databases and
+			// handshake commands server-side, so the fake client only sees
+			// records that survived that filter. The remaining residual guard
+			// in scraper.go is for an empty `command` document, exercised here.
+			desc: "Successful scrape skips operation with empty command",
 			setupMockClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
-					{"ns": "admin.system.version", "op": "query", "command": bson.D{{Key: "hello", Value: 1}}, "active": true},
+					{"ns": "mydb.mycol", "op": "query", "command": bson.D{}, "active": true},
 				}, nil)
 				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "mongohost:27017"}, nil)
 				return fc
@@ -1019,6 +1023,10 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 }
 
 func TestShouldIncludeOperation(t *testing.T) {
+	// Internal databases, handshake commands, and missing/empty namespace
+	// records are pruned server-side by the $currentOp pipeline (see
+	// client.go). The Go-side guard only catches the residual case of an
+	// empty `command` document, which the pipeline cannot reliably express.
 	scraper := &mongodbScraper{logger: zap.NewNop()}
 
 	testCases := []struct {
@@ -1027,21 +1035,6 @@ func TestShouldIncludeOperation(t *testing.T) {
 		expected bool
 	}{
 		{
-			name:     "no namespace",
-			op:       bson.M{"op": "query", "command": bson.D{{Key: "find", Value: 1}}},
-			expected: false,
-		},
-		{
-			name:     "empty namespace",
-			op:       bson.M{"ns": "", "op": "query", "command": bson.D{{Key: "find", Value: 1}}},
-			expected: false,
-		},
-		{
-			name:     "admin database",
-			op:       bson.M{"ns": "admin.system.version", "op": "query", "command": bson.D{{Key: "find", Value: 1}}},
-			expected: false,
-		},
-		{
 			name:     "no command",
 			op:       bson.M{"ns": "mydb.mycol"},
 			expected: false,
@@ -1049,21 +1042,6 @@ func TestShouldIncludeOperation(t *testing.T) {
 		{
 			name:     "empty command",
 			op:       bson.M{"ns": "mydb.mycol", "command": bson.D{}},
-			expected: false,
-		},
-		{
-			name:     "hello command",
-			op:       bson.M{"ns": "mydb.mycol", "command": bson.D{{Key: "hello", Value: 1}}},
-			expected: false,
-		},
-		{
-			name:     "ping command",
-			op:       bson.M{"ns": "mydb.mycol", "command": bson.D{{Key: "ping", Value: 1}}},
-			expected: false,
-		},
-		{
-			name:     "isMaster command",
-			op:       bson.M{"ns": "mydb.mycol", "command": bson.D{{Key: "isMaster", Value: 1}}},
 			expected: false,
 		},
 		{
@@ -1237,14 +1215,16 @@ func TestProcessCurrentOp(t *testing.T) {
 			"microsecs_running": int64(100000),
 			"client":            "10.0.0.2:54322",
 		},
-		// Should be skipped: admin namespace
+		// Should be skipped by the residual Go-side guard: empty command
+		// document. Internal-database and handshake-command filtering is
+		// handled server-side by the $currentOp pipeline.
 		{
-			"ns":      "admin.system.version",
+			"ns":      "mydb.audit",
 			"op":      "query",
-			"command": bson.D{{Key: "find", Value: 1}},
+			"command": bson.D{},
 			"active":  true,
 		},
-		// Should be skipped: inactive operation
+		// Should be skipped by deriveOperationState: not waiting and not active.
 		{
 			"ns":      "mydb.orders",
 			"op":      "query",
@@ -1361,14 +1341,16 @@ func TestProcessCurrentOpMaxRowsPerQueryAppliesAfterSkipping(t *testing.T) {
 	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
 
 	operations := []bson.M{
-		// Should be skipped: admin namespace
+		// Should be skipped by the residual Go-side guard: empty command
+		// document. Internal-database and handshake-command filtering is
+		// handled server-side by the $currentOp pipeline.
 		{
-			"ns":      "admin.system.version",
+			"ns":      "mydb.audit",
 			"op":      "query",
-			"command": bson.D{{Key: "find", Value: 1}},
+			"command": bson.D{},
 			"active":  true,
 		},
-		// Should be skipped: inactive operation
+		// Should be skipped by deriveOperationState: not waiting and not active.
 		{
 			"ns":      "mydb.skipped",
 			"op":      "query",

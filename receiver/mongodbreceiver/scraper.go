@@ -360,29 +360,10 @@ func extractEffectiveUserName(op bson.M) string {
 }
 
 func (s *mongodbScraper) shouldIncludeOperation(op bson.M) bool {
-	if ns := getValue[string](op, namespaceKey); ns == "" {
-		s.logger.Debug("Skipping operation without namespace", zap.Any("operation", op))
+	if len(getValue[bson.D](op, commandKey)) == 0 {
+		s.logger.Debug("Skipping operation with empty command", zap.Any("operation", op))
 		return false
 	}
-
-	if db := getDBFromNamespace(getValue[string](op, namespaceKey)); db == "admin" || db == "local" {
-		s.logger.Debug("Skipping operation for admin and local database", zap.Any("operation", op))
-		return false
-	}
-
-	command := getValue[bson.D](op, commandKey)
-	if len(command) == 0 {
-		s.logger.Debug("Skipping operation without command", zap.Any("operation", op))
-		return false
-	}
-
-	for _, v := range command {
-		if v.Key == "hello" || v.Key == "ping" || v.Key == "isMaster" {
-			s.logger.Debug("Skipping operation", zap.Any("operation", op))
-			return false
-		}
-	}
-
 	return true
 }
 
