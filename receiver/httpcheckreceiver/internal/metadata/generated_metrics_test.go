@@ -68,8 +68,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["httpcheck.status"] = mb.metricHttpcheckStatus.config.AggregationStrategy
 			aggMap["httpcheck.tls.cert_remaining"] = mb.metricHttpcheckTLSCertRemaining.config.AggregationStrategy
 			aggMap["httpcheck.tls.handshake.duration"] = mb.metricHttpcheckTLSHandshakeDuration.config.AggregationStrategy
-			aggMap["httpcheck.validation.failed"] = mb.metricHttpcheckValidationFailed.config.AggregationStrategy
-			aggMap["httpcheck.validation.passed"] = mb.metricHttpcheckValidationPassed.config.AggregationStrategy
+			aggMap["httpcheck.validation.outcome"] = mb.metricHttpcheckValidationOutcome.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -143,15 +142,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordHttpcheckValidationFailedDataPoint(ts, 1, "http.url-val", "validation.type-val")
+			mb.RecordHttpcheckValidationOutcomeDataPoint(ts, 1, "http.url-val", "httpcheck.validation.type-val", "httpcheck.validation.target-val", "httpcheck.validation.outcome-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordHttpcheckValidationFailedDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2")
-			}
-
-			allMetricsCount++
-			mb.RecordHttpcheckValidationPassedDataPoint(ts, 1, "http.url-val", "validation.type-val")
-			if tt.name == "reaggregate_set" {
-				mb.RecordHttpcheckValidationPassedDataPoint(ts, 3, "http.url-val-2", "validation.type-val-2")
+				mb.RecordHttpcheckValidationOutcomeDataPoint(ts, 3, "http.url-val-2", "httpcheck.validation.type-val-2", "httpcheck.validation.target-val-2", "httpcheck.validation.outcome-val-2")
 			}
 
 			res := pcommon.NewResource()
@@ -167,8 +160,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricHttpcheckStatus.aggDataPoints)
 				assert.Empty(t, mb.metricHttpcheckTLSCertRemaining.aggDataPoints)
 				assert.Empty(t, mb.metricHttpcheckTLSHandshakeDuration.aggDataPoints)
-				assert.Empty(t, mb.metricHttpcheckValidationFailed.aggDataPoints)
-				assert.Empty(t, mb.metricHttpcheckValidationPassed.aggDataPoints)
+				assert.Empty(t, mb.metricHttpcheckValidationOutcome.aggDataPoints)
 			}
 
 			if tt.expectEmpty {
@@ -644,13 +636,13 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("http.url")
 						assert.False(t, ok)
 					}
-				case "httpcheck.validation.failed":
+				case "httpcheck.validation.outcome":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["httpcheck.validation.failed"], "Found a duplicate in the metrics slice: httpcheck.validation.failed")
-						validatedMetrics["httpcheck.validation.failed"] = true
+						assert.False(t, validatedMetrics["httpcheck.validation.outcome"], "Found a duplicate in the metrics slice: httpcheck.validation.outcome")
+						validatedMetrics["httpcheck.validation.outcome"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of response validations that failed.", mi.Description())
+						assert.Equal(t, "Result of a response validation (1 for each validation, with outcome attribute).", mi.Description())
 						assert.Equal(t, "{validation}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -662,15 +654,21 @@ func TestMetricsBuilder(t *testing.T) {
 						httpURLAttrVal, ok := dp.Attributes().Get("http.url")
 						assert.True(t, ok)
 						assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
-						validationTypeAttrVal, ok := dp.Attributes().Get("validation.type")
+						httpcheckValidationTypeAttrVal, ok := dp.Attributes().Get("httpcheck.validation.type")
 						assert.True(t, ok)
-						assert.Equal(t, "validation.type-val", validationTypeAttrVal.Str())
+						assert.Equal(t, "httpcheck.validation.type-val", httpcheckValidationTypeAttrVal.Str())
+						httpcheckValidationTargetAttrVal, ok := dp.Attributes().Get("httpcheck.validation.target")
+						assert.True(t, ok)
+						assert.Equal(t, "httpcheck.validation.target-val", httpcheckValidationTargetAttrVal.Str())
+						httpcheckValidationOutcomeAttrVal, ok := dp.Attributes().Get("httpcheck.validation.outcome")
+						assert.True(t, ok)
+						assert.Equal(t, "httpcheck.validation.outcome-val", httpcheckValidationOutcomeAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["httpcheck.validation.failed"], "Found a duplicate in the metrics slice: httpcheck.validation.failed")
-						validatedMetrics["httpcheck.validation.failed"] = true
+						assert.False(t, validatedMetrics["httpcheck.validation.outcome"], "Found a duplicate in the metrics slice: httpcheck.validation.outcome")
+						validatedMetrics["httpcheck.validation.outcome"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of response validations that failed.", mi.Description())
+						assert.Equal(t, "Result of a response validation (1 for each validation, with outcome attribute).", mi.Description())
 						assert.Equal(t, "{validation}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -678,7 +676,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["httpcheck.validation.failed"] {
+						switch aggMap["httpcheck.validation.outcome"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -690,56 +688,11 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("http.url")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("validation.type")
+						_, ok = dp.Attributes().Get("httpcheck.validation.type")
 						assert.False(t, ok)
-					}
-				case "httpcheck.validation.passed":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["httpcheck.validation.passed"], "Found a duplicate in the metrics slice: httpcheck.validation.passed")
-						validatedMetrics["httpcheck.validation.passed"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of response validations that passed.", mi.Description())
-						assert.Equal(t, "{validation}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						httpURLAttrVal, ok := dp.Attributes().Get("http.url")
-						assert.True(t, ok)
-						assert.Equal(t, "http.url-val", httpURLAttrVal.Str())
-						validationTypeAttrVal, ok := dp.Attributes().Get("validation.type")
-						assert.True(t, ok)
-						assert.Equal(t, "validation.type-val", validationTypeAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["httpcheck.validation.passed"], "Found a duplicate in the metrics slice: httpcheck.validation.passed")
-						validatedMetrics["httpcheck.validation.passed"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of response validations that passed.", mi.Description())
-						assert.Equal(t, "{validation}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["httpcheck.validation.passed"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("http.url")
+						_, ok = dp.Attributes().Get("httpcheck.validation.target")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("validation.type")
+						_, ok = dp.Attributes().Get("httpcheck.validation.outcome")
 						assert.False(t, ok)
 					}
 				}

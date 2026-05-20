@@ -496,24 +496,26 @@ func (ms *HttpcheckTLSHandshakeDurationMetricConfig) Validate() error {
 	return nil
 }
 
-// HttpcheckValidationFailedMetricAttributeKey specifies the key of an attribute for the httpcheck.validation.failed metric.
-type HttpcheckValidationFailedMetricAttributeKey string
+// HttpcheckValidationOutcomeMetricAttributeKey specifies the key of an attribute for the httpcheck.validation.outcome metric.
+type HttpcheckValidationOutcomeMetricAttributeKey string
 
 const (
-	HttpcheckValidationFailedMetricAttributeKeyHTTPURL        HttpcheckValidationFailedMetricAttributeKey = "http.url"
-	HttpcheckValidationFailedMetricAttributeKeyValidationType HttpcheckValidationFailedMetricAttributeKey = "validation.type"
+	HttpcheckValidationOutcomeMetricAttributeKeyHTTPURL                    HttpcheckValidationOutcomeMetricAttributeKey = "http.url"
+	HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationType    HttpcheckValidationOutcomeMetricAttributeKey = "httpcheck.validation.type"
+	HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationTarget  HttpcheckValidationOutcomeMetricAttributeKey = "httpcheck.validation.target"
+	HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationOutcome HttpcheckValidationOutcomeMetricAttributeKey = "httpcheck.validation.outcome"
 )
 
-// HttpcheckValidationFailedMetricConfig provides config for the httpcheck.validation.failed metric.
-type HttpcheckValidationFailedMetricConfig struct {
+// HttpcheckValidationOutcomeMetricConfig provides config for the httpcheck.validation.outcome metric.
+type HttpcheckValidationOutcomeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []HttpcheckValidationFailedMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []HttpcheckValidationOutcomeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *HttpcheckValidationFailedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *HttpcheckValidationOutcomeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -527,61 +529,12 @@ func (ms *HttpcheckValidationFailedMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *HttpcheckValidationFailedMetricConfig) Validate() error {
+func (ms *HttpcheckValidationOutcomeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType:
+		case HttpcheckValidationOutcomeMetricAttributeKeyHTTPURL, HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationType, HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationTarget, HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationOutcome:
 		default:
-			return fmt.Errorf("metric httpcheck.validation.failed doesn't have an attribute %v, valid attributes: [http.url, validation.type]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
-// HttpcheckValidationPassedMetricAttributeKey specifies the key of an attribute for the httpcheck.validation.passed metric.
-type HttpcheckValidationPassedMetricAttributeKey string
-
-const (
-	HttpcheckValidationPassedMetricAttributeKeyHTTPURL        HttpcheckValidationPassedMetricAttributeKey = "http.url"
-	HttpcheckValidationPassedMetricAttributeKeyValidationType HttpcheckValidationPassedMetricAttributeKey = "validation.type"
-)
-
-// HttpcheckValidationPassedMetricConfig provides config for the httpcheck.validation.passed metric.
-type HttpcheckValidationPassedMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []HttpcheckValidationPassedMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *HttpcheckValidationPassedMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *HttpcheckValidationPassedMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType:
-		default:
-			return fmt.Errorf("metric httpcheck.validation.passed doesn't have an attribute %v, valid attributes: [http.url, validation.type]", val)
+			return fmt.Errorf("metric httpcheck.validation.outcome doesn't have an attribute %v, valid attributes: [http.url, httpcheck.validation.type, httpcheck.validation.target, httpcheck.validation.outcome]", val)
 		}
 	}
 
@@ -606,8 +559,7 @@ type MetricsConfig struct {
 	HttpcheckStatus                   HttpcheckStatusMetricConfig                   `mapstructure:"httpcheck.status"`
 	HttpcheckTLSCertRemaining         HttpcheckTLSCertRemainingMetricConfig         `mapstructure:"httpcheck.tls.cert_remaining"`
 	HttpcheckTLSHandshakeDuration     HttpcheckTLSHandshakeDurationMetricConfig     `mapstructure:"httpcheck.tls.handshake.duration"`
-	HttpcheckValidationFailed         HttpcheckValidationFailedMetricConfig         `mapstructure:"httpcheck.validation.failed"`
-	HttpcheckValidationPassed         HttpcheckValidationPassedMetricConfig         `mapstructure:"httpcheck.validation.passed"`
+	HttpcheckValidationOutcome        HttpcheckValidationOutcomeMetricConfig        `mapstructure:"httpcheck.validation.outcome"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -662,15 +614,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []HttpcheckTLSHandshakeDurationMetricAttributeKey{HttpcheckTLSHandshakeDurationMetricAttributeKeyHTTPURL},
 		},
-		HttpcheckValidationFailed: HttpcheckValidationFailedMetricConfig{
+		HttpcheckValidationOutcome: HttpcheckValidationOutcomeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType},
-		},
-		HttpcheckValidationPassed: HttpcheckValidationPassedMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType},
+			EnabledAttributes:   []HttpcheckValidationOutcomeMetricAttributeKey{HttpcheckValidationOutcomeMetricAttributeKeyHTTPURL, HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationType, HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationTarget, HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationOutcome},
 		},
 	}
 }

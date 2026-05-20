@@ -76,15 +76,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []HttpcheckTLSHandshakeDurationMetricAttributeKey{HttpcheckTLSHandshakeDurationMetricAttributeKeyHTTPURL},
 					},
-					HttpcheckValidationFailed: HttpcheckValidationFailedMetricConfig{
+					HttpcheckValidationOutcome: HttpcheckValidationOutcomeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType},
-					},
-					HttpcheckValidationPassed: HttpcheckValidationPassedMetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType},
+						EnabledAttributes:   []HttpcheckValidationOutcomeMetricAttributeKey{HttpcheckValidationOutcomeMetricAttributeKeyHTTPURL, HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationType, HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationTarget, HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationOutcome},
 					},
 				},
 			},
@@ -143,15 +138,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []HttpcheckTLSHandshakeDurationMetricAttributeKey{HttpcheckTLSHandshakeDurationMetricAttributeKeyHTTPURL},
 					},
-					HttpcheckValidationFailed: HttpcheckValidationFailedMetricConfig{
+					HttpcheckValidationOutcome: HttpcheckValidationOutcomeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType},
-					},
-					HttpcheckValidationPassed: HttpcheckValidationPassedMetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType},
+						EnabledAttributes:   []HttpcheckValidationOutcomeMetricAttributeKey{HttpcheckValidationOutcomeMetricAttributeKeyHTTPURL, HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationType, HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationTarget, HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationOutcome},
 					},
 				},
 			},
@@ -160,7 +150,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(HttpcheckClientConnectionDurationMetricConfig{}, HttpcheckClientRequestDurationMetricConfig{}, HttpcheckDNSLookupDurationMetricConfig{}, HttpcheckDurationMetricConfig{}, HttpcheckErrorMetricConfig{}, HttpcheckResponseDurationMetricConfig{}, HttpcheckResponseSizeMetricConfig{}, HttpcheckStatusMetricConfig{}, HttpcheckTLSCertRemainingMetricConfig{}, HttpcheckTLSHandshakeDurationMetricConfig{}, HttpcheckValidationFailedMetricConfig{}, HttpcheckValidationPassedMetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(HttpcheckClientConnectionDurationMetricConfig{}, HttpcheckClientRequestDurationMetricConfig{}, HttpcheckDNSLookupDurationMetricConfig{}, HttpcheckDurationMetricConfig{}, HttpcheckErrorMetricConfig{}, HttpcheckResponseDurationMetricConfig{}, HttpcheckResponseSizeMetricConfig{}, HttpcheckStatusMetricConfig{}, HttpcheckTLSCertRemainingMetricConfig{}, HttpcheckTLSHandshakeDurationMetricConfig{}, HttpcheckValidationOutcomeMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
