@@ -6,6 +6,7 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -19,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
@@ -82,6 +84,10 @@ func newTracesClient(set exporter.Settings, cfg *Config) *client {
 
 func newMetricsClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthMetrics)
+}
+
+func newProfilesClient(set exporter.Settings, cfg *Config) *client {
+	return newClient(set, cfg, cfg.MaxContentLengthLogs)
 }
 
 func (c *client) pushMetricsData(
@@ -148,6 +154,66 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 				localHeaders[libraryHeaderName] = profilingLibraryName
 			}
 			break
+		}
+	}
+
+	return c.pushLogDataInBatches(ctx, ld, localHeaders)
+}
+
+func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) error {
+	c.wg.Add(1)
+	defer c.wg.Done()
+
+	if pp.ResourceProfiles().Len() == 0 {
+		return nil
+	}
+
+	localHeaders := map[string]string{}
+	localHeaders[libraryHeaderName] = profilingLibraryName
+
+	// All profiles in a batch have the same access token after batchperresourceattr, so we can just check the first one.
+	accessToken, found := pp.ResourceProfiles().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
+	if found {
+		localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+	}
+
+	ld := plog.NewLogs()
+
+	for _, rp := range pp.ResourceProfiles().All() {
+		rl := ld.ResourceLogs().AppendEmpty()
+		rp.Resource().Attributes().CopyTo(rl.Resource().Attributes())
+
+		sl := rl.ScopeLogs().AppendEmpty()
+		sl.Scope().SetName("otel.profiling")
+		sl.Scope().SetVersion("0.1.0")
+
+		for _, sp := range rp.ScopeProfiles().All() {
+			for _, prof := range sp.Profiles().All() {
+				p, err := translator.ConvertPprofileToPprof(pp.Dictionary(), sp.Scope(), prof)
+				if err != nil {
+					return consumererror.NewPermanent(err)
+				}
+				var buf bytes.Buffer
+
+				// The Write method encodes the profile to a gzipped protobuf
+				if err := p.Write(&buf); err != nil {
+					return consumererror.NewPermanent(err)
+				}
+				lr := sl.LogRecords().AppendEmpty()
+				lr.Body().SetStr(base64.StdEncoding.EncodeToString(buf.Bytes()))
+				lr.SetTimestamp(prof.Time())
+				lr.Attributes().PutStr("com.splunk.sourcetype", "otel.profiling")
+				sampleType := pp.Dictionary().StringTable().At(int(prof.SampleType().TypeStrindex()))
+				lr.Attributes().PutStr("profiling.data.type", sampleType)
+				lr.Attributes().PutStr("profiling.data.format", "pprof-gzip-base64")
+				var totalFrameCount int64
+				for _, s := range prof.Samples().All() {
+					totalFrameCount += int64(pp.Dictionary().StackTable().At(int(s.StackIndex())).LocationIndices().Len())
+				}
+				lr.Attributes().PutInt("profiling.data.total.frame.count", totalFrameCount)
+				// TODO find whether it is continuous or snapshot
+				lr.Attributes().PutStr("profiling.instrumentation.source", "continuous")
+			}
 		}
 	}
 
