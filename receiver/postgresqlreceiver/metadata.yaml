@@ -31,10 +31,22 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831
 
   - id: receiver.postgresql.separateSchemaAttr
-    description: Moves Schema Names into dedicated Attribute
+    description: >-
+      Moves Schema Names into dedicated Attribute.
     stage: alpha
     from_version: "v0.122.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559
+
+  - id: receiver.postgresql.useOTelSemconv
+    stage: alpha
+    description: >-
+      When enabled, uses a single resource per server with server.address, server.port,
+      and service.instance.id (UUID v5) resource attributes, aligning with OpenTelemetry
+      semantic conventions. When disabled, uses the legacy per-entity resource model with
+      postgresql.database.name, postgresql.table.name, postgresql.index.name, and
+      postgresql.schema.name resource attributes.
+    from_version: "v0.148.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45347
 
 resource_attributes:
   postgresql.database.name:
@@ -53,8 +65,16 @@ resource_attributes:
     description: The table name.
     enabled: true
     type: string
+  server.address:
+    description: The address of the PostgreSQL server.
+    enabled: true
+    type: string
+  server.port:
+    description: The port number of the PostgreSQL server.
+    enabled: true
+    type: int
   service.instance.id:
-    description: A unique identifier of the PostgreSQL instance in the format host:port (defaults to 'unknown:5432' in case of error in generating this value).
+    description: A unique identifier of the PostgreSQL instance.
     enabled: true
     type: string
 
@@ -85,8 +105,11 @@ attributes:
       - write
     name_override: type
     requirement_level: recommended
+  db.collection.name:
+    description: The name of the table within the database.
+    type: string
   db.namespace:
-    description: The namespace or schema of the database where the query is executed.
+    description: The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL.
     type: string
   db.query.text:
     description: The text of the database query being executed.
@@ -126,6 +149,9 @@ attributes:
     type: int
   postgresql.client_hostname:
     description: Host name of the connected client, as reported by a reverse DNS lookup of client_addr.
+    type: string
+  postgresql.index.name:
+    description: The name of the index on a table.
     type: string
   postgresql.pid:
     description: Process ID of this backend.
@@ -268,6 +294,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.bgwriter.buffers.allocated:
     description: Number of buffers allocated.
     stability: development
@@ -328,6 +355,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.blks_read:
     enabled: false
     description: Number of disk blocks read in this database.
@@ -337,6 +365,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.blocks_read:
     enabled: true
     description: The number of blocks read.
@@ -346,7 +375,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [source]
+    attributes: [source, db.namespace, db.collection.name]
   postgresql.commits:
     enabled: true
     description: The number of commits.
@@ -356,6 +385,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.connection.max:
     enabled: true
     description: Configured maximum number of client connections allowed
@@ -389,6 +419,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.deadlocks:
     enabled: false
     description: The number of deadlocks.
@@ -398,6 +429,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.function.calls:
     enabled: false
     description: The number of calls made to a function. Requires `track_functions=pl|all` in Postgres config.
@@ -407,7 +439,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [function]
+    attributes: [function, db.namespace]
   postgresql.index.scans:
     description: The number of index scans on a table.
     stability: development
@@ -417,6 +449,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: "{scans}"
+    attributes: [db.namespace, db.collection.name, postgresql.index.name]
   postgresql.index.size:
     description: The size of the index on disk.
     stability: development
@@ -424,6 +457,7 @@ metrics:
     gauge:
       value_type: int
     unit: "By"
+    attributes: [db.namespace, db.collection.name, postgresql.index.name]
   postgresql.operations:
     enabled: true
     description: The number of db row operations.
@@ -433,7 +467,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [operation]
+    attributes: [operation, db.namespace, db.collection.name]
   postgresql.replication.data_delay:
     attributes: [replication_client]
     description: The amount of data delayed in replication.
@@ -451,6 +485,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.rows:
     enabled: true
     description: The number of rows in the database.
@@ -460,7 +495,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [state]
+    attributes: [state, db.namespace, db.collection.name]
   postgresql.sequential_scans:
     enabled: false
     description: The number of sequential scans.
@@ -470,6 +505,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace, db.collection.name]
   postgresql.table.count:
     description: Number of user tables in a database.
     stability: development
@@ -479,6 +515,7 @@ metrics:
       monotonic: false
       value_type: int
     unit: "{table}"
+    attributes: [db.namespace]
   postgresql.table.size:
     description: Disk space used by a table.
     stability: development
@@ -488,6 +525,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
+    attributes: [db.namespace, db.collection.name]
   postgresql.table.vacuum.count:
     description: Number of times a table has manually been vacuumed.
     stability: development
@@ -497,6 +535,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
       value_type: int
+    attributes: [db.namespace, db.collection.name]
   postgresql.temp.io:
     enabled: false
     description: Total amount of data written to temporary files by queries.
@@ -506,6 +545,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.temp_files:
     enabled: false
     description: The number of temp files.
@@ -515,6 +555,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.tup_deleted:
     enabled: false
     description: Number of rows deleted by queries in the database.
@@ -524,6 +565,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.tup_fetched:
     enabled: false
     description: Number of rows fetched by queries in the database.
@@ -533,6 +575,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.tup_inserted:
     enabled: false
     description: Number of rows inserted by queries in the database.
@@ -542,6 +585,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.tup_returned:
     enabled: false
     description: Number of rows returned by queries in the database.
@@ -551,6 +595,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.tup_updated:
     enabled: false
     description: Number of rows updated by queries in the database.
@@ -560,6 +605,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.wal.age:
     description: Age of the oldest WAL file.
     extended_documentation: |
