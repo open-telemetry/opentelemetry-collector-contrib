@@ -26,12 +26,18 @@ By default, the TLS Check Receiver will emit a single metric, `tlscheck.time_lef
 
 Targets are configured as a remote endpoint accessed via TCP, a PEM-encoded certificate file stored locally on disk, or a Java-format keystore file (JKS or PKCS#12).
 
+By default only the first certificate in a certificate chain (i.e. the leaf certificate) is scraped. The `scrape_all_certs` option can be used to monitor all certificates in a file or all certificates presented by an endpoint.
+
 ```yaml
 receivers:
   tls_check:
     targets:
       # Monitor a local PEM file (default when no file_format is set)
       - file_path: /etc/istio/certs/cert-chain.pem
+
+      # Monitor all certificates in a PEM bundle
+      - file_path: /opt/app/ca-bundle.crt
+        scrape_all_certs: true
 
       # Monitor a JKS keystore — format inferred from .jks extension
       - file_path: /opt/app/keystore.jks
@@ -65,10 +71,10 @@ receivers:
 
 ### JKS Keystores
 
-JKS files may contain multiple aliases. One `tlscheck.time_left` metric is emitted per leaf certificate found:
+JKS files may contain multiple aliases. One `tlscheck.time_left` metric is emitted per certificate found:
 
 - **TrustedCertificateEntry** — the single certificate stored in the entry is used.
-- **PrivateKeyEntry** — the first certificate in the chain (the leaf) is used.
+- **PrivateKeyEntry** — the first certificate in the chain (the leaf) is used by default. If `scrape_all_certs` is true, the other certificates in the chain are also scraped.
 
 ## Certificate Verification
 
