@@ -68,7 +68,15 @@ across all spans:
 
 The `collector.instance.id` dimension is intended to add a unique UUID to all metrics, ensuring that the spanmetrics connector
 does not violate the **Single Writer Principle** when spanmetrics is used in a multi-deployment model.
-Currently, `collector.instance.id` must be manually enabled via the feature gate: `connector.spanmetrics.includeCollectorInstanceID`.
+To disable, use `exclude_dimensions` setting:
+
+```yaml
+connectors:
+  spanmetrics:
+    exclude_dimensions: ['collector.instance.id']
+```
+
+Or, disable via the feature gate: `--feature-gates=-connector.spanmetrics.includeCollectorInstanceID`.
 More detail, please see [Known Limitation: the Single Writer Principle](#known-limitation-the-single-writer-principle)
 
 ## Span to Metrics processor to Span to metrics connector
@@ -132,7 +140,8 @@ The following settings can be optionally configured:
   One of either `AGGREGATION_TEMPORALITY_CUMULATIVE` or `AGGREGATION_TEMPORALITY_DELTA`.
 - `namespace` (default: `traces.span.metrics`): Defines the namespace of the generated metrics. If `namespace` provided, generated metric name will be added `namespace.` prefix.
 - `metrics_flush_interval` (default: `60s`): Defines the flush interval of the generated metrics.
-- `metrics_expiration` (default: `0`): Defines the expiration time as `time.Duration`, after which, if no new spans are received, metrics will no longer be exported. Setting to `0` means the metrics will never expire (default behavior).
+- `metrics_expiration` (default: `0`): Defines the expiration time as `time.Duration`, after which, if no new spans are received, metrics will no longer be exported. Setting to `0` means the metrics will never expire.
+- `series_expiration` (default: `0`): Defines the expiration time as `time.Duration` for individual metric series. When set, stale dimension combinations are removed on a later flush even if the parent metric and resource continue receiving other spans. Setting to `0` disables per-series expiration.
 - `metric_timestamp_cache_size` (default `1000`): Only relevant for delta temporality span metrics. Controls the size of the cache used to keep track of a metric's TimestampUnixNano the last time it was flushed. When a metric is evicted from the cache, its next data point will indicate a "reset" in the series. Downstream components converting from delta to cumulative, like `prometheusexporter`, may handle these resets by setting cumulative counters back to 0.
 - `exemplars`:  Use to configure how to attach exemplars to metrics.
   - `enabled` (default: `false`): enabling will add spans as Exemplars to all metrics. Exemplars are only kept for one flush interval.rom the cache, its next data point will indicate a "reset" in the series. Downstream components converting from delta to cumulative, like `prometheusexporter`, may handle these resets by setting cumulative counters back to 0.
@@ -184,6 +193,7 @@ connectors:
     aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"    
     metrics_flush_interval: 15s
     metrics_expiration: 5m
+    series_expiration: 5m
     events:
       enabled: true
       dimensions:
@@ -289,7 +299,7 @@ connectors:
       - telemetry.sdk.language
       - telemetry.sdk.name
 ```
-* Manually enable the feature gate: `connector.spanmetrics.includeCollectorInstanceID` to produce uniquely identified metrics.
+* The feature gate `connector.spanmetrics.includeCollectorInstanceID` is enabled by default to produce uniquely identified metrics.
 * For exporters like Prometheus, which rely on the single writer assumption, use a dedicated pipeline with a single `spanmetricsconnector` instance
 
 More context is available in [GitHub issue #21101](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21101).

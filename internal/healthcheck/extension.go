@@ -43,7 +43,6 @@ var (
 )
 
 func NewHealthCheckExtension(
-	ctx context.Context,
 	config Config,
 	set extension.Settings,
 ) *HealthCheckExtension {
@@ -90,7 +89,7 @@ func NewHealthCheckExtension(
 
 	// Start processing events in the background so that our status watcher doesn't
 	// block others before the extension starts.
-	go hc.eventLoop(ctx)
+	go hc.eventLoop()
 
 	return hc
 }
@@ -170,7 +169,7 @@ func (*HealthCheckExtension) NotReady() error {
 	return nil
 }
 
-func (hc *HealthCheckExtension) eventLoop(ctx context.Context) {
+func (hc *HealthCheckExtension) eventLoop() {
 	// Record events with component.StatusStarting, but queue other events until
 	// PipelineWatcher.Ready is called. This prevents aggregate statuses from
 	// flapping between StatusStarting and StatusOK as components are started
@@ -194,21 +193,11 @@ func (hc *HealthCheckExtension) eventLoop(ctx context.Context) {
 			}
 			eventQueue = nil
 			loop = false
-		case <-ctx.Done():
-			return
 		}
 	}
 
 	// After PipelineWatcher.Ready, record statuses as they are received.
-	for {
-		select {
-		case esp, ok := <-hc.eventCh:
-			if !ok {
-				return
-			}
-			hc.aggregator.RecordStatus(esp.source, esp.event)
-		case <-ctx.Done():
-			return
-		}
+	for esp := range hc.eventCh {
+		hc.aggregator.RecordStatus(esp.source, esp.event)
 	}
 }

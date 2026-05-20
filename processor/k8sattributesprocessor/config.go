@@ -4,12 +4,13 @@
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.41.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -46,11 +47,20 @@ type Config struct {
 
 	// WaitForMetadataTimeout is the maximum time the processor will wait for the k8s metadata to be synced.
 	WaitForMetadataTimeout time.Duration `mapstructure:"wait_for_metadata_timeout"`
+
+	// WatchSyncPeriod determines the resync period for K8s informers.
+	// Reprocessing the informer cache periodically can cause significant memory churn and CPU spikes.
+	// Setting this to 0 disables resync.
+	WatchSyncPeriod time.Duration `mapstructure:"watch_sync_period"`
 }
 
 func (cfg *Config) Validate() error {
 	if err := cfg.APIConfig.Validate(); err != nil {
 		return err
+	}
+
+	if cfg.WatchSyncPeriod < 0 {
+		return errors.New("watch_sync_period must be greater than or equal to 0")
 	}
 
 	for _, assoc := range cfg.Association {
@@ -213,7 +223,7 @@ type FieldExtractConfig struct {
 	KeyRegex string `mapstructure:"key_regex"`
 
 	// From represents the source of the labels/annotations.
-	// Allowed values are "pod", "namespace", and "node". The default is pod.
+	// Allowed values are "pod", "namespace", "node", "deployment", "statefulset", "daemonset", and "job". The default is pod.
 	From string `mapstructure:"from"`
 }
 
