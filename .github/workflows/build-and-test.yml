@@ -54,11 +54,6 @@ jobs:
   # The Makefile's FOR_GROUP_TARGET handling treats both formats correctly.
   # `mode` is a derived output (skip / full / scoped) used by cross-compile,
   # which doesn't fit the group-matrix shape.
-  #
-  # Outputs are not yet consumed by any downstream job -- this is preparation
-  # work being merged from build-and-test-experimental incrementally. While
-  # this job runs, real CI behavior is unchanged; subsequent PRs will wire
-  # individual jobs to consume the outputs.
   ci-scope:
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
