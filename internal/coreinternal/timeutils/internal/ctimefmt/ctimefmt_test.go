@@ -57,6 +57,30 @@ func TestParse(t *testing.T) {
 	assert.Equal(t, layout2, layout)
 }
 
+func TestFlexibleParse(t *testing.T) {
+	// These test cases cover only the format specifiers that are unique to OTel or have conflicting behavior vs strptime.
+	// See ../../strptime_test.go for test cases that verify OTel's behavior matches strptime.
+	want := time.Date(2019, 1, 2, 15, 4, 5, 0, time.UTC)
+	for _, tc := range []struct {
+		name, format, input string
+	}{
+		{"baseline", "%Y-%m-%dT%H:%M:%S%z", "2019-1-2T15:4:5Z"},
+		// Bespoke to OTel
+		{"o", "%Y-%o-%dT%H:%M:%S%z", "2019-1-2T15:4:5Z"},
+		{"q", "%Y-%q-%dT%H:%M:%S%z", "2019-1-2T15:4:5Z"},
+		// Conflicting with normal strptime behavior
+		{"X", "%Y-%m-%dT%X%z", "2019-1-2T15:4:5Z"},
+		{"g", "%Y-%m-%gT%H:%M:%S%z", "2019-1-2T15:4:5Z"},
+		{"r", "%Y-%m-%d %r", "2019-1-2 3:4:5 pm"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, _, err := Parse(tc.format, func(native string) (time.Time, error) { return time.Parse(native, tc.input) })
+			require.NoError(t, err)
+			assert.Equal(t, want, got)
+		})
+	}
+}
+
 func TestZulu(t *testing.T) {
 	format := "%Y-%m-%dT%H:%M:%S.%L%z"
 	// These time should all parse as UTC.

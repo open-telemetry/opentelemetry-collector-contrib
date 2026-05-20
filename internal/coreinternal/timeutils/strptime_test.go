@@ -37,7 +37,10 @@ var strptimeTests = []struct {
 		name:     "unix-utc",
 		expected: time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC),
 		format:   "%a %b %e %H:%M:%S %z %Y",
-		samples:  []string{"Mon Jan 2 15:04:05 Z 2006"},
+		samples: []string{
+			"Mon Jan 2 15:04:05 Z 2006",
+			"Mon Jan 2 15:4:5 Z 2006",
+		},
 	},
 	{
 		// https://github.com/bminor/glibc/blob/04e750e75b73957cf1c791535a3f4319534a52fc/time/strptime_l.c#L778-L816
@@ -90,6 +93,83 @@ var strptimeTests = []struct {
 		samples: []string{
 			"20230203050607",
 			"2023 02 03 05 06 07",
+		},
+	},
+	{
+		name:     "iso-8601-utc",
+		expected: time.Date(2007, time.April, 5, 12, 30, 46, 0, time.UTC),
+		format:   "%Y-%m-%dT%H:%M:%S%z",
+		samples: []string{
+			"2007-4-5T12:30:46+0000",
+			"2007-04-05T12:30:46+00:00",
+			"2007-04-05T12:30:46+0000",
+			"2007-04-05T12:30:46+00",
+			"2007-04-05T12:30:46Z",
+			"2007-04-05T12:30:46  +00:00",
+			"2007-04-05T12:30:46  +0000",
+			"2007-04-05T12:30:46  +00",
+			"2007-04-05T12:30:46  Z",
+		},
+	},
+	{
+		name:     "12h-time",
+		expected: time.Date(2023, time.February, 3, 15, 6, 7, 0, mst),
+		format:   "%Y-%m-%d %I:%M:%S %p",
+		samples: []string{
+			"2023-02-03 03:06:07 PM",
+			"2023-02-03 3:6:7 PM",
+		},
+	},
+	{
+		name:     "macros-F-T",
+		expected: time.Date(2007, time.April, 5, 12, 30, 46, 0, time.UTC),
+		format:   "%FT%T%z",
+		samples: []string{
+			"2007-4-5T12:30:46+0000",
+			"2007-04-05T12:30:46+00:00",
+			"2007-04-05T12:30:46+0000",
+			"2007-04-05T12:30:46+00",
+			"2007-04-05T12:30:46Z",
+			"2007-04-05T12:30:46  +00:00",
+			"2007-04-05T12:30:46  +0000",
+			"2007-04-05T12:30:46  +00",
+			"2007-04-05T12:30:46  Z",
+		},
+	},
+	{
+		name:     "macro-R",
+		expected: time.Date(2007, time.April, 5, 13, 30, 0, 0, mst),
+		format:   "%R %Y-%m-%d",
+		samples: []string{
+			"13:30 2007-4-5",
+			"13:30 2007-04-05",
+		},
+	},
+	{
+		name:     "macros-D-T",
+		expected: time.Date(2007, time.April, 5, 12, 30, 46, 0, mst),
+		format:   "%DT%T",
+		samples: []string{
+			"4/5/07T12:30:46",
+			"04/05/07T12:30:46",
+		},
+	},
+	{
+		name:     "macros-x-T",
+		expected: time.Date(2007, time.April, 5, 12, 30, 46, 0, mst),
+		format:   "%xT%T",
+		samples: []string{
+			"4/5/07T12:30:46",
+			"04/05/07T12:30:46",
+		},
+	},
+	{
+		name:     "macro-c",
+		expected: time.Date(2007, time.April, 5, 13, 30, 46, 0, mst),
+		format:   "%c",
+		samples: []string{
+			"Thu Apr 05 13:30:46 2007",
+			"Thu Apr 5 13:30:46 2007",
 		},
 	},
 }
