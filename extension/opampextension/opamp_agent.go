@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -33,7 +34,6 @@ import (
 	"go.opentelemetry.io/collector/service/hostcapabilities"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
-	expmaps "golang.org/x/exp/maps"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
@@ -406,8 +406,7 @@ func (o *opampAgent) createAgentDescription() error {
 	}
 
 	// Sort the non identifying attributes to give them a stable order for tests
-	keys := expmaps.Keys(nonIdentifyingAttributeMap)
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(nonIdentifyingAttributeMap))
 
 	nonIdent := make([]*protobufs.KeyValue, 0, len(nonIdentifyingAttributeMap))
 	for _, k := range keys {
