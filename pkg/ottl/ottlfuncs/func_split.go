@@ -8,6 +8,8 @@ import (
 	"errors"
 	"strings"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -40,6 +42,13 @@ func split[K any](target, delimiter ottl.StringGetter[K]) ottl.ExprFunc[K] {
 		if err != nil {
 			return nil, err
 		}
-		return strings.Split(val, delimiterVal), nil
+		res := strings.Split(val, delimiterVal)
+
+		resPSlice := pcommon.NewSlice()
+		resPSlice.EnsureCapacity(len(res))
+		for _, s := range res {
+			resPSlice.AppendEmpty().SetStr(s)
+		}
+		return resPSlice, nil
 	}
 }

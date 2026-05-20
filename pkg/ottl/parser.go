@@ -566,6 +566,12 @@ func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error
 						return nil, err
 					}
 					return m, nil
+				case []any:
+					s := pcommon.NewSlice()
+					if err := s.FromRaw(v); err != nil {
+						return nil, err
+					}
+					return s, nil
 				default:
 					return v, nil
 				}

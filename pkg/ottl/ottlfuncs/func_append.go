@@ -71,7 +71,14 @@ func appendTo[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K
 			case []string:
 				res = appendMultiple(res, targetType)
 			case []any:
-				res = append(res, targetType...)
+				for _, v := range targetType {
+					switch val := v.(type) {
+					case pcommon.Slice:
+						res = append(res, val.AsRaw()...)
+					default:
+						res = append(res, val)
+					}
+				}
 			case []int64:
 				res = appendMultiple(res, targetType)
 			case []bool:

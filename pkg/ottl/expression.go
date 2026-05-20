@@ -174,15 +174,47 @@ func newListGetter[K any](slice []Getter[K]) (Getter[K], error) {
 }
 
 func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
-	evaluated := make([]any, len(l.slice))
+	evaluated := pcommon.NewSlice()
+	evaluated.EnsureCapacity(len(l.slice))
 
-	for i, v := range l.slice {
+	for _, v := range l.slice {
 		val, err := v.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 
-		evaluated[i] = val
+		switch tVal := val.(type) {
+		case pcommon.Slice:
+			target := evaluated.AppendEmpty().SetEmptySlice()
+			tVal.CopyTo(target)
+		case pcommon.Map:
+			target := evaluated.AppendEmpty().SetEmptyMap()
+			tVal.CopyTo(target)
+		case []any:
+			target := evaluated.AppendEmpty().SetEmptySlice()
+			target.EnsureCapacity(len(tVal))
+			for _, el := range tVal {
+				switch typedEl := el.(type) {
+				case pcommon.Slice:
+					s := target.AppendEmpty().SetEmptySlice()
+					typedEl.CopyTo(s)
+				case pcommon.Map:
+					m := target.AppendEmpty().SetEmptyMap()
+					typedEl.CopyTo(m)
+				default:
+					err := target.AppendEmpty().FromRaw(el)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
+
+		default:
+			err := evaluated.AppendEmpty().FromRaw(tVal)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return evaluated, nil
@@ -218,6 +250,9 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		case pcommon.Map:
 			target := result.PutEmpty(k).SetEmptyMap()
 			typedVal.CopyTo(target)
+		case pcommon.Slice:
+			target := result.PutEmpty(k).SetEmptySlice()
+			typedVal.CopyTo(target)
 		case []any:
 			target := result.PutEmpty(k).SetEmptySlice()
 			target.EnsureCapacity(len(typedVal))
@@ -226,6 +261,9 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 				case pcommon.Map:
 					m := target.AppendEmpty().SetEmptyMap()
 					typedEl.CopyTo(m)
+				case pcommon.Slice:
+					s := target.AppendEmpty().SetEmptySlice()
+					typedEl.CopyTo(s)
 				default:
 					err := target.AppendEmpty().FromRaw(el)
 					if err != nil {

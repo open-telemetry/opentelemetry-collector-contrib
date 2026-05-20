@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -18,7 +19,7 @@ func Test_split(t *testing.T) {
 		name      string
 		target    ottl.StringGetter[any]
 		delimiter ottl.StringGetter[any]
-		expected  any
+		expected  pcommon.Slice
 	}{
 		{
 			name: "split string",
@@ -32,7 +33,13 @@ func Test_split(t *testing.T) {
 					return "|", nil
 				},
 			},
-			expected: []string{"A", "B", "C"},
+			expected: func() pcommon.Slice {
+				s := pcommon.NewSlice()
+				s.AppendEmpty().SetStr("A")
+				s.AppendEmpty().SetStr("B")
+				s.AppendEmpty().SetStr("C")
+				return s
+			}(),
 		},
 		{
 			name: "split empty string",
@@ -46,7 +53,11 @@ func Test_split(t *testing.T) {
 					return "|", nil
 				},
 			},
-			expected: []string{""},
+			expected: func() pcommon.Slice {
+				s := pcommon.NewSlice()
+				s.AppendEmpty().SetStr("")
+				return s
+			}(),
 		},
 		{
 			name: "split empty delimiter",
@@ -60,7 +71,15 @@ func Test_split(t *testing.T) {
 					return "", nil
 				},
 			},
-			expected: []string{"A", "|", "B", "|", "C"},
+			expected: func() pcommon.Slice {
+				s := pcommon.NewSlice()
+				s.AppendEmpty().SetStr("A")
+				s.AppendEmpty().SetStr("|")
+				s.AppendEmpty().SetStr("B")
+				s.AppendEmpty().SetStr("|")
+				s.AppendEmpty().SetStr("C")
+				return s
+			}(),
 		},
 		{
 			name: "split empty string and empty delimiter",
@@ -74,7 +93,7 @@ func Test_split(t *testing.T) {
 					return "", nil
 				},
 			},
-			expected: []string{},
+			expected: pcommon.NewSlice(),
 		},
 	}
 	for _, tt := range tests {
