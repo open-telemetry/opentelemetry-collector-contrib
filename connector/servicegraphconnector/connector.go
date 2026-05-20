@@ -157,10 +157,10 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 	}, nil
 }
 
-func (p *serviceGraphConnector) Start(context.Context, component.Host) error {
+func (p *serviceGraphConnector) Start(ctx context.Context, _ component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
-	go p.metricFlushLoop(*p.config.MetricsFlushInterval)
+	go p.metricFlushLoop(ctx, *p.config.MetricsFlushInterval)
 
 	go p.cacheLoop(p.config.CacheLoop)
 
@@ -170,7 +170,7 @@ func (p *serviceGraphConnector) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (p *serviceGraphConnector) metricFlushLoop(flushInterval time.Duration) {
+func (p *serviceGraphConnector) metricFlushLoop(ctx context.Context, flushInterval time.Duration) {
 	if flushInterval <= 0 {
 		return
 	}
@@ -181,7 +181,7 @@ func (p *serviceGraphConnector) metricFlushLoop(flushInterval time.Duration) {
 	for {
 		select {
 		case <-ticker.C:
-			if err := p.flushMetrics(context.Background()); err != nil {
+			if err := p.flushMetrics(ctx); err != nil {
 				p.logger.Error("failed to flush metrics", zap.Error(err))
 			}
 		case <-p.shutdownCh:
@@ -585,6 +585,7 @@ func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 }
 
 func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMetrics) error {
+	timestamp := pcommon.NewTimestampFromTime(p.nowWithOffset())
 	mDuration := pmetric.NewMetric()
 	mDuration.SetName("traces_service_graph_request_client")
 	mDuration.SetUnit(secondsUnit)
@@ -596,6 +597,7 @@ func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMet
 		mDuration.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		for key, expHistogram := range p.reqClientDurationExpHistogram {
 			dpDuration := mDuration.ExponentialHistogram().DataPoints().AppendEmpty()
+			dpDuration.SetTimestamp(timestamp)
 			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 			dimensions, ok := p.dimensionsForSeries(key)
 			if !ok {

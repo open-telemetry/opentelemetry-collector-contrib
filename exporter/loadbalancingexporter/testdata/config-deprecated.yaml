@@ -1,0 +1,12 @@
+loadbalancing:
+  protocol:
+    # the OTLP exporter configuration "endpoint" values will be ignored
+    otlp:
+      timeout: 1s
+
+  # how to get the list of backends: static
+  resolver:
+    static:
+      hostnames:
+      - endpoint-1 # assumes 4317 as the default port
+      - endpoint-2:55678
