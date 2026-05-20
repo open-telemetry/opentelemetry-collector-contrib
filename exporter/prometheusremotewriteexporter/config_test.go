@@ -211,6 +211,64 @@ func TestDisabledTargetInfo(t *testing.T) {
 	assert.False(t, cfg.(*Config).TargetInfo.Enabled)
 }
 
+func TestHTTPOverridesFlatConfig(t *testing.T) {
+	flatEndpoint := "http://flat.example.com"
+	httpEndpoint := "http://http.example.com"
+	flatTimeout := 5 * time.Second
+	httpTimeout := 10 * time.Second
+
+	cfg := &Config{
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+		BackOffConfig: configretry.BackOffConfig{
+			Enabled: false,
+		},
+		ClientConfig: confighttp.ClientConfig{
+			Endpoint: flatEndpoint,
+			Timeout:  flatTimeout,
+		},
+		HTTP: &confighttp.ClientConfig{
+			Endpoint: httpEndpoint,
+			Timeout:  httpTimeout,
+		},
+	}
+
+	// Create a minimal confmap to test Unmarshal
+	cm, _ := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	sub, _ := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+
+	err := cfg.Unmarshal(sub)
+	require.NoError(t, err)
+	// HTTP should override flat ClientConfig
+	require.Equal(t, httpEndpoint, cfg.ClientConfig.Endpoint)
+	require.Equal(t, httpTimeout, cfg.ClientConfig.Timeout)
+}
+
+func TestHTTPOnlyConfig(t *testing.T) {
+	httpEndpoint := "http://http.example.com"
+	httpTimeout := 10 * time.Second
+
+	cfg := &Config{
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+		BackOffConfig: configretry.BackOffConfig{
+			Enabled: false,
+		},
+		HTTP: &confighttp.ClientConfig{
+			Endpoint: httpEndpoint,
+			Timeout:  httpTimeout,
+		},
+	}
+
+	// Create a minimal confmap to test Unmarshal
+	cm, _ := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	sub, _ := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+
+	err := cfg.Unmarshal(sub)
+	require.NoError(t, err)
+	// HTTP should set ClientConfig
+	require.Equal(t, httpEndpoint, cfg.ClientConfig.Endpoint)
+	require.Equal(t, httpTimeout, cfg.ClientConfig.Timeout)
+}
+
 func toPtr[T any](val T) *T {
 	return &val
 }
