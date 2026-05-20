@@ -232,6 +232,9 @@ func withOtelAnnotations(enabled bool) option {
 
 func withDeploymentNameFromReplicaSet(enabled bool) option {
 	return func(p *kubernetesprocessor) error {
+		if !enabled && p.logger != nil {
+			p.logger.Warn("`deployment_name_from_replicaset: false` is deprecated and will be removed in future releases")
+		}
 		p.rules.DeploymentNameFromReplicaSet = enabled
 		return nil
 	}
