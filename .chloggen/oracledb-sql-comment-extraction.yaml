@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/oracledb
+note: Add SQL comment extraction support for APM correlation. Users can now configure `allowed_comment_keys` to extract key-value pairs from SQL query comments and include them as telemetry attributes for correlation with APM traces.
+issues: [48338]
+change_logs: [user]

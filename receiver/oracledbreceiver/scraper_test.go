@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sqlcomments"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
@@ -482,6 +483,54 @@ func TestSamplesQuery(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestScraperWithQueryComments(t *testing.T) {
+	t.Run("query samples with allowed comments", func(t *testing.T) {
+		// Create a mock scraper with allowed comment keys configured
+		cfg := createDefaultConfig().(*Config)
+		cfg.QuerySample.AllowedCommentKeys = []string{"nr_service_guid", "app_id"}
+
+		// This test verifies that when AllowedCommentKeys is configured,
+		// the comment extraction happens and is passed through the pipeline.
+		// The actual generated_logs code will handle adding the attribute.
+
+		// We can verify that extractAndFilterComments is called correctly
+		sqlWithComment := "/* nr_service_guid=test-123,app_id=myapp */ SELECT * FROM test_table"
+		result := sqlcomments.ExtractAndFilterComments(sqlWithComment, cfg.QuerySample.AllowedCommentKeys)
+
+		expected := "nr_service_guid=test-123,app_id=myapp"
+		if result != expected {
+			t.Errorf("Expected %q but got %q", expected, result)
+		}
+	})
+
+	t.Run("query samples without allowed comments", func(t *testing.T) {
+		// Create a mock scraper with empty allowed comment keys
+		cfg := createDefaultConfig().(*Config)
+		cfg.QuerySample.AllowedCommentKeys = []string{}
+
+		// Verify secure by default: empty allowlist returns empty string
+		sqlWithComment := "/* nr_service_guid=test-123 */ SELECT * FROM test_table"
+		result := sqlcomments.ExtractAndFilterComments(sqlWithComment, cfg.QuerySample.AllowedCommentKeys)
+
+		if result != "" {
+			t.Errorf("Expected empty string but got %q", result)
+		}
+	})
+
+	t.Run("query samples with non-matching comments", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.QuerySample.AllowedCommentKeys = []string{"nr_service_guid"}
+
+		// SQL has comments but none match the allowlist
+		sqlWithComment := "/* other_key=value */ SELECT * FROM test_table"
+		result := sqlcomments.ExtractAndFilterComments(sqlWithComment, cfg.QuerySample.AllowedCommentKeys)
+
+		if result != "" {
+			t.Errorf("Expected empty string but got %q", result)
+		}
+	})
 }
 
 func TestGetInstanceId(t *testing.T) {

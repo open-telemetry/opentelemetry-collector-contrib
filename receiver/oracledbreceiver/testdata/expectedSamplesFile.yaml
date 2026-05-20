@@ -97,6 +97,9 @@ resourceLogs:
               - key: oracledb.duration_sec
                 value:
                   doubleValue: 1
+              - key: query.comments
+                value:
+                  stringValue: ""
               - key: oracledb.query.started
                 value:
                   stringValue: "2026-01-01T12:00:00Z"

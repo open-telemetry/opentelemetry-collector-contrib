@@ -97,6 +97,9 @@ resourceLogs:
               - key: oracledb.procedure_type
                 value:
                   stringValue: PROCEDURE
+              - key: query.comments
+                value:
+                  stringValue: ""
             body: {}
             eventName: db.server.top_query
             timeUnixNano: "1759142512777891000"
