@@ -65,6 +65,11 @@ type Reader struct {
 	// the gzip file must be decompressed from byte 0, and this value is used to skip
 	// past previously processed content so only new lines are emitted.
 	decompressedBytesToSkip int64
+	// lastEmitFailed is set by readContents when emitFunc returns an error and
+	// is consulted by ReadToEnd's deferred handlers (gzip currentEOF set,
+	// delete-at-EOF) so they don't run when the read loop bailed mid-batch.
+	// Reset at the start of every ReadToEnd call.
+	lastEmitFailed bool
 }
 
 // ReadToEnd will read until the end of the file
@@ -76,6 +81,8 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		defer r.unlockFile()
 	}
 
+	r.lastEmitFailed = false
+
 	switch r.compression {
 	case "gzip":
 		currentEOF, err := r.createGzipReader()
@@ -83,9 +90,13 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			return
 		}
 		// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
-		// we need to set the offset to the end of the file.
+		// we need to set the offset to the end of the file. Skip when emit failed
+		// so the next poll re-reads the rejected batch (the compressed stream is
+		// re-decoded from the start each call, so leaving Offset alone is safe).
 		defer func() {
-			r.Offset = currentEOF
+			if !r.lastEmitFailed {
+				r.Offset = currentEOF
+			}
 		}()
 	case "auto":
 		if r.FileType == gzipExtension {
@@ -94,9 +105,12 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 				return
 			}
 			// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
-			// we need to set the offset to the end of the file.
+			// we need to set the offset to the end of the file. Skip when emit
+			// failed (see "gzip" branch above for the rationale).
 			defer func() {
-				r.Offset = currentEOF
+				if !r.lastEmitFailed {
+					r.Offset = currentEOF
+				}
 			}()
 		} else {
 			r.reader = r.file
@@ -258,18 +272,31 @@ func (r *Reader) readContents(ctx context.Context) {
 
 		ok := s.Scan()
 		if !ok {
-			if err := s.Error(); err != nil {
-				r.set.Logger.Error("failed during scan", zap.Error(err))
-			} else if r.deleteAtEOF {
-				r.delete()
+			scanErr := s.Error()
+			if scanErr != nil {
+				r.set.Logger.Error("failed during scan", zap.Error(scanErr))
 			}
 
 			if numTokensBatched > 0 {
-				err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, tokenOffsets)
-				if err != nil {
+				if err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, tokenOffsets); err != nil {
+					// Leave r.Offset where it was: the rejected tokens must be
+					// re-read on the next poll, not silently skipped. Roll back
+					// RecordNum so the retry assigns the same record_number
+					// values, and skip the delete_at_eof step below so the file
+					// is still around to re-read from.
 					r.set.Logger.Error("failed to emit token", zap.Error(err))
+					r.RecordNum -= int64(numTokensBatched)
+					r.lastEmitFailed = true
+					return
 				}
 				r.Offset = s.Pos()
+			}
+
+			// Only delete on a clean EOF after the final batch (if any) emitted
+			// successfully — if the scanner errored or emit failed we need the
+			// file on disk so the next poll can re-read it.
+			if scanErr == nil && r.deleteAtEOF {
+				r.delete()
 			}
 			return
 		}
@@ -287,7 +314,16 @@ func (r *Reader) readContents(ctx context.Context) {
 		r.RecordNum++
 		if r.maxBatchSize > 0 && numTokensBatched >= r.maxBatchSize {
 			if err = r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, tokenOffsets); err != nil {
+				// Stop reading. The scanner has already consumed bytes for the
+				// rejected batch, so we cannot safely continue from mid-batch;
+				// leaving r.Offset untouched lets the next poll re-read these
+				// tokens with a fresh scanner. Roll back RecordNum so the retry
+				// assigns the same record_number values, and signal the gzip
+				// branch in ReadToEnd to skip the currentEOF offset jump.
 				r.set.Logger.Error("failed to emit token", zap.Error(err))
+				r.RecordNum -= int64(numTokensBatched)
+				r.lastEmitFailed = true
+				return
 			}
 			numTokensBatched = 0
 			r.Offset, tokenOffsets[0] = s.Pos(), s.Pos()
