@@ -300,6 +300,24 @@ func TestValueHash(t *testing.T) {
 	}
 }
 
+func TestBytesCollision(t *testing.T) {
+	t.Parallel()
+
+	m1 := pcommon.NewMap()
+	m1a := m1.PutEmptyBytes("a")
+	m1a.Append(0xF4, 0x62, 0xF6, 0xBB)
+
+	m2 := pcommon.NewMap()
+	_ = m2.PutEmptyBytes("a")
+	m2b := m2.PutEmptyBytes("b")
+	m2b.Append(0xBB)
+
+	m1Hash := MapHash(m1)
+	m2Hash := MapHash(m2)
+
+	assert.NotEqual(t, m1Hash, m2Hash, "Hash collision")
+}
+
 func TestMapValueHashNotEqual(t *testing.T) {
 	tests := []struct {
 		name string
