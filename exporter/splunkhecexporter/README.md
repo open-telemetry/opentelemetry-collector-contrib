@@ -60,7 +60,7 @@ The following configuration options can also be configured:
 - `otel_attrs_to_hec_metadata/host` (default = 'host.name'):  Specifies the mapping of a specific unified model attribute value to the standard host field and the `host.name` field of a HEC event.
 - `otel_to_hec_fields/severity_text` (default = `otel.log.severity.text`): Specifies the name of the field to map the severity text field of log events.
 - `otel_to_hec_fields/severity_number` (default = `otel.log.severity.number`): Specifies the name of the field to map the severity number field of log events.
-- `otel_to_hec_fields/name` (default = `"otel.log.name`): Specifies the name of the field to map the name field of log events.
+- `otel_to_hec_fields/name` (default = `otel.log.name`): Specifies the name of the field to map the [event name](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-eventname) of log events.
 - `heartbeat/interval` (no default): Specifies the interval of sending hec heartbeat to the destination. If not specified, heartbeat is not enabled.
 - `heartbeat/startup` (default: false): Check heartbeat at start up time. This action enforces a synchronous heartbeat action during the collector start up sequence. The collector will fail to start if the heartbeat returns an error.
 - `telemetry/enabled` (default: false): Specifies whether to enable telemetry inside splunk hec exporter.
