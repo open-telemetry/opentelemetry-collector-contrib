@@ -13,7 +13,7 @@ import (
 
 func TestPublisherOpenPreexisting(t *testing.T) {
 	publisher := Publisher{handle: 5}
-	err := publisher.Open("provider_name_does_not_matter_for_this_test")
+	err := publisher.Open("provider_name_does_not_matter_for_this_test", nil)
 	require.ErrorContains(t, err, "publisher handle is already open")
 	require.True(t, publisher.Valid())
 }
@@ -21,7 +21,7 @@ func TestPublisherOpenPreexisting(t *testing.T) {
 func TestPublisherOpenInvalidUTF8(t *testing.T) {
 	publisher := NewPublisher()
 	invalidUTF8 := "\u0000"
-	err := publisher.Open(invalidUTF8)
+	err := publisher.Open(invalidUTF8, nil)
 	require.ErrorContains(t, err, "failed to convert the provider name \"\\x00\" to utf16: invalid argument")
 	require.False(t, publisher.Valid())
 }
@@ -30,7 +30,7 @@ func TestPublisherOpenSyscallFailure(t *testing.T) {
 	publisher := NewPublisher()
 	provider := "provider"
 	defer mockWithDeferredRestore(&openPublisherMetadataProc, SimpleMockProc(0, 0, ErrorNotSupported))()
-	err := publisher.Open(provider)
+	err := publisher.Open(provider, nil)
 	require.ErrorContains(t, err, "failed to open the metadata for the \"provider\" provider: The request is not supported.")
 	require.False(t, publisher.Valid())
 }
@@ -39,7 +39,7 @@ func TestPublisherOpenSuccess(t *testing.T) {
 	publisher := NewPublisher()
 	provider := "provider"
 	defer mockWithDeferredRestore(&openPublisherMetadataProc, SimpleMockProc(5, 0, ErrorSuccess))()
-	err := publisher.Open(provider)
+	err := publisher.Open(provider, nil)
 	require.NoError(t, err)
 	require.Equal(t, uintptr(5), publisher.handle)
 	require.True(t, publisher.Valid())
