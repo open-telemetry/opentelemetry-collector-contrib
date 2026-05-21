@@ -87,6 +87,36 @@ func TestWriterOperatorWriteAfterError(t *testing.T) {
 	output2.AssertCalled(t, "Process", ctx, mock.Anything)
 }
 
+func TestWriterOperatorWriteBatchPropagatesLastOutputError(t *testing.T) {
+	output1 := testutil.NewMockOperator("output1")
+	output1.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
+
+	output2 := testutil.NewMockOperator("output2")
+	outputErr := stanzaerrors.NewError("Operator can not process logs.", "")
+	output2.On("ProcessBatch", mock.Anything, mock.Anything).Return(outputErr)
+
+	config := WriterConfig{
+		OutputIDs: []string{"output1", "output2"},
+		BasicConfig: BasicConfig{
+			OperatorType: "testtype",
+		},
+	}
+	set := componenttest.NewNopTelemetrySettings()
+	writer, err := config.Build(set)
+	require.NoError(t, err)
+
+	err = writer.SetOutputs([]operator.Operator{output1, output2})
+	require.NoError(t, err)
+
+	ctx := t.Context()
+	testEntries := []*entry.Entry{entry.New()}
+
+	err = writer.WriteBatch(ctx, testEntries)
+	require.ErrorContains(t, err, outputErr.Error())
+	output1.AssertCalled(t, "ProcessBatch", ctx, mock.Anything)
+	output2.AssertCalled(t, "ProcessBatch", ctx, mock.Anything)
+}
+
 func TestWriterOperatorCanOutput(t *testing.T) {
 	writer := WriterOperator{}
 	require.True(t, writer.CanOutput())

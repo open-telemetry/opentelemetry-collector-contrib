@@ -5,6 +5,7 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -50,9 +51,11 @@ type WriterOperator struct {
 // WriteBatch writes a batch of entries to the outputs of the operator.
 // A batch is a collection of entries that are sent in one go.
 func (w *WriterOperator) WriteBatch(ctx context.Context, entries []*entry.Entry) error {
+	var errs []error
 	for i, op := range w.OutputOperators {
 		if i == len(w.OutputOperators)-1 {
-			return op.ProcessBatch(ctx, entries)
+			errs = append(errs, op.ProcessBatch(ctx, entries))
+			break
 		}
 		copyOfEntries := make([]*entry.Entry, 0, len(entries))
 		for i := range entries {
@@ -61,9 +64,10 @@ func (w *WriterOperator) WriteBatch(ctx context.Context, entries []*entry.Entry)
 		err := op.ProcessBatch(ctx, copyOfEntries)
 		if err != nil {
 			w.Logger().Error("Failed to process entries", zap.Error(err))
+			errs = append(errs, err)
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 // Write will write an entry to the outputs of the operator.

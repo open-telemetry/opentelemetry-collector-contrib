@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: pkg/stanza
+note: Propagate errors returned by the final output in helper writer WriteBatch.
+issues: [47106]
