@@ -109,7 +109,7 @@ resourceLogs:
             body: {}
             eventName: db.server.query_sample
             spanId: a7ad6b7169203331
-            timeUnixNano: "1759142300369458000"
+            timeUnixNano: "1777971310226931702"
             traceId: 0af7651916cd43dd8448eb211c80319c
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver

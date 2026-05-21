@@ -978,6 +978,11 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	rb.SetOracledbInstanceName(s.instanceName)
 	rb.SetHostName(s.hostName)
 	rb.SetServiceInstanceID(s.serviceInstanceID)
+
+	if _, serviceName, found := strings.Cut(s.instanceName, "/"); found && serviceName != "" {
+		rb.SetServiceName(serviceName)
+	}
+
 	return rb
 }
 
