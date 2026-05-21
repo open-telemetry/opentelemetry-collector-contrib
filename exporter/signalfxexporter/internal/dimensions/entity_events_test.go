@@ -17,7 +17,7 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 		"default_prop": "default_value",
 	}
 
-	transformer := NewEntityEventTransformer(defaultProps)
+	transformer := NewEntityEventTransformer(defaultProps, true)
 
 	tests := []struct {
 		name           string
@@ -67,6 +67,26 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantProperties: map[string]*string{
 				"default_prop":  new("default_value"),
 				"k8s.node.name": new("worker-1"),
+			},
+			wantTags: map[string]bool{},
+		},
+		{
+			name:          "k8s.node strips k8s label prefix",
+			entityType:    "k8s.node",
+			entityIDKey:   "k8s.node.uid",
+			entityIDValue: "node-456",
+			attributes: map[string]any{
+				"k8s.node.name":              "worker-1",
+				"k8s.node.label.nodeName":    "my3",
+				"k8s.node.label.environment": "production",
+			},
+			wantDimKey:   "k8s.node.uid",
+			wantDimValue: "node-456",
+			wantProperties: map[string]*string{
+				"default_prop":  strPtr("default_value"),
+				"k8s.node.name": strPtr("worker-1"),
+				"nodeName":      strPtr("my3"),
+				"environment":   strPtr("production"),
 			},
 			wantTags: map[string]bool{},
 		},
@@ -372,7 +392,7 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 }
 
 func TestEntityEventTransformer_DeleteEvent(t *testing.T) {
-	transformer := NewEntityEventTransformer(nil)
+	transformer := NewEntityEventTransformer(nil, true)
 
 	// Create delete event
 	entityEvents := metadata.NewEntityEventsSlice()
@@ -386,7 +406,7 @@ func TestEntityEventTransformer_DeleteEvent(t *testing.T) {
 }
 
 func TestEntityEventTransformer_MissingEntityID(t *testing.T) {
-	transformer := NewEntityEventTransformer(nil)
+	transformer := NewEntityEventTransformer(nil, true)
 
 	// Create entity event without ID
 	entityEvents := metadata.NewEntityEventsSlice()
