@@ -400,7 +400,7 @@ func (c *WatchClient) Stop() {
 }
 
 func (c *WatchClient) handlePodAdd(obj any) {
-	podTableSize := 0
+	var podTableSize int
 	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.OtelsvcK8sPodAdded.Add(context.Background(), 1)
 	}
@@ -422,7 +422,7 @@ func (c *WatchClient) handlePodAdd(obj any) {
 }
 
 func (c *WatchClient) handlePodUpdate(_, newPod any) {
-	podTableSize := 0
+	var podTableSize int
 	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.OtelsvcK8sPodUpdated.Add(context.Background(), 1)
 	}
@@ -445,7 +445,7 @@ func (c *WatchClient) handlePodUpdate(_, newPod any) {
 }
 
 func (c *WatchClient) handlePodDelete(obj any) {
-	podTableSize := 0
+	var podTableSize int
 	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.OtelsvcK8sPodDeleted.Add(context.Background(), 1)
 	}
@@ -759,6 +759,20 @@ func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 	}
 }
 
+// deleteLoopProcessing drains delete requests that are past the grace period.
+//
+// Delete requests come from two paths.
+//   - Pod updates queue a request when an
+//     identifier disappears from the current pod state
+//   - Pod deletes queue requests for every indexed identifier for that UID,
+//     including historical identifiers missing from the final pod object.
+//
+// podIdentifiers stores the per-identifier state used by both paths. Active
+// identifiers have a zero staleSinceUnixNano. Identifiers pending deletion keep
+// the same timestamp as their delete request ts. At delete time, the timestamps
+// must match; otherwise the queued request is obsolete because the identifier
+// became active again or entered a newer stale period before the grace period
+// expired.
 func (c *WatchClient) deleteLoopProcessing(gracePeriod time.Duration) {
 	var cutoff int
 	now := time.Now()
@@ -1650,10 +1664,9 @@ func (c *WatchClient) forgetPod(pod *api_v1.Pod) int {
 	podToRemove := c.podFromAPI(pod)
 	identifiers := c.getIdentifiersFromAssoc(podToRemove)
 	podUID := string(pod.UID)
-	deleteRequests := make([]deleteRequest, 0)
 
 	c.m.Lock()
-	deleteRequests = c.buildDeletionRequestsForPodLocked(podUID, identifiers)
+	deleteRequests := c.buildDeletionRequestsForPodLocked(podUID, identifiers)
 	podTableSize := len(c.Pods)
 	c.m.Unlock()
 
