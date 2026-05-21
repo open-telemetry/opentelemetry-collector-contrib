@@ -293,7 +293,6 @@ type querySample struct {
 	digestText         string
 	sqlText            string
 	digest             string
-	generatedDigest    string
 	eventID            int64
 	sessionStatus      string
 	waitEvent          string
@@ -974,8 +973,6 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 				dest = append(dest, &s.sqlText)
 			case "fingerprint":
 				dest = append(dest, &s.digest)
-			case "generated_digest":
-				dest = append(dest, &s.generatedDigest)
 			case "activity_event_id":
 				dest = append(dest, &s.eventID)
 			case "session_status":

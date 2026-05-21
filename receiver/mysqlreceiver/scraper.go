@@ -6,6 +6,8 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"container/heap"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"math"
 	"sort"
@@ -747,15 +749,16 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 		}
 
 		var queryPlan string
+		var digestTextHash = getDigestTextHash(q.digest)
 		// querySampleText is "" when the fallback template was used (MySQL <8 / MariaDB).
 		// Skip EXPLAIN in that case — there is no sample statement to explain.
 		if q.digest != "" && q.querySampleText != "" {
-			queryPlan = m.retrieveQueryPlan(q.digestText, q.querySampleText, q.schemaName, q.digest)
+			queryPlan = m.retrieveQueryPlan(q.digestText, q.querySampleText, q.schemaName, q.digest, digestTextHash)
 		}
 
 		queryPlanHash := ""
 		if queryPlan != "" {
-			queryPlanHash = q.digest
+			queryPlanHash = digestTextHash
 		}
 
 		m.lb.RecordDbServerTopQueryEvent(
@@ -814,14 +817,15 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 		}
 
 		var queryPlan string
+		var digestTextHash = getDigestTextHash(sample.digest)
 
-		if sample.generatedDigest != "" {
-			queryPlan = m.retrieveQueryPlan(sample.digestText, sample.sqlText, sample.processlistDB, sample.generatedDigest)
+		if sample.digest != "" {
+			queryPlan = m.retrieveQueryPlan(sample.digestText, sample.sqlText, sample.processlistDB, sample.digest, digestTextHash)
 		}
 
 		queryPlanHash := ""
 		if queryPlan != "" {
-			queryPlanHash = sample.generatedDigest
+			queryPlanHash = digestTextHash
 		}
 
 		m.lb.RecordDbServerQuerySampleEvent(
@@ -856,10 +860,10 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 	}
 }
 
-func (m *mySQLScraper) retrieveQueryPlan(queryDigestText, querySampleText, schemaOrDbName, digest string) string {
+func (m *mySQLScraper) retrieveQueryPlan(queryDigestText, querySampleText, schemaOrDbName, digest, digestTextHash string) string {
 	var queryPlan string
 	var ok bool
-	cacheKey := createCacheKey(schemaOrDbName, digest)
+	cacheKey := createCacheKey(schemaOrDbName, digestTextHash)
 	if queryPlan, ok = m.queryPlanCache.Get(cacheKey); !ok {
 		// attempt to explain the query
 		queryPlan = m.sqlclient.explainQuery(queryDigestText, querySampleText, schemaOrDbName, digest, m.logger)
@@ -880,8 +884,13 @@ func (m *mySQLScraper) retrieveQueryPlan(queryDigestText, querySampleText, schem
 	return queryPlan
 }
 
-func createCacheKey(dbName, digest string) string {
-	return dbName + "-" + digest
+func createCacheKey(dbName, digestTextHash string) string {
+	return dbName + "_" + digestTextHash
+}
+
+func getDigestTextHash(digestText string) string {
+	sum := sha256.Sum256([]byte(digestText))
+	return hex.EncodeToString(sum[:])
 }
 
 // contextWithTraceparent extracts a W3C TraceContext traceparent from the given

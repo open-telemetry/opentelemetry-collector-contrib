@@ -802,14 +802,13 @@ func (c *mockClient) getQuerySamples(uint64, bool) ([]querySample, error) {
 		s.digestText = text[8]
 		s.sqlText = text[9]
 		s.digest = text[10]
-		s.generatedDigest = text[11]
-		s.eventID, _ = parseInt(text[12])
-		s.sessionStatus = text[13]
-		s.waitEvent = text[14]
-		s.waitTime, _ = strconv.ParseFloat(text[15], 64)
-		s.statementTimerWait, _ = strconv.ParseFloat(text[16], 64)
-		if len(text) > 17 {
-			s.traceparent = text[17]
+		s.eventID, _ = parseInt(text[11])
+		s.sessionStatus = text[12]
+		s.waitEvent = text[13]
+		s.waitTime, _ = strconv.ParseFloat(text[14], 64)
+		s.statementTimerWait, _ = strconv.ParseFloat(text[15], 64)
+		if len(text) > 16 {
+			s.traceparent = text[16]
 		}
 
 		samples = append(samples, s)
