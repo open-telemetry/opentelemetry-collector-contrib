@@ -31,16 +31,18 @@ func openDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-// ttlClause returns the partition_expiration_time clause for Hologres DDL.
+// ttlClause returns the time_to_live_in_seconds WITH-clause fragment for Hologres DDL.
+// Hologres uses table-level TTL via time_to_live_in_seconds (in seconds) for non-partitioned
+// tables. Returns an empty string when ttl <= 0.
 func ttlClause(ttl time.Duration) string {
 	if ttl <= 0 {
 		return ""
 	}
-	days := int(ttl.Hours() / 24)
-	if days < 1 {
-		days = 1
+	seconds := int64(ttl.Seconds())
+	if seconds < 1 {
+		seconds = 1
 	}
-	return fmt.Sprintf(",\n    partition_expiration_time = '%d day'", days)
+	return fmt.Sprintf(",\n    time_to_live_in_seconds = '%d'", seconds)
 }
 
 // createTracesTable creates the traces table in Hologres.
@@ -65,12 +67,10 @@ func createTracesTable(ctx context.Context, db *sql.DB, tableName string, ttl ti
     links                 JSONB,
     PRIMARY KEY (trace_id, span_id)
 )
-LOGICAL PARTITION BY LIST (DATE("timestamp"))
 WITH (
     orientation = 'column',
     distribution_key = 'trace_id',
     clustering_key = '"timestamp":asc',
-    event_time_column = '"timestamp"',
     bitmap_columns = 'service_name,span_kind,status_code',
     dictionary_encoding_columns = 'service_name:auto,span_name:auto'%s
 )`, tableName, ttlClause(ttl))
@@ -111,12 +111,10 @@ func createLogsTable(ctx context.Context, db *sql.DB, tableName string, ttl time
     log_attributes        JSONB,
     PRIMARY KEY ("timestamp", service_name, trace_id)
 )
-LOGICAL PARTITION BY LIST (DATE("timestamp"))
 WITH (
     orientation = 'column',
     distribution_key = 'service_name',
     clustering_key = '"timestamp":asc',
-    event_time_column = '"timestamp"',
     bitmap_columns = 'service_name,severity_text',
     dictionary_encoding_columns = 'service_name:auto,severity_text:auto'%s
 )`, tableName, ttlClause(ttl))
@@ -182,12 +180,10 @@ func createMetricsGaugeTable(ctx context.Context, db *sql.DB, tableName string, 
     attributes            JSONB,
     PRIMARY KEY ("timestamp", metric_name, service_name)
 )
-LOGICAL PARTITION BY LIST (DATE("timestamp"))
 WITH (
     orientation = 'column',
     distribution_key = 'service_name',
     clustering_key = '"timestamp":asc',
-    event_time_column = '"timestamp"',
     bitmap_columns = 'service_name,metric_name',
     dictionary_encoding_columns = 'service_name:auto,metric_name:auto'%s
 )`, tableName, ttlClause(ttl))
@@ -219,12 +215,10 @@ func createMetricsSumTable(ctx context.Context, db *sql.DB, tableName string, tt
     attributes                 JSONB,
     PRIMARY KEY ("timestamp", metric_name, service_name)
 )
-LOGICAL PARTITION BY LIST (DATE("timestamp"))
 WITH (
     orientation = 'column',
     distribution_key = 'service_name',
     clustering_key = '"timestamp":asc',
-    event_time_column = '"timestamp"',
     bitmap_columns = 'service_name,metric_name',
     dictionary_encoding_columns = 'service_name:auto,metric_name:auto'%s
 )`, tableName, ttlClause(ttl))
@@ -260,12 +254,10 @@ func createMetricsHistogramTable(ctx context.Context, db *sql.DB, tableName stri
     attributes                 JSONB,
     PRIMARY KEY ("timestamp", metric_name, service_name)
 )
-LOGICAL PARTITION BY LIST (DATE("timestamp"))
 WITH (
     orientation = 'column',
     distribution_key = 'service_name',
     clustering_key = '"timestamp":asc',
-    event_time_column = '"timestamp"',
     bitmap_columns = 'service_name,metric_name',
     dictionary_encoding_columns = 'service_name:auto,metric_name:auto'%s
 )`, tableName, ttlClause(ttl))
@@ -298,12 +290,10 @@ func createMetricsSummaryTable(ctx context.Context, db *sql.DB, tableName string
     attributes            JSONB,
     PRIMARY KEY ("timestamp", metric_name, service_name)
 )
-LOGICAL PARTITION BY LIST (DATE("timestamp"))
 WITH (
     orientation = 'column',
     distribution_key = 'service_name',
     clustering_key = '"timestamp":asc',
-    event_time_column = '"timestamp"',
     bitmap_columns = 'service_name,metric_name',
     dictionary_encoding_columns = 'service_name:auto,metric_name:auto'%s
 )`, tableName, ttlClause(ttl))
@@ -343,12 +333,10 @@ func createMetricsExpHistogramTable(ctx context.Context, db *sql.DB, tableName s
     attributes                 JSONB,
     PRIMARY KEY ("timestamp", metric_name, service_name)
 )
-LOGICAL PARTITION BY LIST (DATE("timestamp"))
 WITH (
     orientation = 'column',
     distribution_key = 'service_name',
     clustering_key = '"timestamp":asc',
-    event_time_column = '"timestamp"',
     bitmap_columns = 'service_name,metric_name',
     dictionary_encoding_columns = 'service_name:auto,metric_name:auto'%s
 )`, tableName, ttlClause(ttl))

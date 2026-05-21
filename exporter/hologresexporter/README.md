@@ -14,7 +14,7 @@ This exporter sends OpenTelemetry traces, metrics, and logs to [Hologres](https:
 | `logs_table_name` | `otel_logs` | Table name for logs data |
 | `metrics_table_name` | `otel_metrics` | Prefix for metrics tables. Creates `_gauge`, `_sum`, `_histogram`, `_summary`, `_exp_histogram` |
 | `create_schema` | `true` | Whether to create tables on startup |
-| `ttl` | `0` (disabled) | Data retention period. Sets `partition_expiration_time` for logical partitions |
+| `ttl` | `0` (disabled) | Data retention period. Sets the table-level `time_to_live_in_seconds` Hologres option |
 | `timeout` | `5s` | Export timeout |
 | `retry_on_failure` | enabled | Retry configuration |
 | `sending_queue` | enabled | Queue configuration |

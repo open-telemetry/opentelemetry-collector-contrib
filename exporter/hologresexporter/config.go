@@ -36,8 +36,8 @@ type Config struct {
 	// CreateSchema indicates whether to create tables on startup.
 	CreateSchema bool `mapstructure:"create_schema"`
 
-	// TTL is the time-to-live for data. Used to set partition_expiration_time.
-	// Set to 0 to disable TTL.
+	// TTL is the time-to-live for data. Used to set the table-level
+	// time_to_live_in_seconds Hologres option. Set to 0 to disable TTL.
 	TTL time.Duration `mapstructure:"ttl"`
 }
 
