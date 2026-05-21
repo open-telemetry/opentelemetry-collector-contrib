@@ -306,6 +306,62 @@ func TestLogPusherConcurrentAddAndFlush(t *testing.T) {
 	wg.Wait()
 }
 
+func TestPusher_perPusherMaxEventPayloadBytes(t *testing.T) {
+	// Build a payload that fits within a 512 KiB per-pusher cap but exceeds
+	// the package default (256 KiB). With WithMaxEventPayloadBytes(512 KiB) the
+	// payload must pass through unmodified; without the option it would be
+	// truncated to the 256 KiB default.
+	largeSize := defaultMaxEventPayloadBytes + 1024 // 256 KiB + 1 KiB
+	body := strings.Repeat("b", largeSize)
+
+	t.Run("per-pusher cap raises ceiling above package default", func(t *testing.T) {
+		ev := NewEvent(timestampMs, body)
+		require.NoError(t, ev.validateWithCap(zap.NewNop(), defaultMaxEventPayloadBytes*2))
+		assert.Len(t, *ev.InputLogEvent.Message, largeSize,
+			"event should pass through untruncated because the per-pusher cap is large enough")
+		assert.NotContains(t, *ev.InputLogEvent.Message, truncatedSuffix)
+	})
+
+	t.Run("zero cap falls back to package default and truncates", func(t *testing.T) {
+		ev := NewEvent(timestampMs, body)
+		require.NoError(t, ev.validateWithCap(zap.NewNop(), 0))
+		assert.Less(t, len(*ev.InputLogEvent.Message), largeSize,
+			"event should be truncated to package default when cap is 0")
+		assert.Contains(t, *ev.InputLogEvent.Message, truncatedSuffix)
+	})
+
+	t.Run("default Validate matches validateWithCap(package default)", func(t *testing.T) {
+		evA := NewEvent(timestampMs, body)
+		evB := NewEvent(timestampMs, body)
+		require.NoError(t, evA.Validate(zap.NewNop()))
+		require.NoError(t, evB.validateWithCap(zap.NewNop(), maxEventPayloadBytes))
+		assert.Equal(t, *evA.InputLogEvent.Message, *evB.InputLogEvent.Message)
+	})
+
+	t.Run("effectiveMaxEventPayloadBytes honors per-pusher value", func(t *testing.T) {
+		p := newLogPusher(StreamKey{
+			LogGroupName:  logGroup,
+			LogStreamName: logStreamName,
+		}, Client{svc: &mockCloudWatchClient{}}, zap.NewNop(),
+			WithMaxEventPayloadBytes(defaultMaxEventPayloadBytes*2))
+		assert.Equal(t, defaultMaxEventPayloadBytes*2, p.effectiveMaxEventPayloadBytes())
+	})
+
+	t.Run("effectiveMaxEventPayloadBytes falls back to package var when option is zero or omitted", func(t *testing.T) {
+		omitted := newLogPusher(StreamKey{
+			LogGroupName:  logGroup,
+			LogStreamName: logStreamName,
+		}, Client{svc: &mockCloudWatchClient{}}, zap.NewNop())
+		zero := newLogPusher(StreamKey{
+			LogGroupName:  logGroup,
+			LogStreamName: logStreamName,
+		}, Client{svc: &mockCloudWatchClient{}}, zap.NewNop(),
+			WithMaxEventPayloadBytes(0))
+		assert.Equal(t, maxEventPayloadBytes, omitted.effectiveMaxEventPayloadBytes())
+		assert.Equal(t, maxEventPayloadBytes, zero.effectiveMaxEventPayloadBytes())
+	})
+}
+
 func TestByTimestampLessNilTimestamp(t *testing.T) {
 	events := ByTimestamp{
 		{Timestamp: aws.Int64(1000), Message: aws.String("a")},
