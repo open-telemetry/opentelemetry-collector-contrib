@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
@@ -450,6 +451,9 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewBooleanAttributeFilter(settings, bafCfg.Key, bafCfg.Value, bafCfg.InvertMatch), nil
 	case OTTLCondition:
 		ottlfCfg := cfg.OTTLConditionCfg
+		if ottlfCfg.ErrorMode == "" {
+			ottlfCfg.ErrorMode = defaultOTTLConditionErrorMode()
+		}
 		return sampling.NewOTTLConditionFilter(settings, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, ottlfCfg.ErrorMode)
 	case TraceFlags:
 		return sampling.NewTraceFlags(settings), nil
@@ -466,6 +470,13 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}
+}
+
+func defaultOTTLConditionErrorMode() ottl.ErrorMode {
+	if metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate.IsEnabled() {
+		return ottl.IgnoreError
+	}
+	return ottl.PropagateError
 }
 
 type policyDecisionMetrics struct {

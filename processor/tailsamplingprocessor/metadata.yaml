@@ -37,6 +37,12 @@ feature_gates:
     from_version: v0.150.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/47331
 
+  - id: "processor.tailsamplingprocessor.defaultErrorModeIgnore"
+    description: Changes the default error_mode of the tail sampling processor ottl_condition policy from propagate to ignore
+    stage: alpha
+    from_version: v0.153.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48420
+
 tests:
   config:
 
