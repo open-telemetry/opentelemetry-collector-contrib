@@ -67,6 +67,7 @@ confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider
 confmap/provider/secretsmanagerprovider
+connector/alertsgenconnector
 internal/filter
 connector/countconnector
 exporter/datadogexporter
