@@ -21,6 +21,7 @@ var (
 type Config struct {
 	Directory string        `mapstructure:"directory,omitempty"`
 	Timeout   time.Duration `mapstructure:"timeout,omitempty"`
+	MaxSize   int64         `mapstructure:"max_size,omitempty"`
 
 	Compaction *CompactionConfig `mapstructure:"compaction,omitempty"`
 
@@ -88,6 +89,19 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Compaction.MaxTransactionSize < 0 {
 		return errors.New("max transaction size for compaction cannot be less than 0")
+	}
+
+	if cfg.MaxSize < 0 {
+		return errors.New("max size cannot be less than 0")
+	}
+
+	if cfg.MaxSize > 0 {
+		if cfg.Compaction.ReboundNeededThresholdMiB*oneMiB > cfg.MaxSize {
+			return errors.New("compaction rebound needed threshold cannot be greater than max size")
+		}
+		if cfg.Compaction.ReboundTriggerThresholdMiB*oneMiB > cfg.MaxSize {
+			return errors.New("compaction rebound trigger threshold cannot be greater than max size")
+		}
 	}
 
 	if cfg.Compaction.OnRebound && cfg.Compaction.CheckInterval <= 0 {

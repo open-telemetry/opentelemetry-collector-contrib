@@ -34,6 +34,7 @@ type fileStorageClient struct {
 	compactionMutex sync.RWMutex
 	db              *bbolt.DB
 	compactionCfg   *CompactionConfig
+	maxSize         int64
 	openTimeout     time.Duration
 	stopCh          chan struct{}
 	wg              sync.WaitGroup
@@ -49,11 +50,15 @@ func bboltOptions(timeout time.Duration, noSync bool) *bbolt.Options {
 	}
 }
 
-func newClient(logger *zap.Logger, filePath string, timeout time.Duration, compactionCfg *CompactionConfig, noSync bool) (*fileStorageClient, error) {
+func newClient(logger *zap.Logger, filePath string, timeout time.Duration, maxSize int64, compactionCfg *CompactionConfig, noSync bool) (*fileStorageClient, error) {
 	options := bboltOptions(timeout, noSync)
 	db, err := bbolt.Open(filePath, 0o600, options)
 	if err != nil {
 		return nil, err
+	}
+
+	if maxSize > 0 {
+		db.AllocSize = db.Info().PageSize
 	}
 
 	initBucket := func(tx *bbolt.Tx) error {
@@ -69,6 +74,7 @@ func newClient(logger *zap.Logger, filePath string, timeout time.Duration, compa
 		logger:        logger,
 		db:            db,
 		compactionCfg: compactionCfg,
+		maxSize:       maxSize,
 		openTimeout:   timeout,
 		stopCh:        make(chan struct{}),
 		wg:            sync.WaitGroup{},
@@ -109,6 +115,10 @@ func (c *fileStorageClient) Batch(_ context.Context, ops ...*storage.Operation) 
 			return errors.New("storage not initialized")
 		}
 
+		if err := c.checkMaxSize(tx, bucket, ops); err != nil {
+			return err
+		}
+
 		var err error
 		for _, op := range ops {
 			switch op.Type {
@@ -141,6 +151,80 @@ func (c *fileStorageClient) Batch(_ context.Context, ops ...*storage.Operation) 
 	c.compactionMutex.RLock()
 	defer c.compactionMutex.RUnlock()
 	return c.db.Update(batch)
+}
+
+func (c *fileStorageClient) checkMaxSize(tx *bbolt.Tx, bucket *bbolt.Bucket, ops []*storage.Operation) error {
+	if c.maxSize <= 0 {
+		return nil
+	}
+
+	addedBytes := estimateAddedBytes(bucket, ops)
+	if addedBytes == 0 {
+		return nil
+	}
+
+	freeAlloc := int64(c.db.Stats().FreeAlloc)
+	if addedBytes <= freeAlloc {
+		return nil
+	}
+
+	requiredGrowth := addedBytes - freeAlloc
+	pageSize := int64(c.db.Info().PageSize)
+	if remainder := requiredGrowth % pageSize; remainder != 0 {
+		requiredGrowth += pageSize - remainder
+	}
+
+	if tx.Size()+requiredGrowth > c.maxSize {
+		return storage.ErrStorageFull
+	}
+
+	return nil
+}
+
+type operationEntryState struct {
+	exists   bool
+	valueLen int
+	loaded   bool
+}
+
+func estimateAddedBytes(bucket *bbolt.Bucket, ops []*storage.Operation) int64 {
+	states := make(map[string]operationEntryState, len(ops))
+	var addedBytes int64
+
+	for _, op := range ops {
+		if op.Type == storage.Get {
+			continue
+		}
+
+		state := states[op.Key]
+		if !state.loaded {
+			existingValue := bucket.Get([]byte(op.Key))
+			state.exists = existingValue != nil
+			state.valueLen = len(existingValue)
+			state.loaded = true
+		}
+
+		switch op.Type {
+		case storage.Set:
+			if state.exists {
+				delta := len(op.Value) - state.valueLen
+				if delta > 0 {
+					addedBytes += int64(delta)
+				}
+			} else {
+				addedBytes += int64(len(op.Key) + len(op.Value))
+			}
+			state.exists = true
+			state.valueLen = len(op.Value)
+		case storage.Delete:
+			state.exists = false
+			state.valueLen = 0
+		}
+
+		states[op.Key] = state
+	}
+
+	return addedBytes
 }
 
 // Close will close the database
