@@ -10,6 +10,13 @@ status:
     active: [Aneurysm9, mxiamxia]
     emeritus: [shaochengwang, bryan-aguilar]
 
+feature_gates:
+  - id: "awsemf.nodimrollupdefault"
+    description: Changes the default AWS EMF Exporter Dimension rollup option to NoDimensionRollup
+    stage: alpha
+    from_version: v0.83.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23997
+
 tests:
   config:
     region: 'us-west-2'
