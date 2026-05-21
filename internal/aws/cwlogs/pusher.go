@@ -151,9 +151,18 @@ func newEventBatch(key StreamKey) *eventBatch {
 	}
 }
 
+// exceedsLimit reports whether adding nextByteTotal more bytes would push the
+// current batch past the PutLogEvents per-request limit (maxRequestPayloadBytes,
+// 1 MiB). The per-event truncation cap (maxEventPayloadBytes, default 256 KiB)
+// is a separate limit and must not be used here; doing so caps batches at 256
+// KiB regardless of how many events would fit under the 1 MiB request ceiling.
+//
+// The 1 MiB batch-size accounting is documented by the service as
+// `sum(message bytes UTF-8) + 26 * num_events`, which is exactly what
+// byteTotal sums (eventPayloadBytes() already includes perEventHeaderBytes).
 func (batch *eventBatch) exceedsLimit(nextByteTotal int) bool {
 	return len(batch.putLogEventsInput.LogEvents) == cap(batch.putLogEventsInput.LogEvents) ||
-		batch.byteTotal+nextByteTotal > maxEventPayloadBytes
+		batch.byteTotal+nextByteTotal > maxRequestPayloadBytes
 }
 
 // isActive checks whether the eventBatch spans more than 24 hours. Returns

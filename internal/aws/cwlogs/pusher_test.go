@@ -191,8 +191,19 @@ func TestAddLogEventWithValidation(t *testing.T) {
 	require.NoError(t, p.AddLogEntry(t.Context(), logEvent), "Error adding log entry")
 	assert.Equal(t, expectedTruncatedContent, *logEvent.InputLogEvent.Message)
 
-	logEvent = NewEvent(timestampMs, "")
-	assert.NotNil(t, p.addLogEvent(logEvent))
+	// Push enough additional truncated-to-256 KiB events that the cumulative
+	// byte total crosses the per-batch ceiling (~1 MiB) and a rollover is
+	// guaranteed. We already have one event in the batch; four more 256 KiB
+	// events bring the running total above the ceiling.
+	var rolled bool
+	for i := 0; i < 5 && !rolled; i++ {
+		filler := NewEvent(timestampMs, strings.Repeat("b", defaultMaxEventPayloadBytes))
+		require.NoError(t, filler.Validate(zap.NewNop()))
+		if p.addLogEvent(filler) != nil {
+			rolled = true
+		}
+	}
+	assert.True(t, rolled, "batch should roll once total bytes exceed the per-request ceiling")
 }
 
 func TestStreamManager(t *testing.T) {
@@ -359,6 +370,32 @@ func TestPusher_perPusherMaxEventPayloadBytes(t *testing.T) {
 			WithMaxEventPayloadBytes(0))
 		assert.Equal(t, maxEventPayloadBytes, omitted.effectiveMaxEventPayloadBytes())
 		assert.Equal(t, maxEventPayloadBytes, zero.effectiveMaxEventPayloadBytes())
+	})
+
+	t.Run("two large events with a 1 MiB cap share a batch (regression for per-event vs batch cap conflation)", func(t *testing.T) {
+		// Before the fix, eventBatch.exceedsLimit compared against the
+		// package-level maxEventPayloadBytes (256 KiB). Two ~400 KiB events
+		// passed through a pusher with a 1 MiB per-event cap would land in
+		// two separate PutLogEvents calls. After the fix, exceedsLimit
+		// compares against maxRequestPayloadBytes (1 MiB) and they share a
+		// batch.
+		p := newLogPusher(StreamKey{
+			LogGroupName:  logGroup,
+			LogStreamName: logStreamName,
+		}, Client{svc: &mockCloudWatchClient{}}, zap.NewNop(),
+			WithMaxEventPayloadBytes(maxRequestPayloadBytes))
+
+		body := strings.Repeat("c", 400*1024)
+		var rolledOut int
+		for i := 0; i < 2; i++ {
+			prev := p.addLogEvent(NewEvent(timestampMs, body))
+			if prev != nil {
+				rolledOut++
+			}
+		}
+		assert.Equal(t, 0, rolledOut, "two 400 KiB events with a 1 MiB cap must share a batch, not flush early")
+		assert.Len(t, p.logEventBatch.putLogEventsInput.LogEvents, 2,
+			"both events should still be queued in the current batch")
 	})
 }
 
