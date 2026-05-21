@@ -23,3 +23,9 @@ feature_gates:
     stage: beta
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46437
+
+  - id: "ottl.functions.enableLambda"
+    description: Allow OTTL functions to take lambda arguments. When disabled, lambda arguments are rejected.
+    stage: alpha
+    from_version: v0.153.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48227

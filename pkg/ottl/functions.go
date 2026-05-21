@@ -13,6 +13,8 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 )
 
 // PathExpressionParser is how a context provides OTTL access to all its Paths.
@@ -75,7 +77,7 @@ func buildOriginalKeysText(keys []key) string {
 	return builder.String()
 }
 
-func (p *Parser[K]) newPath(path *path) (*basePath[K], error) {
+func (p *parseContext[K]) newPath(path *path) (*basePath[K], error) {
 	if len(path.Fields) == 0 {
 		return nil, errors.New("cannot make a path from zero fields")
 	}
@@ -105,7 +107,7 @@ func (p *Parser[K]) newPath(path *path) (*basePath[K], error) {
 	return current, nil
 }
 
-func (p *Parser[K]) parsePathContext(path *path) (string, []field, error) {
+func (p *parseContext[K]) parsePathContext(path *path) (string, []field, error) {
 	hasPathContextNames := len(p.pathContextNames) > 0
 	if path.Context != "" {
 		// no pathContextNames means the Parser isn't handling the grammar path's context yet,
@@ -223,7 +225,7 @@ func (p *basePath[K]) isComplete() error {
 	return p.nextPath.isComplete()
 }
 
-func (p *Parser[K]) newKeys(keys []key) ([]Key[K], error) {
+func (p *parseContext[K]) newKeys(keys []key) ([]Key[K], error) {
 	if len(keys) == 0 {
 		return nil, nil
 	}
@@ -303,7 +305,7 @@ func (k *baseKey[K]) ExpressionGetter(_ context.Context, _ K) (Getter[K], error)
 	return k.g, nil
 }
 
-func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
+func (p *parseContext[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
 	g, err := p.pathParser(ip)
 	if err != nil {
 		return nil, err
@@ -315,7 +317,7 @@ func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
 	return g, nil
 }
 
-func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
+func (p *parseContext[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	f, ok := p.functions[ed.Function]
 	if !ok {
 		return Expr[K]{}, fmt.Errorf("undefined function %q", ed.Function)
@@ -348,7 +350,7 @@ func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	return Expr[K]{exprFunc: fn}, err
 }
 
-func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
+func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 	requiredArgs := 0
 	seenNamed := false
 
@@ -439,7 +441,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 	return nil
 }
 
-func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, error) {
+func (p *parseContext[K]) buildSliceArg(argVal value, argType reflect.Type) (any, error) {
 	name := argType.Elem().Name()
 	switch {
 	case name == reflect.Uint8.String():
@@ -536,7 +538,7 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 	}
 }
 
-func (p *Parser[K]) buildGetSetterFromPath(path *path) (GetSetter[K], error) {
+func (p *parseContext[K]) buildGetSetterFromPath(path *path) (GetSetter[K], error) {
 	np, err := p.newPath(path)
 	if err != nil {
 		return nil, err
@@ -549,7 +551,7 @@ func (p *Parser[K]) buildGetSetterFromPath(path *path) (GetSetter[K], error) {
 }
 
 // Handle interfaces that can be passed as arguments to OTTL functions.
-func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
+func (p *parseContext[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 	name := argType.Name()
 	switch {
 	case strings.HasPrefix(name, "Setter"),
@@ -687,6 +689,15 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			return nil, errors.New("must be a bool")
 		}
 		return bool(*argVal.Bool), nil
+	case strings.HasPrefix(name, "LambdaExpression"):
+		if argVal.Lambda == nil {
+			return nil, errors.New("must be a lambda expression")
+		}
+		lambExpr, err := p.newLambdaExpression(argVal.Lambda)
+		if err != nil {
+			return nil, err
+		}
+		return *lambExpr, nil
 	default:
 		return nil, fmt.Errorf("unsupported argument type: %s", name)
 	}
@@ -717,6 +728,56 @@ func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc
 	}
 
 	return vals, nil
+}
+
+var errLambdaExpressionDisable = fmt.Errorf(
+	"lambda expression arguments requires the `%s` feature gate to be enabled",
+	metadata.OttlFunctionsEnableLambdaFeatureGate.ID(),
+)
+
+func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*LambdaExpression[K], error) {
+	if !metadata.OttlFunctionsEnableLambdaFeatureGate.IsEnabled() {
+		return nil, errLambdaExpressionDisable
+	}
+
+	paramNames := make([]string, len(l.Params))
+	validParams := make(localScopeFrame, len(l.Params))
+	for i, param := range l.Params {
+		name := param.name()
+		if _, exists := validParams[name]; exists {
+			return nil, fmt.Errorf("duplicate local identifier %s", name)
+		}
+		validParams[name] = struct{}{}
+		paramNames[i] = name
+	}
+
+	var result *LambdaExpression[K]
+	err := p.withLocalScope(validParams, func() error {
+		switch {
+		case l.Body.Expr != nil && l.Body.Value != nil:
+			return errors.New("lambda cannot have both an expression and a value body, this is a programming error in OTTL")
+		case l.Body.Expr != nil:
+			body, err := p.newBoolExpr(l.Body.Expr)
+			if err != nil {
+				return err
+			}
+			result = &LambdaExpression[K]{paramNames: paramNames, bodyExpr: body}
+			return nil
+		case l.Body.Value != nil:
+			body, err := p.newGetter(*l.Body.Value)
+			if err != nil {
+				return err
+			}
+			result = &LambdaExpression[K]{paramNames: paramNames, body: body}
+			return nil
+		default:
+			return errors.New("lambda requires a valid body after =>")
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // optionalManager provides a way for the parser to handle Optional[T] structs

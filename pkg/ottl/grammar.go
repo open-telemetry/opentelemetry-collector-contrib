@@ -5,6 +5,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -221,6 +222,55 @@ func (c *converter) accept(v grammarVisitor) {
 	}
 }
 
+type lambdaExpr struct {
+	Params []localIdentifierDecl `parser:"'(' ( @LocalIdentifier ( ',' @LocalIdentifier )* )? ')'"`
+	Arrow  string                `parser:"@LambdaArrow"`
+	Body   lambdaBody            `parser:"@@"`
+}
+
+type lambdaBody struct {
+	Value *value             `parser:"( @@ (?! OpOr | OpAnd | OpComparison)"`
+	Expr  *booleanExpression `parser:"| @@ )"`
+}
+
+func (lb *lambdaBody) accept(vis grammarVisitor) {
+	vis.visitLambdaBody(lb)
+	if lb.Expr != nil {
+		lb.Expr.accept(vis)
+	}
+	if lb.Value != nil {
+		lb.Value.accept(vis)
+	}
+}
+
+type localIdentifierDecl string
+
+func (n *localIdentifierDecl) Capture(values []string) error {
+	s := values[0]
+	if len(s) < 2 || !strings.HasPrefix(s, "$") {
+		return fmt.Errorf("invalid local identifier %q: must start with '$' and include at least one character after it", s)
+	}
+	*n = localIdentifierDecl(s)
+	return nil
+}
+
+func (n *localIdentifierDecl) name() string {
+	return string(*n)
+}
+
+type localIdentifier struct {
+	Name localIdentifierDecl `parser:"@LocalIdentifier"`
+	Keys []key               `parser:"( @@ )*"`
+}
+
+func (lb *localIdentifier) accept(vis grammarVisitor) {
+	if lb.Keys != nil {
+		for _, k := range lb.Keys {
+			k.accept(vis)
+		}
+	}
+}
+
 type argument struct {
 	Name         string  `parser:"(@(Lowercase(Uppercase | Lowercase)*) Equal)?"`
 	Value        value   `parser:"( @@"`
@@ -236,6 +286,7 @@ func (a *argument) accept(v grammarVisitor) {
 type value struct {
 	IsNil          *isNil           `parser:"( @Nil"`
 	Literal        *mathExprLiteral `parser:"| @@ (?! OpAddSub | OpMultDiv)"`
+	Lambda         *lambdaExpr      `parser:"| @@"`
 	MathExpression *mathExpression  `parser:"| @@"`
 	Bytes          *byteSlice       `parser:"| @Bytes"`
 	String         *string          `parser:"| @String"`
@@ -253,6 +304,9 @@ func (v *value) checkForCustomError() error {
 
 func (v *value) accept(vis grammarVisitor) {
 	vis.visitValue(v)
+	if v.Lambda != nil {
+		v.Lambda.Body.accept(vis)
+	}
 	if v.Literal != nil {
 		v.Literal.accept(vis)
 	}
@@ -363,11 +417,12 @@ func (n *isNil) Capture(_ []string) error {
 
 type mathExprLiteral struct {
 	// If editor is matched then error
-	Editor    *editor    `parser:"( @@"`
-	Converter *converter `parser:"| @@"`
-	Float     *float64   `parser:"| @Float"`
-	Int       *int64     `parser:"| @Int"`
-	Path      *path      `parser:"| @@ )"`
+	Editor          *editor          `parser:"( @@"`
+	Converter       *converter       `parser:"| @@"`
+	Float           *float64         `parser:"| @Float"`
+	Int             *int64           `parser:"| @Int"`
+	Path            *path            `parser:"| @@"`
+	LocalIdentifier *localIdentifier `parser:"| @@ )"`
 }
 
 func (m *mathExprLiteral) accept(v grammarVisitor) {
@@ -380,6 +435,9 @@ func (m *mathExprLiteral) accept(v grammarVisitor) {
 	}
 	if m.Converter != nil {
 		m.Converter.accept(v)
+	}
+	if m.LocalIdentifier != nil {
+		m.LocalIdentifier.accept(v)
 	}
 }
 
@@ -510,6 +568,8 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `OpOr`, Pattern: `\b(or)\b`},
 		{Name: `OpAnd`, Pattern: `\b(and)\b`},
 		{Name: `OpComparison`, Pattern: `==|!=|>=|<=|>|<`},
+		{Name: `LambdaArrow`, Pattern: `=>`},
+		{Name: `LocalIdentifier`, Pattern: `\$[a-z][a-z0-9_]*`},
 		{Name: `OpAddSub`, Pattern: `\+|\-`},
 		{Name: `OpMultDiv`, Pattern: `\/|\*`},
 		{Name: `Boolean`, Pattern: `\b(true|false)\b`},
@@ -561,6 +621,7 @@ type grammarVisitor interface {
 	visitConverter(v *converter)
 	visitValue(v *value)
 	visitMathExprLiteral(v *mathExprLiteral)
+	visitLambdaBody(v *lambdaBody)
 }
 
 // grammarCustomErrorsVisitor is used to execute custom validations on the grammar AST.
@@ -594,5 +655,16 @@ func (g *grammarCustomErrorsVisitor) visitEditor(v *editor) {
 func (g *grammarCustomErrorsVisitor) visitMathExprLiteral(v *mathExprLiteral) {
 	if v.Editor != nil {
 		g.add(fmt.Errorf("converter names must start with an uppercase letter but got '%v'", v.Editor.Function))
+	}
+}
+
+func (g *grammarCustomErrorsVisitor) visitLambdaBody(v *lambdaBody) {
+	// Reject a lambda whose body is another lambda ((...) => (...) => <expression>).
+	// The grammar allows it, but a body that returns *lambdaExpr does not retain outer
+	// parameter bindings for a later Eval, relying only on nested Eval and context.
+	// It might be changed in the future if lambdas become available for general use
+	// within the language.
+	if v.Value != nil && v.Value.Lambda != nil {
+		g.add(errors.New("lambda body cannot result into another lambda expression"))
 	}
 }

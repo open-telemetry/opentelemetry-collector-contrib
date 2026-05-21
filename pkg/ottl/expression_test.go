@@ -12,8 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -110,11 +112,18 @@ func basicSliceByte() (ExprFunc[any], error) {
 }
 
 func Test_newGetter(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set(
+		metadata.OttlFunctionsEnableLambdaFeatureGate.ID(),
+		true,
+	)
+	require.NoError(t, err)
+
 	tests := []struct {
 		name        string
 		val         value
 		ctx         any
 		want        any
+		deepEqual   bool
 		wantLiteral bool
 	}{
 		{
@@ -705,6 +714,34 @@ func Test_newGetter(t *testing.T) {
 				"byteAttr":   []byte{1, 2, 3, 4, 5, 6, 7, 8},
 			},
 		},
+		{
+			name: "lambda",
+			val: value{
+				Lambda: &lambdaExpr{
+					Params: []localIdentifierDecl{"$value"},
+					Arrow:  "=>",
+					Body: lambdaBody{
+						Value: &value{
+							Literal: &mathExprLiteral{
+								LocalIdentifier: &localIdentifier{
+									Name: "$value",
+								},
+							},
+						},
+					},
+				},
+			},
+			wantLiteral: true,
+			deepEqual:   true,
+			want: &LambdaExpression[any]{
+				paramNames: []string{"$value"},
+				body: &localBindingGetter[any]{
+					identifierPath: &localIdentifier{
+						Name: "$value",
+					},
+				},
+			},
+		},
 	}
 
 	functions := CreateFactoryMap(
@@ -729,7 +766,7 @@ func Test_newGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader, err := p.newGetter(tt.val)
+			reader, err := p.newParseContext().newGetter(tt.val)
 			require.NoError(t, err)
 
 			tCtx := tt.want
@@ -750,12 +787,17 @@ func Test_newGetter(t *testing.T) {
 				val, err = reader.Get(t.Context(), tCtx)
 				require.NoError(t, err)
 			}
-			assert.Truef(t, valueComparator.Equal(tt.want, val), "expected: %v, got: %v", tt.want, val)
+
+			if tt.deepEqual {
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.Truef(t, valueComparator.Equal(tt.want, val), "expected: %v, got: %v", tt.want, val)
+			}
 		})
 	}
 
 	t.Run("empty value", func(t *testing.T) {
-		_, err := p.newGetter(value{})
+		_, err := p.newParseContext().newGetter(value{})
 		assert.Error(t, err)
 	})
 }
@@ -913,7 +955,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader, err := p.newGetter(tt.val)
+			reader, err := p.newParseContext().newGetter(tt.val)
 			require.NoError(t, err)
 			_, err = reader.Get(t.Context(), nil)
 			assert.Equal(t, tt.err, err)
