@@ -4,13 +4,17 @@
 package hologresexporter
 
 import (
+	"context"
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
 func newTestMetrics() pmetric.Metrics {
@@ -373,4 +377,126 @@ func TestMetricsBatch_InsertEmpty(t *testing.T) {
 	// Inserting with no rows should be a no-op.
 	err := batch.insert(t.Context(), nil)
 	assert.NoError(t, err)
+}
+
+func TestMetricsBatch_Insert_WithDB(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 2))
+
+	batch := &metricsBatch{
+		tableName:   "test_table",
+		columns:     "a, b, c",
+		columnCount: 3,
+	}
+	batch.addRow(1, "two", 3.0)
+	batch.addRow(4, "five", 6.0)
+
+	err = batch.insert(t.Context(), db)
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestMetricsBatch_Insert_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectExec("INSERT INTO").WillReturnError(fmt.Errorf("insert failed"))
+
+	batch := &metricsBatch{
+		tableName:   "test_table",
+		columns:     "a, b",
+		columnCount: 2,
+	}
+	batch.addRow(1, "two")
+
+	err = batch.insert(t.Context(), db)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "insert failed")
+}
+
+func TestPushMetricData_WithDB(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	// newTestMetrics() produces 5 metric types, each with data -> 5 INSERT calls.
+	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
+
+	cfg := &Config{MetricsTableName: "otel_metrics"}
+	exp := &metricsExporter{
+		logger: zap.NewNop(),
+		cfg:    cfg,
+		db:     db,
+	}
+
+	md := newTestMetrics()
+	err = exp.pushMetricData(t.Context(), md)
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestPushMetricData_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	// First batch (gauge) insert fails.
+	mock.ExpectExec("INSERT INTO").WillReturnError(fmt.Errorf("db error"))
+
+	cfg := &Config{MetricsTableName: "otel_metrics"}
+	exp := &metricsExporter{
+		logger: zap.NewNop(),
+		cfg:    cfg,
+		db:     db,
+	}
+
+	md := newTestMetrics()
+	err = exp.pushMetricData(t.Context(), md)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "db error")
+}
+
+func TestMetricsExporter_Shutdown(t *testing.T) {
+	t.Run("nil db", func(t *testing.T) {
+		exp := &metricsExporter{
+			logger: zap.NewNop(),
+			cfg:    &Config{},
+		}
+		err := exp.shutdown(context.Background())
+		require.NoError(t, err)
+	})
+
+	t.Run("with db", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+
+		mock.ExpectClose()
+
+		exp := &metricsExporter{
+			logger: zap.NewNop(),
+			cfg:    &Config{},
+			db:     db,
+		}
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	})
+}
+
+func TestMetricsExporter_Start_DBError(t *testing.T) {
+	exp := &metricsExporter{
+		logger: zap.NewNop(),
+		cfg: &Config{
+			DSN: "postgresql://user:pass@localhost:1/db",
+		},
+	}
+	err := exp.start(context.Background(), nil)
+	require.Error(t, err)
 }

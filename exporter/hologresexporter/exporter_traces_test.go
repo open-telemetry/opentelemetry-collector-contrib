@@ -4,14 +4,18 @@
 package hologresexporter
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 )
 
 func newTestTraces() ptrace.Traces {
@@ -223,4 +227,125 @@ func TestMaxSpansPerBatch(t *testing.T) {
 	assert.Equal(t, 17, traceColumnsCount)
 	assert.Equal(t, 65535/17, maxSpansPerBatch)
 	assert.True(t, maxSpansPerBatch*traceColumnsCount <= 65535)
+}
+
+func TestPushTraceData_WithDB(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
+
+	cfg := &Config{TracesTableName: "test_traces"}
+	exp := &tracesExporter{
+		logger: zap.NewNop(),
+		cfg:    cfg,
+		db:     db,
+	}
+
+	td := newTestTraces()
+	err = exp.pushTraceData(t.Context(), td)
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestPushTraceData_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectExec("INSERT INTO").WillReturnError(fmt.Errorf("connection refused"))
+
+	cfg := &Config{TracesTableName: "test_traces"}
+	exp := &tracesExporter{
+		logger: zap.NewNop(),
+		cfg:    cfg,
+		db:     db,
+	}
+
+	td := newTestTraces()
+	err = exp.pushTraceData(t.Context(), td)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "connection refused")
+}
+
+func TestTracesInsertBatch_WithDB(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 2))
+
+	cfg := &Config{TracesTableName: "test_traces"}
+	exp := &tracesExporter{
+		logger: zap.NewNop(),
+		cfg:    cfg,
+		db:     db,
+	}
+
+	rows := []traceSpanRow{
+		{args: make([]any, traceColumnsCount)},
+		{args: make([]any, traceColumnsCount)},
+	}
+
+	err = exp.insertBatch(t.Context(), rows)
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestTracesInsertBatch_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectExec("INSERT INTO").WillReturnError(fmt.Errorf("insert error"))
+
+	cfg := &Config{TracesTableName: "test_traces"}
+	exp := &tracesExporter{
+		logger: zap.NewNop(),
+		cfg:    cfg,
+		db:     db,
+	}
+
+	rows := []traceSpanRow{{args: make([]any, traceColumnsCount)}}
+	err = exp.insertBatch(t.Context(), rows)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "insert error")
+}
+
+func TestTracesExporter_Shutdown(t *testing.T) {
+	t.Run("nil db", func(t *testing.T) {
+		exp := &tracesExporter{
+			logger: zap.NewNop(),
+			cfg:    &Config{},
+		}
+		err := exp.shutdown(context.Background())
+		require.NoError(t, err)
+	})
+
+	t.Run("with db", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+
+		mock.ExpectClose()
+
+		exp := &tracesExporter{
+			logger: zap.NewNop(),
+			cfg:    &Config{},
+			db:     db,
+		}
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	})
+}
+
+func TestTracesExporter_Start_DBError(t *testing.T) {
+	exp := &tracesExporter{
+		logger: zap.NewNop(),
+		cfg: &Config{
+			DSN: "postgresql://user:pass@localhost:1/db",
+		},
+	}
+	err := exp.start(context.Background(), nil)
+	require.Error(t, err)
 }

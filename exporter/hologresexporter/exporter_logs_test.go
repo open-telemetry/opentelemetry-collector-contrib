@@ -4,14 +4,18 @@
 package hologresexporter
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 )
 
 func newTestLogs() plog.Logs {
@@ -148,4 +152,154 @@ func TestMaxLogsPerBatch(t *testing.T) {
 	assert.Equal(t, 13, logColumnsCount)
 	assert.Equal(t, 65535/13, maxLogsPerBatch)
 	assert.LessOrEqual(t, maxLogsPerBatch*logColumnsCount, 65535)
+}
+
+func TestPushLogData_WithDB(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
+
+	cfg := &Config{LogsTableName: "test_logs"}
+	exp := &logsExporter{
+		logger: zap.NewNop(),
+		cfg:    cfg,
+		db:     db,
+	}
+
+	ld := newTestLogs()
+	err = exp.pushLogData(t.Context(), ld)
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestPushLogData_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectExec("INSERT INTO").WillReturnError(fmt.Errorf("connection refused"))
+
+	cfg := &Config{LogsTableName: "test_logs"}
+	exp := &logsExporter{
+		logger: zap.NewNop(),
+		cfg:    cfg,
+		db:     db,
+	}
+
+	ld := newTestLogs()
+	err = exp.pushLogData(t.Context(), ld)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "connection refused")
+}
+
+func TestLogsInsertBatch_WithDB(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 2))
+
+	cfg := &Config{LogsTableName: "test_logs"}
+	exp := &logsExporter{
+		logger: zap.NewNop(),
+		cfg:    cfg,
+		db:     db,
+	}
+
+	rows := []logRow{
+		{args: make([]any, logColumnsCount)},
+		{args: make([]any, logColumnsCount)},
+	}
+
+	err = exp.insertBatch(t.Context(), rows)
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestLogsInsertBatch_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectExec("INSERT INTO").WillReturnError(fmt.Errorf("insert error"))
+
+	cfg := &Config{LogsTableName: "test_logs"}
+	exp := &logsExporter{
+		logger: zap.NewNop(),
+		cfg:    cfg,
+		db:     db,
+	}
+
+	rows := []logRow{{args: make([]any, logColumnsCount)}}
+	err = exp.insertBatch(t.Context(), rows)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "insert error")
+}
+
+func TestLogsExporter_Shutdown(t *testing.T) {
+	t.Run("nil db", func(t *testing.T) {
+		exp := &logsExporter{
+			logger: zap.NewNop(),
+			cfg:    &Config{},
+		}
+		err := exp.shutdown(context.Background())
+		require.NoError(t, err)
+	})
+
+	t.Run("with db", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+
+		mock.ExpectClose()
+
+		exp := &logsExporter{
+			logger: zap.NewNop(),
+			cfg:    &Config{},
+			db:     db,
+		}
+		err = exp.shutdown(context.Background())
+		require.NoError(t, err)
+	})
+}
+
+func TestLogsExporter_Start_DBError(t *testing.T) {
+	exp := &logsExporter{
+		logger: zap.NewNop(),
+		cfg: &Config{
+			DSN: "postgresql://user:pass@localhost:1/db",
+		},
+	}
+	err := exp.start(context.Background(), nil)
+	require.Error(t, err)
+}
+
+func TestPushLogData_TimestampFallbackWithDB(t *testing.T) {
+	// Test the timestamp fallback logic with actual DB insertion.
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
+
+	cfg := &Config{LogsTableName: "test_logs"}
+	exp := &logsExporter{
+		logger: zap.NewNop(),
+		cfg:    cfg,
+		db:     db,
+	}
+
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("service.name", "test-service")
+	sl := rl.ScopeLogs().AppendEmpty()
+	log := sl.LogRecords().AppendEmpty()
+	// Only set ObservedTimestamp, leave Timestamp as zero.
+	observed := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
+	log.SetObservedTimestamp(pcommon.NewTimestampFromTime(observed))
+	log.Body().SetStr("test fallback")
+
+	err = exp.pushLogData(t.Context(), ld)
+	require.NoError(t, err)
 }
