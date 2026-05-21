@@ -15,6 +15,9 @@ properties:
     description: Interval is the time interval at which the processor will aggregate metrics.
     type: string
     format: duration
+  align_to_wall_clock:
+    description: AlignToWallClock controls whether flushes should align to wall-clock interval boundaries. When true and interval is 30s, flushes occur on :00, :30, :00, :30 across replicas.
+    type: boolean
   pass_through:
     description: PassThrough is a configuration that determines whether gauge and summary metrics should be passed through as they are or aggregated.
     $ref: pass_through

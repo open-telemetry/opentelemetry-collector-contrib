@@ -18,6 +18,9 @@ var _ component.Config = (*Config)(nil)
 type Config struct {
 	// Interval is the time interval at which the processor will aggregate metrics.
 	Interval time.Duration `mapstructure:"interval"`
+	// AlignToWallClock controls whether flushes should align to wall-clock interval boundaries.
+	// When true and interval is 30s, flushes occur on :00, :30, :00, :30 across replicas.
+	AlignToWallClock bool `mapstructure:"align_to_wall_clock"`
 	// PassThrough is a configuration that determines whether gauge and summary metrics should be passed through
 	// as they are or aggregated.
 	PassThrough PassThrough `mapstructure:"pass_through"`

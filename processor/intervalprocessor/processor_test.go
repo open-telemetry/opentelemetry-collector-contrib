@@ -145,3 +145,52 @@ func TestFlushOnShutdown(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expectedExportData, allMetrics[1]))
 }
+
+func TestTimeUntilNextIntervalBoundary(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		now      time.Time
+		interval time.Duration
+		expected time.Duration
+	}{
+		{
+			name:     "already_on_boundary_waits_full_interval",
+			now:      time.Date(2026, time.April, 23, 8, 0, 0, 0, time.UTC),
+			interval: 30 * time.Second,
+			expected: 30 * time.Second,
+		},
+		{
+			name:     "partial_interval_waits_until_next_boundary",
+			now:      time.Date(2026, time.April, 23, 8, 0, 17, 500_000_000, time.UTC),
+			interval: 30 * time.Second,
+			expected: 12*time.Second + 500*time.Millisecond,
+		},
+		{
+			name:     "subsecond_precision_is_preserved",
+			now:      time.Date(2026, time.April, 23, 8, 0, 59, 999_000_000, time.UTC),
+			interval: 30 * time.Second,
+			expected: time.Millisecond,
+		},
+		{
+			name:     "invalid_interval_returns_zero",
+			now:      time.Date(2026, time.April, 23, 8, 0, 0, 0, time.UTC),
+			interval: 0,
+			expected: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.expected, timeUntilNextIntervalBoundary(tc.now, tc.interval))
+		})
+	}
+}
+
+func TestCreateDefaultConfig(t *testing.T) {
+	t.Parallel()
+
+	cfg := createDefaultConfig().(*Config)
+	require.False(t, cfg.AlignToWallClock)
+}

@@ -70,23 +70,72 @@ func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics
 }
 
 func (p *intervalProcessor) Start(_ context.Context, _ component.Host) error {
-	exportTicker := time.NewTicker(p.config.Interval)
+	if !p.config.AlignToWallClock {
+		exportTicker := time.NewTicker(p.config.Interval)
+		p.wg.Go(func() {
+			defer exportTicker.Stop()
+
+			for {
+				select {
+				case <-p.ctx.Done():
+					// Flush remaining buffered metrics before exiting.
+					// Use context.Background() since p.ctx is already cancelled.
+					p.exportMetrics(context.Background())
+					return
+				case <-exportTicker.C:
+					p.exportMetrics(p.ctx)
+				}
+			}
+		})
+
+		return nil
+	}
+
+	firstFlushTimer := time.NewTimer(timeUntilNextIntervalBoundary(time.Now(), p.config.Interval))
+	firstFlushTick := firstFlushTimer.C
+
+	var exportTicker *time.Ticker
+	var exportTickerTick <-chan time.Time
+
 	p.wg.Go(func() {
+		defer firstFlushTimer.Stop()
+		defer func() {
+			if exportTicker != nil {
+				exportTicker.Stop()
+			}
+		}()
+
 		for {
 			select {
 			case <-p.ctx.Done():
-				exportTicker.Stop()
 				// Flush remaining buffered metrics before exiting.
 				// Use context.Background() since p.ctx is already cancelled.
 				p.exportMetrics(context.Background())
 				return
-			case <-exportTicker.C:
+			case <-firstFlushTick:
+				// Create the periodic ticker before exporting the first aligned batch so
+				// steady-state cadence remains anchored to the wall-clock boundary time
+				// instead of first export completion time.
+				exportTicker = time.NewTicker(p.config.Interval)
+				exportTickerTick = exportTicker.C
+				firstFlushTick = nil
+				p.exportMetrics(p.ctx)
+			case <-exportTickerTick:
 				p.exportMetrics(p.ctx)
 			}
 		}
 	})
 
 	return nil
+}
+
+func timeUntilNextIntervalBoundary(now time.Time, interval time.Duration) time.Duration {
+	if interval <= 0 {
+		return 0
+	}
+
+	nextBoundary := now.Truncate(interval).Add(interval)
+	return nextBoundary.Sub(now)
 }
 
 func (p *intervalProcessor) Shutdown(_ context.Context) error {
