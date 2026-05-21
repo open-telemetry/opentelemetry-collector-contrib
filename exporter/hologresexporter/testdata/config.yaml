@@ -1,0 +1,26 @@
+hologres:
+  dsn: "postgresql://user:password@localhost:5432/otel?sslmode=disable"
+  traces_table_name: "otel_traces"
+  logs_table_name: "otel_logs"
+  metrics_table_name: "otel_metrics"
+  create_schema: true
+  ttl: 720h
+
+hologres/full:
+  dsn: "postgresql://user:password@localhost:5432/otel?sslmode=disable"
+  database: "otel"
+  traces_table_name: "custom_traces"
+  logs_table_name: "custom_logs"
+  metrics_table_name: "custom_metrics"
+  create_schema: true
+  ttl: 168h
+  retry_on_failure:
+    enabled: true
+    initial_interval: 5s
+    max_interval: 30s
+    max_elapsed_time: 300s
+  sending_queue:
+    enabled: true
+    num_consumers: 10
+    queue_size: 1000
+  timeout: 30s

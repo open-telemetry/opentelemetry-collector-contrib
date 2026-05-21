@@ -1,0 +1,14 @@
+type: hologres
+
+status:
+  class: exporter
+  stability:
+    alpha: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: []
+
+tests:
+  config:
+    dsn: postgresql://localhost:5432/otel
+  skip_lifecycle: true
