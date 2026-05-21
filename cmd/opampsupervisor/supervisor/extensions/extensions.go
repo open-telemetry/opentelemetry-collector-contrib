@@ -112,8 +112,12 @@ func (e *Extensions) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-// GetExtensions returns the extensions keyed by component ID.
+// GetExtensions returns the extensions keyed by component ID. Safe to call on
+// a nil receiver: returns nil when no extensions have been configured.
 func (e *Extensions) GetExtensions() map[component.ID]component.Component {
+	if e == nil {
+		return nil
+	}
 	out := make(map[component.ID]component.Component, len(e.extensions))
 	for id, ext := range e.extensions {
 		out[id] = ext
