@@ -11,6 +11,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/recombine"
@@ -76,8 +77,13 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		format:                  c.Format,
 		addMetadataFromFilepath: c.AddMetadataFromFilePath,
 	}
+	var cLogEmitter helper.LogEmitter
+	if metadata.StanzaSynchronousLogEmitterFeatureGate.IsEnabled() {
+		cLogEmitter = helper.NewSynchronousLogEmitter(set, p.consumeEntries)
+	} else {
+		cLogEmitter = helper.NewBatchingLogEmitter(set, p.consumeEntries)
+	}
 
-	cLogEmitter := helper.NewBatchingLogEmitter(set, p.consumeEntries)
 	p.criLogEmitter = cLogEmitter
 	recombineParser, err := createRecombine(set, c, cLogEmitter)
 	if err != nil {
@@ -98,7 +104,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 //	max_log_size: 1048576 (1MiB)
 //	source_identifier: attributes["log.file.path"]
 //	type: recombine
-func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter *helper.BatchingLogEmitter) (operator.Operator, error) {
+func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter helper.LogEmitter) (operator.Operator, error) {
 	recombineParserCfg := createRecombineConfig(c)
 	recombineParser, err := recombineParserCfg.Build(set)
 	if err != nil {
@@ -106,7 +112,7 @@ func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter *hel
 	}
 
 	// set the LogEmmiter as the output of the recombine parser
-	recombineParser.SetOutputIDs([]string{cLogEmitter.OperatorID})
+	recombineParser.SetOutputIDs([]string{cLogEmitter.ID()})
 	if err := recombineParser.SetOutputs([]operator.Operator{cLogEmitter}); err != nil {
 		return nil, errors.New("failed to set outputs of internal recombine")
 	}
