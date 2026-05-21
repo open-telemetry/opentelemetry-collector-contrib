@@ -1299,9 +1299,9 @@ func configureExporter[T any](tb testing.TB,
 	require.NoError(tb, err, "failed to create messenger for metrics")
 
 	exp.messenger = messenger
-	exp.producer = kafkaclient.NewFranzSyncProducer(client, cfg.IncludeMetadataKeys, cfg.Producer.MaxMessageBytes)
+	exp.producer = kafkaclient.NewFranzSyncProducer(client, cfg.IncludeMetadataKeys, cfg.RecordHeaders, cfg.Producer.MaxMessageBytes, nil)
 
-	tb.Cleanup(func() { assert.NoError(tb, exp.Close(tb.Context())) })
+	tb.Cleanup(func() { client.Close() })
 	return cluster
 }
 

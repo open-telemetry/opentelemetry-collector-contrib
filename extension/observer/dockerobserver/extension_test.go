@@ -122,6 +122,24 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 				Host:          "127.0.0.1",
 			},
 		},
+		{
+			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c",
+			Target: "babc5a6d7af2",
+			Details: &observer.Container{
+				Name:        "agitated_wu",
+				Image:       "nginx",
+				Tag:         "1.17",
+				Command:     "nginx -g daemon off;",
+				ContainerID: "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c",
+				Transport:   observer.ProtocolUnknown,
+				Labels: map[string]string{
+					"hello":      "world",
+					"maintainer": "NGINX Docker Maintainers",
+					"mstumpf":    "",
+				},
+				Host: "babc5a6d7af2",
+			},
+		},
 	}
 
 	require.Equal(t, want, cEndpoints)
@@ -194,6 +212,61 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 				Port:          8080,
 				AlternatePort: 80,
 				Host:          "127.0.0.1",
+			},
+		},
+	}
+
+	require.Equal(t, want, cEndpoints)
+}
+
+func TestCollectEndpointsIncludeAllContainers(t *testing.T) {
+	extIncludeAll := loadConfig(t, component.NewIDWithName(metadata.Type, "include_all_containers"))
+	ext, err := newObserver(zap.NewNop(), extIncludeAll)
+	require.NoError(t, err)
+	require.NotNil(t, ext)
+
+	obvs := ext.(*dockerObserver)
+
+	c := containerJSON(t)
+	cEndpoints := obvs.containerEndpoints(&c)
+
+	want := []observer.Endpoint{
+		{
+			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
+			Target: "172.17.0.2:80",
+			Details: &observer.Container{
+				Name:        "agitated_wu",
+				Image:       "nginx",
+				Tag:         "1.17",
+				Command:     "nginx -g daemon off;",
+				ContainerID: "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c",
+				Transport:   observer.ProtocolTCP,
+				Labels: map[string]string{
+					"hello":      "world",
+					"maintainer": "NGINX Docker Maintainers",
+					"mstumpf":    "",
+				},
+				Port:          80,
+				AlternatePort: 8080,
+				Host:          "172.17.0.2",
+			},
+		},
+		{
+			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c",
+			Target: "172.17.0.2",
+			Details: &observer.Container{
+				Name:        "agitated_wu",
+				Image:       "nginx",
+				Tag:         "1.17",
+				Command:     "nginx -g daemon off;",
+				ContainerID: "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c",
+				Transport:   observer.ProtocolUnknown,
+				Labels: map[string]string{
+					"hello":      "world",
+					"maintainer": "NGINX Docker Maintainers",
+					"mstumpf":    "",
+				},
+				Host: "172.17.0.2",
 			},
 		},
 	}

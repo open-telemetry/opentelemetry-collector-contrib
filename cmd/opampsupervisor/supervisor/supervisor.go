@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/tls"
 	_ "embed"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
@@ -38,13 +39,11 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/log"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -249,29 +248,14 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		readers = []telemetryconfig.MetricReader{}
 	}
 
-	pcommonRes := pcommon.NewResource()
-	for k, v := range cfg.Resource {
-		pcommonRes.Attributes().PutStr(k, *v)
+	resourceCfg, err := buildSupervisorResourceConfig(&cfg.Resource)
+	if err != nil {
+		return telemetrySettings{}, err
 	}
-
-	if _, ok := cfg.Resource[string(conventions.ServiceNameKey)]; !ok {
-		pcommonRes.Attributes().PutStr(string(conventions.ServiceNameKey), "opamp-supervisor")
+	pcommonRes, err := resourceConfigToPcommon(ctx, resourceCfg)
+	if err != nil {
+		return telemetrySettings{}, err
 	}
-
-	if _, ok := cfg.Resource[string(conventions.ServiceInstanceIDKey)]; !ok {
-		instanceUUID, _ := uuid.NewRandom()
-		instanceID := instanceUUID.String()
-		pcommonRes.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), instanceID)
-	}
-
-	// TODO currently we do not have the build info containing the version available to set semconv.ServiceVersionKey
-
-	var attrs []telemetryconfig.AttributeNameValue
-	for k, v := range pcommonRes.Attributes().All() {
-		attrs = append(attrs, telemetryconfig.AttributeNameValue{Name: k, Value: v.Str()})
-	}
-
-	sch := conventions.SchemaURL
 
 	sdk, err := telemetryconfig.NewSDK(
 		telemetryconfig.WithContext(ctx),
@@ -286,10 +270,7 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 				LoggerProvider: &telemetryconfig.LoggerProvider{
 					Processors: cfg.Logs.Processors,
 				},
-				Resource: &telemetryconfig.Resource{
-					SchemaUrl:  &sch,
-					Attributes: attrs,
-				},
+				Resource: resourceCfg,
 			},
 		),
 	)
@@ -483,34 +464,23 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		},
 		onMessage: func(_ serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 			response := &protobufs.ServerToAgent{}
+
+			if !slices.Equal(message.GetInstanceUid(), s.persistentState.InstanceID[:]) {
+				done <- fmt.Errorf(
+					"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s): %w",
+					hex.EncodeToString(message.GetInstanceUid()),
+					s.persistentState.InstanceID.String(),
+					errNonMatchingInstanceUID,
+				)
+				return response
+			}
+
 			if message.GetAvailableComponents() != nil {
 				s.setAvailableComponents(message.AvailableComponents)
 			}
 
 			if message.AgentDescription != nil {
-				instanceIDSeen := false
 				s.setAgentDescription(message.AgentDescription)
-				identAttr := message.AgentDescription.IdentifyingAttributes
-
-				for _, attr := range identAttr {
-					if attr.Key == string(conventions.ServiceInstanceIDKey) {
-						if attr.Value.GetStringValue() != s.persistentState.InstanceID.String() {
-							done <- fmt.Errorf(
-								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s): %w",
-								attr.Value.GetStringValue(),
-								s.persistentState.InstanceID.String(),
-								errNonMatchingInstanceUID,
-							)
-							return response
-						}
-						instanceIDSeen = true
-					}
-				}
-
-				if !instanceIDSeen {
-					done <- errors.New("the Collector did not specify an instance ID in its AgentDescription message")
-					return response
-				}
 			}
 
 			// agent description must be defined

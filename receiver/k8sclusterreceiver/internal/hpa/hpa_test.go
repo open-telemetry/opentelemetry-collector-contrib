@@ -21,7 +21,7 @@ func TestHPAMetrics(t *testing.T) {
 	hpa := testutils.NewHPA("1")
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+	mb := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(mb, hpa, ts)
 	m := mb.Emit()
 
@@ -53,7 +53,7 @@ func TestHPAResAttrs(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 
 	// Enable additional attributes
-	cfg := metadata.DefaultMetricsBuilderConfig()
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	cfg.ResourceAttributes.K8sHpaScaletargetrefKind.Enabled = true
 	cfg.ResourceAttributes.K8sHpaScaletargetrefName.Enabled = true
 	cfg.ResourceAttributes.K8sHpaScaletargetrefApiversion.Enabled = true

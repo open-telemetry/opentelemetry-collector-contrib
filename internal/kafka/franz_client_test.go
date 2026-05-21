@@ -20,9 +20,11 @@ import (
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
@@ -398,6 +400,77 @@ func TestNewFranzKafkaConsumer_InitialOffset(t *testing.T) {
 	}
 }
 
+func TestBalancerOptFromStrategy(t *testing.T) {
+	balancerExtID := component.MustNewID("my_balancer")
+	type testcase struct {
+		strategy configkafka.GroupRebalanceStrategy
+		host     component.Host
+		wantNil  bool
+		wantErr  string
+	}
+	for name, tc := range map[string]testcase{
+		"empty": {
+			strategy: "",
+			host:     componenttest.NewNopHost(),
+			wantNil:  true,
+		},
+		"range": {
+			strategy: configkafka.RangeBalanceStrategy,
+			host:     componenttest.NewNopHost(),
+		},
+		"roundrobin": {
+			strategy: configkafka.RoundRobinBalanceStrategy,
+			host:     componenttest.NewNopHost(),
+		},
+		"sticky": {
+			strategy: configkafka.StickyBalanceStrategy,
+			host:     componenttest.NewNopHost(),
+		},
+		"cooperative-sticky": {
+			strategy: configkafka.CooperativeStickyBalanceStrategy,
+			host:     componenttest.NewNopHost(),
+		},
+		"extension_not_found": {
+			strategy: "my_balancer",
+			host:     componenttest.NewNopHost(),
+			wantErr:  `group_rebalance_strategy extension "my_balancer" not found`,
+		},
+		"extension_wrong_type": {
+			strategy: "my_balancer",
+			host: &mockHost{extensions: map[component.ID]component.Component{
+				balancerExtID: &nopComponent{},
+			}},
+			wantErr: `does not implement kgo.GroupBalancer`,
+		},
+		"extension_ok": {
+			strategy: "my_balancer",
+			host: &mockHost{extensions: map[component.ID]component.Component{
+				balancerExtID: &mockGroupBalancer{},
+			}},
+		},
+		"invalid_id": {
+			strategy: "!!!invalid!!!",
+			host:     componenttest.NewNopHost(),
+			wantErr:  "is not a built-in strategy or a valid extension ID",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			opt, err := balancerOptFromStrategy(tc.strategy, tc.host)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			if tc.wantNil {
+				assert.Nil(t, opt)
+			} else {
+				assert.NotNil(t, opt)
+			}
+		})
+	}
+}
+
 func fetchRecords(ctx context.Context, client *kgo.Client, wantRecords int) <-chan kgo.Fetches {
 	fetchChan := make(chan kgo.Fetches)
 	go func() {
@@ -577,4 +650,45 @@ func TestNewFranzClient_And_Admin(t *testing.T) {
 	assert.NotEmpty(t, md.Brokers)
 	_, ok := md.Topics["meta-topic"]
 	assert.True(t, ok)
+}
+
+// mockHost is a minimal component.Host that returns a fixed extension map.
+type mockHost struct {
+	extensions map[component.ID]component.Component
+}
+
+func (m *mockHost) GetExtensions() map[component.ID]component.Component {
+	return m.extensions
+}
+
+// nopComponent is a component.Component that does not implement GroupBalancer.
+type nopComponent struct {
+	extension.Extension
+}
+
+// mockGroupBalancer is a no-op kgo.GroupBalancer used in tests.
+type mockGroupBalancer struct {
+	extension.Extension
+}
+
+var _ kgo.GroupBalancer = (*mockGroupBalancer)(nil)
+
+func (*mockGroupBalancer) ProtocolName() string {
+	return "mock"
+}
+
+func (*mockGroupBalancer) JoinGroupMetadata([]string, map[string][]int32, int32) []byte {
+	return nil
+}
+
+func (*mockGroupBalancer) ParseSyncAssignment([]byte) (map[string][]int32, error) {
+	return nil, nil
+}
+
+func (*mockGroupBalancer) MemberBalancer([]kmsg.JoinGroupResponseMember) (kgo.GroupMemberBalancer, map[string]struct{}, error) {
+	return nil, nil, nil
+}
+
+func (*mockGroupBalancer) IsCooperative() bool {
+	return false
 }

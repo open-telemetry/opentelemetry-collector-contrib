@@ -3,16 +3,359 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// MemcachedBytesMetricConfig provides config for the memcached.bytes metric.
+type MemcachedBytesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *MemcachedBytesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MemcachedCommandsMetricAttributeKey specifies the key of an attribute for the memcached.commands metric.
+type MemcachedCommandsMetricAttributeKey string
+
+const (
+	MemcachedCommandsMetricAttributeKeyCommand MemcachedCommandsMetricAttributeKey = "command"
+)
+
+// MemcachedCommandsMetricConfig provides config for the memcached.commands metric.
+type MemcachedCommandsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MemcachedCommandsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MemcachedCommandsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MemcachedCommandsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MemcachedCommandsMetricAttributeKeyCommand:
+		default:
+			return fmt.Errorf("metric memcached.commands doesn't have an attribute %v, valid attributes: [command]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MemcachedConnectionsCurrentMetricConfig provides config for the memcached.connections.current metric.
+type MemcachedConnectionsCurrentMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MemcachedConnectionsCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MemcachedConnectionsTotalMetricConfig provides config for the memcached.connections.total metric.
+type MemcachedConnectionsTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MemcachedConnectionsTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MemcachedCPUUsageMetricAttributeKey specifies the key of an attribute for the memcached.cpu.usage metric.
+type MemcachedCPUUsageMetricAttributeKey string
+
+const (
+	MemcachedCPUUsageMetricAttributeKeyState MemcachedCPUUsageMetricAttributeKey = "state"
+)
+
+// MemcachedCPUUsageMetricConfig provides config for the memcached.cpu.usage metric.
+type MemcachedCPUUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MemcachedCPUUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MemcachedCPUUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MemcachedCPUUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MemcachedCPUUsageMetricAttributeKeyState:
+		default:
+			return fmt.Errorf("metric memcached.cpu.usage doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MemcachedCurrentItemsMetricConfig provides config for the memcached.current_items metric.
+type MemcachedCurrentItemsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MemcachedCurrentItemsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MemcachedEvictionsMetricConfig provides config for the memcached.evictions metric.
+type MemcachedEvictionsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MemcachedEvictionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MemcachedNetworkMetricAttributeKey specifies the key of an attribute for the memcached.network metric.
+type MemcachedNetworkMetricAttributeKey string
+
+const (
+	MemcachedNetworkMetricAttributeKeyDirection MemcachedNetworkMetricAttributeKey = "direction"
+)
+
+// MemcachedNetworkMetricConfig provides config for the memcached.network metric.
+type MemcachedNetworkMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MemcachedNetworkMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MemcachedNetworkMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MemcachedNetworkMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MemcachedNetworkMetricAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric memcached.network doesn't have an attribute %v, valid attributes: [direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MemcachedOperationHitRatioMetricAttributeKey specifies the key of an attribute for the memcached.operation_hit_ratio metric.
+type MemcachedOperationHitRatioMetricAttributeKey string
+
+const (
+	MemcachedOperationHitRatioMetricAttributeKeyOperation MemcachedOperationHitRatioMetricAttributeKey = "operation"
+)
+
+// MemcachedOperationHitRatioMetricConfig provides config for the memcached.operation_hit_ratio metric.
+type MemcachedOperationHitRatioMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MemcachedOperationHitRatioMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MemcachedOperationHitRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MemcachedOperationHitRatioMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MemcachedOperationHitRatioMetricAttributeKeyOperation:
+		default:
+			return fmt.Errorf("metric memcached.operation_hit_ratio doesn't have an attribute %v, valid attributes: [operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MemcachedOperationsMetricAttributeKey specifies the key of an attribute for the memcached.operations metric.
+type MemcachedOperationsMetricAttributeKey string
+
+const (
+	MemcachedOperationsMetricAttributeKeyType      MemcachedOperationsMetricAttributeKey = "type"
+	MemcachedOperationsMetricAttributeKeyOperation MemcachedOperationsMetricAttributeKey = "operation"
+)
+
+// MemcachedOperationsMetricConfig provides config for the memcached.operations metric.
+type MemcachedOperationsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MemcachedOperationsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MemcachedOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MemcachedOperationsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MemcachedOperationsMetricAttributeKeyType, MemcachedOperationsMetricAttributeKeyOperation:
+		default:
+			return fmt.Errorf("metric memcached.operations doesn't have an attribute %v, valid attributes: [type, operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MemcachedThreadsMetricConfig provides config for the memcached.threads metric.
+type MemcachedThreadsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MemcachedThreadsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -28,52 +371,62 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for memcached metrics.
 type MetricsConfig struct {
-	MemcachedBytes              MetricConfig `mapstructure:"memcached.bytes"`
-	MemcachedCommands           MetricConfig `mapstructure:"memcached.commands"`
-	MemcachedConnectionsCurrent MetricConfig `mapstructure:"memcached.connections.current"`
-	MemcachedConnectionsTotal   MetricConfig `mapstructure:"memcached.connections.total"`
-	MemcachedCPUUsage           MetricConfig `mapstructure:"memcached.cpu.usage"`
-	MemcachedCurrentItems       MetricConfig `mapstructure:"memcached.current_items"`
-	MemcachedEvictions          MetricConfig `mapstructure:"memcached.evictions"`
-	MemcachedNetwork            MetricConfig `mapstructure:"memcached.network"`
-	MemcachedOperationHitRatio  MetricConfig `mapstructure:"memcached.operation_hit_ratio"`
-	MemcachedOperations         MetricConfig `mapstructure:"memcached.operations"`
-	MemcachedThreads            MetricConfig `mapstructure:"memcached.threads"`
+	MemcachedBytes              MemcachedBytesMetricConfig              `mapstructure:"memcached.bytes"`
+	MemcachedCommands           MemcachedCommandsMetricConfig           `mapstructure:"memcached.commands"`
+	MemcachedConnectionsCurrent MemcachedConnectionsCurrentMetricConfig `mapstructure:"memcached.connections.current"`
+	MemcachedConnectionsTotal   MemcachedConnectionsTotalMetricConfig   `mapstructure:"memcached.connections.total"`
+	MemcachedCPUUsage           MemcachedCPUUsageMetricConfig           `mapstructure:"memcached.cpu.usage"`
+	MemcachedCurrentItems       MemcachedCurrentItemsMetricConfig       `mapstructure:"memcached.current_items"`
+	MemcachedEvictions          MemcachedEvictionsMetricConfig          `mapstructure:"memcached.evictions"`
+	MemcachedNetwork            MemcachedNetworkMetricConfig            `mapstructure:"memcached.network"`
+	MemcachedOperationHitRatio  MemcachedOperationHitRatioMetricConfig  `mapstructure:"memcached.operation_hit_ratio"`
+	MemcachedOperations         MemcachedOperationsMetricConfig         `mapstructure:"memcached.operations"`
+	MemcachedThreads            MemcachedThreadsMetricConfig            `mapstructure:"memcached.threads"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		MemcachedBytes: MetricConfig{
+		MemcachedBytes: MemcachedBytesMetricConfig{
 			Enabled: true,
 		},
-		MemcachedCommands: MetricConfig{
+		MemcachedCommands: MemcachedCommandsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MemcachedCommandsMetricAttributeKey{MemcachedCommandsMetricAttributeKeyCommand},
+		},
+		MemcachedConnectionsCurrent: MemcachedConnectionsCurrentMetricConfig{
 			Enabled: true,
 		},
-		MemcachedConnectionsCurrent: MetricConfig{
+		MemcachedConnectionsTotal: MemcachedConnectionsTotalMetricConfig{
 			Enabled: true,
 		},
-		MemcachedConnectionsTotal: MetricConfig{
+		MemcachedCPUUsage: MemcachedCPUUsageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MemcachedCPUUsageMetricAttributeKey{MemcachedCPUUsageMetricAttributeKeyState},
+		},
+		MemcachedCurrentItems: MemcachedCurrentItemsMetricConfig{
 			Enabled: true,
 		},
-		MemcachedCPUUsage: MetricConfig{
+		MemcachedEvictions: MemcachedEvictionsMetricConfig{
 			Enabled: true,
 		},
-		MemcachedCurrentItems: MetricConfig{
-			Enabled: true,
+		MemcachedNetwork: MemcachedNetworkMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MemcachedNetworkMetricAttributeKey{MemcachedNetworkMetricAttributeKeyDirection},
 		},
-		MemcachedEvictions: MetricConfig{
-			Enabled: true,
+		MemcachedOperationHitRatio: MemcachedOperationHitRatioMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MemcachedOperationHitRatioMetricAttributeKey{MemcachedOperationHitRatioMetricAttributeKeyOperation},
 		},
-		MemcachedNetwork: MetricConfig{
-			Enabled: true,
+		MemcachedOperations: MemcachedOperationsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MemcachedOperationsMetricAttributeKey{MemcachedOperationsMetricAttributeKeyType, MemcachedOperationsMetricAttributeKeyOperation},
 		},
-		MemcachedOperationHitRatio: MetricConfig{
-			Enabled: true,
-		},
-		MemcachedOperations: MetricConfig{
-			Enabled: true,
-		},
-		MemcachedThreads: MetricConfig{
+		MemcachedThreads: MemcachedThreadsMetricConfig{
 			Enabled: true,
 		},
 	}
@@ -84,8 +437,13 @@ type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics: DefaultMetricsConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }

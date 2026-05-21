@@ -10,6 +10,7 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -39,32 +40,67 @@ func recordUserSize(r *kgo.Record) int {
 	return s
 }
 
+// RecordHeader includes key-value pairs to be added as headers to Kafka records.
+type RecordHeader struct {
+	Name  string              `mapstructure:"name"`
+	Value configopaque.String `mapstructure:"value"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
 // FranzSyncProducer is a wrapper around the franz-go client that implements
 // the Producer interface. Allowing us to use the franz-go client while
 // maintaining compatibility with the existing Kafka exporter code.
 type FranzSyncProducer struct {
 	client          *kgo.Client
+	clientCancel    context.CancelFunc
 	metadataKeys    []string
+	recordHeaders   []kgo.RecordHeader
 	maxMessageBytes int
 }
 
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
+// clientCancel must cancel the context passed to kgo.WithContext when the client was created;
+// it is called by Close to unblock any in-flight ProduceSync calls.
 func NewFranzSyncProducer(client *kgo.Client,
 	metadataKeys []string,
+	recordHeaders []RecordHeader,
 	maxMessageBytes int,
+	clientCancel context.CancelFunc,
 ) *FranzSyncProducer {
+	headers := make([]kgo.RecordHeader, 0, len(recordHeaders))
+	for _, pair := range recordHeaders {
+		headers = append(headers, kgo.RecordHeader{
+			Key:   pair.Name,
+			Value: []byte(pair.Value),
+		})
+	}
+
 	return &FranzSyncProducer{
 		client:          client,
+		clientCancel:    clientCancel,
 		metadataKeys:    metadataKeys,
+		recordHeaders:   headers,
 		maxMessageBytes: maxMessageBytes,
 	}
 }
 
-// ExportData sends a batch of messages to Kafka
-func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error {
-	messages := makeFranzMessages(msgs)
-	setMessageHeaders(ctx, messages, p.metadataKeys)
-	result := p.client.ProduceSync(ctx, messages...)
+// ExportData sends a batch of records to Kafka. It attaches configured
+// record headers and per-call metadata-derived headers to each record before
+// producing.
+func (p *FranzSyncProducer) ExportData(ctx context.Context, records []*kgo.Record) error {
+	metadataHeaders := metadataToHeaders(ctx, p.metadataKeys)
+	var headers []kgo.RecordHeader
+	if n := len(p.recordHeaders) + len(metadataHeaders); n > 0 {
+		headers = make([]kgo.RecordHeader, 0, n)
+		headers = append(headers, p.recordHeaders...)
+		headers = append(headers, metadataHeaders...)
+	}
+	for _, r := range records {
+		r.Headers = headers
+	}
+	result := p.client.ProduceSync(ctx, records...)
 	var errs []error
 	for _, r := range result {
 		if r.Err == nil {
@@ -87,25 +123,20 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error
 	return errors.Join(errs...)
 }
 
-// Close shuts down the producer and flushes any remaining messages.
-func (p *FranzSyncProducer) Close() error {
-	p.client.Close()
-	return nil
-}
-
-func makeFranzMessages(messages Messages) []*kgo.Record {
-	msgs := make([]*kgo.Record, 0, messages.Count)
-	for _, msg := range messages.TopicMessages {
-		for _, message := range msg.Messages {
-			msg := &kgo.Record{Topic: msg.Topic}
-			if message.Key != nil {
-				msg.Key = message.Key
-			}
-			if message.Value != nil {
-				msg.Value = message.Value
-			}
-			msgs = append(msgs, msg)
-		}
+// Close shuts down the producer, unblocking any in-flight ExportData call.
+func (p *FranzSyncProducer) Close(ctx context.Context) error {
+	if p.clientCancel != nil {
+		p.clientCancel()
 	}
-	return msgs
+	done := make(chan struct{})
+	go func() {
+		p.client.Close()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }

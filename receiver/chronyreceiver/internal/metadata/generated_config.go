@@ -3,16 +3,28 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// NtpFrequencyOffsetMetricAttributeKey specifies the key of an attribute for the ntp.frequency.offset metric.
+type NtpFrequencyOffsetMetricAttributeKey string
+
+const (
+	NtpFrequencyOffsetMetricAttributeKeyLeapStatus NtpFrequencyOffsetMetricAttributeKey = "leap.status"
+)
+
+// NtpFrequencyOffsetMetricConfig provides config for the ntp.frequency.offset metric.
+type NtpFrequencyOffsetMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NtpFrequencyOffsetMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NtpFrequencyOffsetMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -26,39 +38,299 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+func (ms *NtpFrequencyOffsetMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case NtpFrequencyOffsetMetricAttributeKeyLeapStatus:
+		default:
+			return fmt.Errorf("metric ntp.frequency.offset doesn't have an attribute %v, valid attributes: [leap.status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// NtpSkewMetricConfig provides config for the ntp.skew metric.
+type NtpSkewMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *NtpSkewMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// NtpStratumMetricConfig provides config for the ntp.stratum metric.
+type NtpStratumMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *NtpStratumMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// NtpTimeCorrectionMetricAttributeKey specifies the key of an attribute for the ntp.time.correction metric.
+type NtpTimeCorrectionMetricAttributeKey string
+
+const (
+	NtpTimeCorrectionMetricAttributeKeyLeapStatus NtpTimeCorrectionMetricAttributeKey = "leap.status"
+)
+
+// NtpTimeCorrectionMetricConfig provides config for the ntp.time.correction metric.
+type NtpTimeCorrectionMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NtpTimeCorrectionMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *NtpTimeCorrectionMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *NtpTimeCorrectionMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case NtpTimeCorrectionMetricAttributeKeyLeapStatus:
+		default:
+			return fmt.Errorf("metric ntp.time.correction doesn't have an attribute %v, valid attributes: [leap.status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// NtpTimeLastOffsetMetricAttributeKey specifies the key of an attribute for the ntp.time.last_offset metric.
+type NtpTimeLastOffsetMetricAttributeKey string
+
+const (
+	NtpTimeLastOffsetMetricAttributeKeyLeapStatus NtpTimeLastOffsetMetricAttributeKey = "leap.status"
+)
+
+// NtpTimeLastOffsetMetricConfig provides config for the ntp.time.last_offset metric.
+type NtpTimeLastOffsetMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NtpTimeLastOffsetMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *NtpTimeLastOffsetMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *NtpTimeLastOffsetMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case NtpTimeLastOffsetMetricAttributeKeyLeapStatus:
+		default:
+			return fmt.Errorf("metric ntp.time.last_offset doesn't have an attribute %v, valid attributes: [leap.status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// NtpTimeRmsOffsetMetricAttributeKey specifies the key of an attribute for the ntp.time.rms_offset metric.
+type NtpTimeRmsOffsetMetricAttributeKey string
+
+const (
+	NtpTimeRmsOffsetMetricAttributeKeyLeapStatus NtpTimeRmsOffsetMetricAttributeKey = "leap.status"
+)
+
+// NtpTimeRmsOffsetMetricConfig provides config for the ntp.time.rms_offset metric.
+type NtpTimeRmsOffsetMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NtpTimeRmsOffsetMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *NtpTimeRmsOffsetMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *NtpTimeRmsOffsetMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case NtpTimeRmsOffsetMetricAttributeKeyLeapStatus:
+		default:
+			return fmt.Errorf("metric ntp.time.rms_offset doesn't have an attribute %v, valid attributes: [leap.status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// NtpTimeRootDelayMetricAttributeKey specifies the key of an attribute for the ntp.time.root_delay metric.
+type NtpTimeRootDelayMetricAttributeKey string
+
+const (
+	NtpTimeRootDelayMetricAttributeKeyLeapStatus NtpTimeRootDelayMetricAttributeKey = "leap.status"
+)
+
+// NtpTimeRootDelayMetricConfig provides config for the ntp.time.root_delay metric.
+type NtpTimeRootDelayMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NtpTimeRootDelayMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *NtpTimeRootDelayMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *NtpTimeRootDelayMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case NtpTimeRootDelayMetricAttributeKeyLeapStatus:
+		default:
+			return fmt.Errorf("metric ntp.time.root_delay doesn't have an attribute %v, valid attributes: [leap.status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for chrony metrics.
 type MetricsConfig struct {
-	NtpFrequencyOffset MetricConfig `mapstructure:"ntp.frequency.offset"`
-	NtpSkew            MetricConfig `mapstructure:"ntp.skew"`
-	NtpStratum         MetricConfig `mapstructure:"ntp.stratum"`
-	NtpTimeCorrection  MetricConfig `mapstructure:"ntp.time.correction"`
-	NtpTimeLastOffset  MetricConfig `mapstructure:"ntp.time.last_offset"`
-	NtpTimeRmsOffset   MetricConfig `mapstructure:"ntp.time.rms_offset"`
-	NtpTimeRootDelay   MetricConfig `mapstructure:"ntp.time.root_delay"`
+	NtpFrequencyOffset NtpFrequencyOffsetMetricConfig `mapstructure:"ntp.frequency.offset"`
+	NtpSkew            NtpSkewMetricConfig            `mapstructure:"ntp.skew"`
+	NtpStratum         NtpStratumMetricConfig         `mapstructure:"ntp.stratum"`
+	NtpTimeCorrection  NtpTimeCorrectionMetricConfig  `mapstructure:"ntp.time.correction"`
+	NtpTimeLastOffset  NtpTimeLastOffsetMetricConfig  `mapstructure:"ntp.time.last_offset"`
+	NtpTimeRmsOffset   NtpTimeRmsOffsetMetricConfig   `mapstructure:"ntp.time.rms_offset"`
+	NtpTimeRootDelay   NtpTimeRootDelayMetricConfig   `mapstructure:"ntp.time.root_delay"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		NtpFrequencyOffset: MetricConfig{
-			Enabled: false,
+		NtpFrequencyOffset: NtpFrequencyOffsetMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []NtpFrequencyOffsetMetricAttributeKey{NtpFrequencyOffsetMetricAttributeKeyLeapStatus},
 		},
-		NtpSkew: MetricConfig{
+		NtpSkew: NtpSkewMetricConfig{
 			Enabled: true,
 		},
-		NtpStratum: MetricConfig{
+		NtpStratum: NtpStratumMetricConfig{
 			Enabled: false,
 		},
-		NtpTimeCorrection: MetricConfig{
-			Enabled: true,
+		NtpTimeCorrection: NtpTimeCorrectionMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []NtpTimeCorrectionMetricAttributeKey{NtpTimeCorrectionMetricAttributeKeyLeapStatus},
 		},
-		NtpTimeLastOffset: MetricConfig{
-			Enabled: true,
+		NtpTimeLastOffset: NtpTimeLastOffsetMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []NtpTimeLastOffsetMetricAttributeKey{NtpTimeLastOffsetMetricAttributeKeyLeapStatus},
 		},
-		NtpTimeRmsOffset: MetricConfig{
-			Enabled: false,
+		NtpTimeRmsOffset: NtpTimeRmsOffsetMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []NtpTimeRmsOffsetMetricAttributeKey{NtpTimeRmsOffsetMetricAttributeKeyLeapStatus},
 		},
-		NtpTimeRootDelay: MetricConfig{
-			Enabled: false,
+		NtpTimeRootDelay: NtpTimeRootDelayMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []NtpTimeRootDelayMetricAttributeKey{NtpTimeRootDelayMetricAttributeKeyLeapStatus},
 		},
 	}
 }
@@ -68,8 +340,13 @@ type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics: DefaultMetricsConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }
