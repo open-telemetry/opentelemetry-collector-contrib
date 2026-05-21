@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/prometheus_remote_write
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Pass obsrecv context to ConsumeMetrics to fix broken trace propagation to downstream pipeline components.
+note: Fix broken trace propagation to downstream pipeline components.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48548]
