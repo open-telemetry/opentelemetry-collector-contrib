@@ -1,0 +1,30 @@
+{
+  "@timestamp": "1710273641123.456789",
+  "trace_id": "0102030405060708090a0b0c0d0e0f10",
+  "span_id": "0102030405060708",
+  "parent_span_id": "0807060504030201",
+  "name": "GET /api/users",
+  "kind": "Server",
+  "duration": 1000000000,
+  "attributes": {
+    "http.method": "GET",
+    "http.url": "/api/users",
+    "http.status_code": 200
+  },
+  "links": [],
+  "status": {
+    "message": "success",
+    "code": "Ok"
+  },
+  "resource": {
+    "attributes": {
+      "service.name": "my-service",
+      "host.name": "my-host",
+      "deployment.environment": "production"
+    }
+  },
+  "scope": {
+    "name": "io.opentelemetry.example",
+    "version": "1.0.0"
+  }
+}

@@ -259,6 +259,11 @@ Span events are stored in separate documents. They will be routed with `data_str
 
 Attribute `elasticsearch.index` will be removed from the final document if exists.
 
+Example indexed documents:
+[Log](testdata/docs/otel_log.json) |
+[Trace](testdata/docs/otel_trace.json) |
+[Metric](testdata/docs/otel_metric.json)
+
 | Signal    | Supported          |
 | --------- | ------------------ |
 | Logs      | :white_check_mark: |
@@ -274,6 +279,11 @@ Attribute `elasticsearch.index` will be removed from the final document if exist
 In `ecs` mapping mode, the Elasticsearch Exporter maps fields from
 [OpenTelemetry Semantic Conventions][SemConv] (version 1.22.0) to [Elastic Common Schema][ECS] where possible.
 This mode may be used for compatibility with existing dashboards that work with ECS.
+
+Example indexed documents:
+[Log](testdata/docs/ecs_log.json) |
+[Trace](testdata/docs/ecs_trace.json) |
+[Metric](testdata/docs/ecs_metric.json)
 
 | Signal    | `ecs`              |
 | --------- | ------------------ |
@@ -292,6 +302,9 @@ of a log record as the exact content of the Elasticsearch document without any t
 This mapping mode is intended for use cases where the client wishes to have complete control over
 the Elasticsearch document structure.
 
+Example indexed document:
+[Log](testdata/docs/bodymap_log.json)
+
 | Signal    | `bodymap`          |
 | --------- | ------------------ |
 | Logs      | :white_check_mark: |
@@ -303,6 +316,10 @@ the Elasticsearch document structure.
 
 In the `none` mapping mode the Elasticsearch Exporter produces documents with the original
 field names of from the OTLP data structures.
+
+Example indexed documents:
+[Log](testdata/docs/none_log.json) |
+[Trace](testdata/docs/none_trace.json)
 
 | Signal    | `none`             |
 | --------- | ------------------ |
@@ -319,6 +336,10 @@ The `raw` mapping mode is identical to `none`, except for two differences:
    while in `raw` mode they are not.
  - In `none` mode span events are mapped with an `Events.` prefix,
    while in `raw` mode they are not.
+
+Example indexed documents:
+[Log](testdata/docs/raw_log.json) |
+[Trace](testdata/docs/raw_trace.json)
 
 | Signal    | `raw `             |
 | --------- | ------------------ |

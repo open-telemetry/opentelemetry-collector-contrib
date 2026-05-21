@@ -1,0 +1,21 @@
+{
+  "@timestamp": 1710273641123,
+  "unit": "s",
+  "attributes": {
+    "http.method": "GET"
+  },
+  "resource": {
+    "attributes": {
+      "service.name": "my-service",
+      "host.name": "my-host"
+    }
+  },
+  "scope": {
+    "name": "io.opentelemetry.example",
+    "version": "1.0.0"
+  },
+  "metrics": {
+    "http.server.request.duration": 0.125
+  },
+  "_metric_names_hash": "30292700b84da900"
+}
