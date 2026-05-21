@@ -25,9 +25,10 @@ This exporter supports sending OpenTelemetry data to [ClickHouse](https://clickh
 > If 10 bytes of columns are extracted, the speed is expected to be around 100-200 million rows per second.
 
 Note:
-Always
-add [batch-processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor) to
-collector pipeline,
+Prefer batching in the exporter's
+[`sending_queue`](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#sending-queue-batch-settings)
+instead of using the
+[batch-processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor),
 as [ClickHouse document says:](https://clickhouse.com/docs/en/introduction/performance/#performance-when-inserting-data)
 > We recommend inserting data in packets of at least 1000 rows, or no more than a single request per second. When
 > inserting to a MergeTree table from a tab-separated dump, the insertion speed can be from 50 to 200 MB/s.
