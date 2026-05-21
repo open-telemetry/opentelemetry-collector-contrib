@@ -157,7 +157,7 @@ func (p *Parser) buildParseFunc() (parseFunc, error) {
 			if p.allowSkipPriHeader && !priRegex.Match(input) {
 				input = append([]byte("<0>"), input...)
 			}
-			return rfc3164.NewMachine(rfc3164.WithLocaleTimezone(p.location)).Parse(input)
+			return rfc3164.NewMachine(rfc3164.WithLocaleTimezone(p.location), rfc3164.WithLenientDay()).Parse(input)
 		}, nil
 	case RFC5424:
 		switch {

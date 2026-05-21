@@ -55,6 +55,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			logRecordFn: func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
 				logRecord.Body().SetStr("mylog")
+				logRecord.SetEventName("my.event")
 				logRecord.Attributes().PutStr(splunk.DefaultSourceLabel, "myapp")
 				logRecord.Attributes().PutStr(splunk.DefaultSourceTypeLabel, "myapp-type")
 				logRecord.Attributes().PutStr("host.name", "myhost")
@@ -69,7 +70,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			sourceType:    "sourcetype",
 			index:         "",
 			wantSplunkEvents: []*Event{
-				commonLogSplunkEvent("mylog", ts, map[string]any{"custom": "custom"},
+				commonLogSplunkEvent("mylog", ts, map[string]any{"custom": "custom", "otel.log.name": "my.event"},
 					"myhost", "myapp", "myapp-type"),
 			},
 		},
@@ -139,6 +140,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			logRecordFn: func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
 				logRecord.Body().SetStr("mylog")
+				logRecord.SetEventName("my.event")
 				logRecord.Attributes().PutStr("custom", "custom")
 				logRecord.Attributes().PutStr("mysource", "mysource")
 				logRecord.Attributes().PutStr("mysourcetype", "mysourcetype")
@@ -159,13 +161,14 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			toHecAttrs: OtelToHecFields{
 				SeverityNumber: "myseveritynum",
 				SeverityText:   "myseverity",
+				Name:           "myname",
 			},
 			source:     "",
 			sourceType: "",
 			index:      "",
 			wantSplunkEvents: []*Event{
 				func() *Event {
-					event := commonLogSplunkEvent("mylog", ts, map[string]any{"custom": "custom", "myseverity": "DEBUG", "myseveritynum": plog.SeverityNumber(5)}, "myhost", "mysource", "mysourcetype")
+					event := commonLogSplunkEvent("mylog", ts, map[string]any{"custom": "custom", "myseverity": "DEBUG", "myseveritynum": plog.SeverityNumber(5), "myname": "my.event"}, "myhost", "mysource", "mysourcetype")
 					event.Index = "myindex"
 					return event
 				}(),
