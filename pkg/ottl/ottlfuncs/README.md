@@ -2385,18 +2385,23 @@ Examples:
 
 ### Substring
 
-`Substring(target, start, length)`
+`Substring(target, start, length, Optional[utf8_safe])`
 
 The `Substring` Converter returns a substring from the given start index to the specified length.
 
-`target` is a string. `start` and `length` are `int64`.
+`target` is a string. `start` and `length` are `int64`. `utf8_safe` is an optional boolean (default: `false`) that enables UTF-8 aware slicing.
+
+By default, `start` and `length` are byte offsets. Multi-byte UTF-8 characters may be split and the result can be invalid UTF-8.
+
+When `utf8_safe` is `true`, `start` and `length` are rune counts and the slice is taken on rune boundaries.
 
 If `target` is not a string or is nil, an error is returned.
-If the start/length exceed the length of the `target` string, an error is returned.
+If `start`/`length` exceed the length of `target`, an error is returned. When `utf8_safe` is `true`, the comparison is against the rune length.
 
 Examples:
 
 - `Substring("123456789", 0, 3)`
+- `Substring("一二三", 0, 1, true)`
 
 ### Time
 

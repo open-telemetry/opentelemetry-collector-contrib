@@ -12,9 +12,10 @@ import (
 )
 
 type SubstringArguments[K any] struct {
-	Target ottl.StringGetter[K]
-	Start  ottl.IntGetter[K]
-	Length ottl.IntGetter[K]
+	Target   ottl.StringGetter[K]
+	Start    ottl.IntGetter[K]
+	Length   ottl.IntGetter[K]
+	Utf8Safe ottl.Optional[bool]
 }
 
 func NewSubstringFactory[K any]() ottl.Factory[K] {
@@ -28,10 +29,15 @@ func createSubstringFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 		return nil, errors.New("SubstringFactory args must be of type *SubstringArguments[K]")
 	}
 
-	return substring(args.Target, args.Start, args.Length), nil
+	return substring(args.Target, args.Start, args.Length, args.Utf8Safe), nil
 }
 
-func substring[K any](target ottl.StringGetter[K], startGetter, lengthGetter ottl.IntGetter[K]) ottl.ExprFunc[K] {
+func substring[K any](
+	target ottl.StringGetter[K],
+	startGetter, lengthGetter ottl.IntGetter[K],
+	utf8Safe ottl.Optional[bool],
+) ottl.ExprFunc[K] {
+	useUTF8Safe := utf8Safe.GetOr(false)
 	return func(ctx context.Context, tCtx K) (any, error) {
 		start, err := startGetter.Get(ctx, tCtx)
 		if err != nil {
@@ -51,9 +57,69 @@ func substring[K any](target ottl.StringGetter[K], startGetter, lengthGetter ott
 		if err != nil {
 			return nil, err
 		}
+
+		if useUTF8Safe {
+			out, err := substringRunes(val, start, length)
+			if err != nil {
+				return nil, err
+			}
+			return out, nil
+		}
 		if start > int64(len(val)) || length > int64(len(val))-start {
-			return nil, fmt.Errorf("invalid range for substring function, start(%d)+length(%d) cannot be greater than the length of target string(%d)", start, length, len(val))
+			return nil, fmt.Errorf(
+				"invalid range for substring function, start(%d)+length(%d) cannot be greater than the length of target string(%d)",
+				start,
+				length,
+				len(val),
+			)
 		}
 		return val[start : start+length], nil
 	}
+}
+
+func substringRunes(val string, start, length int64) (string, error) {
+	end := start + length
+	// runes ≤ bytes in UTF-8; short-circuit when end exceeds byte length.
+	if end > int64(len(val)) {
+		return "", fmt.Errorf(
+			"invalid range for substring function, start(%d)+length(%d) exceeds byte length(%d) of target string",
+			start,
+			length,
+			len(val),
+		)
+	}
+	// ASCII fast path; on miss the fallback re-reads bytes still in L1.
+	if isASCII(val[:end]) {
+		return val[start:end], nil
+	}
+
+	var byteStart int
+	var runes int64
+	for i := range val {
+		if runes == start {
+			byteStart = i
+		}
+		if runes == end {
+			return val[byteStart:i], nil
+		}
+		runes++
+	}
+	if runes == end {
+		return val[byteStart:], nil
+	}
+	return "", fmt.Errorf(
+		"invalid range for substring function, start(%d)+length(%d) cannot be greater than the rune length of target string(%d)",
+		start,
+		length,
+		runes,
+	)
+}
+
+func isASCII(s string) bool {
+	for i := range len(s) {
+		if s[i] >= 0x80 {
+			return false
+		}
+	}
+	return true
 }

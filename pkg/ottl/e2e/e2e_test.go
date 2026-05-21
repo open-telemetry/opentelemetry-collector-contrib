@@ -1263,6 +1263,23 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], Substring("一二三", 0, 1, true))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "一")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Substring("一二三", 1, 2, true))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "二三")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Substring("一二三", 0, 4, true))`,
+			want:      func(*ottllog.TransformContext) {},
+			errMsg:    "invalid range for substring function",
+		},
+		{
 			statement: `set(trace_id, TraceID(0x00000000000000000000000000000000))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().SetTraceID(pcommon.NewTraceIDEmpty())
