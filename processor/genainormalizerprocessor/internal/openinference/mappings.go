@@ -3,8 +3,7 @@
 
 // Package openinference holds the attribute and value mapping tables used to
 // normalize OpenInference-instrumented spans to the OTel GenAI semantic
-// conventions. Source-side keys come from the upstream Go semconv package,
-// not hard-coded strings, so renames in upstream flow through automatically.
+// conventions. Source-side keys come from the upstream Go semconv package.
 //
 // Reference: https://github.com/Arize-ai/openinference/blob/725d68c0c43778089bc99060efba74d37231f9f1/spec/semantic_conventions.md
 package openinference // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/openinference"
