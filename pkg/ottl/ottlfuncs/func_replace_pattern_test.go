@@ -76,6 +76,7 @@ func Test_replacePattern(t *testing.T) {
 
 	tests := []struct {
 		name              string
+		input             string
 		target            ottl.GetSetter[pcommon.Value]
 		pattern           string
 		replacement       ottl.StringGetter[pcommon.Value]
@@ -230,10 +231,59 @@ func Test_replacePattern(t *testing.T) {
 				expectedValue.SetStr("application passwd=$$$ otherarg=notsensitive key1 key2")
 			},
 		},
+		{
+			name:    "function replaces at match position not by text",
+			input:   "user_id=42 parent_user_id=423",
+			target:  target,
+			pattern: `\d+`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (any, error) {
+					return "$0", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("user_id=hash(42) parent_user_id=hash(423)")
+			},
+		},
+		{
+			name:    "function with empty trailing submatch keeps suffix",
+			input:   "abc",
+			target:  target,
+			pattern: `b`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (any, error) {
+					return "$0", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("ahash(b)c")
+			},
+		},
+		{
+			name:    "function with adjacent submatches and zero gap",
+			input:   "aaaa",
+			target:  target,
+			pattern: `a`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (any, error) {
+					return "$0", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("hash(a)hash(a)hash(a)hash(a)")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scenarioValue := pcommon.NewValueStr(input.Str())
+			scenarioInput := input.Str()
+			if tt.input != "" {
+				scenarioInput = tt.input
+			}
+			scenarioValue := pcommon.NewValueStr(scenarioInput)
 			pattern := &ottl.StandardStringGetter[pcommon.Value]{
 				Getter: func(_ context.Context, _ pcommon.Value) (any, error) {
 					return tt.pattern, nil
@@ -252,44 +302,6 @@ func Test_replacePattern(t *testing.T) {
 			assert.Equal(t, expected, scenarioValue)
 		})
 	}
-}
-
-func Test_replacePattern_function_replaces_at_match_position(t *testing.T) {
-	scenarioValue := pcommon.NewValueStr("user_id=42 parent_user_id=423")
-	ottlValue := ottl.StandardFunctionGetter[pcommon.Value]{
-		FCtx: ottl.FunctionContext{
-			Set: componenttest.NewNopTelemetrySettings(),
-		},
-		Fact: optionalFnTestFactory[pcommon.Value](),
-	}
-	target := &ottl.StandardGetSetter[pcommon.Value]{
-		Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
-			return tCtx.Str(), nil
-		},
-		Setter: func(_ context.Context, tCtx pcommon.Value, val any) error {
-			tCtx.SetStr(val.(string))
-			return nil
-		},
-	}
-	pattern := &ottl.StandardStringGetter[pcommon.Value]{
-		Getter: func(_ context.Context, _ pcommon.Value) (any, error) {
-			return `\d+`, nil
-		},
-	}
-	replacement := ottl.StandardStringGetter[pcommon.Value]{
-		Getter: func(context.Context, pcommon.Value) (any, error) {
-			return "$0", nil
-		},
-	}
-	function := ottl.NewTestingOptional[ottl.FunctionGetter[pcommon.Value]](ottlValue)
-
-	exprFunc, err := replacePattern(target, pattern, replacement, function, ottl.Optional[ottl.StringGetter[pcommon.Value]]{})
-	require.NoError(t, err)
-
-	_, err = exprFunc(nil, scenarioValue)
-	require.NoError(t, err)
-
-	assert.Equal(t, "user_id=hash(42) parent_user_id=hash(423)", scenarioValue.Str())
 }
 
 func Test_replacePattern_bad_input(t *testing.T) {

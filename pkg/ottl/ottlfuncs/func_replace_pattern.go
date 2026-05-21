@@ -67,6 +67,7 @@ func applyReplaceFormat[K any](ctx context.Context, tCtx K, replacementFormat ot
 func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern *regexp.Regexp, fn ottl.Optional[ottl.FunctionGetter[K]], originalValStr, replacementVal string, replacementFormat ottl.Optional[ottl.StringGetter[K]]) (string, error) {
 	submatches := compiledPattern.FindAllStringSubmatchIndex(originalValStr, -1)
 	var sb strings.Builder
+	sb.Grow(len(originalValStr))
 	lastEnd := 0
 	for _, submatch := range submatches {
 		result := compiledPattern.ExpandString([]byte{}, replacementVal, originalValStr, submatch)
