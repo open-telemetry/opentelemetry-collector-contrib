@@ -42,7 +42,7 @@ components:
         - honeycomb_marker
         - influxdb
         - kafka
-        - loadbalancing
+        - load_balancing
         - logicmonitor
         - logzio
         - mezmo
