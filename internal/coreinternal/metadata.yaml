@@ -9,6 +9,20 @@ status:
   class: pkg
 
 feature_gates:
+  - id: internal.coreinternal.goldendataset.DontEmitV0FaaSConventions
+    stage: beta
+    description: >-
+      When enabled, goldendataset no longer generates spans with deprecated
+      semconv FaaS attributes like faas.execution.
+    from_version: v0.148.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293
+  - id: internal.coreinternal.goldendataset.DontEmitV0HTTPConventions
+    stage: beta
+    description: >-
+      When enabled, goldendataset no longer generates spans with deprecated
+      semconv HTTP attributes like http.user_agent.
+    from_version: v0.148.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293
   - id: internal.coreinternal.goldendataset.DontEmitV0NetworkConventions
     stage: beta
     description: >-
@@ -23,6 +37,20 @@ feature_gates:
       semconv RPC attributes rpc.service and peer.service.
     from_version: v0.148.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548
+  - id: internal.coreinternal.goldendataset.EmitV1FaaSConventions
+    stage: beta
+    description: >-
+      When enabled, goldendataset generates spans with faas.invocation_id
+      (semconv v1.40.0) alongside legacy faas.execution to support migration.
+    from_version: v0.148.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293
+  - id: internal.coreinternal.goldendataset.EmitV1HTTPConventions
+    stage: beta
+    description: >-
+      When enabled, goldendataset generates spans with user_agent.original
+      (semconv v1.40.0) alongside legacy http.user_agent to support migration.
+    from_version: v0.148.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293
   - id: internal.coreinternal.goldendataset.EmitV1NetworkConventions
     stage: beta
     description: >-
