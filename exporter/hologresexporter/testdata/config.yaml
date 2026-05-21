@@ -4,11 +4,9 @@ hologres:
   logs_table_name: "otel_logs"
   metrics_table_name: "otel_metrics"
   create_schema: true
-  ttl: 720h
 
 hologres/full:
   dsn: "postgresql://user:password@localhost:5432/otel?sslmode=disable"
-  database: "otel"
   traces_table_name: "custom_traces"
   logs_table_name: "custom_logs"
   metrics_table_name: "custom_metrics"
