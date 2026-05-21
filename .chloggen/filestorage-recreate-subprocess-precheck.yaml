@@ -1,0 +1,37 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: extension/file_storage
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Extend the `recreate` option to also recover from bbolt corruption that panics in goroutines spawned by `bbolt.Open`.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [35899]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  The previous implementation used `defer recover()` in the calling goroutine, which correctly catches
+  bbolt main-goroutine panics (e.g. "failed to open read only tx") but cannot catch panics raised in
+  goroutines spawned inside `bbolt.Open` (notably the `freepages` "multiple references" panic
+  triggered by duplicate page references in the freelist scan).
+  When `recreate: true` is set, the extension now runs a subprocess pre-check first: it re-executes
+  the collector binary with an environment variable instructing it to attempt `bbolt.Open` and exit.
+  If the subprocess crashes with the runtime panic exit code, the corrupt database is renamed to
+  `{filename}.{timestamp}.backup` and a fresh database is created in its place.
+  The original `defer/recover` is preserved as a defense-in-depth layer for main-goroutine panics
+  and for environments where the subprocess pre-check is not available (e.g. `os.Executable()` fails).
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
