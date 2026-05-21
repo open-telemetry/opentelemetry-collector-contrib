@@ -57,9 +57,6 @@ func TestMetricsAssertionUnmarshalYAML(t *testing.T) {
 metrics/exact:
   - name: svc.active
     type: gauge
-metrics/include:
-  - name: svc.requests
-    type: sum
 metrics/count:
   min: 1
   max: 3
@@ -67,8 +64,6 @@ metrics/count:
 	require.NoError(t, err)
 	require.Len(t, a.Exact, 1)
 	require.Equal(t, "svc.active", a.Exact[0].Name)
-	require.Len(t, a.Include, 1)
-	require.Equal(t, "svc.requests", a.Include[0].Name)
 	require.NotNil(t, a.Count)
 	require.NotNil(t, a.Count.Min)
 	require.NotNil(t, a.Count.Max)
@@ -91,26 +86,18 @@ func TestMetricsAssertionValidate(t *testing.T) {
 		require.NoError(t, assertion.Validate(actual))
 	})
 
-	t.Run("include subset", func(t *testing.T) {
-		include := []MetricAssertion{{Name: "svc.active", Type: "gauge", Unit: "1"}}
-		assertion := MetricsAssertion{Include: include}
-		require.NoError(t, assertion.Validate(actual))
-	})
-
-	t.Run("count plus include", func(t *testing.T) {
+	t.Run("count exact pass", func(t *testing.T) {
 		exactCount := 2
-		assertion := MetricsAssertion{
-			Include: []MetricAssertion{{Name: "svc.active", Type: "gauge", Unit: "1"}},
-			Count:   &CountAssertion{Exact: &exactCount},
-		}
+		assertion := MetricsAssertion{Count: &CountAssertion{Exact: &exactCount}}
 		require.NoError(t, assertion.Validate(actual))
 	})
 
-	t.Run("include missing", func(t *testing.T) {
-		assertion := MetricsAssertion{Include: []MetricAssertion{{Name: "svc.latency", Type: "histogram"}}}
+	t.Run("count exact fail", func(t *testing.T) {
+		exactCount := 1
+		assertion := MetricsAssertion{Count: &CountAssertion{Exact: &exactCount}}
 		err := assertion.Validate(actual)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "included metric[0] (\"svc.latency\") was not found")
+		require.Contains(t, err.Error(), "expected exactly 1 items, got 2")
 	})
 }
 
