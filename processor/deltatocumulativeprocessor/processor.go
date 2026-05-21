@@ -41,16 +41,10 @@ type deltaToCumulativeProcessor struct {
 func newProcessor(cfg *Config, tel telemetry.Metrics, next consumer.Metrics) *deltaToCumulativeProcessor {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	limit := maps.Limit(int64(cfg.MaxStreams))
 	proc := deltaToCumulativeProcessor{
-		next: next,
-		cfg:  *cfg,
-		last: state{
-			ctx:  limit,
-			nums: maps.New[identity.Stream, *mutex[pmetric.NumberDataPoint]](limit),
-			hist: maps.New[identity.Stream, *mutex[pmetric.HistogramDataPoint]](limit),
-			expo: maps.New[identity.Stream, *mutex[pmetric.ExponentialHistogramDataPoint]](limit),
-		},
+		next:   next,
+		cfg:    *cfg,
+		last:   newState(int64(cfg.MaxStreams)),
 		aggr:   delta.Aggregator{Aggregator: new(data.Adder)},
 		ctx:    ctx,
 		cancel: cancel,
@@ -71,6 +65,14 @@ type vals struct {
 	expo *mutex[pmetric.ExponentialHistogramDataPoint]
 }
 
+func newVals() vals {
+	return vals{
+		nums: guard(pmetric.NewNumberDataPoint()),
+		hist: guard(pmetric.NewHistogramDataPoint()),
+		expo: guard(pmetric.NewExponentialHistogramDataPoint()),
+	}
+}
+
 func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	now := time.Now()
 
@@ -79,11 +81,7 @@ func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmet
 		drop = false
 	)
 
-	zero := vals{
-		nums: guard(pmetric.NewNumberDataPoint()),
-		hist: guard(pmetric.NewHistogramDataPoint()),
-		expo: guard(pmetric.NewExponentialHistogramDataPoint()),
-	}
+	zero := newVals()
 
 	metrics.Filter(md, func(m metrics.Metric) bool {
 		if m.AggregationTemporality() != pmetric.AggregationTemporalityDelta {
@@ -222,12 +220,30 @@ func (*deltaToCumulativeProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
+// Storage is the per-stream backing store for cumulative state. The in-memory
+// implementation ([maps.Parallel]) is used by default; storage-backed
+// implementations can be plugged in to persist state across restarts.
+type Storage[K comparable, V any] interface {
+	LoadOrStore(key K, value V) (actual V, loaded bool)
+	LoadAndDelete(key K) (value V, loaded bool)
+}
+
 // state keeps a cumulative value, aggregated over time, per stream
 type state struct {
 	ctx  maps.Context
-	nums *maps.Parallel[identity.Stream, *mutex[pmetric.NumberDataPoint]]
-	hist *maps.Parallel[identity.Stream, *mutex[pmetric.HistogramDataPoint]]
-	expo *maps.Parallel[identity.Stream, *mutex[pmetric.ExponentialHistogramDataPoint]]
+	nums Storage[identity.Stream, *mutex[pmetric.NumberDataPoint]]
+	hist Storage[identity.Stream, *mutex[pmetric.HistogramDataPoint]]
+	expo Storage[identity.Stream, *mutex[pmetric.ExponentialHistogramDataPoint]]
+}
+
+func newState(maxStreams int64) state {
+	limit := maps.Limit(maxStreams)
+	return state{
+		ctx:  limit,
+		nums: maps.New[identity.Stream, *mutex[pmetric.NumberDataPoint]](limit),
+		hist: maps.New[identity.Stream, *mutex[pmetric.HistogramDataPoint]](limit),
+		expo: maps.New[identity.Stream, *mutex[pmetric.ExponentialHistogramDataPoint]](limit),
+	}
 }
 
 func (s state) Size() int {
