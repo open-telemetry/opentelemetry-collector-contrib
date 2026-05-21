@@ -469,6 +469,21 @@ sample query
 | oracledb.session.started | The timestamp when the session logged on, in ISO 8601 format (UTC). | Any Str | - |
 | oracledb.session.duration | The total time in seconds that the session has been connected. | Any Double | - |
 
+### db.server.session.wait_sample
+
+Per-session wait event statistics from v$session_event showing total time waited and total waits per event.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| oracledb.sid | ID of the Oracle Server session. | Any Str | - |
+| oracledb.serial | Serial number associated with a session. | Any Str | - |
+| oracledb.event | The specific wait event that a query or session is currently experiencing. | Any Str | - |
+| oracledb.wait_class | The category of wait events a query or session is currently experiencing in Oracle Database. | Any Str | - |
+| oracledb.wait.count | Total number of waits for the wait event across all sessions. | Any Int | - |
+| oracledb.wait.duration | Total time waited in seconds for the wait event. | Any Double | - |
+
 ### db.server.top_query
 
 Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).

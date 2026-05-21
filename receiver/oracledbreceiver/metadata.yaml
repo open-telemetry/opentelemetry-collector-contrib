@@ -178,6 +178,12 @@ attributes:
   oracledb.user_io_wait_time:
     description: The total time (in seconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta).
     type: double
+  oracledb.wait.count:
+    description: Total number of waits for the wait event across all sessions.
+    type: int
+  oracledb.wait.duration:
+    description: Total time waited in seconds for the wait event.
+    type: double
   oracledb.wait_class:
     description: The category of wait events a query or session is currently experiencing in Oracle Database.
     type: string
@@ -235,6 +241,16 @@ events:
       - oracledb.query.started
       - oracledb.session.started
       - oracledb.session.duration
+  db.server.session.wait_sample:
+    enabled: false
+    description: Per-session wait event statistics from v$session_event showing total time waited and total waits per event.
+    attributes:
+      - oracledb.sid
+      - oracledb.serial
+      - oracledb.event
+      - oracledb.wait_class
+      - oracledb.wait.count
+      - oracledb.wait.duration
   db.server.top_query:
     enabled: false
     description: Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).
