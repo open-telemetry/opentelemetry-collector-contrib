@@ -23,146 +23,91 @@ type (
 	DatapointAssertion = datapointAssertion
 )
 
-// CountAssertion constrains collection length.
-//
-// Exact requires one exact value. Min/Max can be used as an inclusive range.
-// Exact cannot be combined with Min/Max.
-type CountAssertion struct {
-	Min   *int `yaml:"min,omitempty"`
-	Max   *int `yaml:"max,omitempty"`
-	Exact *int `yaml:"exact,omitempty"`
-}
-
-// Validate checks the actual collection length against the configured count
-// operator.
-func (c *CountAssertion) Validate(actualLength int) error {
-	if c == nil {
-		return nil
-	}
-	if c.Exact != nil {
-		if c.Min != nil || c.Max != nil {
-			return errors.New("count assertion is invalid: exact cannot be combined with min/max")
-		}
-		if *c.Exact < 0 {
-			return fmt.Errorf("count assertion is invalid: exact must be >= 0, got %d", *c.Exact)
-		}
-		if actualLength != *c.Exact {
-			return fmt.Errorf("count assertion failed: expected exactly %d items, got %d", *c.Exact, actualLength)
-		}
-		return nil
-	}
-
-	if c.Min != nil && *c.Min < 0 {
-		return fmt.Errorf("count assertion is invalid: min must be >= 0, got %d", *c.Min)
-	}
-	if c.Max != nil && *c.Max < 0 {
-		return fmt.Errorf("count assertion is invalid: max must be >= 0, got %d", *c.Max)
-	}
-	if c.Min != nil && c.Max != nil && *c.Min > *c.Max {
-		return fmt.Errorf("count assertion is invalid: min (%d) cannot be greater than max (%d)", *c.Min, *c.Max)
-	}
-	if c.Min != nil && actualLength < *c.Min {
-		return fmt.Errorf("count assertion failed: expected at least %d items, got %d", *c.Min, actualLength)
-	}
-	if c.Max != nil && actualLength > *c.Max {
-		return fmt.Errorf("count assertion failed: expected at most %d items, got %d", *c.Max, actualLength)
-	}
-	return nil
-}
-
-// MetricsAssertion supports exact/include/count collection operators.
+// MetricsAssertion supports exact/include collection operators.
 type MetricsAssertion struct {
 	Exact   []MetricAssertion `yaml:"-"`
 	Include []MetricAssertion `yaml:"-"`
-	Count   *CountAssertion   `yaml:"-"`
 }
 
-// ResourcesAssertion supports exact/include/count collection operators.
+// ResourcesAssertion supports exact/include collection operators.
 type ResourcesAssertion struct {
 	Exact   []ResourceAssertion `yaml:"-"`
 	Include []ResourceAssertion `yaml:"-"`
-	Count   *CountAssertion     `yaml:"-"`
 }
 
-// ScopesAssertion supports exact/include/count collection operators.
+// ScopesAssertion supports exact/include collection operators.
 type ScopesAssertion struct {
 	Exact   []ScopeAssertion `yaml:"-"`
 	Include []ScopeAssertion `yaml:"-"`
-	Count   *CountAssertion  `yaml:"-"`
 }
 
-// DatapointsAssertion supports exact/include/count collection operators.
+// DatapointsAssertion supports exact/include collection operators.
 type DatapointsAssertion struct {
 	Exact   []DatapointAssertion `yaml:"-"`
 	Include []DatapointAssertion `yaml:"-"`
-	Count   *CountAssertion      `yaml:"-"`
 }
 
 // UnmarshalYAML supports these forms:
 // - sequence node (equivalent to metrics/exact)
-// - map node with keys: metrics, metrics/exact, metrics/include, metrics/count
+// - map node with keys: metrics, metrics/exact, metrics/include
 func (a *MetricsAssertion) UnmarshalYAML(value *yaml.Node) error {
-	exact, include, count, err := unmarshalCollectionBySuffix[MetricAssertion](value, "metrics")
+	exact, include, err := unmarshalCollectionBySuffix[MetricAssertion](value, "metrics")
 	if err != nil {
 		return err
 	}
 	a.Exact = exact
 	a.Include = include
-	a.Count = count
 	return nil
 }
 
 func (a MetricsAssertion) MarshalYAML() (any, error) {
-	return marshalCollection(a.Exact, a.Include, a.Count), nil
+	return marshalCollection(a.Exact, a.Include), nil
 }
 
 func (a *ResourcesAssertion) UnmarshalYAML(value *yaml.Node) error {
-	exact, include, count, err := unmarshalCollectionBySuffix[ResourceAssertion](value, "resources")
+	exact, include, err := unmarshalCollectionBySuffix[ResourceAssertion](value, "resources")
 	if err != nil {
 		return err
 	}
 	a.Exact = exact
 	a.Include = include
-	a.Count = count
 	return nil
 }
 
 func (a ResourcesAssertion) MarshalYAML() (any, error) {
-	return marshalCollection(a.Exact, a.Include, a.Count), nil
+	return marshalCollection(a.Exact, a.Include), nil
 }
 
 func (a *ScopesAssertion) UnmarshalYAML(value *yaml.Node) error {
-	exact, include, count, err := unmarshalCollectionBySuffix[ScopeAssertion](value, "scopes")
+	exact, include, err := unmarshalCollectionBySuffix[ScopeAssertion](value, "scopes")
 	if err != nil {
 		return err
 	}
 	a.Exact = exact
 	a.Include = include
-	a.Count = count
 	return nil
 }
 
 func (a ScopesAssertion) MarshalYAML() (any, error) {
-	return marshalCollection(a.Exact, a.Include, a.Count), nil
+	return marshalCollection(a.Exact, a.Include), nil
 }
 
 func (a *DatapointsAssertion) UnmarshalYAML(value *yaml.Node) error {
-	exact, include, count, err := unmarshalCollectionBySuffix[DatapointAssertion](value, "datapoints")
+	exact, include, err := unmarshalCollectionBySuffix[DatapointAssertion](value, "datapoints")
 	if err != nil {
 		return err
 	}
 	a.Exact = exact
 	a.Include = include
-	a.Count = count
 	return nil
 }
 
 func (a DatapointsAssertion) MarshalYAML() (any, error) {
-	return marshalCollection(a.Exact, a.Include, a.Count), nil
+	return marshalCollection(a.Exact, a.Include), nil
 }
 
-func marshalCollection[T any](exact, include []T, count *CountAssertion) any {
-	if len(include) == 0 && count == nil {
+func marshalCollection[T any](exact, include []T) any {
+	if len(include) == 0 {
 		return exact
 	}
 	out := map[string]any{}
@@ -172,22 +117,19 @@ func marshalCollection[T any](exact, include []T, count *CountAssertion) any {
 	if len(include) > 0 {
 		out["include"] = include
 	}
-	if count != nil {
-		out["count"] = count
-	}
 	return out
 }
 
-func unmarshalCollectionBySuffix[T any](value *yaml.Node, baseKey string) (exact, include []T, count *CountAssertion, err error) {
+func unmarshalCollectionBySuffix[T any](value *yaml.Node, baseKey string) (exact, include []T, err error) {
 	if value.Kind == yaml.SequenceNode {
 		if err := value.Decode(&exact); err != nil {
-			return nil, nil, nil, fmt.Errorf("decode %s exact assertions: %w", baseKey, err)
+			return nil, nil, fmt.Errorf("decode %s exact assertions: %w", baseKey, err)
 		}
-		return exact, nil, nil, nil
+		return exact, nil, nil
 	}
 
 	if value.Kind != yaml.MappingNode {
-		return nil, nil, nil, fmt.Errorf("%s assertion must be a sequence or map, got YAML kind %d", baseKey, value.Kind)
+		return nil, nil, fmt.Errorf("%s assertion must be a sequence or map, got YAML kind %d", baseKey, value.Kind)
 	}
 
 	for i := 0; i < len(value.Content); i += 2 {
@@ -197,40 +139,28 @@ func unmarshalCollectionBySuffix[T any](value *yaml.Node, baseKey string) (exact
 		switch key {
 		case baseKey, baseKey + "/exact", "exact":
 			if len(exact) > 0 {
-				return nil, nil, nil, fmt.Errorf("duplicate %s exact assertion key %q", baseKey, key)
+				return nil, nil, fmt.Errorf("duplicate %s exact assertion key %q", baseKey, key)
 			}
 			if err := valNode.Decode(&exact); err != nil {
-				return nil, nil, nil, fmt.Errorf("decode %q: %w", key, err)
+				return nil, nil, fmt.Errorf("decode %q: %w", key, err)
 			}
 		case baseKey + "/include", "include":
 			if len(include) > 0 {
-				return nil, nil, nil, fmt.Errorf("duplicate %s include assertion key %q", baseKey, key)
+				return nil, nil, fmt.Errorf("duplicate %s include assertion key %q", baseKey, key)
 			}
 			if err := valNode.Decode(&include); err != nil {
-				return nil, nil, nil, fmt.Errorf("decode %q: %w", key, err)
-			}
-		case baseKey + "/count", "count":
-			if count != nil {
-				return nil, nil, nil, fmt.Errorf("duplicate %s count assertion key %q", baseKey, key)
-			}
-			count = &CountAssertion{}
-			if err := valNode.Decode(count); err != nil {
-				return nil, nil, nil, fmt.Errorf("decode %q: %w", key, err)
+				return nil, nil, fmt.Errorf("decode %q: %w", key, err)
 			}
 		default:
-			return nil, nil, nil, fmt.Errorf("unsupported %s assertion key %q", baseKey, key)
+			return nil, nil, fmt.Errorf("unsupported %s assertion key %q", baseKey, key)
 		}
 	}
 
-	return exact, include, count, nil
+	return exact, include, nil
 }
 
-// Validate checks actual metrics against exact/include/count operators.
+// Validate checks actual metrics against exact/include operators.
 func (a MetricsAssertion) Validate(actualMetrics pmetric.MetricSlice) error {
-	if err := a.Count.Validate(actualMetrics.Len()); err != nil {
-		return fmt.Errorf("metrics/count: %w", err)
-	}
-
 	if a.Exact != nil {
 		if err := validateMetricExact(a.Exact, actualMetrics); err != nil {
 			return fmt.Errorf("metrics exact assertion failed: %w", err)
@@ -247,10 +177,6 @@ func (a MetricsAssertion) Validate(actualMetrics pmetric.MetricSlice) error {
 }
 
 func (a MetricsAssertion) ValidateAssertions(actual []metricAssertion) error {
-	if err := a.Count.Validate(len(actual)); err != nil {
-		return fmt.Errorf("metrics/count: %w", err)
-	}
-
 	if len(a.Exact) > 0 {
 		if err := validateExactCollection("metric", a.Exact, actual, func(expected, got metricAssertion) error {
 			return expected.MatchesAssertion(got)
@@ -271,9 +197,6 @@ func (a MetricsAssertion) ValidateAssertions(actual []metricAssertion) error {
 }
 
 func (a ResourcesAssertion) Validate(actual []resourceAssertion) error {
-	if err := a.Count.Validate(len(actual)); err != nil {
-		return fmt.Errorf("resources/count: %w", err)
-	}
 	if a.Exact != nil {
 		if err := validateExactCollection("resource", a.Exact, actual, func(expected, got resourceAssertion) error {
 			return expected.Matches(got)
@@ -292,9 +215,6 @@ func (a ResourcesAssertion) Validate(actual []resourceAssertion) error {
 }
 
 func (a ScopesAssertion) Validate(actual []scopeAssertion) error {
-	if err := a.Count.Validate(len(actual)); err != nil {
-		return fmt.Errorf("scopes/count: %w", err)
-	}
 	if a.Exact != nil {
 		if err := validateExactCollection("scope", a.Exact, actual, func(expected, got scopeAssertion) error {
 			return expected.Matches(got)
@@ -313,9 +233,6 @@ func (a ScopesAssertion) Validate(actual []scopeAssertion) error {
 }
 
 func (a DatapointsAssertion) Validate(actual []datapointAssertion) error {
-	if err := a.Count.Validate(len(actual)); err != nil {
-		return fmt.Errorf("datapoints/count: %w", err)
-	}
 	if a.Exact != nil {
 		if err := validateExactCollection("datapoint", a.Exact, actual, func(expected, got datapointAssertion) error {
 			return expected.Matches(got)
@@ -454,7 +371,7 @@ func (d datapointAssertion) Matches(actual datapointAssertion) error {
 // Matches validates one actual metric against this expected metric assertion.
 func (m metricAssertion) Matches(actual pmetric.Metric) error {
 	expected := m
-	if len(expected.Datapoints.Exact) == 0 && len(expected.Datapoints.Include) == 0 && expected.Datapoints.Count == nil {
+	if len(expected.Datapoints.Exact) == 0 && len(expected.Datapoints.Include) == 0 {
 		expected.Datapoints.Exact = []datapointAssertion{{}}
 	}
 
@@ -468,7 +385,7 @@ func (m metricAssertion) Matches(actual pmetric.Metric) error {
 
 func (m metricAssertion) MatchesAssertion(actual metricAssertion) error {
 	expected := m
-	if len(expected.Datapoints.Exact) == 0 && len(expected.Datapoints.Include) == 0 && expected.Datapoints.Count == nil {
+	if len(expected.Datapoints.Exact) == 0 && len(expected.Datapoints.Include) == 0 {
 		expected.Datapoints.Exact = []datapointAssertion{{}}
 	}
 	return compareMetric(expected, actual)

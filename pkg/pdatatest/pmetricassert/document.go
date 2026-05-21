@@ -311,7 +311,7 @@ func expandScopeShorthand(s *scopeAssertion) {
 }
 
 func expandMetricShorthand(m *metricAssertion) {
-	if len(m.Datapoints.Exact) == 0 && len(m.Datapoints.Include) == 0 && m.Datapoints.Count == nil {
+	if len(m.Datapoints.Exact) == 0 && len(m.Datapoints.Include) == 0 {
 		m.Datapoints.Exact = []datapointAssertion{{}}
 	}
 }
@@ -335,7 +335,7 @@ func compactShorthand(doc *document) {
 	for i := range doc.Resources.Include {
 		compactResourceShorthand(&doc.Resources.Include[i])
 	}
-	if len(doc.Resources.Include) == 0 && doc.Resources.Count == nil {
+	if len(doc.Resources.Include) == 0 {
 		doc.Resources = ResourcesAssertion{Exact: doc.Resources.Exact}
 	}
 }
@@ -347,7 +347,7 @@ func compactResourceShorthand(r *resourceAssertion) {
 	for i := range r.Scopes.Include {
 		compactScopeShorthand(&r.Scopes.Include[i])
 	}
-	if len(r.Scopes.Include) == 0 && r.Scopes.Count == nil {
+	if len(r.Scopes.Include) == 0 {
 		r.Scopes = ScopesAssertion{Exact: r.Scopes.Exact}
 	}
 }
@@ -359,13 +359,13 @@ func compactScopeShorthand(s *scopeAssertion) {
 	for i := range s.Metrics.Include {
 		compactMetricShorthand(&s.Metrics.Include[i])
 	}
-	if len(s.Metrics.Include) == 0 && s.Metrics.Count == nil {
+	if len(s.Metrics.Include) == 0 {
 		s.Metrics = MetricsAssertion{Exact: s.Metrics.Exact}
 	}
 }
 
 func compactMetricShorthand(m *metricAssertion) {
-	if len(m.Datapoints.Exact) == 1 && len(m.Datapoints.Exact[0].Attributes) == 0 && len(m.Datapoints.Include) == 0 && m.Datapoints.Count == nil {
+	if len(m.Datapoints.Exact) == 1 && len(m.Datapoints.Exact[0].Attributes) == 0 && len(m.Datapoints.Include) == 0 {
 		m.Datapoints = DatapointsAssertion{}
 	}
 }

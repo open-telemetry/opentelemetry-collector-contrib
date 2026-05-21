@@ -35,7 +35,7 @@ func compareDocuments(expected, actual *document) error {
 }
 
 func compareResource(expected, actual resourceAssertion) error {
-	if len(expected.Scopes.Include) == 0 && expected.Scopes.Count == nil {
+	if len(expected.Scopes.Include) == 0 {
 		var errs []error
 		expScopes := indexScopes(expected.Scopes.Exact)
 		actScopes := indexScopes(actual.Scopes.Exact)
@@ -73,7 +73,7 @@ func indexScopes(ss []scopeAssertion) map[string]scopeAssertion {
 }
 
 func compareScope(expected, actual scopeAssertion) error {
-	if len(expected.Metrics.Include) == 0 && expected.Metrics.Count == nil {
+	if len(expected.Metrics.Include) == 0 {
 		var errs []error
 		expMetrics := indexMetrics(expected.Metrics.Exact)
 		actMetrics := indexMetrics(actual.Metrics.Exact)
@@ -127,7 +127,7 @@ func compareMetric(expected, actual metricAssertion) error {
 		errs = append(errs, fmt.Errorf("monotonic mismatch: expected %v, got %v",
 			boolPtrString(expected.Monotonic), boolPtrString(actual.Monotonic)))
 	}
-	if len(expected.Datapoints.Include) == 0 && expected.Datapoints.Count == nil {
+	if len(expected.Datapoints.Include) == 0 {
 		if err := compareDatapoints(expected.Datapoints.Exact, actual.Datapoints.Exact); err != nil {
 			errs = append(errs, err)
 		}

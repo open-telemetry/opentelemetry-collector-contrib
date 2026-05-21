@@ -11,46 +11,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestCountAssertionValidate(t *testing.T) {
-	t.Run("exact pass", func(t *testing.T) {
-		exact := 2
-		c := &CountAssertion{Exact: &exact}
-		require.NoError(t, c.Validate(2))
-	})
-
-	t.Run("exact fail", func(t *testing.T) {
-		exact := 1
-		c := &CountAssertion{Exact: &exact}
-		err := c.Validate(2)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "expected exactly 1 items, got 2")
-	})
-
-	t.Run("range pass", func(t *testing.T) {
-		minVal := 1
-		maxVal := 3
-		c := &CountAssertion{Min: &minVal, Max: &maxVal}
-		require.NoError(t, c.Validate(2))
-	})
-
-	t.Run("range fail", func(t *testing.T) {
-		minVal := 3
-		c := &CountAssertion{Min: &minVal}
-		err := c.Validate(2)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "expected at least 3 items, got 2")
-	})
-
-	t.Run("invalid exact with min", func(t *testing.T) {
-		exact := 1
-		minVal := 0
-		c := &CountAssertion{Exact: &exact, Min: &minVal}
-		err := c.Validate(1)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "exact cannot be combined with min/max")
-	})
-}
-
 func TestMetricsAssertionUnmarshalYAML(t *testing.T) {
 	var a MetricsAssertion
 	err := yaml.Unmarshal([]byte(`
@@ -60,20 +20,12 @@ metrics/exact:
 metrics/include:
   - name: svc.requests
     type: sum
-metrics/count:
-  min: 1
-  max: 3
 `), &a)
 	require.NoError(t, err)
 	require.Len(t, a.Exact, 1)
 	require.Equal(t, "svc.active", a.Exact[0].Name)
 	require.Len(t, a.Include, 1)
 	require.Equal(t, "svc.requests", a.Include[0].Name)
-	require.NotNil(t, a.Count)
-	require.NotNil(t, a.Count.Min)
-	require.NotNil(t, a.Count.Max)
-	require.Equal(t, 1, *a.Count.Min)
-	require.Equal(t, 3, *a.Count.Max)
 }
 
 func TestMetricsAssertionValidate(t *testing.T) {
@@ -94,15 +46,6 @@ func TestMetricsAssertionValidate(t *testing.T) {
 	t.Run("include subset", func(t *testing.T) {
 		include := []MetricAssertion{{Name: "svc.active", Type: "gauge", Unit: "1"}}
 		assertion := MetricsAssertion{Include: include}
-		require.NoError(t, assertion.Validate(actual))
-	})
-
-	t.Run("count plus include", func(t *testing.T) {
-		exactCount := 2
-		assertion := MetricsAssertion{
-			Include: []MetricAssertion{{Name: "svc.active", Type: "gauge", Unit: "1"}},
-			Count:   &CountAssertion{Exact: &exactCount},
-		}
 		require.NoError(t, assertion.Validate(actual))
 	})
 
@@ -148,6 +91,4 @@ func buildMetricSlice(t *testing.T, assertions []metricAssertion) pmetric.Metric
 	return sm.Metrics()
 }
 
-func boolPtr(v bool) *bool {
-	return &v
-}
+func boolPtr(v bool) *bool { return &v }

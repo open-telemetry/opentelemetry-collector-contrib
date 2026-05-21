@@ -15,8 +15,6 @@ func TestReadDocument_CollectionOperatorSuffixes(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
 	require.NoError(t, os.WriteFile(path, []byte(`version: 1
 signal: metrics
-resources/count:
-  exact: 1
 resources/include:
   - attributes:
       service.name: svc
@@ -35,9 +33,6 @@ resources/include:
 
 	doc, err := readDocument(path)
 	require.NoError(t, err)
-	require.NotNil(t, doc.Resources.Count)
-	require.NotNil(t, doc.Resources.Count.Exact)
-	require.Equal(t, 1, *doc.Resources.Count.Exact)
 	require.Len(t, doc.Resources.Include, 1)
 
 	res := doc.Resources.Include[0]
