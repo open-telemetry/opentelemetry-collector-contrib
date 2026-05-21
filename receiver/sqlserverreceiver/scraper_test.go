@@ -51,6 +51,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverDeadlockRate.Enabled = enabled
 	cfg.Metrics.SqlserverIndexSearchRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockTimeoutRate.Enabled = enabled
+	cfg.Metrics.SqlserverLatchWaitTimeAvg.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitCount.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitTimeAvg.Enabled = enabled
@@ -179,6 +180,8 @@ func TestSuccessfulScrape(t *testing.T) {
 					expectedFile = filepath.Join("testdata", "expectedProperties")
 				case getSQLServerWaitStatsQuery(scraper.config.InstanceName):
 					expectedFile = filepath.Join("testdata", "expectedWaitStats")
+				case getSQLServerLatchWaitTimeQuery(scraper.config.InstanceName):
+					expectedFile = filepath.Join("testdata", "expectedLatchWaitTime")
 				}
 				expectedFile += fileSuffix
 
@@ -414,6 +417,8 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("propertyQueryData.txt")
 	case getSQLServerWaitStatsQuery(mc.instanceName):
 		queryResults, err = readFile("waitStatsQueryData.txt")
+	case getSQLServerLatchWaitTimeQuery(mc.instanceName):
+		queryResults, err = readFile("latch_wait_time_scraped_data.txt")
 	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():

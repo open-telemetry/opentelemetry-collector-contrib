@@ -527,11 +527,20 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.latch.wait_time.avg:
+    enabled: false
+    description: Average time spent waiting for latches (lighter-weight synchronization).
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Latches are lightweight synchronization objects used internally by SQL Server to protect in-memory structures. High latch wait times can indicate memory contention, I/O bottlenecks, or internal resource contention. Available on SQL Server 2005+.
   sqlserver.lock.timeout.rate:
     enabled: false
     description: Total number of lock timeouts.
     stability: development
-    unit: “{timeouts}/s”
+    unit: "{timeouts}/s"
     gauge:
       value_type: double
     attributes: []

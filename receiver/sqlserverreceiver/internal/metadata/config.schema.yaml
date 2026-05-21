@@ -214,6 +214,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.latch.wait_time.avg:
+        description: "SqlserverLatchWaitTimeAvgMetricConfig provides config for the sqlserver.latch.wait_time.avg metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       sqlserver.lock.timeout.rate:
         description: "SqlserverLockTimeoutRateMetricConfig provides config for the sqlserver.lock.timeout.rate metric."
         type: object

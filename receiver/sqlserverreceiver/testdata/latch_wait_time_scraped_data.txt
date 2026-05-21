@@ -1,0 +1,7 @@
+[
+    {
+        "measurement": "sqlserver_latch_wait_time",
+        "sql_instance": "SERVER1",
+        "avg_wait_time_seconds": "0.0025"
+    }
+]
