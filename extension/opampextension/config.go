@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension/internal/metadata"
@@ -117,6 +118,24 @@ type httpFields struct {
 	commonFields `mapstructure:",squash"`
 
 	PollingInterval time.Duration `mapstructure:"polling_interval"`
+}
+
+var _ confmap.Marshaler = httpFields{}
+
+func (h httpFields) Marshal(conf *confmap.Conf) error {
+	return conf.Marshal(struct {
+		Endpoint        string                         `mapstructure:"endpoint"`
+		TLS             configtls.ClientConfig         `mapstructure:"tls,omitempty"`
+		Headers         map[string]configopaque.String `mapstructure:"headers,omitempty"`
+		Auth            component.ID                   `mapstructure:"auth,omitempty"`
+		PollingInterval time.Duration                  `mapstructure:"polling_interval"`
+	}{
+		Endpoint:        h.Endpoint,
+		TLS:             h.TLS,
+		Headers:         h.Headers,
+		Auth:            h.Auth,
+		PollingInterval: h.PollingInterval,
+	})
 }
 
 func (h *httpFields) Validate() error {

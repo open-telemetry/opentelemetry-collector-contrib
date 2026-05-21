@@ -49,6 +49,8 @@ type TracesSettings struct {
 	exportSettings `mapstructure:",squash"`
 }
 
+var _ confmap.Marshaler = TracesSettings{}
+
 // newDefaultTracesSettings returns the default settings for TracesSettings.
 func newDefaultTracesSettings() TracesSettings {
 	return TracesSettings{
@@ -98,6 +100,8 @@ type LogsSettings struct {
 	exportSettings `mapstructure:",squash"`
 }
 
+var _ confmap.Marshaler = LogsSettings{}
+
 // newDefaultLogsSettings returns the default settings for LogsSettings.
 func newDefaultLogsSettings() LogsSettings {
 	return LogsSettings{
@@ -109,6 +113,38 @@ func newDefaultLogsSettings() LogsSettings {
 		DecomposedComplexMessagePrefix: logsDecomposedComplexMessageFieldPrefixDefault,
 		exportSettings:                 newDefaultExportSettings(),
 	}
+}
+
+func (c TracesSettings) Marshal(conf *confmap.Conf) error {
+	return conf.Marshal(struct {
+		ExportSeparator            string `mapstructure:"export_separator"`
+		ExportDistinguishingSuffix string `mapstructure:"export_distinguishing_suffix"`
+	}{
+		ExportSeparator:            c.ExportSeparator,
+		ExportDistinguishingSuffix: c.ExportDistinguishingSuffix,
+	})
+}
+
+func (c LogsSettings) Marshal(conf *confmap.Conf) error {
+	return conf.Marshal(struct {
+		ExportResourceInfo             bool   `mapstructure:"export_resource_info_on_event"`
+		ExportResourcePrefix           string `mapstructure:"export_resource_prefix"`
+		ExportScopeInfo                bool   `mapstructure:"export_scope_info_on_event"`
+		ExportScopePrefix              string `mapstructure:"export_scope_prefix"`
+		DecomposeComplexMessageField   bool   `mapstructure:"decompose_complex_message_field"`
+		DecomposedComplexMessagePrefix string `mapstructure:"decomposed_complex_message_prefix"`
+		ExportSeparator                string `mapstructure:"export_separator"`
+		ExportDistinguishingSuffix     string `mapstructure:"export_distinguishing_suffix"`
+	}{
+		ExportResourceInfo:             c.ExportResourceInfo,
+		ExportResourcePrefix:           c.ExportResourcePrefix,
+		ExportScopeInfo:                c.ExportScopeInfo,
+		ExportScopePrefix:              c.ExportScopePrefix,
+		DecomposeComplexMessageField:   c.DecomposeComplexMessageField,
+		DecomposedComplexMessagePrefix: c.DecomposedComplexMessagePrefix,
+		ExportSeparator:                c.ExportSeparator,
+		ExportDistinguishingSuffix:     c.ExportDistinguishingSuffix,
+	})
 }
 
 const (

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/featuregate"
 
@@ -210,6 +211,237 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		}, cfg)
+}
+
+func TestConfigMarshalPoliciesRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	cfg := &Config{
+		SamplingStrategy: samplingStrategyTraceComplete,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "baseline",
+					Type: Probabilistic,
+					ProbabilisticCfg: ProbabilisticCfg{
+						HashSalt:           "salt",
+						SamplingPercentage: 1,
+					},
+				},
+			},
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "errors",
+					Type: StatusCode,
+					StatusCodeCfg: StatusCodeCfg{
+						StatusCodes: []string{"ERROR"},
+					},
+				},
+			},
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "fanout",
+					Type: And,
+				},
+				AndCfg: AndCfg{
+					SubPolicyCfg: []AndSubPolicyCfg{
+						{
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name: "http-only",
+								Type: StringAttribute,
+								StringAttributeCfg: StringAttributeCfg{
+									Key:    "service.name",
+									Values: []string{"api"},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "not-latency",
+					Type: Not,
+				},
+				NotCfg: NotCfg{
+					SubPolicy: NotSubPolicyCfg{
+						sharedPolicyCfg: sharedPolicyCfg{
+							Name: "slow",
+							Type: Latency,
+							LatencyCfg: LatencyCfg{
+								ThresholdMs: 5000,
+							},
+						},
+					},
+				},
+			},
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "composite",
+					Type: Composite,
+				},
+				CompositeCfg: CompositeCfg{
+					MaxTotalSpansPerSecond: 100,
+					PolicyOrder:            []string{"nested-and", "nested-prob"},
+					SubPolicyCfg: []CompositeSubPolicyCfg{
+						{
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name: "nested-and",
+								Type: And,
+							},
+							AndCfg: AndCfg{
+								SubPolicyCfg: []AndSubPolicyCfg{
+									{
+										sharedPolicyCfg: sharedPolicyCfg{
+											Name: "nested-status",
+											Type: StatusCode,
+											StatusCodeCfg: StatusCodeCfg{
+												StatusCodes: []string{"ERROR", "UNSET"},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name: "nested-prob",
+								Type: Probabilistic,
+								ProbabilisticCfg: ProbabilisticCfg{
+									SamplingPercentage: 10,
+								},
+							},
+						},
+					},
+					RateAllocation: []RateAllocationCfg{
+						{
+							Policy:  "nested-prob",
+							Percent: 25,
+						},
+					},
+				},
+			},
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "drop-debug",
+					Type: Drop,
+				},
+				DropCfg: DropCfg{
+					SubPolicyCfg: []AndSubPolicyCfg{
+						{
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name: "debug-attr",
+								Type: BooleanAttribute,
+								BooleanAttributeCfg: BooleanAttributeCfg{
+									Key:   "debug",
+									Value: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "extension-policy",
+					Type: PolicyType("custom_extension"),
+					ExtensionCfg: map[string]any{
+						"custom_extension": map[string]any{"mode": "keep"},
+					},
+				},
+			},
+		},
+	}
+
+	cm := confmap.New()
+	require.NoError(t, cm.Marshal(cfg))
+
+	policies, ok := cm.ToStringMap()["policies"].([]any)
+	require.True(t, ok)
+	require.Len(t, policies, 7)
+
+	baseline := policies[0].(map[string]any)
+	assert.Equal(t, "baseline", baseline["name"])
+	assert.Equal(t, Probabilistic, baseline["type"])
+	assert.Equal(t, map[string]any{
+		"hash_salt":           "salt",
+		"sampling_percentage": 1.0,
+	}, baseline["probabilistic"])
+
+	errors := policies[1].(map[string]any)
+	assert.Equal(t, "errors", errors["name"])
+	assert.Equal(t, StatusCode, errors["type"])
+	assert.Equal(t, map[string]any{
+		"status_codes": []any{"ERROR"},
+	}, errors["status_code"])
+
+	fanout := policies[2].(map[string]any)
+	assert.Equal(t, "fanout", fanout["name"])
+	assert.Equal(t, And, fanout["type"])
+	fanoutAnd := fanout["and"].(map[string]any)
+	fanoutSub := fanoutAnd["and_sub_policy"].([]any)[0].(map[string]any)
+	assert.Equal(t, "http-only", fanoutSub["name"])
+	assert.Equal(t, StringAttribute, fanoutSub["type"])
+	assert.Equal(t, map[string]any{
+		"cache_max_size":         0,
+		"enabled_regex_matching": false,
+		"invert_match":           false,
+		"key":                    "service.name",
+		"values":                 []any{"api"},
+	}, fanoutSub["string_attribute"])
+
+	notLatency := policies[3].(map[string]any)
+	assert.Equal(t, "not-latency", notLatency["name"])
+	assert.Equal(t, Not, notLatency["type"])
+	notSub := notLatency["not"].(map[string]any)["not_sub_policy"].(map[string]any)
+	assert.Equal(t, "slow", notSub["name"])
+	assert.Equal(t, Latency, notSub["type"])
+	assert.Equal(t, map[string]any{
+		"threshold_ms":       int64(5000),
+		"upper_threshold_ms": int64(0),
+	}, notSub["latency"])
+
+	composite := policies[4].(map[string]any)
+	assert.Equal(t, "composite", composite["name"])
+	assert.Equal(t, Composite, composite["type"])
+	compositeCfg := composite["composite"].(map[string]any)
+	assert.Equal(t, int64(100), compositeCfg["max_total_spans_per_second"])
+	assert.Equal(t, []any{"nested-and", "nested-prob"}, compositeCfg["policy_order"])
+	compositePolicies := compositeCfg["composite_sub_policy"].([]any)
+	require.Len(t, compositePolicies, 2)
+	nestedAnd := compositePolicies[0].(map[string]any)
+	assert.Equal(t, "nested-and", nestedAnd["name"])
+	assert.Equal(t, And, nestedAnd["type"])
+	nestedStatus := nestedAnd["and"].(map[string]any)["and_sub_policy"].([]any)[0].(map[string]any)
+	assert.Equal(t, "nested-status", nestedStatus["name"])
+	assert.Equal(t, StatusCode, nestedStatus["type"])
+	assert.Equal(t, map[string]any{
+		"status_codes": []any{"ERROR", "UNSET"},
+	}, nestedStatus["status_code"])
+	nestedProb := compositePolicies[1].(map[string]any)
+	assert.Equal(t, "nested-prob", nestedProb["name"])
+	assert.Equal(t, Probabilistic, nestedProb["type"])
+	assert.Equal(t, map[string]any{
+		"hash_salt":           "",
+		"sampling_percentage": 10.0,
+	}, nestedProb["probabilistic"])
+
+	dropDebug := policies[5].(map[string]any)
+	assert.Equal(t, "drop-debug", dropDebug["name"])
+	assert.Equal(t, Drop, dropDebug["type"])
+	dropSub := dropDebug["drop"].(map[string]any)["drop_sub_policy"].([]any)[0].(map[string]any)
+	assert.Equal(t, "debug-attr", dropSub["name"])
+	assert.Equal(t, BooleanAttribute, dropSub["type"])
+	assert.Equal(t, map[string]any{
+		"invert_match": false,
+		"key":          "debug",
+		"value":        true,
+	}, dropSub["boolean_attribute"])
+
+	extensionPolicy := policies[6].(map[string]any)
+	assert.Equal(t, "extension-policy", extensionPolicy["name"])
+	assert.Equal(t, PolicyType("custom_extension"), extensionPolicy["type"])
+	assert.Equal(t, map[string]any{"mode": "keep"}, extensionPolicy["custom_extension"])
 }
 
 func TestConfigValidateTailStorageFeatureGate(t *testing.T) {

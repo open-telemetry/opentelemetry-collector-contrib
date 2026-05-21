@@ -5,9 +5,11 @@ package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"fmt"
+	"maps"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
@@ -98,7 +100,7 @@ type sharedPolicyCfg struct {
 	// Configs for OTTL condition filter sampling policy evaluator
 	OTTLConditionCfg OTTLConditionCfg `mapstructure:"ottl_condition"`
 	// Configs for any extensions that are used.
-	ExtensionCfg map[string]map[string]any `mapstructure:",remain"`
+	ExtensionCfg map[string]any `mapstructure:",remain"`
 }
 
 // CompositeSubPolicyCfg holds the common configuration to all policies under composite policy.
@@ -362,6 +364,85 @@ type Config struct {
 	// If the trace size exceeds this it will be dropped before the decision period to keep memory more predictable.
 	// A 0 value disables dropping large traces early.
 	MaximumTraceSizeBytes uint64 `mapstructure:"maximum_trace_size_bytes"`
+}
+
+var (
+	_ confmap.Marshaler = PolicyCfg{}
+	_ confmap.Marshaler = CompositeSubPolicyCfg{}
+	_ confmap.Marshaler = AndSubPolicyCfg{}
+	_ confmap.Marshaler = NotSubPolicyCfg{}
+)
+
+func marshalPolicy(conf *confmap.Conf, shared sharedPolicyCfg, extra map[string]any) error {
+	fields := map[string]any{
+		"name": shared.Name,
+		"type": shared.Type,
+	}
+
+	maps.Copy(fields, shared.ExtensionCfg)
+
+	switch shared.Type {
+	case Latency:
+		fields[string(Latency)] = shared.LatencyCfg
+	case NumericAttribute:
+		fields[string(NumericAttribute)] = shared.NumericAttributeCfg
+	case Probabilistic:
+		fields[string(Probabilistic)] = shared.ProbabilisticCfg
+	case StatusCode:
+		fields[string(StatusCode)] = shared.StatusCodeCfg
+	case StringAttribute:
+		fields[string(StringAttribute)] = shared.StringAttributeCfg
+	case RateLimiting:
+		fields[string(RateLimiting)] = shared.RateLimitingCfg
+	case BytesLimiting:
+		fields[string(BytesLimiting)] = shared.BytesLimitingCfg
+	case SpanCount:
+		fields[string(SpanCount)] = shared.SpanCountCfg
+	case TraceState:
+		fields[string(TraceState)] = shared.TraceStateCfg
+	case BooleanAttribute:
+		fields[string(BooleanAttribute)] = shared.BooleanAttributeCfg
+	case OTTLCondition:
+		fields[string(OTTLCondition)] = shared.OTTLConditionCfg
+	}
+
+	maps.Copy(fields, extra)
+
+	return conf.Marshal(fields)
+}
+
+func (p PolicyCfg) Marshal(conf *confmap.Conf) error {
+	extra := map[string]any{}
+
+	switch p.Type {
+	case Composite:
+		extra[string(Composite)] = p.CompositeCfg
+	case And:
+		extra[string(And)] = p.AndCfg
+	case Not:
+		extra[string(Not)] = p.NotCfg
+	case Drop:
+		extra[string(Drop)] = p.DropCfg
+	}
+
+	return marshalPolicy(conf, p.sharedPolicyCfg, extra)
+}
+
+func (p CompositeSubPolicyCfg) Marshal(conf *confmap.Conf) error {
+	extra := map[string]any{}
+	if p.Type == And {
+		extra[string(And)] = p.AndCfg
+	}
+
+	return marshalPolicy(conf, p.sharedPolicyCfg, extra)
+}
+
+func (p AndSubPolicyCfg) Marshal(conf *confmap.Conf) error {
+	return marshalPolicy(conf, p.sharedPolicyCfg, nil)
+}
+
+func (p NotSubPolicyCfg) Marshal(conf *confmap.Conf) error {
+	return marshalPolicy(conf, p.sharedPolicyCfg, nil)
 }
 
 func (cfg *Config) Validate() error {

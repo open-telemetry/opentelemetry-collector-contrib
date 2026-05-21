@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: all
+note: Preserve print-config and effective-config fidelity for component configs that rely on generic confmap marshaling.
+issues: [47760]
+subtext: |
+  Adds explicit confmap marshalers for component configs that embedded unexported squashed fields and could lose
+  effective configuration content in print-config output.
+change_logs: [user]

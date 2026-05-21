@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // Config defines configuration for simple prometheus receiver.
@@ -27,6 +28,32 @@ type Config struct {
 	UseServiceAccount bool `mapstructure:"use_service_account"`
 	// JobName allows users to customize the job name optionally.
 	JobName string `mapstructure:"job_name"`
+}
+
+var _ confmap.Marshaler = Config{}
+
+func (c Config) Marshal(conf *confmap.Conf) error {
+	return conf.Marshal(struct {
+		confighttp.ClientConfig `mapstructure:",squash"`
+		TLSEnabled              bool              `mapstructure:"tls_enabled"`
+		TLSConfig               tlsConfig         `mapstructure:"tls_config"`
+		CollectionInterval      time.Duration     `mapstructure:"collection_interval"`
+		MetricsPath             string            `mapstructure:"metrics_path"`
+		Params                  url.Values        `mapstructure:"params,omitempty"`
+		Labels                  map[string]string `mapstructure:"labels,omitempty"`
+		UseServiceAccount       bool              `mapstructure:"use_service_account"`
+		JobName                 string            `mapstructure:"job_name"`
+	}{
+		ClientConfig:       c.ClientConfig,
+		TLSEnabled:         c.TLSEnabled,
+		TLSConfig:          c.TLSConfig,
+		CollectionInterval: c.CollectionInterval,
+		MetricsPath:        c.MetricsPath,
+		Params:             c.Params,
+		Labels:             c.Labels,
+		UseServiceAccount:  c.UseServiceAccount,
+		JobName:            c.JobName,
+	})
 }
 
 // TODO: Move to a common package for use by other receivers and also pull

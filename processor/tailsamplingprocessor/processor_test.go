@@ -1568,8 +1568,8 @@ func TestExtension(t *testing.T) {
 				sharedPolicyCfg: sharedPolicyCfg{
 					Name: "extension",
 					Type: "my_extension",
-					ExtensionCfg: map[string]map[string]any{
-						"my_extension": {
+					ExtensionCfg: map[string]any{
+						"my_extension": map[string]any{
 							"foo": "bar",
 						},
 					},

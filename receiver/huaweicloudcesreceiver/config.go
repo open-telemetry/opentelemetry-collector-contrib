@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 )
@@ -79,7 +80,48 @@ type huaweiSessionConfig struct {
 	ProxyPassword string `mapstructure:"proxy_password"`
 }
 
-var _ component.Config = (*Config)(nil)
+var (
+	_ component.Config  = (*Config)(nil)
+	_ confmap.Marshaler = Config{}
+)
+
+func (config Config) Marshal(conf *confmap.Conf) error {
+	return conf.Marshal(struct {
+		scraperhelper.ControllerConfig `mapstructure:",squash"`
+		confighttp.ClientConfig        `mapstructure:",squash"`
+		Nodes                          []string                  `mapstructure:"nodes"`
+		SkipClusterMetrics             bool                      `mapstructure:"skip_cluster_metrics"`
+		Indices                        []string                  `mapstructure:"indices"`
+		AccessKey                      configopaque.String       `mapstructure:"access_key"`
+		SecretKey                      configopaque.String       `mapstructure:"secret_key"`
+		NoVerifySSL                    bool                      `mapstructure:"no_verify_ssl"`
+		ProxyAddress                   string                    `mapstructure:"proxy_address"`
+		ProxyUser                      string                    `mapstructure:"proxy_user"`
+		ProxyPassword                  string                    `mapstructure:"proxy_password"`
+		ProjectID                      string                    `mapstructure:"project_id"`
+		RegionID                       string                    `mapstructure:"region_id"`
+		Period                         int32                     `mapstructure:"period"`
+		Filter                         string                    `mapstructure:"filter"`
+		BackOffConfig                  configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	}{
+		ControllerConfig:   config.ControllerConfig,
+		ClientConfig:       config.ClientConfig,
+		Nodes:              config.Nodes,
+		SkipClusterMetrics: config.SkipClusterMetrics,
+		Indices:            config.Indices,
+		AccessKey:          config.AccessKey,
+		SecretKey:          config.SecretKey,
+		NoVerifySSL:        config.NoVerifySSL,
+		ProxyAddress:       config.ProxyAddress,
+		ProxyUser:          config.ProxyUser,
+		ProxyPassword:      config.ProxyPassword,
+		ProjectID:          config.ProjectID,
+		RegionID:           config.RegionID,
+		Period:             config.Period,
+		Filter:             config.Filter,
+		BackOffConfig:      config.BackOffConfig,
+	})
+}
 
 // These valid periods are defined by CES API constraints: https://support.huaweicloud.com/intl/en-us/api-ces/ces_03_0034.html#section3
 var validPeriods = []int32{1, 300, 1200, 3600, 14400, 86400}
