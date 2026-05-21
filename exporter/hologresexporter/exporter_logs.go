@@ -25,7 +25,18 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) *logsExporter {
 	}
 }
 
-func (e *logsExporter) start(_ context.Context, _ component.Host) error {
+func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
+	db, err := openDB(e.cfg.DSN)
+	if err != nil {
+		return err
+	}
+	e.db = db
+
+	if e.cfg.CreateSchema {
+		if err := createLogsTable(ctx, e.db, e.cfg.LogsTableName, e.cfg.TTL); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

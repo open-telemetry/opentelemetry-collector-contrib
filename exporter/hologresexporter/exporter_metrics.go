@@ -25,7 +25,18 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) *metricsExporter {
 	}
 }
 
-func (e *metricsExporter) start(_ context.Context, _ component.Host) error {
+func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
+	db, err := openDB(e.cfg.DSN)
+	if err != nil {
+		return err
+	}
+	e.db = db
+
+	if e.cfg.CreateSchema {
+		if err := createMetricsTables(ctx, e.db, e.cfg.MetricsTableName, e.cfg.TTL); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

@@ -25,7 +25,18 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) *tracesExporter {
 	}
 }
 
-func (e *tracesExporter) start(_ context.Context, _ component.Host) error {
+func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
+	db, err := openDB(e.cfg.DSN)
+	if err != nil {
+		return err
+	}
+	e.db = db
+
+	if e.cfg.CreateSchema {
+		if err := createTracesTable(ctx, e.db, e.cfg.TracesTableName, e.cfg.TTL); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
