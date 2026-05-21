@@ -69,6 +69,14 @@ func untyped(k attribute.Key) string {
 	return string(k)
 }
 
+// enumValue extracts the string value from a semconv enum KeyValue (e.g.
+// conventions.GenAIOperationNameChat). The semconv library exposes these as
+// pre-built attribute.KeyValue with a String value, so we unwrap once at
+// init rather than at every call site.
+func enumValue(kv attribute.KeyValue) string {
+	return kv.Value.AsString()
+}
+
 // GenAI attribute keys, grouped by subnamespace. Adding a new attribute is
 // one line: typed(conventions.GenAIFoo) or untyped(conventions.GenAIFooKey).
 //
@@ -116,4 +124,24 @@ var (
 	// gen_ai.usage.*
 	GenAIUsageInputTokens  = typed(conventions.GenAIUsageInputTokens)
 	GenAIUsageOutputTokens = typed(conventions.GenAIUsageOutputTokens)
+)
+
+// gen_ai.operation.name enum values, sourced from the semconv library.
+// Source-side normalizers (openinference, openllmetry) fold their own
+// span-kind/operation-type enums onto these.
+//
+//nolint:gochecknoglobals // canonical enum value registry
+var (
+	GenAIOperationNameChat           = enumValue(conventions.GenAIOperationNameChat)
+	GenAIOperationNameEmbeddings     = enumValue(conventions.GenAIOperationNameEmbeddings)
+	GenAIOperationNameExecuteTool    = enumValue(conventions.GenAIOperationNameExecuteTool)
+	GenAIOperationNameInvokeAgent    = enumValue(conventions.GenAIOperationNameInvokeAgent)
+	GenAIOperationNameRetrieval      = enumValue(conventions.GenAIOperationNameRetrieval)
+	GenAIOperationNameTextCompletion = enumValue(conventions.GenAIOperationNameTextCompletion)
+
+	// GenAIOperationNameInvokeWorkflow is not part of the standard enum. It
+	// is emitted by openllmetry's traceloop.span.kind=workflow path; we keep
+	// it as a centralized constant so callers don't need to hard-code the
+	// raw string.
+	GenAIOperationNameInvokeWorkflow = "invoke_workflow"
 )

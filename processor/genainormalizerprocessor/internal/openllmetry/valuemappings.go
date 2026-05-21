@@ -16,16 +16,16 @@ import (
 // lowercases the input before lookup.
 var operationNameValues = map[string]string{
 	// traceloop.span.kind (original: lowercase)
-	"workflow": "invoke_workflow",
-	"task":     "invoke_agent",
-	"agent":    "invoke_agent",
-	"tool":     "execute_tool",
+	"workflow": otelsemconv.GenAIOperationNameInvokeWorkflow,
+	"task":     otelsemconv.GenAIOperationNameInvokeAgent,
+	"agent":    otelsemconv.GenAIOperationNameInvokeAgent,
+	"tool":     otelsemconv.GenAIOperationNameExecuteTool,
 
 	// llm.request.type (original: lowercase)
-	"completion": "text_completion",
-	"chat":       "chat",
-	"rerank":     "retrieval",
-	"embedding":  "embeddings",
+	"completion": otelsemconv.GenAIOperationNameTextCompletion,
+	"chat":       otelsemconv.GenAIOperationNameChat,
+	"rerank":     otelsemconv.GenAIOperationNameRetrieval,
+	"embedding":  otelsemconv.GenAIOperationNameEmbeddings,
 }
 
 // Transform applies OpenLLMetry-specific value-level normalization. It folds

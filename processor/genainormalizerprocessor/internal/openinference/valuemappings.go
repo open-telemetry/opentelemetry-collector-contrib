@@ -14,16 +14,17 @@ import (
 
 // operationNameValues maps openinference.span.kind values to OTel GenAI
 // operation names. Source-side keys come from the upstream SpanKind*
-// constants, lowercased so Transform can do a case-insensitive lookup.
+// constants (lowercased so Transform can do a case-insensitive lookup);
+// target values come from otelsemconv's GenAIOperationName* registry.
 var operationNameValues = map[string]string{
-	strings.ToLower(oisemconv.SpanKindLLM):       "chat",
-	strings.ToLower(oisemconv.SpanKindEmbedding): "embeddings",
-	strings.ToLower(oisemconv.SpanKindChain):     "invoke_agent",
-	strings.ToLower(oisemconv.SpanKindRetriever): "retrieval",
-	strings.ToLower(oisemconv.SpanKindReranker):  "retrieval",
-	strings.ToLower(oisemconv.SpanKindTool):      "execute_tool",
-	strings.ToLower(oisemconv.SpanKindAgent):     "invoke_agent",
-	strings.ToLower(oisemconv.SpanKindPrompt):    "text_completion",
+	strings.ToLower(oisemconv.SpanKindLLM):       otelsemconv.GenAIOperationNameChat,
+	strings.ToLower(oisemconv.SpanKindEmbedding): otelsemconv.GenAIOperationNameEmbeddings,
+	strings.ToLower(oisemconv.SpanKindChain):     otelsemconv.GenAIOperationNameInvokeAgent,
+	strings.ToLower(oisemconv.SpanKindRetriever): otelsemconv.GenAIOperationNameRetrieval,
+	strings.ToLower(oisemconv.SpanKindReranker):  otelsemconv.GenAIOperationNameRetrieval,
+	strings.ToLower(oisemconv.SpanKindTool):      otelsemconv.GenAIOperationNameExecuteTool,
+	strings.ToLower(oisemconv.SpanKindAgent):     otelsemconv.GenAIOperationNameInvokeAgent,
+	strings.ToLower(oisemconv.SpanKindPrompt):    otelsemconv.GenAIOperationNameTextCompletion,
 }
 
 // Transform applies OpenInference-specific value-level normalization. It
