@@ -65,10 +65,6 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 		for _, item := range objects[i].ExcludeWatchType {
 			objects[i].exclude[item] = true
 		}
-		// Set default interval if in PullMode and interval is 0
-		if objects[i].Mode == k8sinventory.PullMode && objects[i].Interval == 0 {
-			objects[i].Interval = defaultPullInterval
-		}
 	}
 
 	kr := &k8sobjectsreceiver{

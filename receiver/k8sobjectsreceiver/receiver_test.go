@@ -78,8 +78,9 @@ func TestErrorModes(t *testing.T) {
 			// include_initial_state defaults to false, no override needed
 			rCfg.Objects = []*K8sObjectsConfig{
 				{
-					Name: tt.objectName,
-					Mode: k8sinventory.PullMode,
+					Name:     tt.objectName,
+					Mode:     k8sinventory.PullMode,
+					Interval: 30 * time.Second,
 				},
 			}
 			r, err := newReceiver(
@@ -118,8 +119,9 @@ func TestNewReceiver(t *testing.T) {
 	rCfg.ErrorMode = PropagateError
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
-			Name: "pods",
-			Mode: k8sinventory.PullMode,
+			Name:     "pods",
+			Mode:     k8sinventory.PullMode,
+			Interval: 30 * time.Second,
 		},
 	}
 
@@ -373,8 +375,9 @@ func TestIncludeInitialStateWithPullMode(t *testing.T) {
 
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
-			Name: "pods",
-			Mode: k8sinventory.PullMode,
+			Name:     "pods",
+			Mode:     k8sinventory.PullMode,
+			Interval: 30 * time.Second,
 		},
 	}
 
@@ -457,8 +460,9 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	rCfg.ErrorMode = PropagateError
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
-			Name: "pods",
-			Mode: k8sinventory.PullMode,
+			Name:     "pods",
+			Mode:     k8sinventory.PullMode,
+			Interval: 30 * time.Second,
 		},
 	}
 	rCfg.K8sLeaderElector = &leaderElectorID
