@@ -52,6 +52,7 @@ type Factory struct {
 	IncludeFileRecordOffset bool
 	Compression             string
 	AcquireFSLock           bool
+	FileCacheAdvise         bool
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
@@ -95,6 +96,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		deleteAtEOF:       f.DeleteAtEOF,
 		compression:       f.Compression,
 		acquireFSLock:     f.AcquireFSLock,
+		fileCacheAdvise:   f.FileCacheAdvise,
 		maxBatchSize:      DefaultMaxBatchSize,
 		emitFunc:          f.EmitFunc,
 	}

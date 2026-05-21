@@ -55,6 +55,34 @@ func TestParser(t *testing.T) {
 	}
 }
 
+func TestSyslogParseRFC3164_MalformedDay(t *testing.T) {
+	cfg := basicConfig()
+	cfg.Protocol = syslog.RFC3164
+
+	body := `<13>Feb 05 17:32:18 10.0.0.99 Test message`
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	fake := testutil.NewFakeOutput(t)
+	err = op.SetOutputs([]operator.Operator{fake})
+	require.NoError(t, err)
+
+	newEntry := entry.New()
+	newEntry.Body = body
+	err = op.Process(t.Context(), newEntry)
+	require.NoError(t, err)
+
+	select {
+	case e := <-fake.Received:
+		require.Equal(t, body, e.Body)
+		require.Equal(t, time.Date(2026, time.February, 5, 17, 32, 18, 0, time.UTC), e.Timestamp)
+	case <-time.After(time.Second):
+		require.FailNow(t, "Timed out waiting for entry to be processed")
+	}
+}
+
 func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 	cfg := basicConfig()
 	cfg.Protocol = syslog.RFC5424
