@@ -9,6 +9,9 @@ $defs:
         type: string
 type: object
 properties:
+  default_ingest_delay:
+    description: Fallback ingest delay used when a metric descriptor does not report Metadata.IngestDelay. Must be non-negative and no greater than 24h. Default is 60s.
+    type: string
   endpoint:
     description: Overrides the default monitoring.googleapis.com:443 endpoint. Use this when targeting non-standard universe domains.
     type: string
