@@ -1026,7 +1026,7 @@ func (c *mySQLClient) explainQuery(digestText, sampleStatement, schema, digest s
 	}
 
 	var plan string
-	err := c.client.QueryRow("EXPLAIN FORMAT=json " + strings.TrimSpace(sampleStatement)).Scan(&plan)
+	err := c.client.QueryRow("/* otel-collector-ignore */ EXPLAIN FORMAT=json " + strings.TrimSpace(sampleStatement)).Scan(&plan)
 	if err != nil {
 		logger.Warn("unable to execute explain statement", zap.String("digest", digest), zap.Error(err))
 		return ""
