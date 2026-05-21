@@ -7,6 +7,8 @@ $defs:
         type: boolean
       convert_message_bytes:
         type: boolean
+      convert_to_semantic_conventions:
+        type: boolean
       directory:
         x-pointer: true
         type: string
