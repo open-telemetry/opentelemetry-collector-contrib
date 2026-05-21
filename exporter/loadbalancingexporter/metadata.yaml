@@ -99,4 +99,3 @@ tests:
         - internal/poll.runtime_pollWait
         - syscall.SyscallN
         - syscall.Syscall6
-        - syscall.SyscallN
