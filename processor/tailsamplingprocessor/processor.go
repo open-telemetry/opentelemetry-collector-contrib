@@ -60,6 +60,10 @@ type TraceData struct {
 	batchID       uint64
 }
 
+func (t *TraceData) ExceedsMaxSizeBytes(maxTraceSizeBytes uint64) bool {
+	return maxTraceSizeBytes > 0 && t.SizeBytes > maxTraceSizeBytes
+}
+
 type DecisionHook func(ctx context.Context, id pcommon.TraceID, td *TraceData)
 
 type tailSamplingSpanProcessor struct {
@@ -95,9 +99,9 @@ type tailSamplingSpanProcessor struct {
 	workChan         chan []traceBatch
 	doneChan         chan struct{}
 
-	// tickChan triggers ticks and responds on the provided channel when the tick is complete.
+	// testingTickChan triggers ticks and responds on the provided channel when the tick is complete.
 	// this is used in tests to produce deterministic ticks.
-	tickChan chan chan struct{}
+	testingTickChan chan chan struct{}
 }
 
 func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
@@ -584,9 +588,9 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 		tsp.logger.Debug("New maximum trace size loaded", zap.Uint64("size", maxTraceSize))
 	case <-tickChan:
 		tsp.samplingPolicyOnTick()
-	case tickChan := <-tsp.tickChan:
+	case testReplyChan := <-tsp.testingTickChan:
 		tsp.samplingPolicyOnTick()
-		tickChan <- struct{}{}
+		testReplyChan <- struct{}{}
 	}
 	return true
 }
@@ -862,6 +866,12 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 
 		metrics.addDecision(i, decision, trace.SpanCount)
 
+		if decision == samplingpolicy.InvertSampled || decision == samplingpolicy.InvertNotSampled {
+			tsp.logger.Warn("Strategy span-ingest is incompatible with deprecated sampling decisions; batch of spans may be lost or incorrectly sampled",
+				zap.String("decision", decision.String()), zap.String("policyName", p.name))
+			continue
+		}
+
 		if decision == samplingpolicy.Dropped {
 			metrics.decisionDropped++
 			return samplingpolicy.Dropped, p.name
@@ -906,56 +916,58 @@ func groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceI
 }
 
 func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrace.ResourceSpans, spanCount int64, containsRootSpan bool) {
-	currTime := time.Now()
-
-	var newTraceIDs int64
-	defer func() {
-		// Need a closure here to delay evaluation of newTraceIDs.
-		tsp.telemetry.ProcessorTailSamplingNewTraceIDReceived.Add(tsp.ctx, newTraceIDs)
-	}()
-
 	actualData, ok := tsp.idToTrace[id]
 	if !ok {
 		actualData = &TraceData{
-			arrivalTime: currTime,
+			arrivalTime: time.Now(),
+			batchID:     tsp.decisionBatcher.AddToCurrentBatch(id),
 			TraceData: samplingpolicy.TraceData{
-				SpanCount:       spanCount,
 				ReceivedBatches: ptrace.NewTraces(),
 			},
 		}
 
-		tsp.idToTrace[id] = actualData
-
-		newTraceIDs++
-		actualData.batchID = tsp.decisionBatcher.AddToCurrentBatch(id)
-
 		if !tsp.blockOnOverflow {
 			actualData.deleteElement = tsp.deleteTraceQueue.PushBack(id)
 		}
-	} else {
-		actualData.SpanCount += spanCount
+
+		tsp.idToTrace[id] = actualData
+
+		tsp.telemetry.ProcessorTailSamplingNewTraceIDReceived.Add(tsp.ctx, 1)
 	}
+
+	marshaler := new(ptrace.ProtoMarshaler)
+	actualData.SizeBytes += uint64(marshaler.ResourceSpansSize(rss))
+	actualData.SpanCount += spanCount
+
 	if containsRootSpan && tsp.cfg.DecisionWaitAfterRootReceived > 0 {
 		actualData.batchID = tsp.decisionBatcher.MoveToEarlierBatch(id, actualData.batchID, uint64(tsp.cfg.DecisionWaitAfterRootReceived.Seconds()))
 	}
 
-	finalDecision := actualData.FinalDecision
+	if actualData.FinalDecision == samplingpolicy.Unspecified {
+		if actualData.ExceedsMaxSizeBytes(tsp.maxTraceSizeBytes) {
+			// This trace now exceeds configured max size in bytes.
+			//
+			// Record the final decision as NotSampled now, but do NOT record a decision time.
+			// This way if additional spans come in for this trace, we avoid reporting
+			// them as arriving late below since we're making an early decision here due to size.
+			// If we did not handle this way, it would deceptively skew the late span metric
+			// since we won't be able to tell if those later spans were in fact late vs they
+			// arrived within the decision wait window, but we decided early here.
+			actualData.FinalDecision = samplingpolicy.NotSampled
+			tsp.telemetry.ProcessorTailSamplingTracesDroppedTooLarge.Add(tsp.ctx, 1)
 
-	marshaler := &ptrace.ProtoMarshaler{}
-	actualData.SizeBytes += uint64(marshaler.ResourceSpansSize(rss))
+			// Since we are not in a normal decision flow when dropping large traces,
+			// also be sure to remove it from the batcher.
+			tsp.decisionBatcher.RemoveFromBatch(id, actualData.batchID)
+			tsp.releaseNotSampledTrace(id, actualData)
 
-	if finalDecision == samplingpolicy.Unspecified &&
-		tsp.maxTraceSizeBytes > 0 &&
-		actualData.SizeBytes > tsp.maxTraceSizeBytes {
-		tsp.telemetry.ProcessorTailSamplingTracesDroppedTooLarge.Add(tsp.ctx, 1)
-		actualData.FinalDecision = samplingpolicy.NotSampled
-		// Since we are not in a normal decision flow when dropping large traces, also be sure to remove it from the batcher.
-		tsp.decisionBatcher.RemoveFromBatch(id, actualData.batchID)
-		tsp.releaseNotSampledTrace(id, actualData)
-		return
-	}
+			// Zero out spans now to immediately shed the in-memory footprint of this large trace.
+			// The samplingPolicyOnTick() path does this same clearing of received batches after
+			// a decision, so also doing so here is consistent with that existing behavior.
+			actualData.ReceivedBatches = ptrace.NewTraces()
+			return
+		}
 
-	if finalDecision == samplingpolicy.Unspecified {
 		if tsp.cfg.SamplingStrategy == samplingStrategySpanIngest {
 			metrics := newPolicyEvaluationMetrics(len(tsp.policies))
 			evaluationStart := time.Now()
@@ -1003,21 +1015,29 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		return
 	}
 
-	switch finalDecision {
-	case samplingpolicy.Sampled:
-		traceTd := ptrace.NewTraces()
-		appendToTraces(traceTd, rss)
-		tsp.forwardSpans(tsp.ctx, traceTd)
-	case samplingpolicy.NotSampled:
-		// TODO: I don't think this is correct? If it isn't sampled shouldn't we just do nothing?
-		tsp.releaseNotSampledTrace(id, actualData)
-	default:
-		tsp.logger.Warn("Unexpected sampling decision", zap.Int("decision", int(finalDecision)))
-	}
-
+	// These spans have arrived after a decision was already evaluated for its trace.
+	// Emit the late span age now before any processing time from forwarding, which might
+	// otherwise skew the late span age metric. Note that this metric already has some skew
+	// introduced by including the batch's queuing delay + processing time from workChan
+	// (along with any prior processors in the collector pipeline). However, in practice, this
+	// metric might have less jitter still by emitting duration between actualData.decisionTime
+	// and the arrival time of the batch at ConsumeTraces().
+	// (Although, doing so would then allow for the possibility of negative late span ages.)
 	if !actualData.decisionTime.IsZero() {
 		tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.decisionTime)/time.Second))
 	}
+
+	// If the decision was Sample, then forward on these spans.
+	// Otherwise, for any other decision there's nothing to do.
+	//
+	// We do not need to remove from the batcher because if we have an existing finalDecision,
+	// (and therefore existing idToTrace entry) then it must not have just been added to batcher.
+	if actualData.FinalDecision == samplingpolicy.Sampled {
+		traceTd := ptrace.NewTraces()
+		appendToTraces(traceTd, rss)
+		tsp.forwardSpans(tsp.ctx, traceTd)
+	}
+
 }
 
 func extensions(host component.Host) map[string]samplingpolicy.Extension {
