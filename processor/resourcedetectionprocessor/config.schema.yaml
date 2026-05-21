@@ -15,6 +15,9 @@ $defs:
       azure:
         description: Azure contains user-specified configurations for the azure detector
         $ref: ./internal/azure.config
+      azurecontainerapps:
+        description: AzureContainerApps contains user-specified configurations for the Azure Container Apps detector
+        $ref: ./internal/azure/containerapps.config
       consul:
         description: ConsulConfig contains user-specified configurations for the Consul detector
         $ref: ./internal/consul.config
