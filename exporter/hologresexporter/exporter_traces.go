@@ -5,12 +5,11 @@ package hologresexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -18,25 +17,31 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
-// maxInsertParams is the maximum number of parameters in a single INSERT statement.
-// PostgreSQL protocol supports up to 65535 parameters.
-const maxInsertParams = 65535
-
-// traceColumnsCount is the number of columns in the traces table.
-const traceColumnsCount = 17
-
-// maxSpansPerBatch is the maximum number of spans per INSERT batch.
-const maxSpansPerBatch = maxInsertParams / traceColumnsCount
-
-// traceSpanRow holds the arguments for a single span row INSERT.
-type traceSpanRow struct {
-	args []any
+// traceColumns lists the destination columns for COPY into the traces table.
+var traceColumns = []string{
+	"timestamp",
+	"trace_id",
+	"span_id",
+	"parent_span_id",
+	"trace_state",
+	"span_name",
+	"span_kind",
+	"service_name",
+	"resource_attributes",
+	"scope_name",
+	"scope_version",
+	"span_attributes",
+	"duration",
+	"status_code",
+	"status_message",
+	"events",
+	"links",
 }
 
 type tracesExporter struct {
 	logger *zap.Logger
 	cfg    *Config
-	db     *sql.DB
+	db     pgxDB
 }
 
 func newTracesExporter(logger *zap.Logger, cfg *Config) *tracesExporter {
@@ -47,7 +52,7 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) *tracesExporter {
 }
 
 func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
-	db, err := openDB(e.cfg.DSN)
+	db, err := openDB(ctx, e.cfg.DSN)
 	if err != nil {
 		return err
 	}
@@ -63,7 +68,7 @@ func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 
 func (e *tracesExporter) shutdown(_ context.Context) error {
 	if e.db != nil {
-		return e.db.Close()
+		e.db.Close()
 	}
 	return nil
 }
@@ -71,8 +76,7 @@ func (e *tracesExporter) shutdown(_ context.Context) error {
 func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	start := time.Now()
 
-	// Collect all span rows.
-	var rows []traceSpanRow
+	var rows [][]any
 
 	rsSpans := td.ResourceSpans()
 	for i := range rsSpans.Len() {
@@ -108,26 +112,24 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					return fmt.Errorf("failed to marshal links: %w", err)
 				}
 
-				rows = append(rows, traceSpanRow{
-					args: []any{
-						span.StartTimestamp().AsTime(),                   // timestamp
-						traceutil.TraceIDToHexOrEmptyString(span.TraceID()),   // trace_id
-						traceutil.SpanIDToHexOrEmptyString(span.SpanID()),     // span_id
-						traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID()), // parent_span_id
-						span.TraceState().AsRaw(),                        // trace_state
-						span.Name(),                                      // span_name
-						traceutil.SpanKindStr(span.Kind()),               // span_kind
-						serviceName,                                      // service_name
-						resourceAttrs,                                    // resource_attributes
-						scopeName,                                        // scope_name
-						scopeVersion,                                     // scope_version
-						spanAttrs,                                        // span_attributes
-						int64(span.EndTimestamp() - span.StartTimestamp()), // duration (nanoseconds)
-						traceutil.StatusCodeStr(span.Status().Code()),    // status_code
-						span.Status().Message(),                          // status_message
-						eventsJSON,                                       // events
-						linksJSON,                                        // links
-					},
+				rows = append(rows, []any{
+					span.StartTimestamp().AsTime(),                          // timestamp
+					traceutil.TraceIDToHexOrEmptyString(span.TraceID()),     // trace_id
+					traceutil.SpanIDToHexOrEmptyString(span.SpanID()),       // span_id
+					traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID()), // parent_span_id
+					span.TraceState().AsRaw(),                               // trace_state
+					span.Name(),                                             // span_name
+					traceutil.SpanKindStr(span.Kind()),                      // span_kind
+					serviceName,                                             // service_name
+					resourceAttrs,                                           // resource_attributes
+					scopeName,                                               // scope_name
+					scopeVersion,                                            // scope_version
+					spanAttrs,                                               // span_attributes
+					int64(span.EndTimestamp() - span.StartTimestamp()),      // duration (nanoseconds)
+					traceutil.StatusCodeStr(span.Status().Code()),           // status_code
+					span.Status().Message(),                                 // status_message
+					eventsJSON,                                              // events
+					linksJSON,                                               // links
 				})
 			}
 		}
@@ -137,52 +139,19 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		return nil
 	}
 
-	// Insert in batches to stay within PostgreSQL parameter limit.
-	for batchStart := 0; batchStart < len(rows); batchStart += maxSpansPerBatch {
-		batchEnd := batchStart + maxSpansPerBatch
-		if batchEnd > len(rows) {
-			batchEnd = len(rows)
-		}
-		batch := rows[batchStart:batchEnd]
-
-		if err := e.insertBatch(ctx, batch); err != nil {
-			return err
-		}
+	if _, err := e.db.CopyFrom(
+		ctx,
+		pgx.Identifier{e.cfg.TracesTableName},
+		traceColumns,
+		pgx.CopyFromRows(rows),
+	); err != nil {
+		return fmt.Errorf("failed to copy traces: %w", err)
 	}
 
 	e.logger.Debug("inserted traces",
 		zap.Int("span_count", len(rows)),
 		zap.Duration("duration", time.Since(start)),
 	)
-
-	return nil
-}
-
-func (e *tracesExporter) insertBatch(ctx context.Context, rows []traceSpanRow) error {
-	values := make([]string, len(rows))
-	args := make([]any, 0, len(rows)*traceColumnsCount)
-	argIdx := 1
-
-	for i, row := range rows {
-		placeholders := make([]string, traceColumnsCount)
-		for p := range traceColumnsCount {
-			placeholders[p] = fmt.Sprintf("$%d", argIdx+p)
-		}
-		values[i] = fmt.Sprintf("(%s)", strings.Join(placeholders, ","))
-		argIdx += traceColumnsCount
-		args = append(args, row.args...)
-	}
-
-	query := fmt.Sprintf(
-		`INSERT INTO %s ("timestamp", trace_id, span_id, parent_span_id, trace_state, span_name, span_kind, service_name, resource_attributes, scope_name, scope_version, span_attributes, duration, status_code, status_message, events, links) VALUES %s`,
-		e.cfg.TracesTableName,
-		strings.Join(values, ","),
-	)
-
-	_, err := e.db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return fmt.Errorf("failed to insert traces: %w", err)
-	}
 
 	return nil
 }

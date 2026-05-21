@@ -6,11 +6,10 @@ package hologresexporter
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -58,8 +57,6 @@ func TestPushLogData_EmptyLogs(t *testing.T) {
 }
 
 func TestPushLogData_DataConversion(t *testing.T) {
-	// Verify the data conversion logic produces correct log rows
-	// by directly testing the row construction without a database.
 	ld := newTestLogs()
 
 	rls := ld.ResourceLogs()
@@ -128,38 +125,8 @@ func TestPushLogData_TimestampFallback(t *testing.T) {
 	assert.Equal(t, primary, ts.AsTime())
 }
 
-func TestPushLogData_BatchSplit(t *testing.T) {
-	// Verify the batch split logic without an actual database. The
-	// pushLogData implementation calls insertBatch in chunks of
-	// maxLogsPerBatch; here we replicate the chunking arithmetic to ensure
-	// that a large input is partitioned into the expected number of pieces.
-	totalRows := maxLogsPerBatch*2 + 5
-
-	chunks := 0
-	for batchStart := 0; batchStart < totalRows; batchStart += maxLogsPerBatch {
-		batchEnd := batchStart + maxLogsPerBatch
-		if batchEnd > totalRows {
-			batchEnd = totalRows
-		}
-		assert.LessOrEqual(t, batchEnd-batchStart, maxLogsPerBatch)
-		chunks++
-	}
-	assert.Equal(t, 3, chunks)
-}
-
-func TestMaxLogsPerBatch(t *testing.T) {
-	// Verify constant calculations.
-	assert.Equal(t, 13, logColumnsCount)
-	assert.Equal(t, 65535/13, maxLogsPerBatch)
-	assert.LessOrEqual(t, maxLogsPerBatch*logColumnsCount, 65535)
-}
-
 func TestPushLogData_WithDB(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
+	db := newMockPgxDB()
 
 	cfg := &Config{LogsTableName: "test_logs"}
 	exp := &logsExporter{
@@ -169,17 +136,20 @@ func TestPushLogData_WithDB(t *testing.T) {
 	}
 
 	ld := newTestLogs()
-	err = exp.pushLogData(t.Context(), ld)
+	err := exp.pushLogData(t.Context(), ld)
 	require.NoError(t, err)
-	require.NoError(t, mock.ExpectationsWereMet())
+
+	require.Len(t, db.copyFromCalls, 1)
+	call := db.copyFromCalls[0]
+	assert.Equal(t, "test_logs", call.table[0])
+	assert.Equal(t, logColumns, call.columns)
+	require.Len(t, call.rows, 1)
+	assert.Len(t, call.rows[0], len(logColumns))
 }
 
 func TestPushLogData_DBError(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	mock.ExpectExec("INSERT INTO").WillReturnError(fmt.Errorf("connection refused"))
+	db := newMockPgxDB()
+	db.queueCopyFromErr(errors.New("connection refused"))
 
 	cfg := &Config{LogsTableName: "test_logs"}
 	exp := &logsExporter{
@@ -189,53 +159,9 @@ func TestPushLogData_DBError(t *testing.T) {
 	}
 
 	ld := newTestLogs()
-	err = exp.pushLogData(t.Context(), ld)
+	err := exp.pushLogData(t.Context(), ld)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "connection refused")
-}
-
-func TestLogsInsertBatch_WithDB(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 2))
-
-	cfg := &Config{LogsTableName: "test_logs"}
-	exp := &logsExporter{
-		logger: zap.NewNop(),
-		cfg:    cfg,
-		db:     db,
-	}
-
-	rows := []logRow{
-		{args: make([]any, logColumnsCount)},
-		{args: make([]any, logColumnsCount)},
-	}
-
-	err = exp.insertBatch(t.Context(), rows)
-	require.NoError(t, err)
-	require.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestLogsInsertBatch_Error(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	mock.ExpectExec("INSERT INTO").WillReturnError(fmt.Errorf("insert error"))
-
-	cfg := &Config{LogsTableName: "test_logs"}
-	exp := &logsExporter{
-		logger: zap.NewNop(),
-		cfg:    cfg,
-		db:     db,
-	}
-
-	rows := []logRow{{args: make([]any, logColumnsCount)}}
-	err = exp.insertBatch(t.Context(), rows)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "insert error")
 }
 
 func TestLogsExporter_Shutdown(t *testing.T) {
@@ -249,18 +175,15 @@ func TestLogsExporter_Shutdown(t *testing.T) {
 	})
 
 	t.Run("with db", func(t *testing.T) {
-		db, mock, err := sqlmock.New()
-		require.NoError(t, err)
-
-		mock.ExpectClose()
-
+		db := newMockPgxDB()
 		exp := &logsExporter{
 			logger: zap.NewNop(),
 			cfg:    &Config{},
 			db:     db,
 		}
-		err = exp.shutdown(context.Background())
+		err := exp.shutdown(context.Background())
 		require.NoError(t, err)
+		assert.True(t, db.closed)
 	})
 }
 
@@ -271,17 +194,14 @@ func TestLogsExporter_Start_DBError(t *testing.T) {
 			DSN: "postgresql://user:pass@localhost:1/db",
 		},
 	}
-	err := exp.start(context.Background(), nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err := exp.start(ctx, nil)
 	require.Error(t, err)
 }
 
 func TestPushLogData_TimestampFallbackWithDB(t *testing.T) {
-	// Test the timestamp fallback logic with actual DB insertion.
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
+	db := newMockPgxDB()
 
 	cfg := &Config{LogsTableName: "test_logs"}
 	exp := &logsExporter{
@@ -300,6 +220,19 @@ func TestPushLogData_TimestampFallbackWithDB(t *testing.T) {
 	log.SetObservedTimestamp(pcommon.NewTimestampFromTime(observed))
 	log.Body().SetStr("test fallback")
 
-	err = exp.pushLogData(t.Context(), ld)
+	err := exp.pushLogData(t.Context(), ld)
 	require.NoError(t, err)
+
+	require.Len(t, db.copyFromCalls, 1)
+	// First column is timestamp; verify the fallback was applied.
+	row := db.copyFromCalls[0].rows[0]
+	tsAny := row[0]
+	got, ok := tsAny.(time.Time)
+	require.True(t, ok, "expected timestamp column to be time.Time")
+	assert.True(t, got.Equal(observed), "expected observed timestamp")
+}
+
+func TestLogColumnsLength(t *testing.T) {
+	// Sanity check: column list matches the historical 13-column DDL.
+	assert.Len(t, logColumns, 13)
 }

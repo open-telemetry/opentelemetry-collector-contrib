@@ -5,93 +5,80 @@ package hologresexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
-// Column counts for each metric type table (must match DDL in exporter_common.go).
-const (
-	gaugeColumnsCount        = 10
-	sumColumnsCount          = 13
-	histogramColumnsCount    = 17
-	summaryColumnsCount      = 14
-	expHistogramColumnsCount = 21
+// Column lists for COPY into each metric type table (must match DDL in exporter_common.go).
+var (
+	gaugeColumns = []string{
+		"timestamp", "metric_name", "service_name", "value", "flags",
+		"resource_attributes", "scope_name", "scope_version", "scope_attributes", "attributes",
+	}
+	sumColumns = []string{
+		"timestamp", "start_timestamp", "metric_name", "service_name", "value", "flags",
+		"is_monotonic", "aggregation_temporality",
+		"resource_attributes", "scope_name", "scope_version", "scope_attributes", "attributes",
+	}
+	histogramColumns = []string{
+		"timestamp", "start_timestamp", "metric_name", "service_name",
+		"count", "sum", "min", "max", "flags",
+		"bucket_counts", "explicit_bounds", "aggregation_temporality",
+		"resource_attributes", "scope_name", "scope_version", "scope_attributes", "attributes",
+	}
+	summaryColumns = []string{
+		"timestamp", "start_timestamp", "metric_name", "service_name",
+		"count", "sum", "flags", "quantile_values", "quantile_counts",
+		"resource_attributes", "scope_name", "scope_version", "scope_attributes", "attributes",
+	}
+	expHistogramColumns = []string{
+		"timestamp", "start_timestamp", "metric_name", "service_name",
+		"count", "sum", "min", "max", "scale", "zero_count", "flags",
+		"positive_offset", "positive_bucket_counts", "negative_offset", "negative_bucket_counts",
+		"aggregation_temporality",
+		"resource_attributes", "scope_name", "scope_version", "scope_attributes", "attributes",
+	}
 )
 
-// INSERT column lists for each metric type table.
-const (
-	gaugeColumns        = `"timestamp", metric_name, service_name, value, flags, resource_attributes, scope_name, scope_version, scope_attributes, attributes`
-	sumColumns          = `"timestamp", start_timestamp, metric_name, service_name, value, flags, is_monotonic, aggregation_temporality, resource_attributes, scope_name, scope_version, scope_attributes, attributes`
-	histogramColumns    = `"timestamp", start_timestamp, metric_name, service_name, count, sum, min, max, flags, bucket_counts, explicit_bounds, aggregation_temporality, resource_attributes, scope_name, scope_version, scope_attributes, attributes`
-	summaryColumns      = `"timestamp", start_timestamp, metric_name, service_name, count, sum, flags, quantile_values, quantile_counts, resource_attributes, scope_name, scope_version, scope_attributes, attributes`
-	expHistogramColumns = `"timestamp", start_timestamp, metric_name, service_name, count, sum, min, max, scale, zero_count, flags, positive_offset, positive_bucket_counts, negative_offset, negative_bucket_counts, aggregation_temporality, resource_attributes, scope_name, scope_version, scope_attributes, attributes`
-)
-
-// metricsBatch collects rows for a single metric type table and inserts them in batches.
+// metricsBatch collects rows for a single metric type table and writes them
+// using the PostgreSQL COPY protocol via pgx's CopyFrom.
 type metricsBatch struct {
-	tableName   string
-	columns     string
-	columnCount int
-	rows        [][]any
+	tableName string
+	columns   []string
+	rows      [][]any
 }
 
 func (b *metricsBatch) addRow(args ...any) {
 	b.rows = append(b.rows, args)
 }
 
-func (b *metricsBatch) insert(ctx context.Context, db *sql.DB) error {
+func (b *metricsBatch) insert(ctx context.Context, db pgxDB) error {
 	if len(b.rows) == 0 {
 		return nil
 	}
 
-	maxPerBatch := maxInsertParams / b.columnCount
-
-	for batchStart := 0; batchStart < len(b.rows); batchStart += maxPerBatch {
-		batchEnd := batchStart + maxPerBatch
-		if batchEnd > len(b.rows) {
-			batchEnd = len(b.rows)
-		}
-		batch := b.rows[batchStart:batchEnd]
-
-		values := make([]string, len(batch))
-		args := make([]any, 0, len(batch)*b.columnCount)
-		argIdx := 1
-
-		for i, row := range batch {
-			placeholders := make([]string, b.columnCount)
-			for p := range b.columnCount {
-				placeholders[p] = fmt.Sprintf("$%d", argIdx+p)
-			}
-			values[i] = fmt.Sprintf("(%s)", strings.Join(placeholders, ","))
-			argIdx += b.columnCount
-			args = append(args, row...)
-		}
-
-		query := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s",
-			b.tableName,
-			b.columns,
-			strings.Join(values, ","),
-		)
-
-		if _, err := db.ExecContext(ctx, query, args...); err != nil {
-			return fmt.Errorf("failed to insert metrics into %s: %w", b.tableName, err)
-		}
+	if _, err := db.CopyFrom(
+		ctx,
+		pgx.Identifier{b.tableName},
+		b.columns,
+		pgx.CopyFromRows(b.rows),
+	); err != nil {
+		return fmt.Errorf("failed to copy metrics into %s: %w", b.tableName, err)
 	}
-
 	return nil
 }
 
 type metricsExporter struct {
 	logger *zap.Logger
 	cfg    *Config
-	db     *sql.DB
+	db     pgxDB
 }
 
 func newMetricsExporter(logger *zap.Logger, cfg *Config) *metricsExporter {
@@ -102,7 +89,7 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) *metricsExporter {
 }
 
 func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
-	db, err := openDB(e.cfg.DSN)
+	db, err := openDB(ctx, e.cfg.DSN)
 	if err != nil {
 		return err
 	}
@@ -118,7 +105,7 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 
 func (e *metricsExporter) shutdown(_ context.Context) error {
 	if e.db != nil {
-		return e.db.Close()
+		e.db.Close()
 	}
 	return nil
 }
@@ -127,29 +114,24 @@ func (e *metricsExporter) pushMetricData(ctx context.Context, md pmetric.Metrics
 	start := time.Now()
 
 	gaugeData := &metricsBatch{
-		tableName:   e.cfg.MetricsTableName + "_gauge",
-		columns:     gaugeColumns,
-		columnCount: gaugeColumnsCount,
+		tableName: e.cfg.MetricsTableName + "_gauge",
+		columns:   gaugeColumns,
 	}
 	sumData := &metricsBatch{
-		tableName:   e.cfg.MetricsTableName + "_sum",
-		columns:     sumColumns,
-		columnCount: sumColumnsCount,
+		tableName: e.cfg.MetricsTableName + "_sum",
+		columns:   sumColumns,
 	}
 	histogramData := &metricsBatch{
-		tableName:   e.cfg.MetricsTableName + "_histogram",
-		columns:     histogramColumns,
-		columnCount: histogramColumnsCount,
+		tableName: e.cfg.MetricsTableName + "_histogram",
+		columns:   histogramColumns,
 	}
 	summaryData := &metricsBatch{
-		tableName:   e.cfg.MetricsTableName + "_summary",
-		columns:     summaryColumns,
-		columnCount: summaryColumnsCount,
+		tableName: e.cfg.MetricsTableName + "_summary",
+		columns:   summaryColumns,
 	}
 	expHistData := &metricsBatch{
-		tableName:   e.cfg.MetricsTableName + "_exp_histogram",
-		columns:     expHistogramColumns,
-		columnCount: expHistogramColumnsCount,
+		tableName: e.cfg.MetricsTableName + "_exp_histogram",
+		columns:   expHistogramColumns,
 	}
 
 	rmSlice := md.ResourceMetrics()
@@ -231,7 +213,7 @@ func (e *metricsExporter) collectGauge(
 			metricName,
 			serviceName,
 			getValue(dp),
-			int(dp.Flags()),
+			int32(dp.Flags()),
 			resourceAttrs,
 			scopeName,
 			scopeVersion,
@@ -256,7 +238,7 @@ func (e *metricsExporter) collectSum(
 			metricName,
 			serviceName,
 			getValue(dp),
-			int(dp.Flags()),
+			int32(dp.Flags()),
 			sum.IsMonotonic(),
 			aggregationTemporalityToString(sum.AggregationTemporality()),
 			resourceAttrs,
@@ -286,7 +268,7 @@ func (e *metricsExporter) collectHistogram(
 			dp.Sum(),
 			dp.Min(),
 			dp.Max(),
-			int(dp.Flags()),
+			int32(dp.Flags()),
 			uint64SliceToString(dp.BucketCounts().AsRaw()),
 			float64SliceToString(dp.ExplicitBounds().AsRaw()),
 			aggregationTemporalityToString(hist.AggregationTemporality()),
@@ -316,7 +298,7 @@ func (e *metricsExporter) collectSummary(
 			serviceName,
 			int64(dp.Count()),
 			dp.Sum(),
-			int(dp.Flags()),
+			int32(dp.Flags()),
 			qvs,
 			qcs,
 			resourceAttrs,
@@ -346,12 +328,12 @@ func (e *metricsExporter) collectExpHistogram(
 			dp.Sum(),
 			dp.Min(),
 			dp.Max(),
-			int(dp.Scale()),
+			int32(dp.Scale()),
 			int64(dp.ZeroCount()),
-			int(dp.Flags()),
-			int(dp.Positive().Offset()),
+			int32(dp.Flags()),
+			int32(dp.Positive().Offset()),
 			uint64SliceToString(dp.Positive().BucketCounts().AsRaw()),
-			int(dp.Negative().Offset()),
+			int32(dp.Negative().Offset()),
 			uint64SliceToString(dp.Negative().BucketCounts().AsRaw()),
 			aggregationTemporalityToString(expHist.AggregationTemporality()),
 			resourceAttrs,

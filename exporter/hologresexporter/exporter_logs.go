@@ -5,11 +5,10 @@ package hologresexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -17,21 +16,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
-// logColumnsCount is the number of columns in the logs table.
-const logColumnsCount = 13
-
-// maxLogsPerBatch is the maximum number of log records per INSERT batch.
-const maxLogsPerBatch = maxInsertParams / logColumnsCount
-
-// logRow holds the arguments for a single log row INSERT.
-type logRow struct {
-	args []any
+// logColumns lists the destination columns for COPY into the logs table.
+var logColumns = []string{
+	"timestamp",
+	"trace_id",
+	"span_id",
+	"trace_flags",
+	"severity_text",
+	"severity_number",
+	"service_name",
+	"body",
+	"resource_attributes",
+	"scope_name",
+	"scope_version",
+	"scope_attributes",
+	"log_attributes",
 }
 
 type logsExporter struct {
 	logger *zap.Logger
 	cfg    *Config
-	db     *sql.DB
+	db     pgxDB
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) *logsExporter {
@@ -42,7 +47,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) *logsExporter {
 }
 
 func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
-	db, err := openDB(e.cfg.DSN)
+	db, err := openDB(ctx, e.cfg.DSN)
 	if err != nil {
 		return err
 	}
@@ -58,7 +63,7 @@ func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 
 func (e *logsExporter) shutdown(_ context.Context) error {
 	if e.db != nil {
-		return e.db.Close()
+		e.db.Close()
 	}
 	return nil
 }
@@ -66,8 +71,7 @@ func (e *logsExporter) shutdown(_ context.Context) error {
 func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	start := time.Now()
 
-	// Collect all log rows.
-	var rows []logRow
+	var rows [][]any
 
 	rls := ld.ResourceLogs()
 	for i := range rls.Len() {
@@ -103,22 +107,20 @@ func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 					ts = log.ObservedTimestamp()
 				}
 
-				rows = append(rows, logRow{
-					args: []any{
-						ts.AsTime(),                                         // timestamp
-						traceutil.TraceIDToHexOrEmptyString(log.TraceID()),  // trace_id
-						traceutil.SpanIDToHexOrEmptyString(log.SpanID()),    // span_id
-						int32(log.Flags()),                                  // trace_flags
-						log.SeverityText(),                                  // severity_text
-						int32(log.SeverityNumber()),                         // severity_number
-						serviceName,                                         // service_name
-						log.Body().AsString(),                               // body
-						resourceAttrs,                                       // resource_attributes
-						scopeName,                                           // scope_name
-						scopeVersion,                                        // scope_version
-						scopeAttrs,                                          // scope_attributes
-						logAttrs,                                            // log_attributes
-					},
+				rows = append(rows, []any{
+					ts.AsTime(),                                        // timestamp
+					traceutil.TraceIDToHexOrEmptyString(log.TraceID()), // trace_id
+					traceutil.SpanIDToHexOrEmptyString(log.SpanID()),   // span_id
+					int32(log.Flags()),                                 // trace_flags
+					log.SeverityText(),                                 // severity_text
+					int32(log.SeverityNumber()),                        // severity_number
+					serviceName,                                        // service_name
+					log.Body().AsString(),                              // body
+					resourceAttrs,                                      // resource_attributes
+					scopeName,                                          // scope_name
+					scopeVersion,                                       // scope_version
+					scopeAttrs,                                         // scope_attributes
+					logAttrs,                                           // log_attributes
 				})
 			}
 		}
@@ -128,52 +130,19 @@ func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 		return nil
 	}
 
-	// Insert in batches to stay within PostgreSQL parameter limit.
-	for batchStart := 0; batchStart < len(rows); batchStart += maxLogsPerBatch {
-		batchEnd := batchStart + maxLogsPerBatch
-		if batchEnd > len(rows) {
-			batchEnd = len(rows)
-		}
-		batch := rows[batchStart:batchEnd]
-
-		if err := e.insertBatch(ctx, batch); err != nil {
-			return err
-		}
+	if _, err := e.db.CopyFrom(
+		ctx,
+		pgx.Identifier{e.cfg.LogsTableName},
+		logColumns,
+		pgx.CopyFromRows(rows),
+	); err != nil {
+		return fmt.Errorf("failed to copy logs: %w", err)
 	}
 
 	e.logger.Debug("inserted logs",
 		zap.Int("log_count", len(rows)),
 		zap.Duration("duration", time.Since(start)),
 	)
-
-	return nil
-}
-
-func (e *logsExporter) insertBatch(ctx context.Context, rows []logRow) error {
-	values := make([]string, len(rows))
-	args := make([]any, 0, len(rows)*logColumnsCount)
-	argIdx := 1
-
-	for i, row := range rows {
-		placeholders := make([]string, logColumnsCount)
-		for p := range logColumnsCount {
-			placeholders[p] = fmt.Sprintf("$%d", argIdx+p)
-		}
-		values[i] = fmt.Sprintf("(%s)", strings.Join(placeholders, ","))
-		argIdx += logColumnsCount
-		args = append(args, row.args...)
-	}
-
-	query := fmt.Sprintf(
-		`INSERT INTO %s ("timestamp", trace_id, span_id, trace_flags, severity_text, severity_number, service_name, body, resource_attributes, scope_name, scope_version, scope_attributes, log_attributes) VALUES %s`,
-		e.cfg.LogsTableName,
-		strings.Join(values, ","),
-	)
-
-	_, err := e.db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return fmt.Errorf("failed to insert logs: %w", err)
-	}
 
 	return nil
 }

@@ -6,11 +6,10 @@ package hologresexporter
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -162,8 +161,6 @@ func TestPushTraceData_EmptyTraces(t *testing.T) {
 }
 
 func TestPushTraceData_DataConversion(t *testing.T) {
-	// Verify the data conversion logic produces correct span rows
-	// by directly testing the row construction without a database.
 	td := newTestTraces()
 
 	rsSpans := td.ResourceSpans()
@@ -209,32 +206,8 @@ func TestPushTraceData_DataConversion(t *testing.T) {
 	assert.Equal(t, int64(100*time.Millisecond), duration)
 }
 
-func TestInsertBatch_QueryConstruction(t *testing.T) {
-	// Verify that insertBatch constructs the correct SQL query structure.
-	// We can't execute it without a DB, but we can verify the row building.
-	rows := []traceSpanRow{
-		{args: make([]any, traceColumnsCount)},
-		{args: make([]any, traceColumnsCount)},
-	}
-
-	// Verify the batch has the expected number of rows.
-	assert.Len(t, rows, 2)
-	assert.Len(t, rows[0].args, traceColumnsCount)
-}
-
-func TestMaxSpansPerBatch(t *testing.T) {
-	// Verify constant calculations.
-	assert.Equal(t, 17, traceColumnsCount)
-	assert.Equal(t, 65535/17, maxSpansPerBatch)
-	assert.True(t, maxSpansPerBatch*traceColumnsCount <= 65535)
-}
-
 func TestPushTraceData_WithDB(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
+	db := newMockPgxDB()
 
 	cfg := &Config{TracesTableName: "test_traces"}
 	exp := &tracesExporter{
@@ -244,17 +217,21 @@ func TestPushTraceData_WithDB(t *testing.T) {
 	}
 
 	td := newTestTraces()
-	err = exp.pushTraceData(t.Context(), td)
+	err := exp.pushTraceData(t.Context(), td)
 	require.NoError(t, err)
-	require.NoError(t, mock.ExpectationsWereMet())
+
+	require.Len(t, db.copyFromCalls, 1)
+	call := db.copyFromCalls[0]
+	assert.Equal(t, "test_traces", call.table[0])
+	assert.Equal(t, traceColumns, call.columns)
+	require.Len(t, call.rows, 1)
+	// Each row must have one entry per column.
+	assert.Len(t, call.rows[0], len(traceColumns))
 }
 
 func TestPushTraceData_DBError(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	mock.ExpectExec("INSERT INTO").WillReturnError(fmt.Errorf("connection refused"))
+	db := newMockPgxDB()
+	db.queueCopyFromErr(errors.New("connection refused"))
 
 	cfg := &Config{TracesTableName: "test_traces"}
 	exp := &tracesExporter{
@@ -264,53 +241,9 @@ func TestPushTraceData_DBError(t *testing.T) {
 	}
 
 	td := newTestTraces()
-	err = exp.pushTraceData(t.Context(), td)
+	err := exp.pushTraceData(t.Context(), td)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "connection refused")
-}
-
-func TestTracesInsertBatch_WithDB(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 2))
-
-	cfg := &Config{TracesTableName: "test_traces"}
-	exp := &tracesExporter{
-		logger: zap.NewNop(),
-		cfg:    cfg,
-		db:     db,
-	}
-
-	rows := []traceSpanRow{
-		{args: make([]any, traceColumnsCount)},
-		{args: make([]any, traceColumnsCount)},
-	}
-
-	err = exp.insertBatch(t.Context(), rows)
-	require.NoError(t, err)
-	require.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestTracesInsertBatch_Error(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	mock.ExpectExec("INSERT INTO").WillReturnError(fmt.Errorf("insert error"))
-
-	cfg := &Config{TracesTableName: "test_traces"}
-	exp := &tracesExporter{
-		logger: zap.NewNop(),
-		cfg:    cfg,
-		db:     db,
-	}
-
-	rows := []traceSpanRow{{args: make([]any, traceColumnsCount)}}
-	err = exp.insertBatch(t.Context(), rows)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "insert error")
 }
 
 func TestTracesExporter_Shutdown(t *testing.T) {
@@ -324,18 +257,15 @@ func TestTracesExporter_Shutdown(t *testing.T) {
 	})
 
 	t.Run("with db", func(t *testing.T) {
-		db, mock, err := sqlmock.New()
-		require.NoError(t, err)
-
-		mock.ExpectClose()
-
+		db := newMockPgxDB()
 		exp := &tracesExporter{
 			logger: zap.NewNop(),
 			cfg:    &Config{},
 			db:     db,
 		}
-		err = exp.shutdown(context.Background())
+		err := exp.shutdown(context.Background())
 		require.NoError(t, err)
+		assert.True(t, db.closed)
 	})
 }
 
@@ -346,6 +276,13 @@ func TestTracesExporter_Start_DBError(t *testing.T) {
 			DSN: "postgresql://user:pass@localhost:1/db",
 		},
 	}
-	err := exp.start(context.Background(), nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err := exp.start(ctx, nil)
 	require.Error(t, err)
+}
+
+func TestTraceColumnsLength(t *testing.T) {
+	// Sanity check: column list matches the historical 17-column DDL.
+	assert.Len(t, traceColumns, 17)
 }

@@ -5,30 +5,47 @@ package hologresexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib" // PostgreSQL driver
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// openDB creates a new database connection pool.
-func openDB(dsn string) (*sql.DB, error) {
-	db, err := sql.Open("pgx", dsn)
+// pgxDB defines the database operations used by the Hologres exporters.
+// It is satisfied by *pgxpool.Pool in production code; tests can supply a
+// lightweight implementation. The COPY protocol (CopyFrom) is required by
+// pgx's native API and cannot be expressed via database/sql.
+type pgxDB interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error)
+	Ping(ctx context.Context) error
+	Close()
+}
+
+// openDB creates a new pgx connection pool.
+func openDB(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	config, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
+		return nil, fmt.Errorf("failed to parse DSN: %w", err)
 	}
-	db.SetMaxOpenConns(20)
-	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(time.Hour)
-	if err := db.Ping(); err != nil {
-		db.Close()
+	config.MaxConns = 20
+	config.MinConns = 5
+	config.MaxConnLifetime = time.Hour
+
+	pool, err := pgxpool.NewWithConfig(ctx, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create connection pool: %w", err)
+	}
+	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
-	return db, nil
+	return pool, nil
 }
 
 // ttlClause returns the time_to_live_in_seconds WITH-clause fragment for Hologres DDL.
@@ -46,7 +63,7 @@ func ttlClause(ttl time.Duration) string {
 }
 
 // createTracesTable creates the traces table in Hologres.
-func createTracesTable(ctx context.Context, db *sql.DB, tableName string, ttl time.Duration) error {
+func createTracesTable(ctx context.Context, db pgxDB, tableName string, ttl time.Duration) error {
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
     "timestamp"           TIMESTAMPTZ NOT NULL,
     trace_id              TEXT NOT NULL,
@@ -74,8 +91,7 @@ WITH (
     dictionary_encoding_columns = 'service_name:auto,span_name:auto'%s
 )`, tableName, ttlClause(ttl))
 
-	_, err := db.ExecContext(ctx, query)
-	if err != nil {
+	if _, err := db.Exec(ctx, query); err != nil {
 		return fmt.Errorf("failed to create traces table: %w", err)
 	}
 
@@ -86,14 +102,14 @@ WITH (
 	}
 	for _, q := range alterQueries {
 		// Ignore errors (may already be set).
-		db.ExecContext(ctx, q)
+		_, _ = db.Exec(ctx, q)
 	}
 
 	return nil
 }
 
 // createLogsTable creates the logs table in Hologres.
-func createLogsTable(ctx context.Context, db *sql.DB, tableName string, ttl time.Duration) error {
+func createLogsTable(ctx context.Context, db pgxDB, tableName string, ttl time.Duration) error {
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
     "timestamp"           TIMESTAMPTZ NOT NULL,
     trace_id              TEXT DEFAULT '',
@@ -117,8 +133,7 @@ WITH (
     dictionary_encoding_columns = 'service_name:auto,severity_text:auto'%s
 )`, tableName, ttlClause(ttl))
 
-	_, err := db.ExecContext(ctx, query)
-	if err != nil {
+	if _, err := db.Exec(ctx, query); err != nil {
 		return fmt.Errorf("failed to create logs table: %w", err)
 	}
 
@@ -126,7 +141,7 @@ WITH (
 	indexName := strings.ReplaceAll(tableName, ".", "_") + "_body_idx"
 	indexQuery := fmt.Sprintf(`CREATE INDEX IF NOT EXISTS %s ON %s USING FULLTEXT (body) WITH (tokenizer = 'standard')`, indexName, tableName)
 	// Ignore errors (may already exist or version may not support it).
-	db.ExecContext(ctx, indexQuery)
+	_, _ = db.Exec(ctx, indexQuery)
 
 	// Enable JSONB columnar optimization.
 	alterQueries := []string{
@@ -135,17 +150,17 @@ WITH (
 		fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN log_attributes SET (enable_columnar_type = ON)`, tableName),
 	}
 	for _, q := range alterQueries {
-		db.ExecContext(ctx, q)
+		_, _ = db.Exec(ctx, q)
 	}
 
 	return nil
 }
 
 // createMetricsTables creates all five metric type tables in Hologres.
-func createMetricsTables(ctx context.Context, db *sql.DB, metricsTableName string, ttl time.Duration) error {
+func createMetricsTables(ctx context.Context, db pgxDB, metricsTableName string, ttl time.Duration) error {
 	creators := []struct {
 		suffix string
-		fn     func(context.Context, *sql.DB, string, time.Duration) error
+		fn     func(context.Context, pgxDB, string, time.Duration) error
 	}{
 		{"gauge", createMetricsGaugeTable},
 		{"sum", createMetricsSumTable},
@@ -164,7 +179,7 @@ func createMetricsTables(ctx context.Context, db *sql.DB, metricsTableName strin
 }
 
 // createMetricsGaugeTable creates the gauge metrics table.
-func createMetricsGaugeTable(ctx context.Context, db *sql.DB, tableName string, ttl time.Duration) error {
+func createMetricsGaugeTable(ctx context.Context, db pgxDB, tableName string, ttl time.Duration) error {
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
     "timestamp"           TIMESTAMPTZ NOT NULL,
     metric_name           TEXT NOT NULL,
@@ -185,8 +200,7 @@ WITH (
     dictionary_encoding_columns = 'service_name:auto,metric_name:auto'%s
 )`, tableName, ttlClause(ttl))
 
-	_, err := db.ExecContext(ctx, query)
-	if err != nil {
+	if _, err := db.Exec(ctx, query); err != nil {
 		return fmt.Errorf("failed to create gauge metrics table: %w", err)
 	}
 
@@ -195,7 +209,7 @@ WITH (
 }
 
 // createMetricsSumTable creates the sum metrics table.
-func createMetricsSumTable(ctx context.Context, db *sql.DB, tableName string, ttl time.Duration) error {
+func createMetricsSumTable(ctx context.Context, db pgxDB, tableName string, ttl time.Duration) error {
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
     "timestamp"                TIMESTAMPTZ NOT NULL,
     start_timestamp            TIMESTAMPTZ,
@@ -219,8 +233,7 @@ WITH (
     dictionary_encoding_columns = 'service_name:auto,metric_name:auto'%s
 )`, tableName, ttlClause(ttl))
 
-	_, err := db.ExecContext(ctx, query)
-	if err != nil {
+	if _, err := db.Exec(ctx, query); err != nil {
 		return fmt.Errorf("failed to create sum metrics table: %w", err)
 	}
 
@@ -229,7 +242,7 @@ WITH (
 }
 
 // createMetricsHistogramTable creates the histogram metrics table.
-func createMetricsHistogramTable(ctx context.Context, db *sql.DB, tableName string, ttl time.Duration) error {
+func createMetricsHistogramTable(ctx context.Context, db pgxDB, tableName string, ttl time.Duration) error {
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
     "timestamp"                TIMESTAMPTZ NOT NULL,
     start_timestamp            TIMESTAMPTZ,
@@ -257,8 +270,7 @@ WITH (
     dictionary_encoding_columns = 'service_name:auto,metric_name:auto'%s
 )`, tableName, ttlClause(ttl))
 
-	_, err := db.ExecContext(ctx, query)
-	if err != nil {
+	if _, err := db.Exec(ctx, query); err != nil {
 		return fmt.Errorf("failed to create histogram metrics table: %w", err)
 	}
 
@@ -267,7 +279,7 @@ WITH (
 }
 
 // createMetricsSummaryTable creates the summary metrics table.
-func createMetricsSummaryTable(ctx context.Context, db *sql.DB, tableName string, ttl time.Duration) error {
+func createMetricsSummaryTable(ctx context.Context, db pgxDB, tableName string, ttl time.Duration) error {
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
     "timestamp"           TIMESTAMPTZ NOT NULL,
     start_timestamp       TIMESTAMPTZ,
@@ -292,8 +304,7 @@ WITH (
     dictionary_encoding_columns = 'service_name:auto,metric_name:auto'%s
 )`, tableName, ttlClause(ttl))
 
-	_, err := db.ExecContext(ctx, query)
-	if err != nil {
+	if _, err := db.Exec(ctx, query); err != nil {
 		return fmt.Errorf("failed to create summary metrics table: %w", err)
 	}
 
@@ -302,7 +313,7 @@ WITH (
 }
 
 // createMetricsExpHistogramTable creates the exponential histogram metrics table.
-func createMetricsExpHistogramTable(ctx context.Context, db *sql.DB, tableName string, ttl time.Duration) error {
+func createMetricsExpHistogramTable(ctx context.Context, db pgxDB, tableName string, ttl time.Duration) error {
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
     "timestamp"                TIMESTAMPTZ NOT NULL,
     start_timestamp            TIMESTAMPTZ,
@@ -334,8 +345,7 @@ WITH (
     dictionary_encoding_columns = 'service_name:auto,metric_name:auto'%s
 )`, tableName, ttlClause(ttl))
 
-	_, err := db.ExecContext(ctx, query)
-	if err != nil {
+	if _, err := db.Exec(ctx, query); err != nil {
 		return fmt.Errorf("failed to create exponential histogram metrics table: %w", err)
 	}
 
@@ -345,10 +355,10 @@ WITH (
 
 // enableJSONBColumnar enables columnar type optimization for JSONB columns.
 // Errors are ignored since the setting may already exist or the version may not support it.
-func enableJSONBColumnar(ctx context.Context, db *sql.DB, tableName string, columns ...string) {
+func enableJSONBColumnar(ctx context.Context, db pgxDB, tableName string, columns ...string) {
 	for _, col := range columns {
 		q := fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN %s SET (enable_columnar_type = ON)`, tableName, col)
-		db.ExecContext(ctx, q)
+		_, _ = db.Exec(ctx, q)
 	}
 }
 

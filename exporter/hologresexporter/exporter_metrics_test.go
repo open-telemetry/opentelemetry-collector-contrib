@@ -5,11 +5,10 @@ package hologresexporter
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -183,7 +182,6 @@ func TestFloat64SliceToString(t *testing.T) {
 	})
 
 	t.Run("integer values", func(t *testing.T) {
-		// float64 integer values should not have decimal point
 		assert.Equal(t, "1,2,3", float64SliceToString([]float64{1.0, 2.0, 3.0}))
 	})
 }
@@ -238,7 +236,6 @@ func TestPushMetricData_GaugeConversion(t *testing.T) {
 	assert.Equal(t, "test-scope", sm.Scope().Name())
 	assert.Equal(t, "v1.0.0", sm.Scope().Version())
 
-	// First metric is Gauge.
 	gauge := sm.Metrics().At(0)
 	assert.Equal(t, "cpu.utilization", gauge.Name())
 	assert.Equal(t, pmetric.MetricTypeGauge, gauge.Type())
@@ -253,10 +250,8 @@ func TestPushMetricData_GaugeConversion(t *testing.T) {
 
 func TestPushMetricData_SumConversion(t *testing.T) {
 	md := newTestMetrics()
-
 	sm := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 
-	// Second metric is Sum.
 	sumMetric := sm.Metrics().At(1)
 	assert.Equal(t, "http.request.count", sumMetric.Name())
 	assert.Equal(t, pmetric.MetricTypeSum, sumMetric.Type())
@@ -271,10 +266,8 @@ func TestPushMetricData_SumConversion(t *testing.T) {
 
 func TestPushMetricData_HistogramConversion(t *testing.T) {
 	md := newTestMetrics()
-
 	sm := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 
-	// Third metric is Histogram.
 	histMetric := sm.Metrics().At(2)
 	assert.Equal(t, "http.request.duration", histMetric.Name())
 	assert.Equal(t, pmetric.MetricTypeHistogram, histMetric.Type())
@@ -293,10 +286,8 @@ func TestPushMetricData_HistogramConversion(t *testing.T) {
 
 func TestPushMetricData_SummaryConversion(t *testing.T) {
 	md := newTestMetrics()
-
 	sm := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 
-	// Fourth metric is Summary.
 	summaryMetric := sm.Metrics().At(3)
 	assert.Equal(t, "rpc.duration", summaryMetric.Name())
 	assert.Equal(t, pmetric.MetricTypeSummary, summaryMetric.Type())
@@ -312,10 +303,8 @@ func TestPushMetricData_SummaryConversion(t *testing.T) {
 
 func TestPushMetricData_ExpHistogramConversion(t *testing.T) {
 	md := newTestMetrics()
-
 	sm := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 
-	// Fifth metric is ExponentialHistogram.
 	expHistMetric := sm.Metrics().At(4)
 	assert.Equal(t, "http.response.size", expHistMetric.Name())
 	assert.Equal(t, pmetric.MetricTypeExponentialHistogram, expHistMetric.Type())
@@ -336,27 +325,18 @@ func TestPushMetricData_ExpHistogramConversion(t *testing.T) {
 	assert.Equal(t, "3,7", uint64SliceToString(dp.Negative().BucketCounts().AsRaw()))
 }
 
-func TestMetricsColumnCounts(t *testing.T) {
-	// Verify constant calculations match DDL definitions.
-	assert.Equal(t, 10, gaugeColumnsCount)
-	assert.Equal(t, 13, sumColumnsCount)
-	assert.Equal(t, 17, histogramColumnsCount)
-	assert.Equal(t, 14, summaryColumnsCount)
-	assert.Equal(t, 21, expHistogramColumnsCount)
-
-	// Verify all column counts fit within PostgreSQL parameter limit.
-	for _, count := range []int{gaugeColumnsCount, sumColumnsCount, histogramColumnsCount, summaryColumnsCount, expHistogramColumnsCount} {
-		maxPerBatch := maxInsertParams / count
-		assert.True(t, maxPerBatch*count <= maxInsertParams)
-		assert.True(t, maxPerBatch > 0)
-	}
+func TestMetricsColumnsLengths(t *testing.T) {
+	assert.Len(t, gaugeColumns, 10)
+	assert.Len(t, sumColumns, 13)
+	assert.Len(t, histogramColumns, 17)
+	assert.Len(t, summaryColumns, 14)
+	assert.Len(t, expHistogramColumns, 21)
 }
 
 func TestMetricsBatch_AddRow(t *testing.T) {
 	batch := &metricsBatch{
-		tableName:   "test_table",
-		columns:     "a, b, c",
-		columnCount: 3,
+		tableName: "test_table",
+		columns:   []string{"a", "b", "c"},
 	}
 
 	batch.addRow(1, "two", 3.0)
@@ -369,66 +349,51 @@ func TestMetricsBatch_AddRow(t *testing.T) {
 
 func TestMetricsBatch_InsertEmpty(t *testing.T) {
 	batch := &metricsBatch{
-		tableName:   "test_table",
-		columns:     "a, b",
-		columnCount: 2,
+		tableName: "test_table",
+		columns:   []string{"a", "b"},
 	}
 
-	// Inserting with no rows should be a no-op.
+	// Inserting with no rows should be a no-op (db is allowed to be nil).
 	err := batch.insert(t.Context(), nil)
 	assert.NoError(t, err)
 }
 
 func TestMetricsBatch_Insert_WithDB(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 2))
+	db := newMockPgxDB()
 
 	batch := &metricsBatch{
-		tableName:   "test_table",
-		columns:     "a, b, c",
-		columnCount: 3,
+		tableName: "test_table",
+		columns:   []string{"a", "b", "c"},
 	}
 	batch.addRow(1, "two", 3.0)
 	batch.addRow(4, "five", 6.0)
 
-	err = batch.insert(t.Context(), db)
+	err := batch.insert(t.Context(), db)
 	require.NoError(t, err)
-	require.NoError(t, mock.ExpectationsWereMet())
+
+	require.Len(t, db.copyFromCalls, 1)
+	assert.Equal(t, "test_table", db.copyFromCalls[0].table[0])
+	assert.Equal(t, []string{"a", "b", "c"}, db.copyFromCalls[0].columns)
+	assert.Len(t, db.copyFromCalls[0].rows, 2)
 }
 
 func TestMetricsBatch_Insert_Error(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	mock.ExpectExec("INSERT INTO").WillReturnError(fmt.Errorf("insert failed"))
+	db := newMockPgxDB()
+	db.queueCopyFromErr(errors.New("insert failed"))
 
 	batch := &metricsBatch{
-		tableName:   "test_table",
-		columns:     "a, b",
-		columnCount: 2,
+		tableName: "test_table",
+		columns:   []string{"a", "b"},
 	}
 	batch.addRow(1, "two")
 
-	err = batch.insert(t.Context(), db)
+	err := batch.insert(t.Context(), db)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "insert failed")
 }
 
 func TestPushMetricData_WithDB(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	// newTestMetrics() produces 5 metric types, each with data -> 5 INSERT calls.
-	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(0, 1))
+	db := newMockPgxDB()
 
 	cfg := &Config{MetricsTableName: "otel_metrics"}
 	exp := &metricsExporter{
@@ -438,18 +403,27 @@ func TestPushMetricData_WithDB(t *testing.T) {
 	}
 
 	md := newTestMetrics()
-	err = exp.pushMetricData(t.Context(), md)
+	err := exp.pushMetricData(t.Context(), md)
 	require.NoError(t, err)
-	require.NoError(t, mock.ExpectationsWereMet())
+
+	// 5 metric types × 1 datapoint = 5 CopyFrom calls.
+	require.Len(t, db.copyFromCalls, 5)
+	expectedTables := []string{
+		"otel_metrics_gauge",
+		"otel_metrics_sum",
+		"otel_metrics_histogram",
+		"otel_metrics_summary",
+		"otel_metrics_exp_histogram",
+	}
+	for i, exp := range expectedTables {
+		assert.Equal(t, exp, db.copyFromCalls[i].table[0])
+	}
 }
 
 func TestPushMetricData_DBError(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	// First batch (gauge) insert fails.
-	mock.ExpectExec("INSERT INTO").WillReturnError(fmt.Errorf("db error"))
+	db := newMockPgxDB()
+	// First batch (gauge) CopyFrom fails.
+	db.queueCopyFromErr(errors.New("db error"))
 
 	cfg := &Config{MetricsTableName: "otel_metrics"}
 	exp := &metricsExporter{
@@ -459,7 +433,7 @@ func TestPushMetricData_DBError(t *testing.T) {
 	}
 
 	md := newTestMetrics()
-	err = exp.pushMetricData(t.Context(), md)
+	err := exp.pushMetricData(t.Context(), md)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "db error")
 }
@@ -475,18 +449,15 @@ func TestMetricsExporter_Shutdown(t *testing.T) {
 	})
 
 	t.Run("with db", func(t *testing.T) {
-		db, mock, err := sqlmock.New()
-		require.NoError(t, err)
-
-		mock.ExpectClose()
-
+		db := newMockPgxDB()
 		exp := &metricsExporter{
 			logger: zap.NewNop(),
 			cfg:    &Config{},
 			db:     db,
 		}
-		err = exp.shutdown(context.Background())
+		err := exp.shutdown(context.Background())
 		require.NoError(t, err)
+		assert.True(t, db.closed)
 	})
 }
 
@@ -497,6 +468,8 @@ func TestMetricsExporter_Start_DBError(t *testing.T) {
 			DSN: "postgresql://user:pass@localhost:1/db",
 		},
 	}
-	err := exp.start(context.Background(), nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err := exp.start(ctx, nil)
 	require.Error(t, err)
 }

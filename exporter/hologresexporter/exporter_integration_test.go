@@ -7,12 +7,11 @@ package hologresexporter
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"testing"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -32,25 +31,25 @@ func uniqPrefix(t *testing.T) string {
 }
 
 // dropTablesQuiet drops the given tables, ignoring errors. No transactions used.
-func dropTablesQuiet(ctx context.Context, db *sql.DB, tables ...string) {
+func dropTablesQuiet(ctx context.Context, db *pgxpool.Pool, tables ...string) {
 	for _, tbl := range tables {
-		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", tbl))
+		_, _ = db.Exec(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", tbl))
 	}
 }
 
 // TestIntegration_Connection verifies basic connectivity against the Hologres instance.
 func TestIntegration_Connection(t *testing.T) {
-	db, err := sql.Open("pgx", testDSN)
-	require.NoError(t, err)
-	defer db.Close()
-
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	require.NoError(t, db.PingContext(ctx))
+	db, err := pgxpool.New(ctx, testDSN)
+	require.NoError(t, err)
+	defer db.Close()
+
+	require.NoError(t, db.Ping(ctx))
 
 	var result int
-	require.NoError(t, db.QueryRowContext(ctx, "SELECT 1").Scan(&result))
+	require.NoError(t, db.QueryRow(ctx, "SELECT 1").Scan(&result))
 	assert.Equal(t, 1, result)
 }
 
@@ -59,7 +58,7 @@ func TestIntegration_CreateTables(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	db, err := sql.Open("pgx", testDSN)
+	db, err := pgxpool.New(ctx, testDSN)
 	require.NoError(t, err)
 	defer db.Close()
 
@@ -92,7 +91,7 @@ func TestIntegration_CreateTables(t *testing.T) {
 		metricsTable + "_exp_histogram",
 	} {
 		var exists bool
-		err := db.QueryRowContext(ctx,
+		err := db.QueryRow(ctx,
 			"SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)",
 			tbl).Scan(&exists)
 		require.NoError(t, err)
@@ -115,8 +114,9 @@ func TestIntegration_TracesInsertAndQuery(t *testing.T) {
 
 	exp := newTracesExporter(zap.NewNop(), cfg)
 	require.NoError(t, exp.start(ctx, nil))
+	pool := exp.db.(*pgxpool.Pool)
 	defer func() {
-		dropTablesQuiet(ctx, exp.db, cfg.TracesTableName)
+		dropTablesQuiet(ctx, pool, cfg.TracesTableName)
 		_ = exp.shutdown(ctx)
 	}()
 
@@ -141,12 +141,12 @@ func TestIntegration_TracesInsertAndQuery(t *testing.T) {
 	require.NoError(t, exp.pushTraceData(ctx, td), "failed to insert traces")
 
 	var count int
-	require.NoError(t, exp.db.QueryRowContext(ctx,
+	require.NoError(t, pool.QueryRow(ctx,
 		fmt.Sprintf("SELECT COUNT(*) FROM %s", cfg.TracesTableName)).Scan(&count))
 	assert.Equal(t, 1, count, "should have 1 trace record")
 
 	var serviceName, spanName, statusCode string
-	require.NoError(t, exp.db.QueryRowContext(ctx,
+	require.NoError(t, pool.QueryRow(ctx,
 		fmt.Sprintf("SELECT service_name, span_name, status_code FROM %s LIMIT 1", cfg.TracesTableName)).
 		Scan(&serviceName, &spanName, &statusCode))
 	assert.Equal(t, "test-service", serviceName)
@@ -169,8 +169,9 @@ func TestIntegration_LogsInsertAndQuery(t *testing.T) {
 
 	exp := newLogsExporter(zap.NewNop(), cfg)
 	require.NoError(t, exp.start(ctx, nil))
+	pool := exp.db.(*pgxpool.Pool)
 	defer func() {
-		dropTablesQuiet(ctx, exp.db, cfg.LogsTableName)
+		dropTablesQuiet(ctx, pool, cfg.LogsTableName)
 		_ = exp.shutdown(ctx)
 	}()
 
@@ -190,12 +191,12 @@ func TestIntegration_LogsInsertAndQuery(t *testing.T) {
 	require.NoError(t, exp.pushLogData(ctx, ld), "failed to insert logs")
 
 	var count int
-	require.NoError(t, exp.db.QueryRowContext(ctx,
+	require.NoError(t, pool.QueryRow(ctx,
 		fmt.Sprintf("SELECT COUNT(*) FROM %s", cfg.LogsTableName)).Scan(&count))
 	assert.Equal(t, 1, count)
 
 	var serviceName, severityText, body string
-	require.NoError(t, exp.db.QueryRowContext(ctx,
+	require.NoError(t, pool.QueryRow(ctx,
 		fmt.Sprintf("SELECT service_name, severity_text, body FROM %s LIMIT 1", cfg.LogsTableName)).
 		Scan(&serviceName, &severityText, &body))
 	assert.Equal(t, "test-log-service", serviceName)
@@ -218,8 +219,9 @@ func TestIntegration_MetricsGaugeInsertAndQuery(t *testing.T) {
 
 	exp := newMetricsExporter(zap.NewNop(), cfg)
 	require.NoError(t, exp.start(ctx, nil))
+	pool := exp.db.(*pgxpool.Pool)
 	defer func() {
-		dropTablesQuiet(ctx, exp.db,
+		dropTablesQuiet(ctx, pool,
 			cfg.MetricsTableName+"_gauge",
 			cfg.MetricsTableName+"_sum",
 			cfg.MetricsTableName+"_histogram",
@@ -247,13 +249,13 @@ func TestIntegration_MetricsGaugeInsertAndQuery(t *testing.T) {
 
 	gaugeTable := cfg.MetricsTableName + "_gauge"
 	var count int
-	require.NoError(t, exp.db.QueryRowContext(ctx,
+	require.NoError(t, pool.QueryRow(ctx,
 		fmt.Sprintf("SELECT COUNT(*) FROM %s", gaugeTable)).Scan(&count))
 	assert.Equal(t, 1, count)
 
 	var metricName, serviceName string
 	var value float64
-	require.NoError(t, exp.db.QueryRowContext(ctx,
+	require.NoError(t, pool.QueryRow(ctx,
 		fmt.Sprintf("SELECT metric_name, service_name, value FROM %s LIMIT 1", gaugeTable)).
 		Scan(&metricName, &serviceName, &value))
 	assert.Equal(t, "cpu_usage", metricName)

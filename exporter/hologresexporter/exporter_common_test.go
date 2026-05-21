@@ -5,12 +5,10 @@ package hologresexporter
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -44,121 +42,75 @@ func TestTtlClause(t *testing.T) {
 }
 
 func TestCreateTracesTable_Success(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
+	db := newMockPgxDB()
 
-	mock.ExpectExec("CREATE TABLE IF NOT EXISTS").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("ALTER TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("ALTER TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
-
-	err = createTracesTable(context.Background(), db, "test_traces", 0)
+	err := createTracesTable(context.Background(), db, "test_traces", 0)
 	require.NoError(t, err)
-	require.NoError(t, mock.ExpectationsWereMet())
+
+	// 1 CREATE TABLE + 2 ALTER TABLE.
+	assert.Len(t, db.execCalls, 3)
+	assert.Contains(t, db.execCalls[0], "CREATE TABLE IF NOT EXISTS")
+	assert.Contains(t, db.execCalls[1], "ALTER TABLE")
+	assert.Contains(t, db.execCalls[2], "ALTER TABLE")
 }
 
 func TestCreateTracesTable_WithTTL(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
+	db := newMockPgxDB()
 
-	mock.ExpectExec("CREATE TABLE IF NOT EXISTS").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("ALTER TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("ALTER TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
-
-	err = createTracesTable(context.Background(), db, "test_traces", 7*24*time.Hour)
+	err := createTracesTable(context.Background(), db, "test_traces", 7*24*time.Hour)
 	require.NoError(t, err)
-	require.NoError(t, mock.ExpectationsWereMet())
+	assert.Contains(t, db.execCalls[0], "time_to_live_in_seconds")
 }
 
 func TestCreateTracesTable_Error(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
+	db := newMockPgxDB()
+	db.expectExec("CREATE TABLE IF NOT EXISTS", errors.New("permission denied"))
 
-	mock.ExpectExec("CREATE TABLE IF NOT EXISTS").WillReturnError(fmt.Errorf("permission denied"))
-
-	err = createTracesTable(context.Background(), db, "test_traces", 0)
+	err := createTracesTable(context.Background(), db, "test_traces", 0)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "permission denied")
 }
 
 func TestCreateLogsTable_Success(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
+	db := newMockPgxDB()
 
-	mock.ExpectExec("CREATE TABLE IF NOT EXISTS").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("CREATE INDEX IF NOT EXISTS").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("ALTER TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("ALTER TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("ALTER TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
-
-	err = createLogsTable(context.Background(), db, "test_logs", 0)
+	err := createLogsTable(context.Background(), db, "test_logs", 0)
 	require.NoError(t, err)
-	require.NoError(t, mock.ExpectationsWereMet())
+	// 1 CREATE TABLE + 1 CREATE INDEX + 3 ALTER TABLE.
+	assert.Len(t, db.execCalls, 5)
 }
 
 func TestCreateLogsTable_WithTTL(t *testing.T) {
-	db, mock, err := sqlmock.New()
+	db := newMockPgxDB()
+	err := createLogsTable(context.Background(), db, "test_logs", 24*time.Hour)
 	require.NoError(t, err)
-	defer db.Close()
-
-	mock.ExpectExec("CREATE TABLE IF NOT EXISTS").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("CREATE INDEX IF NOT EXISTS").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("ALTER TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("ALTER TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("ALTER TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
-
-	err = createLogsTable(context.Background(), db, "test_logs", 24*time.Hour)
-	require.NoError(t, err)
+	assert.Contains(t, db.execCalls[0], "time_to_live_in_seconds")
 }
 
 func TestCreateLogsTable_Error(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
+	db := newMockPgxDB()
+	db.expectExec("CREATE TABLE IF NOT EXISTS", errors.New("table error"))
 
-	mock.ExpectExec("CREATE TABLE IF NOT EXISTS").WillReturnError(fmt.Errorf("table error"))
-
-	err = createLogsTable(context.Background(), db, "test_logs", 0)
+	err := createLogsTable(context.Background(), db, "test_logs", 0)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "table error")
 }
 
-// expectMetricTableCreation sets expectations for one metric sub-table creation:
-// 1 CREATE TABLE + 3 ALTER TABLE (enableJSONBColumnar).
-func expectMetricTableCreation(mock sqlmock.Sqlmock) {
-	mock.ExpectExec("CREATE TABLE IF NOT EXISTS").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("ALTER TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("ALTER TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("ALTER TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
-}
-
 func TestCreateMetricsTables_Success(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
+	db := newMockPgxDB()
 
-	// 5 metric tables: gauge, sum, histogram, summary, exp_histogram
-	for range 5 {
-		expectMetricTableCreation(mock)
-	}
-
-	err = createMetricsTables(context.Background(), db, "otel_metrics", 0)
+	err := createMetricsTables(context.Background(), db, "otel_metrics", 0)
 	require.NoError(t, err)
-	require.NoError(t, mock.ExpectationsWereMet())
+
+	// 5 metric tables, each: 1 CREATE + 3 ALTER (enableJSONBColumnar) = 4 execs.
+	assert.Len(t, db.execCalls, 20)
 }
 
 func TestCreateMetricsTables_Error(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
+	db := newMockPgxDB()
+	db.expectExec("CREATE TABLE IF NOT EXISTS", errors.New("creation failed"))
 
-	// First table (gauge) fails
-	mock.ExpectExec("CREATE TABLE IF NOT EXISTS").WillReturnError(fmt.Errorf("creation failed"))
-
-	err = createMetricsTables(context.Background(), db, "otel_metrics", 0)
+	err := createMetricsTables(context.Background(), db, "otel_metrics", 0)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "creation failed")
 }
@@ -166,7 +118,7 @@ func TestCreateMetricsTables_Error(t *testing.T) {
 func TestCreateMetricSubTable_Errors(t *testing.T) {
 	tests := []struct {
 		name string
-		fn   func(context.Context, *sql.DB, string, time.Duration) error
+		fn   func(context.Context, pgxDB, string, time.Duration) error
 	}{
 		{"gauge", createMetricsGaugeTable},
 		{"sum", createMetricsSumTable},
@@ -177,29 +129,23 @@ func TestCreateMetricSubTable_Errors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer db.Close()
+			db := newMockPgxDB()
+			db.expectExec("CREATE TABLE IF NOT EXISTS", errors.New("error"))
 
-			mock.ExpectExec("CREATE TABLE IF NOT EXISTS").WillReturnError(fmt.Errorf("error"))
-
-			err = tt.fn(context.Background(), db, "test_table", 0)
+			err := tt.fn(context.Background(), db, "test_table", 0)
 			require.Error(t, err)
 		})
 	}
 }
 
 func TestEnableJSONBColumnar(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	mock.ExpectExec("ALTER TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectExec("ALTER TABLE").WillReturnResult(sqlmock.NewResult(0, 0))
-
+	db := newMockPgxDB()
 	enableJSONBColumnar(context.Background(), db, "test_table", "col1", "col2")
 
-	require.NoError(t, mock.ExpectationsWereMet())
+	assert.Len(t, db.execCalls, 2)
+	assert.Contains(t, db.execCalls[0], "ALTER TABLE")
+	assert.Contains(t, db.execCalls[0], "col1")
+	assert.Contains(t, db.execCalls[1], "col2")
 }
 
 func TestValueToInterface_AllTypes(t *testing.T) {
@@ -259,10 +205,18 @@ func TestGetServiceName_NoServiceName(t *testing.T) {
 }
 
 func TestOpenDB_InvalidDSN(t *testing.T) {
-	// Use a DSN that pgx can parse but connect fails immediately (port 1 is closed).
-	_, err := openDB("postgresql://user:pass@localhost:1/db")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to ping database")
+	t.Run("malformed DSN", func(t *testing.T) {
+		_, err := openDB(context.Background(), "::not-a-valid-dsn::")
+		require.Error(t, err)
+	})
+
+	t.Run("unreachable host", func(t *testing.T) {
+		// pgxpool can parse this, but the ping fails immediately (port 1 closed).
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_, err := openDB(ctx, "postgresql://user:pass@localhost:1/db")
+		require.Error(t, err)
+	})
 }
 
 func TestAttributesToJSON(t *testing.T) {
