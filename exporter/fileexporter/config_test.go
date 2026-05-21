@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
@@ -58,6 +59,22 @@ func TestLoadConfig(t *testing.T) {
 				},
 				FormatType:    formatTypeProto,
 				Compression:   compressionZSTD,
+				FlushInterval: time.Second,
+				GroupBy: &GroupBy{
+					MaxOpenFiles:      defaultMaxOpenFiles,
+					ResourceAttribute: defaultResourceAttribute,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "zstd_with_level"),
+			expected: &Config{
+				Path:        "./filename",
+				FormatType:  formatTypeProto,
+				Compression: compressionZSTD,
+				CompressionParams: configcompression.CompressionParams{
+					Level: 6,
+				},
 				FlushInterval: time.Second,
 				GroupBy: &GroupBy{
 					MaxOpenFiles:      defaultMaxOpenFiles,
