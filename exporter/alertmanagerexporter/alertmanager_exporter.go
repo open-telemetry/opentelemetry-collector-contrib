@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
@@ -40,6 +41,14 @@ type alertmanagerEvent struct {
 	traceID   string
 	spanID    string
 	severity  string
+}
+
+type alertmanagerLogRecord struct {
+	logRecord plog.LogRecord
+	traceID   string
+	spanID    string
+	severity  string
+	name      string
 }
 
 func (s *alertmanagerExporter) convertEventSliceToArray(eventSlice ptrace.SpanEventSlice, traceID pcommon.TraceID, spanID pcommon.SpanID) []*alertmanagerEvent {
@@ -66,6 +75,15 @@ func (s *alertmanagerExporter) convertEventSliceToArray(eventSlice ptrace.SpanEv
 		return events
 	}
 	return nil
+}
+
+func logRecordName(record plog.LogRecord) string {
+	if nameAttr, ok := record.Attributes().Get("event.name"); ok {
+		if name := nameAttr.AsString(); name != "" {
+			return name
+		}
+	}
+	return "log_record"
 }
 
 func (s *alertmanagerExporter) extractEvents(td ptrace.Traces) []*alertmanagerEvent {
@@ -96,6 +114,45 @@ func (s *alertmanagerExporter) extractEvents(td ptrace.Traces) []*alertmanagerEv
 	return events
 }
 
+func (s *alertmanagerExporter) extractLogs(ld plog.Logs) []*alertmanagerLogRecord {
+	rls := ld.ResourceLogs()
+	if rls.Len() == 0 {
+		return nil
+	}
+
+	var records []*alertmanagerLogRecord
+	for i := 0; i < rls.Len(); i++ {
+		sls := rls.At(i).ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			logs := sls.At(j).LogRecords()
+			for k := 0; k < logs.Len(); k++ {
+				record := logs.At(k)
+				severity := s.defaultSeverity
+				if s.severityAttribute != "" {
+					if severityAttrValue, ok := record.Attributes().Get(s.severityAttribute); ok {
+						if value := severityAttrValue.AsString(); value != "" {
+							severity = value
+						}
+					}
+				}
+				if severity == s.defaultSeverity {
+					if severityText := record.SeverityText(); severityText != "" {
+						severity = severityText
+					}
+				}
+				records = append(records, &alertmanagerLogRecord{
+					logRecord: record,
+					traceID:   record.TraceID().String(),
+					spanID:    record.SpanID().String(),
+					severity:  severity,
+					name:      logRecordName(record),
+				})
+			}
+		}
+	}
+	return records
+}
+
 func createAnnotations(event *alertmanagerEvent) model.LabelSet {
 	labelMap := make(model.LabelSet, event.spanEvent.Attributes().Len()+2)
 	for key, attr := range event.spanEvent.Attributes().All() {
@@ -103,6 +160,19 @@ func createAnnotations(event *alertmanagerEvent) model.LabelSet {
 	}
 	labelMap["TraceID"] = model.LabelValue(event.traceID)
 	labelMap["SpanID"] = model.LabelValue(event.spanID)
+	return labelMap
+}
+
+func createLogAnnotations(record *alertmanagerLogRecord) model.LabelSet {
+	labelMap := make(model.LabelSet, record.logRecord.Attributes().Len()+3)
+	for key, attr := range record.logRecord.Attributes().All() {
+		labelMap[model.LabelName(key)] = model.LabelValue(attr.AsString())
+	}
+	if body := record.logRecord.Body().AsString(); body != "" {
+		labelMap["body"] = model.LabelValue(body)
+	}
+	labelMap["TraceID"] = model.LabelValue(record.traceID)
+	labelMap["SpanID"] = model.LabelValue(record.spanID)
 	return labelMap
 }
 
@@ -118,12 +188,43 @@ func (s *alertmanagerExporter) createLabels(event *alertmanagerEvent) model.Labe
 	return labelMap
 }
 
+func (s *alertmanagerExporter) createLogLabels(record *alertmanagerLogRecord) model.LabelSet {
+	labelMap := model.LabelSet{}
+	for key, attr := range record.logRecord.Attributes().All() {
+		if slices.Contains(s.config.EventLabels, key) {
+			labelMap[model.LabelName(key)] = model.LabelValue(attr.AsString())
+		}
+	}
+	labelMap["severity"] = model.LabelValue(record.severity)
+	labelMap["event_name"] = model.LabelValue(record.name)
+	return labelMap
+}
+
 func (s *alertmanagerExporter) convertEventsToAlertPayload(events []*alertmanagerEvent) []model.Alert {
 	payload := make([]model.Alert, len(events))
 
 	for i, event := range events {
 		annotations := createAnnotations(event)
 		labels := s.createLabels(event)
+
+		alert := model.Alert{
+			StartsAt:     time.Now(),
+			Labels:       labels,
+			Annotations:  annotations,
+			GeneratorURL: s.generatorURL,
+		}
+
+		payload[i] = alert
+	}
+	return payload
+}
+
+func (s *alertmanagerExporter) convertLogRecordsToAlertPayload(records []*alertmanagerLogRecord) []model.Alert {
+	payload := make([]model.Alert, len(records))
+
+	for i, record := range records {
+		annotations := createLogAnnotations(record)
+		labels := s.createLogLabels(record)
 
 		alert := model.Alert{
 			StartsAt:     time.Now(),
@@ -188,6 +289,21 @@ func (s *alertmanagerExporter) pushTraces(ctx context.Context, td ptrace.Traces)
 	return nil
 }
 
+func (s *alertmanagerExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+	records := s.extractLogs(ld)
+
+	if len(records) == 0 {
+		return nil
+	}
+
+	alert := s.convertLogRecordsToAlertPayload(records)
+	if err := s.postAlert(ctx, alert); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *alertmanagerExporter) start(ctx context.Context, host component.Host) error {
 	client, err := s.config.ToClient(ctx, host.GetExtensions(), s.settings)
 	if err != nil {
@@ -227,6 +343,25 @@ func newTracesExporter(ctx context.Context, cfg component.Config, set exporter.S
 		set,
 		cfg,
 		s.pushTraces,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithStart(s.start),
+		exporterhelper.WithTimeout(config.TimeoutSettings),
+		exporterhelper.WithRetry(config.BackoffConfig),
+		exporterhelper.WithQueue(config.QueueSettings),
+		exporterhelper.WithShutdown(s.shutdown),
+	)
+}
+
+func newLogsExporter(ctx context.Context, cfg component.Config, set exporter.Settings) (exporter.Logs, error) {
+	config := cfg.(*Config)
+
+	s := newAlertManagerExporter(config, set.TelemetrySettings)
+
+	return exporterhelper.NewLogs(
+		ctx,
+		set,
+		cfg,
+		s.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),
 		exporterhelper.WithTimeout(config.TimeoutSettings),
