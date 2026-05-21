@@ -64,8 +64,7 @@ func createTracesTable(ctx context.Context, db *sql.DB, tableName string, ttl ti
     status_code           TEXT DEFAULT '',
     status_message        TEXT DEFAULT '',
     events                JSONB,
-    links                 JSONB,
-    PRIMARY KEY (trace_id, span_id)
+    links                 JSONB
 )
 WITH (
     orientation = 'column',
@@ -108,8 +107,7 @@ func createLogsTable(ctx context.Context, db *sql.DB, tableName string, ttl time
     scope_name            TEXT DEFAULT '',
     scope_version         TEXT DEFAULT '',
     scope_attributes      JSONB,
-    log_attributes        JSONB,
-    PRIMARY KEY ("timestamp", service_name, trace_id)
+    log_attributes        JSONB
 )
 WITH (
     orientation = 'column',
@@ -177,8 +175,7 @@ func createMetricsGaugeTable(ctx context.Context, db *sql.DB, tableName string, 
     scope_name            TEXT DEFAULT '',
     scope_version         TEXT DEFAULT '',
     scope_attributes      JSONB,
-    attributes            JSONB,
-    PRIMARY KEY ("timestamp", metric_name, service_name)
+    attributes            JSONB
 )
 WITH (
     orientation = 'column',
@@ -212,8 +209,7 @@ func createMetricsSumTable(ctx context.Context, db *sql.DB, tableName string, tt
     scope_name                 TEXT DEFAULT '',
     scope_version              TEXT DEFAULT '',
     scope_attributes           JSONB,
-    attributes                 JSONB,
-    PRIMARY KEY ("timestamp", metric_name, service_name)
+    attributes                 JSONB
 )
 WITH (
     orientation = 'column',
@@ -251,8 +247,7 @@ func createMetricsHistogramTable(ctx context.Context, db *sql.DB, tableName stri
     scope_name                 TEXT DEFAULT '',
     scope_version              TEXT DEFAULT '',
     scope_attributes           JSONB,
-    attributes                 JSONB,
-    PRIMARY KEY ("timestamp", metric_name, service_name)
+    attributes                 JSONB
 )
 WITH (
     orientation = 'column',
@@ -287,8 +282,7 @@ func createMetricsSummaryTable(ctx context.Context, db *sql.DB, tableName string
     scope_name            TEXT DEFAULT '',
     scope_version         TEXT DEFAULT '',
     scope_attributes      JSONB,
-    attributes            JSONB,
-    PRIMARY KEY ("timestamp", metric_name, service_name)
+    attributes            JSONB
 )
 WITH (
     orientation = 'column',
@@ -330,8 +324,7 @@ func createMetricsExpHistogramTable(ctx context.Context, db *sql.DB, tableName s
     scope_name                 TEXT DEFAULT '',
     scope_version              TEXT DEFAULT '',
     scope_attributes           JSONB,
-    attributes                 JSONB,
-    PRIMARY KEY ("timestamp", metric_name, service_name)
+    attributes                 JSONB
 )
 WITH (
     orientation = 'column',
