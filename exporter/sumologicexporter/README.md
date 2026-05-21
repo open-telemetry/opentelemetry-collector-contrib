@@ -167,7 +167,7 @@ exporters:
         min_size: <>
         # MaxSize defines the configuration for the minimum size of a batch.
         # default = 2048
-        min_size: <>
+        max_size: <>
 ```
 
 ## Source Templates
