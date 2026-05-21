@@ -1,0 +1,69 @@
+{
+  "@timestamp": "2024-01-15T10:30:00.000000000Z",
+  "data_stream": {
+    "dataset": "generic",
+    "namespace": "default",
+    "type": "traces"
+  },
+  "event": {
+    "outcome": "success"
+  },
+  "host": {
+    "architecture": "amd64",
+    "hostname": "prod-server-01",
+    "name": "prod-server-01",
+    "os": {
+      "platform": "linux",
+      "version": "5.15.0"
+    }
+  },
+  "http": {
+    "host": "example.com",
+    "method": "GET",
+    "scheme": "https",
+    "status_code": 200,
+    "target": "/api/v1/users",
+    "url": "https://example.com/api/v1/users"
+  },
+  "parent": {
+    "id": "0001020304050607"
+  },
+  "scope": {
+    "attribute": "example-value"
+  },
+  "service": {
+    "environment": "production",
+    "language": {
+      "name": "go",
+      "version": "1.21.0"
+    },
+    "name": "test-service",
+    "node": {
+      "name": "instance-123"
+    },
+    "version": "1.0.0"
+  },
+  "span": {
+    "db": {
+      "instance": "users_db",
+      "statement": "SELECT * FROM users WHERE id = $1",
+      "type": "postgresql"
+    },
+    "id": "0102030405060708",
+    "kind": "SERVER",
+    "links": [
+      {
+        "span": {
+          "id": "0807060504030201"
+        },
+        "trace": {
+          "id": "100f0e0d0c0b0a090807060504030201"
+        }
+      }
+    ],
+    "name": "GET /api/v1/users"
+  },
+  "trace": {
+    "id": "0102030405060708090a0b0c0d0e0f10"
+  }
+}

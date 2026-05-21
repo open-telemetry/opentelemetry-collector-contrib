@@ -192,6 +192,8 @@ Valid mapping modes are:
 - `raw`
 - `bodymap`
 
+> **📖 Document Structure Examples**: For detailed examples of the JSON document structure produced by each mapping mode, see [DOCUMENT_STRUCTURE.md](DOCUMENT_STRUCTURE.md). These examples are automatically generated and validated to ensure they always reflect the current implementation.
+
 See below for a description of each mapping mode.
 
 #### Migration: Setting mapping mode via scope attribute

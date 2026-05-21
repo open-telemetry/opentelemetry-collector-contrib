@@ -1,0 +1,50 @@
+{
+  "@timestamp": "1705314600000.0",
+  "observed_timestamp": "1705314600001.0",
+  "data_stream": {
+    "type": "logs",
+    "dataset": "generic",
+    "namespace": "default"
+  },
+  "severity_text": "INFO",
+  "severity_number": 9,
+  "trace_id": "0102030405060708090a0b0c0d0e0f10",
+  "span_id": "0102030405060708",
+  "attributes": {
+    "http.method": "GET",
+    "http.status_code": 200,
+    "http.url": "https://example.com/api/v1/users",
+    "event.name": "user.login",
+    "user.id": "12345",
+    "success": true,
+    "duration_ms": 45.67
+  },
+  "event_name": "user.login",
+  "resource": {
+    "schema_url": "https://opentelemetry.io/schemas/1.21.0",
+    "attributes": {
+      "service.name": "test-service",
+      "service.version": "1.0.0",
+      "service.instance.id": "instance-123",
+      "deployment.environment": "production",
+      "host.name": "prod-server-01",
+      "host.arch": "amd64",
+      "os.type": "linux",
+      "os.version": "5.15.0",
+      "telemetry.sdk.name": "opentelemetry",
+      "telemetry.sdk.language": "go",
+      "telemetry.sdk.version": "1.21.0"
+    }
+  },
+  "scope": {
+    "schema_url": "https://opentelemetry.io/schemas/1.21.0",
+    "name": "github.com/example/myapp",
+    "version": "1.0.0",
+    "attributes": {
+      "scope.attribute": "example-value"
+    }
+  },
+  "body": {
+    "text": "Sample log message with important information"
+  }
+}
