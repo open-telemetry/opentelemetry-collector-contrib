@@ -140,6 +140,10 @@ all_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.name:
+      enabled: true
+    db.system.version:
+      enabled: true
     mysql.instance.endpoint:
       enabled: true
 reaggregate_set:
@@ -283,6 +287,10 @@ reaggregate_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.name:
+      enabled: true
+    db.system.version:
+      enabled: true
     mysql.instance.endpoint:
       enabled: true
 none_set:
@@ -426,10 +434,26 @@ none_set:
     db.server.top_query:
       enabled: false
   resource_attributes:
+    db.system.name:
+      enabled: false
+    db.system.version:
+      enabled: false
     mysql.instance.endpoint:
       enabled: false
 filter_set_include:
   resource_attributes:
+    db.system.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    db.system.version:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     mysql.instance.endpoint:
       enabled: true
       metrics_include:
@@ -438,6 +462,18 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    db.system.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "db.system.name-val"
+      events_exclude:
+        - strict: "db.system.name-val"
+    db.system.version:
+      enabled: true
+      metrics_exclude:
+        - strict: "db.system.version-val"
+      events_exclude:
+        - strict: "db.system.version-val"
     mysql.instance.endpoint:
       enabled: true
       metrics_exclude:

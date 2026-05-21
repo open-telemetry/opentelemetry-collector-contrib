@@ -31,6 +31,8 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	lb := NewLogsBuilder(loadLogsBuilderConfig(t, "all_set"), settings)
 
 	rb := lb.NewResourceBuilder()
+	rb.SetDbSystemName("db.system.name-val")
+	rb.SetDbSystemVersion("db.system.version-val")
 	rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
 	res := rb.Emit()
 
@@ -135,6 +137,8 @@ func TestLogsBuilder(t *testing.T) {
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, AttributeDbSystemNameMysql, "db.query.text-val", "mysql.query_plan-val", "mysql.query_plan.hash-val", "mysql.events_statements_summary_by_digest.digest-val", 52, 56.100000)
 
 			rb := lb.NewResourceBuilder()
+			rb.SetDbSystemName("db.system.name-val")
+			rb.SetDbSystemVersion("db.system.version-val")
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
 			res := rb.Emit()
 			logs := lb.Emit(WithLogsResource(res))

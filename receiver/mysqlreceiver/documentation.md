@@ -732,4 +732,6 @@ This provides insights into query performance and resource usage, helping users 
 
 | Name | Description | Values | Enabled | Semantic Convention |
 | ---- | ----------- | ------ | ------- | ------------------- |
+| db.system.name | The database product of the instance. Examples include "mysql" and "mariadb". | Any Str | false | - |
+| db.system.version | The database version of the instance. Examples include "8.0.34" and "10.11.7-MariaDB". | Any Str | false | - |
 | mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true | - |
