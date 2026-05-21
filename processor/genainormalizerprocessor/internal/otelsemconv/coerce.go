@@ -15,8 +15,8 @@ import (
 // (passthrough or coerced). Returns false when the key has a known type but
 // src cannot be safely coerced; callers must drop the attribute.
 //
-// Keys without a known typed constructor (registered via untyped) fall
-// through to a verbatim src.CopyTo(dst).
+// Keys without a known typed constructor (spec type "any") fall through to
+// a verbatim src.CopyTo(dst).
 func Coerce(targetKey string, src, dst pcommon.Value) bool {
 	expected, known := targetTypes[targetKey]
 	if !known {

@@ -10,11 +10,11 @@
 //
 // Adding a new attribute: prefer typed(conventions.GenAIFooBar) — the typed
 // constructor's argument type drives Coerce, which is what enforces spec
-// types at write time. untyped(conventions.GenAIFooBarKey) is an escape
-// hatch reserved for keys whose spec type is "any" (e.g. gen_ai.input.messages,
-// gen_ai.operation.name) and which therefore have no typed constructor in
-// the semconv library; values for these keys pass through verbatim, with no
-// type enforcement. If a typed constructor exists, use typed.
+// types at write time. For keys whose spec type is "any" (e.g.
+// gen_ai.input.messages, gen_ai.operation.name) the semconv library exposes
+// only a *Key constant; convert it with string(conventions.GenAIFooBarKey).
+// Values for these keys pass through Coerce verbatim, with no type
+// enforcement. If a typed constructor exists, use typed.
 package otelsemconv // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
 
 import (
@@ -29,8 +29,9 @@ const SchemaURL = conventions.SchemaURL
 
 // targetTypes maps each gen_ai.* key registered via typed() to the Go type
 // the corresponding semconv constructor accepts. Variadic constructors (e.g.
-// ...string) yield a slice type. Keys registered via untyped() are absent;
-// Coerce treats those as opaque and passes values through.
+// ...string) yield a slice type. Keys whose spec type is "any" are not
+// registered (their declarations use string(...) directly); Coerce treats
+// absent keys as opaque and passes values through.
 var targetTypes = map[string]reflect.Type{}
 
 // typed registers a gen_ai.* attribute whose semconv definition is a typed
@@ -60,15 +61,6 @@ func typed(ctor any) string {
 	return name
 }
 
-// untyped is an escape hatch for gen_ai.* keys whose spec type is "any" and
-// for which the semconv library therefore exposes no typed constructor —
-// only a *Key constant. Coerce passes values for these keys through verbatim
-// with no type enforcement. Do not use untyped for keys that have a typed
-// constructor; use typed so the spec type is enforced.
-func untyped(k attribute.Key) string {
-	return string(k)
-}
-
 // enumValue extracts the string value from a semconv enum KeyValue (e.g.
 // conventions.GenAIOperationNameChat). The semconv library exposes these as
 // pre-built attribute.KeyValue with a String value, so we unwrap once at
@@ -78,7 +70,8 @@ func enumValue(kv attribute.KeyValue) string {
 }
 
 // GenAI attribute keys, grouped by subnamespace. Adding a new attribute is
-// one line: typed(conventions.GenAIFoo) or untyped(conventions.GenAIFooKey).
+// one line: typed(conventions.GenAIFoo) for keys with a typed constructor,
+// or string(conventions.GenAIFooKey) for keys whose spec type is "any".
 //
 //nolint:gochecknoglobals // canonical key registry
 var (
@@ -89,16 +82,16 @@ var (
 	GenAIConversationID = typed(conventions.GenAIConversationID)
 
 	// gen_ai.input.*
-	GenAIInputMessages = untyped(conventions.GenAIInputMessagesKey)
+	GenAIInputMessages = string(conventions.GenAIInputMessagesKey)
 
 	// gen_ai.operation.*
-	GenAIOperationName = untyped(conventions.GenAIOperationNameKey)
+	GenAIOperationName = string(conventions.GenAIOperationNameKey)
 
 	// gen_ai.output.*
-	GenAIOutputMessages = untyped(conventions.GenAIOutputMessagesKey)
+	GenAIOutputMessages = string(conventions.GenAIOutputMessagesKey)
 
 	// gen_ai.provider.*
-	GenAIProviderName = untyped(conventions.GenAIProviderNameKey)
+	GenAIProviderName = string(conventions.GenAIProviderNameKey)
 
 	// gen_ai.request.*
 	GenAIRequestFrequencyPenalty = typed(conventions.GenAIRequestFrequencyPenalty)
@@ -115,9 +108,9 @@ var (
 	GenAIResponseModel         = typed(conventions.GenAIResponseModel)
 
 	// gen_ai.tool.*
-	GenAIToolCallArguments = untyped(conventions.GenAIToolCallArgumentsKey)
+	GenAIToolCallArguments = string(conventions.GenAIToolCallArgumentsKey)
 	GenAIToolCallID        = typed(conventions.GenAIToolCallID)
-	GenAIToolDefinitions   = untyped(conventions.GenAIToolDefinitionsKey)
+	GenAIToolDefinitions   = string(conventions.GenAIToolDefinitionsKey)
 	GenAIToolDescription   = typed(conventions.GenAIToolDescription)
 	GenAIToolName          = typed(conventions.GenAIToolName)
 
