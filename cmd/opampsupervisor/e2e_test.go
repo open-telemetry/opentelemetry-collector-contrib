@@ -338,7 +338,9 @@ func TestValidateFallbackConfigsWithColBin_E2E(t *testing.T) {
 			"startup_fallback_config": escapePathStringForWin(goodColConfigPath),
 		})
 
-		_, err := config.Load(cfgFile.Name())
+		cfg, err := config.Load(cfgFile.Name())
+		require.NoError(t, err)
+		_, err = supervisor.NewSupervisor(t.Context(), zap.NewNop(), cfg)
 		require.NoError(t, err)
 	})
 
@@ -350,7 +352,9 @@ func TestValidateFallbackConfigsWithColBin_E2E(t *testing.T) {
 			"startup_fallback_config": escapePathStringForWin(badColConfigPath),
 		})
 
-		_, err := config.Load(badCfgFile.Name())
+		cfg, err := config.Load(badCfgFile.Name())
+		require.NoError(t, err)
+		_, err = supervisor.NewSupervisor(t.Context(), zap.NewNop(), cfg)
 		require.ErrorContains(t, err, "could not validate startup fallback configs with agent::executable")
 	})
 }
