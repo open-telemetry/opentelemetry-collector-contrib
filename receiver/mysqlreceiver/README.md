@@ -166,6 +166,9 @@ The database user must have `UPDATE` on `performance_schema.setup_consumers` in 
 GRANT SELECT ON performance_schema.* TO '<your-user>'@'%';
 GRANT UPDATE ON performance_schema.setup_consumers TO '<your-user>'@'%';
 ```
+***Note*** that query plans can only be provided from schemas where the user has bee GRANTed`SELECT`. If an attempt is made to
+explain a query where a user does not have access a warning-level log message will be generated that references the
+query digest value. The other attributes for that log event will still be generated and emitted.
 
 #### Enabling the consumer
 

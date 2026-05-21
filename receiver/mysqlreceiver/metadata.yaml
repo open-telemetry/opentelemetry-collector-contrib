@@ -19,6 +19,10 @@ resource_attributes:
     description: Endpoint of the MySQL instance.
     enabled: true
     type: string
+  service.instance.id:
+    description: Unique identifier of the MySQL instance, derived from the endpoint.
+    enabled: false
+    type: string
 
 attributes:
   buffer_pool_data:
