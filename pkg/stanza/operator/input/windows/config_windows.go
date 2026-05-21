@@ -50,8 +50,10 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		return nil, errors.New("remote configuration must have non-empty `username` and `password`")
 	}
 
+	eventDrivenScraping := c.EventDrivenScraping || metadata.StanzaWindowsEventDrivenScrapingFeatureGate.IsEnabled()
+
 	maxEventsPerPoll := c.MaxEventsPerPoll
-	if metadata.StanzaWindowsEventDrivenScrapingFeatureGate.IsEnabled() {
+	if eventDrivenScraping {
 		maxEventsPerPoll = 0
 	}
 
@@ -66,6 +68,7 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		startAt:                  c.StartAt,
 		pollInterval:             c.PollInterval,
 		waitTimeout:              c.WaitTimeout,
+		eventDrivenScraping:      eventDrivenScraping,
 		raw:                      c.Raw,
 		eventDataFormat:          c.EventDataFormat,
 		includeLogRecordOriginal: c.IncludeLogRecordOriginal,
