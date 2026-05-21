@@ -33,21 +33,14 @@ The default timeout is `1s`.
 By default, the directories will be created with `0750 (rwxr-x---)` permissions, minus the process umask.
 Use `directory_permissions` to customize directory creation permissions, minus the process umask.
 
-`recreate` when set, the filestorage extension automatically detects corrupt bbolt databases on startup and recreates them in place of crashing the collector.
-See [#35899](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35899) for background.
+`recreate` when set, the filestorage extension will automatically rename the corrupted bbolt database and create a new one when certain bbolt panics occur.
+See [#35899](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35899) and [#48565](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48565) for more details.
 
-**How it works.** bbolt can panic in two different ways during `bbolt.Open` when the database is corrupt:
-
-1. In the **main goroutine** (e.g. "freepages: failed to open read only tx", "failed to rollback tx").
-2. In a **goroutine spawned by `bbolt.freepages`** (e.g. the "multiple references" panic when the freelist scan finds duplicate page references). Go's `recover()` cannot catch panics in goroutines it didn't spawn.
-
-There may still be scenarios where manually removing or renaming the file is required; this feature flag is not a panacea for every bbolt failure mode.
+If the database fails to open due to corruption (resulting in a panic), the corrupted file will be automatically renamed to `{filename}.{ISO 8601 timestamp}.backup` and a new data file will be created from scratch. This allows the collector to continue operating even when encountering certain bbolt panics. If no corruption is detected, the existing database continues to be used normally.
+There may still be scenarios where manually removing or renaming the file may be required, and this feature flag is not a panacea for all bbolt panics you can encounter.
 
 > [!Note]
-> When automatic recovery is triggered, the corrupt database is moved aside to a `.backup` file and a fresh database is created. While this prevents complete data loss, the collector starts with empty state for that storage client, which may cause data duplication (filelog receivers will re-read from `start_at`) or loss of any data the exporter had queued but not yet shipped.
-
-> [!Note]
-> The subprocess pre-check re-executes the collector binary itself. In container or chroot environments where `/proc/self/exe` is unavailable, the pre-check is skipped and the extension falls back to a direct `bbolt.Open` attempt. A panic in that case will crash the collector as it would without this feature.
+> When database corruption is detected and automatic recovery is triggered, the corrupted data will be moved to a `.backup` file. While this prevents complete data loss, the collector will start with a fresh database, which may lead to data duplication or loss of component state.
 
 ## Compaction
 `compaction` defines how and when files should be compacted. There are two modes of compaction available (both of which can be set concurrently):
