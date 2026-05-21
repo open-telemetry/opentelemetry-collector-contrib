@@ -50,18 +50,25 @@ If the official plugin doesn't meet your needs, you can try the [Altinity plugin
 ```sql
 SELECT toDateTime(toStartOfInterval(Timestamp, INTERVAL 60 second)) as time, SeverityText, count() as count
 FROM otel_logs
-WHERE time >= NOW() - INTERVAL 1 HOUR
+WHERE toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
+  AND Timestamp >= NOW() - INTERVAL 1 HOUR
 GROUP BY SeverityText, time
 ORDER BY time;
 ```
+
+The default logs table is ordered by `(toStartOfFiveMinutes(Timestamp), ServiceName, Timestamp)`.
+For time range queries, filter on both `toStartOfFiveMinutes(Timestamp)` and `Timestamp`, and order by the tuple `(toStartOfFiveMinutes(Timestamp), Timestamp)` to use the primary key's read-in-order optimization.
+Apply `toStartOfFiveMinutes` to the range bound as well (e.g. `toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)`) so the time bucket bounds are not truncated off the scan.
 
 - Find any log.
 
 ```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
-WHERE Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+WHERE toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
+  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with specific service.
@@ -70,8 +77,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE ServiceName = 'clickhouse-exporter'
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with specific attribute.
@@ -80,8 +89,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE LogAttributes['container_name'] = '/example_flog_1'
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with body contain string token.
@@ -90,8 +101,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE hasToken(Body, 'http')
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with body contain string.
@@ -100,8 +113,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE Body like '%http%'
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with body regexp match string.
@@ -110,8 +125,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE match(Body, 'http')
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 - Find log with body json extract.
@@ -120,8 +137,10 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE JSONExtractFloat(Body, 'bytes') > 1000
+  AND toStartOfFiveMinutes(Timestamp) >= toStartOfFiveMinutes(NOW() - INTERVAL 1 HOUR)
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
-Limit 100;
+ORDER BY (toStartOfFiveMinutes(Timestamp), Timestamp) DESC
+LIMIT 100;
 ```
 
 ### Traces
@@ -401,7 +420,10 @@ As mentioned in the previous section, the exporter is able to detect which colum
 Here are some columns you can add to your table to update the schema:
 
 ```sql
--- These 3 columns are part of one feature, you must add all 3 at once.
+-- EventName
+ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1));
+
+-- JSON tables only. These 3 columns are part of one feature, you must add all 3 at once.
 ALTER TABLE otel.otel_logs
   ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
   ADD COLUMN IF NOT EXISTS ScopeAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
@@ -411,10 +433,7 @@ ALTER TABLE otel.otel_logs
   ADD INDEX IF NOT EXISTS idx_scope_attr_keys ScopeAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
   ADD INDEX IF NOT EXISTS idx_log_attr_keys LogAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1;
 
--- EventName
-ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1)),
-
--- These 2 columns are part of one feature, you must add all 2 at once.
+-- JSON tables only. These 2 columns are part of one feature, you must add all 2 at once.
 ALTER TABLE otel.otel_traces
   ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
   ADD COLUMN IF NOT EXISTS SpanAttributesKeys  Array(LowCardinality(String)) CODEC(ZSTD(1)),

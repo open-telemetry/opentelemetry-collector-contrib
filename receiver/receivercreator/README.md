@@ -330,8 +330,9 @@ receivers:
     watch_observers: [k8s_observer]
     receivers:
       prometheus_simple:
-        # Configure prometheus scraping if standard prometheus annotations are set on the pod.
-        rule: type == "pod" && annotations["prometheus.io/scrape"] == "true"
+        # Configure prometheus scraping if standard prometheus annotations are set on the pod
+        # while preventing self-scraping by excluding pods labeled "app.kubernetes.io/component: opentelemetry-collector".
+        rule: type == "pod" && annotations["prometheus.io/scrape"] == "true"  && labels["app.kubernetes.io/component"] != "opentelemetry-collector
         config:
           metrics_path: '`"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/metrics"`'
           endpoint: '`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090`'
@@ -510,6 +511,9 @@ receiver_creator/logs:
     # with `io.opentelemetry.discovery.logs/enabled: "false"`)
     # default_annotations:
     #   io.opentelemetry.discovery.logs/enabled: "true"
+    #
+    # Define the default file_log configuration
+    # default_file_log_config: {}
 ```
 
 See below for the supported annotations that user can define to automatically enable receivers to start
@@ -578,7 +582,7 @@ By default `"false"`.
 
 #### Define configuration
 
-The default configuration for the `file_log` receiver is the following:
+The default configuration for the `file_log` receiver is the following (configurable via `default_file_log_config`):
 
 ```yaml
 include:

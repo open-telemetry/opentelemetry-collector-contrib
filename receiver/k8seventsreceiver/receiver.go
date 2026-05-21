@@ -6,11 +6,13 @@ package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
@@ -38,6 +40,7 @@ type k8seventsReceiver struct {
 	obsrecv         *receiverhelper.ObsReport
 	mu              sync.Mutex
 	client          dynamic.Interface
+	storageClient   storage.Client
 	wg              sync.WaitGroup
 }
 
@@ -75,6 +78,15 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 		return err
 	}
 	kr.client = client
+
+	// Initialize storage client for resource version persistence if storage is configured.
+	if kr.config.Storage != nil {
+		storageClient, storageErr := getStorageClient(ctx, host, kr.config.Storage, kr.settings.ID)
+		if storageErr != nil {
+			return fmt.Errorf("failed to get storage client: %w", storageErr)
+		}
+		kr.storageClient = storageClient
+	}
 
 	if kr.config.K8sLeaderElector != nil {
 		k8sLeaderElector := host.GetExtensions()[*kr.config.K8sLeaderElector]
@@ -117,7 +129,7 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 	return nil
 }
 
-func (kr *k8seventsReceiver) Shutdown(context.Context) error {
+func (kr *k8seventsReceiver) Shutdown(ctx context.Context) error {
 	if kr.cancel != nil {
 		kr.cancel()
 	}
@@ -129,6 +141,14 @@ func (kr *k8seventsReceiver) Shutdown(context.Context) error {
 	kr.stopperChanList = nil
 	kr.mu.Unlock()
 	kr.wg.Wait()
+
+	// Close storage client if it exists.
+	if kr.storageClient != nil {
+		if err := kr.storageClient.Close(ctx); err != nil {
+			kr.settings.Logger.Error("failed to close storage client", zap.Error(err))
+		}
+	}
+
 	return nil
 }
 
@@ -157,6 +177,7 @@ func (kr *k8seventsReceiver) startWatchers() {
 			Exclude:             map[apiWatch.EventType]bool{apiWatch.Deleted: true}, // Skip DELETED events (matches old Informer behavior)
 		},
 		kr.settings.Logger,
+		kr.storageClient,
 		func(event *apiWatch.Event) {
 			// The k8sinventory watch observer uses dynamic client which returns unstructured objects
 			// We need to convert them to corev1.Event
@@ -207,4 +228,26 @@ func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
 func (kr *k8seventsReceiver) allowEvent(ev *corev1.Event) bool {
 	eventTimestamp := k8sinventory.GetEventTimestamp(ev)
 	return !eventTimestamp.Before(kr.startTime)
+}
+
+func getStorageClient(ctx context.Context, host component.Host, storageID *component.ID, componentID component.ID) (storage.Client, error) {
+	if storageID == nil {
+		return storage.NewNopClient(), nil
+	}
+
+	extension, ok := host.GetExtensions()[*storageID]
+	if !ok {
+		return nil, fmt.Errorf("storage extension '%s' not found", storageID)
+	}
+
+	storageExtension, ok := extension.(storage.Extension)
+	if !ok {
+		return nil, fmt.Errorf("non-storage extension '%s' found", storageID)
+	}
+
+	// Make storage immune to component renames that add underscores to the component type.
+	// This is a workaround for https://github.com/open-telemetry/opentelemetry-collector/issues/14988.
+	normalizedComponentType := strings.ReplaceAll(componentID.Type().String(), "_", "")
+	normalizedComponentID := component.MustNewIDWithName(normalizedComponentType, componentID.Name())
+	return storageExtension.GetClient(ctx, component.KindReceiver, normalizedComponentID, "")
 }
