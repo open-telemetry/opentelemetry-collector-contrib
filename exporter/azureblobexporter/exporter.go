@@ -563,7 +563,7 @@ func (e *azureBlobExporter) compressContent(raw []byte) ([]byte, error) {
 }
 
 type poolItem interface {
-	io.Closer
+	io.WriteCloser
 	Reset(io.Writer)
 }
 
@@ -594,8 +594,7 @@ func compress[T poolItem](pool *sync.Pool, raw []byte, newItem func(io.Writer) (
 	}
 
 	// Write the data
-	w := any(zipper).(io.Writer)
-	if _, err := w.Write(raw); err != nil {
+	if _, err := zipper.Write(raw); err != nil {
 		// Always close to release resources, but ignore close error on write failure
 		_ = zipper.Close()
 		return nil, err
