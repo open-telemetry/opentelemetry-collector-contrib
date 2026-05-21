@@ -97,6 +97,8 @@ $defs:
     description: TimeParser is a helper that parses time onto an entry.
     type: object
     properties:
+      assume_current_date:
+        type: boolean
       layout:
         type: string
       layout_type:

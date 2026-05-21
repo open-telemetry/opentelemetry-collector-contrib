@@ -6,6 +6,7 @@ To configure timestamp parsing, add a `timestamp` block in the parser's configur
 
 If a timestamp block is specified, the parser operator will perform the timestamp parsing _after_ performing its other parsing actions, but _before_ passing the entry to the specified output operator.
 
+<<<<<<< HEAD
 | Field                  | Default    | Description |
 | ---                    | ---        | ---         |
 | `parse_from`           | required   | The [field](../types/field.md) from which the value will be parsed. |
@@ -13,6 +14,16 @@ If a timestamp block is specified, the parser operator will perform the timestam
 | `layout`               | required   | The exact layout of the timestamp to be parsed. |
 | `location`             | `Local`    | The geographic location (timezone) to use when parsing a timestamp that does not include a timezone. The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
 | `time_zone_locations`  |            | An optional map of timezone abbreviations to IANA location names (e.g. `PDT: America/Los_Angeles`). When the `%Z` directive is used and the parsed abbreviation matches a key in this map, the corresponding IANA location is used for parsing instead of `location`. This allows correct parsing of log streams that contain timestamps from multiple timezones. |
+| `assume_current_date`  | `false`    | When `true`, and the timestamp layout does not contain date components, uses today's date in the parsed timestamp. |
+=======
+| Field                  | Default    | Description |
+| ---                    | ---        | ---         |
+| `parse_from`           | required   | The [field](../types/field.md) from which the value will be parsed. |
+| `layout_type`          | `strptime` | The type of timestamp. Valid values are `strptime`, `gotime`, and `epoch`. |
+| `layout`               | required   | The exact layout of the timestamp to be parsed. |
+| `location`             | `Local`    | The geographic location (timezone) to use when parsing a timestamp that does not include a timezone. The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
+| `time_zone_locations`  |            | An optional map of timezone abbreviations to IANA location names (e.g. `PDT: America/Los_Angeles`). When the `%Z` directive is used and the parsed abbreviation matches a key in this map, the corresponding IANA location is used for parsing instead of `location`. This allows correct parsing of log streams that contain timestamps from multiple timezones. |
+>>>>>>> origin/main
 
 ## Layout Types
 

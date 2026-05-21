@@ -329,6 +329,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `pkg/ottl`: Added debug-level logging when functions truncate or discard attributes (#9730)
   Added logging to the `truncate_all` and `limit` functions for each record that had attributes truncated or discarded, as per the OpenTelemetry specification on attribute limits
 - `pkg/stanza`: Timestamp operator - Add support for multiple timezone parsing (#47594)
+- `pkg/stanza`: Add opt-in `assume_current_date` option to the time parser to handle timestamps that contain only time-of-day (e.g. "11:31:06,491"); includes docs, schema, and tests. (Fixes #46111) (#46819)
 - `pkg/zipkin`: Migrate semantic conventions to v1.40.0 (#47545)
 - `processor/drain`: Promote Drain Processor from development to alpha stability and add to contrib distribution. (#47235)
 - `processor/k8s_attributes`: Allow k8sattributes processors to be shared between pipelines (#36234)

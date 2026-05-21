@@ -2,6 +2,10 @@ layout:
   type: helpers_test
   time:
     layout: '%Y-%m-%d'
+assume_current_date:
+  type: helpers_test
+  time:
+    assume_current_date: true
 layout_type:
   type: helpers_test
   time:

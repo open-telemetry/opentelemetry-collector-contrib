@@ -287,6 +287,47 @@ func TestTimeParser(t *testing.T) {
 	}
 }
 
+func TestTimeParserAssumeCurrentDate(t *testing.T) {
+	oldNow := timeutils.Now
+	timeutils.Now = func() time.Time { return time.Date(2026, 2, 16, 17, 0, 0, 0, time.UTC) }
+	t.Cleanup(func() { timeutils.Now = oldNow })
+
+	parseFrom := entry.NewBodyField()
+	tp := &TimeParser{
+		LayoutType:        StrptimeKey,
+		Layout:            "%H:%M:%S,%L",
+		ParseFrom:         &parseFrom,
+		AssumeCurrentDate: true,
+	}
+
+	require.NoError(t, tp.Validate())
+
+	e := makeTestEntry(parseFrom, "11:31:06,491")
+	require.NoError(t, tp.Parse(e))
+
+	require.Equal(t, time.Date(2026, 2, 16, 11, 31, 6, 491*1000*1000, time.Local), e.Timestamp)
+}
+
+func TestTimeParserNoAssumeCurrentDate(t *testing.T) {
+	oldNow := timeutils.Now
+	timeutils.Now = func() time.Time { return time.Date(2026, 2, 16, 17, 0, 0, 0, time.UTC) }
+	t.Cleanup(func() { timeutils.Now = oldNow })
+
+	parseFrom := entry.NewBodyField()
+	tp := &TimeParser{
+		LayoutType: StrptimeKey,
+		Layout:     "%H:%M:%S,%L",
+		ParseFrom:  &parseFrom,
+	}
+
+	require.NoError(t, tp.Validate())
+
+	e := makeTestEntry(parseFrom, "11:31:06,491")
+	require.NoError(t, tp.Parse(e))
+
+	require.Equal(t, time.Date(2026, 1, 1, 11, 31, 6, 491*1000*1000, time.Local), e.Timestamp)
+}
+
 func TestTimeEpochs(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -705,6 +746,15 @@ func TestUnmarshalTimeConfig(t *testing.T) {
 		DefaultConfig: newHelpersConfig(),
 		TestsFile:     filepath.Join(".", "testdata", "timestamp.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
+			{
+				Name: "assume_current_date",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Time = NewTimeParser()
+					c.Time.AssumeCurrentDate = true
+					return c
+				}(),
+			},
 			{
 				Name: "layout",
 				Expect: func() *helpersConfig {

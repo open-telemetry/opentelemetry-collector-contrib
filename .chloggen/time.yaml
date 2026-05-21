@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: receiver/filelog
+note: Add opt-in `assume_current_date` to timestamp parsing so time-only layouts can use today's date instead of defaulting to Jan 1.
+issues: [46434]
+change_logs: [user]
