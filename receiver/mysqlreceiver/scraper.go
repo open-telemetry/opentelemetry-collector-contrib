@@ -814,13 +814,14 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 		}
 
 		var queryPlan string
-		if sample.digest != "" {
-			queryPlan = m.retrieveQueryPlan(sample.digestText, sample.sqlText, sample.processlistDB, sample.digest)
+
+		if sample.generatedDigest != "" {
+			queryPlan = m.retrieveQueryPlan(sample.digestText, sample.sqlText, sample.processlistDB, sample.generatedDigest)
 		}
 
 		queryPlanHash := ""
 		if queryPlan != "" {
-			queryPlanHash = sample.digest
+			queryPlanHash = sample.generatedDigest
 		}
 
 		m.lb.RecordDbServerQuerySampleEvent(
