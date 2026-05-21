@@ -207,6 +207,13 @@ func unmarshalCollectionBySuffix[T any](value *yaml.Node, baseKey string) (exact
 
 // Validate checks actual metrics against exact/count operators.
 func (a MetricsAssertion) Validate(actualMetrics pmetric.MetricSlice) error {
+	if a.Count == nil && a.Exact == nil {
+		if actualMetrics.Len() != 0 {
+			return fmt.Errorf("metrics assertion failed: expected 0 metrics, got %d", actualMetrics.Len())
+		}
+		return nil
+	}
+
 	if err := a.Count.Validate(actualMetrics.Len()); err != nil {
 		return fmt.Errorf("metrics/count: %w", err)
 	}
@@ -221,11 +228,18 @@ func (a MetricsAssertion) Validate(actualMetrics pmetric.MetricSlice) error {
 }
 
 func (a MetricsAssertion) ValidateAssertions(actual []metricAssertion) error {
+	if a.Count == nil && a.Exact == nil {
+		if len(actual) != 0 {
+			return fmt.Errorf("metrics assertion failed: expected 0 metrics, got %d", len(actual))
+		}
+		return nil
+	}
+
 	if err := a.Count.Validate(len(actual)); err != nil {
 		return fmt.Errorf("metrics/count: %w", err)
 	}
 
-	if len(a.Exact) > 0 {
+	if a.Exact != nil {
 		if err := validateExactCollection("metric", a.Exact, actual, func(expected, got metricAssertion) error {
 			return expected.MatchesAssertion(got)
 		}); err != nil {
@@ -237,6 +251,13 @@ func (a MetricsAssertion) ValidateAssertions(actual []metricAssertion) error {
 }
 
 func (a ResourcesAssertion) Validate(actual []resourceAssertion) error {
+	if a.Count == nil && a.Exact == nil {
+		if len(actual) != 0 {
+			return fmt.Errorf("resources assertion failed: expected 0 resources, got %d", len(actual))
+		}
+		return nil
+	}
+
 	if err := a.Count.Validate(len(actual)); err != nil {
 		return fmt.Errorf("resources/count: %w", err)
 	}
@@ -251,6 +272,13 @@ func (a ResourcesAssertion) Validate(actual []resourceAssertion) error {
 }
 
 func (a ScopesAssertion) Validate(actual []scopeAssertion) error {
+	if a.Count == nil && a.Exact == nil {
+		if len(actual) != 0 {
+			return fmt.Errorf("scopes assertion failed: expected 0 scopes, got %d", len(actual))
+		}
+		return nil
+	}
+
 	if err := a.Count.Validate(len(actual)); err != nil {
 		return fmt.Errorf("scopes/count: %w", err)
 	}
@@ -265,6 +293,13 @@ func (a ScopesAssertion) Validate(actual []scopeAssertion) error {
 }
 
 func (a DatapointsAssertion) Validate(actual []datapointAssertion) error {
+	if a.Count == nil && a.Exact == nil {
+		if len(actual) != 0 {
+			return fmt.Errorf("datapoints assertion failed: expected 0 datapoints, got %d", len(actual))
+		}
+		return nil
+	}
+
 	if err := a.Count.Validate(len(actual)); err != nil {
 		return fmt.Errorf("datapoints/count: %w", err)
 	}
