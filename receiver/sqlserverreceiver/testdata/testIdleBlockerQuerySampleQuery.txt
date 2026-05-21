@@ -33,6 +33,9 @@ SELECT TOP(@top)
   CONVERT(VARBINARY, '') AS query_plan_hash,
   CONVERT(VARBINARY, '') AS context_info,
   s.login_name AS username,
+  ISNULL(s.program_name, '') AS client_app_name,
+  CONVERT(NVARCHAR, TODATETIMEOFFSET(s.login_time, DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126) AS session_started,
+  s.total_elapsed_time AS session_duration,
   '' AS procedure_id,
   '' AS procedure_name
 FROM sys.dm_exec_sessions s

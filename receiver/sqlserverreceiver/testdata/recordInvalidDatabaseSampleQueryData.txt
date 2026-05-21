@@ -24,6 +24,7 @@
     "percent_complete": "a0",
     "estimated_completion_time": "a0",
     "cpu_time": "a6",
+    "session_duration": "a720",
     "total_elapsed_time": "a6",
     "reads": "a0",
     "writes": "a0",
@@ -36,6 +37,8 @@
     "query_plan_hash": "0x140210F64B788CB9",
     "context_info": "0x70A3B130B1048D4D",
     "username": "sa",
+    "client_app_name": "SSMS",
+    "session_started": "2025-02-12T15:00:00.000+08:00",
     "procedure_id": "0",
     "procedure_name": ""
     }
