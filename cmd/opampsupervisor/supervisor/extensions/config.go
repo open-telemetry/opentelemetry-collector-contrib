@@ -51,3 +51,13 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 	return nil
 }
+
+// Exists returns a boolean indicating if the given component ID exists
+// in the map of configured extensions
+func (c *Config) Exists(id component.ID) bool {
+	if id == (component.ID{}) {
+		return false
+	}
+	_, ok := (*c)[id]
+	return ok
+}

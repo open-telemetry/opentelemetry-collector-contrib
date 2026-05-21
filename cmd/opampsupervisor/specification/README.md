@@ -310,7 +310,8 @@ This results in the following Collector process invocation:
 
 ### Supervisor Extensions
 
-**Note:** This functionality is in development and no extensions are currently supported.
+**Note:** This functionality is experimental and only a subset of extensions have support.
+If you want to see support for an extension added, open an issue.
 
 **Note:** This capability is experimental and must be manually enabled via the
 `opampsupervisor.Extensions` feature gate (alpha, introduced in v0.153.0).
@@ -340,6 +341,11 @@ supported. The allowlist is intentionally narrow and extensions are
 added on a case-by-case basis as their functionality is integrated.
 Referencing an unknown extension type, or providing invalid configuration
 for a known one, produces a startup error.
+
+The list of available extensions is below:
+- [Bearer Token Authenticator Extension](../../../extension/bearertokenauthextension/README.md)
+- [Basic Auth Authenticator Extension](../../../extension/basicauthextension/README.md)
+- [OAuth2 Client Credentials Authenticator Extension](../../../extension/oauth2clientauthextension/README.md)
 
 #### Lifecycle
 
