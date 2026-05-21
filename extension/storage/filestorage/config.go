@@ -95,7 +95,7 @@ func (cfg *Config) Validate() error {
 		return errors.New("max size cannot be less than 0")
 	}
 
-	if cfg.MaxSize > 0 {
+	if cfg.MaxSize > 0 && cfg.Compaction.OnRebound {
 		if cfg.Compaction.ReboundNeededThresholdMiB*oneMiB > cfg.MaxSize {
 			return errors.New("compaction rebound needed threshold cannot be greater than max size")
 		}

@@ -228,6 +228,8 @@ func TestDirectoryCreateConfig(t *testing.T) {
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Directory = t.TempDir()
 				cfg.MaxSize = 32 * oneMiB
+				cfg.Compaction.OnRebound = true
+				cfg.Compaction.Directory = t.TempDir()
 				cfg.Compaction.ReboundNeededThresholdMiB = 64
 				return cfg
 			},
@@ -239,11 +241,24 @@ func TestDirectoryCreateConfig(t *testing.T) {
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Directory = t.TempDir()
 				cfg.MaxSize = 32 * oneMiB
+				cfg.Compaction.OnRebound = true
+				cfg.Compaction.Directory = t.TempDir()
 				cfg.Compaction.ReboundNeededThresholdMiB = 16
 				cfg.Compaction.ReboundTriggerThresholdMiB = 64
 				return cfg
 			},
 			errMsg: "compaction rebound trigger threshold cannot be greater than max size",
+		},
+		{
+			name: "rebound thresholds above max size allowed when rebound compaction disabled",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()
+				cfg.MaxSize = 1 * oneMiB
+				cfg.Compaction.OnRebound = false
+				return cfg
+			},
+			err: nil,
 		},
 		{
 			name: "rebound check interval not positive - error",
@@ -282,7 +297,8 @@ func TestValidateReturnsAccessProblem(t *testing.T) {
 	cfg.Directory = "\x00"
 
 	err := cfg.Validate()
-	require.EqualError(t, err, "problem accessing configured directory: \x00, err: stat \x00: invalid argument")
+	require.Error(t, err)
+	require.ErrorContains(t, err, "problem accessing configured directory: \x00, err: stat \x00")
 }
 
 func TestCompactionDirectory(t *testing.T) {

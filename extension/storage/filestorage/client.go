@@ -50,6 +50,12 @@ func bboltOptions(timeout time.Duration, noSync bool) *bbolt.Options {
 	}
 }
 
+func setAllocSizeForMaxSize(db *bbolt.DB, maxSize int64) {
+	if maxSize > 0 {
+		db.AllocSize = db.Info().PageSize
+	}
+}
+
 func newClient(logger *zap.Logger, filePath string, timeout time.Duration, maxSize int64, compactionCfg *CompactionConfig, noSync bool) (*fileStorageClient, error) {
 	options := bboltOptions(timeout, noSync)
 	db, err := bbolt.Open(filePath, 0o600, options)
@@ -57,9 +63,7 @@ func newClient(logger *zap.Logger, filePath string, timeout time.Duration, maxSi
 		return nil, err
 	}
 
-	if maxSize > 0 {
-		db.AllocSize = db.Info().PageSize
-	}
+	setAllocSizeForMaxSize(db, maxSize)
 
 	initBucket := func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists(defaultBucket)
@@ -310,6 +314,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 		// errors from the closed DB instead of panicking on a nil pointer.
 		return fmt.Errorf("failed to open db after compaction: %w", openErr)
 	}
+	setAllocSizeForMaxSize(newDb, c.maxSize)
 	c.db = newDb
 
 	if moveErr != nil {

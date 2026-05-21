@@ -222,6 +222,24 @@ func TestNewClientWithMaxSizeUsesPageAllocSize(t *testing.T) {
 	require.Equal(t, client.db.Info().PageSize, client.db.AllocSize)
 }
 
+func TestCompactWithMaxSizeRetainsPageAllocSize(t *testing.T) {
+	tempDir := t.TempDir()
+	dbFile := filepath.Join(tempDir, "my_db")
+	compactionDir := filepath.Join(tempDir, "compaction")
+	require.NoError(t, os.MkdirAll(compactionDir, 0o755))
+
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, 1024, &CompactionConfig{}, false)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	require.NoError(t, client.Set(t.Context(), "key", []byte("value")))
+	require.NoError(t, client.Compact(compactionDir, time.Second, 65536))
+
+	require.Equal(t, client.db.Info().PageSize, client.db.AllocSize)
+}
+
 func TestEstimateAddedBytes(t *testing.T) {
 	dbFile := filepath.Join(t.TempDir(), "my_db")
 
