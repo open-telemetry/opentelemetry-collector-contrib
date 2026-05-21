@@ -47,11 +47,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 	for _, ent := range entries {
 		skip, err := p.Skip(ctx, ent)
 		if err != nil {
-			if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
-				if !p.isQuietMode() {
-					errs = append(errs, handleErr)
-				}
-			}
+			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
 			continue
 		}
 		if skip {
@@ -65,11 +61,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 			var bytes []byte
 			bytes, err = toBytes(ent.Body)
 			if err != nil {
-				if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
-					if !p.isQuietMode() {
-						errs = append(errs, handleErr)
-					}
-				}
+				errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
 				continue
 			}
 			if p.shouldSkipPriorityValues(bytes) {
@@ -78,18 +70,14 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 		}
 
 		if err = p.ParseWith(ctx, ent, p.parse, write); err != nil {
-			if !p.isQuietMode() {
+			if !errors.Is(err, helper.ErrEntryHandled) {
 				errs = append(errs, err)
 			}
 			continue
 		}
 
 		if err = callback(ent); err != nil {
-			if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
-				if !p.isQuietMode() {
-					errs = append(errs, handleErr)
-				}
-			}
+			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
 			continue
 		}
 
@@ -106,11 +94,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	if !p.enableOctetCounting && p.allowSkipPriHeader {
 		bytes, err := toBytes(entry.Body)
 		if err != nil {
-			handleErr := p.HandleEntryError(ctx, entry, err)
-			if p.isQuietMode() {
-				return nil
-			}
-			return handleErr
+			return p.HandleEntryError(ctx, entry, err)
 		}
 
 		if p.shouldSkipPriorityValues(bytes) {
@@ -395,9 +379,4 @@ func newNonTransparentFramingParseFunc(trailerType nontransparent.TrailerType) p
 		parser.Parse(reader)
 		return message, err
 	}
-}
-
-// isQuietMode returns true if the operator is configured to use quiet mode
-func (p *Parser) isQuietMode() bool {
-	return p.OnError == helper.DropOnErrorQuiet || p.OnError == helper.SendOnErrorQuiet
 }
