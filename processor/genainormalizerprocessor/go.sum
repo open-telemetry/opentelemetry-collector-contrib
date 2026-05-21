@@ -1,3 +1,5 @@
+github.com/Arize-ai/openinference/go/openinference-semantic-conventions v0.1.0 h1:SpglqmI1af0vbVmULAR0WdZxxJ4czmQ6UStm5/TaJt0=
+github.com/Arize-ai/openinference/go/openinference-semantic-conventions v0.1.0/go.mod h1:C5hLjt/dUbEb3pSkhNbLYu/xpu6HB0XHK6fZOiXXeR0=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -49,6 +51,8 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
+github.com/traceloop/go-openllmetry/semconv-ai v0.0.0-20260117121325-ee5a5c89c1f5 h1:0yGaSsGbDuZ4Sen/wK9+s2paKtknsTYbV/vjTb2Av9g=
+github.com/traceloop/go-openllmetry/semconv-ai v0.0.0-20260117121325-ee5a5c89c1f5/go.mod h1:bpFt6r0KbNnStN2jgtsxotF1d9Pko1P3gigpy4hi1zg=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
 go.opentelemetry.io/collector/component v1.58.1-0.20260514231715-e7f22744c28c h1:P+1Mvf17pJj7q8LoMV8ncUe69R5GIsoIuWiiSMXYK/c=
