@@ -1,3 +1,18 @@
+$defs:
+  standard_config:
+    type: object
+    properties:
+      retry_interval:
+        x-pointer: true
+        type: string
+        format: duration
+  strategy:
+    description: Strategy is a discriminated union of failover-strategy variants. Exactly one of its sub-block fields may be non-nil; the empty value selects the standard variant with default options.
+    type: object
+    properties:
+      standard:
+        x-pointer: true
+        $ref: standard_config
 type: object
 properties:
   max_retries:
@@ -16,9 +31,13 @@ properties:
     format: duration
   retry_interval:
     description: RetryInterval is the frequency at which the pipeline levels will attempt to recover by going over all levels below the current
+    x-pointer: true
     type: string
     format: duration
   sending_queue:
     description: QueueSettings use the exporterhelper sending_queue to move the queue to the connector to avoid data being stuck in the queue of an unhealthy exporter
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  strategy:
+    description: Strategy selects the failover strategy and holds its options. Exactly one variant sub-block (e.g. Standard) may be set; the absence of any variant is equivalent to selecting the standard variant with default options.
+    $ref: strategy

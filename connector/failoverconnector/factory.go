@@ -5,7 +5,6 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -30,9 +29,6 @@ func NewFactory() connector.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
-		RetryInterval: 10 * time.Minute,
-		RetryGap:      0,
-		MaxRetries:    0,
 	}
 }
 

@@ -17,6 +17,10 @@ var (
 	errInvalidRetryIntervals = errors.New("Retry interval must be positive")
 )
 
+const defaultRetryInterval = 10 * time.Minute
+
+func durationPtr(d time.Duration) *time.Duration { return &d }
+
 type Config struct {
 	// QueueSettings use the exporterhelper sending_queue to move the queue to the connector to avoid data being stuck
 	// in the queue of an unhealthy exporter
@@ -27,9 +31,14 @@ type Config struct {
 	// level is considered unhealthy
 	PipelinePriority [][]pipeline.ID `mapstructure:"priority_levels"`
 
+	// Strategy selects the failover strategy and holds its options. Exactly one
+	// variant sub-block (e.g. Standard) may be set; the absence of any variant
+	// is equivalent to selecting the standard variant with default options.
+	Strategy Strategy `mapstructure:"strategy"`
+
 	// RetryInterval is the frequency at which the pipeline levels will attempt to recover by going over
 	// all levels below the current
-	RetryInterval time.Duration `mapstructure:"retry_interval"`
+	RetryInterval *time.Duration `mapstructure:"retry_interval"` // **Deprecated**
 
 	// RetryGap is how much time will pass between trying two separate priority levels in a single RetryInterval
 	// If the priority list has 3 levels, the RetryInterval is 5m, and the retryGap is 1m, within the 5m RetryInterval,
@@ -43,12 +52,45 @@ type Config struct {
 	_ struct{}
 }
 
+// Strategy is a discriminated union of failover-strategy variants. Exactly one
+// of its sub-block fields may be non-nil; the empty value selects the standard
+// variant with default options.
+type Strategy struct {
+	Standard *StandardConfig `mapstructure:"standard"`
+	_        struct{}
+}
+
+type StandardConfig struct {
+	RetryInterval *time.Duration `mapstructure:"retry_interval"`
+}
+
+// effectiveRetryInterval returns the strategy.standard.retry_interval if set,
+// otherwise the deprecated top-level retry_interval, otherwise defaultRetryInterval.
+//
+// TODO(strategy-config): the top-level retry_interval fallback is temporary.
+// When that field is removed in a future release, this resolver collapses to a
+// direct read of c.Strategy.Standard.RetryInterval (with defaultRetryInterval
+// as the only fallback).
+func (c *Config) effectiveRetryInterval() time.Duration {
+	switch {
+	case c.Strategy.Standard != nil && c.Strategy.Standard.RetryInterval != nil:
+		return *c.Strategy.Standard.RetryInterval
+	case c.RetryInterval != nil:
+		return *c.RetryInterval
+	default:
+		return defaultRetryInterval
+	}
+}
+
 // Validate needs to ensure RetryInterval > # elements in PriorityList * RetryGap
 func (c *Config) Validate() error {
 	if len(c.PipelinePriority) == 0 {
 		return errNoPipelinePriority
 	}
-	if c.RetryInterval <= 0 {
+	if c.RetryInterval != nil && *c.RetryInterval <= 0 {
+		return errInvalidRetryIntervals
+	}
+	if c.Strategy.Standard != nil && c.Strategy.Standard.RetryInterval != nil && *c.Strategy.Standard.RetryInterval <= 0 {
 		return errInvalidRetryIntervals
 	}
 	return nil

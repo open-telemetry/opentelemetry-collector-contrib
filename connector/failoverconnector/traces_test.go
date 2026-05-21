@@ -32,7 +32,7 @@ func TestTracesRegisterConsumers(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
-		RetryInterval:    25 * time.Millisecond,
+		RetryInterval:    durationPtr(25 * time.Millisecond),
 		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}
 
@@ -72,7 +72,7 @@ func TestTracesWithValidFailover(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
-		RetryInterval:    50 * time.Millisecond,
+		RetryInterval:    durationPtr(50 * time.Millisecond),
 		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}
 
@@ -109,7 +109,7 @@ func TestTracesWithFailoverError(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
-		RetryInterval:    50 * time.Millisecond,
+		RetryInterval:    durationPtr(50 * time.Millisecond),
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
@@ -144,7 +144,7 @@ func TestTracesWithQueue(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
-		RetryInterval:    50 * time.Millisecond,
+		RetryInterval:    durationPtr(50 * time.Millisecond),
 		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}
 
@@ -174,8 +174,9 @@ func TestTracesWithQueue(t *testing.T) {
 }
 
 func consumeTracesAndCheckStable(router *tracesRouter, idx int, tr ptrace.Traces) bool {
+	strategy := router.strategy.(*standardTracesStrategy)
 	_ = router.Consume(context.Background(), tr)
-	stableIndex := router.pS.CurrentPipeline()
+	stableIndex := strategy.TestGetCurrentConsumerIndex()
 	return stableIndex == idx
 }
 

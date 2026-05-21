@@ -34,7 +34,6 @@ func TestLoadConfig(t *testing.T) {
 						pipeline.NewIDWithName(pipeline.SignalTraces, ""),
 					},
 				},
-				RetryInterval: 10 * time.Minute,
 			},
 		},
 		{
@@ -56,7 +55,18 @@ func TestLoadConfig(t *testing.T) {
 						pipeline.NewIDWithName(pipeline.SignalTraces, "fourth"),
 					},
 				},
-				RetryInterval: 5 * time.Minute,
+				RetryInterval: durationPtr(5 * time.Minute),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "standard_retry_interval"),
+			expected: &Config{
+				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				PipelinePriority: [][]pipeline.ID{
+					{pipeline.NewIDWithName(pipeline.SignalTraces, "first")},
+					{pipeline.NewIDWithName(pipeline.SignalTraces, "second")},
+				},
+				Strategy: Strategy{Standard: &StandardConfig{RetryInterval: durationPtr(5 * time.Minute)}},
 			},
 		},
 	}
