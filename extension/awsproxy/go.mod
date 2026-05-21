@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/config/confignet v1.58.1-0.20260521212641-5abdf017eb1a
 	go.opentelemetry.io/collector/config/configtls v1.58.1-0.20260521212641-5abdf017eb1a
 	go.opentelemetry.io/collector/confmap v1.58.1-0.20260521212641-5abdf017eb1a
-	go.opentelemetry.io/collector/confmap/xconfmap v0.152.1-0.20260521212641-5abdf017eb1a
+	go.opentelemetry.io/collector/confmap/xconfmap v0.152.1
 	go.opentelemetry.io/collector/extension v1.58.1-0.20260521212641-5abdf017eb1a
 	go.opentelemetry.io/collector/extension/extensiontest v0.152.1-0.20260521212641-5abdf017eb1a
 	go.uber.org/zap v1.28.0
@@ -69,9 +69,9 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.58.1-0.20260521212641-5abdf017eb1a // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.58.1-0.20260521212641-5abdf017eb1a // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.58.1-0.20260521212641-5abdf017eb1a // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.152.1-0.20260521212641-5abdf017eb1a // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.152.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.58.1-0.20260521212641-5abdf017eb1a // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.152.1-0.20260521212641-5abdf017eb1a // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.152.1 // indirect
 	go.opentelemetry.io/collector/pdata v1.58.1-0.20260521201627-aec84993524b // indirect
 	go.opentelemetry.io/collector/pipeline v1.58.1-0.20260521212641-5abdf017eb1a // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect

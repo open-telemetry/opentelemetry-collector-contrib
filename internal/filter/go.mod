@@ -53,7 +53,7 @@ require (
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.58.1-0.20260521212641-5abdf017eb1a // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.152.1-0.20260521201627-aec84993524b // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.152.1 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.43.0 // indirect

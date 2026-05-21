@@ -285,7 +285,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.58.1-0.20260521212641-5abdf017eb1a // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.58.1-0.20260521212641-5abdf017eb1a // indirect
 	go.opentelemetry.io/collector/featuregate v1.58.1-0.20260521212641-5abdf017eb1a // indirect
-	go.opentelemetry.io/collector/filter v0.152.1-0.20260521212641-5abdf017eb1a // indirect
+	go.opentelemetry.io/collector/filter v0.152.1 // indirect
 	go.opentelemetry.io/collector/internal/schemagen v0.152.1-0.20260521212641-5abdf017eb1a // indirect
 	go.opentelemetry.io/collector/pdata v1.58.1-0.20260521201627-aec84993524b // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
