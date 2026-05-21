@@ -35,38 +35,37 @@ var (
 )
 
 const (
-	namespaceKey                    = "ns"
-	commandKey                      = "command"
-	opKey                           = "op"
-	activeKey                       = "active"
-	durationMicrosKey               = "microsecs_running"
-	clientKey                       = "client"
-	applicationNameKey              = "appName"
-	effectiveUsersKey               = "effectiveUsers"
-	userKey                         = "user"
-	cursorKey                       = "cursor"
-	cursorAwaitDataKey              = "awaitData"
-	cursorIDKey                     = "cursorId"
-	cursorNBatchesReturnedKey       = "nBatchesReturned"
-	cursorNDocsReturnedKey          = "nDocsReturned"
-	cursorNoCursorTimeoutKey        = "noCursorTimeout"
-	cursorOperationUsingCursorIDKey = "operationUsingCursorId"
-	cursorOriginatingCommandKey     = "originatingCommand"
-	cursorTailableKey               = "tailable"
-	idKey                           = "id"
-	lsidKey                         = "lsid"
-	operationIDKey                  = "opid"
-	planSummaryKey                  = "planSummary"
-	queryFrameworkKey               = "queryFramework"
-	prepareReadConflictsKey         = "prepareReadConflicts"
-	writeConflictsKey               = "writeConflicts"
-	numYieldsKey                    = "numYields"
-	waitingForLockKey               = "waitingForLock"
-	locksKey                        = "locks"
-	lockStatsKey                    = "lockStats"
-	waitingForFlowControlKey        = "waitingForFlowControl"
-	flowControlStatsKey             = "flowControlStats"
-	waitingForLatchKey              = "waitingForLatch"
+	namespaceKey                = "ns"
+	commandKey                  = "command"
+	opKey                       = "op"
+	activeKey                   = "active"
+	durationMicrosKey           = "microsecs_running"
+	clientKey                   = "client"
+	applicationNameKey          = "appName"
+	effectiveUsersKey           = "effectiveUsers"
+	userKey                     = "user"
+	cursorKey                   = "cursor"
+	cursorAwaitDataKey          = "awaitData"
+	cursorIDKey                 = "cursorId"
+	cursorNBatchesReturnedKey   = "nBatchesReturned"
+	cursorNDocsReturnedKey      = "nDocsReturned"
+	cursorNoCursorTimeoutKey    = "noCursorTimeout"
+	cursorOriginatingCommandKey = "originatingCommand"
+	cursorTailableKey           = "tailable"
+	idKey                       = "id"
+	lsidKey                     = "lsid"
+	operationIDKey              = "opid"
+	planSummaryKey              = "planSummary"
+	queryFrameworkKey           = "queryFramework"
+	prepareReadConflictsKey     = "prepareReadConflicts"
+	writeConflictsKey           = "writeConflicts"
+	numYieldsKey                = "numYields"
+	waitingForLockKey           = "waitingForLock"
+	locksKey                    = "locks"
+	lockStatsKey                = "lockStats"
+	waitingForFlowControlKey    = "waitingForFlowControl"
+	flowControlStatsKey         = "flowControlStats"
+	waitingForLatchKey          = "waitingForLatch"
 )
 
 // generateInstanceID generates a deterministic UUID v5 from server address and port.
@@ -254,11 +253,10 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		}
 		cursor := getValue[bson.D](op, cursorKey)
 		cursorAwaitData := getValue[bool](cursor, cursorAwaitDataKey)
-		cursorBatchesReturnedCount := getInt64Value(cursor, cursorNBatchesReturnedKey)
-		cursorDocumentsReturnedCount := getInt64Value(cursor, cursorNDocsReturnedKey)
 		cursorID := getFormattedValue(cursor, cursorIDKey)
 		cursorNoTimeout := getValue[bool](cursor, cursorNoCursorTimeoutKey)
-		cursorOperationUsingCursorID := getFormattedValue(cursor, cursorOperationUsingCursorIDKey)
+		cursorReturnedBatches := getInt64Value(cursor, cursorNBatchesReturnedKey)
+		cursorReturnedDocuments := getInt64Value(cursor, cursorNDocsReturnedKey)
 		cursorOriginatingCommand := getValue[bson.D](cursor, cursorOriginatingCommandKey)
 		obfuscatedCursorOriginatingCommand := ""
 		if len(cursorOriginatingCommand) > 0 {
@@ -298,21 +296,20 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 			metadata.AttributeDbSystemNameMongodb,
 			databaseName,
 			collectionName,
+			operationID,
 			commandType,
 			obfuscatedStatement,
 			queryTextTruncated,
 			userName,
 			clientAppName,
 			cursorAwaitData,
-			cursorBatchesReturnedCount,
-			cursorDocumentsReturnedCount,
 			cursorID,
 			cursorNoTimeout,
-			cursorOperationUsingCursorID,
 			obfuscatedCursorOriginatingCommand,
+			cursorReturnedBatches,
+			cursorReturnedDocuments,
 			cursorTailable,
 			lsid,
-			operationID,
 			planSummary,
 			queryFramework,
 			operationState,

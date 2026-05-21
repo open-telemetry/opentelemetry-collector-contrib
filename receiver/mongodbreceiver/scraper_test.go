@@ -698,7 +698,7 @@ func TestScrapeLogs(t *testing.T) {
 				lsid, ok := logAttrs.Get("mongodb.lsid.id")
 				require.True(t, ok)
 				require.Equal(t, "4d63009a-8d0f-11ee-aad7-4c796ed8e320", lsid.Str())
-				planSummary, ok := logAttrs.Get("mongodb.operation.plan_summary")
+				planSummary, ok := logAttrs.Get("mongodb.operation.plan.summary")
 				require.True(t, ok)
 				require.Equal(t, "IXSCAN { x: 1 }", planSummary.Str())
 				queryFramework, ok := logAttrs.Get("mongodb.query.framework")
@@ -707,21 +707,18 @@ func TestScrapeLogs(t *testing.T) {
 				cursorAwaitData, ok := logAttrs.Get("mongodb.cursor.await_data")
 				require.True(t, ok)
 				require.False(t, cursorAwaitData.Bool())
-				cursorBatchesReturned, ok := logAttrs.Get("mongodb.cursor.batches_returned.count")
+				cursorReturnedBatches, ok := logAttrs.Get("mongodb.cursor.returned_batches")
 				require.True(t, ok)
-				require.Zero(t, cursorBatchesReturned.Int())
-				cursorDocumentsReturned, ok := logAttrs.Get("mongodb.cursor.documents_returned.count")
+				require.Zero(t, cursorReturnedBatches.Int())
+				cursorReturnedDocuments, ok := logAttrs.Get("mongodb.cursor.returned_documents")
 				require.True(t, ok)
-				require.Zero(t, cursorDocumentsReturned.Int())
+				require.Zero(t, cursorReturnedDocuments.Int())
 				cursorID, ok := logAttrs.Get("mongodb.cursor.id")
 				require.True(t, ok)
 				require.Empty(t, cursorID.Str())
 				cursorNoTimeout, ok := logAttrs.Get("mongodb.cursor.no_timeout")
 				require.True(t, ok)
 				require.False(t, cursorNoTimeout.Bool())
-				cursorOperationUsingCursorID, ok := logAttrs.Get("mongodb.cursor.operation_using_cursor_id")
-				require.True(t, ok)
-				require.Empty(t, cursorOperationUsingCursorID.Str())
 				cursorOriginatingCommand, ok := logAttrs.Get("mongodb.cursor.originating_command")
 				require.True(t, ok)
 				require.Empty(t, cursorOriginatingCommand.Str())
@@ -779,7 +776,6 @@ func TestScrapeLogs(t *testing.T) {
 							{Key: "nBatchesReturned", Value: int64(2)},
 							{Key: "nDocsReturned", Value: int64(10)},
 							{Key: "noCursorTimeout", Value: true},
-							{Key: "operationUsingCursorId", Value: int64(321)},
 							{Key: "originatingCommand", Value: bson.D{
 								{Key: "aggregate", Value: "mycol"},
 								{Key: "pipeline", Value: bson.A{
@@ -803,13 +799,13 @@ func TestScrapeLogs(t *testing.T) {
 				require.True(t, ok)
 				require.True(t, awaitData.Bool())
 
-				batchesReturned, ok := logAttrs.Get("mongodb.cursor.batches_returned.count")
+				returnedBatches, ok := logAttrs.Get("mongodb.cursor.returned_batches")
 				require.True(t, ok)
-				require.Equal(t, int64(2), batchesReturned.Int())
+				require.Equal(t, int64(2), returnedBatches.Int())
 
-				documentsReturned, ok := logAttrs.Get("mongodb.cursor.documents_returned.count")
+				returnedDocuments, ok := logAttrs.Get("mongodb.cursor.returned_documents")
 				require.True(t, ok)
-				require.Equal(t, int64(10), documentsReturned.Int())
+				require.Equal(t, int64(10), returnedDocuments.Int())
 
 				cursorID, ok := logAttrs.Get("mongodb.cursor.id")
 				require.True(t, ok)
@@ -818,10 +814,6 @@ func TestScrapeLogs(t *testing.T) {
 				noTimeout, ok := logAttrs.Get("mongodb.cursor.no_timeout")
 				require.True(t, ok)
 				require.True(t, noTimeout.Bool())
-
-				operationUsingCursorID, ok := logAttrs.Get("mongodb.cursor.operation_using_cursor_id")
-				require.True(t, ok)
-				require.Equal(t, "321", operationUsingCursorID.Str())
 
 				originatingCommand, ok := logAttrs.Get("mongodb.cursor.originating_command")
 				require.True(t, ok)

@@ -58,6 +58,9 @@ attributes:
     description: The name of a database.
     type: string
     requirement_level: recommended
+  db.operation.id:
+    description: Identifier of the MongoDB operation.
+    type: string
   db.operation.name:
     description: The name of the MongoDB command being executed.
     type: string
@@ -105,24 +108,21 @@ attributes:
   mongodb.cursor.await_data:
     description: Whether the tailable cursor waits for new data instead of returning immediately.
     type: bool
-  mongodb.cursor.batches_returned.count:
-    description: The cumulative number of batches returned by the cursor.
-    type: int
-  mongodb.cursor.documents_returned.count:
-    description: The cumulative number of documents returned by the cursor.
-    type: int
   mongodb.cursor.id:
     description: The identifier of the cursor.
     type: string
   mongodb.cursor.no_timeout:
     description: Whether the cursor is configured not to time out when idle.
     type: bool
-  mongodb.cursor.operation_using_cursor_id:
-    description: The identifier of the operation currently using the cursor.
-    type: string
   mongodb.cursor.originating_command:
     description: The obfuscated command that originally created the cursor.
     type: string
+  mongodb.cursor.returned_batches:
+    description: The cumulative number of batches returned by the cursor.
+    type: int
+  mongodb.cursor.returned_documents:
+    description: The cumulative number of documents returned by the cursor.
+    type: int
   mongodb.cursor.tailable:
     description: Whether the cursor is a tailable cursor.
     type: bool
@@ -135,16 +135,13 @@ attributes:
   mongodb.operation.flow_control_stats:
     description: The flow control statistics for the MongoDB operation.
     type: string
-  mongodb.operation.id:
-    description: Identifier of the MongoDB operation.
-    type: string
   mongodb.operation.lock_stats:
     description: The lock acquisition statistics for the MongoDB operation.
     type: string
   mongodb.operation.locks:
     description: The type and mode of locks the MongoDB operation currently holds.
     type: string
-  mongodb.operation.plan_summary:
+  mongodb.operation.plan.summary:
     description: Summary of the execution plan for the MongoDB operation.
     type: string
   mongodb.operation.prepared_read_conflict.count:
@@ -225,22 +222,21 @@ events:
       - db.system.name
       - db.namespace
       - db.collection.name
+      - db.operation.id
       - db.operation.name
       - db.query.text
       - mongodb.query.text.truncated
       - user.name
       - mongodb.client.app.name
       - mongodb.cursor.await_data
-      - mongodb.cursor.batches_returned.count
-      - mongodb.cursor.documents_returned.count
       - mongodb.cursor.id
       - mongodb.cursor.no_timeout
-      - mongodb.cursor.operation_using_cursor_id
       - mongodb.cursor.originating_command
+      - mongodb.cursor.returned_batches
+      - mongodb.cursor.returned_documents
       - mongodb.cursor.tailable
       - mongodb.lsid.id
-      - mongodb.operation.id
-      - mongodb.operation.plan_summary
+      - mongodb.operation.plan.summary
       - mongodb.query.framework
       - mongodb.operation.state
       - mongodb.operation.type

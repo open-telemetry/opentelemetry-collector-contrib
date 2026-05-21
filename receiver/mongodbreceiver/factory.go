@@ -20,8 +20,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
-const defaultMongoDBPort = 27017
-const defaultMaxRowsPerQuery = 100
+const (
+	defaultMongoDBPort     = 27017
+	defaultMaxRowsPerQuery = 100
+)
 
 var defaultEndpoint = "localhost:" + strconv.Itoa(defaultMongoDBPort)
 

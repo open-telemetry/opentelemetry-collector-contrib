@@ -4,9 +4,6 @@ package metadata
 
 import (
 	"context"
-	"testing"
-	"time"
-
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -14,6 +11,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"testing"
+	"time"
 )
 
 type eventsTestDataSet int
@@ -131,7 +130,7 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
-			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "client.address-val", 11, AttributeDbSystemNameMongodb, "db.namespace-val", "db.collection.name-val", "db.operation.name-val", "db.query.text-val", true, "user.name-val", "mongodb.client.app.name-val", false, 37, 39, "mongodb.cursor.id-val", false, "mongodb.cursor.operation_using_cursor_id-val", "mongodb.cursor.originating_command-val", false, "mongodb.lsid.id-val", "mongodb.operation.id-val", "mongodb.operation.plan_summary-val", "mongodb.query.framework-val", AttributeMongodbOperationStateActive, "mongodb.operation.type-val", 26.100000, 46, 38, 29, true, "mongodb.operation.locks-val", "mongodb.operation.lock_stats-val", true, "mongodb.operation.flow_control_stats-val", false, "mongodb.operation.waiting_for_latch.details-val")
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "client.address-val", 11, AttributeDbSystemNameMongodb, "db.namespace-val", "db.collection.name-val", "db.operation.id-val", "db.operation.name-val", "db.query.text-val", true, "user.name-val", "mongodb.client.app.name-val", false, "mongodb.cursor.id-val", false, "mongodb.cursor.originating_command-val", 31, 33, false, "mongodb.lsid.id-val", "mongodb.operation.plan.summary-val", "mongodb.query.framework-val", AttributeMongodbOperationStateActive, "mongodb.operation.type-val", 26.100000, 46, 38, 29, true, "mongodb.operation.locks-val", "mongodb.operation.lock_stats-val", true, "mongodb.operation.flow_control_stats-val", false, "mongodb.operation.waiting_for_latch.details-val")
 
 			rb := lb.NewResourceBuilder()
 			rb.SetServerAddress("server.address-val")
@@ -181,6 +180,9 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("db.collection.name")
 					assert.True(t, ok)
 					assert.Equal(t, "db.collection.name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.operation.id")
+					assert.True(t, ok)
+					assert.Equal(t, "db.operation.id-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("db.operation.name")
 					assert.True(t, ok)
 					assert.Equal(t, "db.operation.name-val", attrVal.Str())
@@ -199,36 +201,30 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("mongodb.cursor.await_data")
 					assert.True(t, ok)
 					assert.False(t, attrVal.Bool())
-					attrVal, ok = lr.Attributes().Get("mongodb.cursor.batches_returned.count")
-					assert.True(t, ok)
-					assert.EqualValues(t, 37, attrVal.Int())
-					attrVal, ok = lr.Attributes().Get("mongodb.cursor.documents_returned.count")
-					assert.True(t, ok)
-					assert.EqualValues(t, 39, attrVal.Int())
 					attrVal, ok = lr.Attributes().Get("mongodb.cursor.id")
 					assert.True(t, ok)
 					assert.Equal(t, "mongodb.cursor.id-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("mongodb.cursor.no_timeout")
 					assert.True(t, ok)
 					assert.False(t, attrVal.Bool())
-					attrVal, ok = lr.Attributes().Get("mongodb.cursor.operation_using_cursor_id")
-					assert.True(t, ok)
-					assert.Equal(t, "mongodb.cursor.operation_using_cursor_id-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("mongodb.cursor.originating_command")
 					assert.True(t, ok)
 					assert.Equal(t, "mongodb.cursor.originating_command-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("mongodb.cursor.returned_batches")
+					assert.True(t, ok)
+					assert.EqualValues(t, 31, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("mongodb.cursor.returned_documents")
+					assert.True(t, ok)
+					assert.EqualValues(t, 33, attrVal.Int())
 					attrVal, ok = lr.Attributes().Get("mongodb.cursor.tailable")
 					assert.True(t, ok)
 					assert.False(t, attrVal.Bool())
 					attrVal, ok = lr.Attributes().Get("mongodb.lsid.id")
 					assert.True(t, ok)
 					assert.Equal(t, "mongodb.lsid.id-val", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("mongodb.operation.id")
+					attrVal, ok = lr.Attributes().Get("mongodb.operation.plan.summary")
 					assert.True(t, ok)
-					assert.Equal(t, "mongodb.operation.id-val", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("mongodb.operation.plan_summary")
-					assert.True(t, ok)
-					assert.Equal(t, "mongodb.operation.plan_summary-val", attrVal.Str())
+					assert.Equal(t, "mongodb.operation.plan.summary-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("mongodb.query.framework")
 					assert.True(t, ok)
 					assert.Equal(t, "mongodb.query.framework-val", attrVal.Str())
