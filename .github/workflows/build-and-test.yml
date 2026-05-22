@@ -141,55 +141,44 @@ jobs:
           echo "Raw direct matrix:      $RAW_DIRECT_MATRIX"
           echo "Filtered direct matrix: $direct_matrix"
           echo "Mode:                   $mode"
+  # Lint runs against the direct-changes matrix only: a downstream module's
+  # lint result doesn't depend on whether an upstream module's source changed,
+  # so dragging transitive dependents in here just wastes runners. In `full`
+  # mode (e.g. push, merge_group, critical-file change, or `ci:full` label)
+  # direct_matrix is the full named-group list, matching prior behavior.
   lint-matrix:
+    needs: [setup-environment, ci-scope]
+    if: ${{ needs.ci-scope.outputs.direct_matrix != '[]' && needs.ci-scope.outputs.direct_matrix != '' }}
     strategy:
       fail-fast: false
       matrix:
-        goos:
-          - windows
-          - linux
-        group:
-          - receiver-0
-          - receiver-1
-          - receiver-2
-          - receiver-3
-          - processor-0
-          - processor-1
-          - exporter-0
-          - exporter-1
-          - exporter-2
-          - exporter-3
-          - extension
-          - connector
-          - internal
-          - pkg
-          - cmd-0
-          - other
+        goos: [windows, linux]
+        group: ${{ fromJSON(needs.ci-scope.outputs.direct_matrix) }}
     runs-on: ubuntu-24.04
-    needs: [setup-environment]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - name: Lint
-        run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
+        run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP="${{ matrix.group }}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-24.04
     needs: [setup-environment, lint-matrix]
     steps:
-      - name: Print result
-        run: echo ${{ needs.lint-matrix.result }}
       - name: Interpret result
+        env:
+          MATRIX_RESULT: ${{ needs.lint-matrix.result }}
         run: |
-          if [[ success == ${{ needs.lint-matrix.result }} ]]
-          then
-            echo "All matrix jobs passed!"
+          # `skipped` is success: it means ci-scope determined no modules
+          # needed linting (e.g. a docs-only PR with an empty direct_matrix).
+          if [[ "$MATRIX_RESULT" == "success" || "$MATRIX_RESULT" == "skipped" ]]; then
+            echo "Lint passed (result=$MATRIX_RESULT)."
           else
-            echo "One or more matrix jobs failed."
-            false
+            echo "Lint failed (result=$MATRIX_RESULT)."
+            exit 1
           fi
   govulncheck:
     strategy:
