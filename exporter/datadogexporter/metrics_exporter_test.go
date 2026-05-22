@@ -146,12 +146,9 @@ func TestNewExporter_Serializer(t *testing.T) {
 
 func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	prevDisableVal := featuregates.DisableMetricRemappingFeatureGate.IsEnabled()
-	prevVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableMetricRemappingFeatureGate.ID(), false))
-	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), false))
 	defer func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableMetricRemappingFeatureGate.ID(), prevDisableVal))
-		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevVal))
 	}()
 
 	attrs := map[string]string{
@@ -909,13 +906,11 @@ func TestServiceInstanceIDTag(t *testing.T) {
 
 func TestMetricRemapping(t *testing.T) {
 	tests := []struct {
-		newGate         bool
-		oldGate         bool
+		gate            bool
 		expectedMetrics []string
 	}{
 		{
-			newGate: false,
-			oldGate: false,
+			gate: false,
 			expectedMetrics: []string{
 				// Mapped system metrics
 				"system.disk.in_use",
@@ -934,39 +929,7 @@ func TestMetricRemapping(t *testing.T) {
 			},
 		},
 		{
-			newGate: true,
-			oldGate: false,
-			expectedMetrics: []string{
-				// Unmapped system metrics
-				"system.filesystem.utilization",
-				// Unmapped runtime metrics
-				"process.runtime.go.goroutines",
-				"process.runtime.dotnet.exceptions.count",
-				"process.runtime.jvm.threads.count",
-			},
-		},
-		{
-			newGate: false,
-			oldGate: true,
-			expectedMetrics: []string{
-				// Unmapped system metrics
-				"system.filesystem.utilization",
-				// Mapped runtime metrics
-				"runtime.go.num_goroutine",
-				"process.runtime.go.goroutines",
-				"runtime.dotnet.exceptions.count",
-				"process.runtime.dotnet.exceptions.count",
-				"jvm.thread_count",
-				"process.runtime.jvm.threads.count",
-				// One per lang
-				"otel.datadog_exporter.runtime_metrics.running",
-				"otel.datadog_exporter.runtime_metrics.running",
-				"otel.datadog_exporter.runtime_metrics.running",
-			},
-		},
-		{
-			newGate: true,
-			oldGate: true,
+			gate: true,
 			expectedMetrics: []string{
 				// Unmapped system metrics
 				"system.filesystem.utilization",
@@ -979,19 +942,16 @@ func TestMetricRemapping(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("new=%v,old=%v", tt.newGate, tt.oldGate), func(t *testing.T) {
+		t.Run(fmt.Sprintf("gate=%v", tt.gate), func(t *testing.T) {
 			seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.MetricV2Endpoint}
 			server := testutil.DatadogServerMock(seriesRecorder.HandlerFunc)
 			defer server.Close()
 
 			reg := featuregate.GlobalRegistry()
-			prevNewVal := featuregates.DisableMetricRemappingFeatureGate.IsEnabled()
-			prevOldVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
-			require.NoError(t, reg.Set(featuregates.DisableMetricRemappingFeatureGate.ID(), tt.newGate))
-			require.NoError(t, reg.Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), tt.oldGate))
+			prevVal := featuregates.DisableMetricRemappingFeatureGate.IsEnabled()
+			require.NoError(t, reg.Set(featuregates.DisableMetricRemappingFeatureGate.ID(), tt.gate))
 			defer func() {
-				require.NoError(t, reg.Set(featuregates.DisableMetricRemappingFeatureGate.ID(), prevNewVal))
-				require.NoError(t, reg.Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevOldVal))
+				require.NoError(t, reg.Set(featuregates.DisableMetricRemappingFeatureGate.ID(), prevVal))
 			}()
 
 			var once sync.Once

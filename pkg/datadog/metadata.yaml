@@ -44,10 +44,3 @@ feature_gates:
       When enabled, the exporter will infer the metrics interval for OTLP delta sums using a heuristic.
     from_version: v0.148.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/46851
-
-  - id: exporter.datadogexporter.metricremappingdisabled
-    stage: beta
-    description: >-
-      When enabled the Datadog Exporter stops mapping OpenTelemetry semantic conventions to Datadog semantic conventions. This feature gate is only for internal use. [DEPRECATED] Use 'exporter.datadogexporter.DisableAllMetricRemapping' instead.
-    from_version: v0.110.0
-    reference_url: https://docs.datadoghq.com/opentelemetry/schema_semantics/metrics_mapping/

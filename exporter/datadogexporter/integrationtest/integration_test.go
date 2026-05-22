@@ -542,13 +542,10 @@ func sendLogs(t *testing.T, numLogs int, endpoint string) {
 }
 
 func TestIntegrationHostMetrics_WithRemapping_LegacyMetricClient(t *testing.T) {
-	prevVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
 	prevDisableVal := featuregates.DisableMetricRemappingFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
 	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableMetricRemappingFeatureGate.ID(), false))
-	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), false))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevVal))
 		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
 		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableMetricRemappingFeatureGate.ID(), prevDisableVal))
 	}()
@@ -569,11 +566,11 @@ func TestIntegrationHostMetrics_WithRemapping_LegacyMetricClient(t *testing.T) {
 }
 
 func TestIntegrationHostMetrics_WithoutRemapping_LegacyMetricClient(t *testing.T) {
-	prevVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), true))
+	prevVal := featuregates.DisableMetricRemappingFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableMetricRemappingFeatureGate.ID(), true))
 	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableMetricRemappingFeatureGate.ID(), prevVal))
 		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
 	}()
 
@@ -587,13 +584,9 @@ func TestIntegrationHostMetrics_WithoutRemapping_LegacyMetricClient(t *testing.T
 }
 
 func TestIntegrationHostMetrics_WithRemapping_Serializer(t *testing.T) {
-	prevVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), false))
-
 	prevDisableVal := featuregates.DisableMetricRemappingFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableMetricRemappingFeatureGate.ID(), false))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevVal))
 		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableMetricRemappingFeatureGate.ID(), prevDisableVal))
 	}()
 
@@ -613,10 +606,10 @@ func TestIntegrationHostMetrics_WithRemapping_Serializer(t *testing.T) {
 }
 
 func TestIntegrationHostMetrics_WithoutRemapping_Serializer(t *testing.T) {
-	prevVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), true))
+	prevVal := featuregates.DisableMetricRemappingFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableMetricRemappingFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableMetricRemappingFeatureGate.ID(), prevVal))
 	}()
 
 	expectedMetrics := map[string]struct{}{

@@ -45,11 +45,3 @@ var ExporterDatadogexporterInferIntervalForDeltaMetricsFeatureGate = featuregate
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/46851"),
 	featuregate.WithRegisterFromVersion("v0.148.0"),
 )
-
-var ExporterDatadogexporterMetricremappingdisabledFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.metricremappingdisabled",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled the Datadog Exporter stops mapping OpenTelemetry semantic conventions to Datadog semantic conventions. This feature gate is only for internal use. [DEPRECATED] Use 'exporter.datadogexporter.DisableAllMetricRemapping' instead."),
-	featuregate.WithRegisterReferenceURL("https://docs.datadoghq.com/opentelemetry/schema_semantics/metrics_mapping/"),
-	featuregate.WithRegisterFromVersion("v0.110.0"),
-)

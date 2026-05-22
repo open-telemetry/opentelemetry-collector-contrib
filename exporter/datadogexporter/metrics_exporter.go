@@ -71,12 +71,9 @@ func newMetricsExporter(
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
 		otlpmetrics.WithStatsOut(statsOut))
 
-	switch {
-	case featuregates.DisableMetricRemappingFeatureGate.IsEnabled():
+	if featuregates.DisableMetricRemappingFeatureGate.IsEnabled() {
 		options = append(options, otlpmetrics.WithoutRuntimeMetricMappings())
-	case featuregates.MetricRemappingDisabledFeatureGate.IsEnabled():
-		// Do nothing.
-	default:
+	} else {
 		options = append(options, otlpmetrics.WithRemapping())
 	}
 
