@@ -37,6 +37,7 @@ The following settings can be optionally configured:
     e.g. running the collector as a sidecar, the collector lifecycle is tied to the metric source.
   - `drop`: Keep the observed value but don't send.
     Suitable for gateway deployments, guarantees that all delta counts it produces haven't been observed before, but loses the values between thir first 2 observations.
+- `histogram_fields`: Optional allowlist of histogram data-point fields to convert to delta. Valid values: `bucket_counts`, `sum`, `count`. When empty (default), all three fields are converted — preserving prior behavior. When set, only the listed fields are written back as delta; the others remain cumulative. Applies to both `Histogram` and `ExponentialHistogram` data points.
 
 If neither include nor exclude are supplied, no filtering is applied.
 
@@ -132,6 +133,21 @@ processors:
     cumulativetodelta:
         # If include/exclude are not specified
         # convert all cumulative sum or histogram metrics to delta
+```
+
+```yaml
+processors:
+    # processor name: cumulativetodelta
+    cumulativetodelta:
+
+        # Convert only the bucket_counts of every cumulative histogram to delta.
+        # The _sum and _count fields are left cumulative so downstream rate-based
+        # queries continue to work.
+        include:
+            metric_types:
+              - histogram
+        histogram_fields:
+          - bucket_counts
 ```
 
 ## Troubleshooting
