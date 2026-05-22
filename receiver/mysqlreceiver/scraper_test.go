@@ -1442,6 +1442,10 @@ func TestScrapeTopQueryFuncScopeAttributes(t *testing.T) {
 	require.Equal(t, 1, logs.ResourceLogs().Len())
 
 	sls := logs.ResourceLogs().At(0).ScopeLogs()
+
+	digest, _ := sls.At(0).LogRecords().At(0).Attributes().Get("mysql.events_statements_summary_by_digest.digest")
+	queryPlanHash, _ := sls.At(0).LogRecords().At(0).Attributes().Get("mysql.query_plan.hash")
+	assert.Equal(t, digest, queryPlanHash)
 	for i := 0; i < sls.Len(); i++ {
 		attrs := sls.At(i).Scope().Attributes()
 		ver, ok := attrs.Get("db.version")

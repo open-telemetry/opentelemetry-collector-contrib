@@ -749,16 +749,18 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 		}
 
 		var queryPlan string
-		var digestTextHash = getDigestTextHash(q.digest)
+
+		queryPlanCacheId := m.getQueryPlanCacheId(q.digest, q.digestText)
+
 		// querySampleText is "" when the fallback template was used (MySQL <8 / MariaDB).
 		// Skip EXPLAIN in that case — there is no sample statement to explain.
 		if q.digest != "" && q.querySampleText != "" {
-			queryPlan = m.retrieveQueryPlan(q.digestText, q.querySampleText, q.schemaName, q.digest, digestTextHash)
+			queryPlan = m.retrieveQueryPlan(q.digestText, q.querySampleText, q.schemaName, q.digest, queryPlanCacheId)
 		}
 
 		queryPlanHash := ""
 		if queryPlan != "" {
-			queryPlanHash = digestTextHash
+			queryPlanHash = queryPlanCacheId
 		}
 
 		m.lb.RecordDbServerTopQueryEvent(
@@ -817,15 +819,16 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 		}
 
 		var queryPlan string
-		var digestTextHash = getDigestTextHash(sample.digest)
+
+		queryPlanCacheId := m.getQueryPlanCacheId(sample.digest, sample.digestText)
 
 		if sample.digest != "" {
-			queryPlan = m.retrieveQueryPlan(sample.digestText, sample.sqlText, sample.processlistDB, sample.digest, digestTextHash)
+			queryPlan = m.retrieveQueryPlan(sample.digestText, sample.sqlText, sample.processlistDB, sample.digest, queryPlanCacheId)
 		}
 
 		queryPlanHash := ""
 		if queryPlan != "" {
-			queryPlanHash = digestTextHash
+			queryPlanHash = queryPlanCacheId
 		}
 
 		m.lb.RecordDbServerQuerySampleEvent(
@@ -857,6 +860,15 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 	if droppedSamples > 0 {
 		m.logger.Warn("dropped query samples due to missing digest_text",
 			zap.Int("count", droppedSamples))
+	}
+}
+
+func (m *mySQLScraper) getQueryPlanCacheId(digest, digestText string) string {
+	if !m.detectedVersion.supportsQuerySampleText() {
+		// Use the digestTextHash as plan key for MySQL versions < 8 amd Mariadb since digest is not available consistently in those versions.
+		return getDigestTextHash(digestText)
+	} else {
+		return digest
 	}
 }
 
