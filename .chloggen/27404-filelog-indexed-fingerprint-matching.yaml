@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/file_log
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Improve filelog polling performance at high watched-file counts by indexing fingerprint matching."
+note: "Improve polling performance when watching many files by indexing fingerprint matching."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [27404]
