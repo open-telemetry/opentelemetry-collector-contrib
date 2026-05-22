@@ -18,7 +18,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -40,6 +39,7 @@ type Input struct {
 	excludeProviders         map[string]struct{}
 	pollInterval             time.Duration
 	waitTimeout              time.Duration
+	eventDrivenScraping      bool
 	// cancelEvent is a manual-reset Windows event handle signaled by Stop() to unblock
 	// WaitForMultipleObjects in awaitAndReadEvents. A plain context cancellation cannot
 	// interrupt a blocking Windows syscall, so this handle bridges Go's cancellation model
@@ -175,7 +175,7 @@ func (i *Input) Start(persister operator.Persister) error {
 
 	if !subscriptionError {
 		i.subscription = subscription
-		if metadata.StanzaWindowsEventDrivenScrapingFeatureGate.IsEnabled() {
+		if i.eventDrivenScraping {
 			cancelEvent, err := windows.CreateEvent(nil, 1, 0, nil) // manual-reset, initially non-signaled
 			if err != nil {
 				return fmt.Errorf("failed to create cancel event: %w", err)
