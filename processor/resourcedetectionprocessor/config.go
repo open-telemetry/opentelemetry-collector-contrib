@@ -56,7 +56,6 @@ type Config struct {
 	// When 0 (default), no periodic refresh occurs.
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
 	// Retry controls optional retry/backoff for all detectors on startup.
-	// Disabled by default; enable to wait for slow metadata endpoints.
 	Retry configretry.BackOffConfig `mapstructure:"retry"`
 }
 

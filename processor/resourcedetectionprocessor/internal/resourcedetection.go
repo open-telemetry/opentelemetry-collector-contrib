@@ -118,10 +118,10 @@ func (p *ResourceProvider) Get(_ context.Context, _ *http.Client) (pcommon.Resou
 
 // Refresh recomputes the resource, replacing any previous result.
 func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) error {
-	// When retry is disabled, preserve legacy behavior: cap the whole session at
-	// client.Timeout so a single slow metadata call doesn't block indefinitely.
-	// When retry is enabled, per-attempt timeouts are applied inside detectResource.
-	if !p.backoffConfig.Enabled {
+	// When no explicit retry budget is configured (MaxElapsedTime == 0), bound the
+	// entire detection session to client.Timeout so startup never blocks indefinitely.
+	// When MaxElapsedTime > 0 the caller controls the total retry window instead.
+	if p.backoffConfig.MaxElapsedTime == 0 && client.Timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, client.Timeout)
 		defer cancel()
@@ -166,11 +166,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context, client *http.Clie
 		resultsChan[i] = ch
 
 		go func(detector Detector, ch chan resourceResult) {
-			if p.backoffConfig.Enabled {
-				p.detectWithRetry(ctx, client, detector, ch)
-			} else {
-				p.detectLegacy(ctx, detector, ch)
-			}
+			p.detectWithRetry(ctx, client, detector, ch)
 		}(detector, ch)
 	}
 
@@ -201,41 +197,6 @@ func (p *ResourceProvider) detectResource(ctx context.Context, client *http.Clie
 
 	// Partial or full success: return merged resources.
 	return res, mergedSchemaURL, returnErr
-}
-
-// detectLegacy runs a single detector using the existing hardcoded backoff within ctx.
-// Preserves pre-retry behavior exactly (ctx already has client.Timeout applied by Refresh).
-func (p *ResourceProvider) detectLegacy(ctx context.Context, detector Detector, ch chan resourceResult) {
-	sleep := backoff.ExponentialBackOff{
-		InitialInterval:     1 * time.Second,
-		RandomizationFactor: 1.5,
-		Multiplier:          2,
-	}
-	sleep.Reset()
-
-	for {
-		r, schemaURL, err := detector.Detect(ctx)
-		if err == nil {
-			ch <- resourceResult{resource: r, schemaURL: schemaURL}
-			return
-		}
-
-		p.logger.Warn("failed to detect resource", zap.Error(err))
-
-		// NextBackOff on a bare ExponentialBackOff in cenkalti/backoff/v5 never returns
-		// backoff.Stop; context expiry (applied by Refresh) bounds this loop.
-		next := sleep.NextBackOff()
-		timer := time.NewTimer(next)
-		select {
-		case <-ctx.Done():
-			p.logger.Warn("context was cancelled", zap.Error(ctx.Err()))
-			timer.Stop()
-			ch <- resourceResult{err: err}
-			return
-		case <-timer.C:
-			// retry
-		}
-	}
 }
 
 // detectWithRetry runs a single detector using the configurable backoff.

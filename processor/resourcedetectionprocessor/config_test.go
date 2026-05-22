@@ -76,6 +76,7 @@ func TestLoadConfig(t *testing.T) {
 				DetectorConfig: openshiftConfig,
 				ClientConfig:   cfg,
 				Override:       false,
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -85,6 +86,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: detectorCreateDefaultConfig(),
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -94,6 +96,7 @@ func TestLoadConfig(t *testing.T) {
 				DetectorConfig: ec2Config,
 				ClientConfig:   cfg,
 				Override:       false,
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -103,6 +106,7 @@ func TestLoadConfig(t *testing.T) {
 				DetectorConfig: systemConfig,
 				ClientConfig:   cfg,
 				Override:       false,
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -112,6 +116,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: detectorCreateDefaultConfig(),
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -121,6 +126,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: detectorCreateDefaultConfig(),
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -130,6 +136,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: resourceAttributesConfig,
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -140,6 +147,7 @@ func TestLoadConfig(t *testing.T) {
 				Override:        false,
 				DetectorConfig:  detectorCreateDefaultConfig(),
 				RefreshInterval: 5 * time.Second,
+				Retry:           defaultRetryConfig(),
 			},
 		},
 		{
@@ -300,8 +308,13 @@ func TestDetectorCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, config.AlibabaECSConfig)
 }
 
-func TestDefaultConfig_RetryDisabled(t *testing.T) {
+func TestDefaultConfig_RetryDefaults(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	assert.False(t, cfg.Retry.Enabled, "retry must be disabled by default")
+	assert.True(t, cfg.Retry.Enabled, "retry must be enabled by default")
+	assert.Equal(t, 1*time.Second, cfg.Retry.InitialInterval)
+	assert.InDelta(t, 0.5, cfg.Retry.RandomizationFactor, 1e-9)
+	assert.InDelta(t, 2.0, cfg.Retry.Multiplier, 1e-9)
+	assert.Equal(t, time.Duration(0), cfg.Retry.MaxInterval, "no max interval cap by default")
+	assert.Equal(t, time.Duration(0), cfg.Retry.MaxElapsedTime, "retry forever by default")
 }

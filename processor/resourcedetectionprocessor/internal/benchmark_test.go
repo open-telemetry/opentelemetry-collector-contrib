@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
@@ -114,7 +113,7 @@ func BenchmarkResourceProvider(b *testing.B) {
 	d1 := &benchDetector{res: generateResource(b, 0, 10)}
 	d2 := &benchDetector{res: generateResource(b, 0, 10)}
 	d3 := &benchDetector{res: generateResource(b, 0, 10)}
-	provider := NewResourceProvider(zap.NewNop(), configretry.BackOffConfig{Enabled: false}, d1, d2, d3)
+	provider := NewResourceProvider(zap.NewNop(), fastRetryConfig, d1, d2, d3)
 	ctx := b.Context()
 	client := &http.Client{}
 	_ = provider.Refresh(ctx, client)

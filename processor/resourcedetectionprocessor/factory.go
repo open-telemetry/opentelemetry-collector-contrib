@@ -125,9 +125,20 @@ func createDefaultConfig() component.Config {
 		Override:        true,
 		DetectorConfig:  detectorCreateDefaultConfig(),
 		RefreshInterval: 0,
-		Retry:           configretry.BackOffConfig{Enabled: false},
+		Retry:           defaultRetryConfig(),
 		// TODO: Once issue(https://github.com/open-telemetry/opentelemetry-collector/issues/4001) gets resolved,
 		//		 Set the default value of 'hostname_source' here instead of 'system' detector
+	}
+}
+
+func defaultRetryConfig() configretry.BackOffConfig {
+	return configretry.BackOffConfig{
+		Enabled:             true,
+		InitialInterval:     1 * time.Second,
+		RandomizationFactor: 0.5,
+		Multiplier:          2,
+		MaxInterval:         0,
+		MaxElapsedTime:      0,
 	}
 }
 
