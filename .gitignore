@@ -24,9 +24,12 @@ vendor/
 *.dll
 *.so
 *.dylib
+*.test
 bin/
 dist/
 .tools/
+cmd/telemetrygen/telemetrygen
+cmd/otelcontribcol/otelcontribcol
 
 # Emacs
 *~
