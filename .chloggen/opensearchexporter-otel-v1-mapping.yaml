@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: exporter/opensearchexporter
+component: exporter/opensearch
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add `otel-v1` mapping mode that produces documents conforming to Data Prepper's OTel v1 index schemas, enabling interoperability with OpenSearch Observability dashboards.
