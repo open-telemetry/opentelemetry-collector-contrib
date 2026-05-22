@@ -23,8 +23,13 @@ type Config struct {
 	ProjectID string `mapstructure:"project_id"`
 	// Overrides the default monitoring.googleapis.com:443 endpoint.
 	// Use this when targeting non-standard universe domains.
-	Endpoint    string         `mapstructure:"endpoint"`
-	MetricsList []MetricConfig `mapstructure:"metrics_list"`
+	Endpoint string `mapstructure:"endpoint"`
+	// DefaultIngestDelay is used as the fallback ingest delay when a metric's
+	// descriptor does not populate Metadata.IngestDelay. Common for log-based,
+	// custom and external Prometheus metrics, where real ingestion latency can
+	// exceed the previous hardcoded 60s default and produce empty data windows.
+	DefaultIngestDelay time.Duration  `mapstructure:"default_ingest_delay"`
+	MetricsList        []MetricConfig `mapstructure:"metrics_list"`
 }
 
 type MetricConfig struct {
@@ -37,6 +42,10 @@ type MetricConfig struct {
 func (config *Config) Validate() error {
 	if config.CollectionInterval < minCollectionInterval {
 		return fmt.Errorf("\"collection_interval\" must be not lower than the collection interval: %v, current value is %v", minCollectionInterval, config.CollectionInterval)
+	}
+
+	if config.DefaultIngestDelay < 0 {
+		return fmt.Errorf("\"default_ingest_delay\" must not be negative, current value is %v", config.DefaultIngestDelay)
 	}
 
 	if len(config.MetricsList) == 0 {

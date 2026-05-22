@@ -99,10 +99,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 			gInterval = defaultCollectionInterval
 		}
 
-		gDelay = metricDesc.GetMetadata().GetIngestDelay().AsDuration()
-		if gDelay <= 0 {
-			gDelay = defaultFetchDelay
-		}
+		gDelay = ingestDelay(metricDesc, mr.config.DefaultIngestDelay)
 
 		// Calculate the start and end times
 		calStartTime, calEndTime = calculateStartEndTime(gInterval, gDelay)
@@ -216,6 +213,18 @@ func (mr *monitoringReceiver) metricDescriptorAPI(ctx context.Context) error {
 
 // calculateStartEndTime calculates the start and end times based on the current time, interval, and delay.
 // It enforces a maximum interval of 23 hours to avoid querying data older than 24 hours.
+// ingestDelay returns the ingest delay reported by the metric descriptor's
+// metadata. When the descriptor does not populate Metadata.IngestDelay
+// (common for log-based, custom and external Prometheus metrics), it falls
+// back to the provided default.
+func ingestDelay(desc *metric.MetricDescriptor, fallback time.Duration) time.Duration {
+	d := desc.GetMetadata().GetIngestDelay().AsDuration()
+	if d <= 0 {
+		return fallback
+	}
+	return d
+}
+
 func calculateStartEndTime(interval, delay time.Duration) (time.Time, time.Time) {
 	const maxInterval = 23 * time.Hour // Maximum allowed interval is 23 hours
 

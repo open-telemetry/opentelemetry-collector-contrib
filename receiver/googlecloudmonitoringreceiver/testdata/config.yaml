@@ -12,3 +12,10 @@ googlecloudmonitoring/endpoint:
   endpoint: monitoring.example.com:443
   metrics_list:
     - metric_name: "compute.googleapis.com/instance/cpu/usage_time"
+
+googlecloudmonitoring/default_ingest_delay:
+  collection_interval: 2m
+  project_id: my-project-id
+  default_ingest_delay: 3m
+  metrics_list:
+    - metric_name: "logging.googleapis.com/user/my_log_metric"

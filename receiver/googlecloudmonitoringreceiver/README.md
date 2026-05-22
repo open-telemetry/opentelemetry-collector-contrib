@@ -42,6 +42,7 @@ receivers:
 - `timeout`: (default = `1m`) The timeout of running commands against the GCP Monitoring REST API.
 - `project_id` (Required): The GCP project ID.
 - `endpoint` (Optional): Overrides the default `monitoring.googleapis.com:443` endpoint. Use this when targeting non-standard universe domains.
+- `default_ingest_delay` (default = `60s`): Fallback ingest delay used only when a metric's descriptor does not populate `Metadata.IngestDelay`. Common for log-based metrics (`logging.googleapis.com/user/*`), custom metrics (`custom.googleapis.com/*`) and external Prometheus metrics (`external.googleapis.com/prometheus/*`), where real ingestion latency can exceed 60s and the default produces empty data windows. Increase this if you observe missing data points for these metric types. Metrics whose descriptors already declare `Metadata.IngestDelay` (most GCP service metrics) are unaffected.
 - `metrics_list` (Required): A list of services metrics to monitor.
 
 Each single metric can have the following configuration:

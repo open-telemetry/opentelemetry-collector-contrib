@@ -33,7 +33,8 @@ func TestLoadConfig(t *testing.T) {
 					CollectionInterval: 120 * time.Second,
 					InitialDelay:       1 * time.Second,
 				},
-				ProjectID: "my-project-id",
+				ProjectID:          "my-project-id",
+				DefaultIngestDelay: 60 * time.Second,
 				MetricsList: []MetricConfig{
 					{MetricName: "compute.googleapis.com/instance/cpu/usage_time"},
 					{MetricName: "connectors.googleapis.com/flex/instance/cpu/usage_time"},
@@ -48,10 +49,25 @@ func TestLoadConfig(t *testing.T) {
 					CollectionInterval: 120 * time.Second,
 					InitialDelay:       1 * time.Second,
 				},
-				ProjectID: "my-project-id",
-				Endpoint:  "monitoring.example.com:443",
+				ProjectID:          "my-project-id",
+				Endpoint:           "monitoring.example.com:443",
+				DefaultIngestDelay: 60 * time.Second,
 				MetricsList: []MetricConfig{
 					{MetricName: "compute.googleapis.com/instance/cpu/usage_time"},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "default_ingest_delay"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 120 * time.Second,
+					InitialDelay:       1 * time.Second,
+				},
+				ProjectID:          "my-project-id",
+				DefaultIngestDelay: 3 * time.Minute,
+				MetricsList: []MetricConfig{
+					{MetricName: "logging.googleapis.com/user/my_log_metric"},
 				},
 			},
 		},
@@ -105,12 +121,16 @@ func TestValidateConfig(t *testing.T) {
 	testCases := map[string]struct {
 		metricsList        []MetricConfig
 		collectionInterval time.Duration
+		defaultIngestDelay time.Duration
 		requireError       bool
 	}{
-		"Valid Config":                {[]MetricConfig{validMetric}, 300 * time.Second, false},
-		"Empty Services":              {nil, 300 * time.Second, true},
-		"Invalid Service in Services": {[]MetricConfig{{}}, 300 * time.Second, true},
-		"Invalid Collection Interval": {[]MetricConfig{validMetric}, 0 * time.Second, true},
+		"Valid Config":                       {[]MetricConfig{validMetric}, 300 * time.Second, 60 * time.Second, false},
+		"Empty Services":                     {nil, 300 * time.Second, 60 * time.Second, true},
+		"Invalid Service in Services":        {[]MetricConfig{{}}, 300 * time.Second, 60 * time.Second, true},
+		"Invalid Collection Interval":        {[]MetricConfig{validMetric}, 0 * time.Second, 60 * time.Second, true},
+		"Zero Default Ingest Delay":          {[]MetricConfig{validMetric}, 300 * time.Second, 0, false},
+		"Negative Default Ingest Delay":      {[]MetricConfig{validMetric}, 300 * time.Second, -1 * time.Second, true},
+		"Custom Positive Default Ingest Delay": {[]MetricConfig{validMetric}, 300 * time.Second, 3 * time.Minute, false},
 	}
 
 	for name, testCase := range testCases {
@@ -119,7 +139,8 @@ func TestValidateConfig(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: testCase.collectionInterval,
 				},
-				MetricsList: testCase.metricsList,
+				DefaultIngestDelay: testCase.defaultIngestDelay,
+				MetricsList:        testCase.metricsList,
 			}
 
 			err := cfg.Validate()
