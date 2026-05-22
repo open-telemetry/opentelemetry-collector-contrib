@@ -1074,3 +1074,138 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 		assert.NoError(b, p.ConsumeMetrics(b.Context(), metrics))
 	}
 }
+
+func TestHistogramFieldsFilter(t *testing.T) {
+	tests := []struct {
+		name                string
+		histogramFields     []string
+		wantBucketConverted bool
+		wantSumConverted    bool
+		wantCountConverted  bool
+	}{
+		{
+			name:                "default converts all",
+			histogramFields:     nil,
+			wantBucketConverted: true,
+			wantSumConverted:    true,
+			wantCountConverted:  true,
+		},
+		{
+			name:                "bucket_counts only",
+			histogramFields:     []string{"bucket_counts"},
+			wantBucketConverted: true,
+			wantSumConverted:    false,
+			wantCountConverted:  false,
+		},
+		{
+			name:                "sum and count only",
+			histogramFields:     []string{"sum", "count"},
+			wantBucketConverted: false,
+			wantSumConverted:    true,
+			wantCountConverted:  true,
+		},
+		{
+			name:                "count only",
+			histogramFields:     []string{"count"},
+			wantBucketConverted: false,
+			wantSumConverted:    false,
+			wantCountConverted:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Include: MatchMetrics{
+					MetricTypes: []string{"histogram"},
+				},
+				InitialValue:    tracking.InitialValueKeep,
+				HistogramFields: tt.histogramFields,
+			}
+
+			sink := new(consumertest.MetricsSink)
+			settings := processortest.NewNopSettings(metadata.Type)
+			p, err := createMetricsProcessor(t.Context(), settings, cfg, sink)
+			require.NoError(t, err)
+			require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() { require.NoError(t, p.Shutdown(t.Context())) }()
+
+			baseTime := time.Now()
+			// First batch: dropped (initial_value=drop)
+			m1 := buildHistogramMetricsWithTime(10, 100.0, []uint64{1, 2, 3}, baseTime, baseTime.Add(-time.Minute))
+			require.NoError(t, p.ConsumeMetrics(t.Context(), m1))
+			// Second batch: produces delta from first
+			m2 := buildHistogramMetricsWithTime(20, 200.0, []uint64{2, 4, 6}, baseTime.Add(time.Minute), baseTime.Add(-time.Minute))
+			require.NoError(t, p.ConsumeMetrics(t.Context(), m2))
+
+			require.NotEmpty(t, sink.AllMetrics(), "expected at least 1 metric batch from delta calculation")
+			got := sink.AllMetrics()[len(sink.AllMetrics())-1]
+			h := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram()
+			dp := h.DataPoints().At(0)
+
+			if tt.wantCountConverted {
+				assert.Equal(t, uint64(10), dp.Count(), "count should be delta (20-10=10)")
+			} else {
+				assert.Equal(t, uint64(20), dp.Count(), "count should remain cumulative")
+			}
+
+			if tt.wantSumConverted {
+				assert.InDelta(t, 100.0, dp.Sum(), 0.01, "sum should be delta (200-100=100)")
+			} else {
+				assert.InDelta(t, 200.0, dp.Sum(), 0.01, "sum should remain cumulative")
+			}
+
+			if tt.wantBucketConverted {
+				assert.Equal(t, []uint64{1, 2, 3}, dp.BucketCounts().AsRaw(), "buckets should be delta")
+			} else {
+				assert.Equal(t, []uint64{2, 4, 6}, dp.BucketCounts().AsRaw(), "buckets should remain cumulative")
+			}
+		})
+	}
+}
+
+func TestHistogramFieldsValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		fields  []string
+		wantErr bool
+	}{
+		{name: "valid bucket_counts", fields: []string{"bucket_counts"}, wantErr: false},
+		{name: "valid sum", fields: []string{"sum"}, wantErr: false},
+		{name: "valid count", fields: []string{"count"}, wantErr: false},
+		{name: "valid all", fields: []string{"bucket_counts", "sum", "count"}, wantErr: false},
+		{name: "valid empty", fields: nil, wantErr: false},
+		{name: "invalid field", fields: []string{"invalid"}, wantErr: true},
+		{name: "mixed valid and invalid", fields: []string{"sum", "buckets"}, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{HistogramFields: tt.fields}
+			err := cfg.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func buildHistogramMetricsWithTime(count uint64, sum float64, bucketCounts []uint64, ts, startTs time.Time) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("test_histogram")
+	h := m.SetEmptyHistogram()
+	h.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	dp := h.DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTs))
+	dp.SetCount(count)
+	dp.SetSum(sum)
+	dp.BucketCounts().FromRaw(bucketCounts)
+	dp.ExplicitBounds().FromRaw([]float64{0.1, 1.0})
+	return md
+}
