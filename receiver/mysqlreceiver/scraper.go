@@ -867,9 +867,8 @@ func (m *mySQLScraper) getQueryPlanCacheID(digest, digestText string) string {
 	if !m.detectedVersion.supportsQuerySampleText() {
 		// Use the digestTextHash as plan key for MySQL versions < 8 amd Mariadb since digest is not available consistently in those versions.
 		return getDigestTextHash(digestText)
-	} else {
-		return digest
 	}
+	return digest
 }
 
 func (m *mySQLScraper) retrieveQueryPlan(queryDigestText, querySampleText, schemaOrDbName, digest, digestTextHash string) string {
