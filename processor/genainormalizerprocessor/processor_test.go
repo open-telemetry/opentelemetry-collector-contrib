@@ -235,6 +235,34 @@ func TestNormalizeAttributes(t *testing.T) {
 				assert.Equal(t, "LLM", v.Str())
 			},
 		},
+		{
+			name:            "coerce failure does not create target",
+			lookup:          map[string]string{"src.tokens": "gen_ai.usage.input_tokens"},
+			removeOriginals: true,
+			setup: func(attrs pcommon.Map) {
+				attrs.PutEmptyBytes("src.tokens").FromRaw([]byte{0x01, 0x02})
+			},
+			verify: func(t *testing.T, attrs pcommon.Map) {
+				_, ok := attrs.Get("gen_ai.usage.input_tokens")
+				assert.False(t, ok)
+				_, ok = attrs.Get("src.tokens")
+				assert.True(t, ok)
+			},
+		},
+		{
+			name:      "coerce failure preserves existing target under overwrite",
+			lookup:    map[string]string{"src.tokens": "gen_ai.usage.input_tokens"},
+			overwrite: true,
+			setup: func(attrs pcommon.Map) {
+				attrs.PutEmptyBytes("src.tokens").FromRaw([]byte{0x01, 0x02})
+				attrs.PutInt("gen_ai.usage.input_tokens", 99)
+			},
+			verify: func(t *testing.T, attrs pcommon.Map) {
+				v, ok := attrs.Get("gen_ai.usage.input_tokens")
+				require.True(t, ok)
+				assert.Equal(t, int64(99), v.Int())
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

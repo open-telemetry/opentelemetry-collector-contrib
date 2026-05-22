@@ -113,11 +113,11 @@ func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
 		if !ok {
 			continue
 		}
-		if _, exists := attrs.Get(r.to); exists && !sn.overwrite {
+		dest, existed := attrs.GetOrPutEmpty(r.to)
+		if existed && !sn.overwrite {
 			continue
 		}
 
-		// Step 1: apply source-specific value normalization (e.g. enum folding).
 		transformed := pcommon.NewValueEmpty()
 		if sn.transformValue != nil {
 			sn.transformValue(r.to, val, transformed)
@@ -125,14 +125,12 @@ func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
 			val.CopyTo(transformed)
 		}
 
-		// Step 2: enforce target type per OTel GenAI semconv. Drops the rename
-		// if coercion would lose information or change shape unsafely.
-		coerced := pcommon.NewValueEmpty()
-		if !otelsemconv.Coerce(r.to, transformed, coerced) {
+		if !otelsemconv.Coerce(r.to, transformed, dest) {
+			if !existed {
+				attrs.Remove(r.to)
+			}
 			continue
 		}
-
-		coerced.CopyTo(attrs.PutEmpty(r.to))
 		wrote = true
 
 		if sn.removeOriginals {
