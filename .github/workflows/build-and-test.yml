@@ -163,17 +163,16 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [setup-environment, lint-matrix]
     steps:
+      - name: Print result
+        run: echo ${{ needs.lint-matrix.result }}
       - name: Interpret result
-        env:
-          MATRIX_RESULT: ${{ needs.lint-matrix.result }}
         run: |
-          # `skipped` is success: it means ci-scope determined no modules
-          # needed linting (e.g. a docs-only PR with an empty direct_matrix).
-          if [[ "$MATRIX_RESULT" == "success" || "$MATRIX_RESULT" == "skipped" ]]; then
-            echo "Lint passed (result=$MATRIX_RESULT)."
+          if [[ success == ${{ needs.lint-matrix.result }} || skipped == ${{ needs.lint-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
           else
-            echo "Lint failed (result=$MATRIX_RESULT)."
-            exit 1
+            echo "One or more matrix jobs failed."
+            false
           fi
   govulncheck:
     strategy:
