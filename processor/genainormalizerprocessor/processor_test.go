@@ -213,7 +213,7 @@ func TestNormalizeAttributes(t *testing.T) {
 		{
 			name:           "string target routed through transformValue",
 			lookup:         map[string]string{"src.op": "gen_ai.operation.name"},
-			transformValue: openinference.Transformer{},
+			transformValue: openinference.Transform,
 			setup: func(attrs pcommon.Map) {
 				attrs.PutStr("src.op", "LLM")
 			},
@@ -233,6 +233,34 @@ func TestNormalizeAttributes(t *testing.T) {
 				v, ok := attrs.Get("gen_ai.operation.name")
 				require.True(t, ok)
 				assert.Equal(t, "LLM", v.Str())
+			},
+		},
+		{
+			name:            "coerce failure does not create target",
+			lookup:          map[string]string{"src.tokens": "gen_ai.usage.input_tokens"},
+			removeOriginals: true,
+			setup: func(attrs pcommon.Map) {
+				attrs.PutEmptyBytes("src.tokens").FromRaw([]byte{0x01, 0x02})
+			},
+			verify: func(t *testing.T, attrs pcommon.Map) {
+				_, ok := attrs.Get("gen_ai.usage.input_tokens")
+				assert.False(t, ok)
+				_, ok = attrs.Get("src.tokens")
+				assert.True(t, ok)
+			},
+		},
+		{
+			name:      "coerce failure preserves existing target under overwrite",
+			lookup:    map[string]string{"src.tokens": "gen_ai.usage.input_tokens"},
+			overwrite: true,
+			setup: func(attrs pcommon.Map) {
+				attrs.PutEmptyBytes("src.tokens").FromRaw([]byte{0x01, 0x02})
+				attrs.PutInt("gen_ai.usage.input_tokens", 99)
+			},
+			verify: func(t *testing.T, attrs pcommon.Map) {
+				v, ok := attrs.Get("gen_ai.usage.input_tokens")
+				require.True(t, ok)
+				assert.Equal(t, int64(99), v.Int())
 			},
 		},
 	}
@@ -362,7 +390,8 @@ func TestProcessTraces_DoesNotModifyResourceSchemaURL(t *testing.T) {
 	_, err := p.processTraces(t.Context(), td)
 	require.NoError(t, err)
 
-	assert.Equal(t,
+	assert.Equal(
+		t,
 		"https://opentelemetry.io/schemas/1.38.0",
 		td.ResourceSpans().At(0).SchemaUrl(),
 		"resource schema_url must not be modified",
@@ -483,4 +512,90 @@ func TestNormalize_OpenInferenceEndToEnd(t *testing.T) {
 		_, ok := out.Get(k)
 		assert.False(t, ok, "expected %s to be removed", k)
 	}
+}
+
+// TestNormalize_OpenLLMetry_FinishReasonWrapsToSlice asserts that OpenLLMetry's
+// string-valued llm.response.finish_reason is wrapped into a single-element
+// string[] at gen_ai.response.finish_reasons, which the OTel GenAI semantic
+// conventions define as string[].
+func TestNormalize_OpenLLMetry_FinishReasonWrapsToSlice(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{Name: SourceOpenLLMetry, RemoveOriginals: true}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	span.Attributes().PutStr("llm.response.finish_reason", "stop")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("gen_ai.response.finish_reasons")
+	require.True(t, ok, "gen_ai.response.finish_reasons must be set")
+	require.Equal(t, pcommon.ValueTypeSlice, v.Type(), "must be a slice")
+	require.Equal(t, 1, v.Slice().Len())
+	assert.Equal(t, "stop", v.Slice().At(0).Str())
+
+	_, ok = out.Get("llm.response.finish_reason")
+	assert.False(t, ok, "original must be removed")
+}
+
+// TestNormalize_OpenLLMetry_OperationNameFolding asserts that OpenLLMetry's
+// traceloop.span.kind value is folded onto the OTel GenAI operation-name enum
+// (workflow -> invoke_workflow) end-to-end through ConsumeTraces.
+func TestNormalize_OpenLLMetry_OperationNameFolding(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{Name: SourceOpenLLMetry, RemoveOriginals: true}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	span.Attributes().PutStr("traceloop.span.kind", "workflow")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("gen_ai.operation.name")
+	require.True(t, ok, "gen_ai.operation.name must be set")
+	require.Equal(t, pcommon.ValueTypeStr, v.Type())
+	assert.Equal(t, "invoke_workflow", v.Str())
+
+	_, ok = out.Get("traceloop.span.kind")
+	assert.False(t, ok, "original must be removed")
+}
+
+// TestNormalize_OpenLLMetry_StructuredMessagesPassThrough asserts that a
+// structured (slice-of-maps) source value renamed to gen_ai.input.messages
+// passes through verbatim. The OTel GenAI semconv defines this target as
+// "any"; the processor does not invent shape on the user's behalf.
+func TestNormalize_OpenLLMetry_StructuredMessagesPassThrough(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{Name: SourceOpenLLMetry, RemoveOriginals: true}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	s := span.Attributes().PutEmptySlice("traceloop.entity.input")
+	m := s.AppendEmpty().SetEmptyMap()
+	m.PutStr("role", "user")
+	m.PutStr("content", "hi")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	v, ok := out.Get("gen_ai.input.messages")
+	require.True(t, ok, "gen_ai.input.messages must be set")
+	require.Equal(t, pcommon.ValueTypeSlice, v.Type(), "structured input must pass through as slice")
+	require.Equal(t, 1, v.Slice().Len())
+	mv := v.Slice().At(0).Map()
+	role, _ := mv.Get("role")
+	content, _ := mv.Get("content")
+	assert.Equal(t, "user", role.Str())
+	assert.Equal(t, "hi", content.Str())
 }

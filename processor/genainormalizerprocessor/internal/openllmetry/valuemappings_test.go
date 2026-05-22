@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package openinference
+package openllmetry
 
 import (
 	"testing"
@@ -17,18 +17,21 @@ func TestTransform_OperationName(t *testing.T) {
 		value string
 		want  string
 	}{
-		{"LLM", "LLM", "chat"},
-		{"EMBEDDING", "EMBEDDING", "embeddings"},
-		{"CHAIN", "CHAIN", "invoke_agent"},
-		{"RETRIEVER", "RETRIEVER", "retrieval"},
-		{"RERANKER", "RERANKER", "retrieval"},
-		{"TOOL", "TOOL", "execute_tool"},
-		{"AGENT", "AGENT", "invoke_agent"},
-		{"PROMPT", "PROMPT", "text_completion"},
+		// traceloop.span.kind values.
+		{"workflow", "workflow", "invoke_workflow"},
+		{"task", "task", "invoke_agent"},
+		{"agent", "agent", "invoke_agent"},
+		{"tool", "tool", "execute_tool"},
+
+		// llm.request.type values.
+		{"completion", "completion", "text_completion"},
+		{"chat", "chat", "chat"},
+		{"rerank", "rerank", "retrieval"},
+		{"embedding", "embedding", "embeddings"},
 
 		// Case-insensitivity.
-		{"lowercase", "llm", "chat"},
-		{"mixed case", "Embedding", "embeddings"},
+		{"uppercase", "WORKFLOW", "invoke_workflow"},
+		{"mixed case", "Completion", "text_completion"},
 
 		// Unknown values pass through unchanged.
 		{"unknown", "something-unknown", "something-unknown"},
@@ -48,12 +51,12 @@ func TestTransform_OperationName(t *testing.T) {
 // TestTransform_PassthroughForUnrelatedKeys confirms the transformer is a
 // no-op clone for any target key outside its known set.
 func TestTransform_PassthroughForUnrelatedKeys(t *testing.T) {
-	src := pcommon.NewValueStr("LLM")
+	src := pcommon.NewValueStr("workflow")
 	dst := pcommon.NewValueEmpty()
 	Transform("gen_ai.request.model", src, dst)
 
 	require.Equal(t, pcommon.ValueTypeStr, dst.Type())
-	assert.Equal(t, "LLM", dst.Str())
+	assert.Equal(t, "workflow", dst.Str())
 }
 
 // TestTransform_PassthroughForNonStringTypes confirms scalar int/bool/double

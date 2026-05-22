@@ -29,6 +29,21 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "valid openllmetry source",
+			cfg: Config{
+				Sources: []Source{{Name: SourceOpenLLMetry, RemoveOriginals: true}},
+			},
+		},
+		{
+			name: "both sources",
+			cfg: Config{
+				Sources: []Source{
+					{Name: SourceOpenInference},
+					{Name: SourceOpenLLMetry},
+				},
+			},
+		},
+		{
 			name:    "no sources",
 			cfg:     Config{Sources: []Source{}},
 			wantErr: "at least one source",
@@ -100,6 +115,21 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "openinference_only"),
 			expected: &Config{
 				Sources: []Source{{Name: SourceOpenInference}},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "openllmetry_only"),
+			expected: &Config{
+				Sources: []Source{{Name: SourceOpenLLMetry}},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "openinference_and_openllmetry"),
+			expected: &Config{
+				Sources: []Source{
+					{Name: SourceOpenInference, RemoveOriginals: true},
+					{Name: SourceOpenLLMetry, RemoveOriginals: true},
+				},
 			},
 		},
 		{

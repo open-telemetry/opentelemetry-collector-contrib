@@ -16,10 +16,13 @@ type SourceName string
 const (
 	// SourceOpenInference enables normalization of OpenInference attributes.
 	SourceOpenInference SourceName = "openinference"
+	// SourceOpenLLMetry enables normalization of OpenLLMetry (Traceloop) attributes.
+	SourceOpenLLMetry SourceName = "openllmetry"
 )
 
 var supportedSources = map[SourceName]struct{}{
 	SourceOpenInference: {},
+	SourceOpenLLMetry:   {},
 }
 
 // Source configures normalization behavior for a single source convention.

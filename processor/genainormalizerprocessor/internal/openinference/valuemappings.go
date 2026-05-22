@@ -6,36 +6,37 @@ package openinference // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"strings"
 
+	oisemconv "github.com/Arize-ai/openinference/go/openinference-semantic-conventions"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
 )
 
-// operationNameValues maps OpenInference openinference.span.kind values to
-// OTel GenAI operation names. Keys are lowercased; TransformValue lowercases
-// the input before lookup.
+// operationNameValues maps openinference.span.kind values to OTel GenAI
+// operation names. Source-side keys come from the upstream SpanKind*
+// constants (lowercased so Transform can do a case-insensitive lookup);
+// target values come from otelsemconv's GenAIOperationName* registry.
 var operationNameValues = map[string]string{
-	"llm":       "chat",
-	"embedding": "embeddings",
-	"chain":     "invoke_agent",
-	"retriever": "retrieval",
-	"reranker":  "retrieval",
-	"tool":      "execute_tool",
-	"agent":     "invoke_agent",
-	"prompt":    "text_completion",
+	strings.ToLower(oisemconv.SpanKindLLM):       otelsemconv.GenAIOperationNameChat,
+	strings.ToLower(oisemconv.SpanKindEmbedding): otelsemconv.GenAIOperationNameEmbeddings,
+	strings.ToLower(oisemconv.SpanKindChain):     otelsemconv.GenAIOperationNameInvokeAgent,
+	strings.ToLower(oisemconv.SpanKindRetriever): otelsemconv.GenAIOperationNameRetrieval,
+	strings.ToLower(oisemconv.SpanKindReranker):  otelsemconv.GenAIOperationNameRetrieval,
+	strings.ToLower(oisemconv.SpanKindTool):      otelsemconv.GenAIOperationNameExecuteTool,
+	strings.ToLower(oisemconv.SpanKindAgent):     otelsemconv.GenAIOperationNameInvokeAgent,
+	strings.ToLower(oisemconv.SpanKindPrompt):    otelsemconv.GenAIOperationNameTextCompletion,
 }
 
-// Transformer adapts the package-level TransformValue function to the
-// processor's valueTransformer interface.
-type Transformer struct{}
-
-// TransformValue applies OpenInference-specific value normalization when the
-// target attribute is gen_ai.operation.name. Returns the original value if no
-// mapping applies.
-func (Transformer) TransformValue(targetKey, value string) string {
-	if targetKey != otelsemconv.GenAIOperationName {
-		return value
+// Transform applies OpenInference-specific value-level normalization. It
+// folds openinference.span.kind strings onto the gen_ai.operation.name enum
+// (case-insensitive) and copies all other values verbatim. Type-level
+// enforcement is the processor's responsibility via otelsemconv.Coerce.
+func Transform(targetKey string, src, dst pcommon.Value) {
+	if targetKey == otelsemconv.GenAIOperationName && src.Type() == pcommon.ValueTypeStr {
+		if mapped, ok := operationNameValues[strings.ToLower(src.Str())]; ok {
+			dst.SetStr(mapped)
+			return
+		}
 	}
-	if mapped, ok := operationNameValues[strings.ToLower(value)]; ok {
-		return mapped
-	}
-	return value
+	src.CopyTo(dst)
 }
