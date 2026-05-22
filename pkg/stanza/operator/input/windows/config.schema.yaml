@@ -7,6 +7,9 @@ $defs:
         type: string
       event_data_format:
         $ref: event_data_format
+      event_driven_scraping:
+        description: EventDrivenScraping controls whether the windows input wakes on Windows API signals instead of polling on a fixed interval. When enabled, the input behaves the same as when the stanza.windows.eventDrivenScraping feature gate is enabled. Event-driven scraping is enabled when either this option or the feature gate is set.
+        type: boolean
       exclude_providers:
         type: array
         items:
@@ -34,7 +37,7 @@ $defs:
       suppress_rendering_info:
         type: boolean
       wait_timeout:
-        description: WaitTimeout is the maximum duration to wait for new events before performing a safety-net poll in event-driven mode (see stanza.windows.eventDrivenScraping feature gate). Under normal conditions the subscription signal fires immediately, so this value is rarely reached. Defaults to 5s. Ignored when the feature gate is not enabled.
+        description: WaitTimeout is the maximum duration to wait for new events before performing a safety-net poll in event-driven mode (see EventDrivenScraping config option and the stanza.windows.eventDrivenScraping feature gate). Under normal conditions the subscription signal fires immediately, so this value is rarely reached. Defaults to 5s. Ignored when event-driven scraping is not enabled.
         type: string
         format: duration
     allOf:
