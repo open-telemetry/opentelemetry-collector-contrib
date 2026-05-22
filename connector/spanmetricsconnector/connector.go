@@ -710,11 +710,11 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, dimensions
 		}
 	}
 
-	matchDimensions(dimensions, span, resourceOrEventAttrs, func(_ string, v pcommon.Value) {
-		concatDimensionValue(p.keyBuf, v.AsString(), true)
+	matchDimensions(dimensions, span, resourceOrEventAttrs, func(n string, v pcommon.Value) {
+		concatDimensionValue(p.keyBuf, n+":"+v.AsString(), true)
 	})
-	matchDimensions(optionalDims, span, resourceOrEventAttrs, func(_ string, v pcommon.Value) {
-		concatDimensionValue(p.keyBuf, v.AsString(), true)
+	matchDimensions(optionalDims, span, resourceOrEventAttrs, func(n string, v pcommon.Value) {
+		concatDimensionValue(p.keyBuf, n+":"+v.AsString(), true)
 	})
 
 	if p.config.EnableMetricsSamplingMethod {

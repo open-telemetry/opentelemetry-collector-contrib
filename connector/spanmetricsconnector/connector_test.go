@@ -727,7 +727,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: dimensionList{nameDimensions: []pdatautil.Dimension{
 				{Name: "foo", Value: &defaultFoo},
 			}},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000bar",
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000foo:bar",
 		},
 		{
 			name: "neither span nor resource contains key, dim provides no default",
@@ -744,7 +744,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			spanAttrMap: map[string]any{
 				"foo": 99,
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000foo:99",
 		},
 		{
 			name: "resource attribute contains dimension",
@@ -754,7 +754,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			resourceAttrMap: map[string]any{
 				"foo": 99,
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000foo:99",
 		},
 		{
 			name: "both span and resource attribute contains dimension, should prefer span attribute",
@@ -767,7 +767,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			resourceAttrMap: map[string]any{
 				"foo": 99,
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000100",
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000foo:100",
 		},
 		{
 			name: "name and glob dimensions match attributes at both span and resource",
@@ -783,7 +783,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			resourceAttrMap: map[string]any{
 				"db.name": "users",
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000GET\u0000postgres\u0000users",
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000http.method:GET\u0000db.system:postgres\u0000db.name:users",
 		},
 		{
 			name:         "span attribute wins over resource attribute on the same glob-matched key",
@@ -794,7 +794,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			resourceAttrMap: map[string]any{
 				"env": "dev",
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000prod",
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000env:prod",
 		},
 		{
 			name:         "no matching attribute: glob contributes nothing",
@@ -815,7 +815,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			spanAttrMap: map[string]any{
 				"db.name": "users",
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000users",
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000db.name:users",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
