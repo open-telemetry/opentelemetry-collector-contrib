@@ -39,7 +39,10 @@ func createMetricsScraper(
 		return nil, errors.New("process scraper only available on Linux, Windows, macOS, FreeBSD, or AIX")
 	}
 
-	s, err := newProcessScraper(settings, cfg.(*Config))
+	pCfg := cfg.(*Config)
+	validatePlatformEnabledMetrics(pCfg, settings.Logger)
+
+	s, err := newProcessScraper(settings, pCfg)
 	if err != nil {
 		return nil, err
 	}
