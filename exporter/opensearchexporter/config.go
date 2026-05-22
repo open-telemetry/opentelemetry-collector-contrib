@@ -91,8 +91,9 @@ type MappingsSettings struct {
 	//
 	//   bodymap: supports only logs and uses the "body" of a log record as the exact content
 	//   of the OpenSearch document, without any transformation.
-	//   This mapping mode is intended for use cases where the client wishes to have complete control over the
-	//   OpenSearch document structure.
+	//
+	//   otel-v1: exports logs and traces using the Data Prepper OTel v1 schema.
+	//   Compatible with OpenSearch Observability dashboards that use Data Prepper indices.
 	Mode string `mapstructure:"mode"`
 
 	// Additional field mappings.
@@ -121,6 +122,7 @@ const (
 	MappingECS
 	MappingFlattenAttributes
 	MappingBodyMap
+	MappingOTelV1
 )
 
 func (m MappingMode) String() string {
@@ -133,6 +135,8 @@ func (m MappingMode) String() string {
 		return "flatten_attributes"
 	case MappingBodyMap:
 		return "bodymap"
+	case MappingOTelV1:
+		return "otel-v1"
 	default:
 		return "ss4o"
 	}
@@ -145,6 +149,7 @@ var mappingModes = func() map[string]MappingMode {
 		MappingSS4O,
 		MappingFlattenAttributes,
 		MappingBodyMap,
+		MappingOTelV1,
 	} {
 		table[strings.ToLower(m.String())] = m
 	}
@@ -159,10 +164,10 @@ func (cfg *Config) Validate() error {
 		multiErr = append(multiErr, errConfigNoEndpoint)
 	}
 
-	if cfg.Dataset == "" {
+	if cfg.Dataset == "" && cfg.Mode != MappingOTelV1.String() {
 		multiErr = append(multiErr, errDatasetNoValue)
 	}
-	if cfg.Namespace == "" {
+	if cfg.Namespace == "" && cfg.Mode != MappingOTelV1.String() {
 		multiErr = append(multiErr, errNamespaceNoValue)
 	}
 

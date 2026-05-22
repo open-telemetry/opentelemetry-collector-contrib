@@ -287,3 +287,170 @@ func validateBulkAction(t *testing.T, expectedIndex string, strMap map[string]an
 	require.True(t, exists)
 	require.Equal(t, expectedIndex, val)
 }
+
+func TestOpenSearchTraceExporterOTelV1(t *testing.T) {
+	var receivedDocs []map[string]any
+	var bulkIndex string
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		decoder := json.NewDecoder(r.Body)
+		for decoder.More() {
+			var jsonData any
+			err := decoder.Decode(&jsonData)
+			require.NoError(t, err)
+			strMap := jsonData.(map[string]any)
+			if actionData, isBulkAction := strMap["create"]; isBulkAction {
+				bulkIndex = actionData.(map[string]any)["_index"].(string)
+			} else {
+				receivedDocs = append(receivedDocs, strMap)
+			}
+		}
+		w.WriteHeader(http.StatusOK)
+		response, _ := os.ReadFile("testdata/opensearch-response-no-error.json")
+		_, _ = w.Write(response)
+	}))
+	defer ts.Close()
+
+	cfg := withDefaultConfig(func(config *Config) {
+		config.Endpoint = ts.URL
+		config.TimeoutSettings.Timeout = 0
+		config.MappingsSettings.Mode = "otel-v1"
+	})
+
+	f := NewFactory()
+	exporter, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	err = exporter.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	traces, err := golden.ReadTraces("testdata/traces-sample-a.yaml")
+	require.NoError(t, err)
+	err = exporter.ConsumeTraces(t.Context(), traces)
+	require.NoError(t, err)
+
+	// Verify index name
+	assert.Equal(t, "otel-v1-apm-span", bulkIndex)
+
+	// Verify document structure
+	require.NotEmpty(t, receivedDocs)
+	doc := receivedDocs[len(receivedDocs)-1] // last doc has richer data
+	assert.Contains(t, doc, "traceId")
+	assert.Contains(t, doc, "spanId")
+	assert.Contains(t, doc, "durationInNanos")
+	assert.Contains(t, doc, "startTime")
+	assert.Contains(t, doc, "endTime")
+	assert.Contains(t, doc, "resource")
+	assert.Contains(t, doc, "instrumentationScope")
+
+	// Verify status.code is numeric
+	if status, ok := doc["status"].(map[string]any); ok {
+		assert.IsType(t, float64(0), status["code"]) // JSON numbers decode as float64
+	}
+
+	err = exporter.Shutdown(t.Context())
+	require.NoError(t, err)
+}
+
+func TestOpenSearchLogExporterOTelV1(t *testing.T) {
+	var receivedDocs []map[string]any
+	var bulkIndex string
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		decoder := json.NewDecoder(r.Body)
+		for decoder.More() {
+			var jsonData any
+			err := decoder.Decode(&jsonData)
+			require.NoError(t, err)
+			strMap := jsonData.(map[string]any)
+			if actionData, isBulkAction := strMap["create"]; isBulkAction {
+				bulkIndex = actionData.(map[string]any)["_index"].(string)
+			} else {
+				receivedDocs = append(receivedDocs, strMap)
+			}
+		}
+		w.WriteHeader(http.StatusOK)
+		response, _ := os.ReadFile("testdata/opensearch-response-no-error.json")
+		_, _ = w.Write(response)
+	}))
+	defer ts.Close()
+
+	cfg := withDefaultConfig(func(config *Config) {
+		config.Endpoint = ts.URL
+		config.TimeoutSettings.Timeout = 0
+		config.MappingsSettings.Mode = "otel-v1"
+	})
+
+	f := NewFactory()
+	exporter, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	err = exporter.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	logs, err := golden.ReadLogs("testdata/logs-sample-a.yaml")
+	require.NoError(t, err)
+	err = exporter.ConsumeLogs(t.Context(), logs)
+	require.NoError(t, err)
+
+	// Verify index name
+	assert.Equal(t, "otel-v1-logs", bulkIndex)
+
+	// Verify document structure
+	require.NotEmpty(t, receivedDocs)
+	doc := receivedDocs[0]
+	assert.Contains(t, doc, "@timestamp")
+	assert.Contains(t, doc, "time")
+	assert.Contains(t, doc, "observedTime")
+	assert.Contains(t, doc, "severity")
+	assert.Contains(t, doc, "body")
+	assert.Contains(t, doc, "resource")
+	assert.Contains(t, doc, "instrumentationScope")
+
+	// Verify severity.number is numeric
+	if sev, ok := doc["severity"].(map[string]any); ok {
+		assert.IsType(t, float64(0), sev["number"])
+	}
+
+	// Verify flags is numeric
+	assert.IsType(t, float64(0), doc["flags"])
+
+	err = exporter.Shutdown(t.Context())
+	require.NoError(t, err)
+}
+
+func TestOpenSearchOTelV1_CustomIndex(t *testing.T) {
+	var bulkIndex string
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		decoder := json.NewDecoder(r.Body)
+		for decoder.More() {
+			var jsonData any
+			_ = decoder.Decode(&jsonData)
+			strMap := jsonData.(map[string]any)
+			if actionData, isBulkAction := strMap["create"]; isBulkAction {
+				bulkIndex = actionData.(map[string]any)["_index"].(string)
+			}
+		}
+		w.WriteHeader(http.StatusOK)
+		response, _ := os.ReadFile("testdata/opensearch-response-no-error.json")
+		_, _ = w.Write(response)
+	}))
+	defer ts.Close()
+
+	cfg := withDefaultConfig(func(config *Config) {
+		config.Endpoint = ts.URL
+		config.TimeoutSettings.Timeout = 0
+		config.MappingsSettings.Mode = "otel-v1"
+		config.TracesIndex = "my-custom-traces"
+	})
+
+	f := NewFactory()
+	exporter, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	require.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
+
+	traces, _ := golden.ReadTraces("testdata/traces-sample-a.yaml")
+	require.NoError(t, exporter.ConsumeTraces(t.Context(), traces))
+
+	assert.Equal(t, "my-custom-traces", bulkIndex)
+	require.NoError(t, exporter.Shutdown(t.Context()))
+}

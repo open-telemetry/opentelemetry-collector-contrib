@@ -109,6 +109,7 @@ The OpenSearch exporter supports several document schemas and preprocessing beha
     - `ecs`: Maps fields defined in the OpenTelemetry Semantic Conventions to the [Elastic Common Schema](https://www.elastic.co/guide/en/ecs/current/index.html)
     - `flatten_attributes`: Uses the ECS mapping but flattens all resource and log attributes in the record to the top-level.
     - `bodymap`: uses the "body" of a log record as the exact content of the OpenSearch document, without any transformation. This mapping mode is intended for use cases where the client wishes to have complete control over the OpenSearch document structure.
+    - `otel-v1`: exports logs and traces using the Data Prepper OTel v1 schema, compatible with OpenSearch Observability dashboards.
   - `timestamp_field`: (optional) Field to store the timestamp in. If not set, uses the default `@timestamp`.
   - `unix_timestamp`: (optional) Whether to store the timestamp in epoch milliseconds.
   - `dedup`: (optional) removes fields from the document, that have duplicate keys. The filtering only keeps the last value for a key.
@@ -159,6 +160,38 @@ The bodymap mapping mode only supports log records where the body is of type Map
 | --------- | ------------------- |
 | Logs      | :white_check_mark:  |
 | Traces    | :no_entry_sign:     |
+
+#### OTel v1 mapping mode
+
+In `otel-v1` mapping mode, the OpenSearch exporter produces documents compatible with [Data Prepper's](https://github.com/opensearch-project/data-prepper) OTel v1 index schemas. This enables interoperability with OpenSearch Observability dashboards that consume Data Prepper indices.
+
+Default index names:
+- Traces: `otel-v1-apm-span`
+- Logs: `otel-v1-logs`
+
+These defaults can be overridden using `traces_index` and `logs_index` configuration options.
+
+| Signal    | `otel-v1`           |
+| --------- | ------------------- |
+| Logs      | :white_check_mark:  |
+| Traces    | :white_check_mark:  |
+
+Schema references:
+- [otel-v1-apm-span index template](https://github.com/opensearch-project/data-prepper/blob/main/data-prepper-plugins/opensearch/src/main/resources/index-template/otel-v1-apm-span-index-standard-template.json)
+- [logs-otel-v1 index template](https://github.com/opensearch-project/data-prepper/blob/main/data-prepper-plugins/opensearch/src/main/resources/index-template/logs-otel-v1-index-standard-template.json)
+
+##### Example Configuration
+
+```yaml
+exporters:
+  opensearch:
+    http:
+      endpoint: http://opensearch.example.com:9200
+    mapping:
+      mode: "otel-v1"
+    sending_queue:
+      batch:
+```
 
 ### HTTP Connection Options
 

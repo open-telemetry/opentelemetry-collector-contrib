@@ -70,6 +70,7 @@ type encodeModel struct {
 	dedup             bool
 	dedot             bool
 	sso               bool
+	otelV1            bool
 	flattenAttributes bool
 	timestampField    string
 	unixTime          bool
@@ -83,6 +84,9 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource,
 	schemaURL string,
 	record plog.LogRecord,
 ) ([]byte, error) {
+	if m.otelV1 {
+		return m.encodeLogOTelV1(resource, scope, schemaURL, record)
+	}
 	if m.sso {
 		return m.encodeLogSSO(resource, scope, schemaURL, record)
 	}
@@ -188,6 +192,10 @@ func (m *encodeModel) encodeTrace(
 	schemaURL string,
 	span ptrace.Span,
 ) ([]byte, error) {
+	if m.otelV1 {
+		return m.encodeTraceOTelV1(resource, scope, schemaURL, span)
+	}
+
 	sso := ssoSpan{}
 	sso.Attributes = span.Attributes().AsRaw()
 	sso.DroppedAttributesCount = span.DroppedAttributesCount()
@@ -256,6 +264,137 @@ func (m *encodeModel) encodeTrace(
 		}
 	}
 	return json.Marshal(sso)
+}
+
+// encodeLogOTelV1 encodes a plog.LogRecord following the Data Prepper OTel v1 logs schema.
+func (m *encodeModel) encodeLogOTelV1(
+	resource pcommon.Resource,
+	scope pcommon.InstrumentationScope,
+	schemaURL string,
+	record plog.LogRecord,
+) ([]byte, error) {
+	ts := record.Timestamp().AsTime()
+	doc := otelV1LogRecord{
+		Timestamp:              ts,
+		Time:                   ts,
+		ObservedTime:           record.ObservedTimestamp().AsTime(),
+		Body:                   record.Body().AsString(),
+		TraceID:                record.TraceID().String(),
+		SpanID:                 record.SpanID().String(),
+		Flags:                  int64(record.Flags()),
+		DroppedAttributesCount: record.DroppedAttributesCount(),
+		Attributes:             record.Attributes().AsRaw(),
+		Severity: otelV1Severity{
+			Number: int32(record.SeverityNumber()),
+			Text:   record.SeverityText(),
+		},
+		Resource: otelV1Resource{
+			Attributes:             resource.Attributes().AsRaw(),
+			DroppedAttributesCount: resource.DroppedAttributesCount(),
+			SchemaURL:              schemaURL,
+		},
+		InstrumentationScope: otelV1Scope{
+			Name:                   scope.Name(),
+			Version:                scope.Version(),
+			SchemaURL:              schemaURL,
+			Attributes:             scope.Attributes().AsRaw(),
+			DroppedAttributesCount: scope.DroppedAttributesCount(),
+		},
+	}
+	return json.Marshal(doc)
+}
+
+// encodeTraceOTelV1 encodes a ptrace.Span following the Data Prepper OTel v1 traces schema.
+func (m *encodeModel) encodeTraceOTelV1(
+	resource pcommon.Resource,
+	scope pcommon.InstrumentationScope,
+	schemaURL string,
+	span ptrace.Span,
+) ([]byte, error) {
+	startTime := span.StartTimestamp().AsTime()
+	endTime := span.EndTimestamp().AsTime()
+	durationInNanos := endTime.UnixNano() - startTime.UnixNano()
+	statusCode := int32(span.Status().Code())
+
+	doc := otelV1Span{
+		TraceID:                span.TraceID().String(),
+		SpanID:                 span.SpanID().String(),
+		ParentSpanID:           span.ParentSpanID().String(),
+		Name:                   span.Name(),
+		Kind:                   span.Kind().String(),
+		TraceState:             span.TraceState().AsRaw(),
+		StartTime:              startTime,
+		EndTime:                endTime,
+		Timestamp:              startTime,
+		Time:                   startTime,
+		DurationInNanos:        durationInNanos,
+		DroppedAttributesCount: span.DroppedAttributesCount(),
+		DroppedEventsCount:     span.DroppedEventsCount(),
+		DroppedLinksCount:      span.DroppedLinksCount(),
+		Attributes:             span.Attributes().AsRaw(),
+		Status: otelV1SpanStatus{
+			Code:    statusCode,
+			Message: span.Status().Message(),
+		},
+		Resource: otelV1Resource{
+			Attributes:             resource.Attributes().AsRaw(),
+			DroppedAttributesCount: resource.DroppedAttributesCount(),
+			SchemaURL:              schemaURL,
+		},
+		InstrumentationScope: otelV1Scope{
+			Name:                   scope.Name(),
+			Version:                scope.Version(),
+			SchemaURL:              schemaURL,
+			Attributes:             scope.Attributes().AsRaw(),
+			DroppedAttributesCount: scope.DroppedAttributesCount(),
+		},
+	}
+
+	// Extract serviceName from resource attributes
+	if sn, ok := resource.Attributes().Get("service.name"); ok {
+		doc.ServiceName = sn.AsString()
+	}
+
+	// Root span: populate traceGroup fields
+	if span.ParentSpanID().IsEmpty() {
+		doc.TraceGroup = span.Name()
+		doc.TraceGroupFields = &otelV1TraceGroup{
+			EndTime:         endTime,
+			DurationInNanos: durationInNanos,
+			StatusCode:      statusCode,
+		}
+	}
+
+	// Events
+	if span.Events().Len() > 0 {
+		doc.Events = make([]otelV1SpanEvent, span.Events().Len())
+		for i := 0; i < span.Events().Len(); i++ {
+			e := span.Events().At(i)
+			doc.Events[i] = otelV1SpanEvent{
+				Name:                   e.Name(),
+				Attributes:             e.Attributes().AsRaw(),
+				DroppedAttributesCount: e.DroppedAttributesCount(),
+				Time:                   e.Timestamp().AsTime(),
+			}
+		}
+	}
+
+	// Links
+	if span.Links().Len() > 0 {
+		doc.Links = make([]otelV1SpanLink, span.Links().Len())
+		for i := 0; i < span.Links().Len(); i++ {
+			l := span.Links().At(i)
+			doc.Links[i] = otelV1SpanLink{
+				TraceID:                l.TraceID().String(),
+				SpanID:                 l.SpanID().String(),
+				TraceState:             l.TraceState().AsRaw(),
+				Attributes:             l.Attributes().AsRaw(),
+				DroppedAttributesCount: l.DroppedAttributesCount(),
+			}
+		}
+	}
+
+	return json.Marshal(doc)
 }
 
 func epochMilliTimestamp(record plog.LogRecord) int64 {
