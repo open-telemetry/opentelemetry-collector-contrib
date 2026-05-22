@@ -750,17 +750,17 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 
 		var queryPlan string
 
-		queryPlanCacheId := m.getQueryPlanCacheId(q.digest, q.digestText)
+		queryPlanCacheID := m.getQueryPlanCacheID(q.digest, q.digestText)
 
 		// querySampleText is "" when the fallback template was used (MySQL <8 / MariaDB).
 		// Skip EXPLAIN in that case — there is no sample statement to explain.
 		if q.digest != "" && q.querySampleText != "" {
-			queryPlan = m.retrieveQueryPlan(q.digestText, q.querySampleText, q.schemaName, q.digest, queryPlanCacheId)
+			queryPlan = m.retrieveQueryPlan(q.digestText, q.querySampleText, q.schemaName, q.digest, queryPlanCacheID)
 		}
 
 		queryPlanHash := ""
 		if queryPlan != "" {
-			queryPlanHash = queryPlanCacheId
+			queryPlanHash = queryPlanCacheID
 		}
 
 		m.lb.RecordDbServerTopQueryEvent(
@@ -820,15 +820,15 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 
 		var queryPlan string
 
-		queryPlanCacheId := m.getQueryPlanCacheId(sample.digest, sample.digestText)
+		queryPlanCacheID := m.getQueryPlanCacheID(sample.digest, sample.digestText)
 
 		if sample.digest != "" {
-			queryPlan = m.retrieveQueryPlan(sample.digestText, sample.sqlText, sample.processlistDB, sample.digest, queryPlanCacheId)
+			queryPlan = m.retrieveQueryPlan(sample.digestText, sample.sqlText, sample.processlistDB, sample.digest, queryPlanCacheID)
 		}
 
 		queryPlanHash := ""
 		if queryPlan != "" {
-			queryPlanHash = queryPlanCacheId
+			queryPlanHash = queryPlanCacheID
 		}
 
 		m.lb.RecordDbServerQuerySampleEvent(
@@ -863,7 +863,7 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 	}
 }
 
-func (m *mySQLScraper) getQueryPlanCacheId(digest, digestText string) string {
+func (m *mySQLScraper) getQueryPlanCacheID(digest, digestText string) string {
 	if !m.detectedVersion.supportsQuerySampleText() {
 		// Use the digestTextHash as plan key for MySQL versions < 8 amd Mariadb since digest is not available consistently in those versions.
 		return getDigestTextHash(digestText)
