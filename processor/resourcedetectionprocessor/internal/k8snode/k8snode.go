@@ -66,5 +66,15 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		d.rb.SetK8sNodeName(nodeName)
 	}
 
+	if d.ra.K8sClusterUID.Enabled {
+		// Warn and skip for backward compatibility: existing deployments may lack kube-system RBAC.
+		clusterUID, err := d.provider.ClusterUID(ctx)
+		if err != nil {
+			d.logger.Warn("failed to get k8s cluster UID, skipping", zap.Error(err))
+		} else {
+			d.rb.SetK8sClusterUID(clusterUID)
+		}
+	}
+
 	return d.rb.Emit(), conventions.SchemaURL, nil
 }

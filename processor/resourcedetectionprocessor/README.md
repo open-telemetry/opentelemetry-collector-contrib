@@ -611,7 +611,13 @@ rules:
   - apiGroups: [""]
     resources: ["nodes"]
     verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    resourceNames: ["kube-system"]
+    verbs: ["get"]
 ```
+
+> **Note:** The `namespaces` permission is required for `k8s.cluster.uid` detection. If it is missing, a warning is logged and the attribute is omitted — other attributes are unaffected.
 
 | Name | Type | Required | Default         | Docs                                                                                                                                                                                                                                   |
 | ---- | ---- |----------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
