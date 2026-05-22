@@ -1,0 +1,17 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, e.g. receiver/prometheus
+component: exporter/hologres
+
+# A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Complete Hologres exporter documentation with schema reference, SQL query examples, performance tuning guide, version compatibility matrix, and troubleshooting section"
+
+# Mandatory: One or more tracking Github issues related to the change. You can use the PR number here if no issue exists.
+# e.g. issues: [#1]
+issues: [#XXXXX]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the changelog.
+# Use pipe (|) for multiline entries.
+subtext:

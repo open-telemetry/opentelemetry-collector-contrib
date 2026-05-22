@@ -82,3 +82,509 @@ This exporter leverages several Hologres-specific features:
 
 - Hologres instance (V2.1+ recommended for WITH syntax, V3.1+ for logical partitions, V4.0+ for full-text index)
 - PostgreSQL-compatible connection endpoint
+
+## Schema Reference
+
+All tables are created with column-oriented storage, `service_name`-based distribution (traces use `trace_id`), `timestamp` clustering, and JSONB columnar optimization on attribute columns. When `ttl` is configured, a table-level `time_to_live_in_seconds` option is appended to the `WITH` clause.
+
+### Traces Table
+
+```sql
+CREATE TABLE IF NOT EXISTS otel_traces (
+    "timestamp"           TIMESTAMPTZ NOT NULL,
+    trace_id              TEXT NOT NULL,
+    span_id               TEXT NOT NULL,
+    parent_span_id        TEXT DEFAULT '',
+    trace_state           TEXT DEFAULT '',
+    span_name             TEXT NOT NULL DEFAULT '',
+    span_kind             TEXT DEFAULT '',
+    service_name          TEXT NOT NULL DEFAULT '',
+    resource_attributes   JSONB,
+    scope_name            TEXT DEFAULT '',
+    scope_version         TEXT DEFAULT '',
+    span_attributes       JSONB,
+    duration              BIGINT DEFAULT 0,
+    status_code           TEXT DEFAULT '',
+    status_message        TEXT DEFAULT '',
+    events                JSONB,
+    links                 JSONB
+)
+WITH (
+    orientation = 'column',
+    distribution_key = 'trace_id',
+    clustering_key = '"timestamp":asc',
+    bitmap_columns = 'service_name,span_kind,status_code',
+    dictionary_encoding_columns = 'service_name:auto,span_name:auto'
+    -- , time_to_live_in_seconds = '<ttl_seconds>'  -- appended when ttl > 0
+);
+
+-- JSONB columnar optimization (applied after table creation)
+ALTER TABLE otel_traces ALTER COLUMN resource_attributes SET (enable_columnar_type = ON);
+ALTER TABLE otel_traces ALTER COLUMN span_attributes     SET (enable_columnar_type = ON);
+```
+
+### Logs Table
+
+```sql
+CREATE TABLE IF NOT EXISTS otel_logs (
+    "timestamp"           TIMESTAMPTZ NOT NULL,
+    trace_id              TEXT DEFAULT '',
+    span_id               TEXT DEFAULT '',
+    trace_flags           INTEGER DEFAULT 0,
+    severity_text         TEXT DEFAULT '',
+    severity_number       INTEGER DEFAULT 0,
+    service_name          TEXT NOT NULL DEFAULT '',
+    body                  TEXT DEFAULT '',
+    resource_attributes   JSONB,
+    scope_name            TEXT DEFAULT '',
+    scope_version         TEXT DEFAULT '',
+    scope_attributes      JSONB,
+    log_attributes        JSONB
+)
+WITH (
+    orientation = 'column',
+    distribution_key = 'service_name',
+    clustering_key = '"timestamp":asc',
+    bitmap_columns = 'service_name,severity_text',
+    dictionary_encoding_columns = 'service_name:auto,severity_text:auto'
+    -- , time_to_live_in_seconds = '<ttl_seconds>'  -- appended when ttl > 0
+);
+
+-- Full-text index for log body search (Hologres V4.0+)
+CREATE INDEX IF NOT EXISTS otel_logs_body_idx
+    ON otel_logs USING FULLTEXT (body)
+    WITH (tokenizer = 'standard');
+
+-- JSONB columnar optimization
+ALTER TABLE otel_logs ALTER COLUMN resource_attributes SET (enable_columnar_type = ON);
+ALTER TABLE otel_logs ALTER COLUMN scope_attributes    SET (enable_columnar_type = ON);
+ALTER TABLE otel_logs ALTER COLUMN log_attributes      SET (enable_columnar_type = ON);
+```
+
+### Metrics Tables
+
+Metrics are stored across five tables, one per metric type, all named with the configured `metrics_table_name` as prefix.
+
+#### Gauge Table
+
+```sql
+CREATE TABLE IF NOT EXISTS otel_metrics_gauge (
+    "timestamp"           TIMESTAMPTZ NOT NULL,
+    metric_name           TEXT NOT NULL,
+    service_name          TEXT NOT NULL DEFAULT '',
+    value                 DOUBLE PRECISION,
+    flags                 INTEGER DEFAULT 0,
+    resource_attributes   JSONB,
+    scope_name            TEXT DEFAULT '',
+    scope_version         TEXT DEFAULT '',
+    scope_attributes      JSONB,
+    attributes            JSONB
+)
+WITH (
+    orientation = 'column',
+    distribution_key = 'service_name',
+    clustering_key = '"timestamp":asc',
+    bitmap_columns = 'service_name,metric_name',
+    dictionary_encoding_columns = 'service_name:auto,metric_name:auto'
+);
+```
+
+#### Sum Table
+
+```sql
+CREATE TABLE IF NOT EXISTS otel_metrics_sum (
+    "timestamp"                TIMESTAMPTZ NOT NULL,
+    start_timestamp            TIMESTAMPTZ,
+    metric_name                TEXT NOT NULL,
+    service_name               TEXT NOT NULL DEFAULT '',
+    value                      DOUBLE PRECISION,
+    flags                      INTEGER DEFAULT 0,
+    is_monotonic               BOOLEAN DEFAULT false,
+    aggregation_temporality    TEXT DEFAULT '',
+    resource_attributes        JSONB,
+    scope_name                 TEXT DEFAULT '',
+    scope_version              TEXT DEFAULT '',
+    scope_attributes           JSONB,
+    attributes                 JSONB
+)
+WITH (
+    orientation = 'column',
+    distribution_key = 'service_name',
+    clustering_key = '"timestamp":asc',
+    bitmap_columns = 'service_name,metric_name',
+    dictionary_encoding_columns = 'service_name:auto,metric_name:auto'
+);
+```
+
+#### Histogram Table
+
+```sql
+CREATE TABLE IF NOT EXISTS otel_metrics_histogram (
+    "timestamp"                TIMESTAMPTZ NOT NULL,
+    start_timestamp            TIMESTAMPTZ,
+    metric_name                TEXT NOT NULL,
+    service_name               TEXT NOT NULL DEFAULT '',
+    count                      BIGINT DEFAULT 0,
+    sum                        DOUBLE PRECISION,
+    min                        DOUBLE PRECISION,
+    max                        DOUBLE PRECISION,
+    flags                      INTEGER DEFAULT 0,
+    bucket_counts              TEXT DEFAULT '',
+    explicit_bounds            TEXT DEFAULT '',
+    aggregation_temporality    TEXT DEFAULT '',
+    resource_attributes        JSONB,
+    scope_name                 TEXT DEFAULT '',
+    scope_version              TEXT DEFAULT '',
+    scope_attributes           JSONB,
+    attributes                 JSONB
+)
+WITH (
+    orientation = 'column',
+    distribution_key = 'service_name',
+    clustering_key = '"timestamp":asc',
+    bitmap_columns = 'service_name,metric_name',
+    dictionary_encoding_columns = 'service_name:auto,metric_name:auto'
+);
+```
+
+#### Summary Table
+
+```sql
+CREATE TABLE IF NOT EXISTS otel_metrics_summary (
+    "timestamp"           TIMESTAMPTZ NOT NULL,
+    start_timestamp       TIMESTAMPTZ,
+    metric_name           TEXT NOT NULL,
+    service_name          TEXT NOT NULL DEFAULT '',
+    count                 BIGINT DEFAULT 0,
+    sum                   DOUBLE PRECISION,
+    flags                 INTEGER DEFAULT 0,
+    quantile_values       TEXT DEFAULT '',
+    quantile_counts       TEXT DEFAULT '',
+    resource_attributes   JSONB,
+    scope_name            TEXT DEFAULT '',
+    scope_version         TEXT DEFAULT '',
+    scope_attributes      JSONB,
+    attributes            JSONB
+)
+WITH (
+    orientation = 'column',
+    distribution_key = 'service_name',
+    clustering_key = '"timestamp":asc',
+    bitmap_columns = 'service_name,metric_name',
+    dictionary_encoding_columns = 'service_name:auto,metric_name:auto'
+);
+```
+
+#### Exponential Histogram Table
+
+```sql
+CREATE TABLE IF NOT EXISTS otel_metrics_exp_histogram (
+    "timestamp"                TIMESTAMPTZ NOT NULL,
+    start_timestamp            TIMESTAMPTZ,
+    metric_name                TEXT NOT NULL,
+    service_name               TEXT NOT NULL DEFAULT '',
+    count                      BIGINT DEFAULT 0,
+    sum                        DOUBLE PRECISION,
+    min                        DOUBLE PRECISION,
+    max                        DOUBLE PRECISION,
+    scale                      INTEGER DEFAULT 0,
+    zero_count                 BIGINT DEFAULT 0,
+    flags                      INTEGER DEFAULT 0,
+    positive_offset            INTEGER DEFAULT 0,
+    positive_bucket_counts     TEXT DEFAULT '',
+    negative_offset            INTEGER DEFAULT 0,
+    negative_bucket_counts     TEXT DEFAULT '',
+    aggregation_temporality    TEXT DEFAULT '',
+    resource_attributes        JSONB,
+    scope_name                 TEXT DEFAULT '',
+    scope_version              TEXT DEFAULT '',
+    scope_attributes           JSONB,
+    attributes                 JSONB
+)
+WITH (
+    orientation = 'column',
+    distribution_key = 'service_name',
+    clustering_key = '"timestamp":asc',
+    bitmap_columns = 'service_name,metric_name',
+    dictionary_encoding_columns = 'service_name:auto,metric_name:auto'
+);
+```
+
+All metrics tables additionally execute `ALTER TABLE ... ALTER COLUMN <col> SET (enable_columnar_type = ON)` for `resource_attributes`, `scope_attributes`, and `attributes`.
+
+## Query Examples
+
+### Traces Queries
+
+**Find slow spans for a service:**
+
+```sql
+SELECT
+  timestamp,
+  trace_id,
+  span_id,
+  span_name,
+  duration / 1e6 AS duration_ms,
+  span_attributes
+FROM otel_traces
+WHERE service_name = 'my-service'
+  AND timestamp >= NOW() - INTERVAL '1 hour'
+ORDER BY duration DESC
+LIMIT 20;
+```
+
+**Count errors by operation:**
+
+```sql
+SELECT
+  span_name,
+  COUNT(*) AS error_count,
+  AVG(duration) / 1e6 AS avg_duration_ms
+FROM otel_traces
+WHERE service_name = 'my-service'
+  AND status_code = 'Error'
+  AND timestamp >= NOW() - INTERVAL '1 hour'
+GROUP BY span_name
+ORDER BY error_count DESC;
+```
+
+**Reconstruct a trace by trace_id:**
+
+```sql
+SELECT
+  timestamp,
+  span_id,
+  parent_span_id,
+  span_name,
+  span_kind,
+  duration / 1e6 AS duration_ms,
+  status_code
+FROM otel_traces
+WHERE trace_id = '<your-trace-id>'
+ORDER BY timestamp ASC;
+```
+
+### Logs Queries
+
+**Find error logs for a service:**
+
+```sql
+SELECT
+  timestamp,
+  service_name,
+  severity_text,
+  body,
+  log_attributes
+FROM otel_logs
+WHERE service_name = 'my-service'
+  AND severity_number >= 17  -- ERROR and above
+  AND timestamp >= NOW() - INTERVAL '1 hour'
+ORDER BY timestamp DESC
+LIMIT 100;
+```
+
+**Full-text search (Hologres V4.0+):**
+
+```sql
+SELECT
+  timestamp,
+  service_name,
+  severity_text,
+  body
+FROM otel_logs
+WHERE to_tsvector('standard', body) @@ to_tsquery('standard', 'error & timeout')
+  AND timestamp >= NOW() - INTERVAL '1 hour'
+ORDER BY timestamp DESC;
+```
+
+**Count logs by severity and service:**
+
+```sql
+SELECT
+  service_name,
+  severity_text,
+  COUNT(*) AS log_count
+FROM otel_logs
+WHERE timestamp >= NOW() - INTERVAL '1 hour'
+GROUP BY service_name, severity_text
+ORDER BY service_name, log_count DESC;
+```
+
+### Metrics Queries
+
+**Get latest gauge values:**
+
+```sql
+SELECT
+  metric_name,
+  service_name,
+  attributes,
+  value,
+  timestamp
+FROM otel_metrics_gauge
+WHERE timestamp >= NOW() - INTERVAL '5 minutes'
+ORDER BY timestamp DESC;
+```
+
+**Aggregate sum metrics over time:**
+
+```sql
+SELECT
+  date_trunc('minute', timestamp) AS minute,
+  service_name,
+  metric_name,
+  SUM(value) AS total_value
+FROM otel_metrics_sum
+WHERE metric_name = 'http.server.request.count'
+  AND timestamp >= NOW() - INTERVAL '1 hour'
+GROUP BY minute, service_name, metric_name
+ORDER BY minute ASC;
+```
+
+**Inspect histogram buckets:**
+
+```sql
+SELECT
+  service_name,
+  metric_name,
+  explicit_bounds,
+  bucket_counts
+FROM otel_metrics_histogram
+WHERE metric_name = 'http.server.duration'
+  AND timestamp >= NOW() - INTERVAL '5 minutes'
+ORDER BY timestamp DESC
+LIMIT 10;
+```
+
+## Performance Tuning
+
+### Binary COPY Protocol
+
+The exporter uses PostgreSQL **binary COPY** with Hologres's `STREAM_MODE TRUE` (FIXED COPY) for high-throughput writes:
+
+- **Binary format**: smaller wire payload and faster server-side parsing than text `INSERT` or text `COPY`.
+- **STREAM_MODE TRUE**: required by Hologres for binary COPY. A plain `COPY ... FROM STDIN (FORMAT binary)` without `STREAM_MODE TRUE` is rejected by the server.
+- **Batch semantics**: each `pushTraceData` / `pushLogData` / `pushMetricData` call is a single COPY operation — there is no per-batch row limit imposed by the exporter.
+
+### Benchmark Results
+
+Measured on Apple M3 Pro with an in-process mock backend (no network I/O). See `exporter_benchmark_test.go`.
+
+| Signal  | 10 items       | 100 items      | 1000 items     | 10000 items    |
+|---------|----------------|----------------|----------------|----------------|
+| Traces  | ~350K items/s  | ~363K items/s  | ~314K items/s  | ~328K items/s  |
+| Logs    | ~1.48M items/s | ~1.63M items/s | ~1.54M items/s | ~1.51M items/s |
+| Metrics | ~1.59M items/s | ~1.87M items/s | ~1.87M items/s | ~1.72M items/s |
+
+Real Hologres throughput (including network RTT ~30–40 ms):
+
+| Signal  | 10 items       | 100 items        | 1000 items        |
+|---------|----------------|------------------|-------------------|
+| Traces  | ~247 items/s   | ~1,778 items/s   | ~6,121 items/s    |
+| Logs    | ~258 items/s   | ~1,874 items/s   | ~9,922 items/s    |
+| Metrics | ~310 items/s   | ~2,484 items/s   | ~12,691 items/s   |
+
+> **Note**: Network round-trip time dominates real-world write latency. Larger batches amortize the per-batch cost significantly. Deploy the collector in the same region as the Hologres instance for the best throughput.
+
+### Recommended Batch Configuration
+
+```yaml
+processors:
+  batch:
+    send_batch_size: 1000
+    send_batch_max_size: 5000
+    timeout: 5s
+
+exporters:
+  hologres:
+    dsn: "postgresql://user:password@host:80/db?sslmode=disable"
+    traces_table_name: otel_traces
+    logs_table_name: otel_logs
+    metrics_table_name: otel_metrics
+    create_schema: true
+    ttl: 720h  # 30 days; 0 disables TTL
+    timeout: 30s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 1000
+```
+
+### Connection Pool
+
+The exporter uses `pgxpool` with hard-coded defaults tuned for write workloads:
+
+- `MaxConns`: 20
+- `MinConns`: 5
+- `MaxConnLifetime`: 1 hour
+
+For high-volume scenarios, increase `num_consumers` proportionally — each consumer holds one connection from the pool during a COPY.
+
+## Hologres Version Compatibility
+
+| Feature                                              | Min Version | Notes                                              |
+|------------------------------------------------------|-------------|----------------------------------------------------|
+| Basic COPY import                                    | V2.1+       | `STREAM_MODE TRUE` required                        |
+| Binary COPY (FIXED COPY mode)                        | V2.1+       | `FORMAT binary, STREAM_MODE TRUE`                  |
+| Column store (`orientation = 'column'`)              | V2.1+       | Default for all created tables                     |
+| JSONB columnar optimization (`enable_columnar_type`) | V2.1+       | Improves JSONB read performance                    |
+| Dictionary encoding                                  | V2.1+       | Low-cardinality string compression                 |
+| Logical partitioned tables                           | V3.1+       | Automatic partition management by time             |
+| Full-text index (`USING FULLTEXT`)                   | V4.0+       | Enables log body text search                       |
+| TTL (`time_to_live_in_seconds`)                      | V2.1+       | Table-level data expiration                        |
+
+## Troubleshooting
+
+### Connection Issues
+
+**Error: `failed to ping database`**
+
+- Check that the DSN is correct and the Hologres instance is reachable.
+- Verify network connectivity and firewall rules.
+- Ensure the user has `CONNECT` privilege on the target database.
+
+**SSL/TLS connection errors**
+
+Add `sslmode=disable` or `sslmode=require` to the DSN query string as appropriate for your environment.
+
+### Schema Issues
+
+**Error: `column "..." does not exist` or `relation "..." does not exist`**
+
+- Enable `create_schema: true` to let the exporter create tables automatically, or
+- Manually run the DDL from the [Schema Reference](#schema-reference) section.
+
+**Error: `partition column must be a physical column`**
+
+This is a Hologres-specific constraint: partition / clustering / event-time columns must be physical, not expression-derived. The exporter therefore uses the physical `timestamp` column for clustering.
+
+### Write Errors
+
+**Error: `SQLSTATE 0A000` during COPY**
+
+Hologres requires `STREAM_MODE TRUE` for binary COPY. This error typically indicates that the Hologres version is older than V2.1, or that the SQL did not carry the `STREAM_MODE TRUE` option. Note that pgx's stock `Conn.CopyFrom` hardcodes a `WITH`-less SQL; this exporter ships its own COPY wrapper that injects `STREAM_MODE TRUE`.
+
+**Slow writes or high latency**
+
+- Deploy the collector in the same region as the Hologres instance.
+- Increase `num_consumers` in `sending_queue` and grow `send_batch_size` in the `batch` processor — small batches pay one RTT per batch.
+- Verify that the Hologres warehouse has enough write CUs for the offered load.
+
+### Data Issues
+
+**Duplicate records after retries**
+
+The exporter uses append-only writes (no `PRIMARY KEY`) and Hologres does not deduplicate on insert. If the collector retries a failed push, duplicate rows may appear. Design queries to handle duplicates, e.g. with `DISTINCT ON` or `GROUP BY` aggregations.
+
+**TTL not expiring data**
+
+Hologres TTL is enforced asynchronously by a background process; expiration can lag the configured retention by several hours. For immediate cleanup, manually compact the table:
+
+```sql
+VACUUM FULL your_table_name;
+```
