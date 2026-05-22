@@ -460,10 +460,9 @@ func TestIntegration_DDL_WithTTL(t *testing.T) {
 
 	// Use a 7-day TTL
 	ttl := 7 * 24 * time.Hour
-	hPool := &hologresPool{pool: db}
-	require.NoError(t, createTracesTable(ctx, hPool, tracesTable, ttl))
-	require.NoError(t, createLogsTable(ctx, hPool, logsTable, ttl))
-	require.NoError(t, createMetricsTables(ctx, hPool, metricsTable, ttl))
+	require.NoError(t, createTracesTable(ctx, db, tracesTable, ttl))
+	require.NoError(t, createLogsTable(ctx, db, logsTable, ttl))
+	require.NoError(t, createMetricsTables(ctx, db, metricsTable, ttl))
 
 	// Verify all tables exist
 	for _, tbl := range []string{
@@ -493,11 +492,9 @@ func TestIntegration_DDL_Idempotency(t *testing.T) {
 
 	defer dropTablesQuiet(ctx, db, tracesTable)
 
-	hPool := &hologresPool{pool: db}
-
 	// Create table twice - should not error (CREATE TABLE IF NOT EXISTS)
-	require.NoError(t, createTracesTable(ctx, hPool, tracesTable, 0))
-	require.NoError(t, createTracesTable(ctx, hPool, tracesTable, 0))
+	require.NoError(t, createTracesTable(ctx, db, tracesTable, 0))
+	require.NoError(t, createTracesTable(ctx, db, tracesTable, 0))
 }
 
 // --- Start/Shutdown lifecycle ---
@@ -549,8 +546,7 @@ func TestIntegration_CreateSchemaFalse(t *testing.T) {
 	tableName := prefix + "_traces_noschema"
 	defer dropTablesQuiet(ctx, db, tableName)
 
-	hPool := &hologresPool{pool: db}
-	require.NoError(t, createTracesTable(ctx, hPool, tableName, 0))
+	require.NoError(t, createTracesTable(ctx, db, tableName, 0))
 
 	// Start with CreateSchema=false
 	cfg := &Config{

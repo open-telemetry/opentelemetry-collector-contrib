@@ -6,22 +6,24 @@ package hologresexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // pgxDB defines the database operations used by the Hologres exporters.
 // It is satisfied by *hologresPool in production code; tests can supply a
-// lightweight implementation (mockPgxDB). The COPY protocol uses text-format
-// COPY with STREAM_MODE TRUE for Hologres compatibility.
+// lightweight implementation (mockPgxDB). CopyFrom uses the PostgreSQL
+// binary COPY protocol with STREAM_MODE TRUE, which Hologres requires for
+// binary-format imports (FIXED COPY).
 type pgxDB interface {
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 	CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error)
@@ -30,59 +32,19 @@ type pgxDB interface {
 }
 
 // hologresPool wraps *pgxpool.Pool and implements pgxDB.
-// It overrides CopyFrom to use text-format COPY with STREAM_MODE TRUE,
-// since Hologres does not support binary COPY without stream mode.
+//
+// pgx's stock Conn.CopyFrom hardcodes a SQL of "copy ... from stdin binary"
+// without WITH options, but Hologres rejects binary-format COPY unless the
+// statement also specifies STREAM_MODE TRUE (FIXED COPY mode). So this
+// wrapper drives the COPY protocol at the pgconn layer with a custom SQL
+// that includes STREAM_MODE TRUE, while still using the standard pgx binary
+// row encoder for value serialization.
 type hologresPool struct {
 	pool *pgxpool.Pool
 }
 
 func (h *hologresPool) Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
 	return h.pool.Exec(ctx, sql, arguments...)
-}
-
-func (h *hologresPool) CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error) {
-	conn, err := h.pool.Acquire(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("failed to acquire connection: %w", err)
-	}
-	defer conn.Release()
-
-	// Build column list.
-	quotedCols := make([]string, len(columnNames))
-	for i, col := range columnNames {
-		quotedCols[i] = pgx.Identifier{col}.Sanitize()
-	}
-
-	// Use text-format COPY with STREAM_MODE TRUE for Hologres compatibility.
-	copySQL := fmt.Sprintf("COPY %s (%s) FROM STDIN WITH (FORMAT text, DELIMITER E'\\t', NULL '\\N', STREAM_MODE TRUE)",
-		tableName.Sanitize(), strings.Join(quotedCols, ", "))
-
-	// Build tab-separated text data.
-	var buf bytes.Buffer
-	var count int64
-	for rowSrc.Next() {
-		values, verr := rowSrc.Values()
-		if verr != nil {
-			return 0, verr
-		}
-		for i, v := range values {
-			if i > 0 {
-				buf.WriteByte('\t')
-			}
-			buf.WriteString(formatCopyValue(v))
-		}
-		buf.WriteByte('\n')
-		count++
-	}
-	if rerr := rowSrc.Err(); rerr != nil {
-		return 0, rerr
-	}
-
-	_, err = conn.Conn().PgConn().CopyFrom(ctx, &buf, copySQL)
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
 }
 
 func (h *hologresPool) Ping(ctx context.Context) error {
@@ -93,41 +55,92 @@ func (h *hologresPool) Close() {
 	h.pool.Close()
 }
 
-// formatCopyValue converts a Go value to its PostgreSQL text-format COPY representation.
-func formatCopyValue(v any) string {
-	if v == nil {
-		return "\\N"
+// binaryCopyHeader is the fixed file header prepended to every binary COPY
+// stream: 11-byte signature + int32 flags(0) + int32 header-extension-len(0).
+var binaryCopyHeader = []byte("PGCOPY\n\xff\r\n\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+
+// CopyFrom performs a binary-format PostgreSQL COPY with Hologres's
+// STREAM_MODE TRUE option. It serializes rows on the fly and streams them to
+// the server via the pgconn-level CopyFrom API.
+func (h *hologresPool) CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error) {
+	conn, err := h.pool.Acquire(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to acquire connection: %w", err)
 	}
-	switch val := v.(type) {
-	case time.Time:
-		return val.Format("2006-01-02 15:04:05.999999-07:00")
-	case string:
-		return escapeCopyText(val)
-	case []byte:
-		return escapeCopyText(string(val))
-	case int32:
-		return strconv.FormatInt(int64(val), 10)
-	case int64:
-		return strconv.FormatInt(val, 10)
-	case float64:
-		return strconv.FormatFloat(val, 'f', -1, 64)
-	case bool:
-		if val {
-			return "true"
+	defer conn.Release()
+
+	quotedCols := make([]string, len(columnNames))
+	for i, col := range columnNames {
+		quotedCols[i] = pgx.Identifier{col}.Sanitize()
+	}
+	quotedColList := strings.Join(quotedCols, ", ")
+	quotedTable := tableName.Sanitize()
+
+	// Resolve column type OIDs by preparing a SELECT against the target table.
+	// Using the unnamed prepared statement ("") avoids polluting the statement
+	// cache and is auto-deallocated by the next prepare/execute on the connection.
+	pgxConn := conn.Conn()
+	sd, err := pgxConn.Prepare(ctx, "", fmt.Sprintf("select %s from %s", quotedColList, quotedTable))
+	if err != nil {
+		return 0, fmt.Errorf("failed to describe %s for COPY: %w", quotedTable, err)
+	}
+	if len(sd.Fields) != len(columnNames) {
+		return 0, fmt.Errorf("column count mismatch for %s: described %d, expected %d", quotedTable, len(sd.Fields), len(columnNames))
+	}
+	typeMap := pgxConn.TypeMap()
+
+	// Encode rows into the PostgreSQL binary COPY wire format in memory.
+	buf := make([]byte, 0, 4096)
+	buf = append(buf, binaryCopyHeader...)
+
+	var count int64
+	for rowSrc.Next() {
+		values, verr := rowSrc.Values()
+		if verr != nil {
+			return 0, verr
 		}
-		return "false"
-	default:
-		return escapeCopyText(fmt.Sprintf("%v", val))
+		if len(values) != len(columnNames) {
+			return 0, fmt.Errorf("expected %d values, got %d", len(columnNames), len(values))
+		}
+		buf = binary.BigEndian.AppendUint16(buf, uint16(len(values)))
+		for i, v := range values {
+			buf, err = appendBinaryCopyField(typeMap, buf, sd.Fields[i].DataTypeOID, v)
+			if err != nil {
+				return 0, fmt.Errorf("failed to encode column %s: %w", columnNames[i], err)
+			}
+		}
+		count++
 	}
+	if rerr := rowSrc.Err(); rerr != nil {
+		return 0, rerr
+	}
+	// File trailer: int16 = -1.
+	buf = binary.BigEndian.AppendUint16(buf, uint16(0xFFFF))
+
+	copySQL := fmt.Sprintf("COPY %s (%s) FROM STDIN WITH (FORMAT binary, STREAM_MODE TRUE)", quotedTable, quotedColList)
+	if _, err := pgxConn.PgConn().CopyFrom(ctx, bytes.NewReader(buf), copySQL); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
-// escapeCopyText escapes special characters for PostgreSQL text-format COPY.
-func escapeCopyText(s string) string {
-	s = strings.ReplaceAll(s, "\\", "\\\\")
-	s = strings.ReplaceAll(s, "\t", "\\t")
-	s = strings.ReplaceAll(s, "\n", "\\n")
-	s = strings.ReplaceAll(s, "\r", "\\r")
-	return s
+// appendBinaryCopyField appends one binary-format field (int32 length + data,
+// or int32 -1 for NULL) to buf.
+func appendBinaryCopyField(m *pgtype.Map, buf []byte, oid uint32, arg any) ([]byte, error) {
+	lenPos := len(buf)
+	buf = binary.BigEndian.AppendUint32(buf, 0xFFFFFFFF) // placeholder for -1 (NULL)
+	argBuf, err := m.Encode(oid, pgx.BinaryFormatCode, arg, buf)
+	if err != nil {
+		return nil, err
+	}
+	if argBuf == nil {
+		// Encoder returned NULL; keep the -1 placeholder.
+		return buf, nil
+	}
+	buf = argBuf
+	dataLen := int32(len(buf) - lenPos - 4)
+	binary.BigEndian.PutUint32(buf[lenPos:lenPos+4], uint32(dataLen))
+	return buf, nil
 }
 
 // openDB creates a new pgx connection pool wrapped for Hologres compatibility.
