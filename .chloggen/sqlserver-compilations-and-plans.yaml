@@ -17,12 +17,12 @@ issues: [48591]
 # Use pipe (|) for multiline entries.
 subtext: |
   Adds the following new metrics (all disabled by default):
-  - `sqlserver.sql.attention.rate`: rate of SQL attentions (client cancellation interrupts).
-  - `sqlserver.sql.parameterization.rate`: rate of auto-parameterization activity, classified by outcome
+  - `sqlserver.attention.rate`: rate of SQL attentions (client cancellation interrupts).
+  - `sqlserver.parameterization.rate`: rate of auto-parameterization activity, classified by result
     (`auto_attempted`, `safe`, `unsafe`, `failed`, `forced`).
-  - `sqlserver.sql.plan_execution.rate`: rate of plan executions, classified by plan guide outcome
+  - `sqlserver.plan_execution.rate`: rate of plan executions, classified by plan guide result
     (`guided`, `misguided`).
-  - `sqlserver.sql.recompilation.ratio`: derived ratio of SQL recompilations to compilations,
+  - `sqlserver.recompilation.ratio`: derived ratio of SQL recompilations to compilations,
     expressed as a percentage.
 
 # If your change doesn't affect end users or the exported elements of any package,

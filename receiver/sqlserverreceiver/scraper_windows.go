@@ -39,7 +39,7 @@ type watcherRecorder struct {
 // it needs metadata.MetricsBuilder and timestamp as arguments.
 type curriedRecorder func(*metadata.MetricsBuilder, pcommon.Timestamp)
 
-// SQL Server perf counter names used to derive sqlserver.sql.recompilation.ratio.
+// SQL Server perf counter names used to derive sqlserver.recompilation.ratio.
 const (
 	sqlCompilationsCounter   = "SQL Compilations/sec"
 	sqlReCompilationsCounter = "SQL Re-Compilations/sec"
@@ -92,7 +92,7 @@ func (s *sqlServerPCScraper) scrape(context.Context) (pmetric.Metrics, error) {
 // recordersPerDatabase scrapes perf counter values using provided []watcherRecorder and returns
 // a map of database name to curriedRecorder that includes the recorded value in its closure.
 // It also returns per-database SQL Compilations/sec and SQL Re-Compilations/sec values so that
-// the derived sqlserver.sql.recompilation.ratio metric can be computed at emit time.
+// the derived sqlserver.recompilation.ratio metric can be computed at emit time.
 func recordersPerDatabase(watcherRecorders []watcherRecorder) (map[string][]curriedRecorder, map[string]float64, map[string]float64, error) {
 	var errs error
 
@@ -139,12 +139,12 @@ func (s *sqlServerPCScraper) emitMetricGroup(recorders []curriedRecorder, databa
 		recorder(s.mb, now)
 	}
 
-	// Derive sqlserver.sql.recompilation.ratio (recomp / comp * 100) when both
+	// Derive sqlserver.recompilation.ratio (recomp / comp * 100) when both
 	// SQL Compilations/sec and SQL Re-Compilations/sec were observed for this
 	// database/instance. Skip when comp is 0 to avoid division by zero.
 	if comp, ok := compByDB[databaseName]; ok && comp > 0 {
 		if recomp, ok := recompByDB[databaseName]; ok {
-			s.mb.RecordSqlserverSQLRecompilationRatioDataPoint(now, recomp/comp*100)
+			s.mb.RecordSqlserverRecompilationRatioDataPoint(now, recomp/comp*100)
 		}
 	}
 
