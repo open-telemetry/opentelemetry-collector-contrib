@@ -6,6 +6,8 @@ package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentele
 import (
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"time"
 
@@ -15,6 +17,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
+
+// histogramField identifies a histogram data-point field that can be
+// selectively converted from cumulative to delta via HistogramFields.
+type histogramField string
+
+const (
+	histogramFieldBucketCounts histogramField = "bucket_counts"
+	histogramFieldSum          histogramField = "sum"
+	histogramFieldCount        histogramField = "count"
+)
+
+var validHistogramFields = map[histogramField]bool{
+	histogramFieldBucketCounts: true,
+	histogramFieldSum:          true,
+	histogramFieldCount:        true,
+}
 
 var validMetricTypes = map[string]bool{
 	strings.ToLower(pmetric.MetricTypeSum.String()):                  true,
@@ -42,6 +60,11 @@ type Config struct {
 	// Cannot be used with deprecated Metrics config option.
 	Include MatchMetrics `mapstructure:"include"`
 	Exclude MatchMetrics `mapstructure:"exclude"`
+
+	// HistogramFields specifies which histogram fields to convert to delta.
+	// Valid values: "bucket_counts", "sum", "count".
+	// When empty (default), all fields are converted (backward compatible).
+	HistogramFields []string `mapstructure:"histogram_fields"`
 }
 
 type MatchMetrics struct {
@@ -81,6 +104,15 @@ func (config *Config) Validate() error {
 				"found invalid metric type in include.metric_types: %s. Valid values are %s",
 				metricType,
 				validMetricTypeList,
+			)
+		}
+	}
+	for _, field := range config.HistogramFields {
+		if !validHistogramFields[histogramField(field)] {
+			return fmt.Errorf(
+				"found invalid field in histogram_fields: %s. Valid values are %v",
+				field,
+				slices.Sorted(maps.Keys(validHistogramFields)),
 			)
 		}
 	}
