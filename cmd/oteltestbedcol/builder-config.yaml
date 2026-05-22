@@ -64,3 +64,6 @@ providers:
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
 replaces:
+  # xextension v0.152.1 release predates storage.Walker; MVS picks it over the
+  # v0.152.1-0.* pseudo-version, breaking filestorage. Force the pseudo-version.
+  - go.opentelemetry.io/collector/extension/xextension => go.opentelemetry.io/collector/extension/xextension v0.152.1-0.20260521212641-5abdf017eb1a
