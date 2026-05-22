@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -82,7 +83,16 @@ func Load(configFile string) (Supervisor, error) {
 	return cfg, nil
 }
 
-func (Supervisor) Validate() error {
+func (s *Supervisor) Validate() error {
+	if s.Server.Auth == (component.ID{}) {
+		return nil
+	}
+	if ok := s.Extensions.Exists(s.Server.Auth); !ok {
+		return fmt.Errorf(
+			"server.auth references %q which is not configured under extensions",
+			s.Server.Auth,
+		)
+	}
 	return nil
 }
 
@@ -173,6 +183,11 @@ type OpAMPServer struct {
 	Endpoint string                 `mapstructure:"endpoint"`
 	Headers  http.Header            `mapstructure:"headers"`
 	TLS      configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	// Auth references an extension in the top-level extensions: block that
+	// implements extensionauth.HTTPClient. When set, the supervisor uses the
+	// extension's RoundTripper to populate auth headers on the OpAMP
+	// connection. The extensions feature gate must be enabled.
+	Auth component.ID `mapstructure:"auth,omitempty"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
