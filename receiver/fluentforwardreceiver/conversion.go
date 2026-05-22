@@ -62,9 +62,20 @@ func validateMsgpackElementCount(count uint32) error {
 	return nil
 }
 
-func readPackedForwardPayload(dc *msgp.Reader, typ msgp.Type) ([]byte, error) {
+func readPackedForwardPayload(dc *msgp.Reader, typ msgp.Type, maxBytes int) ([]byte, error) {
+	if maxBytes <= 0 {
+		maxBytes = maxMsgpackRawBytes
+	}
+	if uint64(maxBytes) > uint64(^uint32(0)) {
+		return nil, fmt.Errorf("packed-forward payload limit %d exceeds MessagePack size limit", maxBytes)
+	}
+
 	switch typ {
 	case msgp.StrType:
+		prevMaxStringLength := dc.GetMaxStringLength()
+		dc.SetMaxStringLength(uint64(maxBytes))
+		defer dc.SetMaxStringLength(prevMaxStringLength)
+
 		entriesStr, err := dc.ReadString()
 		if err != nil {
 			return nil, err
@@ -72,9 +83,9 @@ func readPackedForwardPayload(dc *msgp.Reader, typ msgp.Type) ([]byte, error) {
 		return []byte(entriesStr), nil
 	case msgp.BinType:
 		prevMaxElements := dc.GetMaxElements()
-		dc.SetMaxElements(maxMsgpackRawBytes)
+		dc.SetMaxElements(uint32(maxBytes))
 		defer dc.SetMaxElements(prevMaxElements)
-		return dc.ReadBytesLimit(nil, int64(maxMsgpackRawBytes))
+		return dc.ReadBytesLimit(nil, int64(maxBytes))
 	default:
 		return nil, fmt.Errorf("invalid type %d", typ)
 	}
@@ -375,6 +386,7 @@ func parseEntryToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 type packedForwardEventLogRecords struct {
 	plog.LogRecordSlice
 	optionsMap
+	maxRawBytes int
 }
 
 func (pfe *packedForwardEventLogRecords) LogRecords() plog.LogRecordSlice {
@@ -412,7 +424,7 @@ func (pfe *packedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	// comes after.  I guess we could use some kind of detection logic to
 	// determine if it is gzipped by peeking and just ignoring options, but
 	// this seems simpler for now.
-	entriesRaw, err := readPackedForwardPayload(dc, entriesType)
+	entriesRaw, err := readPackedForwardPayload(dc, entriesType, pfe.maxRawBytes)
 	if err != nil {
 		return msgp.WrapError(err, "EntriesRaw")
 	}

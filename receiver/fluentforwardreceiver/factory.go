@@ -24,7 +24,9 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		MaxPackedForwardBytes: maxMsgpackRawBytes,
+	}
 }
 
 func createLogsReceiver(

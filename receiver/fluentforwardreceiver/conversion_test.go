@@ -193,7 +193,7 @@ func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 		t.Run(fmt.Sprintf("EOF at byte %d", i), func(t *testing.T) {
 			reader := msgp.NewReader(bytes.NewReader(b[:i]))
 
-			var event packedForwardEventLogRecords
+			event := packedForwardEventLogRecords{maxRawBytes: maxMsgpackRawBytes}
 			err := event.DecodeMsg(reader)
 			require.Error(t, err)
 		})
@@ -318,11 +318,27 @@ func TestPackedForwardRejectsOversizedEntriesRaw(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var event packedForwardEventLogRecords
+			event := packedForwardEventLogRecords{maxRawBytes: maxMsgpackRawBytes}
 			err := event.DecodeMsg(msgp.NewReader(bytes.NewReader(tt.input())))
 			require.ErrorIs(t, err, msgp.ErrLimitExceeded)
 		})
 	}
+}
+
+func TestPackedForwardRejectsConfiguredEntriesRawLimit(t *testing.T) {
+	var payload []byte
+	payload = msgp.AppendArrayHeader(payload, 2)
+	payload = msgp.AppendInt(payload, 0)
+	payload = msgp.AppendMapHeader(payload, 0)
+
+	var b []byte
+	b = msgp.AppendArrayHeader(b, 2)
+	b = msgp.AppendString(b, "my-tag")
+	b = msgp.AppendBytes(b, payload)
+
+	event := packedForwardEventLogRecords{maxRawBytes: len(payload) - 1}
+	err := event.DecodeMsg(msgp.NewReader(bytes.NewReader(b)))
+	require.ErrorIs(t, err, msgp.ErrLimitExceeded)
 }
 
 func TestBodyConversion(t *testing.T) {

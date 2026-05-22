@@ -48,7 +48,7 @@ func newFluentReceiver(set receiver.Settings, conf *Config, next consumer.Logs) 
 	eventCh := make(chan event, eventChannelLength)
 	collector := newCollector(eventCh, next, set.Logger, obsrecv, telemetryBuilder)
 
-	server := newServer(eventCh, set.Logger, telemetryBuilder)
+	server := newServer(eventCh, set.Logger, telemetryBuilder, conf.MaxPackedForwardBytes)
 
 	return &fluentReceiver{
 		collector: collector,

@@ -25,19 +25,21 @@ import (
 const readBufferSize = 10 * 1024
 
 type server struct {
-	outCh            chan<- event
-	logger           *zap.Logger
-	telemetryBuilder *metadata.TelemetryBuilder
-	conns            map[net.Conn]struct{}
-	mu               sync.Mutex
+	outCh                 chan<- event
+	logger                *zap.Logger
+	telemetryBuilder      *metadata.TelemetryBuilder
+	conns                 map[net.Conn]struct{}
+	mu                    sync.Mutex
+	maxPackedForwardBytes int
 }
 
-func newServer(outCh chan<- event, logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder) *server {
+func newServer(outCh chan<- event, logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder, maxPackedForwardBytes int) *server {
 	return &server{
-		outCh:            outCh,
-		logger:           logger,
-		telemetryBuilder: telemetryBuilder,
-		conns:            make(map[net.Conn]struct{}),
+		outCh:                 outCh,
+		logger:                logger,
+		telemetryBuilder:      telemetryBuilder,
+		conns:                 make(map[net.Conn]struct{}),
+		maxPackedForwardBytes: maxPackedForwardBytes,
 	}
 }
 
@@ -110,7 +112,7 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 		case forwardMode:
 			e = &forwardEventLogRecords{}
 		case packedForwardMode:
-			e = &packedForwardEventLogRecords{}
+			e = &packedForwardEventLogRecords{maxRawBytes: s.maxPackedForwardBytes}
 		default:
 			panic("programmer bug in mode handling")
 		}
