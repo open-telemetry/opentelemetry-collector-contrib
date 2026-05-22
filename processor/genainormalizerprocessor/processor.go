@@ -118,18 +118,14 @@ func (sn *sourceNormalizer) normalizeAttributes(attrs pcommon.Map) bool {
 			continue
 		}
 
-		transformed := pcommon.NewValueEmpty()
-		if sn.transformValue != nil {
-			sn.transformValue(r.to, val, transformed)
-		} else {
-			val.CopyTo(transformed)
-		}
-
-		if !otelsemconv.Coerce(r.to, transformed, dest) {
+		if !otelsemconv.Coerce(r.to, val, dest) {
 			if !existed {
 				attrs.Remove(r.to)
 			}
 			continue
+		}
+		if sn.transformValue != nil {
+			sn.transformValue(r.to, dest, dest)
 		}
 		wrote = true
 
