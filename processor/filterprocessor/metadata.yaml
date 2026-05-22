@@ -15,6 +15,7 @@ status:
     emeritus: [boostchicken]
 feature_gates:
   - id: processor.filter.defaultErrorModeIgnore
+    skip_strict_validation: true
     description: >-
       Changes the default error_mode of the filter processor from propagate to ignore
     stage: beta

@@ -24,6 +24,7 @@ tests:
 
 feature_gates:
   - id: receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion
+    skip_strict_validation: true
     stage: alpha
     description: >-
       Enables the Prometheus created-timestamps-zero-injection feature.
@@ -33,6 +34,7 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40355
 
   - id: receiver.prometheusreceiver.IgnoreScopeInfoMetric
+    skip_strict_validation: true
     stage: alpha
     description: >-
       When enabled, the `otel_scope_info` metric is ignored for scope attribute extraction.

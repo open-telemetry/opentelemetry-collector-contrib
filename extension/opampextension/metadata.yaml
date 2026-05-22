@@ -11,6 +11,7 @@ status:
 
 feature_gates:
   - id: extension.opampextension.RemoteRestarts
+    skip_strict_validation: true
     description: "When enabled, the OpAMP extension supports restart commands from the OpAMP server through the `CommandType_Restart` command."
     stage: alpha
     from_version: "v0.145.0"

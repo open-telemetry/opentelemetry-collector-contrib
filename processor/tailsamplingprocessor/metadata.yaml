@@ -13,6 +13,7 @@ status:
 
 feature_gates:
   - id: "processor.tailsamplingprocessor.disableinvertdecisions"
+    skip_strict_validation: true
     description: When enabled, sampling policy 'invert_match' will result in a SAMPLED or NOT SAMPLED decision instead of INVERT SAMPLED or INVERT NOT SAMPLED.
     stage: stable
     from_version: v0.126.0
@@ -20,18 +21,21 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39833
 
   - id: "processor.tailsamplingprocessor.metricstatcountspanssampled"
+    skip_strict_validation: true
     description: "When enabled, a new metric stat_count_spans_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of spans sampled or not per sampling policy, where the original counts traces."
     stage: alpha
     from_version: v0.95.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30482
 
   - id: "processor.tailsamplingprocessor.recordpolicy"
+    skip_strict_validation: true
     description: "When enabled, attaches the name of the policy (and if applicable, composite policy) responsible for sampling a trace in the 'tailsampling.policy', 'tailsampling.composite_policy', and `tailsampling.cached_decision` attributes."
     stage: alpha
     from_version: v0.120.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35180
 
   - id: "processor.tailsamplingprocessor.tailstorageextension"
+    skip_strict_validation: true
     description: When enabled, allows configuring tail_storage to use a tail storage extension implementation.
     stage: alpha
     from_version: v0.150.0

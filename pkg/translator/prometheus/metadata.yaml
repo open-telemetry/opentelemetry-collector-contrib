@@ -8,6 +8,7 @@ status:
 
 feature_gates:
   - id: pkg.translator.prometheus.PermissiveLabelSanitization
+    skip_strict_validation: true
     description: Controls whether to change labels starting with '_' to 'key_'.
     stage: alpha
     from_version: v0.55.0

@@ -13,6 +13,7 @@ status:
 
 feature_gates:
   - id: exporter.prometheusexporter.DisableAddMetricSuffixes
+    skip_strict_validation: true
     description: When enabled, the deprecated add_metric_suffixes configuration option is ignored and translation_strategy is always used
     stage: alpha
     from_version: "v0.132.0"

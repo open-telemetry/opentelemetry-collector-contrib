@@ -13,6 +13,7 @@ status:
 
 feature_gates:
   - id: exporter.datadogexporter.DisableAPMStats
+    skip_strict_validation: true
     stage: beta
     description: >-
       Datadog Exporter will not compute APM Stats
@@ -20,6 +21,7 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/28616
 
   - id: exporter.datadogexporter.TraceExportUseCustomHTTPClient
+    skip_strict_validation: true
     stage: alpha
     description: >-
       When enabled, trace export uses the HTTP client from the exporter HTTP configs
@@ -27,6 +29,7 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/34025
 
   - id: exporter.datadogexporter.metricexportserializerclient
+    skip_strict_validation: true
     stage: beta
     description: >-
       When enabled, metric export in datadogexporter uses the serializer exporter from the Datadog Agent.

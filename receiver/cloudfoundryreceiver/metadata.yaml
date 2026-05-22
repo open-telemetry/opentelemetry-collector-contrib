@@ -19,6 +19,7 @@ status:
 
 feature_gates:
   - id: cloudfoundry.resourceAttributes.allow
+    skip_strict_validation: true
     description: >-
       When enabled, envelope tags are copied to the metrics as resource attributes instead of datapoint attributes
     stage: beta

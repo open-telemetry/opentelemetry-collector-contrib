@@ -15,6 +15,7 @@ reaggregation_enabled: true
 
 feature_gates:
   - id: receiver.githubreceiver.UseCheckRunID
+    skip_strict_validation: true
     description: >-
       When enabled, deterministic job, step, and queue span IDs are derived from the
       GitHub check_run_id (the WorkflowJob.id webhook field, also exposed in-runner as

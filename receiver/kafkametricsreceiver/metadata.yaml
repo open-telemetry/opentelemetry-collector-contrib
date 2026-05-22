@@ -16,6 +16,7 @@ status:
 
 feature_gates:
   - id: receiver.kafkametricsreceiver.UseFranzGo
+    skip_strict_validation: true
     stage: stable
     description: >-
       The Kafka Metrics receiver now uses the franz-go client to connect to Kafka.

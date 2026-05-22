@@ -10,6 +10,7 @@ status:
     active: [Aneurysm9, crobert-1]
 feature_gates:
   - id: metricsgeneration.MatchAttributes
+    skip_strict_validation: true
     description: >-
       When enabled, the metric calculations will only be done between data points whose attributes match.
     stage: alpha

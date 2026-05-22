@@ -824,6 +824,7 @@ metrics:
 
 feature_gates:
   - id: receiver.sqlserver.RemoveServerResourceAttribute
+    skip_strict_validation: true
     stage: alpha
     description: >-
       When enabled, the server.address and server.port resource attributes are removed from metrics.

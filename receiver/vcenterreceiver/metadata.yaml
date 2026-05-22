@@ -16,6 +16,7 @@ status:
 
 feature_gates:
   - id: receiver.vcenter.resourcePoolMemoryUsageAttribute
+    skip_strict_validation: true
     description: >-
       Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric
     stage: alpha

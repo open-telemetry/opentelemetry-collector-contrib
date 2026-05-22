@@ -11,6 +11,7 @@ status:
 
 feature_gates:
   - id: translator.skywalking.useStableSemconv
+    skip_strict_validation: true
     stage: alpha
     description: >-
       When enabled, uses stable semantic conventions (v1.38.0) for attribute names

@@ -10,11 +10,13 @@ status:
 
 feature_gates:
   - id: pkg.translator.azurelogs.DontEmitV0LogConventions
+    skip_strict_validation: true
     stage: alpha
     description: When enabled, v0 semconv attribute names are not emitted.
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033
   - id: pkg.translator.azurelogs.EmitV1LogConventions
+    skip_strict_validation: true
     stage: alpha
     description: When enabled, v1 semconv attribute names are emitted.
     from_version: v0.147.0

@@ -12,6 +12,7 @@ status:
 
 feature_gates:
   - id: extension.healthcheck.useComponentStatus
+    skip_strict_validation: true
     description: >-
       Switch to the shared healthcheck implementation powered by component status events
     stage: alpha

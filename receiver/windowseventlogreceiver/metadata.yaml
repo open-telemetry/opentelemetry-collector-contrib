@@ -22,6 +22,7 @@ tests:
 
 feature_gates:
   - id: domainControllers.autodiscovery
+    skip_strict_validation: true
     stage: alpha
     description: >-
       When enabled and is remote automatically discover domain controllers through joined controllers and 

@@ -11,6 +11,7 @@ status:
 
 feature_gates:
   - id: exporter.signalfx.consumeEntityEvents
+    skip_strict_validation: true
     stage: alpha
     description: Process entity events from logs pipeline and convert to dimension property updates
     from_version: v0.145.0

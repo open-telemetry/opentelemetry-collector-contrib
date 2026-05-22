@@ -11,6 +11,7 @@ status:
 
 feature_gates:
   - id: exporter.googlecloud.CustomMonitoredResources
+    skip_strict_validation: true
     description: >-
       When enabled, the googlecloudexporter will map the OTLP metrics to the monitored resource type
       defined by the resource label gcp.resource_type. The MR labels are defined by resource labels

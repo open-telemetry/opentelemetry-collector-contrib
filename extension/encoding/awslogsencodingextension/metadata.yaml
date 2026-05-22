@@ -19,6 +19,7 @@ tests:
 
 feature_gates:
   - id: extension.encoding.awslogsencoding.DontEmitV0RPCConventions
+    skip_strict_validation: true
     stage: alpha
     description: >-
       When enabled, CloudTrail log unmarshaler no longer emits the deprecated
@@ -27,6 +28,7 @@ feature_gates:
     from_version: v0.150.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47549
   - id: extension.encoding.awslogsencoding.EmitV1RPCConventions
+    skip_strict_validation: true
     stage: alpha
     description: >-
       When enabled, CloudTrail log unmarshaler emits rpc.system.name

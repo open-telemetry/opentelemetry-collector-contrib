@@ -10,6 +10,7 @@ status:
 
 feature_gates:
   - id: internal.coreinternal.goldendataset.DontEmitV0NetworkConventions
+    skip_strict_validation: true
     stage: beta
     description: >-
       When enabled, goldendataset no longer generates spans with deprecated
@@ -17,6 +18,7 @@ feature_gates:
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076
   - id: internal.coreinternal.goldendataset.DontEmitV0RPCConventions
+    skip_strict_validation: true
     stage: beta
     description: >-
       When enabled, goldendataset no longer generates spans with deprecated
@@ -24,6 +26,7 @@ feature_gates:
     from_version: v0.148.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548
   - id: internal.coreinternal.goldendataset.EmitV1NetworkConventions
+    skip_strict_validation: true
     stage: beta
     description: >-
       When enabled, goldendataset generates spans with network.local.address,
@@ -35,6 +38,7 @@ feature_gates:
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076
   - id: internal.coreinternal.goldendataset.EmitV1RPCConventions
+    skip_strict_validation: true
     stage: beta
     description: >-
       When enabled, goldendataset generates spans with rpc.method and

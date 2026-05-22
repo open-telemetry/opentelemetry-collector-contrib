@@ -10,6 +10,7 @@ status:
 
 feature_gates:
   - id: opampsupervisor.Extensions
+    skip_strict_validation: true
     stage: alpha
     description: >-
       When enabled, the opampsupervisor can be configured with and use specific extensions from the collector ecosystem.

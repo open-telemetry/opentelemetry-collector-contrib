@@ -14,6 +14,7 @@ status:
 
 feature_gates:
   - id: receiver.jaeger.DisableRemoteSampling
+    skip_strict_validation: true
     description: "When enabled, the Jaeger Receiver will fail to start when it is configured with remote_sampling config. When disabled, the receiver will start and the remote_sampling config will be no-op."
     stage: stable
     from_version: v0.84.0
