@@ -250,6 +250,11 @@ require (
 	modernc.org/b/v2 v2.1.11 // indirect
 )
 
+// Local filestorage uses storage.Walker which only exists in xextension main.
+// v0.152.1 release predates Walker and MVS picks it over v0.152.1-0.* pseudo-versions
+// pulled in transitively, so force the pseudo-version that has Walker.
+replace go.opentelemetry.io/collector/extension/xextension => go.opentelemetry.io/collector/extension/xextension v0.152.1-0.20260521212641-5abdf017eb1a
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter => ../
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../../extension/storage
