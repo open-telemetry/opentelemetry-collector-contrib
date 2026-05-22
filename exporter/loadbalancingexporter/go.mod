@@ -24,6 +24,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.152.1-0.20260514231715-e7f22744c28c
 	go.opentelemetry.io/collector/exporter/exportertest v0.152.1-0.20260514231715-e7f22744c28c
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.152.1-0.20260514231715-e7f22744c28c
+	go.opentelemetry.io/collector/exporter/xexporter v0.152.1-0.20260514231715-e7f22744c28c
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.152.1-0.20260514231715-e7f22744c28c
 	go.opentelemetry.io/collector/pdata v1.58.1-0.20260514231715-e7f22744c28c
 	go.opentelemetry.io/otel v1.43.0
@@ -133,7 +134,6 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.152.1-0.20260514231715-e7f22744c28c // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.152.1-0.20260514231715-e7f22744c28c // indirect
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.152.1-0.20260514231715-e7f22744c28c // indirect
-	go.opentelemetry.io/collector/exporter/xexporter v0.152.1-0.20260514231715-e7f22744c28c // indirect
 	go.opentelemetry.io/collector/extension v1.58.1-0.20260514231715-e7f22744c28c // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.58.1-0.20260514231715-e7f22744c28c // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.152.1-0.20260514231715-e7f22744c28c // indirect
@@ -177,11 +177,11 @@ require (
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.51.0 // indirect
+	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/exp v0.0.0-20260312153236-7ab1446f8b90 // indirect
 	golang.org/x/net v0.54.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.44.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/term v0.43.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
