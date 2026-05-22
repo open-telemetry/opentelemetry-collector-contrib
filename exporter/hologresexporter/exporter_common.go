@@ -4,9 +4,11 @@
 package hologresexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/hologresexporter"
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,9 +19,9 @@ import (
 )
 
 // pgxDB defines the database operations used by the Hologres exporters.
-// It is satisfied by *pgxpool.Pool in production code; tests can supply a
-// lightweight implementation. The COPY protocol (CopyFrom) is required by
-// pgx's native API and cannot be expressed via database/sql.
+// It is satisfied by *hologresPool in production code; tests can supply a
+// lightweight implementation (mockPgxDB). The COPY protocol uses text-format
+// COPY with STREAM_MODE TRUE for Hologres compatibility.
 type pgxDB interface {
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 	CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error)
@@ -27,8 +29,109 @@ type pgxDB interface {
 	Close()
 }
 
-// openDB creates a new pgx connection pool.
-func openDB(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+// hologresPool wraps *pgxpool.Pool and implements pgxDB.
+// It overrides CopyFrom to use text-format COPY with STREAM_MODE TRUE,
+// since Hologres does not support binary COPY without stream mode.
+type hologresPool struct {
+	pool *pgxpool.Pool
+}
+
+func (h *hologresPool) Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
+	return h.pool.Exec(ctx, sql, arguments...)
+}
+
+func (h *hologresPool) CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error) {
+	conn, err := h.pool.Acquire(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to acquire connection: %w", err)
+	}
+	defer conn.Release()
+
+	// Build column list.
+	quotedCols := make([]string, len(columnNames))
+	for i, col := range columnNames {
+		quotedCols[i] = pgx.Identifier{col}.Sanitize()
+	}
+
+	// Use text-format COPY with STREAM_MODE TRUE for Hologres compatibility.
+	copySQL := fmt.Sprintf("COPY %s (%s) FROM STDIN WITH (FORMAT text, DELIMITER E'\\t', NULL '\\N', STREAM_MODE TRUE)",
+		tableName.Sanitize(), strings.Join(quotedCols, ", "))
+
+	// Build tab-separated text data.
+	var buf bytes.Buffer
+	var count int64
+	for rowSrc.Next() {
+		values, verr := rowSrc.Values()
+		if verr != nil {
+			return 0, verr
+		}
+		for i, v := range values {
+			if i > 0 {
+				buf.WriteByte('\t')
+			}
+			buf.WriteString(formatCopyValue(v))
+		}
+		buf.WriteByte('\n')
+		count++
+	}
+	if rerr := rowSrc.Err(); rerr != nil {
+		return 0, rerr
+	}
+
+	_, err = conn.Conn().PgConn().CopyFrom(ctx, &buf, copySQL)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (h *hologresPool) Ping(ctx context.Context) error {
+	return h.pool.Ping(ctx)
+}
+
+func (h *hologresPool) Close() {
+	h.pool.Close()
+}
+
+// formatCopyValue converts a Go value to its PostgreSQL text-format COPY representation.
+func formatCopyValue(v any) string {
+	if v == nil {
+		return "\\N"
+	}
+	switch val := v.(type) {
+	case time.Time:
+		return val.Format("2006-01-02 15:04:05.999999-07:00")
+	case string:
+		return escapeCopyText(val)
+	case []byte:
+		return escapeCopyText(string(val))
+	case int32:
+		return strconv.FormatInt(int64(val), 10)
+	case int64:
+		return strconv.FormatInt(val, 10)
+	case float64:
+		return strconv.FormatFloat(val, 'f', -1, 64)
+	case bool:
+		if val {
+			return "true"
+		}
+		return "false"
+	default:
+		return escapeCopyText(fmt.Sprintf("%v", val))
+	}
+}
+
+// escapeCopyText escapes special characters for PostgreSQL text-format COPY.
+func escapeCopyText(s string) string {
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	s = strings.ReplaceAll(s, "\t", "\\t")
+	s = strings.ReplaceAll(s, "\n", "\\n")
+	s = strings.ReplaceAll(s, "\r", "\\r")
+	return s
+}
+
+// openDB creates a new pgx connection pool wrapped for Hologres compatibility.
+func openDB(ctx context.Context, dsn string) (*hologresPool, error) {
 	config, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse DSN: %w", err)
@@ -45,7 +148,7 @@ func openDB(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 		pool.Close()
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
-	return pool, nil
+	return &hologresPool{pool: pool}, nil
 }
 
 // ttlClause returns the time_to_live_in_seconds WITH-clause fragment for Hologres DDL.

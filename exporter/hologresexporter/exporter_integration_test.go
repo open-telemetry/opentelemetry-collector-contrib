@@ -114,7 +114,7 @@ func TestIntegration_TracesInsertAndQuery(t *testing.T) {
 
 	exp := newTracesExporter(zap.NewNop(), cfg)
 	require.NoError(t, exp.start(ctx, nil))
-	pool := exp.db.(*pgxpool.Pool)
+	pool := exp.db.(*hologresPool).pool
 	defer func() {
 		dropTablesQuiet(ctx, pool, cfg.TracesTableName)
 		_ = exp.shutdown(ctx)
@@ -169,7 +169,7 @@ func TestIntegration_LogsInsertAndQuery(t *testing.T) {
 
 	exp := newLogsExporter(zap.NewNop(), cfg)
 	require.NoError(t, exp.start(ctx, nil))
-	pool := exp.db.(*pgxpool.Pool)
+	pool := exp.db.(*hologresPool).pool
 	defer func() {
 		dropTablesQuiet(ctx, pool, cfg.LogsTableName)
 		_ = exp.shutdown(ctx)
@@ -219,7 +219,7 @@ func TestIntegration_MetricsGaugeInsertAndQuery(t *testing.T) {
 
 	exp := newMetricsExporter(zap.NewNop(), cfg)
 	require.NoError(t, exp.start(ctx, nil))
-	pool := exp.db.(*pgxpool.Pool)
+	pool := exp.db.(*hologresPool).pool
 	defer func() {
 		dropTablesQuiet(ctx, pool,
 			cfg.MetricsTableName+"_gauge",
