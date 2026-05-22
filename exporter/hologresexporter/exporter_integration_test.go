@@ -8,6 +8,7 @@ package hologresexporter
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -21,7 +22,16 @@ import (
 	"go.uber.org/zap"
 )
 
-const testDSN = "postgresql://LTAI5tG7Q7uw5puUBpkMFXkt:wDVVrVjLH1L08RzNt77wbKGPc4E0Ur@hgpostcn-cn-ypo4sjx5v005-cn-hangzhou.hologres.aliyuncs.com:80/otel?sslmode=disable"
+// testGetDSN reads the Hologres DSN from the HOLOGRES_DSN environment variable.
+// It skips the test if the variable is not set.
+func testGetDSN(t *testing.T) string {
+	t.Helper()
+	dsn := os.Getenv("HOLOGRES_DSN")
+	if dsn == "" {
+		t.Skip("HOLOGRES_DSN not set, skipping integration test")
+	}
+	return dsn
+}
 
 // uniqPrefix returns a unique table-name prefix using current Unix nanoseconds
 // to avoid collisions across concurrent test runs.
@@ -42,7 +52,8 @@ func TestIntegration_Connection(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	db, err := pgxpool.New(ctx, testDSN)
+	dsn := testGetDSN(t)
+	db, err := pgxpool.New(ctx, dsn)
 	require.NoError(t, err)
 	defer db.Close()
 
@@ -58,7 +69,8 @@ func TestIntegration_CreateTables(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	db, err := pgxpool.New(ctx, testDSN)
+	dsn := testGetDSN(t)
+	db, err := pgxpool.New(ctx, dsn)
 	require.NoError(t, err)
 	defer db.Close()
 
@@ -106,7 +118,7 @@ func TestIntegration_TracesInsertAndQuery(t *testing.T) {
 
 	prefix := uniqPrefix(t)
 	cfg := &Config{
-		DSN:             testDSN,
+		DSN:             testGetDSN(t),
 		TracesTableName: prefix + "_traces",
 		CreateSchema:    true,
 		TTL:             24 * time.Hour,
@@ -161,7 +173,7 @@ func TestIntegration_LogsInsertAndQuery(t *testing.T) {
 
 	prefix := uniqPrefix(t)
 	cfg := &Config{
-		DSN:           testDSN,
+		DSN:           testGetDSN(t),
 		LogsTableName: prefix + "_logs",
 		CreateSchema:  true,
 		TTL:           24 * time.Hour,
@@ -211,7 +223,7 @@ func TestIntegration_MetricsGaugeInsertAndQuery(t *testing.T) {
 
 	prefix := uniqPrefix(t)
 	cfg := &Config{
-		DSN:              testDSN,
+		DSN:              testGetDSN(t),
 		MetricsTableName: prefix + "_metrics",
 		CreateSchema:     true,
 		TTL:              24 * time.Hour,
