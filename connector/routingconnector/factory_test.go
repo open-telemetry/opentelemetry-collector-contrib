@@ -44,14 +44,14 @@ func TestConnectorCreatedWithValidConfiguration(t *testing.T) {
 
 func TestCreateDefaultConfig_FeatureGate(t *testing.T) {
 	t.Cleanup(func() {
-		_ = featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, false)
+		_ = featuregate.GlobalRegistry().Set(metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.ID(), false)
 	})
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, ottl.PropagateError, cfg.(*Config).ErrorMode)
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.ID(), true))
 
 	cfg = factory.CreateDefaultConfig()
 	assert.Equal(t, ottl.IgnoreError, cfg.(*Config).ErrorMode)
