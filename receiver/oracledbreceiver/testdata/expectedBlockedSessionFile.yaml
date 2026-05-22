@@ -15,129 +15,127 @@ resourceLogs:
           - attributes:
               - key: db.query.text
                 value:
-                  stringValue: test_query
+                  stringValue: UPDATE orders SET status = ? WHERE id = ?
               - key: db.system.name
                 value:
                   stringValue: oracle
               - key: user.name
                 value:
-                  stringValue: ADMIN
+                  stringValue: APP_USER
               - key: db.namespace
                 value:
-                  stringValue: ""
+                  stringValue: ORCL
               - key: client.address
                 value:
-                  stringValue: TEST-MACHINE
+                  stringValue: DB-CLIENT-HOST
               - key: client.port
                 value:
-                  intValue: "54440"
+                  intValue: "54441"
               - key: network.peer.address
                 value:
-                  stringValue: TEST-MACHINE
+                  stringValue: DB-CLIENT-HOST
               - key: network.peer.port
                 value:
-                  intValue: "54440"
+                  intValue: "54441"
               - key: oracledb.plan_hash_value
                 value:
-                  stringValue: "34313939393139353638"
+                  stringValue: "31323334353637383930"
               - key: oracledb.sql_id
                 value:
-                  stringValue: 48bc50b6fuz4y
+                  stringValue: 9fkq2mxyzabc1
               - key: oracledb.child_number
                 value:
                   stringValue: "0"
               - key: oracledb.child_address
                 value:
-                  stringValue: SDF3SDF1234D
+                  stringValue: ABCD1234
               - key: oracledb.sid
                 value:
-                  stringValue: "675"
+                  stringValue: "200"
               - key: oracledb.serial
                 value:
-                  stringValue: "51295"
+                  stringValue: "12345"
               - key: oracledb.process
                 value:
-                  stringValue: "1115"
+                  stringValue: "9876"
               - key: oracledb.schemaname
                 value:
-                  stringValue: ADMIN
+                  stringValue: APP_USER
               - key: oracledb.program
                 value:
-                  stringValue: Oracle SQL Developer for VS Code
+                  stringValue: JDBC Thin Client
               - key: oracledb.module
                 value:
-                  stringValue: Oracle SQL Developer for VS Code
+                  stringValue: app
               - key: oracledb.status
                 value:
                   stringValue: ACTIVE
               - key: oracledb.state
                 value:
-                  stringValue: WAITED KNOWN TIME
+                  stringValue: WAITING
               - key: oracledb.wait_class
                 value:
-                  stringValue: ONE
+                  stringValue: Application
               - key: oracledb.event
                 value:
                   stringValue: ""
               - key: oracledb.query.wait_time
                 value:
-                  doubleValue: 0.5
+                  doubleValue: 0
               - key: oracledb.procedure_id
                 value:
-                  intValue: "12345"
+                  intValue: "0"
               - key: oracledb.procedure_name
                 value:
-                  stringValue: BLAH
+                  stringValue: ""
               - key: oracledb.procedure_type
                 value:
-                  stringValue: PROCEDURE_TYPE-A
+                  stringValue: ""
               - key: oracledb.osuser
                 value:
-                  stringValue: test-user
+                  stringValue: oracle
               - key: oracledb.duration_sec
                 value:
-                  doubleValue: 1
+                  doubleValue: 15
               - key: oracledb.query.started
                 value:
-                  stringValue: "2026-01-01T12:00:00Z"
+                  stringValue: "2026-05-06T09:59:45Z"
               - key: oracledb.session.started
                 value:
-                  stringValue: "2026-01-01T12:00:00Z"
+                  stringValue: "2026-05-06T09:00:00Z"
               - key: oracledb.session.duration
                 value:
-                  doubleValue: 0
+                  doubleValue: 3600
               - key: oracledb.blocking.blocker.sid
                 value:
-                  stringValue: ""
+                  stringValue: "100"
               - key: oracledb.blocking.blocker.root_sid
                 value:
-                  stringValue: ""
+                  stringValue: "100"
               - key: oracledb.blocking.blocker.state
                 value:
-                  stringValue: ""
+                  stringValue: VALID
               - key: oracledb.blocking.start_time
                 value:
-                  stringValue: ""
+                  stringValue: "2026-05-06T10:00:00Z"
               - key: oracledb.blocking.wait_duration
                 value:
-                  intValue: "0"
+                  intValue: "15"
               - key: oracledb.blocking.lock.mode
                 value:
-                  stringValue: ""
+                  stringValue: EXCLUSIVE
               - key: oracledb.blocking.lock.type
                 value:
-                  stringValue: ""
+                  stringValue: TX
               - key: oracledb.blocking.object.owner
                 value:
-                  stringValue: ""
+                  stringValue: APP_USER
               - key: oracledb.blocking.object.name
                 value:
-                  stringValue: ""
+                  stringValue: ORDERS
             body: {}
             eventName: db.server.query_sample
-            spanId: a7ad6b7169203331
-            timeUnixNano: "1779182973079606000"
-            traceId: 0af7651916cd43dd8448eb211c80319c
+            timeUnixNano: "1779182973081590000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
           version: latest
