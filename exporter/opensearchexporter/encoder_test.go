@@ -464,7 +464,7 @@ func TestOTelV1_EncodeTrace_RootSpan(t *testing.T) {
 	// Verify basic span fields
 	assert.Equal(t, "8c8b1765a7b0acf0b66aa4623fcb7bd5", doc["traceId"])
 	assert.Equal(t, "fd0da883bb27cd6b", doc["spanId"])
-	assert.Equal(t, "", doc["parentSpanId"])
+	assert.Empty(t, doc["parentSpanId"])
 	assert.Equal(t, "HTTP GET /api/users", doc["name"])
 	assert.Equal(t, "Server", doc["kind"])
 

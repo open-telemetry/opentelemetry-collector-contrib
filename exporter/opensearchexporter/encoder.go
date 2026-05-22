@@ -267,7 +267,7 @@ func (m *encodeModel) encodeTrace(
 }
 
 // encodeLogOTelV1 encodes a plog.LogRecord following the Data Prepper OTel v1 logs schema.
-func (m *encodeModel) encodeLogOTelV1(
+func (*encodeModel) encodeLogOTelV1(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
 	schemaURL string,
@@ -305,7 +305,7 @@ func (m *encodeModel) encodeLogOTelV1(
 }
 
 // encodeTraceOTelV1 encodes a ptrace.Span following the Data Prepper OTel v1 traces schema.
-func (m *encodeModel) encodeTraceOTelV1(
+func (*encodeModel) encodeTraceOTelV1(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
 	schemaURL string,

@@ -180,6 +180,9 @@ Schema references:
 - [otel-v1-apm-span index template](https://github.com/opensearch-project/data-prepper/blob/main/data-prepper-plugins/opensearch/src/main/resources/index-template/otel-v1-apm-span-index-standard-template.json)
 - [logs-otel-v1 index template](https://github.com/opensearch-project/data-prepper/blob/main/data-prepper-plugins/opensearch/src/main/resources/index-template/logs-otel-v1-index-standard-template.json)
 
+> [!NOTE]
+> The exporter emits nanosecond-precision timestamps in the document body, but to materialize them as `date_nanos` (and apply the rest of the recommended field mappings) you must install the matching index templates before indexing begins. Without a template OpenSearch's dynamic mapping will infer `date` (millisecond precision) for timestamp fields. Install the templates out-of-band for now; see also the schema references above.
+
 ##### Example Configuration
 
 ```yaml

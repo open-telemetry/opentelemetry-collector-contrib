@@ -296,8 +296,9 @@ func TestOpenSearchTraceExporterOTelV1(t *testing.T) {
 		decoder := json.NewDecoder(r.Body)
 		for decoder.More() {
 			var jsonData any
-			err := decoder.Decode(&jsonData)
-			require.NoError(t, err)
+			if !assert.NoError(t, decoder.Decode(&jsonData)) {
+				return
+			}
 			strMap := jsonData.(map[string]any)
 			if actionData, isBulkAction := strMap["create"]; isBulkAction {
 				bulkIndex = actionData.(map[string]any)["_index"].(string)
@@ -314,7 +315,7 @@ func TestOpenSearchTraceExporterOTelV1(t *testing.T) {
 	cfg := withDefaultConfig(func(config *Config) {
 		config.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
-		config.MappingsSettings.Mode = "otel-v1"
+		config.Mode = "otel-v1"
 	})
 
 	f := NewFactory()
@@ -359,8 +360,9 @@ func TestOpenSearchLogExporterOTelV1(t *testing.T) {
 		decoder := json.NewDecoder(r.Body)
 		for decoder.More() {
 			var jsonData any
-			err := decoder.Decode(&jsonData)
-			require.NoError(t, err)
+			if !assert.NoError(t, decoder.Decode(&jsonData)) {
+				return
+			}
 			strMap := jsonData.(map[string]any)
 			if actionData, isBulkAction := strMap["create"]; isBulkAction {
 				bulkIndex = actionData.(map[string]any)["_index"].(string)
@@ -377,7 +379,7 @@ func TestOpenSearchLogExporterOTelV1(t *testing.T) {
 	cfg := withDefaultConfig(func(config *Config) {
 		config.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
-		config.MappingsSettings.Mode = "otel-v1"
+		config.Mode = "otel-v1"
 	})
 
 	f := NewFactory()
@@ -439,7 +441,7 @@ func TestOpenSearchOTelV1_CustomIndex(t *testing.T) {
 	cfg := withDefaultConfig(func(config *Config) {
 		config.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
-		config.MappingsSettings.Mode = "otel-v1"
+		config.Mode = "otel-v1"
 		config.TracesIndex = "my-custom-traces"
 	})
 
