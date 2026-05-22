@@ -288,3 +288,6 @@ replaces:
   # xextension v0.152.1 release predates storage.Walker; MVS picks it over the
   # v0.152.1-0.* pseudo-version, breaking filestorage. Force the pseudo-version.
   - go.opentelemetry.io/collector/extension/xextension => go.opentelemetry.io/collector/extension/xextension v0.152.1-0.20260521212641-5abdf017eb1a
+  # Align pdata with the rest of the v1.58.1-0.* stable modules so
+  # check-collector-module-version stays consistent.
+  - go.opentelemetry.io/collector/pdata => go.opentelemetry.io/collector/pdata v1.58.1-0.20260521212641-5abdf017eb1a
