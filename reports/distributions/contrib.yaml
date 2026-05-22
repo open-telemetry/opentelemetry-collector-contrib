@@ -8,12 +8,12 @@ components:
         - exceptions
         - failover
         - grafanacloud
-        - otlpjson
-        - roundrobin
+        - otlp_json
+        - round_robin
         - routing
-        - servicegraph
+        - service_graph
         - signal_to_metrics
-        - spanmetrics
+        - span_metrics
         - sum
     exporter:
         - alibabacloud_logservice
@@ -25,7 +25,7 @@ components:
         - azure_blob
         - azuredataexplorer
         - azuremonitor
-        - bmchelix
+        - bmc_helix
         - cassandra
         - clickhouse
         - coralogix
@@ -39,10 +39,10 @@ components:
         - googlecloud
         - googlecloudpubsub
         - googlemanagedprometheus
-        - honeycombmarker
+        - honeycomb_marker
         - influxdb
         - kafka
-        - loadbalancing
+        - load_balancing
         - logicmonitor
         - logzio
         - mezmo
@@ -112,15 +112,16 @@ components:
         - interval
         - isolationforest
         - k8s_attributes
-        - logdedup
+        - log_dedup
         - metric_start_time
+        - metrics_transform
         - metricsgeneration
-        - metricstransform
         - probabilistic_sampler
         - redaction
         - remotetap
         - resource
-        - resourcedetection
+        - resource_detection
+        - schema
         - span
         - spanpruning
         - sumologic
@@ -137,11 +138,11 @@ components:
         - aerospike
         - apache
         - apachespark
+        - aws_lambda
         - awscloudwatch
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
-        - awslambda
         - awss3
         - awsxray
         - azure_blob
@@ -150,8 +151,8 @@ components:
         - carbon
         - chrony
         - cisco_os
+        - cloud_foundry
         - cloudflare
-        - cloudfoundry
         - collectd
         - couchdb
         - datadog
@@ -163,12 +164,12 @@ components:
         - file_log
         - file_stats
         - flinkmetrics
-        - fluentforward
+        - fluent_forward
         - github
         - gitlab
+        - google_cloud_spanner
         - googlecloudmonitoring
         - googlecloudpubsub
-        - googlecloudspanner
         - haproxy
         - host_metrics
         - http_check
@@ -181,8 +182,8 @@ components:
         - k8s_events
         - k8s_objects
         - kafka
-        - kafkametrics
-        - kubeletstats
+        - kafka_metrics
+        - kubelet_stats
         - libhoney
         - loki
         - macos_unified_logging
@@ -226,8 +227,8 @@ components:
         - stef
         - syslog
         - systemd
+        - tcp_check
         - tcp_log
-        - tcpcheck
         - tls_check
         - udp_log
         - vcenter

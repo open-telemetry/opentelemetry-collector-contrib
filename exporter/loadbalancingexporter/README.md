@@ -18,6 +18,9 @@
 
 This is an exporter that will consistently export spans and metrics depending on the `routing_key` configured. Logs are exported based on the `traceID` (if it's present) or an auto-generated `traceID`. Therefore setting the `routing_key` for logs does not have any effect.
 
+> [!NOTE]
+> The exporter type has been renamed from `loadbalancing` to `load_balancing` to follow the lower_snake_case naming convention. The old name `loadbalancing` is preserved as a deprecated alias, but users should migrate configuration to use `load_balancing:`.
+
 The options for `routing_key` are: `service`, `traceID`, `metric` (metric name), `resource`, `streamID`, `attributes`.
 
 | routing_key | can be used for      |
@@ -61,7 +64,7 @@ The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`,
            |               ---/              |
   +-----------------+  ---/                  |
   |                 --/                      |
-  |  loadbalancing  |                   resiliency options 2
+  |  load_balancing |                   resiliency options 2
   |    exporter     |                        |
   |                 --\                      |
   +-----------------+  ----\                 |
@@ -75,7 +78,7 @@ The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`,
 * For all types of resolvers (`static`, `dns`, `k8s`) - if one of endpoints is unavailable - first works queue, retry and timeout settings defined for sub-exporters (under `otlp` property). Once redelivery is exhausted on sub-exporter level, and resilience options 1 are enabled - telemetry data returns to `loadbalancingexporter` itself and data redelivery happens according to exporter level queue, retry and timeout settings.
 * When using the `static` resolver, there's a risk of data loss if one of the defined endpoint targets becomes unavailable and both resiliency option 2 and resiliency option 1 (if enabled) are exhausted. This limitation stems from the nature of the `static` resolver, where endpoints are configured manually and remain fixed. In contrast, resolvers like `dns` and `k8s` automatically update the list of available endpoints, offering greater flexibility and resilience.
 * When using `k8s`, `dns`, and likely future resolvers, topology changes are eventually reflected in the `loadbalancingexporter`. The `k8s` resolver will update more quickly than `dns`, but a window of time in which the true topology doesn't match the view of the `loadbalancingexporter` remains.
-* Resiliency options 1 (`timeout`, `retry_on_failure` and `sending_queue` settings in `loadbalancing` section) - are useful for highly elastic environment (like k8s), where list of resolved endpoints frequently changed due to deployments, scale-up or scale-down events. In case of permanent change of list of resolved exporters this options provide capability to re-route data into new set of healthy backends. Disabled by default.
+* Resiliency options 1 (`timeout`, `retry_on_failure` and `sending_queue` settings in `load_balancing` section) - are useful for highly elastic environment (like k8s), where list of resolved endpoints frequently changed due to deployments, scale-up or scale-down events. In case of permanent change of list of resolved exporters this options provide capability to re-route data into new set of healthy backends. Disabled by default.
 * Resiliency options 2 (`timeout`, `retry_on_failure` and `sending_queue` settings in `otlp` section) - are useful for temporary problems with specific backend, like network flukes. Persistent Queue is NOT supported here as all sub-exporter shares the same `sending_queue` configuration, including `storage`. Enabled by default.
 
 Unfortunately, data loss is still possible for any resolver type if all of the exporter's targets remains unavailable once redelivery is exhausted. Due consideration needs to be given to the exporter queue and retry configuration when running in a highly elastic environment.
@@ -106,6 +109,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `interval` resolver interval in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `30s` will be used.
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `5s` will be used.
   * `port` port to be used for exporting the traces to the addresses resolved from `service`. By default, the port is set in Cloud Map, but can be be overridden with a static value in this config
+  * `owner_account` the AWS account ID that owns the Cloud Map namespace. Required when discovering instances in a namespace shared from another account via [AWS RAM](https://docs.aws.amazon.com/cloud-map/latest/dg/sharing-namespaces.html). When omitted, only namespaces owned by the caller's account are queried.
   * `health_status` filter in AWS Cloud Map, you can specify the health status of the instances that you want to discover. The health_status filter is optional and allows you to query based on the health status of the instances.
     * Available values are
       * `HEALTHY`: Only return instances that are healthy.
@@ -123,8 +127,8 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `resource`: Routes metrics based on a hash of all resource attributes. All metrics sharing the exact same set of resource attributes will be routed to the same backend. This is more granular than `service`, which only considers `service.name`, but less granular than `streamID`, which also considers scope and datapoint attributes. Invalid for spans.
   * `metric`: Routes metrics based on their metric name. Invalid for spans.
   * `streamID`: Routes metrics based on their datapoint streamID. That's the unique hash of all it's attributes, plus the attributes and identifying information of its resource, scope, and metric data.
-* loadbalancing exporter supports set of standard [queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), but they are disable by default to maintain compatibility
-* The `routing_attributes` property is used to list the attributes that should be used if the `routing_key` is `attributes`.
+* The `load_balancing` exporter supports a set of standard [queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), but they are disabled by default to maintain compatibility
+* The `routing_attributes` property is used to list the attributes that should be used if the `routing_key` is `attributes`. For both traces and metrics, keys are encoded in configured order as `name=value|name=value|`, and missing attributes are encoded as `name=|`. Non-string values are deterministically stringified.
 
 Simple example
 
@@ -138,7 +142,7 @@ receivers:
 processors:
 
 exporters:
-  loadbalancing:
+  load_balancing:
     routing_key: "service"
     protocol:
       otlp:
@@ -163,13 +167,13 @@ service:
         - otlp
       processors: []
       exporters:
-        - loadbalancing
+        - load_balancing
     logs:
       receivers:
         - otlp
       processors: []
       exporters:
-        - loadbalancing
+        - load_balancing
 ```
 
 Persistent queue, retry and timeout usage example:
@@ -184,7 +188,7 @@ receivers:
 processors:
 
 exporters:
-  loadbalancing:
+  load_balancing:
     timeout: 10s
     retry_on_failure:
       enabled: true
@@ -228,13 +232,13 @@ service:
         - otlp
       processors: []
       exporters:
-        - loadbalancing
+        - load_balancing
     logs:
       receivers:
         - otlp
       processors: []
       exporters:
-        - loadbalancing
+        - load_balancing
 ```
 
 Kubernetes resolver example (For a more specific example: [example/k8s-resolver](./example/k8s-resolver/README.md))
@@ -251,7 +255,7 @@ receivers:
 processors:
 
 exporters:
-  loadbalancing:
+  load_balancing:
     routing_key: "service"
     protocol:
       otlp:
@@ -273,13 +277,13 @@ service:
         - otlp
       processors: []
       exporters:
-        - loadbalancing
+        - load_balancing
     logs:
       receivers:
         - otlp
       processors: []
       exporters:
-        - loadbalancing
+        - load_balancing
 ```
 
 AWS CloudMap resolver example
@@ -294,7 +298,7 @@ receivers:
 processors:
 
 exporters:
-  loadbalancing:
+  load_balancing:
     protocol:
       otlp:
         # all options from the OTLP exporter are supported
@@ -304,6 +308,7 @@ exporters:
       aws_cloud_map:
         namespace: aws-namespace
         service_name: aws-otel-col-service-name
+        owner_account: "123456789012" # optional, for cross-account namespace discovery
         interval: 30s
 
 service:
@@ -313,13 +318,13 @@ service:
         - otlp
       processors: []
       exporters:
-        - loadbalancing
+        - load_balancing
     logs:
       receivers:
         - otlp
       processors: []
       exporters:
-        - loadbalancing
+        - load_balancing
 ```
 
 For testing purposes, the following configuration can be used, where both the load balancer and all backends are running locally:
@@ -351,7 +356,7 @@ processors:
 
 exporters:
   debug:
-  loadbalancing:
+  load_balancing:
     protocol:
       otlp:
         timeout: 1s
@@ -372,7 +377,7 @@ service:
         - otlp/loadbalancer
       processors: []
       exporters:
-        - loadbalancing
+        - load_balancing
 
     traces/backend-1:
       receivers:
@@ -407,7 +412,7 @@ service:
         - otlp/loadbalancer
       processors: []
       exporters:
-        - loadbalancing
+        - load_balancing
     logs/backend-1:
       receivers:
         - otlp/backend-1

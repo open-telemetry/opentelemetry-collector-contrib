@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -18,9 +20,16 @@ import (
 
 func newTestProcessor(t *testing.T, cfg *Config) *drainProcessor {
 	t.Helper()
+	return newTestProcessorWithHost(t, cfg, componenttest.NewNopHost())
+}
+
+func newTestProcessorWithHost(t *testing.T, cfg *Config, host component.Host) *drainProcessor {
+	t.Helper()
 	set := processortest.NewNopSettings(metadata.Type)
 	p, err := newDrainProcessor(set, cfg)
 	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), host))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
 	return p
 }
 

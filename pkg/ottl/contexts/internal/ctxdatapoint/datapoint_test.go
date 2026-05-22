@@ -1973,6 +1973,149 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 	}
 }
 
+func TestPathGetSetter_CrossDataPointTypeErrors(t *testing.T) {
+	newBuckets := pmetric.NewExponentialHistogramDataPointBuckets()
+	newQuantileValues := pmetric.NewSummaryDataPointValueAtQuantileSlice()
+	newExemplars := pmetric.NewExemplarSlice()
+
+	tests := []struct {
+		name      string
+		path      ottl.Path[*testContext]
+		dataPoint any
+		val       any
+	}{
+		{
+			name:      "value_double on HistogramDataPoint",
+			path:      &pathtest.Path[*testContext]{N: "value_double"},
+			dataPoint: pmetric.NewHistogramDataPoint(),
+			val:       2.2,
+		},
+		{
+			name:      "value_int on SummaryDataPoint",
+			path:      &pathtest.Path[*testContext]{N: "value_int"},
+			dataPoint: pmetric.NewSummaryDataPoint(),
+			val:       int64(2),
+		},
+		{
+			name:      "explicit_bounds on NumberDataPoint",
+			path:      &pathtest.Path[*testContext]{N: "explicit_bounds"},
+			dataPoint: pmetric.NewNumberDataPoint(),
+			val:       []float64{1.0},
+		},
+		{
+			name:      "bucket_counts on SummaryDataPoint",
+			path:      &pathtest.Path[*testContext]{N: "bucket_counts"},
+			dataPoint: pmetric.NewSummaryDataPoint(),
+			val:       []int64{1},
+		},
+		{
+			name:      "scale on HistogramDataPoint",
+			path:      &pathtest.Path[*testContext]{N: "scale"},
+			dataPoint: pmetric.NewHistogramDataPoint(),
+			val:       int64(1),
+		},
+		{
+			name:      "zero_count on NumberDataPoint",
+			path:      &pathtest.Path[*testContext]{N: "zero_count"},
+			dataPoint: pmetric.NewNumberDataPoint(),
+			val:       int64(1),
+		},
+		{
+			name:      "positive on HistogramDataPoint",
+			path:      &pathtest.Path[*testContext]{N: "positive"},
+			dataPoint: pmetric.NewHistogramDataPoint(),
+			val:       newBuckets,
+		},
+		{
+			name: "positive.offset on NumberDataPoint",
+			path: &pathtest.Path[*testContext]{
+				N:        "positive",
+				NextPath: &pathtest.Path[*testContext]{N: "offset"},
+			},
+			dataPoint: pmetric.NewNumberDataPoint(),
+			val:       int64(1),
+		},
+		{
+			name: "positive.bucket_counts on SummaryDataPoint",
+			path: &pathtest.Path[*testContext]{
+				N:        "positive",
+				NextPath: &pathtest.Path[*testContext]{N: "bucket_counts"},
+			},
+			dataPoint: pmetric.NewSummaryDataPoint(),
+			val:       []int64{1},
+		},
+		{
+			name:      "negative on NumberDataPoint",
+			path:      &pathtest.Path[*testContext]{N: "negative"},
+			dataPoint: pmetric.NewNumberDataPoint(),
+			val:       newBuckets,
+		},
+		{
+			name: "negative.offset on HistogramDataPoint",
+			path: &pathtest.Path[*testContext]{
+				N:        "negative",
+				NextPath: &pathtest.Path[*testContext]{N: "offset"},
+			},
+			dataPoint: pmetric.NewHistogramDataPoint(),
+			val:       int64(1),
+		},
+		{
+			name: "negative.bucket_counts on SummaryDataPoint",
+			path: &pathtest.Path[*testContext]{
+				N:        "negative",
+				NextPath: &pathtest.Path[*testContext]{N: "bucket_counts"},
+			},
+			dataPoint: pmetric.NewSummaryDataPoint(),
+			val:       []int64{1},
+		},
+		{
+			name:      "quantile_values on NumberDataPoint",
+			path:      &pathtest.Path[*testContext]{N: "quantile_values"},
+			dataPoint: pmetric.NewNumberDataPoint(),
+			val:       newQuantileValues,
+		},
+		{
+			name:      "count on NumberDataPoint",
+			path:      &pathtest.Path[*testContext]{N: "count"},
+			dataPoint: pmetric.NewNumberDataPoint(),
+			val:       int64(1),
+		},
+		{
+			name:      "sum on NumberDataPoint",
+			path:      &pathtest.Path[*testContext]{N: "sum"},
+			dataPoint: pmetric.NewNumberDataPoint(),
+			val:       1.0,
+		},
+		{
+			name:      "exemplars on SummaryDataPoint",
+			path:      &pathtest.Path[*testContext]{N: "exemplars"},
+			dataPoint: pmetric.NewSummaryDataPoint(),
+			val:       newExemplars,
+		},
+		{
+			name:      "attributes on unknown data point type",
+			path:      &pathtest.Path[*testContext]{N: "attributes"},
+			dataPoint: struct{}{},
+			val:       pcommon.NewMap(),
+		},
+		{
+			name:      "flags on unknown data point type",
+			path:      &pathtest.Path[*testContext]{N: "flags"},
+			dataPoint: struct{}{},
+			val:       int64(1),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			accessor, err := ctxdatapoint.PathGetSetter(tt.path)
+			require.NoError(t, err)
+			ctx := newTestContext(tt.dataPoint)
+			err = accessor.Set(t.Context(), ctx, tt.val)
+			require.Error(t, err)
+		})
+	}
+}
+
 func createSummaryDataPointTelemetry() pmetric.SummaryDataPoint {
 	summaryDataPoint := pmetric.NewSummaryDataPoint()
 	summaryDataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
