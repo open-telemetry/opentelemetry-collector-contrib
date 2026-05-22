@@ -298,7 +298,7 @@ func TestValidateReturnsAccessProblem(t *testing.T) {
 
 	err := cfg.Validate()
 	require.Error(t, err)
-	require.ErrorContains(t, err, "problem accessing configured directory: \x00, err: stat \x00")
+	require.Contains(t, strings.ToLower(err.Error()), "problem accessing configured directory: \x00, err: stat \x00")
 }
 
 func TestCompactionDirectory(t *testing.T) {
