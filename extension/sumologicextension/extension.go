@@ -842,11 +842,18 @@ func (se *SumologicExtension) updateMetadataAsync() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
-		<-se.closeChan
-		cancel()
+		select {
+		case <-se.closeChan:
+			cancel()
+		case <-ctx.Done():
+		}
 	}()
 
-	se.backOff.Reset()
+	bo := backoff.NewExponentialBackOff()
+	bo.InitialInterval = se.conf.BackOff.InitialInterval
+	bo.MaxElapsedTime = se.conf.BackOff.MaxElapsedTime
+	bo.MaxInterval = se.conf.BackOff.MaxInterval
+	bo.Reset()
 
 	for {
 		select {
@@ -870,8 +877,8 @@ func (se *SumologicExtension) updateMetadataAsync() {
 			return
 		}
 
-		nbo := se.backOff.NextBackOff()
-		if nbo == se.backOff.Stop {
+		nbo := bo.NextBackOff()
+		if nbo == bo.Stop {
 			se.logger.Warn("Async metadata update stopped: backoff elapsed time exceeded")
 			return
 		}
