@@ -11,9 +11,20 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+)
+
+const defaultErrorModeIgnoreGateID = "connector.routing.defaultErrorModeIgnore"
+
+var defaultErrorModeIgnoreFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	defaultErrorModeIgnoreGateID,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Changes the default error_mode of the routing connector from propagate to ignore"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48418"),
+	featuregate.WithRegisterFromVersion("v0.152.0"),
 )
 
 // NewFactory returns a ConnectorFactory.
@@ -29,8 +40,12 @@ func NewFactory() connector.Factory {
 
 // createDefaultConfig creates the default configuration.
 func createDefaultConfig() component.Config {
+	defaultErrorMode := ottl.PropagateError
+	if defaultErrorModeIgnoreFeatureGate.IsEnabled() {
+		defaultErrorMode = ottl.IgnoreError
+	}
 	return &Config{
-		ErrorMode: ottl.PropagateError,
+		ErrorMode: defaultErrorMode,
 	}
 }
 

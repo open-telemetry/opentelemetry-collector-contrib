@@ -1,0 +1,6 @@
+change_type: enhancement
+component: connector/routing
+note: Add feature gate `connector.routing.defaultErrorModeIgnore` to change default error_mode from propagate to ignore
+issues: [48418]
+subtext:
+change_logs: []
