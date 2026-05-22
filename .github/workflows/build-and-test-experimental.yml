@@ -343,10 +343,25 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
+      - name: Compute Docker cache key
+        id: docker-cache-key
+        env:
+          GROUP: ${{ matrix.group }}
+        run: |
+          normalized_group="$(
+            printf '%s' "$GROUP" \
+              | tr '[:space:]' '\n' \
+              | sed '/^$/d' \
+              | sort \
+              | tr '\n' ' ' \
+              | sed 's/[[:space:]]\+$//'
+          )"
+          group_hash="$(printf '%s' "$normalized_group" | sha256sum | cut -d ' ' -f 1)"
+          echo "key=docker-experimental-${group_hash}" >> "$GITHUB_OUTPUT"
       - name: Cache Docker images.
         uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
         with:
-          key: docker-experimental-${{ matrix.group }}
+          key: ${{ steps.docker-cache-key.outputs.key }}
       - name: Run Integration Tests
         run: make gointegration-test GROUP="${{ matrix.group }}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
