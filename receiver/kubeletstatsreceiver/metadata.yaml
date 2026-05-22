@@ -1,6 +1,7 @@
 display_name: Kubelet Stats Receiver
 type: kubelet_stats
 deprecated_type: kubeletstats
+reaggregation_enabled: true
 
 description: |
   The Kubelet Stats Receiver pulls node, pod, container, and volume metrics from the API server on a kubelet
@@ -95,10 +96,16 @@ resource_attributes:
 attributes:
   direction:
     description: Direction of flow of bytes/operations (receive or transmit).
+    requirement_level: recommended
     type: string
     enum: [receive, transmit]
+  fs.type:
+    description: The type of filesystem component.
+    type: string
+    enum: [rootfs, logs]
   interface:
     description: Name of the network interface.
+    requirement_level: recommended
     type: string
 
 metrics:
@@ -226,6 +233,16 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  k8s.container.ephemeral_storage.usage:
+    enabled: false
+    description: "Ephemeral storage used by the container."
+    unit: By
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [fs.type]
   k8s.container.memory.node.utilization:
     enabled: false
     description: "Container memory utilization as a ratio of the node's capacity"

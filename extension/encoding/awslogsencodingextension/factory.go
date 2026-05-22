@@ -34,8 +34,5 @@ func createDefaultConfig() component.Config {
 		VPCFlowLogConfig: vpcflowlog.Config{
 			FileFormat: constants.FileFormatPlainText,
 		},
-		VPCFlowLogConfigV1: vpcflowlog.Config{
-			FileFormat: constants.FileFormatPlainText,
-		},
 	}
 }
