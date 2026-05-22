@@ -141,11 +141,6 @@ jobs:
           echo "Raw direct matrix:      $RAW_DIRECT_MATRIX"
           echo "Filtered direct matrix: $direct_matrix"
           echo "Mode:                   $mode"
-  # Lint runs against the direct-changes matrix only: a downstream module's
-  # lint result doesn't depend on whether an upstream module's source changed,
-  # so dragging transitive dependents in here just wastes runners. In `full`
-  # mode (e.g. push, merge_group, critical-file change, or `ci:full` label)
-  # direct_matrix is the full named-group list, matching prior behavior.
   lint-matrix:
     needs: [setup-environment, ci-scope]
     if: ${{ needs.ci-scope.outputs.direct_matrix != '[]' && needs.ci-scope.outputs.direct_matrix != '' }}
