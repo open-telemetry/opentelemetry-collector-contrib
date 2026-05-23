@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -436,23 +437,27 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			accessor, err := ctxdatapoint.PathGetSetter(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			numberDataPoint := createNumberDataPoint(tt.valueType)
 
 			ctx := newTestContext(numberDataPoint)
 
 			got, err := accessor.Get(t.Context(), ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), ctx, tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exNumberDataPoint := createNumberDataPoint(tt.valueType)
 			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, numberDataPoint)
+
+			// Verify that setting an invalid type returns an error
+			err = accessor.Set(t.Context(), ctx, struct{}{})
+			require.Error(t, err)
 		})
 	}
 }
@@ -913,23 +918,27 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			accessor, err := ctxdatapoint.PathGetSetter(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			histogramDataPoint := createHistogramDataPointTelemetry()
 
 			ctx := newTestContext(histogramDataPoint)
 
 			got, err := accessor.Get(t.Context(), ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), ctx, tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exNumberDataPoint := createHistogramDataPointTelemetry()
 			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, histogramDataPoint)
+
+			// Verify that setting an invalid type returns an error
+			err = accessor.Set(t.Context(), ctx, struct{}{})
+			require.Error(t, err)
 		})
 	}
 }
@@ -1474,23 +1483,27 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			accessor, err := ctxdatapoint.PathGetSetter(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			expoHistogramDataPoint := createExpoHistogramDataPointTelemetry()
 
 			ctx := newTestContext(expoHistogramDataPoint)
 
 			got, err := accessor.Get(t.Context(), ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), ctx, tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exNumberDataPoint := createExpoHistogramDataPointTelemetry()
 			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, expoHistogramDataPoint)
+
+			// Verify that setting an invalid type returns an error
+			err = accessor.Set(t.Context(), ctx, struct{}{})
+			require.Error(t, err)
 		})
 	}
 }
@@ -1935,23 +1948,27 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			accessor, err := ctxdatapoint.PathGetSetter(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			summaryDataPoint := createSummaryDataPointTelemetry()
 
 			ctx := newTestContext(summaryDataPoint)
 
 			got, err := accessor.Get(t.Context(), ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), ctx, tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exNumberDataPoint := createSummaryDataPointTelemetry()
 			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, summaryDataPoint)
+
+			// Verify that setting an invalid type returns an error
+			err = accessor.Set(t.Context(), ctx, struct{}{})
+			require.Error(t, err)
 		})
 	}
 }

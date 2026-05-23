@@ -11,10 +11,16 @@ import (
 	"unsafe"
 )
 
-// PerformanceQuery is abstraction for PDH_FMT_COUNTERVALUE_ITEM_DOUBLE
+// CounterValue is abstraction for PDH_FMT_COUNTERVALUE_ITEM_DOUBLE
 type CounterValue struct {
 	InstanceName string
 	Value        float64
+}
+
+// RawCounterValue is abstraction for PDH_RAW_COUNTER_ITEM
+type RawCounterValue struct {
+	InstanceName string
+	RawValue     int64
 }
 
 // PerformanceQuery provides wrappers around Windows performance counters API for easy usage in GO
@@ -26,6 +32,8 @@ type PerformanceQuery interface {
 	GetCounterPath(counterHandle PDH_HCOUNTER) (string, error)
 	GetFormattedCounterValueDouble(hCounter PDH_HCOUNTER) (float64, error)
 	GetFormattedCounterArrayDouble(hCounter PDH_HCOUNTER) ([]CounterValue, error)
+	GetRawCounterValue(hCounter PDH_HCOUNTER) (int64, error)
+	GetRawCounterArray(hCounter PDH_HCOUNTER) ([]RawCounterValue, error)
 	CollectData() error
 	CollectDataWithTime() (time.Time, error)
 	IsVistaOrNewer() bool
@@ -154,6 +162,45 @@ func (m *PerformanceQueryImpl) GetFormattedCounterArrayDouble(hCounter PDH_HCOUN
 			for _, item := range items {
 				if item.FmtValue.CStatus == PDH_CSTATUS_VALID_DATA || item.FmtValue.CStatus == PDH_CSTATUS_NEW_DATA {
 					val := CounterValue{UTF16PtrToString(item.SzName), item.FmtValue.DoubleValue}
+					values = append(values, val)
+				}
+			}
+			return values, nil
+		}
+	}
+	return nil, NewPdhError(ret)
+}
+
+func (m *PerformanceQueryImpl) GetRawCounterValue(hCounter PDH_HCOUNTER) (int64, error) {
+	var counterType uint32
+	var rawValue PDH_RAW_COUNTER
+	var ret uint32
+
+	if ret = PdhGetRawCounterValue(hCounter, &counterType, &rawValue); ret == ERROR_SUCCESS {
+		if rawValue.CStatus == PDH_CSTATUS_VALID_DATA {
+			return rawValue.FirstValue, nil
+		} else {
+			return 0, NewPdhError(rawValue.CStatus)
+		}
+	} else {
+		return 0, NewPdhError(ret)
+	}
+}
+
+func (m *PerformanceQueryImpl) GetRawCounterArray(hCounter PDH_HCOUNTER) ([]RawCounterValue, error) {
+	var buffSize uint32
+	var itemCount uint32
+	var ret uint32
+
+	if ret = PdhGetRawCounterArrayW(hCounter, &buffSize, &itemCount, nil); ret == PDH_MORE_DATA {
+		buff := make([]byte, buffSize)
+
+		if ret = PdhGetRawCounterArrayW(hCounter, &buffSize, &itemCount, &buff[0]); ret == ERROR_SUCCESS {
+			items := unsafe.Slice((*PDH_RAW_COUNTER_ITEM)(unsafe.Pointer(&buff[0])), itemCount)
+			values := make([]RawCounterValue, 0, itemCount)
+			for _, item := range items {
+				if item.RawValue.CStatus == PDH_CSTATUS_VALID_DATA {
+					val := RawCounterValue{UTF16PtrToString(item.SzName), item.RawValue.FirstValue}
 					values = append(values, val)
 				}
 			}

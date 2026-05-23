@@ -6,11 +6,14 @@ package googlecloudpubsubreceiver // import "github.com/open-telemetry/opentelem
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal"
 )
 
-var subscriptionMatcher = regexp.MustCompile(`projects/[a-z][a-z0-9\-]*/subscriptions/`)
+var subscriptionMatcher = regexp.MustCompile(`projects/[a-z][a-z0-9\-]*(:[a-z0-9\-]+)?/subscriptions/`)
 
 type Config struct {
 	// Google Cloud Project ID where the Pubsub client will connect to
@@ -31,8 +34,38 @@ type Config struct {
 	// Lock down the compression of the payload, leave empty for attribute based detection
 	Compression string `mapstructure:"compression"`
 
+	// Ignore errors when the configured encoder fails to decoding a PubSub messages
+	IgnoreEncodingError bool `mapstructure:"ignore_encoding_error"`
+
 	// The client id that will be used by Pubsub to make load balancing decisions
 	ClientID string `mapstructure:"client_id"`
+
+	FlowControlConfig FlowControlConfig `mapstructure:"flow_control"`
+}
+
+// FlowControlConfig defines the flow control configuration for the receiver. This is used to
+// tune the internal flow control implementation, along with the Pub/Sub flow control settings
+// documented at https://cloud.google.com/pubsub/docs/flow-control and
+// https://cloud.google.com/pubsub/docs/reference/rpc/google.pubsub.v1#streamingpullrequest
+type FlowControlConfig struct {
+	// The maximum duration the acknowledgement loop waits before sending the acknowledgements.
+	TriggerAckBatchDuration time.Duration `mapstructure:"trigger_ack_batch_duration"`
+
+	// The ack deadline to use for the Pub/Sub stream.
+	StreamAckDeadline time.Duration `mapstructure:"stream_ack_deadline"`
+	// Pub/Sub flow control settings for the maximum number of outstanding messages.
+	MaxOutstandingMessages int64 `mapstructure:"max_outstanding_messages"`
+	// Pub/Sub flow control settings for the maximum number of outstanding bytes.
+	MaxOutstandingBytes int64 `mapstructure:"max_outstanding_bytes"`
+}
+
+func (fcc *FlowControlConfig) getInternalConfig() *internal.FlowControlConfig {
+	return &internal.FlowControlConfig{
+		TriggerAckBatchDuration: fcc.TriggerAckBatchDuration,
+		StreamAckDeadline:       fcc.StreamAckDeadline,
+		MaxOutstandingMessages:  fcc.MaxOutstandingMessages,
+		MaxOutstandingBytes:     fcc.MaxOutstandingBytes,
+	}
 }
 
 func (config *Config) validate() error {

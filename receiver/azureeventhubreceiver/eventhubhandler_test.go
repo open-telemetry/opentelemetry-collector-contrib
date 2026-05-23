@@ -8,13 +8,15 @@ import (
 	"testing"
 	"time"
 
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -24,8 +26,8 @@ import (
 
 type mockHubWrapper struct{}
 
-func (m mockHubWrapper) GetRuntimeInformation(_ context.Context) (*eventhub.HubRuntimeInformation, error) {
-	return &eventhub.HubRuntimeInformation{
+func (mockHubWrapper) GetRuntimeInformation(context.Context) (*hubRuntimeInfo, error) {
+	return &hubRuntimeInfo{
 		Path:           "foo",
 		CreatedAt:      time.Now(),
 		PartitionCount: 1,
@@ -33,13 +35,13 @@ func (m mockHubWrapper) GetRuntimeInformation(_ context.Context) (*eventhub.HubR
 	}, nil
 }
 
-func (m mockHubWrapper) Receive(ctx context.Context, _ string, _ eventhub.Handler, _ ...eventhub.ReceiveOption) (listerHandleWrapper, error) {
+func (mockHubWrapper) Receive(ctx context.Context, _ string, _ hubHandler, _ bool, _ *zap.Logger) (listenerHandleWrapper, error) {
 	return &mockListenerHandleWrapper{
 		ctx: ctx,
 	}, nil
 }
 
-func (m mockHubWrapper) Close(_ context.Context) error {
+func (mockHubWrapper) Close(context.Context) error {
 	return nil
 }
 
@@ -51,7 +53,7 @@ func (m *mockListenerHandleWrapper) Done() <-chan struct{} {
 	return m.ctx.Done()
 }
 
-func (m mockListenerHandleWrapper) Err() error {
+func (mockListenerHandleWrapper) Err() error {
 	return nil
 }
 
@@ -70,9 +72,9 @@ func (m *mockDataConsumer) setNextTracesConsumer(nextTracesConsumer consumer.Tra
 	m.nextTracesConsumer = nextTracesConsumer
 }
 
-func (m *mockDataConsumer) setNextMetricsConsumer(_ consumer.Metrics) {}
+func (*mockDataConsumer) setNextMetricsConsumer(consumer.Metrics) {}
 
-func (m *mockDataConsumer) consume(ctx context.Context, event *eventhub.Event) error {
+func (m *mockDataConsumer) consume(ctx context.Context, event *azureEvent) error {
 	logsContext := m.obsrecv.StartLogsOp(ctx)
 
 	logs, err := m.logsUnmarshaler.UnmarshalLogs(event)
@@ -101,7 +103,77 @@ func TestEventhubHandler_Start(t *testing.T) {
 	assert.NoError(t, ehHandler.close(t.Context()))
 }
 
-func TestEventhubHandler_newMessageHandler(t *testing.T) {
+func TestShouldInitializeStorageClient(t *testing.T) {
+	testCases := []struct {
+		name          string
+		storageClient storage.Client
+		storageID     *component.ID
+		expected      bool
+	}{
+		{
+			name:          "no storage client and no storage ID - should not initialize",
+			storageClient: nil,
+			storageID:     nil,
+			expected:      false,
+		},
+		{
+			name:          "no storage client but has storage ID - should initialize",
+			storageClient: nil,
+			storageID:     &component.ID{},
+			expected:      true,
+		},
+		{
+			name:          "has storage client and storage ID - should not initialize",
+			storageClient: &mockStorageClient{},
+			storageID:     &component.ID{},
+			expected:      false,
+		},
+		{
+			name:          "has storage client but no storage ID - should not initialize",
+			storageClient: &mockStorageClient{},
+			storageID:     nil,
+			expected:      false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			result := shouldInitializeStorageClient(test.storageClient, test.storageID)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
+type mockStorageClient struct {
+	storage map[string][]byte
+}
+
+func (m *mockStorageClient) Get(_ context.Context, key string) ([]byte, error) {
+	if len(m.storage[key]) > 0 {
+		return m.storage[key], nil
+	}
+	return nil, nil
+}
+
+func (m *mockStorageClient) Set(_ context.Context, key string, val []byte) error {
+	m.storage[key] = val
+	return nil
+}
+
+func (m *mockStorageClient) Delete(_ context.Context, key string) error {
+	m.storage[key] = []byte{}
+	return nil
+}
+
+func (*mockStorageClient) Batch(_ context.Context, _ ...*storage.Operation) error {
+	return nil
+}
+
+func (*mockStorageClient) Close(_ context.Context) error {
+	return nil
+}
+
+func TestEventhubHandler_newAzeventhubsMessageHandler(t *testing.T) {
 	config := createDefaultConfig()
 	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 
@@ -128,18 +200,16 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 	assert.NoError(t, ehHandler.run(t.Context(), componenttest.NewNopHost()))
 
 	now := time.Now()
-	err = ehHandler.newMessageHandler(t.Context(), &eventhub.Event{
-		Data:         []byte("hello"),
-		PartitionKey: nil,
-		Properties:   map[string]any{"foo": "bar"},
-		ID:           "11234",
-		SystemProperties: &eventhub.SystemProperties{
-			SequenceNumber: nil,
-			EnqueuedTime:   &now,
-			Offset:         nil,
-			PartitionID:    nil,
-			PartitionKey:   nil,
-			Annotations:    nil,
+	err = ehHandler.newMessageHandler(t.Context(), &azureEvent{
+		AzEventData: &azeventhubs.ReceivedEventData{
+			EventData: azeventhubs.EventData{
+				MessageID:  to.Ptr("11234"),
+				Body:       []byte("hello"),
+				Properties: map[string]any{"foo": "bar"},
+			},
+			EnqueuedTime: &now,
+			Offset:       "",
+			PartitionKey: nil,
 		},
 	})
 
@@ -152,6 +222,202 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, "bar", read.AsString())
 	assert.NoError(t, ehHandler.close(t.Context()))
+}
+
+func TestEventhubHandler_newLegacyMessageHandler(t *testing.T) {
+	config := createDefaultConfig()
+	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
+
+	sink := new(consumertest.LogsSink)
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.NewID(metadata.Type),
+		Transport:              "",
+		LongLivedCtx:           false,
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
+	})
+	require.NoError(t, err)
+
+	ehHandler := &eventhubHandler{
+		settings: receivertest.NewNopSettings(metadata.Type),
+		config:   config.(*Config),
+		dataConsumer: &mockDataConsumer{
+			logsUnmarshaler:  newRawLogsUnmarshaler(zap.NewNop()),
+			nextLogsConsumer: sink,
+			obsrecv:          obsrecv,
+		},
+	}
+	ehHandler.hub = &mockHubWrapper{}
+
+	assert.NoError(t, ehHandler.run(t.Context(), componenttest.NewNopHost()))
+
+	now := time.Now()
+	err = ehHandler.newMessageHandler(t.Context(), &azureEvent{
+		AzEventData: &azeventhubs.ReceivedEventData{
+			EventData: azeventhubs.EventData{
+				Body:       []byte("hello"),
+				Properties: map[string]any{"foo": "bar"},
+			},
+			EnqueuedTime: &now,
+			Offset:       "",
+			PartitionKey: nil,
+		},
+	})
+
+	assert.NoError(t, err)
+	assert.Len(t, sink.AllLogs(), 1)
+	assert.Equal(t, 1, sink.AllLogs()[0].LogRecordCount())
+	assert.Equal(t, []byte("hello"), sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Bytes().AsRaw())
+
+	read, ok := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("foo")
+	assert.True(t, ok)
+	assert.Equal(t, "bar", read.AsString())
+	assert.NoError(t, ehHandler.close(t.Context()))
+}
+
+func TestEventhubHandler_runDistributed_skipsNonDistributed(t *testing.T) {
+	// Verify that the non-distributed path still works when BlobCheckpointStore is nil
+	config := createDefaultConfig()
+	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
+
+	ehHandler := &eventhubHandler{
+		settings:     receivertest.NewNopSettings(metadata.Type),
+		dataConsumer: &mockDataConsumer{},
+		config:       config.(*Config),
+	}
+	ehHandler.hub = &mockHubWrapper{}
+
+	// BlobCheckpointStore is nil, so it should take the non-distributed path
+	assert.Nil(t, ehHandler.config.BlobCheckpointStore)
+	assert.NoError(t, ehHandler.run(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, ehHandler.close(t.Context()))
+}
+
+func TestProcessPartitionEvents_contextCancelled(t *testing.T) {
+	// Verify that processPartitionEvents returns when context is cancelled
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel() // Cancel immediately
+
+	mockPC := &mockProcessorPartitionClient{
+		partitionID: "0",
+		onReceive: func() ([]*azeventhubs.ReceivedEventData, error) {
+			return nil, context.Canceled
+		},
+	}
+
+	config := &Config{
+		PollRate:      1,
+		MaxPollEvents: 10,
+	}
+
+	processPartitionEvents(ctx, mockPC, func(_ context.Context, _ *azureEvent) error {
+		return nil
+	}, config, zap.NewNop())
+
+	assert.True(t, mockPC.closed)
+}
+
+func TestProcessPartitionEvents_ownershipLost(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	mockPC := &mockProcessorPartitionClient{
+		partitionID: "0",
+		onReceive: func() ([]*azeventhubs.ReceivedEventData, error) {
+			return nil, &azeventhubs.Error{Code: azeventhubs.ErrorCodeOwnershipLost}
+		},
+	}
+
+	config := &Config{
+		PollRate:      1,
+		MaxPollEvents: 10,
+	}
+
+	processPartitionEvents(ctx, mockPC, func(_ context.Context, _ *azureEvent) error {
+		return nil
+	}, config, zap.NewNop())
+
+	assert.True(t, mockPC.closed)
+}
+
+func TestProcessPartitionEvents_processesEvents(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+
+	now := time.Now()
+	callCount := 0
+	var receivedEvents []*azureEvent
+
+	mockPC := &mockProcessorPartitionClient{
+		partitionID: "1",
+		onReceive: func() ([]*azeventhubs.ReceivedEventData, error) {
+			callCount++
+			if callCount == 1 {
+				return []*azeventhubs.ReceivedEventData{
+					{
+						EventData: azeventhubs.EventData{
+							Body: []byte("event1"),
+						},
+						EnqueuedTime:   &now,
+						SequenceNumber: 1,
+					},
+					{
+						EventData: azeventhubs.EventData{
+							Body: []byte("event2"),
+						},
+						EnqueuedTime:   &now,
+						SequenceNumber: 2,
+					},
+				}, nil
+			}
+			cancel()
+			return nil, context.Canceled
+		},
+	}
+
+	config := &Config{
+		PollRate:      1,
+		MaxPollEvents: 10,
+	}
+
+	processPartitionEvents(ctx, mockPC, func(_ context.Context, event *azureEvent) error {
+		receivedEvents = append(receivedEvents, event)
+		return nil
+	}, config, zap.NewNop())
+
+	assert.Len(t, receivedEvents, 2)
+	assert.Equal(t, []byte("event1"), receivedEvents[0].AzEventData.Body)
+	assert.Equal(t, []byte("event2"), receivedEvents[1].AzEventData.Body)
+	assert.True(t, mockPC.checkpointUpdated)
+	assert.Equal(t, int64(2), mockPC.lastCheckpointSeq)
+	assert.True(t, mockPC.closed)
+}
+
+// mockProcessorPartitionClient implements the processorPartitionClient interface
+// for use in unit tests without requiring a real Azure connection.
+type mockProcessorPartitionClient struct {
+	partitionID       string
+	closed            bool
+	checkpointUpdated bool
+	lastCheckpointSeq int64
+	onReceive         func() ([]*azeventhubs.ReceivedEventData, error)
+}
+
+func (m *mockProcessorPartitionClient) PartitionID() string {
+	return m.partitionID
+}
+
+func (m *mockProcessorPartitionClient) ReceiveEvents(_ context.Context, _ int, _ *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error) {
+	return m.onReceive()
+}
+
+func (m *mockProcessorPartitionClient) UpdateCheckpoint(_ context.Context, event *azeventhubs.ReceivedEventData, _ *azeventhubs.UpdateCheckpointOptions) error {
+	m.checkpointUpdated = true
+	m.lastCheckpointSeq = event.SequenceNumber
+	return nil
+}
+
+func (m *mockProcessorPartitionClient) Close(_ context.Context) error {
+	m.closed = true
+	return nil
 }
 
 func TestEventhubHandler_closeWithStorageClient(t *testing.T) {

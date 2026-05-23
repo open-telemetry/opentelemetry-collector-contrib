@@ -12,7 +12,9 @@ import (
 	"go.uber.org/zap"
 )
 
-func createBuf(b *testing.B, nRecords int) []byte {
+// newBuf creates an azure resource log with
+// as many records as defined in nRecords
+func newBuf(b *testing.B, nRecords int) []byte {
 	rec := azureLogRecord{
 		Time:          "2024-04-24T12:06:12.0000000Z",
 		ResourceID:    "/test",
@@ -25,7 +27,7 @@ func createBuf(b *testing.B, nRecords int) []byte {
 
 	buf := bytes.NewBuffer(make([]byte, 0, nRecords*(len(data))))
 	buf.WriteString(`{"records": [`)
-	for i := 0; i < nRecords; i++ {
+	for i := range nRecords {
 		if i > 0 {
 			buf.WriteByte(',')
 		}
@@ -56,11 +58,12 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 		Logger:  zap.NewNop(),
 	}
 	for name, test := range tests {
-		buf := createBuf(b, test.nRecords)
+		buf := newBuf(b, test.nRecords)
 		b.Run(name, func(b *testing.B) {
 			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
-				_, _ = u.UnmarshalLogs(buf)
+			for b.Loop() {
+				_, err := u.UnmarshalLogs(buf)
+				require.NoError(b, err)
 			}
 		})
 	}

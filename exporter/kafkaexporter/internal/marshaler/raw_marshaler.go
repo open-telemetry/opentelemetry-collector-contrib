@@ -63,7 +63,7 @@ func (r RawLogsMarshaler) logBodyAsBytes(value pcommon.Value) ([]byte, error) {
 	}
 }
 
-func (r RawLogsMarshaler) interfaceAsBytes(value any) ([]byte, error) {
+func (RawLogsMarshaler) interfaceAsBytes(value any) ([]byte, error) {
 	if value == nil {
 		return []byte{}, nil
 	}

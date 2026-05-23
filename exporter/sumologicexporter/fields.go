@@ -46,7 +46,7 @@ func (f fields) string() string {
 		sv := v.AsString()
 
 		// Skip empty field
-		if len(sv) == 0 {
+		if sv == "" {
 			continue
 		}
 
@@ -72,8 +72,8 @@ func (f fields) string() string {
 
 // sanitizeFields sanitize field (key or value) to be correctly parsed by sumologic receiver
 // It modifies the field in place.
-func (f fields) sanitizeField(fld []byte) {
-	for i := 0; i < len(fld); i++ {
+func (fields) sanitizeField(fld []byte) {
+	for i := range fld {
 		switch fld[i] {
 		case ',':
 			fld[i] = '_'

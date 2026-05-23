@@ -28,7 +28,7 @@ type SeriesList struct {
 	Series []datadogV1.Series `json:"series"`
 }
 
-func (mt *MetricsTranslator) HandleSeriesV2Payload(req *http.Request) (mp []*gogen.MetricPayload_MetricSeries, err error) {
+func (*MetricsTranslator) HandleSeriesV2Payload(req *http.Request) (mp []*gogen.MetricPayload_MetricSeries, err error) {
 	buf := GetBuffer()
 	defer PutBuffer(buf)
 	if _, err := io.Copy(buf, req.Body); err != nil {

@@ -15,17 +15,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DeRuina/timberjack"
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	"gopkg.in/natefinch/lumberjack.v2"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -537,6 +539,13 @@ func TestFileProfilesExporter(t *testing.T) {
 				assert.NoError(t, fe.Shutdown(t.Context()))
 			}()
 
+			// Create expected by marshaling and unmarshaling pd the same way
+			// This ensures the internal dictionary structure matches
+			expectedBuf, err := profilesMarshalers[tt.args.conf.FormatType].MarshalProfiles(testdata.GenerateProfilesTwoProfilesSameResource())
+			assert.NoError(t, err)
+			expected, err := tt.args.unmarshaler.UnmarshalProfiles(expectedBuf)
+			assert.NoError(t, err)
+
 			fi, err := os.Open(fe.writer.path)
 			assert.NoError(t, err)
 			defer fi.Close()
@@ -557,7 +566,7 @@ func TestFileProfilesExporter(t *testing.T) {
 				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalProfiles(buf)
 				assert.NoError(t, err)
-				assert.Equal(t, pd, got)
+				assert.Equal(t, expected, got)
 			}
 		})
 	}
@@ -593,7 +602,7 @@ func TestExportMessageAsBuffer(t *testing.T) {
 		},
 		writer: &fileWriter{
 			path: path,
-			file: &lumberjack.Logger{
+			file: &timberjack.Logger{
 				Filename: path,
 				MaxSize:  1,
 			},
@@ -618,11 +627,11 @@ func tempFileName(tb testing.TB) string {
 // errorWriter is an io.Writer that will return an error all ways
 type errorWriter struct{}
 
-func (e errorWriter) Write([]byte) (n int, err error) {
+func (errorWriter) Write([]byte) (n int, err error) {
 	return 0, errors.New("all ways return error")
 }
 
-func (e *errorWriter) Close() error {
+func (*errorWriter) Close() error {
 	return nil
 }
 
@@ -736,7 +745,12 @@ func TestConcurrentlyCompress(t *testing.T) {
 	profilesUnmarshaler := &pprofile.JSONUnmarshaler{}
 	gotPd, err := profilesUnmarshaler.UnmarshalProfiles(buf)
 	assert.NoError(t, err)
-	assert.Equal(t, pd, gotPd)
+	// Create expected by marshaling and unmarshaling pd the same way
+	expectedBuf, err := profilesMarshalers[formatTypeJSON].MarshalProfiles(testdata.GenerateProfilesTwoProfilesSameResource())
+	assert.NoError(t, err)
+	expectedPd, err := profilesUnmarshaler.UnmarshalProfiles(expectedBuf)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedPd, gotPd)
 }
 
 // tsBuffer is a thread safe buffer to prevent race conditions in the CI/CD.
@@ -777,7 +791,7 @@ func TestFlushing(t *testing.T) {
 
 	// Create a buffer to capture the output.
 	bbuf := &tsBuffer{b: &bytes.Buffer{}}
-	buf := &NopWriteCloser{bbuf}
+	buf := &nopWriteCloser{bbuf}
 	// Wrap the buffer with the buffered writer closer that implements flush() method.
 	bwc := newBufferedWriteCloser(buf)
 	// Create a file exporter with flushing enabled.
@@ -832,7 +846,7 @@ func TestAppend(t *testing.T) {
 
 	// Create a buffer to capture the output.
 	bbuf := &tsBuffer{b: &bytes.Buffer{}}
-	buf := &NopWriteCloser{bbuf}
+	buf := &nopWriteCloser{bbuf}
 	// Wrap the buffer with the buffered writer closer that implements flush() method.
 	bwc := newBufferedWriteCloser(buf)
 	// Create a file exporter with flushing enabled.
@@ -904,4 +918,48 @@ func TestAppend(t *testing.T) {
 	bComplete = append(bComplete, b2...)
 	assert.Equal(t, bComplete, bbuf.Bytes())
 	assert.NoError(t, fe.Shutdown(ctx))
+}
+
+func TestCreateDirectoryOption(t *testing.T) {
+	t.Run("create_directory=false should fail when parent missing", func(t *testing.T) {
+		base := t.TempDir()
+		nonExistingDir := filepath.Join(base, "nested", "dir")
+		path := filepath.Join(nonExistingDir, "out.log")
+		cfg := &Config{
+			Path:            path,
+			FormatType:      formatTypeJSON,
+			CreateDirectory: false,
+		}
+		exp, err := createLogsExporter(
+			t.Context(),
+			exportertest.NewNopSettings(metadata.Type),
+			cfg)
+		require.NoError(t, err)
+		err = exp.Start(t.Context(), componenttest.NewNopHost())
+		require.Error(t, err)
+	})
+
+	t.Run("create_directory=true should create parent and succeed", func(t *testing.T) {
+		base := t.TempDir()
+		nonExistingDir := filepath.Join(base, "nested", "dir2")
+		path := filepath.Join(nonExistingDir, "out.log")
+		cfg := &Config{
+			Path:                 path,
+			FormatType:           formatTypeJSON,
+			CreateDirectory:      true,
+			DirectoryPermissions: "0755",
+			FlushInterval:        time.Second,
+		}
+		exp, err := createLogsExporter(
+			t.Context(),
+			exportertest.NewNopSettings(metadata.Type),
+			cfg)
+		require.NoError(t, err)
+		err = exp.Start(t.Context(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		defer func() { _ = exp.Shutdown(t.Context()) }()
+		// Directory should exist
+		_, statErr := os.Stat(nonExistingDir)
+		require.NoError(t, statErr)
+	})
 }

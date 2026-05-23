@@ -22,6 +22,7 @@ func PushRequestToLogs(pushRequest *push.PushRequest, keepTimestamp bool) (plog.
 	if len(pushRequest.Streams) == 0 {
 		return logs, nil
 	}
+	promParser := promql_parser.NewParser(promql_parser.Options{})
 	rls := logs.ResourceLogs().AppendEmpty()
 	logSlice := rls.ScopeLogs().AppendEmpty().LogRecords()
 
@@ -35,7 +36,7 @@ func PushRequestToLogs(pushRequest *push.PushRequest, keepTimestamp bool) (plog.
 		// Get stream labels
 		// Stream contains labels in string format: `{label1="value1", label2="value2"}`
 		// Here we parse such a string into labels.Labels
-		ls, err := promql_parser.ParseMetric(stream.Labels)
+		ls, err := promParser.ParseMetric(stream.Labels)
 		if err != nil {
 			lastErr = err
 			errNumber++
@@ -44,12 +45,12 @@ func PushRequestToLogs(pushRequest *push.PushRequest, keepTimestamp bool) (plog.
 
 		// Convert to model.LabelSet
 		filtered := model.LabelSet{}
-		for _, label := range ls {
+		for labelName, labelValue := range ls.Map() {
 			// Labels started from __ are considered internal and should be ignored
-			if strings.HasPrefix(label.Name, "__") {
+			if strings.HasPrefix(labelName, "__") {
 				continue
 			}
-			filtered[model.LabelName(label.Name)] = model.LabelValue(label.Value)
+			filtered[model.LabelName(labelName)] = model.LabelValue(labelValue)
 		}
 
 		for i := range stream.Entries {
@@ -77,5 +78,8 @@ func ConvertEntryToLogRecord(entry *push.Entry, lr *plog.LogRecord, labelSet mod
 	lr.Body().SetStr(entry.Line)
 	for key, value := range labelSet {
 		lr.Attributes().PutStr(string(key), string(value))
+	}
+	for _, metadata := range entry.StructuredMetadata {
+		lr.Attributes().PutStr(metadata.Name, metadata.Value)
 	}
 }

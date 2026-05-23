@@ -4,6 +4,8 @@
 package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver"
 
 import (
+	"go.opentelemetry.io/collector/component"
+	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -16,8 +18,11 @@ type Config struct {
 	// List of ‘namespaces’ to collect events from.
 	Namespaces []string `mapstructure:"namespaces"`
 
+	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
+
 	// For mocking
-	makeClient func(apiConf k8sconfig.APIConfig) (k8s.Interface, error)
+	makeClient        func(apiConf k8sconfig.APIConfig) (k8s.Interface, error)
+	makeDynamicClient func(apiConf k8sconfig.APIConfig) (dynamic.Interface, error)
 }
 
 func (cfg *Config) Validate() error {
@@ -29,4 +34,11 @@ func (cfg *Config) getK8sClient() (k8s.Interface, error) {
 		cfg.makeClient = k8sconfig.MakeClient
 	}
 	return cfg.makeClient(cfg.APIConfig)
+}
+
+func (cfg *Config) getDynamicClient() (dynamic.Interface, error) {
+	if cfg.makeDynamicClient == nil {
+		cfg.makeDynamicClient = k8sconfig.MakeDynamicClient
+	}
+	return cfg.makeDynamicClient(cfg.APIConfig)
 }

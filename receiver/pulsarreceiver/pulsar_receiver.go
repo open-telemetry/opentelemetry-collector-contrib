@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 
 import (
@@ -45,7 +47,7 @@ func newTracesReceiver(config Config, set receiver.Settings, unmarshalers map[st
 		return nil, err
 	}
 	unmarshaler := unmarshalers[config.Encoding]
-	if nil == unmarshaler {
+	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
 
@@ -158,7 +160,7 @@ func newMetricsReceiver(config Config, set receiver.Settings, unmarshalers map[s
 		return nil, err
 	}
 	unmarshaler := unmarshalers[config.Encoding]
-	if nil == unmarshaler {
+	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
 
@@ -274,7 +276,7 @@ func newLogsReceiver(config Config, set receiver.Settings, unmarshalers map[stri
 		return nil, err
 	}
 	unmarshaler := unmarshalers[config.Encoding]
-	if nil == unmarshaler {
+	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
 

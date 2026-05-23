@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // Package awscloudwatchmetricstreamsencodingextension provides an encoding extension
 // capable of unmarshalling metrics produced by CloudWatch Metric Streams.

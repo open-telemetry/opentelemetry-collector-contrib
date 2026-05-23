@@ -10,7 +10,7 @@ package sketches // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"github.com/DataDog/agent-payload/v5/gogen"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/quantile"
+	"github.com/DataDog/datadog-agent/pkg/util/quantile"
 )
 
 const (

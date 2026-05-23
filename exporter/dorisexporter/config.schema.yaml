@@ -1,0 +1,61 @@
+$defs:
+  table:
+    type: object
+    properties:
+      logs:
+        description: Logs is the table name for logs.
+        type: string
+      metrics:
+        description: Metrics is the table name for metrics.
+        type: string
+      traces:
+        description: Traces is the table name for traces.
+        type: string
+type: object
+properties:
+  create_history_days:
+    description: The number of days in the history partition that was created when the table was created; ignored if create_schema is false. If history_days is not 0, create_history_days needs to be less than or equal to history_days.
+    type: integer
+    x-customType: int32
+  create_schema:
+    description: CreateSchema is whether databases and tables are created automatically.
+    type: boolean
+  database:
+    description: Database is the database name.
+    type: string
+  history_days:
+    description: Data older than these days will be deleted; ignored if create_schema is false. If set to 0, historical data will not be deleted.
+    type: integer
+    x-customType: int32
+  label_prefix:
+    description: LabelPrefix is the prefix of the label in doris stream load.
+    type: string
+  log_progress_interval:
+    description: ProgressInterval is the interval of the progress reporter.
+    type: integer
+  log_response:
+    description: LogResponse is whether to log the response of doris stream load.
+    type: boolean
+  mysql_endpoint:
+    description: MySQLEndpoint is the mysql protocol address to create the schema; ignored if create_schema is false.
+    type: string
+  password:
+    description: Password is the authentication password.
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  replication_num:
+    description: ReplicationNum is the number of replicas of the table; ignored if create_schema is false.
+    type: integer
+    x-customType: int32
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  timezone:
+    description: Timezone is the timezone of the doris.
+    type: string
+  username:
+    description: Username is the authentication username.
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  - $ref: table

@@ -19,3 +19,23 @@ storage:
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
   config_apply_timeout: {{.config_apply_timeout}}
+  {{- if .use_hup_config_reload }}
+  use_hup_config_reload: {{ .use_hup_config_reload }}
+  {{- end }}
+
+telemetry:
+  traces:
+    processors:
+      - simple:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: http://{{.telemetryUrl}}
+  logs:
+    level: debug
+    processors:
+      - simple:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: http://{{.telemetryUrl}}

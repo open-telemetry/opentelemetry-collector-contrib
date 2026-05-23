@@ -1,105 +1,109 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package aws // import "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
+package aws
 
 import (
 	"errors"
 	"net/http"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/request"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_IMDSRetryer_ShouldRetry(t *testing.T) {
-	tests := []struct {
-		name string
-		req  *request.Request
+func TestIMDSRetryer_IsErrorRetryable(t *testing.T) {
+	tests := map[string]struct {
+		err  error
 		want bool
 	}{
-		{
-			name: "ErrorIsNilDoNotRetry",
-			req: &request.Request{
-				Error: nil,
-			},
+		"NilNotRetryable": {
+			err:  nil,
 			want: false,
 		},
-		{
-			// no enum for status codes in request.Request nor http.Response
-			name: "ErrorIsDefaultRetryable",
-			req: &request.Request{
-				Error: awserr.New("throttle me for 503", "throttle me for 503", nil),
-				HTTPResponse: &http.Response{
-					StatusCode: http.StatusServiceUnavailable,
+		"IMDSResponseError404Retryable": {
+			err: &smithyhttp.ResponseError{
+				Response: &smithyhttp.Response{
+					Response: &http.Response{StatusCode: http.StatusNotFound},
 				},
+				Err: errors.New("request to EC2 IMDS failed"),
 			},
 			want: true,
 		},
-		{
-			name: "ErrorIsEC2MetadataErrorRetryable",
-			req: &request.Request{
-				Error: awserr.New("EC2MetadataError", "EC2MetadataError", nil),
+		"IMDSResponseError500Retryable": {
+			err: &smithyhttp.ResponseError{
+				Response: &smithyhttp.Response{
+					Response: &http.Response{StatusCode: http.StatusInternalServerError},
+				},
+				Err: errors.New("request to EC2 IMDS failed"),
 			},
 			want: true,
 		},
-		{
-			name: "ErrorIsAWSOtherErrorNotRetryable",
-			req: &request.Request{
-				Error: awserr.New("other", "other", nil),
-			},
+		"WrappedIMDSResponseError503Retryable": {
+			// errors.As must unwrap joined errors.
+			err: errors.Join(
+				errors.New("outer error"),
+				&smithyhttp.ResponseError{
+					Response: &smithyhttp.Response{
+						Response: &http.Response{StatusCode: http.StatusServiceUnavailable},
+					},
+					Err: errors.New("request to EC2 IMDS failed"),
+				},
+			),
+			want: true,
+		},
+		"GenericErrorNotRetryable": {
+			err:  errors.New("some other error"),
 			want: false,
-		},
-		{
-			// errors.New as a parent error will always retry due to fallback
-			name: "ErrorIsAWSOtherWithParentErrorRetryable",
-			req: &request.Request{
-				Error: awserr.New("other", "other", errors.New("other")),
-			},
-			want: true,
-		},
-		{
-			// errors.New will always retry due to fallback
-			name: "ErrorIsOtherErrorRetryable",
-			req: &request.Request{
-				Error: errors.New("other"),
-			},
-			want: true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewIMDSRetryer(1).ShouldRetry(tt.req); got != tt.want {
-				t.Errorf("ShouldRetry() = %v, want %v", got, tt.want)
-			}
+
+	retryer := NewIMDSRetryer(DefaultIMDSRetries)
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := retryer.IsErrorRetryable(tt.err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func TestNumberOfRetryTest(t *testing.T) {
-	tests := []struct {
-		name                  string
-		expectedRetriesInput  int
-		expectedRetriesOutput int
+func TestIMDSRetryer_MaxAttempts(t *testing.T) {
+	// NewIMDSRetryer(n).MaxAttempts() == n + 1 — v2 counts the first attempt.
+	tests := map[string]struct {
+		retries int
+		want    int
 	}{
-		{
-			name:                  "expect 0 for 0",
-			expectedRetriesInput:  0,
-			expectedRetriesOutput: 0,
-		},
-		{
-			name:                  "expect 5 for 5",
-			expectedRetriesInput:  5,
-			expectedRetriesOutput: 5,
-		},
+		"DefaultRetries": {retries: DefaultIMDSRetries, want: DefaultIMDSRetries + 1},
+		"ZeroRetries":    {retries: 0, want: 1},
+		"TwoRetries":     {retries: 2, want: 3},
+		"FiveRetries":    {retries: 5, want: 6},
 	}
-	for _, tt := range tests {
-		func() {
-			t.Run(tt.name, func(t *testing.T) {
-				newIMDSRetryer := NewIMDSRetryer(tt.expectedRetriesInput)
-				assert.Equal(t, tt.expectedRetriesOutput, newIMDSRetryer.MaxRetries())
-			})
-		}()
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			r := NewIMDSRetryer(tt.retries)
+			assert.Equal(t, tt.want, r.MaxAttempts())
+		})
+	}
+}
+
+func TestGetDefaultRetryNumber(t *testing.T) {
+	tests := map[string]struct {
+		envValue string
+		want     int
+	}{
+		"Unset":         {envValue: "", want: DefaultIMDSRetries},
+		"ValidZero":     {envValue: "0", want: 0},
+		"ValidPositive": {envValue: "5", want: 5},
+		"Negative":      {envValue: "-1", want: DefaultIMDSRetries},
+		"NonNumeric":    {envValue: "abc", want: DefaultIMDSRetries},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Setenv(EnvIMDSNumberRetry, tt.envValue)
+			assert.Equal(t, tt.want, GetDefaultRetryNumber())
+		})
 	}
 }

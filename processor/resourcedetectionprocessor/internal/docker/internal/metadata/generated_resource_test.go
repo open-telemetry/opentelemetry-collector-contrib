@@ -13,6 +13,8 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetContainerImageName("container.image.name-val")
+			rb.SetContainerName("container.name-val")
 			rb.SetHostName("host.name-val")
 			rb.SetOsType("os.type-val")
 
@@ -23,23 +25,32 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 2, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 4, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("host.name")
-			assert.True(t, ok)
+			containerImageNameAttrVal, ok := res.Attributes().Get("container.image.name")
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "host.name-val", val.Str())
+				assert.Equal(t, "container.image.name-val", containerImageNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("os.type")
+			containerNameAttrVal, ok := res.Attributes().Get("container.name")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "container.name-val", containerNameAttrVal.Str())
+			}
+			hostNameAttrVal, ok := res.Attributes().Get("host.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "os.type-val", val.Str())
+				assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
+			}
+			osTypeAttrVal, ok := res.Attributes().Get("os.type")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "os.type-val", osTypeAttrVal.Str())
 			}
 		})
 	}

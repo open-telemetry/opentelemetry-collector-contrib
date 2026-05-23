@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 )
 
 // grpcExporterOptions creates the configuration options for a gRPC-based OTLP trace exporter.
@@ -22,7 +22,7 @@ func grpcExporterOptions(cfg *Config) ([]otlptracegrpc.Option, error) {
 	if cfg.Insecure {
 		grpcExpOpt = append(grpcExpOpt, otlptracegrpc.WithInsecure())
 	} else {
-		credentials, err := common.GetTLSCredentialsForGRPCExporter(
+		credentials, err := config.GetTLSCredentialsForGRPCExporter(
 			cfg.CaFile, cfg.ClientAuth, cfg.InsecureSkipVerify,
 		)
 		if err != nil {
@@ -49,7 +49,7 @@ func httpExporterOptions(cfg *Config) ([]otlptracehttp.Option, error) {
 	if cfg.Insecure {
 		httpExpOpt = append(httpExpOpt, otlptracehttp.WithInsecure())
 	} else {
-		tlsCfg, err := common.GetTLSCredentialsForHTTPExporter(
+		tlsCfg, err := config.GetTLSCredentialsForHTTPExporter(
 			cfg.CaFile, cfg.ClientAuth, cfg.InsecureSkipVerify,
 		)
 		if err != nil {

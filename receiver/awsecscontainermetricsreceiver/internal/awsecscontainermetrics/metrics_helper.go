@@ -26,12 +26,12 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 
 	if stats.CPU != nil && stats.CPU.CPUUsage != nil &&
 		stats.PreviousCPU != nil && stats.PreviousCPU.CPUUsage != nil {
-		numOfCores := (uint64)(len(stats.CPU.CPUUsage.PerCPUUsage))
-		timeDiffSinceLastRead := (float64)(stats.Read.Sub(stats.PreviousRead).Nanoseconds())
+		numOfCores := uint64(len(stats.CPU.CPUUsage.PerCPUUsage))
+		timeDiffSinceLastRead := float64(stats.Read.Sub(stats.PreviousRead).Nanoseconds())
 
 		cpuUsageInVCpu := float64(0)
 		if timeDiffSinceLastRead > 0 {
-			cpuDelta := (float64)(aws.ToUint64(stats.CPU.CPUUsage.TotalUsage) - aws.ToUint64(stats.PreviousCPU.CPUUsage.TotalUsage))
+			cpuDelta := float64(aws.ToUint64(stats.CPU.CPUUsage.TotalUsage) - aws.ToUint64(stats.PreviousCPU.CPUUsage.TotalUsage))
 			cpuUsageInVCpu = cpuDelta / timeDiffSinceLastRead
 		}
 		cpuUtilized := cpuUsageInVCpu * 100

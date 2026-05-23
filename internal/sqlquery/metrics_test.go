@@ -11,7 +11,7 @@ import (
 )
 
 func TestSetDataPointValue(t *testing.T) {
-	err := setDataPointValue(MetricCfg{
+	err := setDataPointValue(&MetricCfg{
 		ValueType:   MetricValueTypeInt,
 		ValueColumn: "some-col",
 	}, "", pmetric.NewNumberDataPoint())

@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
 	"go.opentelemetry.io/collector/processor/xprocessor"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -35,6 +36,7 @@ func NewFactory() processor.Factory {
 		xprocessor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
 		xprocessor.WithLogs(createLogsProcessor, metadata.LogsStability),
 		xprocessor.WithProfiles(createProfilesProcessor, metadata.ProfilesStability),
+		xprocessor.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
@@ -171,11 +173,17 @@ func createKubernetesProcessor(
 	cfg component.Config,
 	options ...option,
 ) *kubernetesprocessor {
+	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
+	if err != nil {
+		params.Logger.Error("failed to create telemetry builder", zap.Error(err))
+	}
+
 	kp := &kubernetesprocessor{
 		logger:            params.Logger,
 		cfg:               cfg,
 		options:           options,
 		telemetrySettings: params.TelemetrySettings,
+		telemetry:         telemetry,
 	}
 
 	return kp
@@ -189,23 +197,22 @@ func createProcessorOpts(cfg component.Config) []option {
 	}
 
 	// extraction rules
-	opts = append(opts, withExtractMetadata(oCfg.Extract.Metadata...))
-	opts = append(opts, withExtractLabels(oCfg.Extract.Labels...))
-	opts = append(opts, withExtractAnnotations(oCfg.Extract.Annotations...))
-	opts = append(opts, withOtelAnnotations(oCfg.Extract.OtelAnnotations))
+	opts = append(opts,
+		withExtractMetadata(oCfg.Extract.Metadata...),
+		withExtractLabels(oCfg.Extract.Labels...),
+		withExtractAnnotations(oCfg.Extract.Annotations...),
+		withOtelAnnotations(oCfg.Extract.OtelAnnotations),
+		withDeploymentNameFromReplicaSet(oCfg.Extract.DeploymentNameFromReplicaSet),
+		// filters
+		withFilterNode(oCfg.Filter.Node, oCfg.Filter.NodeFromEnvVar),
+		withFilterNamespace(oCfg.Filter.Namespace),
+		withFilterLabels(oCfg.Filter.Labels...),
+		withFilterFields(oCfg.Filter.Fields...),
+		withAPIConfig(oCfg.APIConfig),
+		withExtractPodAssociations(oCfg.Association...),
+		withExcludes(oCfg.Exclude),
+		withWaitForMetadataTimeout(oCfg.WaitForMetadataTimeout))
 
-	// filters
-	opts = append(opts, withFilterNode(oCfg.Filter.Node, oCfg.Filter.NodeFromEnvVar))
-	opts = append(opts, withFilterNamespace(oCfg.Filter.Namespace))
-	opts = append(opts, withFilterLabels(oCfg.Filter.Labels...))
-	opts = append(opts, withFilterFields(oCfg.Filter.Fields...))
-	opts = append(opts, withAPIConfig(oCfg.APIConfig))
-
-	opts = append(opts, withExtractPodAssociations(oCfg.Association...))
-
-	opts = append(opts, withExcludes(oCfg.Exclude))
-
-	opts = append(opts, withWaitForMetadataTimeout(oCfg.WaitForMetadataTimeout))
 	if oCfg.WaitForMetadata {
 		opts = append(opts, withWaitForMetadata(true))
 	}

@@ -1,0 +1,13 @@
+receivers:
+  journald:
+    directory: /opt/journal
+
+exporters:
+  debug:
+    verbosity: normal
+
+service:
+  pipelines:
+    logs:
+      receivers: [journald]
+      exporters: [debug]

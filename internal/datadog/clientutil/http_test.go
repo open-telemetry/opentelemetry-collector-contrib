@@ -58,7 +58,7 @@ func TestNewHTTPClient(t *testing.T) {
 		MaxIdleConnsPerHost: maxIdleConnPerHost,
 		MaxConnsPerHost:     maxConnPerHost,
 		DisableKeepAlives:   true,
-		TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
+		TLS:                 configtls.ClientConfig{InsecureSkipVerify: true},
 		ProxyURL:            "proxy",
 
 		// The rest are ignored
@@ -101,7 +101,7 @@ func TestNewHTTPClient(t *testing.T) {
 		MaxIdleConnsPerHost: maxIdleConnPerHost,
 		MaxConnsPerHost:     maxConnPerHost,
 		DisableKeepAlives:   true,
-		TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
+		TLS:                 configtls.ClientConfig{InsecureSkipVerify: true},
 		ProxyURL:            "http://datadog-proxy.myorganization.com:3128",
 
 		// The rest are ignored
@@ -140,7 +140,7 @@ func TestNewHTTPClient(t *testing.T) {
 		MaxIdleConnsPerHost: maxIdleConnPerHost,
 		MaxConnsPerHost:     maxConnPerHost,
 		DisableKeepAlives:   true,
-		TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
+		TLS:                 configtls.ClientConfig{InsecureSkipVerify: true},
 
 		// The rest are ignored
 		Endpoint:             "endpoint",

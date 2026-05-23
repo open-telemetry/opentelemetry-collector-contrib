@@ -4,6 +4,7 @@
 package dbstorage
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
 	"path/filepath"
@@ -43,7 +44,7 @@ func BenchmarkBatchGet(b *testing.B) {
 			b.ResetTimer()
 
 			// Run Benchmark
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				if err := client.Batch(b.Context(), ops...); err != nil {
 					b.Fatal(err)
 				}
@@ -71,7 +72,7 @@ func BenchmarkBatchSet(b *testing.B) {
 			b.ResetTimer()
 
 			// Run Benchmark
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				if err := client.Batch(b.Context(), ops...); err != nil {
 					b.Fatal(err)
 				}
@@ -99,7 +100,7 @@ func BenchmarkBatchDelete(b *testing.B) {
 			b.ResetTimer()
 
 			// Run Benchmark
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				if err := client.Batch(b.Context(), ops...); err != nil {
 					b.Fatal(err)
 				}
@@ -173,7 +174,7 @@ func getBatchBenchExtensions(b *testing.B, batchType string) map[string]storage.
 
 	sePostgreSQL, ctr, err := newPostgresTestExtension()
 	b.Cleanup(func() {
-		if ctrErr := ctr.Terminate(b.Context()); ctrErr != nil {
+		if ctrErr := ctr.Terminate(context.Background()); ctrErr != nil { //nolint:usetesting
 			b.Fatal(ctrErr)
 		}
 	})
@@ -188,7 +189,7 @@ func getBatchBenchExtensions(b *testing.B, batchType string) map[string]storage.
 			b.Fatal(err)
 		}
 		b.Cleanup(func() {
-			err = se.Shutdown(b.Context())
+			err = se.Shutdown(context.Background()) //nolint:usetesting
 			if err != nil {
 				b.Fatal(err)
 			}

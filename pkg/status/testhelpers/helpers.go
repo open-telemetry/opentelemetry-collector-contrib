@@ -26,23 +26,14 @@ func (p *PipelineMetadata) InstanceIDs() []*componentstatus.InstanceID {
 }
 
 // NewPipelineMetadata returns a metadata for a hypothetical pipeline.
-func NewPipelineMetadata(typestr string) *PipelineMetadata {
-	pipelineID := pipeline.MustNewID(typestr)
+func NewPipelineMetadata(signal pipeline.Signal) *PipelineMetadata {
+	pipelineID := pipeline.NewID(signal)
 	return &PipelineMetadata{
 		PipelineID:  pipelineID,
-		ReceiverID:  componentstatus.NewInstanceID(component.NewIDWithName(component.MustNewType(typestr), "in"), component.KindReceiver).WithPipelines(pipelineID),
+		ReceiverID:  componentstatus.NewInstanceID(component.NewIDWithName(component.MustNewType(signal.String()), "in"), component.KindReceiver).WithPipelines(pipelineID),
 		ProcessorID: componentstatus.NewInstanceID(component.MustNewID("batch"), component.KindProcessor).WithPipelines(pipelineID),
-		ExporterID:  componentstatus.NewInstanceID(component.NewIDWithName(component.MustNewType(typestr), "out"), component.KindExporter).WithPipelines(pipelineID),
+		ExporterID:  componentstatus.NewInstanceID(component.NewIDWithName(component.MustNewType(signal.String()), "out"), component.KindExporter).WithPipelines(pipelineID),
 	}
-}
-
-// NewPipelines returns a map of hypothetical pipelines identified by their stringified typeVal.
-func NewPipelines(typestrs ...string) map[string]*PipelineMetadata {
-	result := make(map[string]*PipelineMetadata, len(typestrs))
-	for _, typestr := range typestrs {
-		result[typestr] = NewPipelineMetadata(typestr)
-	}
-	return result
 }
 
 // SeedAggregator records a status event for each instanceID.

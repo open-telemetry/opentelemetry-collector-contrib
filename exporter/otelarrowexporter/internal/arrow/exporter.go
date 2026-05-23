@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
+	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -40,6 +40,12 @@ var (
 )
 
 const (
+	// DefaultProducersPerStream is the factor used to configure
+	// the combined exporterhelper batch/queue function, which has
+	// a num_consumers parameter. That field is set to this factor
+	// times the number of streams by default.
+	DefaultProducersPerStream = 10
+
 	// DefaultMaxStreamLifetime is 30 seconds, because the
 	// marginal compression benefit of a longer OTel-Arrow stream
 	// is limited after 100s of batches.

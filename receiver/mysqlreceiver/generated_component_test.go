@@ -34,6 +34,13 @@ func TestComponentLifecycle(t *testing.T) {
 	}{
 
 		{
+			name: "logs",
+			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
+				return factory.CreateLogs(ctx, set, cfg, consumertest.NewNop())
+			},
+		},
+
+		{
 			name: "metrics",
 			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateMetrics(ctx, set, cfg, consumertest.NewNop())
@@ -58,7 +65,7 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
 			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			host := componenttest.NewNopHost()
+			host := newMdatagenNopHost()
 			require.NoError(t, err)
 			require.NoError(t, firstRcvr.Start(context.Background(), host))
 			require.NoError(t, firstRcvr.Shutdown(context.Background()))
@@ -68,4 +75,20 @@ func TestComponentLifecycle(t *testing.T) {
 			require.NoError(t, secondRcvr.Shutdown(context.Background()))
 		})
 	}
+}
+
+var _ component.Host = (*mdatagenNopHost)(nil)
+
+type mdatagenNopHost struct{}
+
+func newMdatagenNopHost() component.Host {
+	return &mdatagenNopHost{}
+}
+
+func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+	return nil
 }

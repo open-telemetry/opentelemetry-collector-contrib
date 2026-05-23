@@ -4,12 +4,14 @@
 package adapter
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	rcvr "go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
@@ -124,4 +126,78 @@ func createReceiver(t *testing.T, storageID component.ID) *receiver {
 	require.True(t, ok)
 	r.storageID = &storageID
 	return r
+}
+
+type mockStorageExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+
+	gotKind        component.Kind
+	gotComponentID component.ID
+	gotStorageName string
+}
+
+var _ storage.Extension = (*mockStorageExtension)(nil)
+
+func (r *mockStorageExtension) GetClient(_ context.Context, kind component.Kind, id component.ID, storageName string) (storage.Client, error) {
+	r.gotKind = kind
+	r.gotComponentID = id
+	r.gotStorageName = storageName
+	return storage.NewNopClient(), nil
+}
+
+func TestGetStorageClientNormalizesComponentID(t *testing.T) {
+	ctx := t.Context()
+	storageExtID := storagetest.NewStorageID("mock_storage")
+	storageExt := &mockStorageExtension{
+		StartFunc:    func(context.Context, component.Host) error { return nil },
+		ShutdownFunc: func(context.Context) error { return nil },
+	}
+	host := storagetest.NewStorageHost().WithExtension(storageExtID, storageExt)
+
+	tests := []struct {
+		name         string
+		componentID  component.ID
+		wantTypeName string
+	}{
+		{
+			name:         "strips_underscores_from_type",
+			componentID:  component.MustNewIDWithName("my_receiver", "default"),
+			wantTypeName: "myreceiver",
+		},
+		{
+			name:         "multiple_underscores",
+			componentID:  component.MustNewIDWithName("a_b_c", "inst"),
+			wantTypeName: "abc",
+		},
+		{
+			name:         "no_underscores_unchanged",
+			componentID:  component.MustNewIDWithName("nounderscores", "default"),
+			wantTypeName: "nounderscores",
+		},
+		{
+			name:         "file_log_receiver",
+			componentID:  component.MustNewIDWithName("file_log", "default"),
+			wantTypeName: "filelog",
+		},
+		{
+			name:         "file_log_receiver",
+			componentID:  component.MustNewIDWithName("filelog", "default"),
+			wantTypeName: "filelog",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, err := GetStorageClient(ctx, host, &storageExtID, tt.componentID)
+			require.NoError(t, err)
+			require.NotNil(t, client)
+			require.NoError(t, client.Close(ctx))
+
+			wantID := component.MustNewIDWithName(tt.wantTypeName, tt.componentID.Name())
+			require.Equal(t, component.KindReceiver, storageExt.gotKind)
+			require.Equal(t, wantID, storageExt.gotComponentID)
+			require.Empty(t, storageExt.gotStorageName)
+		})
+	}
 }

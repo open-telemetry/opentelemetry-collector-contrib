@@ -12,7 +12,7 @@ components:
         - roundrobin
         - routing
         - servicegraph
-        - signaltometrics
+        - signal_to_metrics
         - spanmetrics
         - sum
     exporter:
@@ -22,11 +22,10 @@ components:
         - awskinesis
         - awss3
         - awsxray
-        - azureblob
+        - azure_blob
         - azuredataexplorer
         - azuremonitor
         - bmchelix
-        - carbon
         - cassandra
         - clickhouse
         - coralogix
@@ -34,7 +33,9 @@ components:
         - dataset
         - doris
         - elasticsearch
+        - faro
         - file
+        - google_cloud_storage
         - googlecloud
         - googlecloudpubsub
         - googlemanagedprometheus
@@ -44,16 +45,13 @@ components:
         - loadbalancing
         - logicmonitor
         - logzio
-        - loki
         - mezmo
-        - opencensus
         - opensearch
         - otelarrow
         - prometheus
         - prometheusremotewrite
         - pulsar
         - rabbitmq
-        - sapm
         - sentry
         - signalfx
         - splunk_hec
@@ -61,37 +59,49 @@ components:
         - sumologic
         - syslog
         - tencentcloud_logservice
+        - tinybird
         - zipkin
     extension:
         - ack
         - asapclient
+        - aws_logs_encoding
         - awscloudwatchmetricstreams_encoding
         - awsproxy
+        - azure_auth
+        - azure_encoding
         - basicauth
         - bearertokenauth
-        - cgroupruntime
+        - cgroup_runtime
+        - datadog
         - db_storage
         - docker_observer
         - ecs_observer
-        - ecs_task_observer
         - file_storage
+        - google_cloud_logentry_encoding
+        - googleclientauth
         - headers_setter
         - health_check
         - host_observer
         - http_forwarder
+        - jaeger_encoding
         - jaegerremotesampling
+        - json_log_encoding
+        - k8s_leader_elector
         - k8s_observer
         - kafkatopics_observer
         - oauth2client
         - oidc
         - opamp
+        - otlp_encoding
         - pprof
         - redis_storage
         - sigv4auth
+        - skywalking_encoding
+        - text_encoding
+        - zipkin_encoding
     processor:
         - attributes
         - cumulativetodelta
-        - datadogsemantics
         - deltatocumulative
         - deltatorate
         - filter
@@ -99,8 +109,10 @@ components:
         - groupbyattrs
         - groupbytrace
         - interval
-        - k8sattributes
+        - isolationforest
+        - k8s_attributes
         - logdedup
+        - metric_start_time
         - metricsgeneration
         - metricstransform
         - probabilistic_sampler
@@ -108,13 +120,15 @@ components:
         - remotetap
         - resource
         - resourcedetection
-        - routing
         - span
+        - spanpruning
         - sumologic
         - tail_sampling
         - transform
+        - unroll
     provider:
         - aes
+        - googlesecretmanager
         - s3
         - secretsmanager
     receiver:
@@ -128,14 +142,15 @@ components:
         - awsecscontainermetrics
         - awsekshyperpodreceiver
         - awsfirehose
+        - awslambda
         - awss3
         - awsxray
-        - azureblob
-        - azureeventhub
-        - azuremonitor
-        - bigip
+        - azure_blob
+        - azure_event_hub
+        - azure_monitor
         - carbon
         - chrony
+        - cisco_os
         - cloudflare
         - cloudfoundry
         - collectd
@@ -145,17 +160,19 @@ components:
         - elasticsearch
         - envoyals
         - expvar
-        - filelog
+        - faro
+        - file_log
         - filestats
         - flinkmetrics
         - fluentforward
         - github
+        - gitlab
         - googlecloudmonitoring
         - googlecloudpubsub
         - googlecloudspanner
         - haproxy
         - hostmetrics
-        - httpcheck
+        - http_check
         - iis
         - influxdb
         - jaeger
@@ -169,22 +186,24 @@ components:
         - kubeletstats
         - libhoney
         - loki
+        - macos_unified_logging
         - memcached
         - mongodb
-        - mongodbatlas
+        - mongodb_atlas
         - mysql
-        - namedpipe
+        - named_pipe
         - netflow
         - nginx
         - nsxt
         - ntp
-        - opencensus
         - oracledb
         - otelarrow
         - otlpjsonfile
         - podman_stats
         - postgresql
+        - pprof
         - prometheus
+        - prometheus_remote_write
         - prometheus_simple
         - pulsar
         - purefa
@@ -193,7 +212,7 @@ components:
         - receiver_creator
         - redis
         - riak
-        - sapm
+        - saphana
         - signalfx
         - skywalking
         - snmp
@@ -205,17 +224,20 @@ components:
         - sqlserver
         - sshcheck
         - statsd
+        - stef
         - syslog
+        - systemd
+        - tcp_log
         - tcpcheck
-        - tcplog
-        - tlscheck
-        - udplog
+        - tls_check
+        - udp_log
         - vcenter
         - wavefront
         - webhookevent
-        - windowseventlog
+        - windows_event_log
         - windowsperfcounters
         - windowsservice
+        - yang_grpc
         - zipkin
         - zookeeper
     scraper:
@@ -225,6 +247,7 @@ components:
         - load
         - memory
         - network
+        - nfs
         - paging
         - process
         - processes

@@ -18,30 +18,26 @@ import (
 )
 
 func BenchmarkConvertSimple(b *testing.B) {
-	b.StopTimer()
 	ent := entry.New()
 	b.ReportAllocs()
-	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		convert(ent)
 	}
 }
 
 func BenchmarkConvertComplex(b *testing.B) {
-	b.StopTimer()
 	ent := complexEntry()
 	b.ReportAllocs()
-	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		convert(ent)
 	}
 }
 
-func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
+func complexEntriesForNDifferentHosts(count, n int) []*entry.Entry {
 	ret := make([]*entry.Entry, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		e := entry.New()
 		e.Severity = entry.Error
 		e.Resource = map[string]any{
@@ -83,10 +79,10 @@ func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
 	return ret
 }
 
-func complexEntriesForNDifferentHostsMDifferentScopes(count int, n int, m int) []*entry.Entry {
+func complexEntriesForNDifferentHostsMDifferentScopes(count, n, m int) []*entry.Entry {
 	ret := make([]*entry.Entry, count)
-	for i := 0; i < count; i++ {
-		for j := 0; j < m; j++ {
+	for i := range count {
+		for range m {
 			e := entry.New()
 			e.Severity = entry.Error
 			e.Resource = map[string]any{
@@ -727,7 +723,7 @@ func TestConvertSeverity(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		t.Run(fmt.Sprintf("%v", tc.severity), func(t *testing.T) {
+		t.Run(tc.severity.String(), func(t *testing.T) {
 			entry := entry.New()
 			entry.Severity = tc.severity
 			entry.SeverityText = tc.severityText
@@ -798,14 +794,11 @@ func BenchmarkConverter(b *testing.B) {
 
 	for _, wc := range workerCounts {
 		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				b.ReportAllocs()
 
 				for from := 0; from < entryCount; from += int(batchSize) {
-					to := from + int(batchSize)
-					if to > entryCount {
-						to = entryCount
-					}
+					to := min(from+int(batchSize), entryCount)
 					pLogs := ConvertEntries(entries[from:to])
 					rLogs := pLogs.ResourceLogs()
 					require.Equal(b, hostsCount, rLogs.Len())
@@ -816,11 +809,10 @@ func BenchmarkConverter(b *testing.B) {
 }
 
 func BenchmarkGetResourceID(b *testing.B) {
-	b.StopTimer()
 	res := getResource()
 	b.ReportAllocs()
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		HashResource(res)
 	}
 }
@@ -828,8 +820,8 @@ func BenchmarkGetResourceID(b *testing.B) {
 func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
 	res := map[string]any{}
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		HashResource(res)
 	}
 }
@@ -839,8 +831,8 @@ func BenchmarkGetResourceIDSingleResource(b *testing.B) {
 		"resource": "value",
 	}
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		HashResource(res)
 	}
 }
@@ -854,8 +846,8 @@ func BenchmarkGetResourceIDComplexResource(b *testing.B) {
 		},
 	}
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		HashResource(res)
 	}
 }

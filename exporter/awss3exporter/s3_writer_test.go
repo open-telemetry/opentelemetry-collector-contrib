@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.uber.org/zap"
 )
 
 func TestNewUploadManager(t *testing.T) {
@@ -22,19 +23,39 @@ func TestNewUploadManager(t *testing.T) {
 			name: "valid configuration",
 			conf: &Config{
 				S3Uploader: S3UploaderConfig{
-					Region:            "local",
-					S3Bucket:          "my-awesome-bucket",
-					S3Prefix:          "opentelemetry",
-					S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H",
-					FilePrefix:        "ingested-data-",
-					Endpoint:          "localhost",
-					RoleArn:           "arn:aws:iam::123456789012:my-awesome-user",
-					S3ForcePathStyle:  true,
-					DisableSSL:        true,
-					Compression:       configcompression.TypeGzip,
+					Region:              "local",
+					S3Bucket:            "my-awesome-bucket",
+					S3Prefix:            "opentelemetry",
+					S3PartitionFormat:   "year=%Y/month=%m/day=%d/hour=%H",
+					S3PartitionTimezone: "Europe/London",
+					FilePrefix:          "ingested-data-",
+					Endpoint:            "localhost",
+					RoleArn:             "arn:aws:iam::123456789012:my-awesome-user",
+					S3ForcePathStyle:    true,
+					DisableSSL:          true,
+					Compression:         configcompression.TypeGzip,
 				},
 			},
 			errVal: "",
+		},
+		{
+			name: "invalid timezone configuration",
+			conf: &Config{
+				S3Uploader: S3UploaderConfig{
+					Region:              "local",
+					S3Bucket:            "my-awesome-bucket",
+					S3Prefix:            "opentelemetry",
+					S3PartitionFormat:   "year=%Y/month=%m/day=%d/hour=%H",
+					S3PartitionTimezone: "non-existing timezone",
+					FilePrefix:          "ingested-data-",
+					Endpoint:            "localhost",
+					RoleArn:             "arn:aws:iam::123456789012:my-awesome-user",
+					S3ForcePathStyle:    true,
+					DisableSSL:          true,
+					Compression:         configcompression.TypeGzip,
+				},
+			},
+			errVal: "invalid S3 partition timezone: unknown time zone non-existing timezone",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -43,8 +64,10 @@ func TestNewUploadManager(t *testing.T) {
 			sm, err := newUploadManager(
 				t.Context(),
 				tc.conf,
+				zap.NewNop(),
 				"metrics",
 				"otlp",
+				false,
 			)
 
 			if tc.errVal != "" {

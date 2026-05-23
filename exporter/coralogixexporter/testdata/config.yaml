@@ -1,6 +1,6 @@
 coralogix:
   traces:
-    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317"
   private_key: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
   application_name: "APP_NAME"
   # Deprecated: [v0.47.0] SubSystem will remove in the next version
@@ -8,7 +8,7 @@ coralogix:
   timeout: 5s
 
 coralogix/trace:
-  endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317"
   private_key: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
   application_name: "APP_NAME"
   # Deprecated: [v0.47.0] SubSystem will remove in the next version
@@ -17,11 +17,11 @@ coralogix/trace:
 
 coralogix/all:
   traces:
-    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317"
   metrics:
-    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317"
   logs:
-    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317"
   application_name_attributes:
     - "service.namespace"
     - "k8s.namespace.name" 
@@ -53,11 +53,23 @@ coralogix/domain:
 coralogix/domain_endpoints:
   domain: "coralogix.com"
   traces:
-    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317"
   metrics:
-    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317"
   logs:
-    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317"
+  application_name_attributes:
+    - "service.namespace"
+  subsystem_name_attributes:
+    - "service.name"
+  private_key: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  application_name: "APP_NAME"
+  subsystem_name: "SUBSYSTEM_NAME"
+  timeout: 5s
+
+coralogix/http_protocol:
+  protocol: "http"
+  domain: "coralogix.com"
   application_name_attributes:
     - "service.namespace"
   subsystem_name_attributes:

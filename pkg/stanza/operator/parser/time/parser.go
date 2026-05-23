@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Deprecated [v0.146.0]:  Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/timeparser" instead.
 package time // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/time"
 
 import (
@@ -17,7 +18,7 @@ type Parser struct {
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return p.ProcessBatchWith(ctx, entries, p.Process)
+	return p.ProcessBatchWithTransform(ctx, entries, p.Parse)
 }
 
 // Process will parse time from an entry.

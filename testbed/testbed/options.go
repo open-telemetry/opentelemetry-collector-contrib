@@ -49,10 +49,10 @@ func WithSkipResults() TestCaseOption {
 	}
 }
 
-// WithResourceLimits sets expected limits for resource consmption.
+// WithResourceLimits sets expected limits for resource consumption.
 // Error is signaled if consumption during ResourceCheckPeriod exceeds the limits.
 // Limits are modified only for non-zero fields of resourceSpec, all zero-value fields
-// fo resourceSpec are ignored and their previous values remain in effect.
+// of resourceSpec are ignored and their previous values remain in effect.
 func WithResourceLimits(resourceSpec ResourceSpec) TestCaseOption {
 	return func(tc *TestCase) {
 		if resourceSpec.ExpectedMaxCPU > 0 {

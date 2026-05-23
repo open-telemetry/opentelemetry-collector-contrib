@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package pulsarexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
 
 import (
@@ -55,11 +57,11 @@ type jaegerProtoBatchMarshaler struct{}
 
 var _ jaegerBatchMarshaler = (*jaegerProtoBatchMarshaler)(nil)
 
-func (p jaegerProtoBatchMarshaler) marshal(batch *jaegerproto.Batch) ([]byte, error) {
+func (jaegerProtoBatchMarshaler) marshal(batch *jaegerproto.Batch) ([]byte, error) {
 	return batch.Marshal()
 }
 
-func (p jaegerProtoBatchMarshaler) encoding() string {
+func (jaegerProtoBatchMarshaler) encoding() string {
 	return "jaeger_proto"
 }
 
@@ -81,6 +83,6 @@ func (p jaegerJSONBatchMarshaler) marshal(batch *jaegerproto.Batch) ([]byte, err
 	return out.Bytes(), err
 }
 
-func (p jaegerJSONBatchMarshaler) encoding() string {
+func (jaegerJSONBatchMarshaler) encoding() string {
 	return "jaeger_json"
 }

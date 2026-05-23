@@ -1,0 +1,42 @@
+# This workflow generates a code owner activity report as a GitHub issue.
+# It measures whether code owners have reviewed/replied to
+# PRs opened against each component (by component label).
+# We target at least 75% of each component's PRs to be reviewed by a code owner,
+# and each code owner to respond to at least 75% / n of their requested PRs (n = number of code owners for that component)
+# (at least 3 code owners are required for components aiming for stable).
+
+name: 'Generate Code Owner Activity Report'
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (print report only, do not create issue)'
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    # run on the 1st of every month at 2am UTC
+    - cron: "0 2 1 * *"
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'open-telemetry' }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        id: report
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' && 'true' || '0' }}
+        with:
+          retries: 3
+          script: |
+            const script = require('.github/workflows/scripts/generate-codeowners-activity.js')
+            await script({github, context})

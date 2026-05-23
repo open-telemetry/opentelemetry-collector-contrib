@@ -6,6 +6,7 @@ package metricstestutil // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -28,7 +29,7 @@ func DiffMetrics(diffs []*MetricDiff, expected, actual pmetric.Metrics) []*Metri
 	return append(diffs, diffMetricData(expected, actual)...)
 }
 
-func diffRMSlices(sent []pmetric.ResourceMetrics, recd []pmetric.ResourceMetrics) []*MetricDiff {
+func diffRMSlices(sent, recd []pmetric.ResourceMetrics) []*MetricDiff {
 	var diffs []*MetricDiff
 	if len(sent) != len(recd) {
 		return []*MetricDiff{{
@@ -37,7 +38,7 @@ func diffRMSlices(sent []pmetric.ResourceMetrics, recd []pmetric.ResourceMetrics
 			Msg:           "Sent vs received ResourceMetrics not equal length",
 		}}
 	}
-	for i := 0; i < len(sent); i++ {
+	for i := range sent {
 		sentRM := sent[i]
 		recdRM := recd[i]
 		diffs = diffRMs(diffs, sentRM, recdRM)
@@ -45,7 +46,7 @@ func diffRMSlices(sent []pmetric.ResourceMetrics, recd []pmetric.ResourceMetrics
 	return diffs
 }
 
-func diffRMs(diffs []*MetricDiff, expected pmetric.ResourceMetrics, actual pmetric.ResourceMetrics) []*MetricDiff {
+func diffRMs(diffs []*MetricDiff, expected, actual pmetric.ResourceMetrics) []*MetricDiff {
 	diffs = diffResource(diffs, expected.Resource(), actual.Resource())
 	diffs = diffILMSlice(
 		diffs,
@@ -79,7 +80,7 @@ func diffILM(
 	return diffMetrics(diffs, expected.Metrics(), actual.Metrics())
 }
 
-func diffMetrics(diffs []*MetricDiff, expected pmetric.MetricSlice, actual pmetric.MetricSlice) []*MetricDiff {
+func diffMetrics(diffs []*MetricDiff, expected, actual pmetric.MetricSlice) []*MetricDiff {
 	var mismatch bool
 	diffs, mismatch = diffValues(diffs, actual.Len(), expected.Len(), "MetricSlice len")
 	if mismatch {
@@ -104,7 +105,7 @@ func toSlice(s pmetric.ResourceMetricsSlice) (out []pmetric.ResourceMetrics) {
 	return out
 }
 
-func DiffMetric(diffs []*MetricDiff, expected pmetric.Metric, actual pmetric.Metric) []*MetricDiff {
+func DiffMetric(diffs []*MetricDiff, expected, actual pmetric.Metric) []*MetricDiff {
 	var mismatch bool
 	diffs, mismatch = diffMetricDescriptor(diffs, expected, actual)
 	if mismatch {
@@ -199,8 +200,21 @@ func diffHistogramPt(
 	diffs = diff(diffs, expected.Count(), actual.Count(), "HistogramDataPoint Count")
 	diffs = diff(diffs, expected.Sum(), actual.Sum(), "HistogramDataPoint Sum")
 	// TODO: HasSum, Min, HasMin, Max, HasMax are not covered in tests.
-	diffs = diff(diffs, expected.BucketCounts(), actual.BucketCounts(), "HistogramDataPoint BucketCounts")
-	diffs = diff(diffs, expected.ExplicitBounds(), actual.ExplicitBounds(), "HistogramDataPoint ExplicitBounds")
+	var mismatch bool
+	diffs, mismatch = diffValues(diffs, expected.BucketCounts().Len(), actual.BucketCounts().Len(), "HistogramDataPoint BucketCounts len")
+	if mismatch {
+		return diffs
+	}
+	for i := 0; i < expected.BucketCounts().Len(); i++ {
+		diffs = diff(diffs, expected.BucketCounts().At(i), actual.BucketCounts().At(i), "HistogramDataPoint BucketCounts")
+	}
+	diffs, mismatch = diffValues(diffs, expected.ExplicitBounds().Len(), actual.ExplicitBounds().Len(), "HistogramDataPoint ExplicitBounds len")
+	if mismatch {
+		return diffs
+	}
+	for i := 0; i < expected.ExplicitBounds().Len(); i++ {
+		diffs = diff(diffs, expected.ExplicitBounds().At(i), actual.ExplicitBounds().At(i), "HistogramDataPoint ExplicitBounds")
+	}
 	return diffExemplars(diffs, expected.Exemplars(), actual.Exemplars())
 }
 
@@ -282,12 +296,12 @@ func diffExemplars(
 	return diffs
 }
 
-func diffResource(diffs []*MetricDiff, expected pcommon.Resource, actual pcommon.Resource) []*MetricDiff {
+func diffResource(diffs []*MetricDiff, expected, actual pcommon.Resource) []*MetricDiff {
 	return diffResourceAttrs(diffs, expected.Attributes(), actual.Attributes())
 }
 
-func diffResourceAttrs(diffs []*MetricDiff, expected pcommon.Map, actual pcommon.Map) []*MetricDiff {
-	if !reflect.DeepEqual(expected, actual) {
+func diffResourceAttrs(diffs []*MetricDiff, expected, actual pcommon.Map) []*MetricDiff {
+	if !reflect.DeepEqual(expected.AsRaw(), actual.AsRaw()) {
 		diffs = append(diffs, &MetricDiff{
 			ExpectedValue: attrMapToString(expected),
 			ActualValue:   attrMapToString(actual),
@@ -297,8 +311,8 @@ func diffResourceAttrs(diffs []*MetricDiff, expected pcommon.Map, actual pcommon
 	return diffs
 }
 
-func diffMetricAttrs(diffs []*MetricDiff, expected pcommon.Map, actual pcommon.Map) []*MetricDiff {
-	if !reflect.DeepEqual(expected, actual) {
+func diffMetricAttrs(diffs []*MetricDiff, expected, actual pcommon.Map) []*MetricDiff {
+	if !reflect.DeepEqual(expected.AsRaw(), actual.AsRaw()) {
 		diffs = append(diffs, &MetricDiff{
 			ExpectedValue: attrMapToString(expected),
 			ActualValue:   attrMapToString(actual),
@@ -308,7 +322,7 @@ func diffMetricAttrs(diffs []*MetricDiff, expected pcommon.Map, actual pcommon.M
 	return diffs
 }
 
-func diff(diffs []*MetricDiff, expected any, actual any, msg string) []*MetricDiff {
+func diff(diffs []*MetricDiff, expected, actual any, msg string) []*MetricDiff {
 	out, _ := diffValues(diffs, expected, actual, msg)
 	return out
 }
@@ -330,9 +344,13 @@ func diffValues(
 }
 
 func attrMapToString(m pcommon.Map) string {
-	out := ""
+	var out strings.Builder
 	for k, v := range m.All() {
-		out += "[" + k + "=" + v.Str() + "]"
+		out.WriteString("[")
+		out.WriteString(k)
+		out.WriteString("=")
+		out.WriteString(v.AsString())
+		out.WriteString("]")
 	}
-	return out
+	return out.String()
 }

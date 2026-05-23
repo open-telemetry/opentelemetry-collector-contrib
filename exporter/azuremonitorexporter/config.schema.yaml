@@ -1,0 +1,26 @@
+description: Config defines configuration for Azure Monitor
+type: object
+properties:
+  connection_string:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  custom_events_enabled:
+    type: boolean
+  exception_events_enabled:
+    type: boolean
+  instrumentation_key:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  maxbatchinterval:
+    type: string
+    format: duration
+  maxbatchsize:
+    type: integer
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  shutdown_timeout:
+    type: string
+    format: duration
+  spaneventsenabled:
+    type: boolean
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config

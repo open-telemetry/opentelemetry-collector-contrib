@@ -9,9 +9,9 @@ import (
 	"regexp"
 	"time"
 
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/filter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/finder"
 )
@@ -25,13 +25,6 @@ const (
 
 const (
 	defaultOrderingCriteriaTopN = 1
-)
-
-var mtimeSortTypeFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"filelog.mtimeSortType",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, allows usage of `ordering_criteria.mode` = `mtime`."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812"),
 )
 
 type Criteria struct {
@@ -137,8 +130,8 @@ func New(c Criteria) (*Matcher, error) {
 			}
 			m.filterOpts = append(m.filterOpts, f)
 		case sortTypeMtime:
-			if !mtimeSortTypeFeatureGate.IsEnabled() {
-				return nil, fmt.Errorf("the %q feature gate must be enabled to use %q sort type", mtimeSortTypeFeatureGate.ID(), sortTypeMtime)
+			if !metadata.FilelogMtimeSortTypeFeatureGate.IsEnabled() {
+				return nil, fmt.Errorf("the %q feature gate must be enabled to use %q sort type", metadata.FilelogMtimeSortTypeFeatureGate.ID(), sortTypeMtime)
 			}
 			m.filterOpts = append(m.filterOpts, filter.SortMtime(sc.Ascending))
 		default:

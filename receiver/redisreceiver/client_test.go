@@ -21,7 +21,7 @@ func newFakeClient() *fakeClient {
 	return &fakeClient{}
 }
 
-func (c fakeClient) delimiter() string {
+func (fakeClient) delimiter() string {
 	if runtime.GOOS == "windows" {
 		return "\r\n"
 	}
@@ -31,6 +31,10 @@ func (c fakeClient) delimiter() string {
 
 func (fakeClient) retrieveInfo() (string, error) {
 	return readFile("info")
+}
+
+func (fakeClient) retrieveClusterInfo() (string, error) {
+	return readFile("cluster_info")
 }
 
 func (fakeClient) close() error {

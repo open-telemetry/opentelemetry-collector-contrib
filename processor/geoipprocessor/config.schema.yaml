@@ -1,0 +1,14 @@
+$defs:
+  context_id:
+    type: string
+description: Config holds the configuration for the GeoIP processor.
+type: object
+properties:
+  attributes:
+    description: An array of attribute names, which are used for the IP address lookup
+    type: array
+    items:
+      x-customType: go.opentelemetry.io/otel/attribute.key
+  context:
+    description: 'Context section allows specifying the source type to look for the IP. Available options: resource or record.'
+    $ref: context_id

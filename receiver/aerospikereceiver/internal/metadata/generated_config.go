@@ -3,89 +3,537 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
+// AerospikeNamespaceDiskAvailableMetricConfig provides config for the aerospike.namespace.disk.available metric.
+type AerospikeNamespaceDiskAvailableMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *AerospikeNamespaceDiskAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
+
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// AerospikeNamespaceGeojsonRegionQueryCellsMetricConfig provides config for the aerospike.namespace.geojson.region_query_cells metric.
+type AerospikeNamespaceGeojsonRegionQueryCellsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *AerospikeNamespaceGeojsonRegionQueryCellsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// AerospikeNamespaceGeojsonRegionQueryFalsePositiveMetricConfig provides config for the aerospike.namespace.geojson.region_query_false_positive metric.
+type AerospikeNamespaceGeojsonRegionQueryFalsePositiveMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *AerospikeNamespaceGeojsonRegionQueryFalsePositiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// AerospikeNamespaceGeojsonRegionQueryPointsMetricConfig provides config for the aerospike.namespace.geojson.region_query_points metric.
+type AerospikeNamespaceGeojsonRegionQueryPointsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *AerospikeNamespaceGeojsonRegionQueryPointsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// AerospikeNamespaceGeojsonRegionQueryRequestsMetricConfig provides config for the aerospike.namespace.geojson.region_query_requests metric.
+type AerospikeNamespaceGeojsonRegionQueryRequestsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *AerospikeNamespaceGeojsonRegionQueryRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// AerospikeNamespaceMemoryFreeMetricConfig provides config for the aerospike.namespace.memory.free metric.
+type AerospikeNamespaceMemoryFreeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *AerospikeNamespaceMemoryFreeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// AerospikeNamespaceMemoryUsageMetricAttributeKey specifies the key of an attribute for the aerospike.namespace.memory.usage metric.
+type AerospikeNamespaceMemoryUsageMetricAttributeKey string
+
+const (
+	AerospikeNamespaceMemoryUsageMetricAttributeKeyNamespaceComponent AerospikeNamespaceMemoryUsageMetricAttributeKey = "component"
+)
+
+// AerospikeNamespaceMemoryUsageMetricConfig provides config for the aerospike.namespace.memory.usage metric.
+type AerospikeNamespaceMemoryUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []AerospikeNamespaceMemoryUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *AerospikeNamespaceMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *AerospikeNamespaceMemoryUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case AerospikeNamespaceMemoryUsageMetricAttributeKeyNamespaceComponent:
+		default:
+			return fmt.Errorf("metric aerospike.namespace.memory.usage doesn't have an attribute %v, valid attributes: [component]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// AerospikeNamespaceQueryCountMetricAttributeKey specifies the key of an attribute for the aerospike.namespace.query.count metric.
+type AerospikeNamespaceQueryCountMetricAttributeKey string
+
+const (
+	AerospikeNamespaceQueryCountMetricAttributeKeyQueryType   AerospikeNamespaceQueryCountMetricAttributeKey = "type"
+	AerospikeNamespaceQueryCountMetricAttributeKeyIndexType   AerospikeNamespaceQueryCountMetricAttributeKey = "index"
+	AerospikeNamespaceQueryCountMetricAttributeKeyQueryResult AerospikeNamespaceQueryCountMetricAttributeKey = "result"
+)
+
+// AerospikeNamespaceQueryCountMetricConfig provides config for the aerospike.namespace.query.count metric.
+type AerospikeNamespaceQueryCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []AerospikeNamespaceQueryCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *AerospikeNamespaceQueryCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *AerospikeNamespaceQueryCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case AerospikeNamespaceQueryCountMetricAttributeKeyQueryType, AerospikeNamespaceQueryCountMetricAttributeKeyIndexType, AerospikeNamespaceQueryCountMetricAttributeKeyQueryResult:
+		default:
+			return fmt.Errorf("metric aerospike.namespace.query.count doesn't have an attribute %v, valid attributes: [type, index, result]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// AerospikeNamespaceScanCountMetricAttributeKey specifies the key of an attribute for the aerospike.namespace.scan.count metric.
+type AerospikeNamespaceScanCountMetricAttributeKey string
+
+const (
+	AerospikeNamespaceScanCountMetricAttributeKeyScanType   AerospikeNamespaceScanCountMetricAttributeKey = "type"
+	AerospikeNamespaceScanCountMetricAttributeKeyScanResult AerospikeNamespaceScanCountMetricAttributeKey = "result"
+)
+
+// AerospikeNamespaceScanCountMetricConfig provides config for the aerospike.namespace.scan.count metric.
+type AerospikeNamespaceScanCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []AerospikeNamespaceScanCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *AerospikeNamespaceScanCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *AerospikeNamespaceScanCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case AerospikeNamespaceScanCountMetricAttributeKeyScanType, AerospikeNamespaceScanCountMetricAttributeKeyScanResult:
+		default:
+			return fmt.Errorf("metric aerospike.namespace.scan.count doesn't have an attribute %v, valid attributes: [type, result]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// AerospikeNamespaceTransactionCountMetricAttributeKey specifies the key of an attribute for the aerospike.namespace.transaction.count metric.
+type AerospikeNamespaceTransactionCountMetricAttributeKey string
+
+const (
+	AerospikeNamespaceTransactionCountMetricAttributeKeyTransactionType   AerospikeNamespaceTransactionCountMetricAttributeKey = "type"
+	AerospikeNamespaceTransactionCountMetricAttributeKeyTransactionResult AerospikeNamespaceTransactionCountMetricAttributeKey = "result"
+)
+
+// AerospikeNamespaceTransactionCountMetricConfig provides config for the aerospike.namespace.transaction.count metric.
+type AerospikeNamespaceTransactionCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []AerospikeNamespaceTransactionCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *AerospikeNamespaceTransactionCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *AerospikeNamespaceTransactionCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case AerospikeNamespaceTransactionCountMetricAttributeKeyTransactionType, AerospikeNamespaceTransactionCountMetricAttributeKeyTransactionResult:
+		default:
+			return fmt.Errorf("metric aerospike.namespace.transaction.count doesn't have an attribute %v, valid attributes: [type, result]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// AerospikeNodeConnectionCountMetricAttributeKey specifies the key of an attribute for the aerospike.node.connection.count metric.
+type AerospikeNodeConnectionCountMetricAttributeKey string
+
+const (
+	AerospikeNodeConnectionCountMetricAttributeKeyConnectionType AerospikeNodeConnectionCountMetricAttributeKey = "type"
+	AerospikeNodeConnectionCountMetricAttributeKeyConnectionOp   AerospikeNodeConnectionCountMetricAttributeKey = "operation"
+)
+
+// AerospikeNodeConnectionCountMetricConfig provides config for the aerospike.node.connection.count metric.
+type AerospikeNodeConnectionCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []AerospikeNodeConnectionCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *AerospikeNodeConnectionCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *AerospikeNodeConnectionCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case AerospikeNodeConnectionCountMetricAttributeKeyConnectionType, AerospikeNodeConnectionCountMetricAttributeKeyConnectionOp:
+		default:
+			return fmt.Errorf("metric aerospike.node.connection.count doesn't have an attribute %v, valid attributes: [type, operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// AerospikeNodeConnectionOpenMetricAttributeKey specifies the key of an attribute for the aerospike.node.connection.open metric.
+type AerospikeNodeConnectionOpenMetricAttributeKey string
+
+const (
+	AerospikeNodeConnectionOpenMetricAttributeKeyConnectionType AerospikeNodeConnectionOpenMetricAttributeKey = "type"
+)
+
+// AerospikeNodeConnectionOpenMetricConfig provides config for the aerospike.node.connection.open metric.
+type AerospikeNodeConnectionOpenMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []AerospikeNodeConnectionOpenMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *AerospikeNodeConnectionOpenMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *AerospikeNodeConnectionOpenMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case AerospikeNodeConnectionOpenMetricAttributeKeyConnectionType:
+		default:
+			return fmt.Errorf("metric aerospike.node.connection.open doesn't have an attribute %v, valid attributes: [type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// AerospikeNodeMemoryFreeMetricConfig provides config for the aerospike.node.memory.free metric.
+type AerospikeNodeMemoryFreeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *AerospikeNodeMemoryFreeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// AerospikeNodeQueryTrackedMetricConfig provides config for the aerospike.node.query.tracked metric.
+type AerospikeNodeQueryTrackedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *AerospikeNodeQueryTrackedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
 // MetricsConfig provides config for aerospike metrics.
 type MetricsConfig struct {
-	AerospikeNamespaceDiskAvailable                   MetricConfig `mapstructure:"aerospike.namespace.disk.available"`
-	AerospikeNamespaceGeojsonRegionQueryCells         MetricConfig `mapstructure:"aerospike.namespace.geojson.region_query_cells"`
-	AerospikeNamespaceGeojsonRegionQueryFalsePositive MetricConfig `mapstructure:"aerospike.namespace.geojson.region_query_false_positive"`
-	AerospikeNamespaceGeojsonRegionQueryPoints        MetricConfig `mapstructure:"aerospike.namespace.geojson.region_query_points"`
-	AerospikeNamespaceGeojsonRegionQueryRequests      MetricConfig `mapstructure:"aerospike.namespace.geojson.region_query_requests"`
-	AerospikeNamespaceMemoryFree                      MetricConfig `mapstructure:"aerospike.namespace.memory.free"`
-	AerospikeNamespaceMemoryUsage                     MetricConfig `mapstructure:"aerospike.namespace.memory.usage"`
-	AerospikeNamespaceQueryCount                      MetricConfig `mapstructure:"aerospike.namespace.query.count"`
-	AerospikeNamespaceScanCount                       MetricConfig `mapstructure:"aerospike.namespace.scan.count"`
-	AerospikeNamespaceTransactionCount                MetricConfig `mapstructure:"aerospike.namespace.transaction.count"`
-	AerospikeNodeConnectionCount                      MetricConfig `mapstructure:"aerospike.node.connection.count"`
-	AerospikeNodeConnectionOpen                       MetricConfig `mapstructure:"aerospike.node.connection.open"`
-	AerospikeNodeMemoryFree                           MetricConfig `mapstructure:"aerospike.node.memory.free"`
-	AerospikeNodeQueryTracked                         MetricConfig `mapstructure:"aerospike.node.query.tracked"`
+	AerospikeNamespaceDiskAvailable                   AerospikeNamespaceDiskAvailableMetricConfig                   `mapstructure:"aerospike.namespace.disk.available"`
+	AerospikeNamespaceGeojsonRegionQueryCells         AerospikeNamespaceGeojsonRegionQueryCellsMetricConfig         `mapstructure:"aerospike.namespace.geojson.region_query_cells"`
+	AerospikeNamespaceGeojsonRegionQueryFalsePositive AerospikeNamespaceGeojsonRegionQueryFalsePositiveMetricConfig `mapstructure:"aerospike.namespace.geojson.region_query_false_positive"`
+	AerospikeNamespaceGeojsonRegionQueryPoints        AerospikeNamespaceGeojsonRegionQueryPointsMetricConfig        `mapstructure:"aerospike.namespace.geojson.region_query_points"`
+	AerospikeNamespaceGeojsonRegionQueryRequests      AerospikeNamespaceGeojsonRegionQueryRequestsMetricConfig      `mapstructure:"aerospike.namespace.geojson.region_query_requests"`
+	AerospikeNamespaceMemoryFree                      AerospikeNamespaceMemoryFreeMetricConfig                      `mapstructure:"aerospike.namespace.memory.free"`
+	AerospikeNamespaceMemoryUsage                     AerospikeNamespaceMemoryUsageMetricConfig                     `mapstructure:"aerospike.namespace.memory.usage"`
+	AerospikeNamespaceQueryCount                      AerospikeNamespaceQueryCountMetricConfig                      `mapstructure:"aerospike.namespace.query.count"`
+	AerospikeNamespaceScanCount                       AerospikeNamespaceScanCountMetricConfig                       `mapstructure:"aerospike.namespace.scan.count"`
+	AerospikeNamespaceTransactionCount                AerospikeNamespaceTransactionCountMetricConfig                `mapstructure:"aerospike.namespace.transaction.count"`
+	AerospikeNodeConnectionCount                      AerospikeNodeConnectionCountMetricConfig                      `mapstructure:"aerospike.node.connection.count"`
+	AerospikeNodeConnectionOpen                       AerospikeNodeConnectionOpenMetricConfig                       `mapstructure:"aerospike.node.connection.open"`
+	AerospikeNodeMemoryFree                           AerospikeNodeMemoryFreeMetricConfig                           `mapstructure:"aerospike.node.memory.free"`
+	AerospikeNodeQueryTracked                         AerospikeNodeQueryTrackedMetricConfig                         `mapstructure:"aerospike.node.query.tracked"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		AerospikeNamespaceDiskAvailable: MetricConfig{
+		AerospikeNamespaceDiskAvailable: AerospikeNamespaceDiskAvailableMetricConfig{
 			Enabled: true,
 		},
-		AerospikeNamespaceGeojsonRegionQueryCells: MetricConfig{
+		AerospikeNamespaceGeojsonRegionQueryCells: AerospikeNamespaceGeojsonRegionQueryCellsMetricConfig{
 			Enabled: true,
 		},
-		AerospikeNamespaceGeojsonRegionQueryFalsePositive: MetricConfig{
+		AerospikeNamespaceGeojsonRegionQueryFalsePositive: AerospikeNamespaceGeojsonRegionQueryFalsePositiveMetricConfig{
 			Enabled: true,
 		},
-		AerospikeNamespaceGeojsonRegionQueryPoints: MetricConfig{
+		AerospikeNamespaceGeojsonRegionQueryPoints: AerospikeNamespaceGeojsonRegionQueryPointsMetricConfig{
 			Enabled: true,
 		},
-		AerospikeNamespaceGeojsonRegionQueryRequests: MetricConfig{
+		AerospikeNamespaceGeojsonRegionQueryRequests: AerospikeNamespaceGeojsonRegionQueryRequestsMetricConfig{
 			Enabled: true,
 		},
-		AerospikeNamespaceMemoryFree: MetricConfig{
+		AerospikeNamespaceMemoryFree: AerospikeNamespaceMemoryFreeMetricConfig{
 			Enabled: true,
 		},
-		AerospikeNamespaceMemoryUsage: MetricConfig{
+		AerospikeNamespaceMemoryUsage: AerospikeNamespaceMemoryUsageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []AerospikeNamespaceMemoryUsageMetricAttributeKey{AerospikeNamespaceMemoryUsageMetricAttributeKeyNamespaceComponent},
+		},
+		AerospikeNamespaceQueryCount: AerospikeNamespaceQueryCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []AerospikeNamespaceQueryCountMetricAttributeKey{AerospikeNamespaceQueryCountMetricAttributeKeyQueryType, AerospikeNamespaceQueryCountMetricAttributeKeyIndexType, AerospikeNamespaceQueryCountMetricAttributeKeyQueryResult},
+		},
+		AerospikeNamespaceScanCount: AerospikeNamespaceScanCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []AerospikeNamespaceScanCountMetricAttributeKey{AerospikeNamespaceScanCountMetricAttributeKeyScanType, AerospikeNamespaceScanCountMetricAttributeKeyScanResult},
+		},
+		AerospikeNamespaceTransactionCount: AerospikeNamespaceTransactionCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []AerospikeNamespaceTransactionCountMetricAttributeKey{AerospikeNamespaceTransactionCountMetricAttributeKeyTransactionType, AerospikeNamespaceTransactionCountMetricAttributeKeyTransactionResult},
+		},
+		AerospikeNodeConnectionCount: AerospikeNodeConnectionCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []AerospikeNodeConnectionCountMetricAttributeKey{AerospikeNodeConnectionCountMetricAttributeKeyConnectionType, AerospikeNodeConnectionCountMetricAttributeKeyConnectionOp},
+		},
+		AerospikeNodeConnectionOpen: AerospikeNodeConnectionOpenMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []AerospikeNodeConnectionOpenMetricAttributeKey{AerospikeNodeConnectionOpenMetricAttributeKeyConnectionType},
+		},
+		AerospikeNodeMemoryFree: AerospikeNodeMemoryFreeMetricConfig{
 			Enabled: true,
 		},
-		AerospikeNamespaceQueryCount: MetricConfig{
-			Enabled: true,
-		},
-		AerospikeNamespaceScanCount: MetricConfig{
-			Enabled: true,
-		},
-		AerospikeNamespaceTransactionCount: MetricConfig{
-			Enabled: true,
-		},
-		AerospikeNodeConnectionCount: MetricConfig{
-			Enabled: true,
-		},
-		AerospikeNodeConnectionOpen: MetricConfig{
-			Enabled: true,
-		},
-		AerospikeNodeMemoryFree: MetricConfig{
-			Enabled: true,
-		},
-		AerospikeNodeQueryTracked: MetricConfig{
+		AerospikeNodeQueryTracked: AerospikeNodeQueryTrackedMetricConfig{
 			Enabled: true,
 		},
 	}

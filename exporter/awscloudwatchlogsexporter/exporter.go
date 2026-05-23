@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -31,7 +31,6 @@ import (
 type cwlExporter struct {
 	Config           *Config
 	logger           *zap.Logger
-	retryCount       int
 	collectorID      string
 	svcStructuredLog *cwlogs.Client
 	pusherFactory    cwlogs.MultiStreamPusherFactory
@@ -49,10 +48,11 @@ type emfMetadata struct {
 	LogStreamName string       `json:"log_stream_name,omitempty"`
 }
 
-func newCwLogsPusher(expConfig *Config, params exp.Settings) (*cwlExporter, error) {
+func newCwLogsPusher(_ context.Context, expConfig *Config, params exp.Settings) (*cwlExporter, error) {
 	if expConfig == nil {
 		return nil, errors.New("awscloudwatchlogs exporter config is nil")
 	}
+	expConfig.logger = params.Logger
 
 	collectorIdentifier, err := uuid.NewRandom()
 	if err != nil {
@@ -68,14 +68,14 @@ func newCwLogsPusher(expConfig *Config, params exp.Settings) (*cwlExporter, erro
 	return logsExporter, nil
 }
 
-func newCwLogsExporter(config component.Config, params exp.Settings) (exp.Logs, error) {
+func newCwLogsExporter(ctx context.Context, config component.Config, params exp.Settings) (exp.Logs, error) {
 	expConfig := config.(*Config)
-	logsPusher, err := newCwLogsPusher(expConfig, params)
+	logsPusher, err := newCwLogsPusher(ctx, expConfig, params)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewLogs(
-		context.TODO(),
+		ctx,
 		params,
 		config,
 		logsPusher.consumeLogs,
@@ -87,50 +87,57 @@ func newCwLogsExporter(config component.Config, params exp.Settings) (exp.Logs, 
 	)
 }
 
-func (e *cwlExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
+func (e *cwlExporter) consumeLogs(ctx context.Context, ld plog.Logs) error {
 	pusher := e.pusherFactory.CreateMultiStreamPusher()
 	var errs error
 
-	err := pushLogsToCWLogs(e.logger, ld, e.Config, pusher)
+	err := pushLogsToCWLogs(ctx, e.logger, ld, e.Config, pusher)
 	if err != nil {
-		errs = errors.Join(errs, fmt.Errorf("Error pushing logs: %w", err))
+		errs = errors.Join(errs, fmt.Errorf("error pushing logs: %w", err))
 	}
 
-	err = pusher.ForceFlush()
+	err = pusher.ForceFlush(ctx)
 	if err != nil {
-		errs = errors.Join(errs, fmt.Errorf("Error flushing logs: %w", err))
+		errs = errors.Join(errs, fmt.Errorf("error flushing logs: %w", err))
 	}
 
 	return errs
 }
 
-func (e *cwlExporter) start(_ context.Context, host component.Host) error {
-	// Create AWS session
-	awsConfig, session, err := awsutil.GetAWSConfigSession(e.logger, &awsutil.Conn{}, &e.Config.AWSSessionSettings)
+func (e *cwlExporter) start(ctx context.Context, host component.Host) error {
+	awsConfig, err := awsutil.GetAWSConfig(ctx, e.logger, &e.Config.AWSSessionSettings)
 	if err != nil {
-		return fmt.Errorf("failed to create AWS session: %w", err)
+		return fmt.Errorf("failed to create AWS config: %w", err)
 	}
 
-	// Create CWLogs client with aws session config
-	e.svcStructuredLog = cwlogs.NewClient(e.logger, awsConfig, e.params.BuildInfo, e.Config.LogGroupName, e.Config.LogRetention, e.Config.Tags, session, metadata.Type.String())
+	// SDKv2 middleware must be installed on awsConfig.APIOptions before
+	// cwlogs.NewClient runs cloudwatchlogs.NewFromConfig, which snapshots
+	// the APIOptions slice into the client's per-operation stack.
+	if e.Config.MiddlewareID != nil {
+		awsmiddleware.TryConfigure(e.logger, host, *e.Config.MiddlewareID, awsmiddleware.SDKv2(&awsConfig))
+	}
 
-	e.retryCount = *awsConfig.MaxRetries
+	e.svcStructuredLog = cwlogs.NewClient(
+		e.logger,
+		awsConfig,
+		e.params.BuildInfo,
+		e.Config.LogGroupName,
+		e.Config.LogRetention,
+		e.Config.Tags,
+		metadata.Type.String(),
+	)
 
 	logStreamManager := cwlogs.NewLogStreamManager(*e.svcStructuredLog)
 	e.pusherFactory = cwlogs.NewMultiStreamPusherFactory(logStreamManager, *e.svcStructuredLog, e.logger)
 
-	if e.Config.MiddlewareID != nil {
-		awsmiddleware.TryConfigure(e.logger, host, *e.Config.MiddlewareID, awsmiddleware.SDKv1(e.svcStructuredLog.Handlers()))
-	}
-
 	return nil
 }
 
-func (*cwlExporter) shutdown(_ context.Context) error {
+func (*cwlExporter) shutdown(context.Context) error {
 	return nil
 }
 
-func pushLogsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config, pusher cwlogs.Pusher) error {
+func pushLogsToCWLogs(ctx context.Context, logger *zap.Logger, ld plog.Logs, config *Config, pusher cwlogs.Pusher) error {
 	n := ld.ResourceLogs().Len()
 
 	if n == 0 {
@@ -151,11 +158,11 @@ func pushLogsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config, pusher c
 			logs := sl.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
-				event, err := logToCWLog(resourceAttrs, scope, log, config, logger)
+				event, err := logToCWLog(resourceAttrs, scope, log, config)
 				if err != nil {
 					logger.Debug("Failed to convert to CloudWatch Log", zap.Error(err))
 				} else {
-					err := pusher.AddLogEntry(event)
+					err := pusher.AddLogEntry(ctx, event)
 					if err != nil {
 						errs = errors.Join(errs, err)
 					}
@@ -186,11 +193,11 @@ type cwLogBody struct {
 	Resource               map[string]any  `json:"resource,omitempty"`
 }
 
-func logToCWLog(resourceAttrs map[string]any, scope pcommon.InstrumentationScope, log plog.LogRecord, config *Config, logger *zap.Logger) (*cwlogs.Event, error) {
+func logToCWLog(resourceAttrs map[string]any, scope pcommon.InstrumentationScope, log plog.LogRecord, config *Config) (*cwlogs.Event, error) {
 	// TODO(jbd): Benchmark and improve the allocations.
 	// Evaluate go.elastic.co/fastjson as a replacement for encoding/json.
 	// Replace loggroup and logstream with resource attribute
-	logGroupName, logStreamName, _ := getLogInfo(resourceAttrs, config, logger)
+	logGroupName, logStreamName, _ := getLogInfo(resourceAttrs, config)
 
 	var bodyJSON []byte
 	var err error
@@ -250,7 +257,7 @@ func logToCWLog(resourceAttrs map[string]any, scope pcommon.InstrumentationScope
 	}
 
 	return &cwlogs.Event{
-		InputLogEvent: &cloudwatchlogs.InputLogEvent{
+		InputLogEvent: types.InputLogEvent{
 			Timestamp: aws.Int64(int64(log.Timestamp()) / int64(time.Millisecond)), // in milliseconds
 			Message:   aws.String(string(bodyJSON)),
 		},

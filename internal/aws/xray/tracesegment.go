@@ -170,7 +170,7 @@ func (c *CauseData) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	rawStr := string(data)
-	if len(rawStr) > 0 && (rawStr[0] != '"' || rawStr[len(rawStr)-1] != '"') {
+	if rawStr != "" && (rawStr[0] != '"' || rawStr[len(rawStr)-1] != '"') {
 		return fmt.Errorf("the value assigned to the `cause` field does not appear to be a string: %v", data)
 	}
 	exceptionID := rawStr[1 : len(rawStr)-1]

@@ -20,7 +20,6 @@ package healthcheck // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"sync/atomic"
 	"time"
@@ -105,15 +104,15 @@ func (hc *HealthCheck) Handler() http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(template.statusCode)
 
-		_, _ = w.Write(hc.createRespBody(hcState, template))
+		_, _ = w.Write(createRespBody(hcState, template))
 	})
 }
 
-func (hc *HealthCheck) createRespBody(state state, template healthCheckResponse) []byte {
+func createRespBody(state state, template healthCheckResponse) []byte {
 	resp := template // clone
 	if state.status == Ready {
 		resp.UpSince = state.upSince
-		resp.Uptime = fmt.Sprintf("%v", time.Since(state.upSince))
+		resp.Uptime = time.Since(state.upSince).String()
 	}
 	healthCheckStatus, _ := json.Marshal(resp)
 	return healthCheckStatus

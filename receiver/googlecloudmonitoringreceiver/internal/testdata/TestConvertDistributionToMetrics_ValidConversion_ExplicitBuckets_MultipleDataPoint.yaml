@@ -1,0 +1,65 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - attributes:
+                    - key: key1
+                      value:
+                        stringValue: value1
+                    - key: key2
+                      value:
+                        stringValue: value2
+                  bucketCounts:
+                    - "5"
+                    - "0"
+                    - "15"
+                    - "11"
+                  count: "31"
+                  explicitBounds:
+                    - 11.1
+                    - 22.2
+                    - 33.3
+                  startTimeUnixNano: "13000000000"
+                  timeUnixNano: "73000000000"
+                - attributes:
+                    - key: key1
+                      value:
+                        stringValue: value1
+                    - key: key2
+                      value:
+                        stringValue: value2
+                  bucketCounts:
+                    - "6"
+                    - "0"
+                    - "16"
+                    - "12"
+                  count: "34"
+                  explicitBounds:
+                    - 111.1
+                    - 122.2
+                    - 133.3
+                  startTimeUnixNano: "73000000000"
+                  timeUnixNano: "133000000000"
+                - attributes:
+                    - key: key1
+                      value:
+                        stringValue: value1
+                    - key: key2
+                      value:
+                        stringValue: value2
+                  bucketCounts:
+                    - "7"
+                    - "0"
+                    - "17"
+                    - "13"
+                  count: "37"
+                  explicitBounds:
+                    - 211.1
+                    - 222.2
+                    - 233.3
+                  startTimeUnixNano: "133000000000"
+                  timeUnixNano: "193000000000"
+        scope: {}

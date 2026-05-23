@@ -151,14 +151,21 @@ func TestDetailedPVCLabels(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			podStats := stats.PodStats{
+			podStats := &stats.PodStats{
 				PodRef: stats.PodReference{
 					UID:       tt.pod.uid,
 					Name:      tt.pod.name,
 					Namespace: tt.pod.namespace,
 				},
 			}
-			rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
+			rac := metadata.DefaultResourceAttributesConfig()
+			rac.AwsVolumeID.Enabled = true
+			rac.FsType.Enabled = true
+			rac.GcePdName.Enabled = true
+			rac.GlusterfsEndpointsName.Enabled = true
+			rac.GlusterfsPath.Enabled = true
+			rac.Partition.Enabled = true
+			rb := metadata.NewResourceBuilder(rac)
 			metadata := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
 				Items: []v1.Pod{
 					{
@@ -180,7 +187,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 			}, NodeInfo{}, nil)
 			metadata.DetailedPVCResourceSetter = tt.detailedPVCLabelsSetterOverride
 
-			res, err := getVolumeResourceOptions(rb, podStats, stats.VolumeStats{Name: tt.volumeName}, metadata)
+			res, err := getVolumeResourceOptions(rb, podStats, &stats.VolumeStats{Name: tt.volumeName}, metadata)
 			require.NoError(t, err)
 
 			require.Equal(t, tt.want, res.Attributes().AsRaw())

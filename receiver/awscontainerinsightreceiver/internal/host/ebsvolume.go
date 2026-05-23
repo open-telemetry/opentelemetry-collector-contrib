@@ -7,7 +7,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -16,11 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"go.uber.org/zap"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
@@ -29,7 +26,7 @@ import (
 var ebsMountPointRegex = regexp.MustCompile(`kubernetes\.io/aws-ebs/mounts/aws/(.+)/(vol-\w+)$`)
 
 type ebsVolumeClient interface {
-	DescribeVolumesWithContext(context.Context, *ec2.DescribeVolumesInput, ...request.Option) (*ec2.DescribeVolumesOutput, error)
+	DescribeVolumes(ctx context.Context, params *ec2.DescribeVolumesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeVolumesOutput, error)
 }
 
 type ebsVolumeProvider interface {
@@ -57,13 +54,20 @@ type ebsVolume struct {
 
 type ebsVolumeOption func(*ebsVolume)
 
-func newEBSVolume(ctx context.Context, session *session.Session, instanceID string, region string,
-	refreshInterval time.Duration, logger *zap.Logger, configurer *awsmiddleware.Configurer, options ...ebsVolumeOption,
+func newEBSVolume(
+	ctx context.Context,
+	cfg aws.Config,
+	instanceID, region string,
+	refreshInterval time.Duration,
+	logger *zap.Logger,
+	options ...ebsVolumeOption,
 ) ebsVolumeProvider {
 	e := &ebsVolume{
-		dev2Vol:         make(map[string]string),
-		instanceID:      instanceID,
-		client:          ec2.New(session, aws.NewConfig().WithRegion(region)),
+		dev2Vol:    make(map[string]string),
+		instanceID: instanceID,
+		client: ec2.NewFromConfig(cfg, func(o *ec2.Options) {
+			o.Region = region
+		}),
 		refreshInterval: refreshInterval,
 		maxJitterTime:   3 * time.Second,
 		shutdownC:       make(chan bool),
@@ -72,12 +76,7 @@ func newEBSVolume(ctx context.Context, session *session.Session, instanceID stri
 		osLstat:         os.Lstat,
 		evalSymLinks:    filepath.EvalSymlinks,
 	}
-	if configurer != nil {
-		err := configurer.Configure(awsmiddleware.SDKv1(&e.client.(*ec2.EC2).Handlers))
-		if err != nil {
-			log.Println("There was a problem configuring middleware on ec2 client")
-		}
-	}
+
 	for _, opt := range options {
 		opt(e)
 	}
@@ -95,33 +94,31 @@ func (e *ebsVolume) refresh(ctx context.Context) {
 	e.logger.Info("Fetch ebs volumes from ec2 api")
 
 	input := &ec2.DescribeVolumesInput{
-		Filters: []*ec2.Filter{
+		Filters: []ec2types.Filter{
 			{
 				Name:   aws.String("attachment.instance-id"),
-				Values: aws.StringSlice([]string{e.instanceID}),
+				Values: []string{e.instanceID},
 			},
 		},
 	}
 
 	devPathSet := make(map[string]bool)
 	allSuccess := false
-	for {
-		result, err := e.client.DescribeVolumesWithContext(ctx, input)
+	paginator := ec2.NewDescribeVolumesPaginator(e.client, input)
+	for paginator.HasMorePages() {
+		result, err := paginator.NextPage(ctx)
 		if err != nil {
 			e.logger.Warn("Fail to call ec2 DescribeVolumes", zap.Error(err))
 			break
 		}
-		for _, volume := range result.Volumes {
-			for _, attachment := range volume.Attachments {
-				devPath := e.addEBSVolumeMapping(volume.AvailabilityZone, attachment)
+		for i := range result.Volumes {
+			volume := &result.Volumes[i]
+			for j := range volume.Attachments {
+				devPath := e.addEBSVolumeMapping(volume.AvailabilityZone, volume.Attachments[j])
 				devPathSet[devPath] = true
 			}
 		}
 		allSuccess = true
-		if result.NextToken == nil {
-			break
-		}
-		input.SetNextToken(*result.NextToken)
 	}
 
 	if allSuccess {
@@ -135,16 +132,16 @@ func (e *ebsVolume) refresh(ctx context.Context) {
 	}
 }
 
-func (e *ebsVolume) addEBSVolumeMapping(zone *string, attachment *ec2.VolumeAttachment) string {
+func (e *ebsVolume) addEBSVolumeMapping(zone *string, attachment ec2types.VolumeAttachment) string {
 	// *attachment.Device is sth like: /dev/xvda
-	devPath := e.findNvmeBlockNameIfPresent(*attachment.Device)
+	devPath := e.findNvmeBlockNameIfPresent(aws.ToString(attachment.Device))
 	if devPath == "" {
-		devPath = *attachment.Device
+		devPath = aws.ToString(attachment.Device)
 	}
 
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	e.dev2Vol[devPath] = fmt.Sprintf("aws://%s/%s", *zone, *attachment.VolumeId)
+	e.dev2Vol[devPath] = fmt.Sprintf("aws://%s/%s", aws.ToString(zone), aws.ToString(attachment.VolumeId))
 	return devPath
 }
 

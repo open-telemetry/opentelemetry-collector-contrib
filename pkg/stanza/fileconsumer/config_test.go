@@ -39,6 +39,7 @@ func TestNewConfig(t *testing.T) {
 	assert.False(t, cfg.IncludeFilePathResolved)
 	assert.False(t, cfg.IncludeFileOwnerName)
 	assert.False(t, cfg.IncludeFileOwnerGroupName)
+	assert.False(t, cfg.IncludeFilePermissions)
 	assert.False(t, cfg.IncludeFileRecordNumber)
 	assert.False(t, cfg.AcquireFSLock)
 }
@@ -638,6 +639,30 @@ func TestBuild(t *testing.T) {
 			require.NoError,
 			func(_ *testing.T, _ *Manager) {},
 		},
+		{
+			"MaxLogSizeBehaviorSplit",
+			func(cfg *Config) {
+				cfg.MaxLogSizeBehavior = MaxLogSizeBehaviorSplit
+			},
+			require.NoError,
+			func(_ *testing.T, _ *Manager) {},
+		},
+		{
+			"MaxLogSizeBehaviorTruncate",
+			func(cfg *Config) {
+				cfg.MaxLogSizeBehavior = MaxLogSizeBehaviorTruncate
+			},
+			require.NoError,
+			func(_ *testing.T, _ *Manager) {},
+		},
+		{
+			"InvalidMaxLogSizeBehavior",
+			func(cfg *Config) {
+				cfg.MaxLogSizeBehavior = "invalid"
+			},
+			require.Error,
+			nil,
+		},
 	}
 
 	for _, tc := range cases {
@@ -788,6 +813,6 @@ func newMockOperatorConfig(cfg *Config) *mockOperatorConfig {
 
 // This function is impelmented for compatibility with operatortest
 // but is not meant to be used directly
-func (h *mockOperatorConfig) Build(_ component.TelemetrySettings) (operator.Operator, error) {
+func (*mockOperatorConfig) Build(_ component.TelemetrySettings) (operator.Operator, error) {
 	panic("not impelemented")
 }

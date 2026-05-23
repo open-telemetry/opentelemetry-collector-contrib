@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 
 import (
@@ -181,26 +183,26 @@ type customMetricsUnmarshaler struct{}
 
 type customLogsUnmarshaler struct{}
 
-func (c customTracesUnmarshaler) Unmarshal([]byte) (ptrace.Traces, error) {
+func (customTracesUnmarshaler) Unmarshal([]byte) (ptrace.Traces, error) {
 	panic("implement me")
 }
 
-func (c customTracesUnmarshaler) Encoding() string {
+func (customTracesUnmarshaler) Encoding() string {
 	return "custom"
 }
 
-func (c customMetricsUnmarshaler) Unmarshal([]byte) (pmetric.Metrics, error) {
+func (customMetricsUnmarshaler) Unmarshal([]byte) (pmetric.Metrics, error) {
 	panic("implement me")
 }
 
-func (c customMetricsUnmarshaler) Encoding() string {
+func (customMetricsUnmarshaler) Encoding() string {
 	return "custom"
 }
 
-func (c customLogsUnmarshaler) Unmarshal([]byte) (plog.Logs, error) {
+func (customLogsUnmarshaler) Unmarshal([]byte) (plog.Logs, error) {
 	panic("implement me")
 }
 
-func (c customLogsUnmarshaler) Encoding() string {
+func (customLogsUnmarshaler) Encoding() string {
 	return "custom"
 }

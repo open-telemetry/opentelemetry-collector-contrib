@@ -1,4 +1,7 @@
+display_name: Journald Receiver
 type: journald
+
+description: The Journald Receiver parses Journald events from systemd journal.
 
 status:
   class: receiver
@@ -6,6 +9,6 @@ status:
     alpha: [logs]
   distributions: [contrib, k8s]
   codeowners:
-    active: [sumo-drosiek, djaglowski]
+    active: [belimawr, namco1992]
+    emeritus: [djaglowski, sumo-drosiek]
   unsupported_platforms: [darwin, windows]
-

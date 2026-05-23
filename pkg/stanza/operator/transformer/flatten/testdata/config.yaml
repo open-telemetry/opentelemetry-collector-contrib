@@ -16,3 +16,7 @@ flatten_attributes_one_level:
 flatten_attributes_second_level:
   type: flatten
   field: attributes.nested.secondlevel
+on_error_drop:
+  type: flatten
+  field: body.nested
+  on_error: drop

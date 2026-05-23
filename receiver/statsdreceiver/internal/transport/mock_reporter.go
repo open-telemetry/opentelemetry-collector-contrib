@@ -22,7 +22,7 @@ func NewMockReporter(expectedOnMetricsProcessedCalls int) *MockReporter {
 	return &m
 }
 
-func (m *MockReporter) OnDebugf(_ string, _ ...any) {
+func (*MockReporter) OnDebugf(string, ...any) {
 }
 
 // WaitAllOnMetricsProcessedCalls blocks until the number of expected calls

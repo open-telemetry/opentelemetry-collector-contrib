@@ -1,0 +1,87 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/AAAA0A0A-BB1B-CC2C-DD3D-EEEEEE4E4E4E/RESOURCEGROUPS/RG-001/PROVIDERS/MICROSOFT.WEB/SITES/SCALEABLEWEBAPP1
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asDouble: 2
+                  startTimeUnixNano: "1681808520000000000"
+                  timeUnixNano: "1681808580000000000"
+            name: cputime_count
+          - gauge:
+              dataPoints:
+                - asDouble: 0.217
+                  startTimeUnixNano: "1681808520000000000"
+                  timeUnixNano: "1681808580000000000"
+            name: cputime_total
+          - gauge:
+              dataPoints:
+                - asDouble: 0.042
+                  startTimeUnixNano: "1681808520000000000"
+                  timeUnixNano: "1681808580000000000"
+            name: cputime_minimum
+          - gauge:
+              dataPoints:
+                - asDouble: 0.175
+                  startTimeUnixNano: "1681808520000000000"
+                  timeUnixNano: "1681808580000000000"
+            name: cputime_maximum
+          - gauge:
+              dataPoints:
+                - asDouble: 0.1085
+                  startTimeUnixNano: "1681808520000000000"
+                  timeUnixNano: "1681808580000000000"
+            name: cputime_average
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/AAAA0A0A-BB1B-CC2C-DD3D-EEEEEE4E4E4E/RESOURCEGROUPS/RG-001/PROVIDERS/MICROSOFT.WEB/SITES/SCALEABLEWEBAPP2
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asDouble: 2
+                  startTimeUnixNano: "1681808340000000000"
+                  timeUnixNano: "1681808640000000000"
+            name: cputime5m_count
+          - gauge:
+              dataPoints:
+                - asDouble: 0.284
+                  startTimeUnixNano: "1681808340000000000"
+                  timeUnixNano: "1681808640000000000"
+            name: cputime5m_total
+          - gauge:
+              dataPoints:
+                - asDouble: 0.053
+                  startTimeUnixNano: "1681808340000000000"
+                  timeUnixNano: "1681808640000000000"
+            name: cputime5m_minimum
+          - gauge:
+              dataPoints:
+                - asDouble: 0.231
+                  startTimeUnixNano: "1681808340000000000"
+                  timeUnixNano: "1681808640000000000"
+            name: cputime5m_maximum
+          - gauge:
+              dataPoints:
+                - asDouble: 0.142
+                  startTimeUnixNano: "1681808340000000000"
+                  timeUnixNano: "1681808640000000000"
+            name: cputime5m_average
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

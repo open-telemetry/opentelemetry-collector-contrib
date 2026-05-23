@@ -20,15 +20,16 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/log"
 )
 
 func Start(cfg *Config) error {
-	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
+	logger, err := log.CreateLogger(cfg.SkipSettingGRPCLogger)
 	if err != nil {
 		return err
 	}
@@ -69,12 +70,20 @@ func Start(cfg *Config) error {
 
 	var ssp sdktrace.SpanProcessor
 	if cfg.Batch {
-		ssp = sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
+		ssp = sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second), sdktrace.WithMaxExportBatchSize(cfg.BatchSize))
 		defer func() {
 			logger.Info("stop the batch span processor")
 
 			if tempError := ssp.Shutdown(context.Background()); tempError != nil {
 				logger.Error("failed to stop the batch span processor", zap.Error(tempError))
+			}
+		}()
+	} else {
+		ssp = sdktrace.NewSimpleSpanProcessor(exp)
+		defer func() {
+			logger.Info("stop the simple span processor")
+			if tempError := ssp.Shutdown(context.Background()); tempError != nil {
+				logger.Error("failed to stop the simple span processor", zap.Error(tempError))
 			}
 		}()
 	}
@@ -83,12 +92,10 @@ func Start(cfg *Config) error {
 	attributes = append(attributes, cfg.GetAttributes()...)
 
 	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...)),
+		sdktrace.WithResource(resource.NewWithAttributes(conventions.SchemaURL, attributes...)),
 	)
 
-	if cfg.Batch {
-		tracerProvider.RegisterSpanProcessor(ssp)
-	}
+	tracerProvider.RegisterSpanProcessor(ssp)
 
 	otel.SetTracerProvider(tracerProvider)
 
@@ -106,7 +113,7 @@ func run(c *Config, logger *zap.Logger) error {
 		return err
 	}
 
-	if c.TotalDuration > 0 {
+	if c.TotalDuration.Duration() > 0 || c.TotalDuration.IsInf() {
 		c.NumTraces = 0
 	}
 
@@ -152,12 +159,15 @@ func run(c *Config, logger *zap.Logger) error {
 			logger:           logger.With(zap.Int("worker", i)),
 			loadSize:         c.LoadSize,
 			spanDuration:     c.SpanDuration,
+			allowFailures:    c.AllowExportFailures,
+			numSpanLinks:     c.NumSpanLinks,
+			spanContexts:     make([]trace.SpanContext, 0),
 		}
 
 		go w.simulateTraces(telemetryAttributes)
 	}
-	if c.TotalDuration > 0 {
-		time.Sleep(c.TotalDuration)
+	if c.TotalDuration.Duration() > 0 && !c.TotalDuration.IsInf() {
+		time.Sleep(c.TotalDuration.Duration())
 		running.Store(false)
 	}
 	wg.Wait()

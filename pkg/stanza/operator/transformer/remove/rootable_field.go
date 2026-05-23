@@ -72,3 +72,7 @@ func (f *rootableField) Get(entry *entry.Entry) (any, bool) {
 	}
 	return f.Field.Get(entry)
 }
+
+func (f *rootableField) IsEmpty() bool {
+	return f.Field.IsEmpty() && !f.allAttributes && !f.allResource
+}

@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 func TestProbabilisticSampling(t *testing.T) {
@@ -76,7 +78,7 @@ func TestProbabilisticSampling(t *testing.T) {
 				decision, err := probabilisticSampler.Evaluate(t.Context(), traceID, trace)
 				assert.NoError(t, err)
 
-				if decision == Sampled {
+				if decision == samplingpolicy.Sampled {
 					sampled++
 				}
 			}
@@ -95,7 +97,7 @@ func genRandomTraceIDs(num int) (ids []pcommon.TraceID) {
 	// be unpredictable.
 	r := rand.New(rand.NewPCG(123, 456))
 	ids = make([]pcommon.TraceID, 0, num)
-	for i := 0; i < num; i++ {
+	for range num {
 		traceID := [16]byte{}
 		binary.BigEndian.PutUint64(traceID[:8], r.Uint64())
 		binary.BigEndian.PutUint64(traceID[8:], r.Uint64())

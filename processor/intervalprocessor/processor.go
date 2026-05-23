@@ -20,13 +20,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor/internal/metrics"
 )
 
-var _ processor.Metrics = (*Processor)(nil)
+var _ processor.Metrics = (*intervalProcessor)(nil)
 
-type Processor struct {
+type intervalProcessor struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	logger *zap.Logger
 
+	wg        sync.WaitGroup
 	stateLock sync.Mutex
 
 	md                 pmetric.Metrics
@@ -43,10 +44,10 @@ type Processor struct {
 	nextConsumer consumer.Metrics
 }
 
-func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics) *Processor {
+func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics) *intervalProcessor {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	return &Processor{
+	return &intervalProcessor{
 		ctx:    ctx,
 		cancel: cancel,
 		logger: log,
@@ -68,33 +69,37 @@ func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics
 	}
 }
 
-func (p *Processor) Start(_ context.Context, _ component.Host) error {
+func (p *intervalProcessor) Start(_ context.Context, _ component.Host) error {
 	exportTicker := time.NewTicker(p.config.Interval)
-	go func() {
+	p.wg.Go(func() {
 		for {
 			select {
 			case <-p.ctx.Done():
 				exportTicker.Stop()
+				// Flush remaining buffered metrics before exiting.
+				// Use context.Background() since p.ctx is already cancelled.
+				p.exportMetrics(context.Background())
 				return
 			case <-exportTicker.C:
-				p.exportMetrics()
+				p.exportMetrics(p.ctx)
 			}
 		}
-	}()
+	})
 
 	return nil
 }
 
-func (p *Processor) Shutdown(_ context.Context) error {
+func (p *intervalProcessor) Shutdown(_ context.Context) error {
 	p.cancel()
+	p.wg.Wait()
 	return nil
 }
 
-func (p *Processor) Capabilities() consumer.Capabilities {
+func (*intervalProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (p *intervalProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	var errs error
 
 	p.stateLock.Lock()
@@ -178,7 +183,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 	return errs
 }
 
-func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP]](dataPoints DPS, mCloneDataPoints DPS, metricID identity.Metric, dpLookup map[identity.Stream]DP) {
+func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP]](dataPoints, mCloneDataPoints DPS, metricID identity.Metric, dpLookup map[identity.Stream]DP) {
 	for i := 0; i < dataPoints.Len(); i++ {
 		dp := dataPoints.At(i)
 
@@ -201,7 +206,7 @@ func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP
 	}
 }
 
-func (p *Processor) exportMetrics() {
+func (p *intervalProcessor) exportMetrics(ctx context.Context) {
 	md := func() pmetric.Metrics {
 		p.stateLock.Lock()
 		defer p.stateLock.Unlock()
@@ -223,12 +228,12 @@ func (p *Processor) exportMetrics() {
 		return out
 	}()
 
-	if err := p.nextConsumer.ConsumeMetrics(p.ctx, md); err != nil {
+	if err := p.nextConsumer.ConsumeMetrics(ctx, md); err != nil {
 		p.logger.Error("Metrics export failed", zap.Error(err))
 	}
 }
 
-func (p *Processor) getOrCloneMetric(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) (pmetric.Metric, identity.Metric) {
+func (p *intervalProcessor) getOrCloneMetric(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) (pmetric.Metric, identity.Metric) {
 	// Find the ResourceMetrics
 	resID := identity.OfResource(rm.Resource())
 	rmClone, ok := p.rmLookup[resID]

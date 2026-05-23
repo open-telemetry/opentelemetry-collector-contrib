@@ -9,10 +9,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
@@ -20,11 +23,18 @@ import (
 const knownFilesKey = "knownFiles"
 
 // Save syncs the most recent set of files to the database
+// Uses protobuf encoding if the feature gate is enabled, otherwise uses JSON
 func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata) error {
 	return SaveKey(ctx, persister, rmds, knownFilesKey)
 }
 
 func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string, ops ...*storage.Operation) error {
+	// Use protobuf if feature gate is enabled
+	if metadata.FilelogProtobufCheckpointEncodingFeatureGate.IsEnabled() {
+		return saveKeyProto(ctx, persister, rmds, key, ops...)
+	}
+
+	// Otherwise use JSON (default)
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 
@@ -48,12 +58,13 @@ func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.M
 	return errs
 }
 
-// Load loads the most recent set of files to the database
-func Load(ctx context.Context, persister operator.Persister) ([]*reader.Metadata, error) {
-	return LoadKey(ctx, persister, knownFilesKey)
+// Load loads the most recent set of files from the database
+// Tries protobuf first for backward compatibility, falls back to JSON if protobuf fails
+func Load(ctx context.Context, persister operator.Persister, logger *zap.Logger) ([]*reader.Metadata, error) {
+	return LoadKey(ctx, persister, knownFilesKey, logger)
 }
 
-func LoadKey(ctx context.Context, persister operator.Persister, key string) ([]*reader.Metadata, error) {
+func LoadKey(ctx context.Context, persister operator.Persister, key string, logger *zap.Logger) ([]*reader.Metadata, error) {
 	encoded, err := persister.Get(ctx, key)
 	if err != nil {
 		return nil, err
@@ -63,6 +74,15 @@ func LoadKey(ctx context.Context, persister operator.Persister, key string) ([]*
 		return []*reader.Metadata{}, nil
 	}
 
+	// Try protobuf first (for backward compatibility with existing protobuf checkpoints)
+	// This allows seamless migration even when the feature gate is disabled
+	rmds, err := tryLoadProtobuf(encoded)
+	if err == nil {
+		return rmds, nil
+	}
+	logger.Debug("failed to load checkpoint as protobuf, falling back to JSON", zap.Error(err))
+
+	// Fall back to JSON if protobuf fails
 	dec := json.NewDecoder(bytes.NewReader(encoded))
 
 	// Decode the number of entries
@@ -73,10 +93,11 @@ func LoadKey(ctx context.Context, persister operator.Persister, key string) ([]*
 
 	// Decode each of the known files
 	var errs error
-	rmds := make([]*reader.Metadata, 0, knownFileCount)
+	rmds = make([]*reader.Metadata, 0, knownFileCount)
 	for i := 0; i < knownFileCount; i++ {
 		rmd := new(reader.Metadata)
-		if err = dec.Decode(rmd); err != nil {
+		err = dec.Decode(rmd)
+		if err != nil {
 			return nil, err
 		}
 		if rmd.FileAttributes == nil {
@@ -88,9 +109,7 @@ func LoadKey(ctx context.Context, persister operator.Persister, key string) ([]*
 		if ha, ok := rmd.FileAttributes["HeaderAttributes"]; ok {
 			switch hat := ha.(type) {
 			case map[string]any:
-				for k, v := range hat {
-					rmd.FileAttributes[k] = v
-				}
+				maps.Copy(rmd.FileAttributes, hat)
 				delete(rmd.FileAttributes, "HeaderAttributes")
 			default:
 				errs = multierr.Append(errs, errors.New("migrate header attributes: unexpected format"))

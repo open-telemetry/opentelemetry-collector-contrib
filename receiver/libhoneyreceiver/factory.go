@@ -9,6 +9,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
@@ -37,13 +39,18 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	durationFieldsArr := []string{"duration_ms"}
 	endpointStr := fmt.Sprintf("localhost:%d", httpPort)
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	netAddr.Endpoint = endpointStr
 	return &Config{
-		HTTP: &HTTPConfig{
-			ServerConfig: &confighttp.ServerConfig{
-				Endpoint: endpointStr,
+		HTTP: configoptional.Default(HTTPConfig{
+			ServerConfig: confighttp.ServerConfig{
+				NetAddr: netAddr,
+				// The empty array means no decompression attempted.
+				CompressionAlgorithms: []string{},
 			},
 			TracesURLPaths: defaultTracesURLPaths,
-		},
+		}),
 		AuthAPI: "",
 		FieldMapConfig: libhoneyevent.FieldMapConfig{
 			Resources: libhoneyevent.ResourcesConfig{

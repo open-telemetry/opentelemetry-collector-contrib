@@ -10,7 +10,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/hostcapabilities"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -19,13 +21,14 @@ var _ receiver.Metrics = (*receiverCreator)(nil)
 
 // receiverCreator implements consumer.Metrics.
 type receiverCreator struct {
-	params              receiver.Settings
-	cfg                 *Config
-	nextLogsConsumer    consumer.Logs
-	nextMetricsConsumer consumer.Metrics
-	nextTracesConsumer  consumer.Traces
-	observerHandler     *observerHandler
-	observables         []observer.Observable
+	params               receiver.Settings
+	cfg                  *Config
+	nextLogsConsumer     consumer.Logs
+	nextMetricsConsumer  consumer.Metrics
+	nextTracesConsumer   consumer.Traces
+	nextProfilesConsumer xconsumer.Profiles
+	observerHandler      *observerHandler
+	observables          []observer.Observable
 }
 
 func newReceiverCreator(params receiver.Settings, cfg *Config) receiver.Metrics {
@@ -38,7 +41,7 @@ func newReceiverCreator(params receiver.Settings, cfg *Config) receiver.Metrics 
 // host is an interface that the component.Host passed to receivercreator's Start function must implement
 type host interface {
 	component.Host
-	GetFactory(component.Kind, component.Type) component.Factory
+	hostcapabilities.ComponentFactory
 }
 
 // Start receiver_creator.
@@ -55,6 +58,7 @@ func (rc *receiverCreator) Start(_ context.Context, h component.Host) error {
 		nextLogsConsumer:      rc.nextLogsConsumer,
 		nextMetricsConsumer:   rc.nextMetricsConsumer,
 		nextTracesConsumer:    rc.nextTracesConsumer,
+		nextProfilesConsumer:  rc.nextProfilesConsumer,
 		runner:                newReceiverRunner(rc.params, rcHost),
 	}
 

@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("udplog")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
+	Type           = component.MustNewType("udp_log")
+	DeprecatedType = component.MustNewType("udplog")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
 )
 
 const (

@@ -49,6 +49,22 @@ func (opt ignoreResourceAttributeValue) maskLogsResourceAttributeValue(logs plog
 	}
 }
 
+// IgnoreResourceEntityRefs is a CompareLogsOption that clears entity references
+// on all resources.
+func IgnoreResourceEntityRefs() CompareLogsOption {
+	return compareLogsOptionFunc(func(expected, actual plog.Logs) {
+		maskLogsResourceEntityRefs(expected)
+		maskLogsResourceEntityRefs(actual)
+	})
+}
+
+func maskLogsResourceEntityRefs(logs plog.Logs) {
+	rls := logs.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		internal.MaskResourceEntityRefs(rls.At(i).Resource())
+	}
+}
+
 // IgnoreLogRecordAttributeValue is a CompareLogsOption that sets the value of an attribute
 // to empty bytes for every log record
 func IgnoreLogRecordAttributeValue(attributeName string) CompareLogsOption {
@@ -209,6 +225,25 @@ func sortLogRecordSlices(ls plog.Logs) {
 				bb := pdatautil.ValueHash(b.Body())
 				return bytes.Compare(ab[:], bb[:]) < 0
 			})
+		}
+	}
+}
+
+// IgnoreScopeLogsVersion is a CompareLogsOption that ignores the version of scope logs.
+func IgnoreScopeLogsVersion() CompareLogsOption {
+	return compareLogsOptionFunc(func(expected, actual plog.Logs) {
+		version := "latest"
+		maskScopeLogsVersion(expected, version)
+		maskScopeLogsVersion(actual, version)
+	})
+}
+
+func maskScopeLogsVersion(logs plog.Logs, version string) {
+	rls := logs.ResourceLogs()
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		sls := rls.At(i).ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			sls.At(j).Scope().SetVersion(version)
 		}
 	}
 }

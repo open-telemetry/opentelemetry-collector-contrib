@@ -119,6 +119,27 @@ func (rb *ResourceBuilder) SetK8sHpaName(val string) {
 	}
 }
 
+// SetK8sHpaScaletargetrefApiversion sets provided value as "k8s.hpa.scaletargetref.apiversion" attribute.
+func (rb *ResourceBuilder) SetK8sHpaScaletargetrefApiversion(val string) {
+	if rb.config.K8sHpaScaletargetrefApiversion.Enabled {
+		rb.res.Attributes().PutStr("k8s.hpa.scaletargetref.apiversion", val)
+	}
+}
+
+// SetK8sHpaScaletargetrefKind sets provided value as "k8s.hpa.scaletargetref.kind" attribute.
+func (rb *ResourceBuilder) SetK8sHpaScaletargetrefKind(val string) {
+	if rb.config.K8sHpaScaletargetrefKind.Enabled {
+		rb.res.Attributes().PutStr("k8s.hpa.scaletargetref.kind", val)
+	}
+}
+
+// SetK8sHpaScaletargetrefName sets provided value as "k8s.hpa.scaletargetref.name" attribute.
+func (rb *ResourceBuilder) SetK8sHpaScaletargetrefName(val string) {
+	if rb.config.K8sHpaScaletargetrefName.Enabled {
+		rb.res.Attributes().PutStr("k8s.hpa.scaletargetref.name", val)
+	}
+}
+
 // SetK8sHpaUID sets provided value as "k8s.hpa.uid" attribute.
 func (rb *ResourceBuilder) SetK8sHpaUID(val string) {
 	if rb.config.K8sHpaUID.Enabled {
@@ -235,6 +256,41 @@ func (rb *ResourceBuilder) SetK8sResourcequotaName(val string) {
 func (rb *ResourceBuilder) SetK8sResourcequotaUID(val string) {
 	if rb.config.K8sResourcequotaUID.Enabled {
 		rb.res.Attributes().PutStr("k8s.resourcequota.uid", val)
+	}
+}
+
+// SetK8sServiceName sets provided value as "k8s.service.name" attribute.
+func (rb *ResourceBuilder) SetK8sServiceName(val string) {
+	if rb.config.K8sServiceName.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.name", val)
+	}
+}
+
+// SetK8sServicePublishNotReadyAddresses sets provided value as "k8s.service.publish_not_ready_addresses" attribute.
+func (rb *ResourceBuilder) SetK8sServicePublishNotReadyAddresses(val bool) {
+	if rb.config.K8sServicePublishNotReadyAddresses.Enabled {
+		rb.res.Attributes().PutBool("k8s.service.publish_not_ready_addresses", val)
+	}
+}
+
+// SetK8sServiceTrafficDistribution sets provided value as "k8s.service.traffic_distribution" attribute.
+func (rb *ResourceBuilder) SetK8sServiceTrafficDistribution(val string) {
+	if rb.config.K8sServiceTrafficDistribution.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.traffic_distribution", val)
+	}
+}
+
+// SetK8sServiceType sets provided value as "k8s.service.type" attribute.
+func (rb *ResourceBuilder) SetK8sServiceType(val string) {
+	if rb.config.K8sServiceType.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.type", val)
+	}
+}
+
+// SetK8sServiceUID sets provided value as "k8s.service.uid" attribute.
+func (rb *ResourceBuilder) SetK8sServiceUID(val string) {
+	if rb.config.K8sServiceUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.uid", val)
 	}
 }
 

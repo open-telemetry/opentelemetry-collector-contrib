@@ -1,0 +1,56 @@
+{
+  "records": [
+    {
+      "count": 2,
+      "total": 0.217,
+      "minimum": 0.042,
+      "maximum": 0.175,
+      "average": 0.1085,
+      "resourceId": "/SUBSCRIPTIONS/AAAA0A0A-BB1B-CC2C-DD3D-EEEEEE4E4E4E/RESOURCEGROUPS/RG-001/PROVIDERS/MICROSOFT.WEB/SITES/SCALEABLEWEBAPP1",
+      "time": "2023-04-18T09:03:00.0000000Z",
+      "metricName": "CpuTime",
+      "timeGrain": "PT1M"
+    },
+    {
+      "count": 2,
+      "total": 0.284,
+      "minimum": 0.053,
+      "maximum": 0.231,
+      "average": 0.142,
+      "resourceId": "/SUBSCRIPTIONS/AAAA0A0A-BB1B-CC2C-DD3D-EEEEEE4E4E4E/RESOURCEGROUPS/RG-001/PROVIDERS/MICROSOFT.WEB/SITES/SCALEABLEWEBAPP2",
+      "time": "2023-04-18T09:04:00.0000000Z",
+      "metricName": "CpuTime5m",
+      "timeGrain": "PT5M"
+    },
+    {
+      "count": 1,
+      "total": 1,
+      "minimum": 1,
+      "maximum": 1,
+      "average": 1,
+      "resourceId": "/SUBSCRIPTIONS/AAAA0A0A-BB1B-CC2C-DD3D-EEEEEE4E4E4E/RESOURCEGROUPS/RG-001/PROVIDERS/MICROSOFT.WEB/SITES/SCALEABLEWEBAPP1",
+      "time": "2023-04-18T09:03:00.0000000Z",
+      "metricName": "Requests",
+      "timeGrain": "PT1M"
+    },
+    {
+      "Average": 1,
+      "Count": 1,
+      "Maximum": 1,
+      "Minimum": 1,
+      "Total": 1,
+      "resourceId": "/subscriptions/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/resourcegroups/rg-dcrs/providers/microsoft.keyvault/vaults/dcr-vault",
+      "time": "2024-08-22T13:43:00.0000000Z",
+      "unit": "Count",
+      "metricName": "ServiceApiHit",
+      "timeGrain": "PT1M",
+      "dimension": {
+        "ActivityName": "keycreate",
+        "ActivityType": "key"
+      },
+      "EventProcessedUtcTime": "2024-08-22T13:49:17.1233030Z",
+      "PartitionId": 0,
+      "EventEnqueuedUtcTime": "2024-08-22T13:46:04.5570000Z"
+    }
+  ]
+}

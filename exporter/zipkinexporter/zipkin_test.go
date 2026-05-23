@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -67,7 +68,10 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	recvCfg := &zipkinreceiver.Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: addr,
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  addr,
+			},
 		},
 	}
 	zi, err := zipkinreceiver.NewFactory().CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), recvCfg, zexp)
@@ -151,7 +155,7 @@ func (r *mockZipkinReporter) Send(span zipkinmodel.SpanModel) {
 	r.batch = append(r.batch, &span)
 }
 
-func (r *mockZipkinReporter) Close() error {
+func (*mockZipkinReporter) Close() error {
 	return nil
 }
 
@@ -316,7 +320,10 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	recvCfg := &zipkinreceiver.Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: addr,
+			NetAddr: confignet.AddrConfig{
+				Endpoint:  addr,
+				Transport: "tcp",
+			},
 		},
 	}
 	zi, err := zipkinreceiver.NewFactory().CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), recvCfg, zexp)

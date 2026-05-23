@@ -45,7 +45,7 @@ type openshiftProvider struct {
 
 func (o *openshiftProvider) makeOCPRequest(ctx context.Context, endpoint, target string) (*http.Request, error) {
 	addr := fmt.Sprintf("%s/apis/config.openshift.io/v1/%s/%s/status", o.address, endpoint, target)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, addr, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, addr, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -63,6 +63,10 @@ func (o *openshiftProvider) OpenShiftClusterVersion(ctx context.Context) (string
 	if err != nil {
 		return "", err
 	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("OpenShift API returned status %s", resp.Status)
+	}
 	res := ocpClusterVersionAPIResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		return "", err
@@ -79,6 +83,10 @@ func (o *openshiftProvider) Infrastructure(ctx context.Context) (*Infrastructure
 	resp, err := o.client.Do(req)
 	if err != nil {
 		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("OpenShift API returned status %s", resp.Status)
 	}
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -98,7 +106,7 @@ func (o *openshiftProvider) Infrastructure(ctx context.Context) (*Infrastructure
 // K8SClusterVersion requests the ClusterVersion from the kubernetes api.
 func (o *openshiftProvider) K8SClusterVersion(ctx context.Context) (string, error) {
 	addr := fmt.Sprintf("%s/version", o.address)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, addr, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, addr, http.NoBody)
 	if err != nil {
 		return "", err
 	}
@@ -107,6 +115,10 @@ func (o *openshiftProvider) K8SClusterVersion(ctx context.Context) (string, erro
 	resp, err := o.client.Do(req)
 	if err != nil {
 		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Kubernetes API returned status %s", resp.Status)
 	}
 	res := k8sClusterVersionAPIResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {

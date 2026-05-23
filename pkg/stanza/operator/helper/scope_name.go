@@ -4,13 +4,17 @@
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
 import (
+	"fmt"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 // ScopeNameParser is a helper that parses severity onto an entry.
 type ScopeNameParser struct {
 	ParseFrom entry.Field `mapstructure:"parse_from,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewScopeNameParser creates a new scope parser with default values
@@ -22,7 +26,7 @@ func NewScopeNameParser() ScopeNameParser {
 func (p *ScopeNameParser) Parse(ent *entry.Entry) error {
 	value, ok := ent.Get(p.ParseFrom)
 	if !ok {
-		return errors.NewError(
+		return stanzaerrors.NewError(
 			"log entry does not have the expected parse_from field",
 			"ensure that all entries forwarded to this parser contain the parse_from field",
 			"parse_from", p.ParseFrom.String(),
@@ -33,9 +37,9 @@ func (p *ScopeNameParser) Parse(ent *entry.Entry) error {
 	if !ok {
 		err := ent.Set(p.ParseFrom, value)
 		if err != nil {
-			return errors.Wrap(err, "parse_from field does not contain a string")
+			return fmt.Errorf("parse_from field does not contain a string: %w", err)
 		}
-		return errors.NewError(
+		return stanzaerrors.NewError(
 			"parse_from field does not contain a string",
 			"ensure that all entries forwarded to this parser contain a string in the parse_from field",
 			"parse_from", p.ParseFrom.String(),

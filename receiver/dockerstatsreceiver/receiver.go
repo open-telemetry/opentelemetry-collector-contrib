@@ -11,7 +11,8 @@ import (
 	"sync"
 	"time"
 
-	ctypes "github.com/docker/docker/api/types/container"
+	ctypes "github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -24,8 +25,8 @@ import (
 )
 
 var (
-	defaultDockerAPIVersion         = "1.25"
-	minimumRequiredDockerAPIVersion = docker.MustNewAPIVersion(defaultDockerAPIVersion)
+	defaultDockerAPIVersion         = docker.MustNewAPIVersion("1.44")
+	minimumRequiredDockerAPIVersion = docker.MustNewAPIVersion("1.25")
 )
 
 type resultV2 struct {
@@ -50,14 +51,23 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 	}
 }
 
+func (r *metricsReceiver) clientOptions() []client.Opt {
+	var opts []client.Opt
+	if r.config.Endpoint == "" {
+		opts = append(opts, client.WithHostFromEnv())
+	}
+	return opts
+}
+
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 	var err error
-	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger)
+	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger, r.clientOptions()...)
 	if err != nil {
 		return err
 	}
 
-	if err = r.client.LoadContainerList(ctx); err != nil {
+	err = r.client.LoadContainerList(ctx)
+	if err != nil {
 		return err
 	}
 
@@ -72,11 +82,34 @@ func (r *metricsReceiver) shutdown(context.Context) error {
 	if r.cancel != nil {
 		r.cancel()
 	}
+	if r.client != nil {
+		return r.client.Close()
+	}
 	return nil
 }
 
 func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
 	containers := r.client.Containers()
+	var errs error
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	if r.config.StreamStats {
+		for _, container := range containers {
+			stats, ok := r.client.LatestContainerStats(container.ID, r.config.CollectionInterval)
+			if !ok {
+				// Stream is still starting up; skip until first frame arrives.
+				errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(
+					fmt.Errorf("no stats available yet for container %s", container.ID), 0))
+				continue
+			}
+			if err := r.recordContainerStats(now, stats, &container); err != nil {
+				errs = multierr.Append(errs, err)
+			}
+		}
+		return r.mb.Emit(), errs
+	}
+
+	// Default (non-streaming): open a fresh connection per container each scrape.
 	results := make(chan resultV2, len(containers))
 
 	wg := &sync.WaitGroup{}
@@ -101,9 +134,6 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 	wg.Wait()
 	close(results)
 
-	var errs error
-
-	now := pcommon.NewTimestampFromTime(time.Now())
 	for res := range results {
 		if res.err != nil {
 			// Don't know the number of failed stats, but one container fetch is a partial error.
@@ -120,15 +150,15 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 
 func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerStats *ctypes.StatsResponse, container *docker.Container) error {
 	var errs error
-	r.recordCPUMetrics(now, &containerStats.CPUStats, &containerStats.PreCPUStats)
+	r.recordCPUMetrics(now, containerStats)
 	r.recordMemoryMetrics(now, &containerStats.MemoryStats)
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
 	r.recordNetworkMetrics(now, &containerStats.Networks)
 	r.recordPidsMetrics(now, &containerStats.PidsStats)
-	if err := r.recordBaseMetrics(now, container.ContainerJSONBase); err != nil {
+	if err := r.recordBaseMetrics(now, container.InspectResponse); err != nil {
 		errs = multierr.Append(errs, err)
 	}
-	if err := r.recordHostConfigMetrics(now, container.ContainerJSON); err != nil {
+	if err := r.recordHostConfigMetrics(now, container.InspectResponse); err != nil {
 		errs = multierr.Append(errs, err)
 	}
 	r.mb.RecordContainerRestartsDataPoint(now, int64(container.RestartCount))
@@ -215,7 +245,7 @@ func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats
 	}
 }
 
-type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj string, devMin string, operation string)
+type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj, devMin, operation string)
 
 func (r *metricsReceiver) recordBlkioMetrics(now pcommon.Timestamp, blkioStats *ctypes.BlkioStats) {
 	recordSingleBlkioStat(now, blkioStats.IoMergedRecursive, r.mb.RecordContainerBlockioIoMergedRecursiveDataPoint)
@@ -256,7 +286,8 @@ func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, networks *
 	}
 }
 
-func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *ctypes.CPUStats, prevStats *ctypes.CPUStats) {
+func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, v *ctypes.StatsResponse) {
+	cpuStats := v.CPUStats
 	r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(cpuStats.SystemUsage))
 	r.mb.RecordContainerCPUUsageTotalDataPoint(now, int64(cpuStats.CPUUsage.TotalUsage))
 	r.mb.RecordContainerCPUUsageKernelmodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInKernelmode))
@@ -264,7 +295,7 @@ func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *ctyp
 	r.mb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledPeriods))
 	r.mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.Periods))
 	r.mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledTime))
-	r.mb.RecordContainerCPUUtilizationDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
+	r.mb.RecordContainerCPUUtilizationDataPoint(now, calculateCPUPercent(v))
 	r.mb.RecordContainerCPULogicalCountDataPoint(now, int64(cpuStats.OnlineCPUs))
 
 	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {
@@ -282,7 +313,7 @@ func (r *metricsReceiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *ct
 	}
 }
 
-func (r *metricsReceiver) recordBaseMetrics(now pcommon.Timestamp, base *ctypes.ContainerJSONBase) error {
+func (r *metricsReceiver) recordBaseMetrics(now pcommon.Timestamp, base *ctypes.InspectResponse) error {
 	t, err := time.Parse(time.RFC3339, base.State.StartedAt)
 	if err != nil {
 		// value not available or invalid

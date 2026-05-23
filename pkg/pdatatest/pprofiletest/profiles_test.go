@@ -17,20 +17,21 @@ import (
 )
 
 func basicProfiles() Profiles {
+	res := pcommon.NewResource()
+	res.Attributes().PutEmpty("key1").SetStr("value1")
 	return Profiles{
 		ResourceProfiles: []ResourceProfile{
 			{
-				Resource: Resource{
-					Attributes: []Attribute{{"key1", "value1"}},
-				},
+				Resource: res,
 				ScopeProfiles: []ScopeProfile{
 					{
-						Profile: []Profile{
+						Profiles: []Profile{
 							{
-								Attributes: []Attribute{{"scope-attr1", "value1"}},
+								Attributes: []Attribute{{Key: "scope-attr1", Value: "value1"}},
 								ProfileID:  pprofile.NewProfileIDEmpty(),
 							},
 						},
+						Scope: pcommon.NewInstrumentationScope(),
 					},
 				},
 			},
@@ -40,7 +41,7 @@ func basicProfiles() Profiles {
 
 func TestCompareProfiles(t *testing.T) {
 	timestamp1 := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
-	timestamp2 := timestamp1.Add(5 * time.Second)
+	duration := (5 * time.Second).Nanoseconds()
 	tcs := []struct {
 		name           string
 		expected       pprofile.Profiles
@@ -60,32 +61,22 @@ func TestCompareProfiles(t *testing.T) {
 			actual:   basicProfiles().Transform(),
 		},
 		{
-			name: "attribute value string is not bool",
-			expected: func() pprofile.Profiles {
-				p := basicProfiles()
-				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{"key1", "true"}
-				return p.Transform()
-			}(),
-			actual: func() pprofile.Profiles {
-				p := basicProfiles()
-				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{"key1", true}
-				return p.Transform()
-			}(),
-			withoutOptions: errors.New(`missing expected resource: map[key1:true]; unexpected resource: map[key1:true]`),
-		},
-		{
 			name: "resource order",
 			expected: func() pprofile.Profiles {
 				p := basicProfiles()
+				s1 := pcommon.NewInstrumentationScope()
+				s1.SetName("scope1")
+				s1.Attributes().PutEmpty("scope-attr1").SetStr("value1")
+				r := pcommon.NewResource()
+				r.Attributes().PutStr("key2", "value2")
 				p.ResourceProfiles = append(p.ResourceProfiles, ResourceProfile{
-					Resource: Resource{
-						Attributes: []Attribute{{"key2", "value2"}},
-					},
+					Resource: r,
 					ScopeProfiles: []ScopeProfile{
 						{
-							Profile: []Profile{
+							Scope: s1,
+							Profiles: []Profile{
 								{
-									Attributes: []Attribute{{"scope-attr2", "value2"}},
+									Attributes: []Attribute{{Key: "scope-attr2", Value: "value2"}},
 								},
 							},
 						},
@@ -95,22 +86,26 @@ func TestCompareProfiles(t *testing.T) {
 			}(),
 			actual: func() pprofile.Profiles {
 				p := basicProfiles()
-				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{"key2", "value2"}
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile[0].Attributes[0] = Attribute{"scope-attr2", "value2"}
+				s1 := pcommon.NewInstrumentationScope()
+				s1.SetName("scope1")
+				s1.Attributes().PutEmpty("scope-attr1").SetStr("value1")
+				r := pcommon.NewResource()
+				r.Attributes().PutStr("key2", "value2")
 				p.ResourceProfiles = append(p.ResourceProfiles, ResourceProfile{
-					Resource: Resource{
-						Attributes: []Attribute{{"key1", "value1"}},
-					},
+					Resource: r,
 					ScopeProfiles: []ScopeProfile{
 						{
-							Profile: []Profile{
+							Scope: s1,
+							Profiles: []Profile{
 								{
-									Attributes: []Attribute{{"scope-attr1", "value1"}},
+									Attributes: []Attribute{{Key: "scope-attr2", Value: "value2"}},
 								},
 							},
 						},
 					},
 				})
+				// Reverse the order of resources to trigger order mismatch
+				p.ResourceProfiles[0], p.ResourceProfiles[1] = p.ResourceProfiles[1], p.ResourceProfiles[0]
 				return p.Transform()
 			}(),
 			withoutOptions: multierr.Combine(
@@ -126,7 +121,7 @@ func TestCompareProfiles(t *testing.T) {
 			expected: basicProfiles().Transform(),
 			actual: func() pprofile.Profiles {
 				p := basicProfiles()
-				p.ResourceProfiles[0].Resource.Attributes[0].Value = "value2"
+				p.ResourceProfiles[0].Resource.Attributes().PutStr("key1", "value2")
 				return p.Transform()
 			}(),
 			withoutOptions: multierr.Combine(
@@ -141,41 +136,44 @@ func TestCompareProfiles(t *testing.T) {
 			name: "resource scope order",
 			expected: func() pprofile.Profiles {
 				p := basicProfiles()
+				is1 := pcommon.NewInstrumentationScope()
+				is1.SetName("scope1")
+				is1.Attributes().PutEmpty("scope-attr1").SetStr("value1")
+				is2 := pcommon.NewInstrumentationScope()
+				is2.SetName("scope2")
+				is2.Attributes().PutEmpty("scope-attr2").SetStr("value2")
 				p.ResourceProfiles[0].ScopeProfiles = []ScopeProfile{
 					{
-						Scope: Scope{
-							Name:       "scope1",
-							Attributes: []Attribute{{"scope-attr1", "value1"}},
-						},
+						Scope: is1,
 					},
 					{
-						Scope: Scope{
-							Name:       "scope2",
-							Attributes: []Attribute{{"scope-attr2", "value2"}},
-						},
+						Scope: is2,
 					},
 				}
 				return p.Transform()
 			}(),
 			actual: func() pprofile.Profiles {
 				p := basicProfiles()
+				is1 := pcommon.NewInstrumentationScope()
+				is1.SetName("scope1")
+				is1.Attributes().PutEmpty("scope-attr1").SetStr("value1")
+				is2 := pcommon.NewInstrumentationScope()
+				is2.SetName("scope2")
+				is2.Attributes().PutEmpty("scope-attr2").SetStr("value2")
 				p.ResourceProfiles[0].ScopeProfiles = []ScopeProfile{
 					{
-						Scope: Scope{
-							Name:       "scope2",
-							Attributes: []Attribute{{"scope-attr2", "value2"}},
-						},
+						Scope: is2,
 					},
 					{
-						Scope: Scope{
-							Name:       "scope1",
-							Attributes: []Attribute{{"scope-attr1", "value1"}},
-						},
+						Scope: is1,
 					},
 				}
 				return p.Transform()
 			}(),
-			withoutOptions: errors.New(`resource "map[key1:value1]": scopes are out of order: scope scope1 expected at index 0, found at index 1; resource "map[key1:value1]": scopes are out of order: scope scope2 expected at index 1, found at index 0`),
+			withoutOptions: multierr.Combine(
+				errors.New(`resource "map[key1:value1]": scopes are out of order: scope scope1 expected at index 0, found at index 1`),
+				errors.New(`resource "map[key1:value1]": scopes are out of order: scope scope2 expected at index 1, found at index 0`),
+			),
 			compareOptions: []CompareProfilesOption{
 				IgnoreScopeProfilesOrder(),
 			},
@@ -184,41 +182,44 @@ func TestCompareProfiles(t *testing.T) {
 			name: "mask scope attribute",
 			expected: func() pprofile.Profiles {
 				p := basicProfiles()
+				s1 := pcommon.NewInstrumentationScope()
+				s1.SetName("scope1")
+				s1.Attributes().PutEmpty("scope-attr1").SetStr("value1")
+				s2 := pcommon.NewInstrumentationScope()
+				s2.SetName("scope2")
+				s2.Attributes().PutEmpty("scope-attr2").SetStr("value2")
 				p.ResourceProfiles[0].ScopeProfiles = []ScopeProfile{
 					{
-						Scope: Scope{
-							Name:       "scope1",
-							Attributes: []Attribute{{"scope-attr1", "value1"}},
-						},
+						Scope: s1,
 					},
 					{
-						Scope: Scope{
-							Name:       "scope2",
-							Attributes: []Attribute{{"scope-attr2", "value2"}},
-						},
+						Scope: s2,
 					},
 				}
 				return p.Transform()
 			}(),
 			actual: func() pprofile.Profiles {
 				p := basicProfiles()
+				s1 := pcommon.NewInstrumentationScope()
+				s1.SetName("scope1")
+				s1.Attributes().PutEmpty("scope-attr1").SetStr("value12")
+				s2 := pcommon.NewInstrumentationScope()
+				s2.SetName("scope2")
+				s2.Attributes().PutEmpty("scope-attr2").SetStr("value22")
 				p.ResourceProfiles[0].ScopeProfiles = []ScopeProfile{
 					{
-						Scope: Scope{
-							Name:       "scope1",
-							Attributes: []Attribute{{"scope-attr1", "value12"}},
-						},
+						Scope: s1,
 					},
 					{
-						Scope: Scope{
-							Name:       "scope2",
-							Attributes: []Attribute{{"scope-attr2", "value22"}},
-						},
+						Scope: s2,
 					},
 				}
 				return p.Transform()
 			}(),
-			withoutOptions: errors.New(`resource "map[key1:value1]": scope "scope1": attributes don't match expected: map[scope-attr1:value1], actual: map[scope-attr1:value12]; resource "map[key1:value1]": scope "scope2": attributes don't match expected: map[scope-attr2:value2], actual: map[scope-attr2:value22]`),
+			withoutOptions: multierr.Combine(
+				errors.New(`resource "map[key1:value1]": scope "scope1": attributes don't match expected: map[scope-attr1:value1], actual: map[scope-attr1:value12]`),
+				errors.New(`resource "map[key1:value1]": scope "scope2": attributes don't match expected: map[scope-attr2:value2], actual: map[scope-attr2:value22]`),
+			),
 			compareOptions: []CompareProfilesOption{
 				IgnoreScopeAttributeValue("scope-attr2"),
 				IgnoreScopeAttributeValue("scope-attr1"),
@@ -228,30 +229,34 @@ func TestCompareProfiles(t *testing.T) {
 			name: "ignore profile order",
 			expected: func() pprofile.Profiles {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Scope.Name = "scope1"
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
+				s := pcommon.NewInstrumentationScope()
+				s.SetName("scope1")
+				p.ResourceProfiles[0].ScopeProfiles[0].Scope = s
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles = []Profile{
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes: []Attribute{{"container-attr1", "value1"}},
+						Attributes: []Attribute{{Key: "container-attr1", Value: "value1"}},
 					},
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111112")),
-						Attributes: []Attribute{{"container-attr2", "value2"}},
+						Attributes: []Attribute{{Key: "container-attr2", Value: "value2"}},
 					},
 				}
 				return p.Transform()
 			}(),
 			actual: func() pprofile.Profiles {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Scope.Name = "scope1"
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
+				s := pcommon.NewInstrumentationScope()
+				s.SetName("scope1")
+				p.ResourceProfiles[0].ScopeProfiles[0].Scope = s
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles = []Profile{
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111112")),
-						Attributes: []Attribute{{"container-attr2", "value2"}},
+						Attributes: []Attribute{{Key: "container-attr2", Value: "value2"}},
 					},
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes: []Attribute{{"container-attr1", "value1"}},
+						Attributes: []Attribute{{Key: "container-attr1", Value: "value1"}},
 					},
 				}
 				return p.Transform()
@@ -265,30 +270,34 @@ func TestCompareProfiles(t *testing.T) {
 			name: "ignore profile attribute value",
 			expected: func() pprofile.Profiles {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Scope.Name = "scope1"
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
+				s := pcommon.NewInstrumentationScope()
+				s.SetName("scope1")
+				p.ResourceProfiles[0].ScopeProfiles[0].Scope = s
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles = []Profile{
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes: []Attribute{{"container-attr1", "value1"}},
+						Attributes: []Attribute{{Key: "container-attr1", Value: "value1"}},
 					},
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111112")),
-						Attributes: []Attribute{{"container-attr2", "value2"}},
+						Attributes: []Attribute{{Key: "container-attr2", Value: "value2"}},
 					},
 				}
 				return p.Transform()
 			}(),
 			actual: func() pprofile.Profiles {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Scope.Name = "scope1"
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
+				s := pcommon.NewInstrumentationScope()
+				p.ResourceProfiles[0].ScopeProfiles[0].Scope = s
+				s.SetName("scope1")
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles = []Profile{
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes: []Attribute{{"container-attr1", "value3"}},
+						Attributes: []Attribute{{Key: "container-attr1", Value: "value3"}},
 					},
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111112")),
-						Attributes: []Attribute{{"container-attr2", "value4"}},
+						Attributes: []Attribute{{Key: "container-attr2", Value: "value4"}},
 					},
 				}
 				return p.Transform()
@@ -303,31 +312,35 @@ func TestCompareProfiles(t *testing.T) {
 			name: "ignore profile timestamp values",
 			expected: func() pprofile.Profiles {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Scope.Name = "scope1"
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
+				s := pcommon.NewInstrumentationScope()
+				s.SetName("scope1")
+				p.ResourceProfiles[0].ScopeProfiles[0].Scope = s
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles = []Profile{
 					{
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:    []Attribute{{"container-attr1", "value1"}},
+						Attributes:    []Attribute{{Key: "container-attr1", Value: "value1"}},
 						TimeNanos:     pcommon.NewTimestampFromTime(timestamp1),
-						DurationNanos: pcommon.NewTimestampFromTime(timestamp2),
+						DurationNanos: uint64(duration),
 					},
 				}
 				return p.Transform()
 			}(),
 			actual: func() pprofile.Profiles {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Scope.Name = "scope1"
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
+				s := pcommon.NewInstrumentationScope()
+				s.SetName("scope1")
+				p.ResourceProfiles[0].ScopeProfiles[0].Scope = s
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles = []Profile{
 					{
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:    []Attribute{{"container-attr1", "value1"}},
-						TimeNanos:     pcommon.NewTimestampFromTime(timestamp2),
-						DurationNanos: pcommon.NewTimestampFromTime(timestamp2),
+						Attributes:    []Attribute{{Key: "container-attr1", Value: "value1"}},
+						TimeNanos:     pcommon.NewTimestampFromTime(timestamp1.Add(5 * time.Second)),
+						DurationNanos: uint64(duration),
 					},
 				}
 				return p.Transform()
 			}(),
-			withoutOptions: errors.New(`resource "map[key1:value1]": scope "scope1": profile "map[container-attr1:value1]": start timestamp doesn't match expected: 1577836800000000000, actual: 1577836805000000000; resource "map[key1:value1]": scope "scope1": profile "map[container-attr1:value1]": time doesn't match expected: 1577836800000000000, actual: 1577836805000000000; resource "map[key1:value1]": scope "scope1": profile "map[container-attr1:value1]": startTime doesn't match expected: 1577836800000000000, actual: 1577836805000000000`),
+			withoutOptions: errors.New(`resource "map[key1:value1]": scope "scope1": profile "map[container-attr1:value1]": time doesn't match expected: 1577836800000000000, actual: 1577836805000000000`),
 			compareOptions: []CompareProfilesOption{
 				IgnoreProfileTimestampValues(),
 			},
@@ -336,27 +349,31 @@ func TestCompareProfiles(t *testing.T) {
 			name: "not equal without options",
 			expected: func() pprofile.Profiles {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Scope.Name = "scope1"
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
+				s := pcommon.NewInstrumentationScope()
+				s.SetName("scope1")
+				p.ResourceProfiles[0].ScopeProfiles[0].Scope = s
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles = []Profile{
 					{
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:    []Attribute{{"container-attr1", "value1"}},
+						Attributes:    []Attribute{{Key: "container-attr1", Value: "value1"}},
 						TimeNanos:     pcommon.NewTimestampFromTime(timestamp1),
-						DurationNanos: pcommon.NewTimestampFromTime(timestamp1.Add(5 * time.Second)),
+						DurationNanos: uint64(duration),
 					},
 				}
 				return p.Transform()
 			}(),
 			actual: func() pprofile.Profiles {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Scope.Name = "scope1"
-				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{"key1", "value2"}
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
+				s := pcommon.NewInstrumentationScope()
+				s.SetName("scope1")
+				p.ResourceProfiles[0].ScopeProfiles[0].Scope = s
+				p.ResourceProfiles[0].Resource.Attributes().PutStr("key1", "value2")
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles = []Profile{
 					{
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:    []Attribute{{"container-attr1", "value2"}},
-						TimeNanos:     pcommon.NewTimestampFromTime(timestamp2),
-						DurationNanos: pcommon.NewTimestampFromTime(timestamp2.Add(5 * time.Second)),
+						Attributes:    []Attribute{{Key: "container-attr1", Value: "value2"}},
+						TimeNanos:     pcommon.NewTimestampFromTime(timestamp1),
+						DurationNanos: uint64(duration),
 					},
 				}
 				return p.Transform()
@@ -391,67 +408,78 @@ func TestCompareProfiles(t *testing.T) {
 func TestCompareResourceProfiles(t *testing.T) {
 	tests := []struct {
 		name     string
-		expected pprofile.ResourceProfiles
-		actual   pprofile.ResourceProfiles
+		expected func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles)
+		actual   func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles)
 		err      error
 	}{
 		{
 			name: "equal",
-			expected: func() pprofile.ResourceProfiles {
-				return basicProfiles().Transform().ResourceProfiles().At(0)
-			}(),
-			actual: func() pprofile.ResourceProfiles {
-				return basicProfiles().Transform().ResourceProfiles().At(0)
-			}(),
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				prof := basicProfiles().Transform()
+				return prof.Dictionary(), prof.ResourceProfiles().At(0)
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				prof := basicProfiles().Transform()
+				return prof.Dictionary(), prof.ResourceProfiles().At(0)
+			},
 		},
 		{
 			name: "resource-attributes-mismatch",
-			expected: func() pprofile.ResourceProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewResourceProfiles()
 				rl.Resource().Attributes().PutStr("key1", "value1")
 				rl.Resource().Attributes().PutStr("key2", "value2")
-				return rl
-			}(),
-			actual: func() pprofile.ResourceProfiles {
+				return dic, rl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewResourceProfiles()
 				rl.Resource().Attributes().PutStr("key1", "value1")
-				return rl
-			}(),
+				return dic, rl
+			},
 			err: errors.New("attributes don't match expected: map[key1:value1 key2:value2], actual: map[key1:value1]"),
 		},
 		{
 			name: "resource-schema-url-mismatch",
-			expected: func() pprofile.ResourceProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewResourceProfiles()
 				rl.SetSchemaUrl("schema-url")
-				return rl
-			}(),
-			actual: func() pprofile.ResourceProfiles {
+				return dic, rl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewResourceProfiles()
 				rl.SetSchemaUrl("schema-url-2")
-				return rl
-			}(),
+				return dic, rl
+			},
 			err: errors.New("schema url doesn't match expected: schema-url, actual: schema-url-2"),
 		},
 		{
 			name: "scope-profiles-number-mismatch",
-			expected: func() pprofile.ResourceProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewResourceProfiles()
 				rl.ScopeProfiles().AppendEmpty()
 				rl.ScopeProfiles().AppendEmpty()
-				return rl
-			}(),
-			actual: func() pprofile.ResourceProfiles {
+				return dic, rl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ResourceProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewResourceProfiles()
 				rl.ScopeProfiles().AppendEmpty()
-				return rl
-			}(),
+				return dic, rl
+			},
 			err: errors.New("number of scopes doesn't match expected: 2, actual: 1"),
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, test.err, CompareResourceProfiles(test.expected, test.actual))
+			eDic, eRp := test.expected()
+			aDic, aRp := test.actual()
+
+			require.Equal(t, test.err, CompareResourceProfiles(eDic, aDic, eRp, aRp))
 		})
 	}
 }
@@ -459,65 +487,77 @@ func TestCompareResourceProfiles(t *testing.T) {
 func TestCompareScopeProfiles(t *testing.T) {
 	tests := []struct {
 		name     string
-		expected pprofile.ScopeProfiles
-		actual   pprofile.ScopeProfiles
+		expected func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles)
+		actual   func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles)
 		err      error
 	}{
 		{
 			name: "equal",
-			expected: func() pprofile.ScopeProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Scope.Name = "scope1"
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0)
-			}(),
-			actual: func() pprofile.ScopeProfiles {
+				sp := pcommon.NewInstrumentationScope()
+				sp.SetName("scope1")
+				p.ResourceProfiles[0].ScopeProfiles[0].Scope = sp
+				tr := p.Transform()
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Scope.Name = "scope1"
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0)
-			}(),
+				sp := pcommon.NewInstrumentationScope()
+				sp.SetName("scope1")
+				p.ResourceProfiles[0].ScopeProfiles[0].Scope = sp
+				tr := p.Transform()
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
+			},
 		},
 		{
 			name: "scope-name-mismatch",
-			expected: func() pprofile.ScopeProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Scope().SetName("scope-name")
-				return sl
-			}(),
-			actual: func() pprofile.ScopeProfiles {
+				return dic, sl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Scope().SetName("scope-name-2")
-				return sl
-			}(),
+				return dic, sl
+			},
 			err: errors.New("name doesn't match expected: scope-name, actual: scope-name-2"),
 		},
 		{
 			name: "scope-version-mismatch",
-			expected: func() pprofile.ScopeProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Scope().SetVersion("scope-version")
-				return sl
-			}(),
-			actual: func() pprofile.ScopeProfiles {
+				return dic, sl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Scope().SetVersion("scope-version-2")
-				return sl
-			}(),
+				return dic, sl
+			},
 			err: errors.New("version doesn't match expected: scope-version, actual: scope-version-2"),
 		},
 		{
 			name: "scope-attributes-mismatch",
-			expected: func() pprofile.ScopeProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Scope().Attributes().PutStr("scope-attr1", "value1")
 				sl.Scope().Attributes().PutStr("scope-attr2", "value2")
-				return sl
-			}(),
-			actual: func() pprofile.ScopeProfiles {
+				return dic, sl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Scope().Attributes().PutStr("scope-attr1", "value1")
 				sl.Scope().SetDroppedAttributesCount(1)
-				return sl
-			}(),
+				return dic, sl
+			},
 			err: multierr.Combine(
 				errors.New("attributes don't match expected: map[scope-attr1:value1 scope-attr2:value2], "+
 					"actual: map[scope-attr1:value1]"),
@@ -526,63 +566,69 @@ func TestCompareScopeProfiles(t *testing.T) {
 		},
 		{
 			name: "scope-schema-url-mismatch",
-			expected: func() pprofile.ScopeProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewScopeProfiles()
 				rl.SetSchemaUrl("schema-url")
-				return rl
-			}(),
-			actual: func() pprofile.ScopeProfiles {
+				return dic, rl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				rl := pprofile.NewScopeProfiles()
 				rl.SetSchemaUrl("schema-url-2")
-				return rl
-			}(),
+				return dic, rl
+			},
 			err: errors.New("schema url doesn't match expected: schema-url, actual: schema-url-2"),
 		},
 		{
 			name: "profiles-number-mismatch",
-			expected: func() pprofile.ScopeProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Profiles().AppendEmpty()
 				sl.Profiles().AppendEmpty()
-				return sl
-			}(),
-			actual: func() pprofile.ScopeProfiles {
+				return dic, sl
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
+				dic := pprofile.NewProfilesDictionary()
 				sl := pprofile.NewScopeProfiles()
 				sl.Profiles().AppendEmpty()
-				return sl
-			}(),
+				return dic, sl
+			},
 			err: errors.New("number of profiles doesn't match expected: 2, actual: 1"),
 		},
 		{
 			name: "profile-records-order-mismatch",
-			expected: func() pprofile.ScopeProfiles {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles = []Profile{
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes: []Attribute{{"scope-attr1", "value1"}},
+						Attributes: []Attribute{{Key: "scope-attr1", Value: "value1"}},
 					},
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111112")),
-						Attributes: []Attribute{{"scope-attr2", "value2"}},
+						Attributes: []Attribute{{Key: "scope-attr2", Value: "value2"}},
 					},
 				}
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0)
-			}(),
-			actual: func() pprofile.ScopeProfiles {
+				tr := p.Transform()
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.ScopeProfiles) {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles = []Profile{
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes: []Attribute{{"scope-attr2", "value2"}},
+						Attributes: []Attribute{{Key: "scope-attr2", Value: "value2"}},
 					},
 					{
 						ProfileID:  pprofile.ProfileID([]byte("profileid1111112")),
-						Attributes: []Attribute{{"scope-attr1", "value1"}},
+						Attributes: []Attribute{{Key: "scope-attr1", Value: "value1"}},
 					},
 				}
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0)
-			}(),
+				tr := p.Transform()
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0)
+			},
 			err: multierr.Combine(
 				errors.New(`profiles are out of order: profile "map[scope-attr1:value1]" expected at index 0, found at index 1`),
 				errors.New(`profiles are out of order: profile "map[scope-attr2:value2]" expected at index 1, found at index 0`),
@@ -591,7 +637,10 @@ func TestCompareScopeProfiles(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, test.err, CompareScopeProfiles(test.expected, test.actual))
+			eDic, eSp := test.expected()
+			aDic, aSp := test.actual()
+
+			require.Equal(t, test.err, CompareScopeProfiles(eDic, aDic, eSp, aSp))
 		})
 	}
 }
@@ -599,311 +648,170 @@ func TestCompareScopeProfiles(t *testing.T) {
 func TestCompareProfile(t *testing.T) {
 	tests := []struct {
 		name     string
-		expected pprofile.Profile
-		actual   pprofile.Profile
+		expected func() (pprofile.ProfilesDictionary, pprofile.Profile)
+		actual   func() (pprofile.ProfilesDictionary, pprofile.Profile)
 		err      error
 	}{
 		{
 			name: "empty",
-			expected: func() pprofile.Profile {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.Profile) {
+				dic := pprofile.NewProfilesDictionary()
 				l := pprofile.NewProfile()
-				return l
-			}(),
-			actual: func() pprofile.Profile {
+				return dic, l
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.Profile) {
+				dic := pprofile.NewProfilesDictionary()
 				l := pprofile.NewProfile()
-				return l
-			}(),
+				return dic, l
+			},
 		},
 		{
 			name: "equal",
-			expected: func() pprofile.Profile {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.Profile) {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles = []Profile{
 					{
 						ProfileID:              pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:             []Attribute{{"key", "val"}},
+						Attributes:             []Attribute{{Key: "key", Value: "val"}},
 						DroppedAttributesCount: 2,
-						DefaultSampleType: ValueType{
-							Typ:                    "samples",
-							Unit:                   "count",
-							AggregationTemporality: pprofile.AggregationTemporalityDelta,
+						Period:                 1,
+						SampleType: ValueType{
+							Typ:  "cpu",
+							Unit: "nanoseconds",
 						},
-						Period: 1,
-						SampleType: []ValueType{
-							{
-								Typ:                    "cpu",
-								Unit:                   "nanoseconds",
-								AggregationTemporality: pprofile.AggregationTemporalityCumulative,
-							},
-						},
-						AttributeUnits: []AttributeUnit{{AttributeKey: "cpu", Unit: "nanoseconds"}},
+						KeyValueAndUnits: []KeyValueAndUnit{{Key: "cpu", Value: "", Unit: "nanoseconds"}},
 					},
 				}
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
-			}(),
-			actual: func() pprofile.Profile {
+				tr := p.Transform()
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.Profile) {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles = []Profile{
 					{
 						ProfileID:              pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:             []Attribute{{"key", "val"}},
+						Attributes:             []Attribute{{Key: "key", Value: "val"}},
 						DroppedAttributesCount: 2,
-						DefaultSampleType: ValueType{
-							Typ:                    "samples",
-							Unit:                   "count",
-							AggregationTemporality: pprofile.AggregationTemporalityDelta,
+						Period:                 1,
+						SampleType: ValueType{
+							Typ:  "cpu",
+							Unit: "nanoseconds",
 						},
-						Period: 1,
-						SampleType: []ValueType{
-							{
-								Typ:                    "cpu",
-								Unit:                   "nanoseconds",
-								AggregationTemporality: pprofile.AggregationTemporalityCumulative,
-							},
-						},
-						AttributeUnits: []AttributeUnit{{AttributeKey: "cpu", Unit: "nanoseconds"}},
+						KeyValueAndUnits: []KeyValueAndUnit{{Key: "cpu", Value: "", Unit: "nanoseconds"}},
 					},
 				}
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
-			}(),
+				tr := p.Transform()
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+			},
 		},
 		{
 			name: "not equal",
-			expected: func() pprofile.Profile {
+			expected: func() (pprofile.ProfilesDictionary, pprofile.Profile) {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles = []Profile{
 					{
 						ProfileID:              pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:             []Attribute{{"key", "val"}},
+						Attributes:             []Attribute{{Key: "key", Value: "val"}},
 						DroppedAttributesCount: 2,
-						DefaultSampleType: ValueType{
-							Typ:                    "samples",
-							Unit:                   "count",
-							AggregationTemporality: pprofile.AggregationTemporalityDelta,
+						Period:                 1,
+						SampleType: ValueType{
+							Typ:  "cpu",
+							Unit: "nanoseconds",
 						},
-						Period: 1,
-						SampleType: []ValueType{
-							{
-								Typ:                    "cpu",
-								Unit:                   "nanoseconds",
-								AggregationTemporality: pprofile.AggregationTemporalityCumulative,
-							},
-						},
-						AttributeUnits: []AttributeUnit{{AttributeKey: "cpu", Unit: "nanoseconds"}},
+						KeyValueAndUnits: []KeyValueAndUnit{{Key: "cpu", Value: "", Unit: "nanoseconds"}},
 					},
 				}
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
-			}(),
-			actual: func() pprofile.Profile {
+				tr := p.Transform()
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+			},
+			actual: func() (pprofile.ProfilesDictionary, pprofile.Profile) {
 				p := basicProfiles()
-				p.ResourceProfiles[0].ScopeProfiles[0].Profile = []Profile{
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles = []Profile{
 					{
 						ProfileID:              pprofile.ProfileID([]byte("profileid1111111")),
-						Attributes:             []Attribute{{"key1", "val1"}},
+						Attributes:             []Attribute{{Key: "key1", Value: "val1"}},
 						DroppedAttributesCount: 2,
-						DefaultSampleType: ValueType{
-							Typ:                    "samples1",
-							Unit:                   "count1",
-							AggregationTemporality: pprofile.AggregationTemporalityDelta,
+						Period:                 2,
+						SampleType: ValueType{
+							Typ:  "cpu1",
+							Unit: "nanoseconds1",
 						},
-						Period: 2,
-						SampleType: []ValueType{
-							{
-								Typ:                    "cpu1",
-								Unit:                   "nanoseconds1",
-								AggregationTemporality: pprofile.AggregationTemporalityCumulative,
-							},
-						},
-						AttributeUnits: []AttributeUnit{{AttributeKey: "cpu2", Unit: "nanoseconds2"}},
+						KeyValueAndUnits: []KeyValueAndUnit{{Key: "cpu2", Value: "", Unit: "nanoseconds2"}},
 					},
 				}
-				return p.Transform().ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
-			}(),
+				tr := p.Transform()
+				return tr.Dictionary(), tr.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+			},
 			err: multierr.Combine(
 				errors.New(`attributes don't match expected: map[key:val], actual: map[key1:val1]`),
-				errors.New(`stringTable '[ cpu1 nanoseconds1 samples count samples1 count1 cpu2 nanoseconds2]' does not match expected '[ cpu nanoseconds samples count]'`),
 				errors.New(`period does not match expected '1', actual '2'`),
-				fmt.Errorf(`sampleType: %w`, errors.New(`missing expected valueType "unit: 4, type: 3, aggregationTemporality: 1"`)),
-				fmt.Errorf(`sampleType: %w`, errors.New(`unexpected valueType "unit: 6, type: 5, aggregationTemporality: 1"`)),
-				fmt.Errorf(`attributeUnits: %w`, errors.New(`missing expected attributeUnit "attributeKey: 1"`)),
-				fmt.Errorf(`attributeUnits: %w`, errors.New(`unexpected profile attributeUnit "attributeKey: 7"`)),
 			),
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, test.err, CompareProfile(test.expected, test.actual))
+			eDic, eP := test.expected()
+			aDic, aP := test.actual()
+			require.Equal(t, test.err, CompareProfile(eDic, aDic, eP, aP))
 		})
 	}
 }
 
-func TestCompareProfileValueTypeSlice(t *testing.T) {
+func TestCompareProfileValueType(t *testing.T) {
 	tests := []struct {
 		name     string
-		expected pprofile.ValueTypeSlice
-		actual   pprofile.ValueTypeSlice
+		expected pprofile.ValueType
+		actual   pprofile.ValueType
 		err      error
 	}{
 		{
 			name: "empty",
-			expected: func() pprofile.ValueTypeSlice {
-				l := pprofile.NewValueTypeSlice()
+			expected: func() pprofile.ValueType {
+				l := pprofile.NewValueType()
 				return l
 			}(),
-			actual: func() pprofile.ValueTypeSlice {
-				l := pprofile.NewValueTypeSlice()
+			actual: func() pprofile.ValueType {
+				l := pprofile.NewValueType()
 				return l
 			}(),
 		},
 		{
 			name: "equal",
-			expected: func() pprofile.ValueTypeSlice {
-				l := pprofile.NewValueTypeSlice()
-				i1 := l.AppendEmpty()
-				i1.SetTypeStrindex(1)
-				i1.SetUnitStrindex(1)
-				i1.SetAggregationTemporality(1)
-				i2 := l.AppendEmpty()
-				i2.SetTypeStrindex(2)
-				i2.SetUnitStrindex(2)
-				i2.SetAggregationTemporality(1)
+			expected: func() pprofile.ValueType {
+				l := pprofile.NewValueType()
+				l.SetTypeStrindex(1)
+				l.SetUnitStrindex(1)
 				return l
 			}(),
-			actual: func() pprofile.ValueTypeSlice {
-				l := pprofile.NewValueTypeSlice()
-				i1 := l.AppendEmpty()
-				i1.SetTypeStrindex(1)
-				i1.SetUnitStrindex(1)
-				i1.SetAggregationTemporality(1)
-				i2 := l.AppendEmpty()
-				i2.SetTypeStrindex(2)
-				i2.SetUnitStrindex(2)
-				i2.SetAggregationTemporality(1)
+			actual: func() pprofile.ValueType {
+				l := pprofile.NewValueType()
+				l.SetTypeStrindex(1)
+				l.SetUnitStrindex(1)
 				return l
 			}(),
-		},
-		{
-			name: "equal wrong order",
-			expected: func() pprofile.ValueTypeSlice {
-				l := pprofile.NewValueTypeSlice()
-				i1 := l.AppendEmpty()
-				i1.SetTypeStrindex(1)
-				i1.SetUnitStrindex(1)
-				i1.SetAggregationTemporality(1)
-				i2 := l.AppendEmpty()
-				i2.SetTypeStrindex(2)
-				i2.SetUnitStrindex(2)
-				i2.SetAggregationTemporality(1)
-				return l
-			}(),
-			actual: func() pprofile.ValueTypeSlice {
-				l := pprofile.NewValueTypeSlice()
-				i2 := l.AppendEmpty()
-				i2.SetTypeStrindex(2)
-				i2.SetUnitStrindex(2)
-				i2.SetAggregationTemporality(1)
-				i1 := l.AppendEmpty()
-				i1.SetTypeStrindex(1)
-				i1.SetUnitStrindex(1)
-				i1.SetAggregationTemporality(1)
-				return l
-			}(),
-			err: multierr.Combine(
-				errors.New(`valueTypes are out of order: valueType "unit: 1, type: 1, aggregationTemporality: 1" expected at index 0, found at index 1`),
-				errors.New(`valueTypes are out of order: valueType "unit: 2, type: 2, aggregationTemporality: 1" expected at index 1, found at index 0`),
-			),
-		},
-		{
-			name: "wrong length",
-			expected: func() pprofile.ValueTypeSlice {
-				l := pprofile.NewValueTypeSlice()
-				i1 := l.AppendEmpty()
-				i1.SetTypeStrindex(1)
-				i1.SetUnitStrindex(1)
-				i1.SetAggregationTemporality(1)
-				return l
-			}(),
-			actual: func() pprofile.ValueTypeSlice {
-				l := pprofile.NewValueTypeSlice()
-				i1 := l.AppendEmpty()
-				i1.SetTypeStrindex(1)
-				i1.SetUnitStrindex(1)
-				i1.SetAggregationTemporality(1)
-				i2 := l.AppendEmpty()
-				i2.SetTypeStrindex(2)
-				i2.SetUnitStrindex(2)
-				i2.SetAggregationTemporality(1)
-				return l
-			}(),
-			err: multierr.Combine(
-				errors.New(`number of valueTypes doesn't match expected: 1, actual: 2`),
-			),
 		},
 		{
 			name: "not equal - does not match expected",
-			expected: func() pprofile.ValueTypeSlice {
-				l := pprofile.NewValueTypeSlice()
-				i1 := l.AppendEmpty()
-				i1.SetTypeStrindex(1)
-				i1.SetUnitStrindex(1)
-				i1.SetAggregationTemporality(1)
-				i2 := l.AppendEmpty()
-				i2.SetTypeStrindex(2)
-				i2.SetUnitStrindex(2)
-				i2.SetAggregationTemporality(1)
+			expected: func() pprofile.ValueType {
+				l := pprofile.NewValueType()
+				l.SetTypeStrindex(1)
+				l.SetUnitStrindex(1)
 				return l
 			}(),
-			actual: func() pprofile.ValueTypeSlice {
-				l := pprofile.NewValueTypeSlice()
-				i1 := l.AppendEmpty()
-				i1.SetTypeStrindex(1)
-				i1.SetUnitStrindex(1)
-				i1.SetAggregationTemporality(1)
-				i2 := l.AppendEmpty()
-				i2.SetTypeStrindex(2)
-				i2.SetUnitStrindex(2)
-				i2.SetAggregationTemporality(2)
+			actual: func() pprofile.ValueType {
+				l := pprofile.NewValueType()
+				l.SetTypeStrindex(2)
+				l.SetUnitStrindex(3)
 				return l
 			}(),
 			err: multierr.Combine(
-				errors.New(`expected valueType "unit: 2, type: 2, aggregationTemporality: 1",got "unit: 2, type: 2, aggregationTemporality: 2"`),
-			),
-		},
-		{
-			name: "not equal - missing",
-			expected: func() pprofile.ValueTypeSlice {
-				l := pprofile.NewValueTypeSlice()
-				i1 := l.AppendEmpty()
-				i1.SetTypeStrindex(1)
-				i1.SetUnitStrindex(1)
-				i1.SetAggregationTemporality(1)
-				i2 := l.AppendEmpty()
-				i2.SetTypeStrindex(2)
-				i2.SetUnitStrindex(2)
-				i2.SetAggregationTemporality(1)
-				return l
-			}(),
-			actual: func() pprofile.ValueTypeSlice {
-				l := pprofile.NewValueTypeSlice()
-				i1 := l.AppendEmpty()
-				i1.SetTypeStrindex(1)
-				i1.SetUnitStrindex(1)
-				i1.SetAggregationTemporality(1)
-				i2 := l.AppendEmpty()
-				i2.SetTypeStrindex(3)
-				i2.SetUnitStrindex(3)
-				i2.SetAggregationTemporality(1)
-				return l
-			}(),
-			err: multierr.Combine(
-				errors.New(`missing expected valueType "unit: 2, type: 2, aggregationTemporality: 1"`),
-				errors.New(`unexpected valueType "unit: 3, type: 3, aggregationTemporality: 1"`),
+				errors.New(`expected valueType "unit: 1, type: 1",got "unit: 3, type: 2"`),
 			),
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, test.err, CompareProfileValueTypeSlice(test.expected, test.actual))
+			require.Equal(t, test.err, CompareProfileValueType(test.expected, test.actual))
 		})
 	}
 }
@@ -931,21 +839,17 @@ func TestCompareProfileSampleSlice(t *testing.T) {
 			expected: func() pprofile.SampleSlice {
 				l := pprofile.NewSampleSlice()
 				i1 := l.AppendEmpty()
-				i1.SetLocationsLength(1)
 				i1.AttributeIndices().Append(1, 2)
 				i2 := l.AppendEmpty()
 				i2.AttributeIndices().Append(1, 2, 3)
-				i2.SetLocationsLength(2)
 				return l
 			}(),
 			actual: func() pprofile.SampleSlice {
 				l := pprofile.NewSampleSlice()
 				i1 := l.AppendEmpty()
-				i1.SetLocationsLength(1)
 				i1.AttributeIndices().Append(1, 2)
 				i2 := l.AppendEmpty()
 				i2.AttributeIndices().Append(1, 2, 3)
-				i2.SetLocationsLength(2)
 				return l
 			}(),
 		},
@@ -954,20 +858,16 @@ func TestCompareProfileSampleSlice(t *testing.T) {
 			expected: func() pprofile.SampleSlice {
 				l := pprofile.NewSampleSlice()
 				i1 := l.AppendEmpty()
-				i1.SetLocationsLength(1)
 				i1.AttributeIndices().Append(1, 2)
 				i2 := l.AppendEmpty()
 				i2.AttributeIndices().Append(1, 2, 3)
-				i2.SetLocationsLength(2)
 				return l
 			}(),
 			actual: func() pprofile.SampleSlice {
 				l := pprofile.NewSampleSlice()
 				i2 := l.AppendEmpty()
 				i2.AttributeIndices().Append(1, 2, 3)
-				i2.SetLocationsLength(2)
 				i1 := l.AppendEmpty()
-				i1.SetLocationsLength(1)
 				i1.AttributeIndices().Append(1, 2)
 				return l
 			}(),
@@ -981,18 +881,15 @@ func TestCompareProfileSampleSlice(t *testing.T) {
 			expected: func() pprofile.SampleSlice {
 				l := pprofile.NewSampleSlice()
 				i1 := l.AppendEmpty()
-				i1.SetLocationsLength(1)
 				i1.AttributeIndices().Append(1, 2)
 				return l
 			}(),
 			actual: func() pprofile.SampleSlice {
 				l := pprofile.NewSampleSlice()
 				i1 := l.AppendEmpty()
-				i1.SetLocationsLength(1)
 				i1.AttributeIndices().Append(1, 2)
 				i2 := l.AppendEmpty()
 				i2.AttributeIndices().Append(1, 2, 3)
-				i2.SetLocationsLength(2)
 				return l
 			}(),
 			err: multierr.Combine(
@@ -1004,25 +901,22 @@ func TestCompareProfileSampleSlice(t *testing.T) {
 			expected: func() pprofile.SampleSlice {
 				l := pprofile.NewSampleSlice()
 				i1 := l.AppendEmpty()
-				i1.SetLocationsLength(1)
 				i1.AttributeIndices().Append(1, 2)
 				i2 := l.AppendEmpty()
-				i2.AttributeIndices().Append(1, 2, 3)
-				i2.SetLocationsLength(2)
+				i2.AttributeIndices().Append(1, 3)
 				return l
 			}(),
 			actual: func() pprofile.SampleSlice {
 				l := pprofile.NewSampleSlice()
 				i1 := l.AppendEmpty()
-				i1.SetLocationsLength(1)
 				i1.AttributeIndices().Append(1, 2)
 				i2 := l.AppendEmpty()
 				i2.AttributeIndices().Append(1, 2, 3)
-				i2.SetLocationsLength(3)
 				return l
 			}(),
 			err: multierr.Combine(
-				fmt.Errorf(`sample "attributes: [1 2 3]": %w`, errors.New(`expected locationLenght '2', got '3'`)),
+				errors.New(`missing expected sample "attributes: [1 3]"`),
+				errors.New(`unexpected sample "attributes: [1 2 3]"`),
 			),
 		},
 		{
@@ -1030,21 +924,17 @@ func TestCompareProfileSampleSlice(t *testing.T) {
 			expected: func() pprofile.SampleSlice {
 				l := pprofile.NewSampleSlice()
 				i1 := l.AppendEmpty()
-				i1.SetLocationsLength(1)
 				i1.AttributeIndices().Append(1, 2)
 				i2 := l.AppendEmpty()
 				i2.AttributeIndices().Append(1, 2, 3)
-				i2.SetLocationsLength(2)
 				return l
 			}(),
 			actual: func() pprofile.SampleSlice {
 				l := pprofile.NewSampleSlice()
 				i1 := l.AppendEmpty()
-				i1.SetLocationsLength(1)
 				i1.AttributeIndices().Append(1, 2)
 				i2 := l.AppendEmpty()
 				i2.AttributeIndices().Append(1, 2, 3, 5)
-				i2.SetLocationsLength(3)
 				return l
 			}(),
 			err: multierr.Combine(
@@ -1082,15 +972,11 @@ func TestCompareProfileSample(t *testing.T) {
 			name: "equal",
 			expected: func() pprofile.Sample {
 				l := pprofile.NewSample()
-				l.SetLocationsStartIndex(1)
-				l.SetLocationsLength(1)
 				l.AttributeIndices().Append(1, 2)
 				return l
 			}(),
 			actual: func() pprofile.Sample {
 				l := pprofile.NewSample()
-				l.SetLocationsStartIndex(1)
-				l.SetLocationsLength(1)
 				l.AttributeIndices().Append(1, 2)
 				return l
 			}(),
@@ -1099,21 +985,15 @@ func TestCompareProfileSample(t *testing.T) {
 			name: "not equal",
 			expected: func() pprofile.Sample {
 				l := pprofile.NewSample()
-				l.SetLocationsStartIndex(1)
-				l.SetLocationsLength(1)
 				l.AttributeIndices().Append(1, 2)
 				return l
 			}(),
 			actual: func() pprofile.Sample {
 				l := pprofile.NewSample()
-				l.SetLocationsStartIndex(2)
-				l.SetLocationsLength(3)
 				l.AttributeIndices().Append(1, 2, 3)
 				return l
 			}(),
 			err: multierr.Combine(
-				errors.New(`expected locationStartIndex '1', got '2'`),
-				errors.New(`expected locationLenght '1', got '3'`),
 				errors.New(`expected attributes '[1 2]', got '[1 2 3]'`),
 			),
 		},
@@ -1603,19 +1483,17 @@ func TestCompareProfileLocation(t *testing.T) {
 			expected: func() pprofile.Location {
 				l := pprofile.NewLocation()
 				l.SetAddress(2)
-				l.SetIsFolded(true)
 				l.SetMappingIndex(4)
 				l.AttributeIndices().Append(1, 2, 3)
-				l.Line().AppendEmpty().Line()
+				l.Lines().AppendEmpty().Line()
 				return l
 			}(),
 			actual: func() pprofile.Location {
 				l := pprofile.NewLocation()
 				l.SetAddress(2)
-				l.SetIsFolded(true)
 				l.SetMappingIndex(4)
 				l.AttributeIndices().Append(1, 2, 3)
-				l.Line().AppendEmpty()
+				l.Lines().AppendEmpty()
 				return l
 			}(),
 		},
@@ -1624,25 +1502,22 @@ func TestCompareProfileLocation(t *testing.T) {
 			expected: func() pprofile.Location {
 				l := pprofile.NewLocation()
 				l.SetAddress(3)
-				l.SetIsFolded(false)
 				l.SetMappingIndex(2)
 				l.AttributeIndices().Append(1, 2, 3, 4)
-				l.Line().AppendEmpty().SetFunctionIndex(3)
+				l.Lines().AppendEmpty().SetFunctionIndex(3)
 				return l
 			}(),
 			actual: func() pprofile.Location {
 				l := pprofile.NewLocation()
 				l.SetAddress(2)
-				l.SetIsFolded(true)
 				l.SetMappingIndex(4)
 				l.AttributeIndices().Append(1, 2, 3)
-				l.Line().AppendEmpty().Line()
+				l.Lines().AppendEmpty().Line()
 				return l
 			}(),
 			err: multierr.Combine(
 				errors.New(`expected mappingIndex '2', got '4'`),
 				errors.New(`expected address '3', got '2'`),
-				errors.New(`expected isFolded 'false', got 'true'`),
 				errors.New(`expected attributes '[1 2 3 4]', got '[1 2 3]'`),
 				fmt.Errorf(`line of location with "attributes: [1 2 3 4]": %w`, errors.New(`missing expected line "functionIndex: 3"`)),
 				fmt.Errorf(`line of location with "attributes: [1 2 3 4]": %w`, errors.New(`unexpected profile line "functionIndex: 0"`)),
@@ -1827,128 +1702,128 @@ func TestCompareProfileLineSlice(t *testing.T) {
 	}
 }
 
-func TestCompareProfileAttributeUnitSlice(t *testing.T) {
+func TestCompareCompareKeyValueAndUnitSlice(t *testing.T) {
 	tests := []struct {
 		name     string
-		expected pprofile.AttributeUnitSlice
-		actual   pprofile.AttributeUnitSlice
+		expected pprofile.KeyValueAndUnitSlice
+		actual   pprofile.KeyValueAndUnitSlice
 		err      error
 	}{
 		{
 			name: "empty",
-			expected: func() pprofile.AttributeUnitSlice {
-				l := pprofile.NewAttributeUnitSlice()
+			expected: func() pprofile.KeyValueAndUnitSlice {
+				l := pprofile.NewKeyValueAndUnitSlice()
 				return l
 			}(),
-			actual: func() pprofile.AttributeUnitSlice {
-				l := pprofile.NewAttributeUnitSlice()
+			actual: func() pprofile.KeyValueAndUnitSlice {
+				l := pprofile.NewKeyValueAndUnitSlice()
 				return l
 			}(),
 		},
 		{
 			name: "equal",
-			expected: func() pprofile.AttributeUnitSlice {
-				l := pprofile.NewAttributeUnitSlice()
+			expected: func() pprofile.KeyValueAndUnitSlice {
+				l := pprofile.NewKeyValueAndUnitSlice()
 				i1 := l.AppendEmpty()
-				i1.SetAttributeKeyStrindex(2)
+				i1.SetKeyStrindex(2)
 				i1.SetUnitStrindex(3)
 				i2 := l.AppendEmpty()
-				i2.SetAttributeKeyStrindex(4)
+				i2.SetKeyStrindex(4)
 				i2.SetUnitStrindex(5)
 				return l
 			}(),
-			actual: func() pprofile.AttributeUnitSlice {
-				l := pprofile.NewAttributeUnitSlice()
+			actual: func() pprofile.KeyValueAndUnitSlice {
+				l := pprofile.NewKeyValueAndUnitSlice()
 				i1 := l.AppendEmpty()
-				i1.SetAttributeKeyStrindex(2)
+				i1.SetKeyStrindex(2)
 				i1.SetUnitStrindex(3)
 				i2 := l.AppendEmpty()
-				i2.SetAttributeKeyStrindex(4)
+				i2.SetKeyStrindex(4)
 				i2.SetUnitStrindex(5)
 				return l
 			}(),
 		},
 		{
 			name: "equal wrong order",
-			expected: func() pprofile.AttributeUnitSlice {
-				l := pprofile.NewAttributeUnitSlice()
+			expected: func() pprofile.KeyValueAndUnitSlice {
+				l := pprofile.NewKeyValueAndUnitSlice()
 				i1 := l.AppendEmpty()
-				i1.SetAttributeKeyStrindex(2)
+				i1.SetKeyStrindex(2)
 				i1.SetUnitStrindex(3)
 				i2 := l.AppendEmpty()
-				i2.SetAttributeKeyStrindex(4)
+				i2.SetKeyStrindex(4)
 				i2.SetUnitStrindex(5)
 				return l
 			}(),
-			actual: func() pprofile.AttributeUnitSlice {
-				l := pprofile.NewAttributeUnitSlice()
+			actual: func() pprofile.KeyValueAndUnitSlice {
+				l := pprofile.NewKeyValueAndUnitSlice()
 				i2 := l.AppendEmpty()
-				i2.SetAttributeKeyStrindex(4)
+				i2.SetKeyStrindex(4)
 				i2.SetUnitStrindex(5)
 				i1 := l.AppendEmpty()
-				i1.SetAttributeKeyStrindex(2)
+				i1.SetKeyStrindex(2)
 				i1.SetUnitStrindex(3)
 				return l
 			}(),
 			err: multierr.Combine(
-				errors.New(`attributeUnits are out of order: attributeUnit "attributeKey: 2" expected at index 0, found at index 1`),
-				errors.New(`attributeUnits are out of order: attributeUnit "attributeKey: 4" expected at index 1, found at index 0`),
+				errors.New(`keyValueAndUnits are out of order: keyValueAndUnit "key: 2" expected at index 0, found at index 1`),
+				errors.New(`keyValueAndUnits are out of order: keyValueAndUnit "key: 4" expected at index 1, found at index 0`),
 			),
 		},
 		{
 			name: "wrong length",
-			expected: func() pprofile.AttributeUnitSlice {
-				l := pprofile.NewAttributeUnitSlice()
+			expected: func() pprofile.KeyValueAndUnitSlice {
+				l := pprofile.NewKeyValueAndUnitSlice()
 				i1 := l.AppendEmpty()
-				i1.SetAttributeKeyStrindex(2)
+				i1.SetKeyStrindex(2)
 				i1.SetUnitStrindex(3)
 				return l
 			}(),
-			actual: func() pprofile.AttributeUnitSlice {
-				l := pprofile.NewAttributeUnitSlice()
+			actual: func() pprofile.KeyValueAndUnitSlice {
+				l := pprofile.NewKeyValueAndUnitSlice()
 				i1 := l.AppendEmpty()
-				i1.SetAttributeKeyStrindex(2)
+				i1.SetKeyStrindex(2)
 				i1.SetUnitStrindex(3)
 				i2 := l.AppendEmpty()
-				i2.SetAttributeKeyStrindex(4)
+				i2.SetKeyStrindex(4)
 				i2.SetUnitStrindex(5)
 				return l
 			}(),
 			err: multierr.Combine(
-				errors.New(`number of attributeUnits doesn't match expected: 1, actual: 2`),
+				errors.New(`number of keyValueAndUnits doesn't match expected: 1, actual: 2`),
 			),
 		},
 		{
 			name: "not equal",
-			expected: func() pprofile.AttributeUnitSlice {
-				l := pprofile.NewAttributeUnitSlice()
+			expected: func() pprofile.KeyValueAndUnitSlice {
+				l := pprofile.NewKeyValueAndUnitSlice()
 				i1 := l.AppendEmpty()
-				i1.SetAttributeKeyStrindex(2)
+				i1.SetKeyStrindex(2)
 				i1.SetUnitStrindex(3)
 				i2 := l.AppendEmpty()
-				i2.SetAttributeKeyStrindex(4)
+				i2.SetKeyStrindex(4)
 				i2.SetUnitStrindex(5)
 				return l
 			}(),
-			actual: func() pprofile.AttributeUnitSlice {
-				l := pprofile.NewAttributeUnitSlice()
+			actual: func() pprofile.KeyValueAndUnitSlice {
+				l := pprofile.NewKeyValueAndUnitSlice()
 				i1 := l.AppendEmpty()
-				i1.SetAttributeKeyStrindex(2)
+				i1.SetKeyStrindex(2)
 				i1.SetUnitStrindex(3)
 				i2 := l.AppendEmpty()
-				i2.SetAttributeKeyStrindex(6)
+				i2.SetKeyStrindex(6)
 				i2.SetUnitStrindex(7)
 				return l
 			}(),
 			err: multierr.Combine(
-				errors.New(`missing expected attributeUnit "attributeKey: 4"`),
-				errors.New(`unexpected profile attributeUnit "attributeKey: 6"`),
+				errors.New(`missing expected keyValueAndUnit "key: 4"`),
+				errors.New(`unexpected profile keyValueAndUnit "key: 6"`),
 			),
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, test.err, CompareProfileAttributeUnitSlice(test.expected, test.actual))
+			require.Equal(t, test.err, CompareKeyValueAndUnitSlice(test.expected, test.actual))
 		})
 	}
 }

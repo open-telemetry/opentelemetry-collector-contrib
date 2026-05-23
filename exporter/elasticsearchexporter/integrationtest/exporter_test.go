@@ -4,8 +4,9 @@
 package integrationtest
 
 import (
-	"errors"
 	"fmt"
+	"net"
+	"net/http"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -21,43 +22,38 @@ func TestExporter(t *testing.T) {
 		for _, tc := range []struct {
 			name string
 
-			// batcherEnabled enables/disables the batch sender. If this is
-			// nil, then the exporter buffers data itself (legacy behavior),
-			// whereas if it is non-nil then the exporter will not perform
-			// any buffering itself.
-			batcherEnabled *bool
+			enableBatching bool
 
 			// restartCollector restarts the OTEL collector. Restarting
 			// the collector allows durability testing of the ES exporter
 			// based on the OTEL config used for testing.
 			restartCollector bool
-			mockESFailure    bool
+			mockESErr        error
 		}{
 			{name: "basic"},
-			{name: "es_intermittent_failure", mockESFailure: true},
+			{name: "es_intermittent_http_error", mockESErr: errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
+			{name: "es_intermittent_doc_error", mockESErr: errElasticsearch{httpStatus: http.StatusOK, httpDocStatus: http.StatusTooManyRequests}},
 
-			{name: "batcher_enabled", batcherEnabled: ptrTo(true)},
-			{name: "batcher_enabled_es_intermittent_failure", batcherEnabled: ptrTo(true), mockESFailure: true},
-			{name: "batcher_disabled", batcherEnabled: ptrTo(false)},
-			{name: "batcher_disabled_es_intermittent_failure", batcherEnabled: ptrTo(false), mockESFailure: true},
+			{name: "enable sending_queue batching", enableBatching: true},
+			{name: "batcher_enabled_es_intermittent_http_error", enableBatching: true, mockESErr: errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
+			{name: "batcher_enabled_es_intermittent_doc_error", enableBatching: true, mockESErr: errElasticsearch{httpStatus: http.StatusOK, httpDocStatus: http.StatusTooManyRequests}},
+			{name: "batcher_disabled", enableBatching: false},
+			{name: "batcher_disabled_es_intermittent_http_error", enableBatching: false, mockESErr: errElasticsearch{httpStatus: http.StatusServiceUnavailable}},
+			{name: "batcher_disabled_es_intermittent_doc_error", enableBatching: false, mockESErr: errElasticsearch{httpStatus: http.StatusOK, httpDocStatus: http.StatusTooManyRequests}},
 
 			/* TODO: Below tests should be enabled after https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30792 is fixed
 			{name: "collector_restarts", restartCollector: true},
-			{name: "collector_restart_with_es_intermittent_failure", mockESFailure: true, restartCollector: true},
+			{name: "collector_restart_with_es_intermittent_failure", mockESErr: true, restartCollector: true},
 			*/
 		} {
 			t.Run(fmt.Sprintf("%s/%s", eventType, tc.name), func(t *testing.T) {
-				var opts []dataReceiverOption
-				if tc.batcherEnabled != nil {
-					opts = append(opts, withBatcherEnabled(*tc.batcherEnabled))
-				}
-				runner(t, eventType, tc.restartCollector, tc.mockESFailure, opts...)
+				runner(t, eventType, tc.restartCollector, tc.mockESErr, withBatching(tc.enableBatching))
 			})
 		}
 	}
 }
 
-func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool, opts ...dataReceiverOption) {
+func runner(t *testing.T, eventType string, restartCollector bool, mockESErr error, opts ...dataReceiverOption) {
 	t.Helper()
 
 	var (
@@ -76,12 +72,22 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 		t.Fatalf("failed to create data sender for type: %s", eventType)
 	}
 
+	// The port used by the sender is not yet active and can be detected as a
+	// available port by another call to testutil#GetAvailablePort in an attempt
+	// to create a new datareceiver. To prevent the conflict occupy the port
+	// temporarily.
+	testListner, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+	require.NoError(t, err, "port is expected to be free")
+
 	receiver := newElasticsearchDataReceiver(t, opts...)
 	loadOpts := testbed.LoadOptions{
 		DataItemsPerSecond: 1_000,
 		ItemsPerBatch:      10,
 	}
 	provider := testbed.NewPerfTestDataProvider(loadOpts)
+
+	// Stop the listener so that collector can start correctly.
+	require.NoError(t, testListner.Close())
 
 	cfg := createConfigYaml(t, sender, receiver, nil, nil, eventType, getDebugFlag(t))
 	t.Log("test otel collector configuration:", cfg)
@@ -101,7 +107,7 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 		&testbed.CorrectnessResults{},
 		testbed.WithDecisionFunc(func() error {
 			if esFailing.Load() {
-				return errors.New("simulated ES failure")
+				return mockESErr
 			}
 			return nil
 		}),
@@ -117,7 +123,7 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 	tc.Sleep(2 * time.Second)
 
 	// Fail ES if required and send load.
-	if mockESFailure {
+	if mockESErr != nil {
 		esFailing.Store(true)
 		tc.Sleep(2 * time.Second)
 	}
@@ -141,8 +147,4 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 		"backend should receive all sent items",
 	)
 	tc.ValidateData()
-}
-
-func ptrTo[T any](t T) *T {
-	return &t
 }

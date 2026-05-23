@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -72,7 +73,7 @@ func (dsb *DataSenderBase) GetEndpoint() net.Addr {
 	return addr
 }
 
-func (dsb *DataSenderBase) Flush() {
+func (*DataSenderBase) Flush() {
 	// Exporter interface does not support Flush, so nothing to do.
 }
 
@@ -86,8 +87,8 @@ func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphtt
 	// Disable retries, we should push data and if error just log it.
 	cfg.RetryConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
-	cfg.QueueConfig.Enabled = false
-	cfg.ClientConfig.TLSSetting = configtls.ClientConfig{
+	cfg.QueueConfig = configoptional.Default(*cfg.QueueConfig.Get())
+	cfg.ClientConfig.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
 	cfg.ClientConfig.Compression = ods.compression
@@ -103,7 +104,7 @@ func (ods *otlpHTTPDataSender) GenConfigYAMLStr() string {
         endpoint: "%s"`, ods.GetEndpoint())
 }
 
-func (ods *otlpHTTPDataSender) ProtocolName() string {
+func (*otlpHTTPDataSender) ProtocolName() string {
 	return "otlp"
 }
 
@@ -218,8 +219,8 @@ func (ods *otlpDataSender) fillConfig(cfg *otlpexporter.Config) *otlpexporter.Co
 	// Disable retries, we should push data and if error just log it.
 	cfg.RetryConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
-	cfg.QueueConfig.Enabled = false
-	cfg.ClientConfig.TLSSetting = configtls.ClientConfig{
+	cfg.QueueConfig = configoptional.Default(*cfg.QueueConfig.Get())
+	cfg.ClientConfig.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
 	return cfg
@@ -234,7 +235,7 @@ func (ods *otlpDataSender) GenConfigYAMLStr() string {
         endpoint: "%s"`, ods.GetEndpoint())
 }
 
-func (ods *otlpDataSender) ProtocolName() string {
+func (*otlpDataSender) ProtocolName() string {
 	return "otlp"
 }
 

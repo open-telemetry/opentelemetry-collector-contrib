@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -341,20 +342,36 @@ func TestPathGetSetter(t *testing.T) {
 				log.SetSpanID(spanID2)
 			},
 		},
+		{
+			name: "event_name",
+			path: &pathtest.Path[*testContext]{
+				N: "event_name",
+			},
+			orig:   "",
+			newVal: "exception",
+			modified: func(log plog.LogRecord) {
+				log.SetEventName("exception")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			accessor, err := ctxlog.PathGetSetter(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			log := createTelemetry(tt.bodyType)
 
 			got, err := accessor.Get(t.Context(), newTestContext(log))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(t.Context(), newTestContext(log), tt.newVal)
-			assert.NoError(t, err)
+			ctx := newTestContext(log)
+			err = accessor.Set(t.Context(), ctx, tt.newVal)
+			require.NoError(t, err)
+
+			// Verify that setting an invalid type returns an error
+			err = accessor.Set(t.Context(), ctx, struct{}{})
+			require.Error(t, err)
 
 			expectedLog := createTelemetry(tt.bodyType)
 			tt.modified(expectedLog)

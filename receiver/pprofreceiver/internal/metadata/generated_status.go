@@ -12,5 +12,5 @@ var (
 )
 
 const (
-	ProfilesStability = component.StabilityLevelDevelopment
+	ProfilesStability = component.StabilityLevelAlpha
 )

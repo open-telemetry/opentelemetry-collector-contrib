@@ -1,0 +1,10 @@
+$defs:
+  transactions_config:
+    description: TransactionsConfig holds configuration for transactions.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+type: object
+allOf:
+  - $ref: transactions_config

@@ -12,21 +12,24 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - ArthurSens
-    - ChrsMark
+    - axw
+    - braydonk
     - crobert-1
-    # - dashpole on leave
+    - dashpole
     - dehaansa
-    - edmocosta
-    - mwear
     - fatsheep9146
+    - jmacd
+    - pjanotti
+    - VihasMakwana
     # Maintainers
     - andrzej-stencel
     - atoulme
     - bogdandrutu
+    - ChrsMark
     - codeboten
-    - djaglowski
     - dmitryax
-    # - evan-bradley OOO until 2025-05-05
+    - edmocosta
+    - evan-bradley
     - MovieStoreGuy
     - mx-psi
     - songy23

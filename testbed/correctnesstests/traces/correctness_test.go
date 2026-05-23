@@ -59,11 +59,6 @@ func testWithTracingGoldenDataset(
 	require.NoError(t, err, "default components resulted in: %v", err)
 	runner := testbed.NewInProcessCollector(factories)
 	validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
-	config := correctnesstests.CreateConfigYaml(t, sender, receiver, nil, processors)
-	log.Println(config)
-	configCleanup, cfgErr := runner.PrepareConfig(t, config)
-	require.NoError(t, cfgErr, "collector configuration resulted in: %v", cfgErr)
-	defer configCleanup()
 	tc := testbed.NewTestCase(
 		t,
 		dataProvider,
@@ -76,8 +71,17 @@ func testWithTracingGoldenDataset(
 	)
 	defer tc.Stop()
 
-	tc.EnableRecording()
 	tc.StartBackend()
+
+	// CreateConfigYaml must be called after StartBackend to ensure the receiver port is bound.
+	// This prevents CreateConfigYaml from picking the same port for Prometheus telemetry.
+	config := correctnesstests.CreateConfigYaml(t, sender, receiver, nil, processors)
+	log.Println(config)
+	configCleanup, cfgErr := runner.PrepareConfig(t, config)
+	require.NoError(t, cfgErr, "collector configuration resulted in: %v", cfgErr)
+	defer configCleanup()
+
+	tc.EnableRecording()
 	tc.StartAgent()
 
 	tc.StartLoad(testbed.LoadOptions{

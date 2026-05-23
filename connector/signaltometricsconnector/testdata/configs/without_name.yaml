@@ -1,4 +1,4 @@
-signaltometrics:
+signal_to_metrics:
   spans:
     - sum:
         value: "1"
@@ -6,5 +6,8 @@ signaltometrics:
     - sum:
         value: "1"
   logs:
+    - sum:
+        value: "1"
+  profiles:
     - sum:
         value: "1"

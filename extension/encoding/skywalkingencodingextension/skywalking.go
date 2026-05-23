@@ -13,7 +13,7 @@ import (
 
 type skywalkingProtobufTrace struct{}
 
-func (j skywalkingProtobufTrace) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
+func (skywalkingProtobufTrace) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 	segment := &agentV3.SegmentObject{}
 	err := proto.Unmarshal(buf, segment)
 	if err != nil {

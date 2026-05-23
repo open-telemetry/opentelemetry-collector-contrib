@@ -9,6 +9,7 @@ The `windows_eventlog_input` operator reads logs from the windows event log API.
 | `id`            | `windows_eventlog_input` | A unique identifier for the operator. |
 | `output`        | Next in pipeline         | The connected operator(s) that will receive all outbound entries. |
 | `channel`       | required                 | The windows event log channel to monitor. |
+| `ignore_channel_errors`       | false                 | If true, Prevents shutdown of collector while encountering errors while opening event log channels and warn instead |
 | `max_reads`     | 100                      | The maximum number of bodies read into memory, before beginning a new batch. |
 | `start_at`      | `end`                    | On first startup, where to start reading logs from the API. Options are `beginning` or `end`. |
 | `poll_interval` | 1s                       | The interval at which the channel is checked for new log entries. This check begins again after all new bodies have been read. |

@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -40,6 +42,19 @@ const (
 	none
 )
 
+// getOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
+func getOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T {
+	if opt.HasValue() {
+		return opt.Get()
+	}
+
+	empty := confmap.NewFromStringMap(map[string]any{})
+	require.NoError(t, empty.Unmarshal(opt))
+	val := opt.Get()
+	require.NotNil(t, "Expected a default value to be set for %T", val)
+	return val
+}
+
 func TestE2E(t *testing.T) {
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
@@ -48,8 +63,7 @@ func TestE2E(t *testing.T) {
 
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
-	cfg.HTTP = nil
-	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
+	getOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
 	logsConsumer := new(consumertest.LogsSink)
 	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(f.Type()), cfg, logsConsumer)
 	require.NoError(t, err, "failed creating logs receiver")
@@ -150,7 +164,8 @@ func TestE2E(t *testing.T) {
 				plogtest.IgnoreObservedTimestamp(),
 				plogtest.IgnoreResourceLogsOrder(),
 				plogtest.IgnoreScopeLogsOrder(),
-				plogtest.IgnoreLogRecordsOrder()),
+				plogtest.IgnoreLogRecordsOrder(),
+				plogtest.IgnoreScopeLogsVersion()),
 				"Received logs did not match log records in file %s", expectedFile,
 			)
 		})

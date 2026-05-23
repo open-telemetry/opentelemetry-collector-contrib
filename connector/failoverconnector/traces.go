@@ -59,7 +59,7 @@ func (f *tracesRouter) consumeByHealthyPipeline(ctx context.Context, td ptrace.T
 // sampleRetryConsumers iterates through all unhealthy consumers to re-establish a healthy connection
 func (f *tracesRouter) sampleRetryConsumers(ctx context.Context, td ptrace.Traces) bool {
 	stableIndex := f.pS.CurrentPipeline()
-	for i := 0; i < stableIndex; i++ {
+	for i := range stableIndex {
 		consumer := f.getConsumerAtIndex(i)
 		err := consumer.ConsumeTraces(ctx, td)
 		if err == nil {
@@ -79,7 +79,7 @@ type tracesFailover struct {
 	logger   *zap.Logger
 }
 
-func (f *tracesFailover) Capabilities() consumer.Capabilities {
+func (*tracesFailover) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -88,7 +88,7 @@ func (f *tracesFailover) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 	return f.failover.Consume(ctx, td)
 }
 
-func (f *tracesFailover) Shutdown(_ context.Context) error {
+func (f *tracesFailover) Shutdown(context.Context) error {
 	if f.failover != nil {
 		f.failover.Shutdown()
 	}

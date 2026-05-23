@@ -1,0 +1,27 @@
+{
+    "messageType": "DATA_MESSAGE",
+    "owner": "123456789012",
+    "logGroup": "test-log-group",
+    "logStream": "test-log-stream",
+    "subscriptionFilters": ["test-filter"],
+    "logEvents": [
+        {
+            "id": "38480917865042697267627490045603633139480491071049695232",
+            "timestamp": 1725544035523,
+            "message": "First log from account 111",
+            "extractedFields": {
+                "@aws.account": "111111111111",
+                "@aws.region": "us-east-1"
+            }
+        },
+        {
+            "id": "38480917865042697267627490045603633139480491071049695233",
+            "timestamp": 1725544035524,
+            "message": "Second log from account 222",
+            "extractedFields": {
+                "@aws.account": "222222222222",
+                "@aws.region": "us-west-2"
+            }
+        }
+    ]
+}

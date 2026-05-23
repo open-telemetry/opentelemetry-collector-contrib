@@ -6,10 +6,10 @@ package cluster // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"testing"
 
-	as "github.com/aerospike/aerospike-client-go/v7"
+	as "github.com/aerospike/aerospike-client-go/v8"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster/mocks"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/cluster/mocks"
 )
 
 func TestCluster_GetNodes(t *testing.T) {

@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -25,13 +26,27 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NsxtNodeCPUUtilization:        MetricConfig{Enabled: true},
-					NsxtNodeFilesystemUsage:       MetricConfig{Enabled: true},
-					NsxtNodeFilesystemUtilization: MetricConfig{Enabled: true},
-					NsxtNodeMemoryCacheUsage:      MetricConfig{Enabled: true},
-					NsxtNodeMemoryUsage:           MetricConfig{Enabled: true},
-					NsxtNodeNetworkIo:             MetricConfig{Enabled: true},
-					NsxtNodeNetworkPacketCount:    MetricConfig{Enabled: true},
+					NsxtNodeCPUUtilization: MetricConfig{
+						Enabled: true,
+					},
+					NsxtNodeFilesystemUsage: MetricConfig{
+						Enabled: true,
+					},
+					NsxtNodeFilesystemUtilization: MetricConfig{
+						Enabled: true,
+					},
+					NsxtNodeMemoryCacheUsage: MetricConfig{
+						Enabled: true,
+					},
+					NsxtNodeMemoryUsage: MetricConfig{
+						Enabled: true,
+					},
+					NsxtNodeNetworkIo: MetricConfig{
+						Enabled: true,
+					},
+					NsxtNodeNetworkPacketCount: MetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					DeviceID:     ResourceAttributeConfig{Enabled: true},
@@ -45,13 +60,27 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NsxtNodeCPUUtilization:        MetricConfig{Enabled: false},
-					NsxtNodeFilesystemUsage:       MetricConfig{Enabled: false},
-					NsxtNodeFilesystemUtilization: MetricConfig{Enabled: false},
-					NsxtNodeMemoryCacheUsage:      MetricConfig{Enabled: false},
-					NsxtNodeMemoryUsage:           MetricConfig{Enabled: false},
-					NsxtNodeNetworkIo:             MetricConfig{Enabled: false},
-					NsxtNodeNetworkPacketCount:    MetricConfig{Enabled: false},
+					NsxtNodeCPUUtilization: MetricConfig{
+						Enabled: false,
+					},
+					NsxtNodeFilesystemUsage: MetricConfig{
+						Enabled: false,
+					},
+					NsxtNodeFilesystemUtilization: MetricConfig{
+						Enabled: false,
+					},
+					NsxtNodeMemoryCacheUsage: MetricConfig{
+						Enabled: false,
+					},
+					NsxtNodeMemoryUsage: MetricConfig{
+						Enabled: false,
+					},
+					NsxtNodeNetworkIo: MetricConfig{
+						Enabled: false,
+					},
+					NsxtNodeNetworkPacketCount: MetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					DeviceID:     ResourceAttributeConfig{Enabled: false},
@@ -77,7 +106,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
 

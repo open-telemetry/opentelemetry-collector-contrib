@@ -266,7 +266,7 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 	}
 }
 
-func getBaseMetricConfig(gauge bool, scalar bool) map[string]*MetricConfig {
+func getBaseMetricConfig(gauge, scalar bool) map[string]*MetricConfig {
 	metricCfg := map[string]*MetricConfig{
 		"m3": {
 			Unit: "By",

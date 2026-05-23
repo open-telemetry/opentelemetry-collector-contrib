@@ -5,6 +5,7 @@ package syslog
 
 import (
 	"fmt"
+	"maps"
 	"net"
 	"testing"
 	"time"
@@ -46,13 +47,14 @@ var (
 			Severity:     entry.Info,
 			SeverityText: "info",
 			Attributes: map[string]any{
-				"appname":  "SecureAuth0",
-				"facility": 10,
-				"hostname": "192.168.2.132",
-				"message":  "Found the user for retrieving user's profile",
-				"msg_id":   "ID52020",
-				"priority": 86,
-				"proc_id":  "23108",
+				"appname":       "SecureAuth0",
+				"facility":      10,
+				"facility_text": "authpriv",
+				"hostname":      "192.168.2.132",
+				"message":       "Found the user for retrieving user's profile",
+				"msg_id":        "ID52020",
+				"priority":      86,
+				"proc_id":       "23108",
 				"structured_data": map[string]any{
 					"SecureAuth@27389": map[string]any{
 						"PEN":             "27389",
@@ -85,12 +87,13 @@ var (
 				"service.name": "apache_server",
 			},
 			Attributes: map[string]any{
-				"foo":      "bar",
-				"appname":  "apache_server",
-				"facility": 4,
-				"hostname": "1.2.3.4",
-				"message":  "test message",
-				"priority": 34,
+				"foo":           "bar",
+				"appname":       "apache_server",
+				"facility":      4,
+				"facility_text": "auth",
+				"hostname":      "1.2.3.4",
+				"message":       "test message",
+				"priority":      34,
 			},
 			Body: fmt.Sprintf("<34>%s 1.2.3.4 apache_server: test message", ts.Format("Jan _2 15:04:05")),
 		},
@@ -148,7 +151,7 @@ func TestInput(t *testing.T) {
 	})
 }
 
-func InputTest(t *testing.T, tc syslogtest.Case, cfg *Config, rsrc map[string]any, attr map[string]any) {
+func InputTest(t *testing.T, tc syslogtest.Case, cfg *Config, rsrc, attr map[string]any) {
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
 	require.NoError(t, err)
@@ -195,18 +198,14 @@ func InputTest(t *testing.T, tc syslogtest.Case, cfg *Config, rsrc map[string]an
 			if expect.Resource == nil {
 				expect.Resource = rsrc
 			} else {
-				for k, v := range rsrc {
-					expect.Resource[k] = v
-				}
+				maps.Copy(expect.Resource, rsrc)
 			}
 		}
 		if attr != nil {
 			if expect.Attributes == nil {
 				expect.Attributes = attr
 			} else {
-				for k, v := range attr {
-					expect.Attributes[k] = v
-				}
+				maps.Copy(expect.Attributes, attr)
 			}
 		}
 		require.Equal(t, expect, e)

@@ -5,20 +5,19 @@ package host // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
-	"log"
+	"io"
+	"strings"
 	"time"
 
-	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
 	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
-	"github.com/aws/aws-sdk-go/aws"
-	awsec2metadata "github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"go.uber.org/zap"
 )
 
 type metadataClient interface {
-	GetInstanceIdentityDocument() (awsec2metadata.EC2InstanceIdentityDocument, error)
-	GetMetadata(string) (string, error)
+	GetInstanceIdentityDocument(ctx context.Context, params *imds.GetInstanceIdentityDocumentInput, optFns ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error)
+	GetMetadata(ctx context.Context, params *imds.GetMetadataInput, optFns ...func(*imds.Options)) (*imds.GetMetadataOutput, error)
 }
 
 type ec2MetadataProvider interface {
@@ -46,27 +45,30 @@ type ec2Metadata struct {
 
 type ec2MetadataOption func(*ec2Metadata)
 
-func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterval time.Duration,
-	instanceIDReadyC chan bool, instanceIPReadyC chan bool, localMode bool, imdsRetries int, logger *zap.Logger, configurer *awsmiddleware.Configurer, options ...ec2MetadataOption,
+func newEC2Metadata(
+	ctx context.Context,
+	cfg aws.Config,
+	refreshInterval time.Duration,
+	instanceIDReadyC, instanceIPReadyC chan bool,
+	localMode bool,
+	imdsRetries int,
+	logger *zap.Logger,
+	options ...ec2MetadataOption,
 ) ec2MetadataProvider {
 	emd := &ec2Metadata{
-		client: awsec2metadata.New(session, &aws.Config{
-			Retryer:                   override.NewIMDSRetryer(imdsRetries),
-			EC2MetadataEnableFallback: aws.Bool(false),
+		client: imds.NewFromConfig(cfg, func(o *imds.Options) {
+			o.Retryer = override.NewIMDSRetryer(imdsRetries)
+			o.EnableFallback = aws.FalseTernary
 		}),
-		clientFallbackEnable: awsec2metadata.New(session, &aws.Config{}),
-		refreshInterval:      refreshInterval,
-		instanceIDReadyC:     instanceIDReadyC,
-		instanceIPReadyC:     instanceIPReadyC,
-		localMode:            localMode,
-		logger:               logger,
-		networkInterfaceIDs:  make(map[string]string),
-	}
-	if configurer != nil {
-		err := configurer.Configure(awsmiddleware.SDKv1(&emd.client.(*awsec2metadata.EC2Metadata).Handlers))
-		if err != nil {
-			log.Println("There was a problem configuring middleware on ec2 client")
-		}
+		clientFallbackEnable: imds.NewFromConfig(cfg, func(o *imds.Options) {
+			o.EnableFallback = aws.TrueTernary
+		}),
+		refreshInterval:     refreshInterval,
+		instanceIDReadyC:    instanceIDReadyC,
+		instanceIPReadyC:    instanceIPReadyC,
+		localMode:           localMode,
+		logger:              logger,
+		networkInterfaceIDs: make(map[string]string),
 	}
 
 	for _, opt := range options {
@@ -83,16 +85,16 @@ func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterv
 	return emd
 }
 
-func (emd *ec2Metadata) refresh(_ context.Context) {
+func (emd *ec2Metadata) refresh(ctx context.Context) {
 	if emd.localMode {
 		emd.logger.Debug("Running EC2MetadataProvider in local mode.  Skipping EC2 metadata fetch")
 		return
 	}
 	emd.logger.Info("Fetch instance id and type from ec2 metadata")
 
-	doc, err := emd.client.GetInstanceIdentityDocument()
+	doc, err := emd.client.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
 	if err != nil {
-		docInner, errInner := emd.clientFallbackEnable.GetInstanceIdentityDocument()
+		docInner, errInner := emd.clientFallbackEnable.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
 		if errInner != nil {
 			emd.logger.Error("Failed to get ec2 metadata", zap.Error(err))
 			return
@@ -152,9 +154,22 @@ func (emd *ec2Metadata) getNetworkInterfaceID(macAddress string) (string, error)
 }
 
 func (emd *ec2Metadata) loadNetworkInterfaceID(macAddress string) (string, error) {
-	eniID, err := emd.client.GetMetadata("network/interfaces/macs/" + macAddress + "/interface-id")
-	if err == nil {
-		return eniID, nil
+	in := &imds.GetMetadataInput{Path: "network/interfaces/macs/" + macAddress + "/interface-id"}
+	if out, err := emd.client.GetMetadata(context.Background(), in); err == nil {
+		return readAndClose(out.Content)
 	}
-	return emd.clientFallbackEnable.GetMetadata("network/interfaces/macs/" + macAddress + "/interface-id")
+	out, err := emd.clientFallbackEnable.GetMetadata(context.Background(), in)
+	if err != nil {
+		return "", err
+	}
+	return readAndClose(out.Content)
+}
+
+func readAndClose(rc io.ReadCloser) (string, error) {
+	defer func() { _ = rc.Close() }()
+	body, err := io.ReadAll(rc)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(body)), nil
 }

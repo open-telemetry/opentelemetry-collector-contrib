@@ -88,6 +88,16 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errNoCert.Error(),
 		},
+		{
+			name: "invalid timestamp_format",
+			config: Config{
+				Logs: LogsConfig{
+					Endpoint:        "0.0.0.0:9999",
+					TimestampFormat: "bad",
+				},
+			},
+			expectedErr: "invalid timestamp_format \"bad\"",
+		},
 	}
 
 	for _, tc := range cases {
@@ -97,6 +107,46 @@ func TestValidate(t *testing.T) {
 				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
 				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestConfigValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *Config
+		wantErr bool
+	}{
+		{
+			name: "default_config_sets_max_request_body_size",
+			config: &Config{
+				Logs: LogsConfig{
+					Endpoint: "0.0.0.0:9999",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "zero_max_request_body_size_gets_default",
+			config: &Config{
+				Logs: LogsConfig{
+					Endpoint:           "0.0.0.0:9999",
+					MaxRequestBodySize: 0,
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, int64(20*1024*1024), tt.config.Logs.MaxRequestBodySize)
 			}
 		})
 	}
@@ -121,8 +171,10 @@ func TestLoadConfig(t *testing.T) {
 							KeyFile:  "some_key_file",
 						},
 					},
-					Secret:         "1234567890abcdef1234567890abcdef",
-					TimestampField: "EdgeStartTimestamp",
+					Secret:          "1234567890abcdef1234567890abcdef",
+					TimestampField:  "EdgeStartTimestamp",
+					TimestampFormat: "rfc3339",
+					Separator:       ".",
 					Attributes: map[string]string{
 						"ClientIP":         "http_request.client_ip",
 						"ClientRequestURI": "http_request.uri",

@@ -5,13 +5,16 @@ package googlecloudexporter
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter/internal/resourcemapping"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -57,4 +60,29 @@ func TestCreateLegacyExporter(t *testing.T) {
 	me, err := factory.CreateMetrics(ctx, exportertest.NewNopSettings(metadata.Type), eCfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
+}
+
+func TestCustomMonitoredResourceMapping(t *testing.T) {
+	_ = featuregate.GlobalRegistry().Set("exporter.googlecloud.CustomMonitoredResources", true)
+	ctx := t.Context()
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	eCfg := cfg.(*Config)
+	eCfg.ProjectID = "test"
+
+	te, err := factory.CreateLogs(ctx, exportertest.NewNopSettings(metadata.Type), eCfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, te, "failed to create logs exporter")
+
+	actualLogFuncPointer := reflect.ValueOf(eCfg.LogConfig.MapMonitoredResource).Pointer()
+	expectedLogFuncPointer := reflect.ValueOf(resourcemapping.CustomLoggingMonitoredResourceMapping).Pointer()
+	assert.Equal(t, expectedLogFuncPointer, actualLogFuncPointer)
+
+	me, err := factory.CreateMetrics(ctx, exportertest.NewNopSettings(metadata.Type), eCfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, me, "failed to create metrics exporter")
+
+	actualMetricsFuncPointer := reflect.ValueOf(eCfg.LogConfig.MapMonitoredResource).Pointer()
+	expectedMetricsFuncPointer := reflect.ValueOf(resourcemapping.CustomLoggingMonitoredResourceMapping).Pointer()
+	assert.Equal(t, expectedMetricsFuncPointer, actualMetricsFuncPointer)
 }

@@ -8,7 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
+	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -32,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "localhost:8888"
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: "/var/lib/mycert.pem", // This is subject to change, but currently I have no idea what else to put here lol
 		},
@@ -41,9 +42,9 @@ func TestLoadConfig(t *testing.T) {
 	clientConfig.ReadBufferSize = 0
 	clientConfig.WriteBufferSize = 512 * 1024
 	clientConfig.Timeout = 5 * time.Second
-	clientConfig.Headers = map[string]configopaque.String{
-		"Prometheus-Remote-Write-Version": "0.1.0",
-		"X-Scope-OrgID":                   "234",
+	clientConfig.Headers = configopaque.MapList{
+		{Name: "Prometheus-Remote-Write-Version", Value: "0.1.0"},
+		{Name: "X-Scope-OrgID", Value: "234"},
 	}
 	tests := []struct {
 		id           component.ID
@@ -78,9 +79,10 @@ func TestLoadConfig(t *testing.T) {
 				ExternalLabels:              map[string]string{"key1": "value1", "key2": "value2"},
 				ClientConfig:                clientConfig,
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
-				TargetInfo: &TargetInfo{
+				TargetInfo: TargetInfo{
 					Enabled: true,
 				},
+				RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
 			},
 		},
 		{
@@ -99,6 +101,10 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "non_snappy_compression_type"),
 			errorMessage: "compression type must be snappy",
 		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "unknown_protobuf_message"),
+			errorMessage: "unknown type for remote write protobuf message io.prometheus.write.v4.Request, supported: prometheus.WriteRequest, io.prometheus.write.v2.Request",
+		},
 	}
 
 	for _, tt := range tests {
@@ -111,7 +117,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
+				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.errorMessage)
 				return
 			}
 			assert.NoError(t, xconfmap.Validate(cfg))

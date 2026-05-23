@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}-eks-api
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Name }}-eks-api
+  template:
+    metadata:
+      labels:
+        app: {{ .Name }}-eks-api
+    spec:
+      containers:
+        - name: api-server
+          image: python:3.13-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - python3
+            - /scripts/server.py
+          env:
+            - name: TLS_CERT_FILE
+              value: /certs/tls.crt
+            - name: TLS_KEY_FILE
+              value: /certs/tls.key
+            - name: PORT
+              value: "8443"
+          ports:
+            - containerPort: 8443
+              name: https
+          volumeMounts:
+            - name: script
+              mountPath: /scripts
+            - name: certs
+              mountPath: /certs
+      volumes:
+        - name: script
+          configMap:
+            name: {{ .Name }}-eks-api-config
+        - name: certs
+          secret:
+            secretName: {{ .Name }}-eks-api-cert

@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
@@ -31,9 +32,12 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig creates a default config with the endpoint set
 // to port 8443 and the record type set to the CloudWatch metric stream.
 func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	netAddr.Endpoint = defaultEndpoint
 	return &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: defaultEndpoint,
+			NetAddr: netAddr,
 		},
 	}
 }

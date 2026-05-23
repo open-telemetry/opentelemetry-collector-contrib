@@ -16,12 +16,17 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 	zipkinthriftconverter "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinthriftconverter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
@@ -40,6 +45,10 @@ var (
 	customTracesUnmarshalerExtension struct {
 		component.Component
 		ptrace.Unmarshaler
+	}
+	customProfilesUnmarshalerExtension struct {
+		component.Component
+		pprofile.Unmarshaler
 	}
 )
 
@@ -130,6 +139,19 @@ func TestNewLogsUnmarshaler(t *testing.T) {
 				assert.NoError(t, plogtest.CompareLogs(logs, actual, plogtest.IgnoreObservedTimestamp()))
 			},
 		},
+		{
+			encoding: "text_utf-16", // hyphen in the name
+			input: func() []byte {
+				out, _ := unicode.UTF16(
+					unicode.LittleEndian,
+					unicode.IgnoreBOM,
+				).NewEncoder().Bytes([]byte("hello world"))
+				return out
+			}(),
+			check: func(t *testing.T, actual plog.Logs) {
+				assert.NoError(t, plogtest.CompareLogs(logs, actual, plogtest.IgnoreObservedTimestamp()))
+			},
+		},
 	} {
 		t.Run(tc.encoding, func(t *testing.T) {
 			u := mustNewLogsUnmarshaler(t, tc.encoding, componenttest.NewNopHost())
@@ -149,6 +171,12 @@ func TestNewLogsUnmarshalerExtension(t *testing.T) {
 	})
 	assert.Equal(t, &customLogsUnmarshalerExtension, u)
 
+	// Verify extensions can be named.
+	u = mustNewLogsUnmarshaler(t, "otlp_proto/alice", extensionsHost{
+		component.MustNewIDWithName("otlp_proto", "alice"): &customLogsUnmarshalerExtension,
+	})
+	assert.Equal(t, &customLogsUnmarshalerExtension, u)
+
 	// Specifying an extension for a different type should fail fast.
 	u, err := newLogsUnmarshaler("not_logs", settings, extensionsHost{
 		component.MustNewID("not_logs"): &customTracesUnmarshalerExtension,
@@ -162,6 +190,18 @@ func TestNewLogsUnmarshalerTextEncoding(t *testing.T) {
 	u, err := newLogsUnmarshaler("text_invalid", settings, componenttest.NewNopHost())
 	require.EqualError(t, err, `invalid text encoding: unsupported encoding 'invalid'`)
 	assert.Nil(t, u)
+}
+
+func TestAzureResourceLogsDeprecationWarning(t *testing.T) {
+	core, logs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+
+	_, err := newLogsUnmarshaler("azure_resource_logs", settings, componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	require.Equal(t, 1, logs.Len())
+	assert.Contains(t, logs.All()[0].Message, "azure_resource_logs")
 }
 
 func TestNewMetricsUnmarshaler(t *testing.T) {
@@ -357,6 +397,59 @@ func TestNewTracesUnmarshalerExtension(t *testing.T) {
 	assert.Nil(t, u)
 }
 
+func TestNewProfilesUnmarshaler(t *testing.T) {
+	for _, tc := range []struct {
+		encoding string
+		marshal  func(pprofile.Profiles) ([]byte, error)
+		check    func(*testing.T, pprofile.Profiles)
+	}{
+		{
+			encoding: "otlp_proto",
+			marshal:  (&pprofile.ProtoMarshaler{}).MarshalProfiles,
+			check: func(t *testing.T, actual pprofile.Profiles) {
+				expected := testdata.GenerateProfiles(3)
+				assert.NoError(t, pprofiletest.CompareProfiles(expected, actual))
+			},
+		},
+		{
+			encoding: "otlp_json",
+			marshal:  (&pprofile.JSONMarshaler{}).MarshalProfiles,
+			check: func(t *testing.T, actual pprofile.Profiles) {
+				expected := testdata.GenerateProfiles(3)
+				assert.NoError(t, pprofiletest.CompareProfiles(expected, actual))
+			},
+		},
+	} {
+		t.Run(tc.encoding, func(t *testing.T) {
+			profiles := testdata.GenerateProfiles(3)
+			input, err := tc.marshal(profiles)
+			require.NoError(t, err)
+
+			u := mustNewProfilesUnmarshaler(t, tc.encoding, componenttest.NewNopHost())
+			out, err := u.UnmarshalProfiles(input)
+			require.NoError(t, err)
+			tc.check(t, out)
+		})
+	}
+}
+
+func TestNewProfilesUnmarshalerExtension(t *testing.T) {
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	// Verify extensions take precedence over built-in unmarshalers.
+	u := mustNewProfilesUnmarshaler(t, "otlp_proto", extensionsHost{
+		component.MustNewID("otlp_proto"): &customProfilesUnmarshalerExtension,
+	})
+	assert.Equal(t, &customProfilesUnmarshalerExtension, u)
+
+	// Specifying an extension for a different type should fail fast.
+	u, err := newProfilesUnmarshaler("not_profiles", settings, extensionsHost{
+		component.MustNewID("not_profiles"): &customLogsUnmarshalerExtension,
+	})
+	require.EqualError(t, err, `extension "not_profiles" is not a profiles unmarshaler`)
+	assert.Nil(t, u)
+}
+
 func mustNewLogsUnmarshaler(tb testing.TB, encoding string, host component.Host) plog.Unmarshaler {
 	settings := receivertest.NewNopSettings(metadata.Type)
 	u, err := newLogsUnmarshaler(encoding, settings, host)
@@ -374,6 +467,13 @@ func mustNewMetricsUnmarshaler(tb testing.TB, encoding string, host component.Ho
 func mustNewTracesUnmarshaler(tb testing.TB, encoding string, host component.Host) ptrace.Unmarshaler {
 	settings := receivertest.NewNopSettings(metadata.Type)
 	u, err := newTracesUnmarshaler(encoding, settings, host)
+	require.NoError(tb, err)
+	return u
+}
+
+func mustNewProfilesUnmarshaler(tb testing.TB, encoding string, host component.Host) pprofile.Unmarshaler {
+	settings := receivertest.NewNopSettings(metadata.Type)
+	u, err := newProfilesUnmarshaler(encoding, settings, host)
 	require.NoError(tb, err)
 	return u
 }

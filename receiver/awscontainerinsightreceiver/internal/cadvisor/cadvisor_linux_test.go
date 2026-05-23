@@ -28,7 +28,7 @@ type mockCadvisorManager struct {
 
 // Start the manager. Calling other manager methods before this returns
 // may produce undefined behavior.
-func (m *mockCadvisorManager) Start() error {
+func (*mockCadvisorManager) Start() error {
 	return nil
 }
 
@@ -40,11 +40,11 @@ func (m *mockCadvisorManager) SubcontainersInfo(_ string, _ *info.ContainerInfoR
 
 type mockCadvisorManager2 struct{}
 
-func (m *mockCadvisorManager2) Start() error {
+func (*mockCadvisorManager2) Start() error {
 	return errors.New("new error")
 }
 
-func (m *mockCadvisorManager2) SubcontainersInfo(_ string, _ *info.ContainerInfoRequest) ([]*info.ContainerInfo, error) {
+func (*mockCadvisorManager2) SubcontainersInfo(_ string, _ *info.ContainerInfoRequest) ([]*info.ContainerInfo, error) {
 	return nil, nil
 }
 
@@ -73,11 +73,11 @@ var mockCreateManagerWithError = func(_ *memory.InMemoryCache, _ sysfs.SysFs, _ 
 
 type MockDecorator struct{}
 
-func (m *MockDecorator) Decorate(metric stores.CIMetric) stores.CIMetric {
+func (*MockDecorator) Decorate(metric stores.CIMetric) stores.CIMetric {
 	return metric
 }
 
-func (m *MockDecorator) Shutdown() error {
+func (*MockDecorator) Shutdown() error {
 	return nil
 }
 

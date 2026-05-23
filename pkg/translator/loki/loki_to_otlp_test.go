@@ -77,6 +77,40 @@ func TestPushRequestToLogs(t *testing.T) {
 				},
 			}),
 		},
+		{
+			name: "Should add structured metadata to log record attributes",
+			pushRequest: &push.PushRequest{
+				Streams: []push.Stream{
+					{
+						Labels: "{foo=\"bar\", label1=\"value1\"}",
+						Entries: []push.Entry{
+							{
+								Timestamp: time.Unix(0, 1676888496000000000),
+								Line:      "logline 1",
+								StructuredMetadata: push.LabelsAdapter{
+									{
+										Name:  "sm-key1",
+										Value: "sm-value1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			keepTimestamp: true,
+			expected: generateLogs([]Log{
+				{
+					Timestamp: 1676888496000000000,
+					Body:      pcommon.NewValueStr("logline 1"),
+					Attributes: map[string]any{
+						"foo":     "bar",
+						"label1":  "value1",
+						"sm-key1": "sm-value1",
+					},
+				},
+			}),
+		},
 	}
 
 	for _, tt := range testCases {

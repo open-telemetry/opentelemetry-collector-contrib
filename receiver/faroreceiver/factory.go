@@ -5,18 +5,38 @@ package faroreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/faroreceiver/internal/metadata"
 )
 
 const (
 	defaultFaroEndpoint = "localhost:8080"
 )
+
+// This is the map of already created Faro receivers for particular configurations.
+// We maintain this map because the receiver.Factory is asked trace and log receivers separately
+// when it gets createFaroReceiverTraces() and createFaroReceiverLogs() but they must not
+// create separate objects, they must use one faroReceiver object per configuration.
+// When the receiver is shutdown it should be removed from this map so the same configuration
+// can be recreated successfully.
+var receivers = sharedcomponent.NewSharedComponents()
+
+func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	netAddr.Endpoint = defaultFaroEndpoint
+	return &Config{
+		ServerConfig: confighttp.ServerConfig{NetAddr: netAddr},
+	}
+}
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -26,30 +46,52 @@ func NewFactory() receiver.Factory {
 		receiver.WithLogs(createFaroReceiverLogs, metadata.LogsStability))
 }
 
-func createDefaultConfig() component.Config {
-	return &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: defaultFaroEndpoint,
-		},
+func newFaroReceiverFactory(fCfg *Config, set *receiver.Settings, err *error) func() component.Component {
+	return func() component.Component {
+		var rcv component.Component
+		rcv, *err = newFaroReceiver(fCfg, set)
+		return rcv
 	}
 }
 
 func createFaroReceiverTraces(
 	_ context.Context,
-	_ receiver.Settings,
-	conf component.Config,
-	consumer consumer.Traces,
+	set receiver.Settings,
+	cfg component.Config,
+	nextTraces consumer.Traces,
 ) (receiver.Traces, error) {
-	cfg := conf.(*Config)
-	return newTraceReceiverTraces(cfg, consumer), nil
+	fCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("invalid configuration: %T", cfg)
+	}
+	var err error
+	receiver := receivers.GetOrAdd(fCfg, newFaroReceiverFactory(fCfg, &set, &err))
+	if err != nil {
+		return nil, err
+	}
+
+	receiver.Unwrap().(*faroReceiver).RegisterTracesConsumer(nextTraces)
+
+	return receiver, nil
 }
 
 func createFaroReceiverLogs(
 	_ context.Context,
-	_ receiver.Settings,
-	conf component.Config,
-	consumer consumer.Logs,
+	set receiver.Settings,
+	cfg component.Config,
+	nextLogs consumer.Logs,
 ) (receiver.Logs, error) {
-	cfg := conf.(*Config)
-	return newTraceReceiverLogs(cfg, consumer), nil
+	fCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("invalid configuration: %T", cfg)
+	}
+	var err error
+	receiver := receivers.GetOrAdd(fCfg, newFaroReceiverFactory(fCfg, &set, &err))
+	if err != nil {
+		return nil, err
+	}
+
+	receiver.Unwrap().(*faroReceiver).RegisterLogsConsumer(nextLogs)
+
+	return receiver, nil
 }

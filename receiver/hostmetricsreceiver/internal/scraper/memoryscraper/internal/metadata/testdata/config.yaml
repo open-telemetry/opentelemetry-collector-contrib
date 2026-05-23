@@ -7,12 +7,62 @@ all_set:
       enabled: true
     system.memory.limit:
       enabled: true
+    system.memory.linux.hugepages.limit:
+      enabled: true
+    system.memory.linux.hugepages.page_size:
+      enabled: true
+    system.memory.linux.hugepages.reserved:
+      enabled: true
+    system.memory.linux.hugepages.surplus:
+      enabled: true
+    system.memory.linux.hugepages.usage:
+      enabled: true
+      attributes: ["system.memory.linux.hugepages.state"]
+    system.memory.linux.hugepages.utilization:
+      enabled: true
+      attributes: ["system.memory.linux.hugepages.state"]
+    system.memory.linux.shared:
+      enabled: true
     system.memory.page_size:
       enabled: true
     system.memory.usage:
       enabled: true
+      attributes: ["state"]
     system.memory.utilization:
       enabled: true
+      attributes: ["state"]
+reaggregate_set:
+  metrics:
+    system.linux.memory.available:
+      enabled: true
+    system.linux.memory.dirty:
+      enabled: true
+    system.memory.limit:
+      enabled: true
+    system.memory.linux.hugepages.limit:
+      enabled: true
+    system.memory.linux.hugepages.page_size:
+      enabled: true
+    system.memory.linux.hugepages.reserved:
+      enabled: true
+    system.memory.linux.hugepages.surplus:
+      enabled: true
+    system.memory.linux.hugepages.usage:
+      enabled: true
+      attributes: []
+    system.memory.linux.hugepages.utilization:
+      enabled: true
+      attributes: []
+    system.memory.linux.shared:
+      enabled: true
+    system.memory.page_size:
+      enabled: true
+    system.memory.usage:
+      enabled: true
+      attributes: []
+    system.memory.utilization:
+      enabled: true
+      attributes: []
 none_set:
   metrics:
     system.linux.memory.available:
@@ -21,9 +71,27 @@ none_set:
       enabled: false
     system.memory.limit:
       enabled: false
+    system.memory.linux.hugepages.limit:
+      enabled: false
+    system.memory.linux.hugepages.page_size:
+      enabled: false
+    system.memory.linux.hugepages.reserved:
+      enabled: false
+    system.memory.linux.hugepages.surplus:
+      enabled: false
+    system.memory.linux.hugepages.usage:
+      enabled: false
+      attributes: ["system.memory.linux.hugepages.state"]
+    system.memory.linux.hugepages.utilization:
+      enabled: false
+      attributes: ["system.memory.linux.hugepages.state"]
+    system.memory.linux.shared:
+      enabled: false
     system.memory.page_size:
       enabled: false
     system.memory.usage:
       enabled: false
+      attributes: ["state"]
     system.memory.utilization:
       enabled: false
+      attributes: ["state"]

@@ -1,0 +1,22 @@
+azure_functions:
+  http:
+    endpoint: test:123
+  auth: azureauth
+  logs:
+    encoding: azure_encoding
+
+azure_functions/no_auth:
+  http:
+    endpoint: test:123
+  logs:
+    encoding: azure_encoding
+
+azure_functions/no_http:
+  auth: azureauth
+  logs:
+    encoding: azure_encoding
+
+azure_functions/missing_logs_encoding:
+  auth: azureauth
+  http:
+    endpoint: test:123

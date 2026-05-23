@@ -1,4 +1,4 @@
-signaltometrics:
+signal_to_metrics:
   spans:
     - name: span.sum
       attributes:
@@ -11,6 +11,11 @@ signaltometrics:
       exponential_histogram: {}
   logs:
     - name: log.sum
+      attributes:
+        - key: key.1
+      exponential_histogram: {}
+  profiles:
+    - name: profile.sum
       attributes:
         - key: key.1
       exponential_histogram: {}

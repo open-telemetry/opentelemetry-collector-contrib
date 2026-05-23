@@ -5,15 +5,19 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"io"
 	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-var downloadManager *manager.Downloader //nolint:golint,unused
+const (
+	ingestedTag    = "otel-collector:status"
+	ingestedStatus = "ingested"
+)
 
 type ListObjectsV2Pager interface {
 	HasMorePages() bool
@@ -24,22 +28,23 @@ type ListObjectsAPI interface {
 	NewListObjectsV2Paginator(params *s3.ListObjectsV2Input) ListObjectsV2Pager
 }
 
-type GetObjectAPI interface {
+type SingleObjectAPI interface {
 	GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
+	PutObjectTagging(ctx context.Context, params *s3.PutObjectTaggingInput, optFns ...func(*s3.Options)) (*s3.PutObjectTaggingOutput, error)
 }
 
 type s3ListObjectsAPIImpl struct {
 	client *s3.Client
 }
 
-func newS3Client(ctx context.Context, cfg S3DownloaderConfig) (ListObjectsAPI, GetObjectAPI, error) {
+func newS3Client(ctx context.Context, cfg S3DownloaderConfig) (ListObjectsAPI, SingleObjectAPI, error) {
 	optionsFuncs := make([]func(*config.LoadOptions) error, 0)
 	if cfg.Region != "" {
 		optionsFuncs = append(optionsFuncs, config.WithRegion(cfg.Region))
 	}
 	awsCfg, err := config.LoadDefaultConfig(ctx, optionsFuncs...)
 	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
+		log.Printf("unable to load SDK config: %v", err)
 		return nil, nil, err
 	}
 	s3OptionFuncs := make([]func(options *s3.Options), 0)
@@ -54,10 +59,45 @@ func newS3Client(ctx context.Context, cfg S3DownloaderConfig) (ListObjectsAPI, G
 		})
 	}
 	client := s3.NewFromConfig(awsCfg, s3OptionFuncs...)
-
 	return &s3ListObjectsAPIImpl{client: client}, client, nil
 }
 
 func (api *s3ListObjectsAPIImpl) NewListObjectsV2Paginator(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
 	return s3.NewListObjectsV2Paginator(api.client, params)
+}
+
+// retrieveS3Object retrieves S3 object content for a given bucket and key
+func retrieveS3Object(ctx context.Context, client SingleObjectAPI, bucket, key string) ([]byte, error) {
+	params := s3.GetObjectInput{
+		Bucket: &bucket,
+		Key:    &key,
+	}
+	output, err := client.GetObject(ctx, &params)
+	if err != nil {
+		return nil, err
+	}
+	defer output.Body.Close()
+	contents, err := io.ReadAll(output.Body)
+	if err != nil {
+		return nil, err
+	}
+	return contents, nil
+}
+
+// tagS3Object tags an S3 object for a given bucket and key
+func tagS3Object(ctx context.Context, client SingleObjectAPI, bucket, key string) error {
+	params := s3.PutObjectTaggingInput{
+		Bucket: &bucket,
+		Key:    &key,
+		Tagging: &types.Tagging{
+			TagSet: []types.Tag{
+				{
+					Key:   aws.String(ingestedTag),
+					Value: aws.String(ingestedStatus),
+				},
+			},
+		},
+	}
+	_, err := client.PutObjectTagging(ctx, &params)
+	return err
 }

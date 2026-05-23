@@ -53,7 +53,10 @@ func createDefaultConfig() component.Config {
 				},
 			},
 			HTTP: &confighttp.ServerConfig{
-				Endpoint: defaultHTTPEndpoint,
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+					Endpoint:  defaultHTTPEndpoint,
+				},
 			},
 		},
 	}
@@ -79,7 +82,8 @@ func createTracesReceiver(
 		return newSkywalkingReceiver(c, set)
 	})
 
-	if err = r.Unwrap().(*swReceiver).registerTraceConsumer(nextConsumer); err != nil {
+	err = r.Unwrap().(*swReceiver).registerTraceConsumer(nextConsumer)
+	if err != nil {
 		return nil, err
 	}
 
@@ -106,7 +110,8 @@ func createMetricsReceiver(
 		return newSkywalkingReceiver(c, set)
 	})
 
-	if err = r.Unwrap().(*swReceiver).registerMetricsConsumer(nextConsumer); err != nil {
+	err = r.Unwrap().(*swReceiver).registerMetricsConsumer(nextConsumer)
+	if err != nil {
 		return nil, err
 	}
 
@@ -127,7 +132,7 @@ func createConfiguration(rCfg *Config) (*configuration, error) {
 
 	if rCfg.HTTP != nil {
 		c.CollectorHTTPSettings = *rCfg.HTTP
-		if c.CollectorHTTPPort, err = extractPortFromEndpoint(rCfg.HTTP.Endpoint); err != nil {
+		if c.CollectorHTTPPort, err = extractPortFromEndpoint(rCfg.HTTP.NetAddr.Endpoint); err != nil {
 			return nil, fmt.Errorf("unable to extract port for the HTTP endpoint: %w", err)
 		}
 	}

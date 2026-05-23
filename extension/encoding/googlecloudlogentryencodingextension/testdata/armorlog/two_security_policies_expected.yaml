@@ -1,0 +1,128 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: elastic-observability
+        - key: cloud.resource_id
+          value:
+            stringValue: requests
+        - key: gcp.resource_type
+          value:
+            stringValue: http_load_balancer
+        - key: gcp.label.zone
+          value:
+            stringValue: global
+        - key: gcp.label.url_map_name
+          value:
+            stringValue: cloud-armor-test-lb
+        - key: gcp.label.backend_service_name
+          value:
+            stringValue: bakcend-test-2
+        - key: gcp.label.forwarding_rule_name
+          value:
+            stringValue: cloud-armor-test-lb-forwarding-rule
+        - key: gcp.label.target_proxy_name
+          value:
+            stringValue: cloud-armor-test-lb-target-proxy
+        - key: gcp.label.project_id
+          value:
+            stringValue: elastic-observability
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: 96b8mog16i6va6
+              - key: gcp.load_balancing.status.details
+                value:
+                  stringValue: failed_to_pick_backend
+              - key: gcp.load_balancing.cache.decision
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: RESPONSE_HAS_CONTENT_TYPE
+                      - stringValue: CACHE_MODE_USE_ORIGIN_HEADERS
+              - key: gcp.load_balancing.backend_target_project_number
+                value:
+                  stringValue: projects/8560181848
+              - key: network.peer.address
+                value:
+                  stringValue: 64.62.156.212
+              - key: geo.region.iso_code
+                value:
+                  stringValue: US
+              - key: gcp.armor.request_data.remote_ip.asn
+                value:
+                  intValue: "6939"
+              - key: gcp.armor.security_policy.enforced_edge
+                value:
+                  kvlistValue:
+                    values:
+                      - key: name
+                        value:
+                          stringValue: test-edge-policy
+                      - key: priority
+                        value:
+                          intValue: "2147483647"
+                      - key: configured_action
+                        value:
+                          stringValue: ALLOW
+                      - key: outcome
+                        value:
+                          stringValue: ACCEPT
+              - key: gcp.armor.security_policy.enforced
+                value:
+                  kvlistValue:
+                    values:
+                      - key: name
+                        value:
+                          stringValue: test-armor-policy
+                      - key: priority
+                        value:
+                          intValue: "2147483647"
+                      - key: configured_action
+                        value:
+                          stringValue: ALLOW
+                      - key: outcome
+                        value:
+                          stringValue: ACCEPT
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: url.full
+                value:
+                  stringValue: http://136.110.215.198/geoserver/web/
+              - key: url.path
+                value:
+                  stringValue: /geoserver/web/
+              - key: url.domain
+                value:
+                  stringValue: 136.110.215.198
+              - key: http.request.size
+                value:
+                  intValue: "211"
+              - key: http.response.status_code
+                value:
+                  intValue: "503"
+              - key: http.response.size
+                value:
+                  intValue: "155"
+              - key: user_agent.original
+                value:
+                  stringValue: Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36
+              - key: http.request.server.duration
+                value:
+                  doubleValue: 0.011213
+            body: {}
+            observedTimeUnixNano: "1763639730099810516"
+            timeUnixNano: "1763639728882791000"
+            severityNumber: 13
+            severityText: WARNING
+            traceId: 5e9d5546ce04737d7f2bb8a01ebe42de
+            spanId: 5c3a7dccbe97b56f
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: gcp.load-balancer

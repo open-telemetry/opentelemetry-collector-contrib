@@ -4,251 +4,146 @@
 package awsutil
 
 import (
-	"errors"
+	"context"
+	"fmt"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	awsmock "github.com/aws/aws-sdk-go/awstesting/mock"
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
-var ec2Region = "us-west-2"
-
-type mockConn struct {
-	mock.Mock
-	sn *session.Session
-}
-
-func (c *mockConn) getEC2Region(_ *session.Session, _ int) (string, error) {
-	args := c.Called(nil)
-	errorStr := args.String(0)
-	var err error
-	if errorStr != "" {
-		err = errors.New(errorStr)
-		return "", err
-	}
-	return ec2Region, nil
-}
-
-func (c *mockConn) newAWSSession(_ *zap.Logger, _ *AWSSessionSettings, _ string) (*session.Session, error) {
-	return c.sn, nil
-}
-
-// fetch region value from ec2 meta data service
-func TestEC2Session(t *testing.T) {
+func TestResolveRegion_PriorityOrder(t *testing.T) {
 	logger := zap.NewNop()
-	sessionCfg := CreateDefaultSessionConfig()
-	m := new(mockConn)
-	m.On("getEC2Region", nil).Return("").Once()
-	var expectedSession *session.Session
-	expectedSession, _ = session.NewSession()
-	m.sn = expectedSession
-	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
-	assert.Equal(t, expectedSession, s, "Expect the session object is not overridden")
-	assert.Equal(t, *cfg.Region, ec2Region, "Region value fetched from ec2-metadata service")
-	assert.NoError(t, err)
-}
 
-// fetch region value from environment variable
-func TestRegionEnv(t *testing.T) {
-	logger := zap.NewNop()
-	sessionCfg := CreateDefaultSessionConfig()
-	region := "us-east-1"
-	t.Setenv("AWS_REGION", region)
-
-	m := &mockConn{}
-	var expectedSession *session.Session
-	expectedSession, _ = session.NewSession()
-	m.sn = expectedSession
-	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
-	assert.Equal(t, expectedSession, s, "Expect the session object is not overridden")
-	assert.Equal(t, *cfg.Region, region, "Region value fetched from environment")
-	assert.NoError(t, err)
-}
-
-func TestGetAWSConfigSessionWithSessionErr(t *testing.T) {
-	logger := zap.NewNop()
-	sessionCfg := CreateDefaultSessionConfig()
-	sessionCfg.Region = ""
-	sessionCfg.NoVerifySSL = false
-	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
-	m := new(mockConn)
-	m.On("getEC2Region", nil).Return("").Once()
-	var expectedSession *session.Session
-	expectedSession, _ = session.NewSession()
-	m.sn = expectedSession
-	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
-	assert.Nil(t, cfg)
-	assert.Nil(t, s)
-	assert.Error(t, err)
-}
-
-func TestGetAWSConfigSessionWithEC2RegionErr(t *testing.T) {
-	logger := zap.NewNop()
-	sessionCfg := CreateDefaultSessionConfig()
-	sessionCfg.Region = ""
-	sessionCfg.NoVerifySSL = false
-	m := new(mockConn)
-	m.On("getEC2Region", nil).Return("some error").Once()
-	var expectedSession *session.Session
-	expectedSession, _ = session.NewSession()
-	m.sn = expectedSession
-	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
-	assert.Nil(t, cfg)
-	assert.Nil(t, s)
-	assert.Error(t, err)
-}
-
-func TestNewAWSSessionWithErr(t *testing.T) {
-	logger := zap.NewNop()
-	roleArn := "fake_arn"
-	region := "fake_region"
-	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
-	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
-	conn := &Conn{}
-	aWSSessionSettings := &AWSSessionSettings{
-		RoleARN: roleArn,
-	}
-	se, err := conn.newAWSSession(logger, aWSSessionSettings, region)
-	assert.Error(t, err)
-	assert.Nil(t, se)
-	aWSSessionSettings = &AWSSessionSettings{
-		RoleARN: "",
-	}
-	se, err = conn.newAWSSession(logger, aWSSessionSettings, region)
-	assert.Error(t, err)
-	assert.Nil(t, se)
-	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
-	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "regional")
-	se, _ = session.NewSession(&aws.Config{
-		Region: aws.String("us-east-1"),
+	t.Run("ConfigRegionWinsOverEnv", func(t *testing.T) {
+		t.Setenv("AWS_REGION", "env-region")
+		s := &AWSSessionSettings{Region: "config-region"}
+		got, err := resolveRegion(context.Background(), logger, s, nil)
+		require.NoError(t, err)
+		assert.Equal(t, "config-region", got)
 	})
-	assert.NotNil(t, se)
-	_, err = conn.getEC2Region(se, aWSSessionSettings.IMDSRetries)
+
+	t.Run("EnvWinsWhenConfigEmpty", func(t *testing.T) {
+		t.Setenv("AWS_REGION", "env-region")
+		s := &AWSSessionSettings{}
+		got, err := resolveRegion(context.Background(), logger, s, nil)
+		require.NoError(t, err)
+		assert.Equal(t, "env-region", got)
+	})
+
+	t.Run("LocalModeSkipsIMDS", func(t *testing.T) {
+		t.Setenv("AWS_REGION", "")
+		s := &AWSSessionSettings{LocalMode: true}
+		got, err := resolveRegion(context.Background(), logger, s, nil)
+		require.NoError(t, err)
+		assert.Empty(t, got)
+	})
+}
+
+func TestGetAWSConfig_NoRegionResolvable(t *testing.T) {
+	t.Setenv("AWS_REGION", "")
+	cfg, err := GetAWSConfig(context.Background(), zap.NewNop(), &AWSSessionSettings{
+		LocalMode:             true,
+		NumberOfWorkers:       8,
+		RequestTimeoutSeconds: 30,
+	})
 	assert.Error(t, err)
+	assert.Equal(t, aws.Config{}, cfg)
 }
 
-func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
-	logger := zap.NewNop()
-	session, _ := session.NewSession()
-
-	regions := []string{"us-east-1", "us-gov-west-1", "cn-north-1"}
-
-	for _, region := range regions {
-		creds := getSTSCredsFromPrimaryRegionEndpoint(logger, session, "", region, "")
-		assert.NotNil(t, creds)
-	}
-	creds := getSTSCredsFromPrimaryRegionEndpoint(logger, session, "", "fake_region", "")
-	assert.Nil(t, creds)
+// staticCredsEnv installs static AWS credentials via env vars and scrubs
+// any inherited shared-config / profile env so config.LoadDefaultConfig
+// resolves deterministically without consulting IMDS or the EC2 instance
+// role.
+func staticCredsEnv(t *testing.T) {
+	t.Helper()
+	t.Setenv("AWS_ACCESS_KEY_ID", "AKIAIOSFODNN7EXAMPLE")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
+	t.Setenv("AWS_SESSION_TOKEN", "")
+	t.Setenv("AWS_PROFILE", "")
+	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", "")
+	t.Setenv("AWS_CONFIG_FILE", "")
+	t.Setenv("AWS_SDK_LOAD_CONFIG", "")
 }
 
-func TestGetDefaultSession(t *testing.T) {
-	logger := zap.NewNop()
-	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
-	aWSSessionSettings := &AWSSessionSettings{}
-	_, err := GetDefaultSession(logger, aWSSessionSettings)
-	assert.Error(t, err)
+func TestGetAWSConfig_ExplicitRegion(t *testing.T) {
+	staticCredsEnv(t)
+
+	cfg, err := GetAWSConfig(context.Background(), zap.NewNop(), &AWSSessionSettings{
+		Region:                "us-east-1",
+		NumberOfWorkers:       8,
+		RequestTimeoutSeconds: 30,
+		MaxRetries:            2,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "us-east-1", cfg.Region)
+	// MaxRetries: 2 → RetryMaxAttempts: 3 (v2 counts the initial attempt).
+	assert.Equal(t, 3, cfg.RetryMaxAttempts)
 }
 
-func TestGetSTSCreds(t *testing.T) {
-	logger := zap.NewNop()
-	region := "fake_region"
-	roleArn := ""
-	aWSSessionSettings := &AWSSessionSettings{
-		RoleARN: roleArn,
-	}
-	creds, err := getSTSCreds(logger, region, aWSSessionSettings)
-	assert.NotNil(t, creds)
-	assert.NoError(t, err)
-	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
-	_, err = getSTSCreds(logger, region, aWSSessionSettings)
-	assert.Error(t, err)
+func TestGetAWSConfig_EndpointThreaded(t *testing.T) {
+	staticCredsEnv(t)
+
+	cfg, err := GetAWSConfig(context.Background(), zap.NewNop(), &AWSSessionSettings{
+		Region:                "us-east-1",
+		Endpoint:              "https://example-endpoint.local",
+		NumberOfWorkers:       8,
+		RequestTimeoutSeconds: 30,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, cfg.BaseEndpoint)
+	assert.Equal(t, "https://example-endpoint.local", *cfg.BaseEndpoint)
 }
 
-func TestLoadAmazonCertificateFromFile(t *testing.T) {
-	certFromFile, err := loadCertPool("testdata/public_amazon_cert.pem")
-	assert.NoError(t, err)
-	assert.NotNil(t, certFromFile)
-}
+func TestGetAWSConfig_RetryMaxAttempts(t *testing.T) {
+	// settings.MaxRetries=N must produce cfg.RetryMaxAttempts=N+1.
+	staticCredsEnv(t)
 
-func TestLoadEmptyFile(t *testing.T) {
-	certFromFile, err := loadCertPool("")
-	assert.Error(t, err)
-	assert.Nil(t, certFromFile)
-}
-
-func TestConfusedDeputyHeaders(t *testing.T) {
 	tests := []struct {
-		name                  string
-		envSourceArn          string
-		envSourceAccount      string
-		expectedHeaderArn     string
-		expectedHeaderAccount string
+		maxRetries          int
+		wantRetryMaxAttempt int
 	}{
-		{
-			name:                  "unpopulated",
-			envSourceArn:          "",
-			envSourceAccount:      "",
-			expectedHeaderArn:     "",
-			expectedHeaderAccount: "",
-		},
-		{
-			name:                  "both populated",
-			envSourceArn:          "arn:aws:ec2:us-east-1:474668408639:instance/i-08293cd9825754f7c",
-			envSourceAccount:      "539247453986",
-			expectedHeaderArn:     "arn:aws:ec2:us-east-1:474668408639:instance/i-08293cd9825754f7c",
-			expectedHeaderAccount: "539247453986",
-		},
-		{
-			name:                  "only source arn populated",
-			envSourceArn:          "arn:aws:ec2:us-east-1:474668408639:instance/i-08293cd9825754f7c",
-			envSourceAccount:      "",
-			expectedHeaderArn:     "",
-			expectedHeaderAccount: "",
-		},
-		{
-			name:                  "only source account populated",
-			envSourceArn:          "",
-			envSourceAccount:      "539247453986",
-			expectedHeaderArn:     "",
-			expectedHeaderAccount: "",
-		},
+		{0, 1},
+		{1, 2},
+		{2, 3},
+		{5, 6},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv(AmzSourceAccount, tt.envSourceAccount)
-			t.Setenv(AmzSourceArn, tt.envSourceArn)
-
-			client := newStsClient(awsmock.Session, &aws.Config{
-				// These are examples credentials pulled from:
-				// https://docs.aws.amazon.com/STS/latest/APIReference/API_GetAccessKeyInfo.html
-				Credentials: credentials.NewStaticCredentials("AKIAIOSFODNN7EXAMPLE", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", ""),
-				Region:      aws.String("us-east-1"),
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("MaxRetries=%d", tc.maxRetries), func(t *testing.T) {
+			cfg, err := GetAWSConfig(context.Background(), zap.NewNop(), &AWSSessionSettings{
+				Region:                "us-east-1",
+				NumberOfWorkers:       8,
+				RequestTimeoutSeconds: 30,
+				MaxRetries:            tc.maxRetries,
 			})
-
-			request, _ := client.AssumeRoleRequest(&sts.AssumeRoleInput{
-				// We aren't going to actually make the assume role call, we are just going
-				// to verify the headers are present once signed so the RoleArn and RoleSessionName
-				// arguments are irrelevant. Fill them out with something so the request is valid.
-				RoleArn:         aws.String("arn:aws:iam::012345678912:role/XXXXXXXX"),
-				RoleSessionName: aws.String("MockSession"),
-			})
-
-			// Headers are generated after the request is signed (but before it's sent)
-			err := request.Sign()
 			require.NoError(t, err)
-
-			headerSourceArn := request.HTTPRequest.Header.Get(SourceArnHeaderKey)
-			assert.Equal(t, tt.expectedHeaderArn, headerSourceArn)
-
-			headerSourceAccount := request.HTTPRequest.Header.Get(SourceAccountHeaderKey)
-			assert.Equal(t, tt.expectedHeaderAccount, headerSourceAccount)
+			assert.Equal(t, tc.wantRetryMaxAttempt, cfg.RetryMaxAttempts)
 		})
 	}
+}
+
+func TestGetAWSConfig_DoesNotMutateSettings(t *testing.T) {
+	// GetAWSConfig must not write back to the caller's *AWSSessionSettings.
+	staticCredsEnv(t)
+
+	settings := &AWSSessionSettings{
+		Region:                "us-east-1",
+		NumberOfWorkers:       8,
+		RequestTimeoutSeconds: 30,
+		MaxRetries:            2,
+		Profile:               "test-profile",
+		SharedCredentialsFile: []string{"/tmp/test-credentials"},
+		CertificateFilePath:   "testdata/public_amazon_cert.pem",
+		IMDSRetries:           3,
+		LocalMode:             false,
+		ResourceARN:           "arn:aws:resource",
+	}
+	before := *settings
+
+	_, err := GetAWSConfig(context.Background(), zap.NewNop(), settings)
+	require.NoError(t, err)
+
+	assert.Equal(t, before, *settings)
 }

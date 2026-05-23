@@ -1,3 +1,4 @@
+display_name: OAuth2 Client Credentials Authenticator Extension
 type: oauth2client
 
 status:
@@ -12,3 +13,8 @@ status:
 
 tests:
   config:
+  goleak:
+    ignore:
+      top:
+        - "net/http.(*persistConn).readLoop"
+        - "net/http.(*persistConn).writeLoop"

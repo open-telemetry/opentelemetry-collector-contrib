@@ -30,16 +30,15 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("iis.application_pool")
+			iisApplicationPoolAttrVal, ok := res.Attributes().Get("iis.application_pool")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "iis.application_pool-val", val.Str())
+				assert.Equal(t, "iis.application_pool-val", iisApplicationPoolAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("iis.site")
+			iisSiteAttrVal, ok := res.Attributes().Get("iis.site")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "iis.site-val", val.Str())
+				assert.Equal(t, "iis.site-val", iisSiteAttrVal.Str())
 			}
 		})
 	}

@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -28,31 +27,12 @@ type sfxEventClient struct {
 	accessTokenPassthrough bool
 }
 
-func (s *sfxEventClient) pushLogsData(ctx context.Context, ld plog.Logs) (int, error) {
-	rls := ld.ResourceLogs()
-	if rls.Len() == 0 {
-		return 0, nil
-	}
-
-	accessToken := s.retrieveAccessToken(ctx, rls.At(0))
-
-	var sfxEvents []*sfxpb.Event
-	numDroppedLogRecords := 0
-
-	for i := 0; i < rls.Len(); i++ {
-		rl := rls.At(i)
-		ills := rl.ScopeLogs()
-		for j := 0; j < ills.Len(); j++ {
-			sl := ills.At(j)
-			events, dropped := translation.LogRecordSliceToSignalFxV2(s.logger, sl.LogRecords(), rl.Resource().Attributes())
-			sfxEvents = append(sfxEvents, events...)
-			numDroppedLogRecords += dropped
-		}
-	}
+func (s *sfxEventClient) pushEvents(ctx context.Context, rl plog.ResourceLogs, sfxEvents []*sfxpb.Event) error {
+	accessToken := s.retrieveAccessToken(ctx, rl)
 
 	body, compressed, err := s.encodeBody(sfxEvents)
 	if err != nil {
-		return ld.LogRecordCount(), consumererror.NewPermanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	eventURL := *s.ingestURL
@@ -61,7 +41,7 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld plog.Logs) (int, e
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, eventURL.String(), body)
 	if err != nil {
-		return ld.LogRecordCount(), consumererror.NewPermanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
 	for k, v := range s.headers {
@@ -78,7 +58,7 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld plog.Logs) (int, e
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return ld.LogRecordCount(), err
+		return err
 	}
 
 	defer func() {
@@ -88,10 +68,10 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld plog.Logs) (int, e
 
 	err = splunk.HandleHTTPCode(resp)
 	if err != nil {
-		return ld.LogRecordCount(), err
+		return err
 	}
 
-	return numDroppedLogRecords, nil
+	return nil
 }
 
 func (s *sfxEventClient) encodeBody(events []*sfxpb.Event) (bodyReader io.Reader, compressed bool, err error) {

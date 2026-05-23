@@ -6,7 +6,9 @@ package azureauthextension
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
@@ -24,12 +26,28 @@ func TestNewAzureAuthenticator(t *testing.T) {
 
 func TestGetToken(t *testing.T) {
 	m := mockTokenCredential{}
-	m.On("GetToken").Return(azcore.AccessToken{Token: "test"}, nil)
+	m.On("GetToken", mock.Anything, mock.Anything).Return(azcore.AccessToken{Token: "test"}, nil)
 	auth := authenticator{
 		credential: &m,
 	}
 	_, err := auth.GetToken(t.Context(), policy.TokenRequestOptions{})
 	require.NoError(t, err)
+}
+
+func TestToken(t *testing.T) {
+	m := mockTokenCredential{}
+	m.On("GetToken", mock.Anything, mock.Anything).Return(
+		azcore.AccessToken{Token: "test", ExpiresOn: time.Now().Add(time.Hour)}, nil,
+	)
+
+	auth := authenticator{
+		credential: &m,
+	}
+
+	token, err := auth.Token(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "test", token.AccessToken)
+	m.AssertExpectations(t)
 }
 
 func TestGetHeaderValue(t *testing.T) {
@@ -124,7 +142,7 @@ func TestAuthenticate(t *testing.T) {
 	}
 
 	m := mockTokenCredential{}
-	m.On("GetToken").Return(azcore.AccessToken{Token: "test"}, nil)
+	m.On("GetToken", mock.Anything, mock.Anything).Return(azcore.AccessToken{Token: "test"}, nil)
 	auth := authenticator{
 		credential: &m,
 	}
@@ -148,23 +166,40 @@ func TestRoundTrip(t *testing.T) {
 		request     http.Request
 		expectedErr string
 	}{
-		"empty_headers": {
-			request:     http.Request{Header: nil},
-			expectedErr: "request headers are empty",
+		"empty_host_nil_url": {
+			request: http.Request{
+				Header: make(http.Header),
+			},
+			expectedErr: "unexpected nil request URL",
 		},
-		"missing_host_header": {
-			request:     http.Request{Header: map[string][]string{}},
-			expectedErr: `missing "host" header`,
+		"empty_host_empty_url_host": {
+			request: http.Request{
+				Header: make(http.Header),
+				URL:    &url.URL{},
+			},
+			expectedErr: "unexpected empty Host in request URL",
 		},
-		"valid_authorize": {
-			request: http.Request{Header: map[string][]string{
-				"Host": {"Test"},
-			}},
+		"valid_authorize_1": {
+			request: http.Request{
+				Header: make(http.Header),
+				URL: &url.URL{
+					Host: "test",
+				},
+			},
+		},
+		"valid_authorize_2": {
+			request: http.Request{
+				Header: make(http.Header),
+				Host:   "override",
+				URL: &url.URL{
+					Host: "test",
+				},
+			},
 		},
 	}
 
 	m := mockTokenCredential{}
-	m.On("GetToken").Return(azcore.AccessToken{Token: "test"}, nil)
+	m.On("GetToken", mock.Anything, mock.Anything).Return(azcore.AccessToken{Token: "test"}, nil)
 	auth := authenticator{
 		credential: &m,
 	}
@@ -191,8 +226,8 @@ type mockTokenCredential struct {
 
 var _ azcore.TokenCredential = (*mockTokenCredential)(nil)
 
-func (m *mockTokenCredential) GetToken(_ context.Context, _ policy.TokenRequestOptions) (azcore.AccessToken, error) {
-	args := m.Called()
+func (m *mockTokenCredential) GetToken(ctx context.Context, opts policy.TokenRequestOptions) (azcore.AccessToken, error) {
+	args := m.Called(ctx, opts)
 	return args.Get(0).(azcore.AccessToken), args.Error(1)
 }
 

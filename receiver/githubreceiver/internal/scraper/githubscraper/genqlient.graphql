@@ -111,10 +111,9 @@ query getPullRequestData(
   $prFirst: Int!
   # @genqlient(pointer: true)
   $prCursor: String
-  $prStates: [PullRequestState!]
 ) {
   repository(name: $name, owner: $owner) {
-    pullRequests(first: $prFirst, after: $prCursor, states: $prStates) {
+    pullRequests(first: $prFirst, after: $prCursor, states: [OPEN]) {
       # @genqlient(typename: "PullRequestNode")
       nodes {
         ... on PullRequest {
@@ -144,6 +143,49 @@ query getPullRequestData(
       pageInfo {
         hasNextPage
         endCursor
+      }
+    }
+  }
+}
+
+query getMergedPullRequestData(
+  $name: String!
+  $owner: String!
+  $prLast: Int!
+  # @genqlient(pointer: true)
+  $prCursor: String
+) {
+  repository(name: $name, owner: $owner) {
+    pullRequests(last: $prLast, before: $prCursor, states: [MERGED]) {
+      # @genqlient(typename: "MergedPullRequestNode")
+      nodes {
+        ... on PullRequest {
+          createdAt
+          merged
+          mergedAt
+          mergeCommit {
+            deployments(last: 1, orderBy: { field: CREATED_AT, direction: ASC }) {
+              nodes {
+                createdAt
+              }
+              totalCount
+            }
+          }
+        }
+        headRefName
+        # last: 1 returns the very first review
+        reviews(states: APPROVED, last: 1) {
+          totalCount
+          nodes {
+            ... on PullRequestReview {
+              createdAt
+            }
+          }
+        }
+      }
+      pageInfo {
+        hasPreviousPage
+        startCursor
       }
     }
   }

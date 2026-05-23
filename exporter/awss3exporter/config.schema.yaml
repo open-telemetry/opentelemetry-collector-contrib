@@ -1,0 +1,91 @@
+$defs:
+  marshaler_type:
+    type: string
+  resource_attrs_to_s_3:
+    description: ResourceAttrsToS3 defines the mapping of S3 uploading configuration values to resource attribute values.
+    type: object
+    properties:
+      s3_bucket:
+        description: S3Bucket indicates the mapping of the bucket name used for uploading to a specific resource attribute value.
+        type: string
+      s3_prefix:
+        description: S3Prefix indicates the mapping of the key (directory) prefix used for writing into the bucket to a specific resource attribute value.
+        type: string
+  s_3_uploader_config:
+    description: S3UploaderConfig contains aws s3 uploader related config to controls things like bucket, prefix, batching, connections, retries, etc.
+    type: object
+    properties:
+      acl:
+        description: ACL is the canned ACL to use when uploading objects.
+        type: string
+      compression:
+        description: 'Compression sets the algorithm used to process the payload before uploading to S3. Valid values are: `gzip`, `zstd`, or no value set.'
+        $ref: go.opentelemetry.io/collector/config/configcompression.type
+      disable_ssl:
+        description: DisableSLL forces communication to happen via HTTP instead of HTTPS.
+        type: boolean
+      endpoint:
+        description: Endpoint is the URL used for communicated with S3.
+        type: string
+      file_prefix:
+        description: FilePrefix is the filename prefix used for the file to avoid any potential collisions.
+        type: string
+      region:
+        type: string
+      retry_max_attempts:
+        description: RetryMaxAttempts specifies the maximum number of attempts for S3 client. Default is 3 (SDK default).
+        type: integer
+      retry_max_backoff:
+        description: RetryMaxBackoff specifies the maximum backoff delay for S3 client. Default is 20 seconds (SDK default).
+        type: string
+        format: duration
+      retry_mode:
+        description: 'RetryMode specifies the retry mode for S3 client, default is "standard". Valid values are: "standard", "adaptive", or "nop". "nop" will disable retry by setting the retryer to aws.NopRetryer.'
+        type: string
+      role_arn:
+        description: RoleArn is the role policy to use when interacting with S3
+        type: string
+      s3_base_prefix:
+        description: S3BasePrefix is the root key (directory) prefix used to write the file.
+        type: string
+      s3_bucket:
+        description: S3Bucket is the bucket name to be uploaded to.
+        type: string
+      s3_force_path_style:
+        description: S3ForcePathStyle sets the value for force path style.
+        type: boolean
+      s3_partition_format:
+        description: S3PartitionFormat is used to provide the rollup on how data is written. Uses [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) formatting.
+        type: string
+      s3_partition_timezone:
+        description: S3PartitionTimezone is used to provide timezone for partition time. Defaults to Local timezone.
+        type: string
+      s3_prefix:
+        description: S3Prefix is the key (directory) prefix to write to inside the bucket. Appended to S3BasePrefix if provided.
+        type: string
+      storage_class:
+        type: string
+      unique_key_func_name:
+        description: 'UniqueKeyFuncName specifies a function to use for generating a unique string as part of the S3 key. If unspecified, a default function will be used that generates a random string. Valid values are: "uuidv7"'
+        type: string
+description: Config contains the main configuration options for the s3 exporter
+type: object
+properties:
+  encoding:
+    description: Encoding to apply. If present, overrides the marshaler configuration option.
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
+  encoding_file_extension:
+    type: string
+  marshaler:
+    $ref: marshaler_type
+  resource_attrs_to_s3:
+    $ref: resource_attrs_to_s_3
+  s3uploader:
+    $ref: s_3_uploader_config
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config

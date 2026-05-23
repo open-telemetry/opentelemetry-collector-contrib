@@ -5,6 +5,8 @@ package k8sclusterreceiver
 
 import (
 	"context"
+	"os"
+	"slices"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -25,21 +27,28 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
+
+func init() {
+	// Disable WatchListClient feature gate for tests as fake clientset doesn't support bookmark events
+	// See: https://github.com/kubernetes/kubernetes/issues/129408
+	os.Setenv("KUBE_FEATURE_WatchListClient", "false")
+}
 
 type nopHost struct {
 	component.Host
 }
 
-func (nh *nopHost) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+func (*nopHost) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 
 func newNopHost() component.Host {
 	return &nopHost{
-		Host: componenttest.NewNopHost(),
+		componenttest.NewNopHost(),
 	}
 }
 
@@ -50,17 +59,17 @@ func TestReceiver(t *testing.T) {
 	}()
 
 	client := newFakeClientWithAllResources()
-	osQuotaClient := fakeQuota.NewSimpleClientset()
+	osQuotaClient := fakeQuota.NewClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "")
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, nil, component.MustNewID("foo"))
 
 	// Setup k8s resources.
 	numPods := 2
 	numNodes := 1
 	numQuotas := 2
 	numClusterQuotaMetrics := numQuotas * 4
-	createPods(t, client, numPods)
+	createPods(t, client, numPods, false)
 	createNodes(t, client, numNodes)
 	createClusterQuota(t, osQuotaClient, 2)
 
@@ -92,6 +101,42 @@ func TestReceiver(t *testing.T) {
 	require.NoError(t, r.Shutdown(ctx))
 }
 
+func TestReceiverWithLeaderElection(t *testing.T) {
+	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{
+		FakeLeaderElection: fakeLeaderElection,
+	}
+
+	client := newFakeClientWithAllResources()
+	osQuotaClient := fakeQuota.NewClientset()
+	sink := new(consumertest.MetricsSink)
+	tt := componenttest.NewTelemetry()
+	kr := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, nil, component.MustNewID("k8s_leader_elector"))
+
+	// Setup k8s resources.
+	numPods := 2
+
+	createPods(t, client, numPods, false)
+
+	err := kr.Start(t.Context(), fakeHost)
+	require.NoError(t, err)
+
+	// elected leader
+	fakeLeaderElection.InvokeOnLeading()
+
+	expectedNumMetrics := numPods
+	var initialDataPointCount int
+	require.Eventually(t, func() bool {
+		initialDataPointCount = sink.DataPointCount()
+		return initialDataPointCount == expectedNumMetrics
+	}, 20*time.Second, 100*time.Millisecond,
+		"metrics not collected")
+
+	// lost election
+	fakeLeaderElection.InvokeOnStopping()
+	require.NoError(t, kr.Shutdown(t.Context()))
+}
+
 func TestNamespacedReceiver(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	defer func() {
@@ -99,17 +144,17 @@ func TestNamespacedReceiver(t *testing.T) {
 	}()
 
 	client := newFakeClientWithAllResources()
-	osQuotaClient := fakeQuota.NewSimpleClientset()
+	osQuotaClient := fakeQuota.NewClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "test")
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, []string{"test"}, component.MustNewID("foo"))
 
 	// Setup k8s resources.
 	numPods := 2
 	numNodes := 1
 	numQuotas := 2
 
-	createPods(t, client, numPods)
+	createPods(t, client, numPods, false)
 	createNodes(t, client, numNodes)
 	createClusterQuota(t, osQuotaClient, numQuotas)
 
@@ -142,6 +187,56 @@ func TestNamespacedReceiver(t *testing.T) {
 	require.NoError(t, r.Shutdown(ctx))
 }
 
+func TestNamespacedReceiverWithMultipleNamespaces(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	defer func() {
+		require.NoError(t, tt.Shutdown(t.Context()))
+	}()
+
+	client := newFakeClientWithAllResources()
+	osQuotaClient := fakeQuota.NewClientset()
+	sink := new(consumertest.MetricsSink)
+
+	observedNamespaces := []string{"test-0", "test-1"}
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, observedNamespaces, component.MustNewID("foo"))
+
+	// Setup k8s resources.
+	numPods := 3
+	numNodes := 1
+	numQuotas := 1
+
+	createPods(t, client, numPods, true)
+	createNodes(t, client, numNodes)
+	createClusterQuota(t, osQuotaClient, numQuotas)
+
+	ctx := t.Context()
+	require.NoError(t, r.Start(ctx, newNopHost()))
+
+	require.Eventually(t, func() bool {
+		m := sink.AllMetrics()
+
+		if len(m) == 0 {
+			return false
+		}
+		gotNamespaces := []string{}
+		latestMetrics := m[len(m)-1].ResourceMetrics()
+
+		for i := 0; i < latestMetrics.Len(); i++ {
+			resource := latestMetrics.At(i).Resource()
+			gotNamespace, ok := resource.Attributes().Get("k8s.namespace.name")
+			if ok {
+				gotNamespaces = append(gotNamespaces, gotNamespace.AsString())
+			}
+		}
+		slices.Sort(gotNamespaces)
+
+		return slices.Equal(observedNamespaces, gotNamespaces)
+	}, 10*time.Second, 100*time.Millisecond,
+		"metrics not collected")
+
+	require.NoError(t, r.Shutdown(ctx))
+}
+
 func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	defer func() {
@@ -150,9 +245,9 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	client := newFakeClientWithAllResources()
 
 	// Mock initial cache sync timing out, using a small timeout.
-	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt, "")
+	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt, nil, component.MustNewID("foo"))
 
-	createPods(t, client, 1)
+	createPods(t, client, 1, false)
 
 	ctx := t.Context()
 	require.NoError(t, r.Start(ctx, newNopHost()))
@@ -169,15 +264,15 @@ func TestReceiverWithManyResources(t *testing.T) {
 	}()
 
 	client := newFakeClientWithAllResources()
-	osQuotaClient := fakeQuota.NewSimpleClientset()
+	osQuotaClient := fakeQuota.NewClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "")
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, nil, component.MustNewID("foo"))
 
 	numPods := 1000
 	numQuotas := 2
 	numExpectedMetrics := numPods + numQuotas*4
-	createPods(t, client, numPods)
+	createPods(t, client, numPods, false)
 	createClusterQuota(t, osQuotaClient, 2)
 
 	ctx := t.Context()
@@ -213,11 +308,11 @@ func TestReceiverWithMetadata(t *testing.T) {
 
 	logsConsumer := new(consumertest.LogsSink)
 
-	r := setupReceiver(client, nil, metricsConsumer, logsConsumer, 10*time.Second, tt, "")
+	r := setupReceiver(client, nil, metricsConsumer, logsConsumer, 10*time.Second, tt, nil, component.MustNewID("foo"))
 	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.
-	pods := createPods(t, client, 1)
+	pods := createPods(t, client, 1, false)
 
 	ctx := t.Context()
 	require.NoError(t, r.Start(ctx, newNopHostWithExporters()))
@@ -243,11 +338,10 @@ func TestReceiverWithMetadata(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond,
 		"metadata not collected")
 
-	// Must have 3 entity events: once for the add, followed by an update and
-	// then another update, which unlike metadata calls actually happens since
-	// even unchanged entities trigger an event.
+	// Must have 4 entity events: once for the add, followed by an update and
+	// then another update, and then a delete.
 	require.Eventually(t, func() bool {
-		return logsConsumer.LogRecordCount() == 3
+		return logsConsumer.LogRecordCount() == 4
 	}, 10*time.Second, 100*time.Millisecond,
 		"entity events not collected")
 
@@ -264,30 +358,29 @@ func getUpdatedPod(pod *corev1.Pod) any {
 				"key": "value",
 			},
 		},
+		Spec: corev1.PodSpec{
+			NodeName: "test-node",
+		},
 	}
 }
 
-func setupReceiver(
-	client *fake.Clientset,
-	osQuotaClient quotaclientset.Interface,
-	metricsConsumer consumer.Metrics,
-	logsConsumer consumer.Logs,
-	initialSyncTimeout time.Duration,
-	tt *componenttest.Telemetry,
-	namespace string,
-) *kubernetesReceiver {
+func setupReceiver(client *fake.Clientset, osQuotaClient quotaclientset.Interface, metricsConsumer consumer.Metrics, logsConsumer consumer.Logs, initialSyncTimeout time.Duration, tt *componenttest.Telemetry, namespaces []string, leaderElector component.ID) *kubernetesReceiver {
 	distribution := distributionKubernetes
 	if osQuotaClient != nil {
 		distribution = distributionOpenShift
 	}
-
 	config := &Config{
 		CollectionInterval:         1 * time.Second,
 		NodeConditionTypesToReport: []string{"Ready"},
 		AllocatableTypesToReport:   []string{"cpu", "memory"},
 		Distribution:               distribution,
 		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
-		Namespace:                  namespace,
+	}
+
+	config.Namespaces = namespaces
+
+	if leaderElector.Type().String() == "k8s_leader_elector" {
+		config.K8sLeaderElector = &leaderElector
 	}
 
 	r, _ := newReceiver(context.Background(), receiver.Settings{ID: component.NewID(metadata.Type), TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, config)
@@ -338,6 +431,12 @@ func newFakeClientWithAllResources() *fake.Clientset {
 			GroupVersion: "autoscaling/v2",
 			APIResources: []v1.APIResource{
 				gvkToAPIResource(gvk.HorizontalPodAutoscaler),
+			},
+		},
+		{
+			GroupVersion: "discovery.k8s.io/v1",
+			APIResources: []v1.APIResource{
+				gvkToAPIResource(gvk.EndpointSlice),
 			},
 		},
 	}

@@ -10,8 +10,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
 func TestSAPathInHostProcessContainer(t *testing.T) {
@@ -22,13 +20,13 @@ func TestSAPathInHostProcessContainer(t *testing.T) {
 	assert.Equal(t, "/var/run/secrets/kubernetes.io/serviceaccount/token", svcAcctTokenPath)
 
 	// Test SA cert and token when run inside container.
-	t.Setenv(containerinsight.RunInContainer, "True")
+	t.Setenv(RunInContainer, TrueValue)
 	updateSVCPath()
 	assert.Equal(t, "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt", svcAcctCACertPath)
 	assert.Equal(t, "/var/run/secrets/kubernetes.io/serviceaccount/token", svcAcctTokenPath)
 
 	// Test SA cert and token when run inside host process container.
-	t.Setenv(containerinsight.RunAsHostProcessContainer, "True")
+	t.Setenv(RunAsHostProcessContainer, TrueValue)
 	t.Setenv("CONTAINER_SANDBOX_MOUNT_POINT", "test123456")
 	updateSVCPath()
 	assert.Equal(t, "test123456/var/run/secrets/kubernetes.io/serviceaccount/ca.crt", svcAcctCACertPath)

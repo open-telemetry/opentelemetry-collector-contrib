@@ -1,0 +1,4 @@
+description: Config defines the configuration for an AWS X-Ray proxy.
+type: object
+allOf:
+  - $ref: /internal/aws/proxy.config

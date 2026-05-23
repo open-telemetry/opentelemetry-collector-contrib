@@ -7,10 +7,13 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"context"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,12 +34,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver/internal/metadata"
 )
 
-func sendToCollector(endpoint string, contentType string, contentEncoding string, body []byte) error {
+func sendToCollector(endpoint, contentType, contentEncoding string, body []byte) error {
 	var buf bytes.Buffer
 
 	switch contentEncoding {
@@ -92,7 +94,7 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 		Protocols: Protocols{
 			GRPC: &configgrpc.ServerConfig{
 				NetAddr: confignet.AddrConfig{
-					Endpoint:  testutil.GetAvailableLocalAddress(t),
+					Endpoint:  "localhost:0",
 					Transport: confignet.TransportTypeTCP,
 				},
 			},
@@ -105,20 +107,26 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 	lr, err := newLokiReceiver(config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, lr.Shutdown(t.Context())) })
+	ctx := t.Context()
 
-	conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, lr.Shutdown(context.WithoutCancel(ctx)))
+	})
+
+	conn, err := grpc.NewClient(lr.grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	return conn, sink
 }
 
 func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
-	addr := testutil.GetAvailableLocalAddress(t)
 	config := &Config{
 		Protocols: Protocols{
 			HTTP: &confighttp.ServerConfig{
-				Endpoint: addr,
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+					Endpoint:  "localhost:0",
+				},
 			},
 		},
 		KeepTimestamp: true,
@@ -129,10 +137,14 @@ func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
 	lr, err := newLokiReceiver(config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, lr.Shutdown(t.Context())) })
+	ctx := t.Context()
 
-	return addr, sink
+	require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, lr.Shutdown(context.WithoutCancel(ctx)))
+	})
+
+	return lr.httpAddr, sink
 }
 
 func TestSendingProtobufPushRequestToHTTPEndpoint(t *testing.T) {
@@ -161,7 +173,7 @@ func TestSendingProtobufPushRequestToHTTPEndpoint(t *testing.T) {
 					},
 				},
 			},
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -207,7 +219,7 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			contentEncoding: "",
 			contentType:     jsonContentType,
 			body:            []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ], [ "1676888497000000000", "logline 2" ]]}]}`),
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -230,7 +242,7 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			contentEncoding: "snappy",
 			contentType:     jsonContentType,
 			body:            []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ], [ "1676888497000000000", "logline 2" ]]}]}`),
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -253,7 +265,7 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			contentEncoding: "gzip",
 			contentType:     jsonContentType,
 			body:            []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ], [ "1676888497000000000", "logline 2" ]]}]}`),
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -276,7 +288,7 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			contentEncoding: "deflate",
 			contentType:     jsonContentType,
 			body:            []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ], [ "1676888497000000000", "logline 2" ]]}]}`),
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -340,7 +352,7 @@ func TestSendingPushRequestToGRPCEndpoint(t *testing.T) {
 					},
 				},
 			},
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -386,17 +398,19 @@ func TestExpectedStatus(t *testing.T) {
 	}
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
-			httpAddr := testutil.GetAvailableLocalAddress(t)
 			config := &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
-							Endpoint:  testutil.GetAvailableLocalAddress(t),
+							Endpoint:  "localhost:0",
 							Transport: confignet.TransportTypeTCP,
 						},
 					},
 					HTTP: &confighttp.ServerConfig{
-						Endpoint: httpAddr,
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:0",
+						},
 					},
 				},
 				KeepTimestamp: true,
@@ -406,9 +420,13 @@ func TestExpectedStatus(t *testing.T) {
 			lr, err := newLokiReceiver(config, consumer, receivertest.NewNopSettings(metadata.Type))
 			require.NoError(t, err)
 
-			require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
-			t.Cleanup(func() { require.NoError(t, lr.Shutdown(t.Context())) })
-			conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			ctx := t.Context()
+
+			require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, lr.Shutdown(ctx))
+			}()
+			conn, err := grpc.NewClient(lr.grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			require.NoError(t, err)
 			defer conn.Close()
 			grpcClient := push.NewPusherClient(conn)
@@ -430,20 +448,62 @@ func TestExpectedStatus(t *testing.T) {
 			_, err = grpcClient.Push(t.Context(), body)
 			require.EqualError(t, err, tt.expectedGrpcError)
 
-			_, port, _ := net.SplitHostPort(httpAddr)
+			_, port, _ := net.SplitHostPort(lr.httpAddr)
 			collectorAddr := fmt.Sprintf("http://localhost:%s/loki/api/v1/push", port)
 			require.EqualError(t, sendToCollector(collectorAddr, "application/json", "", []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ]]}]}`)), tt.expectedHTTPError)
 		})
 	}
 }
 
-type Log struct {
+func TestNewLokiReceiver_SupportedContentTypeWithCharset(t *testing.T) {
+	jsonPayload := `{
+		"streams": [
+			{
+				"stream": {
+					"job": "test"
+				},
+				"values": [
+					["1752000000000000000", "This is a log line"]
+				]
+			}
+		]
+	}`
+
+	cfg := &Config{
+		Protocols: Protocols{
+			HTTP: &confighttp.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+					Endpoint:  "localhost:0",
+				},
+			},
+		},
+	}
+	consumer := consumertest.NewNop()
+	settings := receivertest.NewNopSettings(metadata.Type)
+	receiver, err := newLokiReceiver(cfg, consumer, settings)
+	require.NoError(t, err)
+	require.NotNil(t, receiver)
+
+	req := httptest.NewRequest(http.MethodPost, "/loki/api/v1/push", strings.NewReader(jsonPayload))
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	w := httptest.NewRecorder()
+
+	receiver.httpMux.ServeHTTP(w, req)
+
+	resp := w.Result()
+	defer resp.Body.Close()
+
+	require.Equal(t, 204, resp.StatusCode)
+}
+
+type logRecord struct {
 	Timestamp  int64
 	Body       pcommon.Value
 	Attributes map[string]any
 }
 
-func generateLogs(logs []Log) plog.Logs {
+func generateLogs(logs []logRecord) plog.Logs {
 	ld := plog.NewLogs()
 	logSlice := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 

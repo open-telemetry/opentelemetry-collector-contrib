@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Deprecated [v0.146.0]:  Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/jsonparser" instead.
 package json // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
 
 import (
@@ -22,7 +23,7 @@ type Parser struct {
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return p.ProcessBatchWith(ctx, entries, p.Process)
+	return p.ProcessBatchWith(ctx, entries, p.parse)
 }
 
 // Process will parse an entry for JSON.

@@ -6,6 +6,7 @@ package filelogreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -14,9 +15,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver/internal/metadata"
 )
 
-// NewFactory creates a factory for filelog receiver
+// NewFactory creates a factory for file_log receiver
 func NewFactory() receiver.Factory {
-	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability)
+	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability,
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 // ReceiverType implements stanza.LogReceiverType
@@ -24,12 +27,12 @@ func NewFactory() receiver.Factory {
 type ReceiverType struct{}
 
 // Type is the receiver type
-func (f ReceiverType) Type() component.Type {
+func (ReceiverType) Type() component.Type {
 	return metadata.Type
 }
 
 // CreateDefaultConfig creates a config with type and version
-func (f ReceiverType) CreateDefaultConfig() component.Config {
+func (ReceiverType) CreateDefaultConfig() component.Config {
 	return createDefaultConfig()
 }
 
@@ -44,17 +47,20 @@ func createDefaultConfig() *FileLogConfig {
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
+func (ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*FileLogConfig).BaseConfig
 }
 
-// FileLogConfig defines configuration for the filelog receiver
+// FileLogConfig defines configuration for the file_log receiver
 type FileLogConfig struct {
 	InputConfig        file.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // InputConfig unmarshals the input operator
-func (f ReceiverType) InputConfig(cfg component.Config) operator.Config {
+func (ReceiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(&cfg.(*FileLogConfig).InputConfig)
 }

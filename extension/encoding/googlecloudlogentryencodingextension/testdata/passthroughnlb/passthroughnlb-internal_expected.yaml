@@ -1,0 +1,98 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: elastic-logstash
+        - key: cloud.resource_id
+          value:
+            stringValue: loadbalancing.googleapis.com%2Fflows
+        - key: gcp.resource_type
+          value:
+            stringValue: loadbalancing.googleapis.com/InternalNetworkLoadBalancerRule
+        - key: gcp.label.backend_subnetwork_name
+          value:
+            stringValue: estolfo-nlb-passthrough-subnet
+        - key: gcp.label.backend_group_type
+          value:
+            stringValue: INSTANCE_GROUP
+        - key: gcp.label.backend_target_type
+          value:
+            stringValue: BACKEND_SERVICE
+        - key: gcp.label.project_id
+          value:
+            stringValue: elastic-logstash
+        - key: gcp.label.region
+          value:
+            stringValue: europe-west3
+        - key: gcp.label.backend_group_scope
+          value:
+            stringValue: ZONE
+        - key: gcp.label.backend_zone
+          value:
+            stringValue: europe-west3-a
+        - key: gcp.label.backend_group_name
+          value:
+            stringValue: estolfo-nlb-passthrough-backend-mig
+        - key: gcp.label.forwarding_rule_name
+          value:
+            stringValue: estolfo-nlb-passthrough-forwarding-rule
+        - key: gcp.label.backend_network_name
+          value:
+            stringValue: estolfo-nlb-passthrough-network
+        - key: gcp.label.backend_service_name
+          value:
+            stringValue: estolfo-nlb-passthrough-backend-service
+        - key: gcp.label.primary_target_pool
+          value:
+            stringValue: "xx"
+        - key: gcp.label.target_pool
+          value:
+            stringValue: "xx"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: sbjsimg21w91yt
+              - key: client.address
+                value:
+                  stringValue: 78.153.140.203
+              - key: client.port
+                value:
+                  intValue: "35144"
+              - key: server.address
+                value:
+                  stringValue: 35.207.166.31
+              - key: server.port
+                value:
+                  intValue: "80"
+              - key: network.transport
+                value:
+                  stringValue: tcp
+              - key: gcp.load_balancing.passthrough_nlb.packets.start_time
+                value:
+                  stringValue: "2025-12-01T07:57:05.73459905Z"
+              - key: gcp.load_balancing.passthrough_nlb.packets.end_time
+                value:
+                  stringValue: "2025-12-01T07:57:05.854664955Z"
+              - key: gcp.load_balancing.passthrough_nlb.bytes_sent
+                value:
+                  intValue: "1232"
+              - key: gcp.load_balancing.passthrough_nlb.packets_received
+                value:
+                  intValue: "12"
+              - key: gcp.load_balancing.passthrough_nlb.packets_sent
+                value:
+                  intValue: "12"
+              - key: gcp.load_balancing.passthrough_nlb.rtt
+                value:
+                  doubleValue: 0.063198476
+            body: {}
+            observedTimeUnixNano: "1764575832459072344"
+            timeUnixNano: "1764575825854664955"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: gcp.passthrough-nlb

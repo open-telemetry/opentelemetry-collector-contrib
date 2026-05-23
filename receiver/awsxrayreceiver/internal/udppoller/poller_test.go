@@ -169,10 +169,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 
 		return strings.Contains(lastEntry.Message, "Failed to split segment header and body") &&
 			errors.As(lastEntry.Context[0].Interface.(error), &errRecv) &&
-			strings.Compare(
-				errors.Unwrap(
-					lastEntry.Context[0].Interface.(error)).Error(),
-				fmt.Sprintf("unable to split incoming data as header and segment, incoming bytes: %v", rawData)) == 0
+			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == fmt.Sprintf("unable to split incoming data as header and segment, incoming bytes: %v", rawData)
 	}, 10*time.Second, 5*time.Millisecond, "poller should reject segment")
 
 	assertReceiverTraces(t, tt, receiverID, 0, 1)
@@ -244,7 +241,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 	randString, _ := uuid.NewRandom()
 	// the header (i.e. the portion before \n) is invalid
 	err := writePacket(t, addr,
-		fmt.Sprintf(`{"format": "%s", "version": 1}`, randString.String())+"\nBody")
+		fmt.Sprintf(`{"format": "%s", "version": 1}`, randString.String())+"\nBody") //nolint:gocritic //sprintfQuotedString for JSON
 	assert.NoError(t, err, "cannot write packet in the TestJsonInvalidHeader case")
 	assert.Eventuallyf(t, func() bool {
 		var errRecv *internalErr.ErrRecoverable
@@ -387,7 +384,7 @@ func (m *mockNetError) Timeout() bool {
 	return m.timeout
 }
 
-func (m *mockNetError) Temporary() bool {
+func (*mockNetError) Temporary() bool {
 	return false
 }
 
@@ -419,7 +416,7 @@ func (m *mockSocketConn) Read(b []byte) (int, error) {
 	return copied, m.expectedError
 }
 
-func (m *mockSocketConn) Close() error { return nil }
+func (*mockSocketConn) Close() error { return nil }
 
 func createAndOptionallyStartPoller(
 	t *testing.T,
@@ -482,13 +479,17 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 }
 
 func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, accepted, refused int64) {
-	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
-	assert.NoError(t, err)
+	var got metricdata.Metrics
+	var err error
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		got, err = tt.GetMetric("otelcol_receiver_accepted_spans")
+		assert.NoError(c, err)
+	}, 5*time.Second, 100*time.Millisecond)
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_accepted_spans",
-			Description: "Number of spans successfully pushed into the pipeline. [alpha]",
-			Unit:        "{spans}",
+			Description: "Number of spans successfully pushed into the pipeline. [Alpha]",
+			Unit:        "{span}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -503,13 +504,15 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 			},
 		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-	got, err = tt.GetMetric("otelcol_receiver_refused_spans")
-	assert.NoError(t, err)
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		got, err = tt.GetMetric("otelcol_receiver_refused_spans")
+		assert.NoError(c, err)
+	}, 5*time.Second, 100*time.Millisecond)
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_refused_spans",
-			Description: "Number of spans that could not be pushed into the pipeline. [alpha]",
-			Unit:        "{spans}",
+			Description: "Number of spans that could not be pushed into the pipeline. [Alpha]",
+			Unit:        "{span}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,

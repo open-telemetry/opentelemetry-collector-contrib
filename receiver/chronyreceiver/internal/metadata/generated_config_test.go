@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -25,13 +26,27 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NtpFrequencyOffset: MetricConfig{Enabled: true},
-					NtpSkew:            MetricConfig{Enabled: true},
-					NtpStratum:         MetricConfig{Enabled: true},
-					NtpTimeCorrection:  MetricConfig{Enabled: true},
-					NtpTimeLastOffset:  MetricConfig{Enabled: true},
-					NtpTimeRmsOffset:   MetricConfig{Enabled: true},
-					NtpTimeRootDelay:   MetricConfig{Enabled: true},
+					NtpFrequencyOffset: MetricConfig{
+						Enabled: true,
+					},
+					NtpSkew: MetricConfig{
+						Enabled: true,
+					},
+					NtpStratum: MetricConfig{
+						Enabled: true,
+					},
+					NtpTimeCorrection: MetricConfig{
+						Enabled: true,
+					},
+					NtpTimeLastOffset: MetricConfig{
+						Enabled: true,
+					},
+					NtpTimeRmsOffset: MetricConfig{
+						Enabled: true,
+					},
+					NtpTimeRootDelay: MetricConfig{
+						Enabled: true,
+					},
 				},
 			},
 		},
@@ -39,13 +54,27 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NtpFrequencyOffset: MetricConfig{Enabled: false},
-					NtpSkew:            MetricConfig{Enabled: false},
-					NtpStratum:         MetricConfig{Enabled: false},
-					NtpTimeCorrection:  MetricConfig{Enabled: false},
-					NtpTimeLastOffset:  MetricConfig{Enabled: false},
-					NtpTimeRmsOffset:   MetricConfig{Enabled: false},
-					NtpTimeRootDelay:   MetricConfig{Enabled: false},
+					NtpFrequencyOffset: MetricConfig{
+						Enabled: false,
+					},
+					NtpSkew: MetricConfig{
+						Enabled: false,
+					},
+					NtpStratum: MetricConfig{
+						Enabled: false,
+					},
+					NtpTimeCorrection: MetricConfig{
+						Enabled: false,
+					},
+					NtpTimeLastOffset: MetricConfig{
+						Enabled: false,
+					},
+					NtpTimeRmsOffset: MetricConfig{
+						Enabled: false,
+					},
+					NtpTimeRootDelay: MetricConfig{
+						Enabled: false,
+					},
 				},
 			},
 		},
@@ -65,6 +94,6 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

@@ -26,7 +26,7 @@ func FuzzProcessTraces(f *testing.F) {
 			proc := &cloudNamespaceProcessor{}
 			_ = proc.processTraces(traces)
 		case 2:
-			proc := &NestingProcessor{}
+			proc := &nestingProcessor{}
 			_ = proc.processTraces(traces)
 		case 3:
 			proc := &translateAttributesProcessor{}
@@ -50,7 +50,7 @@ func FuzzProcessLogs(f *testing.F) {
 			proc := &cloudNamespaceProcessor{}
 			_ = proc.processLogs(logs)
 		case 2:
-			proc := &NestingProcessor{}
+			proc := &nestingProcessor{}
 			_ = proc.processLogs(logs)
 		case 3:
 			proc := &translateAttributesProcessor{}
@@ -74,7 +74,7 @@ func FuzzProcessMetrics(f *testing.F) {
 			proc := &cloudNamespaceProcessor{}
 			_ = proc.processMetrics(metrics)
 		case 2:
-			proc := &NestingProcessor{}
+			proc := &nestingProcessor{}
 			_ = proc.processMetrics(metrics)
 		case 3:
 			proc := &translateAttributesProcessor{}

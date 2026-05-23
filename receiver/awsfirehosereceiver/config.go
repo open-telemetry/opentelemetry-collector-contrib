@@ -16,11 +16,15 @@ var errRecordTypeEncodingSet = errors.New("record_type must not be set when enco
 type Config struct {
 	// ServerConfig is used to set up the Firehose delivery
 	// endpoint. The Firehose delivery stream expects an HTTPS
-	// endpoint, so TLSSettings must be used to enable that.
+	// endpoint, so TLSs must be used to enable that.
 	confighttp.ServerConfig `mapstructure:",squash"`
 	// Encoding identifies the encoding of records received from
-	// Firehose. Defaults to telemetry-specific encodings: "cwlog"
-	// for logs, and "cwmetrics" for metrics.
+	// Firehose.
+	//
+	// Defaults to telemetry-specific encodings: "cwlog" for logs,
+	// and "cwmetrics" for metrics. This default behavior is
+	// deprecated as of v0.149.0, and in the future it will be
+	// required to specify the encoding explicitly.
 	Encoding string `mapstructure:"encoding"`
 	// RecordType is an alias for Encoding for backwards compatibility.
 	// It is an error to specify both encoding and record_type.
@@ -36,7 +40,7 @@ type Config struct {
 // Validate checks that the endpoint and record type exist and
 // are valid.
 func (c *Config) Validate() error {
-	if c.Endpoint == "" {
+	if c.NetAddr.Endpoint == "" {
 		return errors.New("must specify endpoint")
 	}
 	if c.RecordType != "" && c.Encoding != "" {

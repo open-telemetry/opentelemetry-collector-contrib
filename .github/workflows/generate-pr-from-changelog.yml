@@ -1,0 +1,40 @@
+# This workflow generates a PR title and body from changelog entry YAML files
+# when the PR title contains "as per changelog" (case-insensitive).
+#
+# This allows contributors to write their changelog entry first, then simply
+# set the PR title to "as per changelog" to have the PR information auto-populated.
+#
+# See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42123
+
+name: 'Generate PR from changelog'
+on:
+  pull_request_target:
+    types:
+      - opened
+      - edited
+
+permissions: read-all
+
+jobs:
+  generate-pr-from-changelog:
+    permissions:
+      pull-requests: write
+      contents: read
+    runs-on: ubuntu-24.04
+    if: >-
+      github.actor != 'dependabot[bot]'
+      && github.repository_owner == 'open-telemetry'
+      && (contains(github.event.pull_request.title, 'as per changelog')
+        || contains(github.event.pull_request.title, 'as per chloggen'))
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: Generate PR title and body from changelog
+        run: ./.github/workflows/scripts/generate-pr-from-changelog.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.number }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}

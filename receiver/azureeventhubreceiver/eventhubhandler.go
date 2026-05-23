@@ -6,8 +6,10 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"errors"
+	"sync"
+	"time"
 
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver"
@@ -17,46 +19,52 @@ import (
 )
 
 type hubWrapper interface {
-	GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error)
-	Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (listerHandleWrapper, error)
+	GetRuntimeInformation(ctx context.Context) (*hubRuntimeInfo, error)
+	Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool, logger *zap.Logger) (listenerHandleWrapper, error)
 	Close(ctx context.Context) error
 }
 
-type hubWrapperImpl struct {
-	hub *eventhub.Hub
-}
-
-func (h *hubWrapperImpl) GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error) {
-	return h.hub.GetRuntimeInformation(ctx)
-}
-
-func (h *hubWrapperImpl) Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (listerHandleWrapper, error) {
-	l, err := h.hub.Receive(ctx, partitionID, handler, opts...)
-	return l, err
-}
-
-func (h *hubWrapperImpl) Close(ctx context.Context) error {
-	return h.hub.Close(ctx)
-}
-
-type listerHandleWrapper interface {
+type listenerHandleWrapper interface {
 	Done() <-chan struct{}
 	Err() error
 }
 
+type hubHandler func(ctx context.Context, event *azureEvent) error
+
+type hubRuntimeInfo struct {
+	Path           string
+	CreatedAt      time.Time
+	PartitionCount int
+	PartitionIDs   []string
+}
+
+var errNoConfig = errors.New("Configuration error, hub not accessible")
+
 type eventhubHandler struct {
-	hub           hubWrapper
-	dataConsumer  dataConsumer
-	config        *Config
-	settings      receiver.Settings
-	cancel        context.CancelFunc
-	storageClient storage.Client
+	hub            hubWrapper
+	dataConsumer   dataConsumer
+	config         *Config
+	settings       receiver.Settings
+	cancel         context.CancelFunc
+	storageClient  storage.Client
+	consumerClient *azeventhubs.ConsumerClient // non-nil when in distributed mode
+	wg             sync.WaitGroup              // tracks goroutines spawned by runDistributed
+}
+
+func shouldInitializeStorageClient(storageClient storage.Client, storageID *component.ID) bool {
+	return storageClient == nil && storageID != nil
 }
 
 func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	ctx, h.cancel = context.WithCancel(ctx)
+	if h.config.BlobCheckpointStore != nil {
+		return h.runDistributed(ctx, host)
+	}
+	return h.runSingle(ctx, host)
+}
 
-	if h.storageClient == nil { // set manually for testing.
+func (h *eventhubHandler) runSingle(ctx context.Context, host component.Host) error {
+	if shouldInitializeStorageClient(h.storageClient, h.config.StorageID) { // set manually for testing.
 		storageClient, err := adapter.GetStorageClient(ctx, host, h.config.StorageID, h.settings.ID)
 		if err != nil {
 			h.settings.Logger.Debug("Error connecting to Storage", zap.Error(err))
@@ -66,12 +74,11 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	}
 
 	if h.hub == nil { // set manually for testing.
-		hub, newHubErr := eventhub.NewHubFromConnectionString(h.config.Connection, eventhub.HubWithOffsetPersistence(&storageCheckpointPersister{storageClient: h.storageClient}))
-		if newHubErr != nil {
-			h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
-			return newHubErr
+		newHub, err := newAzeventhubWrapper(h, host)
+		if err != nil {
+			return err
 		}
-		h.hub = &hubWrapperImpl{hub: hub}
+		h.hub = newHub
 	}
 
 	if h.config.Partition != "" {
@@ -100,17 +107,42 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	return errors.Join(errs...)
 }
 
+func (h *eventhubHandler) runDistributed(ctx context.Context, host component.Host) error {
+	h.settings.Logger.Info("Starting distributed Event Hub consumption with blob checkpoint store")
+
+	processor, consumerClient, err := createProcessor(h.config, host, h.settings.Logger)
+	if err != nil {
+		return err
+	}
+	h.consumerClient = consumerClient
+
+	// Dispatch partition clients as the Processor assigns them.
+	h.wg.Go(func() {
+		for {
+			partitionClient := processor.NextPartitionClient(ctx)
+			if partitionClient == nil {
+				// Processor has stopped
+				return
+			}
+			h.wg.Go(func() {
+				processPartitionEvents(ctx, partitionClient, h.newMessageHandler, h.config, h.settings.Logger)
+			})
+		}
+	})
+
+	// Run the processor's load balancer in a background goroutine.
+	// It returns when the context is cancelled.
+	h.wg.Go(func() {
+		if err := processor.Run(ctx); err != nil {
+			h.settings.Logger.Error("Processor exited with error", zap.Error(err))
+		}
+	})
+
+	return nil
+}
+
 func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID string, applyOffset bool) error {
-	receiverOptions := []eventhub.ReceiveOption{}
-	if applyOffset && h.config.Offset != "" {
-		receiverOptions = append(receiverOptions, eventhub.ReceiveWithStartingOffset(h.config.Offset))
-	}
-
-	if h.config.ConsumerGroup != "" {
-		receiverOptions = append(receiverOptions, eventhub.ReceiveWithConsumerGroup(h.config.ConsumerGroup))
-	}
-
-	handle, err := h.hub.Receive(ctx, partitionID, h.newMessageHandler, receiverOptions...)
+	handle, err := h.hub.Receive(ctx, partitionID, h.newMessageHandler, applyOffset, h.settings.Logger)
 	if err != nil {
 		return err
 	}
@@ -125,7 +157,7 @@ func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID str
 	return nil
 }
 
-func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *eventhub.Event) error {
+func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *azureEvent) error {
 	err := h.dataConsumer.consume(ctx, event)
 	if err != nil {
 		h.settings.Logger.Error("error decoding message", zap.Error(err))
@@ -153,6 +185,17 @@ func (h *eventhubHandler) close(ctx context.Context) error {
 	}
 	if h.cancel != nil {
 		h.cancel()
+	}
+
+	// Wait for goroutines spawned by runDistributed to finish before closing
+	// the consumer client they depend on.
+	h.wg.Wait()
+
+	if h.consumerClient != nil {
+		if err := h.consumerClient.Close(ctx); err != nil {
+			errs = errors.Join(errs, err)
+		}
+		h.consumerClient = nil
 	}
 
 	return errs

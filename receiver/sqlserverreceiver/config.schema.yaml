@@ -1,0 +1,47 @@
+$defs:
+  query_sample:
+    type: object
+    properties:
+      max_rows_per_query:
+        type: integer
+        x-customType: uint64
+  top_query_collection:
+    type: object
+    properties:
+      collection_interval:
+        type: string
+        format: duration
+      lookback_time:
+        description: Enabled enables the collection of the top queries by the execution time. It will collect the top N queries based on totalElapsedTimeDiffs during the last collection interval. The query statement will also be reported, hence, it is not ideal to send it as a metric. Hence we are reporting them as logs. The `N` is configured via `TopQueryCount`
+        type: string
+        format: duration
+      max_query_sample_count:
+        type: integer
+        x-customType: uint
+      top_query_count:
+        type: integer
+        x-customType: uint
+description: Config defines configuration for a sqlserver receiver.
+type: object
+properties:
+  computer_name:
+    type: string
+  datasource:
+    type: string
+  instance_name:
+    type: string
+  password:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  port:
+    type: integer
+    x-customType: uint
+  server:
+    type: string
+  username:
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: ./internal/metadata.metrics_builder_config
+  - $ref: ./internal/metadata.logs_builder_config
+  - $ref: top_query_collection
+  - $ref: query_sample

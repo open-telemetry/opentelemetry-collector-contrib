@@ -3,77 +3,115 @@
 
 package tracking // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 
-import "go.opentelemetry.io/collector/pdata/pcommon"
+import (
+	"slices"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+)
 
 type ValuePoint struct {
-	ObservedTimestamp pcommon.Timestamp
-	FloatValue        float64
-	IntValue          int64
-	HistogramValue    *HistogramPoint
-	ExpHistogramValue *ExpHistogramPoint
+	ObservedTimestamp         pcommon.Timestamp
+	FloatValue                float64
+	IntValue                  int64
+	HistogramValue            *HistogramPoint
+	ExponentialHistogramValue *ExponentialHistogramPoint
 }
 
 type HistogramPoint struct {
-	Count   uint64
-	Sum     float64
-	Buckets []uint64
+	Count        uint64
+	Sum          float64
+	BucketBounds []float64
+	BucketCounts []uint64
 }
 
 func (point *HistogramPoint) Clone() HistogramPoint {
-	bucketValues := make([]uint64, len(point.Buckets))
-	copy(bucketValues, point.Buckets)
-
 	return HistogramPoint{
-		Count:   point.Count,
-		Sum:     point.Sum,
-		Buckets: bucketValues,
+		Count:        point.Count,
+		Sum:          point.Sum,
+		BucketBounds: slices.Clone(point.BucketBounds),
+		BucketCounts: slices.Clone(point.BucketCounts),
 	}
 }
 
-type ExpHistogramPoint struct {
-	Scale               int32
-	NegativeOffsetIndex int32
-	PositiveOffsetIndex int32
-	ZeroThreshold       float64
-	Count               uint64
-	Sum                 float64
-	ZeroCount           uint64
-	PosBuckets          []uint64
-	NegBuckets          []uint64
+type ExponentialBuckets struct {
+	Offset       int32
+	BucketCounts []uint64
 }
 
-func (point *ExpHistogramPoint) Clone() ExpHistogramPoint {
-	posBucketValues := make([]uint64, len(point.PosBuckets))
-	copy(posBucketValues, point.PosBuckets)
-	negBucketValues := make([]uint64, len(point.NegBuckets))
-	copy(negBucketValues, point.NegBuckets)
-
-	return ExpHistogramPoint{
-		Count:               point.Count,
-		Sum:                 point.Sum,
-		Scale:               point.Scale,
-		ZeroCount:           point.ZeroCount,
-		ZeroThreshold:       point.ZeroThreshold,
-		PositiveOffsetIndex: point.PositiveOffsetIndex,
-		NegativeOffsetIndex: point.NegativeOffsetIndex,
-		PosBuckets:          posBucketValues,
-		NegBuckets:          negBucketValues,
+// Coarsen reduces an exponential histogram's scale by bitsLost,
+// which amounts to dividing bucket indices by 2**bitsLost and merging buckets with the same resulting index.
+func (buckets *ExponentialBuckets) Coarsen(bitsLost int32) (out ExponentialBuckets) {
+	out.Offset = buckets.Offset >> bitsLost
+	if len(buckets.BucketCounts) > 0 {
+		maxBucket := buckets.Offset + int32(len(buckets.BucketCounts)) - 1
+		out.BucketCounts = make([]uint64, (maxBucket>>bitsLost)-out.Offset+1)
+		for index, bucketCount := range buckets.BucketCounts {
+			newIndex := ((buckets.Offset + int32(index)) >> bitsLost) - out.Offset
+			out.BucketCounts[newIndex] += bucketCount
+		}
 	}
+	return out
 }
 
-func (point *ExpHistogramPoint) isCompatible(other *ExpHistogramPoint) bool {
-	// NOTE: this constraint could be relaxed but requires changes to tracker to handle perfect subsetting and handling
-	// index offsetting
-	return point.Scale == other.Scale &&
-		point.PositiveOffsetIndex == other.PositiveOffsetIndex &&
-		point.NegativeOffsetIndex == other.NegativeOffsetIndex &&
-		point.ZeroThreshold == other.ZeroThreshold
+// TrimZeros removes buckets below a given bucket index, returning the sum of their counts.
+// This is used when increasing the zero threshold: the removed count will be added to the zero count.
+func (buckets *ExponentialBuckets) TrimZeros(thresholdBucket int32) uint64 {
+	thresholdIndex := thresholdBucket - buckets.Offset
+	if thresholdIndex < 0 {
+		return 0
+	}
+	trimmed := min(int(thresholdIndex)+1, len(buckets.BucketCounts))
+	var zeroCount uint64
+	for _, bucketCount := range buckets.BucketCounts[:trimmed] {
+		zeroCount += bucketCount
+	}
+	buckets.BucketCounts = buckets.BucketCounts[trimmed:]
+	buckets.Offset += int32(trimmed)
+	return zeroCount
 }
 
-func (point *ExpHistogramPoint) isReset(prev *ExpHistogramPoint) bool {
-	// A drop in count or decrease in number of buckets indicates a reset
-	return point.Count < prev.Count ||
-		point.ZeroCount < prev.ZeroCount ||
-		len(point.PosBuckets) < len(prev.PosBuckets) ||
-		len(point.NegBuckets) < len(prev.NegBuckets)
+// Diff computes the delta between two sets of buckets with the same scale.
+func (buckets *ExponentialBuckets) Diff(old *ExponentialBuckets) (out ExponentialBuckets) {
+	for index, bucketCount := range buckets.BucketCounts {
+		if bucketCount == 0 {
+			continue
+		}
+		bucket := int(buckets.Offset) + index
+		oldIndex := bucket - int(old.Offset)
+		oldCount := uint64(0)
+		if oldIndex >= 0 && oldIndex < len(old.BucketCounts) {
+			oldCount = old.BucketCounts[oldIndex]
+		}
+		if bucketCount <= oldCount {
+			// bucketCount < oldCount is a monotonicity error, we'll consider the diff to be zero as fallback
+			continue
+		}
+		diff := bucketCount - oldCount
+		if out.BucketCounts == nil {
+			out.Offset = int32(bucket)
+		} else {
+			nextBucket := int(out.Offset) + len(out.BucketCounts)
+			zeros := bucket - nextBucket
+			out.BucketCounts = append(out.BucketCounts, make([]uint64, zeros)...)
+		}
+		out.BucketCounts = append(out.BucketCounts, diff)
+	}
+	return out
+}
+
+type ExponentialHistogramPoint struct {
+	Count         uint64
+	Sum           float64
+	ZeroCount     uint64
+	ZeroThreshold float64
+	Scale         int32
+	Positive      ExponentialBuckets
+	Negative      ExponentialBuckets
+}
+
+func (point *ExponentialHistogramPoint) Clone() ExponentialHistogramPoint {
+	newPoint := *point
+	newPoint.Positive.BucketCounts = slices.Clone(newPoint.Positive.BucketCounts)
+	newPoint.Negative.BucketCounts = slices.Clone(newPoint.Negative.BucketCounts)
+	return newPoint
 }

@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/expr-lang/expr/vm"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -32,16 +31,59 @@ type Route struct {
 }
 
 // CanProcess will always return true for a router operator
-func (t *Transformer) CanProcess() bool {
+func (*Transformer) CanProcess() bool {
 	return true
 }
 
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	var errs error
-	for i := range entries {
-		errs = multierr.Append(errs, t.Process(ctx, entries[i]))
+	// Group entries by the route they match
+	routeEntries := make(map[int][]*entry.Entry)
+
+	for _, ent := range entries {
+		if ent == nil {
+			t.Logger().Warn("got a nil entry, this should not happen and is potentially a bug")
+			continue
+		}
+
+		env := helper.GetExprEnv(ent)
+		routeIdx := -1 // Track which route matched
+
+		for idx, route := range t.routes {
+			matches, err := vm.Run(route.Expression, env)
+			if err != nil {
+				t.Logger().Warn("Running expression returned an error", zapAttributes(ent, err)...)
+				continue
+			}
+
+			// we compile the expression with "AsBool", so this should be safe
+			if matches.(bool) {
+				if err = route.Attribute(ent); err != nil {
+					t.Logger().Error("Failed to label entry", zapAttributes(ent, err)...)
+					break
+				}
+				routeIdx = idx
+				break
+			}
+		}
+		helper.PutExprEnv(env)
+
+		// Group entries by their matching route
+		if routeIdx >= 0 {
+			routeEntries[routeIdx] = append(routeEntries[routeIdx], ent)
+		}
 	}
-	return errs
+
+	// Process batches for each route
+	for routeIdx, batch := range routeEntries {
+		route := t.routes[routeIdx]
+		for _, output := range route.OutputOperators {
+			if err := output.ProcessBatch(ctx, batch); err != nil {
+				t.Logger().Error("Failed to process batch", zap.Int("batch_size", len(batch)), zap.Error(err))
+			}
+		}
+	}
+
+	return nil
 }
 
 // Process will route incoming entries based on matching expressions
@@ -80,7 +122,7 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 }
 
 // CanOutput will always return true for a router operator
-func (t *Transformer) CanOutput() bool {
+func (*Transformer) CanOutput() bool {
 	return true
 }
 
@@ -116,7 +158,7 @@ func (t *Transformer) SetOutputs(operators []operator.Operator) error {
 }
 
 // SetOutputIDs will do nothing.
-func (t *Transformer) SetOutputIDs(_ []string) {}
+func (*Transformer) SetOutputIDs(_ []string) {}
 
 // findOperators will find a subset of operators from a collection.
 func (t *Transformer) findOperators(operators []operator.Operator, operatorIDs []string) ([]operator.Operator, error) {
@@ -132,7 +174,7 @@ func (t *Transformer) findOperators(operators []operator.Operator, operatorIDs [
 }
 
 // findOperator will find an operator from a collection.
-func (t *Transformer) findOperator(operators []operator.Operator, operatorID string) (operator.Operator, error) {
+func (*Transformer) findOperator(operators []operator.Operator, operatorID string) (operator.Operator, error) {
 	for _, operator := range operators {
 		if operator.ID() == operatorID {
 			return operator, nil

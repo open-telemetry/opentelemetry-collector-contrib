@@ -1,0 +1,143 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.region
+          value:
+            stringValue: us-east-1
+        - key: cloud.account.id
+          value:
+            stringValue: "123456789012"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: aws.cloudtrail.event_version
+                value:
+                  stringValue: "1.08"
+              - key: aws.cloudtrail.event_id
+                value:
+                  stringValue: bb3496d4-5252-4660-9c28-3c6aebdb21c0
+              - key: rpc.method
+                value:
+                  stringValue: Publish
+              - key: rpc.system
+                value:
+                  stringValue: AwsApiCall
+              - key: rpc.service
+                value:
+                  stringValue: sns.amazonaws.com
+              - key: aws.request_id
+                value:
+                  stringValue: 0a8ab208-11bf-5e01-bd2d-ef55861b545d
+              - key: aws.event.category
+                value:
+                  stringValue: Data
+              - key: aws.event.read_only
+                value:
+                  boolValue: false
+              - key: aws.event.management
+                value:
+                  boolValue: false
+              - key: source.address
+                value:
+                  stringValue: 192.0.2.0
+              - key: user_agent.original
+                value:
+                  stringValue: aws-cli/1.29.16 md/Botocore#1.31.16 ua/2.0 os/linux#5.4.250-173.369.amzn2int.x86_64 md/arch#x86_64 lang/python#3.8.17 md/pyimpl#CPython cfg/retry-mode#legacy botocore/1.31.16
+              - key: aws.user_identity.account_id
+                value:
+                  stringValue: "123456789012"
+              - key: aws.access_key.id
+                value:
+                  stringValue: AKIAIOSFODNN7EXAMPLE
+              - key: aws.principal.id
+                value:
+                  stringValue: EX_PRINCIPAL_ID
+              - key: aws.principal.arn
+                value:
+                  stringValue: arn:aws:iam::123456789012:user/Bob
+              - key: aws.principal.type
+                value:
+                  stringValue: AssumedRole
+              - key: aws.user_identity.session_context.attributes.mfa_authenticated
+                value:
+                  boolValue: true
+              - key: aws.user_identity.session_context.attributes.creation_date
+                value:
+                  stringValue: "2023-08-21T16:44:05Z"
+              - key: aws.user_identity.session_context.issuer.type
+                value:
+                  stringValue: Role
+              - key: aws.user_identity.session_context.issuer.principal_id
+                value:
+                  stringValue: AKIAIOSFODNN7EXAMPLE
+              - key: aws.user_identity.session_context.issuer.arn
+                value:
+                  stringValue: arn:aws:iam::123456789012:role/Admin
+              - key: aws.user_identity.session_context.issuer.account_id
+                value:
+                  stringValue: "123456789012"
+              - key: aws.user_identity.session_context.issuer.user_name
+                value:
+                  stringValue: ExampleUser
+              - key: tls.protocol.version
+                value:
+                  stringValue: "1.2"
+              - key: tls.cipher
+                value:
+                  stringValue: ECDHE-RSA-AES128-GCM-SHA256
+              - key: server.address
+                value:
+                  stringValue: sns.us-east-1.amazonaws.com
+              - key: aws.request.parameters
+                value:
+                  kvlistValue:
+                    values:
+                      - key: topicArn
+                        value:
+                          stringValue: arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic
+                      - key: message
+                        value:
+                          stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
+                      - key: subject
+                        value:
+                          stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
+                      - key: messageStructure
+                        value:
+                          stringValue: json
+                      - key: messageAttributes
+                        value:
+                          stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
+              - key: aws.response.elements
+                value:
+                  kvlistValue:
+                    values:
+                      - key: messageId
+                        value:
+                          stringValue: 0787cd1e-d92b-521c-a8b4-90434e8ef840
+              - key: aws.resources
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: account.id
+                              value:
+                                stringValue: "123456789012"
+                            - key: type
+                              value:
+                                stringValue: AWS::SNS::Topic
+                            - key: arn
+                              value:
+                                stringValue: arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic
+            body: {}
+            timeUnixNano: "1692636517000000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.cloudtrail
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+          version: test-version

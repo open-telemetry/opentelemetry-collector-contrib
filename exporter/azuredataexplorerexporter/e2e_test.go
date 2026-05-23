@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
+package azuredataexplorerexporter
 
 import (
 	"encoding/hex"
@@ -9,10 +9,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Azure/azure-kusto-go/kusto"
-	"github.com/Azure/azure-kusto-go/kusto/data/errors"
-	"github.com/Azure/azure-kusto-go/kusto/data/table"
-	"github.com/Azure/azure-kusto-go/kusto/kql"
+	"github.com/Azure/azure-kusto-go/azkustodata"
+	"github.com/Azure/azure-kusto-go/azkustodata/kql"
+	"github.com/Azure/azure-kusto-go/azkustodata/query"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -73,25 +72,31 @@ func TestCreateTracesE2E(t *testing.T) {
 	traceStmt := kql.New(traceValidationQuery)
 	traceStmtParams := kql.NewParameters().AddString("TID", tID)
 	// Query using our trace table for TraceID
-	iter, err := createClientAndExecuteQuery(t, *config, traceStmt, traceStmtParams)
+	dataset, err := createClientAndExecuteQuery(t, *config, traceStmt, traceStmtParams)
 	if err != nil {
 		assert.Fail(t, err.Error())
 	}
 	// Validate the results
-	recs := []AdxTrace{}
-	err = iter.DoOnRowOrError(
-		func(row *table.Row, e *errors.Error) error {
-			if e != nil {
-				return e
-			}
-			rec := AdxTrace{}
-			if err = row.ToStruct(&rec); err != nil {
-				return err
-			}
-			recs = append(recs, rec)
-			return nil
-		},
-	)
+	recs := []adxTrace{}
+	tableResult := <-dataset.Tables()
+	if tableResult.Err() != nil {
+		panic(tableResult.Err())
+	}
+	iterativeTable := tableResult.Table()
+
+	for rowResult := range iterativeTable.Rows() {
+		if rowResult.Err() != nil {
+			err = rowResult.Err()
+			assert.Fail(t, err.Error())
+		}
+		row := rowResult.Row()
+
+		rec := adxTrace{}
+		if err = row.ToStruct(&rec); err != nil {
+			err = rowResult.Err()
+		}
+		recs = append(recs, rec)
+	}
 	if err != nil {
 		assert.Fail(t, err.Error())
 	}
@@ -128,32 +133,38 @@ func TestCreateLogsE2E(t *testing.T) {
 	require.NoError(t, err)
 	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	// create some traces
+	// Create some logs
 	ld, tID, attrs := createLogs()
 	err = exp.ConsumeLogs(t.Context(), ld)
 	require.NoError(t, err)
 	// Statements
-	traceStmt := kql.New(traceValidationQuery)
-	traceStmtParams := kql.NewParameters().AddString("TID", tID)
-	iter, err := createClientAndExecuteQuery(t, *config, traceStmt, traceStmtParams)
+	logStmt := kql.New(logValidationQuery)
+	logStmtParams := kql.NewParameters().AddString("TID", tID)
+	dataset, err := createClientAndExecuteQuery(t, *config, logStmt, logStmtParams)
 	if err != nil {
 		assert.Fail(t, err.Error())
 	}
 	// Validate the results
-	recs := []AdxLog{}
-	err = iter.DoOnRowOrError(
-		func(row *table.Row, e *errors.Error) error {
-			if e != nil {
-				return e
-			}
-			rec := AdxLog{}
-			if err = row.ToStruct(&rec); err != nil {
-				return err
-			}
-			recs = append(recs, rec)
-			return nil
-		},
-	)
+	recs := []adxLog{}
+	tableResult := <-dataset.Tables()
+	if tableResult.Err() != nil {
+		panic(tableResult.Err())
+	}
+	iterativeTable := tableResult.Table()
+
+	for rowResult := range iterativeTable.Rows() {
+		if rowResult.Err() != nil {
+			err = rowResult.Err()
+			assert.Fail(t, err.Error())
+		}
+		row := rowResult.Row()
+
+		rec := adxLog{}
+		if err = row.ToStruct(&rec); err != nil {
+			err = rowResult.Err()
+		}
+		recs = append(recs, rec)
+	}
 	if err != nil {
 		assert.Fail(t, err.Error())
 	}
@@ -189,33 +200,42 @@ func TestCreateMetricsE2E(t *testing.T) {
 	require.NoError(t, err)
 	err = exp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	// create some traces
+	// Create some metrics
 	md, attrs, metricName := createMetrics()
 	err = exp.ConsumeMetrics(t.Context(), md)
 	require.NoError(t, err)
 	// Statements
-	traceStmt := kql.New(traceValidationQuery)
-	traceStmtParams := kql.NewParameters().AddString("TID", metricName)
-	// Query using our logs table for TraceID
-	iter, err := createClientAndExecuteQuery(t, *config, traceStmt, traceStmtParams)
+	metricStmt := kql.New(metricValidationQuery)
+	metricStmtParams := kql.NewParameters().AddString("TID", metricName)
+
+	dataset, err := createClientAndExecuteQuery(t, *config, metricStmt, metricStmtParams)
 	if err != nil {
 		assert.Fail(t, err.Error())
 	}
 	// Validate the results
-	recs := []AdxMetric{}
-	err = iter.DoOnRowOrError(
-		func(row *table.Row, e *errors.Error) error {
-			if e != nil {
-				return e
-			}
-			rec := AdxMetric{}
-			if err = row.ToStruct(&rec); err != nil {
-				return err
-			}
-			recs = append(recs, rec)
-			return nil
-		},
-	)
+	recs := []adxMetric{}
+	tableResult := <-dataset.Tables()
+	if err != nil {
+		assert.Fail(t, err.Error())
+	}
+	if tableResult.Err() != nil {
+		assert.Fail(t, tableResult.Err().Error())
+	}
+	iterativeTable := tableResult.Table()
+
+	for rowResult := range iterativeTable.Rows() {
+		if rowResult.Err() != nil {
+			err = rowResult.Err()
+			assert.Fail(t, err.Error())
+		}
+		row := rowResult.Row()
+
+		rec := adxMetric{}
+		if err = row.ToStruct(&rec); err != nil {
+			err = rowResult.Err()
+		}
+		recs = append(recs, rec)
+	}
 	if err != nil {
 		assert.Fail(t, err.Error())
 	}
@@ -326,19 +346,24 @@ func createMetrics() (pmetric.Metrics, map[string]any, string) {
 	return tm, attrs, metricNameGUID
 }
 
-func createClientAndExecuteQuery(t *testing.T, config Config, query *kql.Builder, params *kql.Parameters) (*kusto.RowIterator, error) {
-	kcsb := kusto.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
-	client, kerr := kusto.New(kcsb)
+func createClientAndExecuteQuery(t *testing.T, config Config, query azkustodata.Statement, params *kql.Parameters) (query.IterativeDataset, error) {
+	kcsb := azkustodata.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
+	client, kerr := azkustodata.New(kcsb)
 	// The client should be created
 	if kerr != nil {
 		assert.Fail(t, kerr.Error())
 	}
 	defer client.Close()
 	// Query using our singleNodeStmt, variable substituting for ParamNodeId
-	return client.Query(
+	dataset, err := client.IterativeQuery(
 		t.Context(),
 		config.Database,
 		query,
-		kusto.QueryParameters(params),
+		azkustodata.QueryParameters(params),
 	)
+	if err != nil {
+		assert.Fail(t, err.Error())
+	}
+	defer dataset.Close()
+	return dataset, err
 }

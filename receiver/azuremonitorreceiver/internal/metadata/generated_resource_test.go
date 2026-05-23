@@ -31,21 +31,20 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("azuremonitor.subscription")
+			azuremonitorSubscriptionAttrVal, ok := res.Attributes().Get("azuremonitor.subscription")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "azuremonitor.subscription-val", val.Str())
+				assert.Equal(t, "azuremonitor.subscription-val", azuremonitorSubscriptionAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("azuremonitor.subscription_id")
+			azuremonitorSubscriptionIDAttrVal, ok := res.Attributes().Get("azuremonitor.subscription_id")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "azuremonitor.subscription_id-val", val.Str())
+				assert.Equal(t, "azuremonitor.subscription_id-val", azuremonitorSubscriptionIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("azuremonitor.tenant_id")
+			azuremonitorTenantIDAttrVal, ok := res.Attributes().Get("azuremonitor.tenant_id")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "azuremonitor.tenant_id-val", val.Str())
+				assert.Equal(t, "azuremonitor.tenant_id-val", azuremonitorTenantIDAttrVal.Str())
 			}
 		})
 	}

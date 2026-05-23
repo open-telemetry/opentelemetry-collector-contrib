@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -196,12 +195,12 @@ func generateThriftSpan() *jaeger.Span {
 		},
 		Tags: []*jaeger.Tag{
 			{
-				Key:   conventions.OtelStatusCode,
+				Key:   "otel.status_code",
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusCode,
 			},
 			{
-				Key:   conventions.OtelStatusDescription,
+				Key:   "otel.status_description",
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusMsg,
 			},
@@ -230,7 +229,7 @@ func generateThriftChildSpan() *jaeger.Span {
 		Duration:      spanEndTs - spanStartTs,
 		Tags: []*jaeger.Tag{
 			{
-				Key:   conventions.AttributeHTTPStatusCode,
+				Key:   "http.status_code",
 				VType: jaeger.TagType_LONG,
 				VLong: &notFoundAttrVal,
 			},
@@ -257,12 +256,12 @@ func generateThriftFollowerSpan() *jaeger.Span {
 		Duration:      1000,
 		Tags: []*jaeger.Tag{
 			{
-				Key:   conventions.OtelStatusCode,
+				Key:   "otel.status_code",
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusCode,
 			},
 			{
-				Key:   conventions.OtelStatusDescription,
+				Key:   "otel.status_description",
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusMsg,
 			},
@@ -300,12 +299,12 @@ func generateThriftTwoParentsSpan() *jaeger.Span {
 		ParentSpanId:  int64(binary.BigEndian.Uint64([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})),
 		Tags: []*jaeger.Tag{
 			{
-				Key:   conventions.OtelStatusCode,
+				Key:   "otel.status_code",
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusCode,
 			},
 			{
-				Key:   conventions.OtelStatusDescription,
+				Key:   "otel.status_description",
 				VType: jaeger.TagType_STRING,
 				VStr:  &statusMsg,
 			},
@@ -339,8 +338,7 @@ func BenchmarkThriftBatchToInternalTraces(b *testing.B) {
 		},
 	}
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		_, err := ThriftToTraces(jb)
 		assert.NoError(b, err)
 	}

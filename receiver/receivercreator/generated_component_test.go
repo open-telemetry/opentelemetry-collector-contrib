@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
 var typ = component.MustNewType("receiver_creator")
@@ -53,6 +54,13 @@ func TestComponentLifecycle(t *testing.T) {
 				return factory.CreateTraces(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
+
+		{
+			name: "profiles",
+			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
+				return factory.(xreceiver.Factory).CreateProfiles(ctx, set, cfg, consumertest.NewNop())
+			},
+		},
 	}
 
 	cm, err := confmaptest.LoadConf("metadata.yaml")
@@ -72,7 +80,7 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
 			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			host := componenttest.NewNopHost()
+			host := newMdatagenNopHost()
 			require.NoError(t, err)
 			require.NoError(t, firstRcvr.Start(context.Background(), host))
 			require.NoError(t, firstRcvr.Shutdown(context.Background()))
@@ -82,4 +90,20 @@ func TestComponentLifecycle(t *testing.T) {
 			require.NoError(t, secondRcvr.Shutdown(context.Background()))
 		})
 	}
+}
+
+var _ component.Host = (*mdatagenNopHost)(nil)
+
+type mdatagenNopHost struct{}
+
+func newMdatagenNopHost() component.Host {
+	return &mdatagenNopHost{}
+}
+
+func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+	return nil
 }

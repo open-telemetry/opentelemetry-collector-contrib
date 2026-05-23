@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	arrowRecordMock "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record/mock"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
+	arrowRecordMock "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc"
@@ -77,12 +77,9 @@ func newStreamTestCase(t *testing.T, pname PrioritizerName) *streamTestCase {
 func (tc *streamTestCase) start(channel testChannel) {
 	tc.traceCall.Times(1).DoAndReturn(tc.connectTestStream(channel))
 
-	tc.wait.Add(1)
-
-	go func() {
-		defer tc.wait.Done()
+	tc.wait.Go(func() {
 		tc.stream.run(tc.bgctx, tc.doneCancel, tc.traceClient, nil)
-	}()
+	})
 }
 
 // cancelAndWait cancels the context and waits for the runner to return.

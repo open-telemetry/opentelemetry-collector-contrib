@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-var priRegex = regexp.MustCompile(`\<\d{1,3}\>`)
+var priRegex = regexp.MustCompile(`<\d{1,3}>`)
 
 // parseFunc a parseFunc determines how the raw input is to be parsed into a syslog message
 type parseFunc func(input []byte) (sl.Message, error)
@@ -38,7 +38,66 @@ type Parser struct {
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return p.ProcessBatchWith(ctx, entries, p.Process)
+	processedEntries := make([]*entry.Entry, 0, len(entries))
+	write := func(_ context.Context, ent *entry.Entry) error {
+		processedEntries = append(processedEntries, ent)
+		return nil
+	}
+	var errs []error
+	for _, ent := range entries {
+		skip, err := p.Skip(ctx, ent)
+		if err != nil {
+			if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
+				if !p.isQuietMode() {
+					errs = append(errs, handleErr)
+				}
+			}
+			continue
+		}
+		if skip {
+			_ = write(ctx, ent)
+			continue
+		}
+
+		// Determine which callback to use based on entry data
+		callback := postprocess
+		if !p.enableOctetCounting && p.allowSkipPriHeader {
+			var bytes []byte
+			bytes, err = toBytes(ent.Body)
+			if err != nil {
+				if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
+					if !p.isQuietMode() {
+						errs = append(errs, handleErr)
+					}
+				}
+				continue
+			}
+			if p.shouldSkipPriorityValues(bytes) {
+				callback = postprocessWithoutPriHeader
+			}
+		}
+
+		if err = p.ParseWith(ctx, ent, p.parse, write); err != nil {
+			if !p.isQuietMode() {
+				errs = append(errs, err)
+			}
+			continue
+		}
+
+		if err = callback(ent); err != nil {
+			if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
+				if !p.isQuietMode() {
+					errs = append(errs, handleErr)
+				}
+			}
+			continue
+		}
+
+		_ = write(ctx, ent)
+	}
+
+	errs = append(errs, p.WriteBatch(ctx, processedEntries))
+	return errors.Join(errs...)
 }
 
 // Process will parse an entry field as syslog.
@@ -47,7 +106,11 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	if !p.enableOctetCounting && p.allowSkipPriHeader {
 		bytes, err := toBytes(entry.Body)
 		if err != nil {
-			return err
+			handleErr := p.HandleEntryError(ctx, entry, err)
+			if p.isQuietMode() {
+				return nil
+			}
+			return handleErr
 		}
 
 		if p.shouldSkipPriorityValues(bytes) {
@@ -147,6 +210,7 @@ func (p *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage, skipPriHeade
 		value["priority"] = syslogMessage.Priority
 		value["severity"] = syslogMessage.Severity
 		value["facility"] = syslogMessage.Facility
+		value["facility_text"] = syslogMessage.FacilityLevel()
 	}
 
 	return p.toSafeMap(value)
@@ -169,13 +233,14 @@ func (p *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage, skipPriHeade
 		value["priority"] = syslogMessage.Priority
 		value["severity"] = syslogMessage.Severity
 		value["facility"] = syslogMessage.Facility
+		value["facility_text"] = syslogMessage.FacilityLevel()
 	}
 
 	return p.toSafeMap(value)
 }
 
 // toSafeMap will dereference any pointers on the supplied map.
-func (p *Parser) toSafeMap(message map[string]any) (map[string]any, error) {
+func (*Parser) toSafeMap(message map[string]any) (map[string]any, error) {
 	for key, val := range message {
 		switch v := val.(type) {
 		case *string:
@@ -314,7 +379,7 @@ func newOctetCountingParseFunc(maxOctets int) parseFunc {
 		parser := octetcounting.NewParser(parserOpts...)
 		reader := bytes.NewReader(input)
 		parser.Parse(reader)
-		return
+		return message, err
 	}
 }
 
@@ -328,6 +393,11 @@ func newNonTransparentFramingParseFunc(trailerType nontransparent.TrailerType) p
 		parser := nontransparent.NewParser(sl.WithBestEffort(), nontransparent.WithTrailer(trailerType), sl.WithListener(listener))
 		reader := bytes.NewReader(input)
 		parser.Parse(reader)
-		return
+		return message, err
 	}
+}
+
+// isQuietMode returns true if the operator is configured to use quiet mode
+func (p *Parser) isQuietMode() bool {
+	return p.OnError == helper.DropOnErrorQuiet || p.OnError == helper.SendOnErrorQuiet
 }

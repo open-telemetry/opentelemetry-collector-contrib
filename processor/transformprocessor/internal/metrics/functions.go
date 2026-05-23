@@ -4,7 +4,7 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
 import (
-	"go.opentelemetry.io/collector/featuregate"
+	"maps"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
@@ -12,30 +12,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-var UseConvertBetweenSumAndGaugeMetricContext = featuregate.GlobalRegistry().MustRegister(
-	"processor.transform.ConvertBetweenSumAndGaugeMetricContext",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled will use metric context for conversion between sum and gauge"),
-	featuregate.WithRegisterToVersion("v0.114.0"),
-)
+func DataPointFunctions() map[string]ottl.Factory[*ottldatapoint.TransformContext] {
+	functions := ottlfuncs.StandardFuncs[*ottldatapoint.TransformContext]()
 
-func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext] {
-	functions := ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()
-
-	datapointFunctions := ottl.CreateFactoryMap[ottldatapoint.TransformContext](
+	datapointFunctions := ottl.CreateFactoryMap(
 		newConvertSummarySumValToSumFactory(),
 		newConvertSummaryCountValToSumFactory(),
+		newMergeHistogramBucketsFactory(),
 	)
 
-	for k, v := range datapointFunctions {
-		functions[k] = v
-	}
+	maps.Copy(functions, datapointFunctions)
 
 	return functions
 }
 
-func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
-	functions := ottlfuncs.StandardFuncs[ottlmetric.TransformContext]()
+func MetricFunctions() map[string]ottl.Factory[*ottlmetric.TransformContext] {
+	functions := ottlfuncs.StandardFuncs[*ottlmetric.TransformContext]()
 
 	metricFunctions := ottl.CreateFactoryMap(
 		newExtractSumMetricFactory(),
@@ -47,11 +39,10 @@ func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 		newAggregateOnAttributesFactory(),
 		newconvertExponentialHistToExplicitHistFactory(),
 		newAggregateOnAttributeValueFactory(),
+		newConvertSummaryQuantileValToGaugeFactory(),
 	)
 
-	for k, v := range metricFunctions {
-		functions[k] = v
-	}
+	maps.Copy(functions, metricFunctions)
 
 	return functions
 }

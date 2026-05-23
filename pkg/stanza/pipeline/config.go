@@ -4,11 +4,11 @@
 package pipeline // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
@@ -21,14 +21,14 @@ type Config struct {
 // Build will build a pipeline from the config.
 func (c Config) Build(set component.TelemetrySettings) (*DirectedPipeline, error) {
 	if set.Logger == nil {
-		return nil, errors.NewError("logger must be provided", "")
+		return nil, errors.New("logger must be provided")
 	}
 	if c.Operators == nil {
-		return nil, errors.NewError("operators must be specified", "")
+		return nil, errors.New("operators must be specified")
 	}
 
 	if len(c.Operators) == 0 {
-		return nil, errors.NewError("empty pipeline not allowed", "")
+		return nil, errors.New("empty pipeline not allowed")
 	}
 
 	dedeplucateIDs(c.Operators)

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -61,7 +62,7 @@ func Test_set(t *testing.T) {
 			exprFunc := set(tt.setter, tt.getter)
 
 			result, err := exprFunc(nil, scenarioValue)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Nil(t, result)
 
 			expected := pcommon.NewValueStr("")
@@ -74,7 +75,7 @@ func Test_set(t *testing.T) {
 
 func Test_set_get_nil(t *testing.T) {
 	setter := &ottl.StandardGetSetter[any]{
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -89,6 +90,6 @@ func Test_set_get_nil(t *testing.T) {
 	exprFunc := set[any](setter, getter)
 
 	result, err := exprFunc(nil, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }

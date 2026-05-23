@@ -6,7 +6,7 @@ package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetr
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.21.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 func convertToOTLPMetrics(prefix string, m ECSMetrics, r pcommon.Resource, timestamp pcommon.Timestamp) pmetric.Metrics {
@@ -20,8 +20,8 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pcommon.Resource, times
 	appendIntGauge(prefix+attributeMemoryUsage, unitBytes, int64(m.MemoryUsage), timestamp, ilms.AppendEmpty())
 	appendIntGauge(prefix+attributeMemoryMaxUsage, unitBytes, int64(m.MemoryMaxUsage), timestamp, ilms.AppendEmpty())
 	appendIntGauge(prefix+attributeMemoryLimit, unitBytes, int64(m.MemoryLimit), timestamp, ilms.AppendEmpty())
-	appendIntGauge(prefix+attributeMemoryUtilized, unitMegaBytes, int64(m.MemoryUtilized), timestamp, ilms.AppendEmpty())
-	appendIntGauge(prefix+attributeMemoryReserved, unitMegaBytes, int64(m.MemoryReserved), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+attributeMemoryUtilized, unitMiB, int64(m.MemoryUtilized), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+attributeMemoryReserved, unitMiB, int64(m.MemoryReserved), timestamp, ilms.AppendEmpty())
 
 	appendIntSum(prefix+attributeCPUTotalUsage, unitNanoSecond, int64(m.CPUTotalUsage), timestamp, ilms.AppendEmpty())
 	appendIntSum(prefix+attributeCPUKernelModeUsage, unitNanoSecond, int64(m.CPUUsageInKernelmode), timestamp, ilms.AppendEmpty())
@@ -48,6 +48,13 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pcommon.Resource, times
 	appendIntSum(prefix+attributeStorageRead, unitBytes, int64(m.StorageReadBytes), timestamp, ilms.AppendEmpty())
 	appendIntSum(prefix+attributeStorageWrite, unitBytes, int64(m.StorageWriteBytes), timestamp, ilms.AppendEmpty())
 
+	// Ephemeral storage metrics are only available at the task level.
+	// They represent the shared ephemeral storage for the entire Fargate task.
+	if prefix == taskPrefix {
+		appendIntGauge(prefix+attributeEphemeralStorageUtilized, unitMiB, m.EphemeralStorageUtilized, timestamp, ilms.AppendEmpty())
+		appendIntGauge(prefix+attributeEphemeralStorageReserved, unitMiB, m.EphemeralStorageReserved, timestamp, ilms.AppendEmpty())
+	}
+
 	return md
 }
 
@@ -62,7 +69,7 @@ func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pco
 	return md
 }
 
-func appendIntGauge(metricName string, unit string, value int64, ts pcommon.Timestamp, ilm pmetric.ScopeMetrics) {
+func appendIntGauge(metricName, unit string, value int64, ts pcommon.Timestamp, ilm pmetric.ScopeMetrics) {
 	metric := appendMetric(ilm, metricName, unit)
 
 	intGauge := metric.SetEmptyGauge()
@@ -70,7 +77,7 @@ func appendIntGauge(metricName string, unit string, value int64, ts pcommon.Time
 	appendIntDataPoint(intGauge.DataPoints(), value, ts)
 }
 
-func appendIntSum(metricName string, unit string, value int64, ts pcommon.Timestamp, ilm pmetric.ScopeMetrics) {
+func appendIntSum(metricName, unit string, value int64, ts pcommon.Timestamp, ilm pmetric.ScopeMetrics) {
 	metric := appendMetric(ilm, metricName, unit)
 
 	intSum := metric.SetEmptySum()
@@ -79,7 +86,7 @@ func appendIntSum(metricName string, unit string, value int64, ts pcommon.Timest
 	appendIntDataPoint(intSum.DataPoints(), value, ts)
 }
 
-func appendDoubleGauge(metricName string, unit string, value float64, ts pcommon.Timestamp, ilm pmetric.ScopeMetrics) {
+func appendDoubleGauge(metricName, unit string, value float64, ts pcommon.Timestamp, ilm pmetric.ScopeMetrics) {
 	metric := appendMetric(ilm, metricName, unit)
 	doubleGauge := metric.SetEmptyGauge()
 	dataPoint := doubleGauge.DataPoints().AppendEmpty()

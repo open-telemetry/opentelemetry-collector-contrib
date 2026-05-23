@@ -191,7 +191,7 @@ func TestSubmitLogs(t *testing.T) {
 				}
 			})
 			defer server.Close()
-			s := NewSender(server.URL, logger, confighttp.ClientConfig{Timeout: time.Second * 10, TLSSetting: configtls.ClientConfig{InsecureSkipVerify: true}}, true, "")
+			s := NewSender(server.URL, logger, confighttp.ClientConfig{Timeout: time.Second * 10, TLS: configtls.ClientConfig{InsecureSkipVerify: true}}, true, "")
 			require.NoError(t, s.SubmitLogs(t.Context(), tt.payload))
 			assert.Equal(t, calls, tt.numRequests)
 		})

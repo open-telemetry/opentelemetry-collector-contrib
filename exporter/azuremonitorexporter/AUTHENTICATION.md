@@ -20,6 +20,18 @@ exporters:
       connection_string: ${env:APPLICATIONINSIGHTS_CONNECTION_STRING}
 ```
 
+## Authenticator Extension
+
+You can use any standard OTEL authenticator extension to add authentication to outgoing requests.
+This is an example using [azureauthextension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/azureauthextension):
+
+```yaml
+exporters:
+   azuremonitor:
+      auth:
+         authenticator: azureauth
+```
+
 ## AAD/Entra Authentication
 
 Local Authentication can be disabled in [Application Insights](https://learn.microsoft.com/en-us/azure/azure-monitor/app/azure-ad-authentication) and an AAD based identity can be used in conjunction with the instrumentation key.

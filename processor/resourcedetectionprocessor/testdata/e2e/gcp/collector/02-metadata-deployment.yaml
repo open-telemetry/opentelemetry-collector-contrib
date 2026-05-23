@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}-metadata
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Name }}-metadata
+  template:
+    metadata:
+      labels:
+        app: {{ .Name }}-metadata
+    spec:
+      containers:
+        - name: metadata-server
+          image: python:3.13-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - python3
+            - /scripts/server.py
+          env:
+            - name: PORT
+              value: "8080"
+          ports:
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - name: metadata-script
+              mountPath: /scripts
+      volumes:
+        - name: metadata-script
+          configMap:
+            name: {{ .Name }}-metadata-config

@@ -34,14 +34,11 @@ func ParallelRaceCompute(tb testing.TB, count int, fn func() error) {
 		start = make(chan struct{})
 		wg    sync.WaitGroup
 	)
-	for i := 0; i < count; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
+	for range count {
+		wg.Go(func() {
 			<-start
 			assert.NoError(tb, fn(), "Must not error when executing function")
-		}()
+		})
 	}
 	close(start)
 

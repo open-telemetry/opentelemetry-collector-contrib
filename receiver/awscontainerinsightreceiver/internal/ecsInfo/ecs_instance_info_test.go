@@ -19,11 +19,11 @@ import (
 
 type MockHostInfo struct{}
 
-func (mi *MockHostInfo) GetInstanceIP() string {
+func (*MockHostInfo) GetInstanceIP() string {
 	return "0.0.0.0"
 }
 
-func (mi *MockHostInfo) GetInstanceIPReadyC() chan bool {
+func (*MockHostInfo) GetInstanceIPReadyC() chan bool {
 	readyC := make(chan bool)
 	return readyC
 }

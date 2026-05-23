@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"strconv"
 	"strings"
@@ -452,9 +453,7 @@ func (k *K8sAPIServer) getKubernetesBlob(pod *k8sclient.PodInfo, kubernetesBlob 
 	}
 
 	labels := make(map[string]string)
-	for k, v := range pod.Labels {
-		labels[k] = v
-	}
+	maps.Copy(labels, pod.Labels)
 	if len(labels) > 0 {
 		kubernetesBlob["labels"] = labels
 	}

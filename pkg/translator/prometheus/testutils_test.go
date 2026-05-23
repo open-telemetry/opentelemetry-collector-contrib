@@ -16,7 +16,7 @@ func init() {
 }
 
 // Returns a new Metric of type "Gauge" with specified name and unit
-func createGauge(name string, unit string) pmetric.Metric {
+func createGauge(name, unit string) pmetric.Metric {
 	gauge := ilm.Metrics().AppendEmpty()
 	gauge.SetName(name)
 	gauge.SetUnit(unit)
@@ -25,7 +25,7 @@ func createGauge(name string, unit string) pmetric.Metric {
 }
 
 // Returns a new Metric of type Monotonic Sum with specified name and unit
-func createCounter(name string, unit string) pmetric.Metric {
+func createCounter(name, unit string) pmetric.Metric {
 	counter := ilm.Metrics().AppendEmpty()
 	counter.SetEmptySum().SetIsMonotonic(true)
 	counter.SetName(name)

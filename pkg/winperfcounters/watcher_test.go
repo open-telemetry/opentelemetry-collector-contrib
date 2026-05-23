@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sys/windows"
 )
 
 func TestCounterPath(t *testing.T) {
@@ -51,7 +52,47 @@ func Test_Scraping_Wildcard(t *testing.T) {
 	values, err := watcher.ScrapeData()
 	require.NoError(t, err)
 
-	require.GreaterOrEqual(t, len(values), 3)
+	// Count the number of logical drives
+	drives, err := windows.GetLogicalDrives()
+	require.NoError(t, err)
+
+	numDrives := 0
+	for drives != 0 {
+		if drives&1 != 0 {
+			numDrives++
+		}
+		drives >>= 1
+	}
+
+	require.GreaterOrEqual(t, len(values), numDrives)
+}
+
+func TestWatcher_ScrapeRawValue(t *testing.T) {
+	watcher, err := NewWatcher("Memory", "", "Page Reads/Sec")
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, watcher.Close())
+	}()
+
+	var rawValue int64
+	hasValue, err := watcher.ScrapeRawValue(&rawValue)
+	require.NoError(t, err)
+	require.True(t, hasValue)
+	assert.Positive(t, rawValue)
+}
+
+func TestWatcher_ScrapeRawValue_NoData(t *testing.T) {
+	watcher, err := NewWatcher(".NET CLR Memory", "NonExistingInstance", "% Time in GC")
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, watcher.Close())
+	}()
+
+	var rawValue int64
+	hasValue, err := watcher.ScrapeRawValue(&rawValue)
+	require.NoError(t, err)
+	assert.False(t, hasValue)
+	assert.Zero(t, rawValue)
 }
 
 func TestNewPerfCounter_InvalidPath(t *testing.T) {
@@ -138,11 +179,12 @@ func TestPerfCounter_Reset(t *testing.T) {
 	}
 }
 
-func TestPerfCounter_ScrapeData(t *testing.T) {
+func TestPerfCounter_Scrape(t *testing.T) {
 	type testCase struct {
-		name           string
-		path           string
-		assertExpected func(t *testing.T, data []CounterValue)
+		name              string
+		path              string
+		assertExpected    func(t *testing.T, data []CounterValue)
+		assertExpectedRaw func(t *testing.T, data []RawCounterValue)
 	}
 
 	testCases := []testCase{
@@ -153,6 +195,10 @@ func TestPerfCounter_ScrapeData(t *testing.T) {
 				assert.Len(t, data, 1)
 				assert.Empty(t, data[0].InstanceName)
 			},
+			assertExpectedRaw: func(t *testing.T, raw []RawCounterValue) {
+				assert.Len(t, raw, 1)
+				assert.Empty(t, raw[0].InstanceName)
+			},
 		},
 		{
 			name: "total instance",
@@ -160,6 +206,10 @@ func TestPerfCounter_ScrapeData(t *testing.T) {
 			assertExpected: func(t *testing.T, data []CounterValue) {
 				assert.Len(t, data, 1)
 				assert.Empty(t, data[0].InstanceName)
+			},
+			assertExpectedRaw: func(t *testing.T, raw []RawCounterValue) {
+				assert.Len(t, raw, 1)
+				assert.Empty(t, raw[0].InstanceName)
 			},
 		},
 		{
@@ -169,6 +219,12 @@ func TestPerfCounter_ScrapeData(t *testing.T) {
 				assert.GreaterOrEqual(t, len(data), 1)
 				for _, d := range data {
 					assert.NotEmpty(t, d.InstanceName)
+				}
+			},
+			assertExpectedRaw: func(t *testing.T, raw []RawCounterValue) {
+				assert.GreaterOrEqual(t, len(raw), 1)
+				for _, r := range raw {
+					assert.NotEmpty(t, r.InstanceName)
 				}
 			},
 		},
@@ -181,8 +237,11 @@ func TestPerfCounter_ScrapeData(t *testing.T) {
 
 			data, err := pc.ScrapeData()
 			require.NoError(t, err, "Failed to scrape data: %v", err)
-
 			test.assertExpected(t, data)
+
+			raw, err := pc.ScrapeRawValues()
+			require.NoError(t, err, "Failed to scrape raw data: %v", err)
+			test.assertExpectedRaw(t, raw)
 		})
 	}
 }

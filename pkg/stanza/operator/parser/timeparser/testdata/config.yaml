@@ -1,0 +1,21 @@
+default:
+  type: time_parser
+on_error_drop:
+  type: time_parser
+  on_error: drop
+parse_strptime:
+  type: time_parser
+  parse_from: body.from
+  layout_type: strptime
+  layout: '%Y-%m-%d'
+parse_gotime:
+  type: time_parser
+  parse_from: body.from
+  layout_type: gotime
+  layout: '2006-01-02'
+no_nested:
+  type: time_parser
+  timestamp:
+    parse_from: body.timestamp_field
+    layout_type: strptime
+    layout: '%Y-%m-%d'

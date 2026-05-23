@@ -1,0 +1,8 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: some text
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver

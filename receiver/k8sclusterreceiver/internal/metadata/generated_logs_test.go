@@ -7,12 +7,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestLogsBuilderAppendLogRecord(t *testing.T) {
@@ -36,6 +35,9 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	rb.SetK8sDeploymentName("k8s.deployment.name-val")
 	rb.SetK8sDeploymentUID("k8s.deployment.uid-val")
 	rb.SetK8sHpaName("k8s.hpa.name-val")
+	rb.SetK8sHpaScaletargetrefApiversion("k8s.hpa.scaletargetref.apiversion-val")
+	rb.SetK8sHpaScaletargetrefKind("k8s.hpa.scaletargetref.kind-val")
+	rb.SetK8sHpaScaletargetrefName("k8s.hpa.scaletargetref.name-val")
 	rb.SetK8sHpaUID("k8s.hpa.uid-val")
 	rb.SetK8sJobName("k8s.job.name-val")
 	rb.SetK8sJobUID("k8s.job.uid-val")
@@ -53,6 +55,11 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	rb.SetK8sReplicationcontrollerUID("k8s.replicationcontroller.uid-val")
 	rb.SetK8sResourcequotaName("k8s.resourcequota.name-val")
 	rb.SetK8sResourcequotaUID("k8s.resourcequota.uid-val")
+	rb.SetK8sServiceName("k8s.service.name-val")
+	rb.SetK8sServicePublishNotReadyAddresses(false)
+	rb.SetK8sServiceTrafficDistribution("k8s.service.traffic_distribution-val")
+	rb.SetK8sServiceType("k8s.service.type-val")
+	rb.SetK8sServiceUID("k8s.service.uid-val")
 	rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
 	rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
 	rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")

@@ -22,11 +22,9 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv112 "go.opentelemetry.io/collector/semconv/v1.12.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry/telemetrytest"
 )
@@ -58,12 +56,14 @@ func TestXrayAndW3CSpanTraceExport(t *testing.T) {
 }
 
 func TestXrayAndW3CSpanTraceResourceExtraction(t *testing.T) {
+	setSkipTimestampValidation(t, true)
 	td := constructXrayAndW3CSpanData()
 	logger, _ := zap.NewProduction()
 	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 4, "4 spans have xray/w3c trace id")
 }
 
 func TestW3CSpanTraceResourceExtraction(t *testing.T) {
+	setSkipTimestampValidation(t, true)
 	td := constructW3CSpanData()
 	logger, _ := zap.NewProduction()
 	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 2, "2 spans have w3c trace id")
@@ -81,7 +81,7 @@ func TestTelemetryEnabled(t *testing.T) {
 	require.Equal(t, sink, sender)
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
-	traceExporter, err := newTracesExporter(cfg, set, new(awsutil.Conn), registry)
+	traceExporter, err := newTracesExporter(t.Context(), cfg, set, registry)
 	assert.NoError(t, err)
 	ctx := t.Context()
 	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))
@@ -95,6 +95,7 @@ func TestTelemetryEnabled(t *testing.T) {
 	assert.True(t, sink.HasRecording())
 	got := sink.Rotate()
 	assert.EqualValues(t, 1, *got.BackendConnectionErrors.HTTPCode4XXCount)
+	assert.EqualValues(t, 0, *got.BackendConnectionErrors.OtherCount)
 }
 
 func TestMiddleware(t *testing.T) {
@@ -164,17 +165,15 @@ func TestEncodingOtlpFormat(t *testing.T) {
 }
 
 func testEncodingOtlpFormatWithIndexConfiguration(t *testing.T, config *Config) {
-	// 1. prepare 50 resource spans and encode them
 	td := constructMultiSpanData(50)
 	documents, err := encodeOtlpAsBase64(td, config)
 	assert.NoError(t, err)
 	assert.Len(t, documents, td.ResourceSpans().Len(), "ensure #resourcespans same as #documents")
 
-	// 2. ensure documents can be decoded back
 	unmarshaler := &ptrace.ProtoUnmarshaler{}
 	for i, document := range documents {
-		assert.Equal(t, "T1S", (*document)[0:3], "ensure protocol prefix")
-		decodedBytes, err := base64.StdEncoding.DecodeString((*document)[3:])
+		assert.Equal(t, "T1S", document[0:3], "ensure protocol prefix")
+		decodedBytes, err := base64.StdEncoding.DecodeString(document[3:])
 		assert.NoError(t, err)
 
 		trace, err := unmarshaler.UnmarshalTraces(decodedBytes)
@@ -182,7 +181,6 @@ func testEncodingOtlpFormatWithIndexConfiguration(t *testing.T, config *Config) 
 
 		trace.CopyTo(trace)
 
-		// 3. ensure index configurations are carried
 		injectIndexConfigIntoOtlpPayload(td.ResourceSpans().At(i), config)
 		assert.Equal(t, td.ResourceSpans().At(i), trace.ResourceSpans().At(0))
 	}
@@ -195,15 +193,15 @@ func TestEncodingOtlpFormatWithEmptySpans(t *testing.T) {
 	assert.Empty(t, documents, "expect 0 document")
 }
 
-func BenchmarkForTracesExporter(tb *testing.B) {
-	traceExporter := initializeTracesExporter(tb, generateConfig(tb), telemetrytest.NewNopRegistry())
-	for i := 0; i < tb.N; i++ {
-		tb.StopTimer()
-		ctx := tb.Context()
+func BenchmarkForTracesExporter(b *testing.B) {
+	traceExporter := initializeTracesExporter(b, generateConfig(b), telemetrytest.NewNopRegistry())
+	for b.Loop() {
+		b.StopTimer()
+		ctx := b.Context()
 		td := constructSpanData()
-		tb.StartTimer()
+		b.StartTimer()
 		err := traceExporter.ConsumeTraces(ctx, td)
-		assert.Error(tb, err)
+		assert.Error(b, err)
 	}
 }
 
@@ -211,14 +209,13 @@ type mockHost struct {
 	component.Host
 }
 
-func (m *mockHost) GetExtensions() map[component.ID]component.Component {
+func (*mockHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
 func initializeTracesExporter(tb testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
 	tb.Helper()
-	mconn := new(awsutil.Conn)
-	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopSettings(metadata.Type), mconn, registry)
+	traceExporter, err := newTracesExporter(tb.Context(), exporterConfig, exportertest.NewNopSettings(metadata.Type), registry)
 	if err != nil {
 		panic(err)
 	}
@@ -243,6 +240,7 @@ func generateConfig(tb testing.TB) *Config {
 
 func constructSpanData() ptrace.Traces {
 	resource := constructResource()
+
 	traces := ptrace.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
 	resource.CopyTo(rspans.Resource())
@@ -297,22 +295,22 @@ func constructW3CFormatTraceSpanData(ispans ptrace.ScopeSpans) {
 func constructResource() pcommon.Resource {
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(conventionsv112.AttributeServiceName, "signup_aggregator")
-	attrs.PutStr(conventionsv112.AttributeContainerName, "signup_aggregator")
-	attrs.PutStr(conventionsv112.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.PutStr(conventionsv112.AttributeContainerImageTag, "v1")
-	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
-	attrs.PutStr(conventionsv112.AttributeCloudAccountID, "999999998")
-	attrs.PutStr(conventionsv112.AttributeCloudRegion, "us-west-2")
-	attrs.PutStr(conventionsv112.AttributeCloudAvailabilityZone, "us-west-1b")
+	attrs.PutStr("service.name", "signup_aggregator")
+	attrs.PutStr("container.name", "signup_aggregator")
+	attrs.PutStr("container.image.name", "otel/signupaggregator")
+	attrs.PutStr("container.image.tag", "v1")
+	attrs.PutStr("cloud.provider", "aws")
+	attrs.PutStr("cloud.account.id", "999999998")
+	attrs.PutStr("cloud.region", "us-west-2")
+	attrs.PutStr("cloud.availability_zone", "us-west-1b")
 	return resource
 }
 
 func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	attributes[conventionsv112.AttributeHTTPStatusCode] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.url"] = "https://api.example.com/users/junit"
+	attributes["http.status_code"] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -337,10 +335,10 @@ func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 
 func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	attributes[conventionsv112.AttributeHTTPClientIP] = "192.168.15.32"
-	attributes[conventionsv112.AttributeHTTPStatusCode] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.url"] = "https://api.example.com/users/junit"
+	attributes["http.client_ip"] = "192.168.15.32"
+	attributes["http.status_code"] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -366,11 +364,12 @@ func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 func constructSpanAttributes(attributes map[string]any) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for key, value := range attributes {
-		if cast, ok := value.(int); ok {
+		switch cast := value.(type) {
+		case int:
 			attrs.PutInt(key, int64(cast))
-		} else if cast, ok := value.(int64); ok {
+		case int64:
 			attrs.PutInt(key, cast)
-		} else {
+		default:
 			attrs.PutStr(key, fmt.Sprintf("%v", value))
 		}
 	}

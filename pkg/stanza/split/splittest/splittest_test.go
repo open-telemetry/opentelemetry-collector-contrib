@@ -135,7 +135,7 @@ func scanLinesError(data []byte, atEOF bool) (advance int, token []byte, err err
 	if strings.Contains(string(token), "error") {
 		return advance, token, errors.New(string(token))
 	}
-	return
+	return advance, token, err
 }
 
 func scanLinesStrictWithFlush(flushPeriod time.Duration) bufio.SplitFunc {
@@ -143,7 +143,7 @@ func scanLinesStrictWithFlush(flushPeriod time.Duration) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		advance, token, err = ScanLinesStrict(data, atEOF)
 		if advance > 0 || token != nil || err != nil {
-			return
+			return advance, token, err
 		}
 		if time.Since(now) > flushPeriod {
 			now = time.Now()

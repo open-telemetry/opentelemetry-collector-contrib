@@ -5,11 +5,11 @@ package ctxutil_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -28,23 +28,23 @@ func Test_GetSliceValue_Valid(t *testing.T) {
 		},
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "val", value)
 }
 
 func Test_GetSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}
 	tests := []struct {
 		name string
 		keys []ottl.Key[any]
-		err  error
+		err  string
 	}{
 		{
 			name: "first key not an integer",
@@ -54,7 +54,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
+			err: `unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`,
 		},
 		{
 			name: "index too large",
@@ -64,7 +64,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("index 1 out of bounds"),
+			err: "index 1 out of bounds",
 		},
 		{
 			name: "index too small",
@@ -74,7 +74,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("index -1 out of bounds"),
+			err: "index -1 out of bounds",
 		},
 		{
 			name: "invalid type",
@@ -88,7 +88,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("type Str does not support string indexing"),
+			err: "type Str does not support string indexing",
 		},
 	}
 
@@ -98,7 +98,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 			s.AppendEmpty().SetStr("val")
 
 			_, err := ctxutil.GetSliceValue[any](t.Context(), nil, s, tt.keys)
-			assert.Equal(t, tt.err.Error(), err.Error())
+			assert.EqualError(t, err, tt.err)
 		})
 	}
 }
@@ -115,23 +115,23 @@ func Test_SetSliceValue_Valid(t *testing.T) {
 	err := ctxutil.SetSliceValue[any](t.Context(), nil, s, []ottl.Key[any]{
 		&pathtest.Key[any]{I: ottltest.Intp(0)},
 	}, "value")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "value", s.At(0).AsRaw())
 }
 
 func Test_SetSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}
 	tests := []struct {
 		name string
 		keys []ottl.Key[any]
-		err  error
+		err  string
 	}{
 		{
 			name: "first key not an integer",
@@ -141,7 +141,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
+			err: `unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`,
 		},
 		{
 			name: "index too large",
@@ -151,7 +151,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("index 1 out of bounds"),
+			err: "index 1 out of bounds",
 		},
 		{
 			name: "index too small",
@@ -161,7 +161,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("index -1 out of bounds"),
+			err: "index -1 out of bounds",
 		},
 		{
 			name: "invalid type",
@@ -175,7 +175,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("type Str does not support string indexing"),
+			err: "type Str does not support string indexing",
 		},
 	}
 
@@ -185,7 +185,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 			s.AppendEmpty().SetStr("val")
 
 			err := ctxutil.SetSliceValue[any](t.Context(), nil, s, tt.keys, "value")
-			assert.Equal(t, tt.err.Error(), err.Error())
+			assert.EqualError(t, err, tt.err)
 		})
 	}
 }
@@ -205,23 +205,23 @@ func Test_GetCommonTypedSliceValue_Valid(t *testing.T) {
 		},
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, s.At(1), value)
 }
 
 func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}
 	tests := []struct {
 		name string
 		keys []ottl.Key[any]
-		err  error
+		err  string
 	}{
 		{
 			name: "first key not an integer",
@@ -231,7 +231,7 @@ func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
+			err: `unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`,
 		},
 		{
 			name: "index too large",
@@ -241,7 +241,7 @@ func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("index 1 out of bounds"),
+			err: "index 1 out of bounds",
 		},
 		{
 			name: "index too small",
@@ -251,7 +251,7 @@ func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("index -1 out of bounds"),
+			err: "index -1 out of bounds",
 		},
 		{
 			name: "invalid key type",
@@ -265,12 +265,12 @@ func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("type pcommon.StringSlice does not support indexing"),
+			err: "type pcommon.StringSlice does not support indexing",
 		},
 		{
 			name: "nil key",
 			keys: nil,
-			err:  errors.New("cannot get slice value without key"),
+			err:  "cannot get slice value without key",
 		},
 	}
 
@@ -280,7 +280,7 @@ func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 			s.Append("val")
 
 			_, err := ctxutil.GetCommonTypedSliceValue[any, string](t.Context(), nil, s, tt.keys)
-			assert.Equal(t, tt.err.Error(), err.Error())
+			assert.EqualError(t, err, tt.err)
 		})
 	}
 }
@@ -292,23 +292,23 @@ func Test_SetCommonTypedSliceValue_Valid(t *testing.T) {
 	err := ctxutil.SetCommonTypedSliceValue[any, string](t.Context(), nil, s, []ottl.Key[any]{
 		&pathtest.Key[any]{I: ottltest.Intp(1)},
 	}, "two")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "two", s.At(1))
 }
 
 func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}
 	tests := []struct {
 		name string
 		keys []ottl.Key[any]
-		err  error
+		err  string
 		val  any
 	}{
 		{
@@ -319,7 +319,7 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
+			err: `unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`,
 		},
 		{
 			name: "index too large",
@@ -329,7 +329,7 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("index 1 out of bounds"),
+			err: "index 1 out of bounds",
 		},
 		{
 			name: "index too small",
@@ -339,7 +339,7 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("index -1 out of bounds"),
+			err: "index -1 out of bounds",
 		},
 		{
 			name: "invalid key type",
@@ -353,7 +353,7 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("type pcommon.StringSlice does not support indexing"),
+			err: "type pcommon.StringSlice does not support indexing",
 		},
 		{
 			name: "invalid value type",
@@ -363,12 +363,12 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 				},
 			},
 			val: 1,
-			err: errors.New("invalid value type provided for a slice of string: int"),
+			err: "invalid value type provided for a slice of string: int",
 		},
 		{
 			name: "nil key",
 			keys: nil,
-			err:  errors.New("cannot set slice value without key"),
+			err:  "cannot set slice value without key",
 		},
 	}
 
@@ -385,7 +385,7 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 			}
 
 			err := ctxutil.SetCommonTypedSliceValue[any, string](t.Context(), nil, s, tt.keys, val)
-			assert.Equal(t, tt.err.Error(), err.Error())
+			assert.EqualError(t, err, tt.err)
 		})
 	}
 }
@@ -396,11 +396,11 @@ func Test_SetCommonTypedSliceValues(t *testing.T) {
 
 	ps := pcommon.NewSlice()
 	err := ps.FromRaw([]any{"one", "two", "three"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	invalid := pcommon.NewSlice()
 	err = invalid.FromRaw([]any{"one", 1, "three"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name      string
@@ -452,99 +452,9 @@ func Test_SetCommonTypedSliceValues(t *testing.T) {
 			if tt.wantError != "" {
 				assert.ErrorContains(t, err, tt.wantError)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, s.AsRaw())
 			}
-		})
-	}
-}
-
-func Test_GetCommonIntSliceValue_Valid(t *testing.T) {
-	s := pcommon.NewIntSlice()
-	s.Append(1, 2, 3)
-
-	value, err := ctxutil.GetCommonIntSliceValue[any, int](t.Context(), nil, s, []ottl.Key[any]{
-		&pathtest.Key[any]{
-			I: ottltest.Intp(1),
-		},
-	})
-
-	assert.NoError(t, err)
-	assert.Equal(t, int64(s.At(1)), value)
-}
-
-func Test_GetCommonIntSliceValue_Invalid(t *testing.T) {
-	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return nil, nil
-		},
-		Setter: func(_ context.Context, _ any, _ any) error {
-			return nil
-		},
-	}
-	tests := []struct {
-		name string
-		keys []ottl.Key[any]
-		err  error
-	}{
-		{
-			name: "first key not an integer",
-			keys: []ottl.Key[any]{
-				&pathtest.Key[any]{
-					S: ottltest.Strp("key"),
-					G: getSetter,
-				},
-			},
-			err: errors.New(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
-		},
-		{
-			name: "index too large",
-			keys: []ottl.Key[any]{
-				&pathtest.Key[any]{
-					I: ottltest.Intp(1),
-					G: getSetter,
-				},
-			},
-			err: errors.New("index 1 out of bounds"),
-		},
-		{
-			name: "index too small",
-			keys: []ottl.Key[any]{
-				&pathtest.Key[any]{
-					I: ottltest.Intp(-1),
-					G: getSetter,
-				},
-			},
-			err: errors.New("index -1 out of bounds"),
-		},
-		{
-			name: "invalid key type",
-			keys: []ottl.Key[any]{
-				&pathtest.Key[any]{
-					I: ottltest.Intp(0),
-					G: getSetter,
-				},
-				&pathtest.Key[any]{
-					S: ottltest.Strp("string"),
-					G: getSetter,
-				},
-			},
-			err: errors.New("type pcommon.IntSlice does not support indexing"),
-		},
-		{
-			name: "nil key",
-			keys: nil,
-			err:  errors.New("cannot get slice value without key"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := pcommon.NewIntSlice()
-			s.Append(1)
-
-			_, err := ctxutil.GetCommonIntSliceValue[any, int](t.Context(), nil, s, tt.keys)
-			assert.Equal(t, tt.err.Error(), err.Error())
 		})
 	}
 }
@@ -560,7 +470,7 @@ func Test_SetCommonIntSliceValue_Valid(t *testing.T) {
 			err := ctxutil.SetCommonIntSliceValue[any, int32](t.Context(), nil, s, []ottl.Key[any]{
 				&pathtest.Key[any]{I: ottltest.Intp(1)},
 			}, val)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, int32(1), s.At(1))
 		})
 	}
@@ -568,17 +478,17 @@ func Test_SetCommonIntSliceValue_Valid(t *testing.T) {
 
 func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			return nil
 		},
 	}
 	tests := []struct {
 		name string
 		keys []ottl.Key[any]
-		err  error
+		err  string
 		val  any
 	}{
 		{
@@ -589,7 +499,7 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
+			err: `unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`,
 		},
 		{
 			name: "index too large",
@@ -599,7 +509,7 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("index 1 out of bounds"),
+			err: "index 1 out of bounds",
 		},
 		{
 			name: "index too small",
@@ -609,7 +519,7 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("index -1 out of bounds"),
+			err: "index -1 out of bounds",
 		},
 		{
 			name: "invalid key type",
@@ -623,7 +533,7 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: errors.New("type pcommon.Int32Slice does not support indexing"),
+			err: "type pcommon.Int32Slice does not support indexing",
 		},
 		{
 			name: "invalid value type",
@@ -633,12 +543,12 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 				},
 			},
 			val: "one",
-			err: errors.New("invalid type provided for setting a slice of int32: string"),
+			err: "invalid type provided for setting a slice of int32: string",
 		},
 		{
 			name: "nil key",
 			keys: nil,
-			err:  errors.New("cannot set slice value without key"),
+			err:  "cannot set slice value without key",
 		},
 	}
 
@@ -655,7 +565,7 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 			}
 
 			err := ctxutil.SetCommonIntSliceValue[any, int32](t.Context(), nil, s, tt.keys, val)
-			assert.Equal(t, tt.err.Error(), err.Error())
+			assert.EqualError(t, err, tt.err)
 		})
 	}
 }
@@ -666,11 +576,11 @@ func Test_SetCommonIntSliceValues(t *testing.T) {
 
 	ps := pcommon.NewSlice()
 	err := ps.FromRaw([]any{1, 2, 3})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	invalid := pcommon.NewSlice()
 	err = invalid.FromRaw([]any{"one", 1, "three"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name      string
@@ -727,7 +637,7 @@ func Test_SetCommonIntSliceValues(t *testing.T) {
 			if tt.wantError != "" {
 				assert.ErrorContains(t, err, tt.wantError)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, s.AsRaw())
 			}
 		})

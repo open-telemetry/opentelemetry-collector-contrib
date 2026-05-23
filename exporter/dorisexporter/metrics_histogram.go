@@ -33,11 +33,11 @@ type metricModelHistogram struct {
 	metricModelCommon[dMetricHistogram]
 }
 
-func (m *metricModelHistogram) metricType() pmetric.MetricType {
+func (*metricModelHistogram) metricType() pmetric.MetricType {
 	return pmetric.MetricTypeHistogram
 }
 
-func (m *metricModelHistogram) tableSuffix() string {
+func (*metricModelHistogram) tableSuffix() string {
 	return "_histogram"
 }
 

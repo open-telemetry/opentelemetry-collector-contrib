@@ -1,0 +1,48 @@
+receivers:
+  hostmetrics:
+    collection_interval: 10s
+    scrapers:
+      cpu:
+      memory:
+      load:
+      disk:
+      filesystem:
+      network:
+
+processors:
+  isolationforest:
+    num_trees: 50
+    subsample_size: 128
+    window_size: 500
+    anomaly_threshold: 0.7
+    training_interval: 1m
+    add_anomaly_score: true
+    drop_anomalous_metrics: false
+    adaptive_window:
+      enabled: true
+      min_window_size: 200
+      max_window_size: 2000
+      memory_limit_mb: 64
+      adaptation_rate: 0.15
+      velocity_threshold: 10.0
+      stability_check_interval: 2m
+
+exporters:
+  debug:
+    verbosity: detailed
+
+  file:
+    path: ./metrics_output.json
+    sending_queue:
+      batch:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [hostmetrics]
+      processors: [isolationforest]
+      exporters: [debug, file]
+
+  telemetry:
+    logs:
+      level: debug

@@ -1,4 +1,7 @@
+display_name: Database Storage Extension
 type: db_storage
+
+description: The Database Storage Extension can persist state to a relational database.
 
 status:
   class: extension

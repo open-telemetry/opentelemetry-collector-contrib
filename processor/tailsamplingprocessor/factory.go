@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
@@ -27,8 +27,10 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		DecisionWait: 30 * time.Second,
-		NumTraces:    50000,
+		DecisionWait:       30 * time.Second,
+		NumTraces:          50000,
+		SampleOnFirstMatch: false,
+		SamplingStrategy:   samplingStrategyTraceComplete,
 	}
 }
 

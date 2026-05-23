@@ -29,7 +29,7 @@ func NewDataDogDataReceiver() testbed.DataReceiver {
 func (dd *datadogDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	factory := datadogreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*datadogreceiver.Config)
-	cfg.Endpoint = "0.0.0.0:8126"
+	cfg.NetAddr.Endpoint = "0.0.0.0:8126"
 
 	set := receiver.Settings{}
 	var err error
@@ -45,7 +45,7 @@ func (dd *datadogDataReceiver) Stop() error {
 	return dd.receiver.Shutdown(context.Background())
 }
 
-func (dd *datadogDataReceiver) GenConfigYAMLStr() string {
+func (*datadogDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return `
   datadog:
@@ -53,6 +53,6 @@ func (dd *datadogDataReceiver) GenConfigYAMLStr() string {
     `
 }
 
-func (dd *datadogDataReceiver) ProtocolName() string {
+func (*datadogDataReceiver) ProtocolName() string {
 	return "datadog"
 }

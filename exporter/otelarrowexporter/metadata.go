@@ -12,7 +12,6 @@ import (
 	"strings"
 	"sync"
 
-	arrowPkg "github.com/apache/arrow/go/v16/arrow"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -64,7 +63,7 @@ func newMetadataExporter(cfg component.Config, set exporter.Settings, streamClie
 		// Ignoring an error because Validate() was called.
 		_ = zstd.SetEncoderConfig(oCfg.Arrow.Zstd)
 
-		userAgent += fmt.Sprintf(" ApacheArrow/%s (NumStreams/%d)", arrowPkg.PkgVersion, oCfg.Arrow.NumStreams)
+		userAgent += fmt.Sprintf(" OTAP (NumStreams/%d)", oCfg.Arrow.NumStreams)
 	}
 	// use lower-case, to be consistent with http/2 headers.
 	mks := make([]string, len(oCfg.MetadataKeys))
@@ -100,7 +99,7 @@ func (e *metadataExporter) start(_ context.Context, host component.Host) (err er
 
 func (e *metadataExporter) shutdown(ctx context.Context) error {
 	var err error
-	e.exporters.Range(func(_ any, value any) bool {
+	e.exporters.Range(func(_, value any) bool {
 		be := value.(exp)
 		err = multierr.Append(err, be.shutdown(ctx))
 		return true
@@ -179,7 +178,7 @@ func (e *metadataExporter) getOrCreateExporter(ctx context.Context, s attribute.
 
 // getAttrSet is code taken from the core collector's batchprocessor multibatch logic.
 // https://github.com/open-telemetry/opentelemetry-collector/blob/v0.107.0/processor/batchprocessor/batch_processor.go#L298
-func (e *metadataExporter) getAttrSet(ctx context.Context, keys []string) (attribute.Set, metadata.MD) {
+func (*metadataExporter) getAttrSet(ctx context.Context, keys []string) (attribute.Set, metadata.MD) {
 	// Get each metadata key value, form the corresponding
 	// attribute set for use as a map lookup key.
 	info := client.FromContext(ctx)

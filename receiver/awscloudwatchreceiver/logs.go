@@ -13,34 +13,40 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 const (
-	noStreamName = "THIS IS INVALID STREAM"
+	noStreamName             = "THIS IS INVALID STREAM"
+	maxLogGroupsPerDiscovery = int32(50)
 )
 
 type logsReceiver struct {
-	region              string
-	profile             string
-	imdsEndpoint        string
-	pollInterval        time.Duration
-	maxEventsPerRequest int
-	nextStartTime       time.Time
-	groupRequests       []groupRequest
-	autodiscover        *AutodiscoverConfig
-	logger              *zap.Logger
-	client              client
-	consumer            consumer.Logs
-	wg                  *sync.WaitGroup
-	doneChan            chan bool
+	settings                      receiver.Settings
+	region                        string
+	profile                       string
+	imdsEndpoint                  string
+	pollInterval                  time.Duration
+	maxEventsPerRequest           int
+	initialStartTime              time.Time
+	groupNextStartTimes           map[string]time.Time
+	groupRequests                 []groupRequest
+	autodiscover                  *AutodiscoverConfig
+	client                        client
+	consumer                      consumer.Logs
+	wg                            *sync.WaitGroup
+	doneChan                      chan bool
+	storageID                     *component.ID
+	cloudwatchCheckpointPersister *cloudwatchCheckpointPersister
 }
-
-const maxLogGroupsPerDiscovery = int32(50)
 
 type client interface {
 	DescribeLogGroups(ctx context.Context, input *cloudwatchlogs.DescribeLogGroupsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.DescribeLogGroupsOutput, error)
@@ -100,7 +106,7 @@ type groupRequest interface {
 	groupName() string
 }
 
-func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *logsReceiver {
+func newLogsReceiver(cfg *Config, settings receiver.Settings, consumer consumer.Logs) *logsReceiver {
 	groups := []groupRequest{}
 	for logGroupName, sc := range cfg.Logs.Groups.NamedConfigs {
 		for _, prefix := range sc.Prefixes {
@@ -120,7 +126,18 @@ func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *l
 		autodiscover = nil
 	}
 
+	startTime := time.Unix(0, 0)
+	if cfg.Logs.StartFrom != "" {
+		parsedTime, err := time.Parse(time.RFC3339, cfg.Logs.StartFrom)
+		if err != nil {
+			settings.Logger.Error("Unable to parse start time", zap.Error(err))
+		} else {
+			startTime = parsedTime
+		}
+	}
+
 	return &logsReceiver{
+		settings:            settings,
 		region:              cfg.Region,
 		profile:             cfg.Profile,
 		consumer:            consumer,
@@ -128,25 +145,43 @@ func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *l
 		imdsEndpoint:        cfg.IMDSEndpoint,
 		autodiscover:        autodiscover,
 		pollInterval:        cfg.Logs.PollInterval,
-		nextStartTime:       time.Now().Add(-cfg.Logs.PollInterval),
+		initialStartTime:    startTime,
+		groupNextStartTimes: map[string]time.Time{},
 		groupRequests:       groups,
-		logger:              logger,
 		wg:                  &sync.WaitGroup{},
 		doneChan:            make(chan bool),
+		storageID:           cfg.StorageID,
 	}
 }
 
-func (l *logsReceiver) Start(ctx context.Context, _ component.Host) error {
-	l.logger.Debug("starting to poll for Cloudwatch logs")
+func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
+	if l.cloudwatchCheckpointPersister == nil {
+		storageClient, err := adapter.GetStorageClient(ctx, host, l.storageID, l.settings.ID)
+		if err != nil {
+			l.settings.Logger.Debug("Error connecting to Storage", zap.Error(err))
+			return err
+		}
+		l.cloudwatchCheckpointPersister = newCloudwatchCheckpointPersister(storageClient, l.settings.Logger)
+	}
+
+	l.settings.Logger.Debug("starting to poll for Cloudwatch logs")
 	l.wg.Add(1)
 	go l.startPolling(ctx)
 	return nil
 }
 
-func (l *logsReceiver) Shutdown(_ context.Context) error {
-	l.logger.Debug("shutting down logs receiver")
+func (l *logsReceiver) Shutdown(ctx context.Context) error {
+	l.settings.Logger.Debug("shutting down logs receiver")
 	close(l.doneChan)
 	l.wg.Wait()
+
+	if l.cloudwatchCheckpointPersister != nil {
+		if err := l.cloudwatchCheckpointPersister.Shutdown(ctx); err != nil {
+			l.settings.Logger.Error("failed to close storage client", zap.Error(err))
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -164,7 +199,7 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 			if l.autodiscover != nil {
 				group, err := l.discoverGroups(ctx, l.autodiscover)
 				if err != nil {
-					l.logger.Error("unable to perform discovery of log groups", zap.Error(err))
+					l.settings.Logger.Error("unable to perform discovery of log groups", zap.Error(err))
 					continue
 				}
 				l.groupRequests = group
@@ -172,7 +207,7 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 
 			err := l.poll(ctx)
 			if err != nil {
-				l.logger.Error("there was an error during the poll", zap.Error(err))
+				l.settings.Logger.Error("there was an error during the poll", zap.Error(err))
 			}
 		}
 	}
@@ -180,70 +215,146 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 
 func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
-	startTime := l.nextStartTime
+	currentGroups := make(map[string]bool)
 	endTime := time.Now()
 	for _, r := range l.groupRequests {
-		if err := l.pollForLogs(ctx, r, startTime, endTime); err != nil {
+		groupName := r.groupName()
+		currentGroups[groupName] = true
+		startTime, ok := l.groupNextStartTimes[groupName]
+		if !ok {
+			startTime = l.initialStartTime
+		}
+
+		// Retrieve the last persisted timestamp for this log group if exists
+		if l.cloudwatchCheckpointPersister != nil {
+			logGroup := r.groupName()
+			checkpoint, err := l.cloudwatchCheckpointPersister.GetCheckpoint(ctx, logGroup)
+			if err == nil && checkpoint != "" {
+				parsedTime, parseErr := time.Parse(time.RFC3339, checkpoint)
+				if parseErr == nil && parsedTime.After(startTime) {
+					startTime = parsedTime
+					l.settings.Logger.Info("Resuming from previously known checkpoint(s)",
+						zap.String("logGroup", logGroup),
+						zap.Time("startTime", startTime))
+				} else if parseErr != nil {
+					l.settings.Logger.Warn("Failed to parse persisted timestamp, using default start time",
+						zap.String("logGroup", logGroup),
+						zap.String("checkpoint", checkpoint),
+						zap.Error(parseErr))
+					if err := l.cloudwatchCheckpointPersister.DeleteCheckpoint(ctx, logGroup); err != nil {
+						l.settings.Logger.Error("Failed to delete invalid checkpoint",
+							zap.String("logGroup", logGroup),
+							zap.String("checkpoint", checkpoint),
+							zap.Error(err))
+					}
+				}
+			}
+		}
+
+		// Poll logs for the current log group
+		nextStartTime, err := l.pollForLogs(ctx, r, startTime, endTime)
+		if err != nil {
 			errs = errors.Join(errs, err)
 		}
+
+		// Persist the new end time as the checkpoint for this log group
+		if l.cloudwatchCheckpointPersister != nil {
+			logGroup := r.groupName()
+			newCheckpoint := endTime.Format(time.RFC3339)
+			err := l.cloudwatchCheckpointPersister.SetCheckpoint(ctx, logGroup, newCheckpoint)
+			if err != nil {
+				l.settings.Logger.Error("failed to persist timestamp checkpoint",
+					zap.String("logGroup", logGroup),
+					zap.String("checkpoint", newCheckpoint),
+					zap.Error(err))
+			}
+		}
+
+		// Update the receiver's nextStartTime for the next poll cycle
+		l.groupNextStartTimes[groupName] = nextStartTime
 	}
-	l.nextStartTime = endTime
+
+	// Clean up stale entries from groupNextStartTimes map
+	for groupName := range l.groupNextStartTimes {
+		if !currentGroups[groupName] {
+			delete(l.groupNextStartTimes, groupName)
+			l.settings.Logger.Debug("Cleaned up stale timestamp for removed log group", zap.String("logGroup", groupName))
+		}
+	}
 	return errs
 }
 
-func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTime, endTime time.Time) error {
+func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTime, endTime time.Time) (time.Time, error) {
+	// In case of failure, the startTime of the request will be used as the checkpoint for the next poll
+	nextStartTime := startTime
+
 	err := l.ensureSession()
 	if err != nil {
-		return err
+		return nextStartTime, err
 	}
+	logGroup := pc.groupName()
 	nextToken := aws.String("")
 
 	for nextToken != nil {
 		select {
-		// if done, we want to stop processing paginated stream of events
 		case _, ok := <-l.doneChan:
 			if !ok {
-				return nil
+				return nextStartTime, nil
 			}
 		default:
 			input := pc.request(l.maxEventsPerRequest, *nextToken, &startTime, &endTime)
 			resp, err := l.client.FilterLogEvents(ctx, input)
 			if err != nil {
-				l.logger.Error("unable to retrieve logs from cloudwatch", zap.String("log group", pc.groupName()), zap.Error(err))
-				break
+				var resourceNotFoundException *types.ResourceNotFoundException
+				if errors.As(err, &resourceNotFoundException) {
+					l.settings.Logger.Warn("log group no longer exists, skipping",
+						zap.String("logGroup", logGroup),
+						zap.Error(err))
+					return nextStartTime, fmt.Errorf("log group %s no longer exists: %w", logGroup, err)
+				}
+				return nextStartTime, fmt.Errorf("failed to retrieve logs from log group %s: %w", logGroup, err)
 			}
+
 			observedTime := pcommon.NewTimestampFromTime(time.Now())
-			logs := l.processEvents(observedTime, pc.groupName(), resp)
+			logs := l.processEvents(observedTime, logGroup, resp)
 			if logs.LogRecordCount() > 0 {
 				if err = l.consumer.ConsumeLogs(ctx, logs); err != nil {
-					l.logger.Error("unable to consume logs", zap.Error(err))
-					break
+					l.settings.Logger.Error("unable to consume logs",
+						zap.String("logGroup", logGroup),
+						zap.Error(err))
+					return nextStartTime, fmt.Errorf("failed to consume logs from log group %s: %w", logGroup, err)
 				}
+				// the next timestamp should be 1 more millisecond than the last log
+				nextStartTime = time.UnixMilli(*resp.Events[len(resp.Events)-1].Timestamp + 1)
+			} else {
+				// Skip the time range in case there are no logs
+				nextStartTime = endTime
 			}
 			nextToken = resp.NextToken
 		}
 	}
-	return nil
+
+	return nextStartTime, nil
 }
 
 func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string, output *cloudwatchlogs.FilterLogEventsOutput) plog.Logs {
 	logs := plog.NewLogs()
 
-	resourceMap := map[string](map[string]*plog.ResourceLogs){}
+	resourceMap := map[string]map[string]*plog.ResourceLogs{}
 
 	for _, e := range output.Events {
 		if e.Timestamp == nil {
-			l.logger.Error("unable to determine timestamp of event as the timestamp is nil")
+			l.settings.Logger.Error("unable to determine timestamp of event as the timestamp is nil")
 			continue
 		}
 
 		if e.EventId == nil {
-			l.logger.Error("no event ID was present on the event, skipping entry")
+			l.settings.Logger.Error("no event ID was present on the event, skipping entry")
 			continue
 		}
 
 		if e.Message == nil {
-			l.logger.Error("no message was present on the event", zap.String("event.id", *e.EventId))
+			l.settings.Logger.Error("no message was present on the event", zap.String("event.id", *e.EventId))
 			continue
 		}
 
@@ -265,10 +376,11 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 			resourceAttributes := resourceLogs.Resource().Attributes()
 			resourceAttributes.PutStr("aws.region", l.region)
 			resourceAttributes.PutStr("cloudwatch.log.group.name", logGroupName)
-			resourceAttributes.PutStr("cloudwatch.log.stream", logStreamName)
+			if logStreamName != "" {
+				resourceAttributes.PutStr("cloudwatch.log.stream", logStreamName)
+			}
 			group[logStreamName] = resourceLogs
 
-			// Ensure one scopeLogs is initialized so we can handle in standardized way going forward.
 			_ = resourceLogs.ScopeLogs().AppendEmpty()
 		}
 
@@ -286,7 +398,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 }
 
 func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverConfig) ([]groupRequest, error) {
-	l.logger.Debug("attempting to discover log groups.", zap.Int("limit", auto.Limit))
+	l.settings.Logger.Debug("attempting to discover log groups.", zap.Int("limit", auto.Limit))
 	groups := []groupRequest{}
 	err := l.ensureSession()
 	if err != nil {
@@ -304,12 +416,24 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			Limit: aws.Int32(maxLogGroupsPerDiscovery),
 		}
 
-		if len(*nextToken) > 0 {
+		if *nextToken != "" {
 			req.NextToken = nextToken
+		}
+
+		if auto.Pattern != "" {
+			req.LogGroupNamePattern = &auto.Pattern
 		}
 
 		if auto.Prefix != "" {
 			req.LogGroupNamePrefix = &auto.Prefix
+		}
+
+		if auto.IncludeLinkedAccounts != nil {
+			req.IncludeLinkedAccounts = auto.IncludeLinkedAccounts
+		}
+
+		if len(auto.AccountIdentifiers) > 0 {
+			req.AccountIdentifiers = auto.AccountIdentifiers
 		}
 
 		dlgResults, err := l.client.DescribeLogGroups(ctx, req)
@@ -317,9 +441,10 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			return groups, fmt.Errorf("unable to list log groups: %w", err)
 		}
 
-		for _, lg := range dlgResults.LogGroups {
+		for i := range dlgResults.LogGroups {
+			lg := &dlgResults.LogGroups[i]
 			if numGroups == auto.Limit {
-				l.logger.Debug("reached limit of the number of log groups to discover."+
+				l.settings.Logger.Debug("reached limit of the number of log groups to discover."+
 					"To increase the number of groups able to be discovered, please increase the autodiscover limit field.",
 					zap.Int("groups_discovered", numGroups), zap.Int("limit", auto.Limit))
 				break

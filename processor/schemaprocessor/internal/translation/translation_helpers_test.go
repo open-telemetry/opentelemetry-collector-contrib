@@ -50,7 +50,7 @@ func NewExampleLogs(tb testing.TB, at Version) plog.Logs {
 
 	logs := plog.NewLogs()
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		log := logs.ResourceLogs().AppendEmpty()
 		log.SetSchemaUrl(schemaURL)
 
@@ -64,10 +64,9 @@ func NewExampleLogs(tb testing.TB, at Version) plog.Logs {
 			l.Attributes().PutStr("application.stacktrace", "func main() { panic('boom') }")
 			l.SetSeverityText("ERROR")
 			l.Body().SetStr("bad program")
-		case Version{1, 5, 0}, Version{1, 4, 0}:
+		case Version{1, 5, 0}, Version{1, 4, 0},
 			// No changes to log during this versions
-			fallthrough
-		case Version{1, 2, 0}:
+			Version{1, 2, 0}:
 			log.Resource().Attributes().PutStr("test.name", tb.Name())
 
 			l := sl.LogRecords().AppendEmpty()
@@ -103,14 +102,14 @@ func NewExampleMetrics(tb testing.TB, at Version) pmetric.Metrics {
 	schemaURL := fmt.Sprint("https://example.com/", at.String())
 
 	metrics := pmetric.NewMetrics()
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		metric := metrics.ResourceMetrics().AppendEmpty()
 		metric.SetSchemaUrl(schemaURL)
 
 		sMetric := metric.ScopeMetrics().AppendEmpty()
 		sMetric.SetSchemaUrl(schemaURL)
 
-		for j := 0; j < 5; j++ {
+		for range 5 {
 			switch at {
 			case Version{1, 7, 0}, Version{1, 5, 0}:
 				metric.Resource().Attributes().PutStr("test.name", tb.Name())
@@ -256,7 +255,7 @@ func NewExampleSpans(tb testing.TB, at Version) ptrace.Traces {
 	schemaURL := fmt.Sprint("https://example.com/", at.String())
 	traces := ptrace.NewTraces()
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		traces := traces.ResourceSpans().AppendEmpty()
 		traces.SetSchemaUrl(schemaURL)
 

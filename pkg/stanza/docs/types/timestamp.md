@@ -121,7 +121,7 @@ exporters:
   debug:
     verbosity: detailed
 receivers:
-  filelog:
+  file_log:
     include:
     - my-app.log
     start_at: beginning
@@ -135,7 +135,7 @@ service:
   pipelines:
     logs:
       receivers:
-      - filelog
+      - file_log
       exporters:
       - debug
 ```
@@ -148,7 +148,7 @@ exporters:
   debug:
     verbosity: detailed
 receivers:
-  filelog:
+  file_log:
     include:
     - my-app.log
     start_at: beginning
@@ -164,7 +164,7 @@ service:
   pipelines:
     logs:
       receivers:
-      - filelog
+      - file_log
       exporters:
       - debug
 ```
@@ -186,7 +186,7 @@ exporters:
   debug:
     verbosity: detailed
 receivers:
-  filelog:
+  file_log:
     include:
     - logs-json.log
     start_at: beginning
@@ -200,7 +200,7 @@ service:
   pipelines:
     logs:
       receivers:
-      - filelog
+      - file_log
       exporters:
       - debug
 ```

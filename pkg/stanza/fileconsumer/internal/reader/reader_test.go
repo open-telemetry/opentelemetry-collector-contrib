@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
-	internaltime "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/time"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/stanzatime"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
@@ -214,12 +214,12 @@ func TestFlushPeriodEOF(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), r.Offset)
 
-	clock := internaltime.NewAlwaysIncreasingClock()
-	internaltime.Now = clock.Now
-	internaltime.Since = clock.Since
+	clock := stanzatime.NewAlwaysIncreasingClock()
+	stanzatime.Now = clock.Now
+	stanzatime.Since = clock.Since
 	defer func() {
-		internaltime.Now = time.Now
-		internaltime.Since = time.Since
+		stanzatime.Now = time.Now
+		stanzatime.Since = time.Since
 	}()
 
 	// First ReadToEnd should not emit only the terminated token
@@ -245,12 +245,12 @@ func TestUntermintedLongLogEntry(t *testing.T) {
 
 	// Use a controlled clock. It advances by 1ns each time Now() is called, which may happen
 	// a few times during a call to ReadToEnd.
-	clock := internaltime.NewAlwaysIncreasingClock()
-	internaltime.Now = clock.Now
-	internaltime.Since = clock.Since
+	clock := stanzatime.NewAlwaysIncreasingClock()
+	stanzatime.Now = clock.Now
+	stanzatime.Since = clock.Since
 	defer func() {
-		internaltime.Now = time.Now
-		internaltime.Since = time.Since
+		stanzatime.Now = time.Now
+		stanzatime.Since = time.Since
 	}()
 
 	// Use a long flush period to ensure it does not expire DURING a ReadToEnd
@@ -288,12 +288,12 @@ func TestUntermintedLogEntryGrows(t *testing.T) {
 
 	// Use a controlled clock. It advances by 1ns each time Now() is called, which may happen
 	// a few times during a call to ReadToEnd.
-	clock := internaltime.NewAlwaysIncreasingClock()
-	internaltime.Now = clock.Now
-	internaltime.Since = clock.Since
+	clock := stanzatime.NewAlwaysIncreasingClock()
+	stanzatime.Now = clock.Now
+	stanzatime.Since = clock.Since
 	defer func() {
-		internaltime.Now = time.Now
-		internaltime.Since = time.Since
+		stanzatime.Now = time.Now
+		stanzatime.Since = time.Since
 	}()
 
 	// Use a long flush period to ensure it does not expire DURING a ReadToEnd
@@ -340,20 +340,20 @@ func BenchmarkFileRead(b *testing.B) {
 	_, err := temp.WriteString(temp.Name() + "\n")
 	require.NoError(b, err)
 	// Write half the content before starting the benchmark
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		_, err := temp.WriteString(string(filetest.TokenWithLength(999)) + "\n")
 		require.NoError(b, err)
 	}
 
 	// Use a long flush period to ensure it does not expire DURING a ReadToEnd
 	counter := atomic.Int64{}
-	f := newTestFactory(b, func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64) error {
+	f := newTestFactory(b, func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
 		counter.Add(int64(len(tokens)))
 		return nil
 	})
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for i := 0; b.Loop(); i++ {
 		file, err := os.OpenFile(temp.Name(), os.O_CREATE|os.O_RDWR, 0o600)
 		require.NoError(b, err)
 		fp, err := f.NewFingerprint(file)

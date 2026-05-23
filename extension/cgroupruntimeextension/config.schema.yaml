@@ -1,0 +1,20 @@
+$defs:
+  go_max_procs_config:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  go_mem_limit_config:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      ratio:
+        type: number
+        x-customType: float64
+type: object
+properties:
+  gomaxprocs:
+    $ref: go_max_procs_config
+  gomemlimit:
+    $ref: go_mem_limit_config

@@ -8,16 +8,20 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/xextension"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
+	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
 )
 
 func NewFactory() extension.Factory {
-	return extension.NewFactory(
+	return xextension.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
 		createExtension,
 		metadata.ExtensionStability,
+		xextension.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
@@ -27,8 +31,11 @@ func createExtension(_ context.Context, settings extension.Settings, cfg compone
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		VPCFlowLogConfig: VPCFlowLogConfig{
-			FileFormat: fileFormatPlainText,
+		VPCFlowLogConfig: vpcflowlog.Config{
+			FileFormat: constants.FileFormatPlainText,
+		},
+		VPCFlowLogConfigV1: vpcflowlog.Config{
+			FileFormat: constants.FileFormatPlainText,
 		},
 	}
 }

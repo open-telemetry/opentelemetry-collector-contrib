@@ -7,12 +7,14 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("signaltometrics")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector"
+	Type           = component.MustNewType("signal_to_metrics")
+	DeprecatedType = component.MustNewType("signaltometrics")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector"
 )
 
 const (
-	TracesToMetricsStability  = component.StabilityLevelAlpha
-	LogsToMetricsStability    = component.StabilityLevelAlpha
-	MetricsToMetricsStability = component.StabilityLevelAlpha
+	TracesToMetricsStability   = component.StabilityLevelAlpha
+	LogsToMetricsStability     = component.StabilityLevelAlpha
+	MetricsToMetricsStability  = component.StabilityLevelAlpha
+	ProfilesToMetricsStability = component.StabilityLevelAlpha
 )

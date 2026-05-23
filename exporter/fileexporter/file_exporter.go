@@ -5,6 +5,8 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -60,6 +62,19 @@ func (e *fileExporter) Start(_ context.Context, host component.Host) error {
 		return err
 	}
 	export := buildExportFunc(e.conf)
+
+	// Optionally ensure the output directory exists.
+	if e.conf.CreateDirectory {
+		dir := filepath.Dir(e.conf.Path)
+		perm := os.FileMode(0o755)
+		if e.conf.directoryPermissionsParsed != 0 {
+			perm = os.FileMode(e.conf.directoryPermissionsParsed)
+		}
+		err = os.MkdirAll(dir, perm)
+		if err != nil {
+			return err
+		}
+	}
 
 	e.writer, err = newFileWriter(e.conf.Path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export)
 	if err != nil {

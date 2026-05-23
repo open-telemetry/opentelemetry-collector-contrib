@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -35,26 +36,29 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
-			expected: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "1.2.3.4:1234",
-					TLSSetting: &configtls.ServerConfig{
-						Config: configtls.Config{
-							CertFile: "certs/server.crt",
-							KeyFile:  "certs/server.key",
-							CAFile:   "certs/ca.crt",
-						},
+			expected: func() component.Config {
+				serverConfig := confighttp.NewDefaultServerConfig()
+				serverConfig.NetAddr.Endpoint = "1.2.3.4:1234"
+				serverConfig.TLS = configoptional.Some(configtls.ServerConfig{
+					Config: configtls.Config{
+						CertFile: "certs/server.crt",
+						KeyFile:  "certs/server.key",
+						CAFile:   "certs/ca.crt",
 					},
-				},
-				Namespace: "test-space",
-				ConstLabels: map[string]string{
-					"label1":        "value1",
-					"another label": "spaced value",
-				},
-				SendTimestamps:    true,
-				MetricExpiration:  60 * time.Minute,
-				AddMetricSuffixes: false,
-			},
+				})
+
+				return &Config{
+					ServerConfig: serverConfig,
+					Namespace:    "test-space",
+					ConstLabels: map[string]string{
+						"label1":        "value1",
+						"another label": "spaced value",
+					},
+					SendTimestamps:    true,
+					MetricExpiration:  60 * time.Minute,
+					AddMetricSuffixes: false,
+				}
+			}(),
 		},
 	}
 

@@ -16,88 +16,88 @@ metrics:
 
 The average amount of CPU being used by the node.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| % | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| class | The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes. | Str: ``datapath``, ``services`` |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| class | The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes. | Str: ``datapath``, ``services`` | Recommended | - |
 
 ### nsxt.node.filesystem.usage
 
 The amount of storage space used by the node.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | The state of storage space. | Str: ``used``, ``available`` |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| state | The state of storage space. | Str: ``used``, ``available`` | Recommended | - |
 
 ### nsxt.node.filesystem.utilization
 
 The percentage of storage space utilized.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| % | Gauge | Double |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
 
 ### nsxt.node.memory.cache.usage
 
 The size of the node's memory cache.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| KBy | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| KBy | Sum | Int | Cumulative | false | Development |
 
 ### nsxt.node.memory.usage
 
 The memory usage of the node.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| KBy | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| KBy | Sum | Int | Cumulative | false | Development |
 
 ### nsxt.node.network.io
 
 The number of bytes which have flowed through the network interface.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network flow. | Str: ``received``, ``transmitted`` |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of network flow. | Str: ``received``, ``transmitted`` | Recommended | - |
 
 ### nsxt.node.network.packet.count
 
 The number of packets which have flowed through the network interface on the node.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {packets} | Sum | Int | Cumulative | true |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {packets} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network flow. | Str: ``received``, ``transmitted`` |
-| type | The type of packet counter. | Str: ``dropped``, ``errored``, ``success`` |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of network flow. | Str: ``received``, ``transmitted`` | Recommended | - |
+| type | The type of packet counter. | Str: ``dropped``, ``errored``, ``success`` | Recommended | - |
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| device.id | The name of the network interface. | Any Str | true |
-| nsxt.node.id | The ID of the NSX Node. | Any Str | true |
-| nsxt.node.name | The name of the NSX Node. | Any Str | true |
-| nsxt.node.type | The type of NSX Node. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| device.id | The name of the network interface. | Any Str | true | - |
+| nsxt.node.id | The ID of the NSX Node. | Any Str | true | - |
+| nsxt.node.name | The name of the NSX Node. | Any Str | true | - |
+| nsxt.node.type | The type of NSX Node. | Any Str | true | - |

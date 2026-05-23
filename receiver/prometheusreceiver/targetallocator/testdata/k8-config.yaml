@@ -1,4 +1,0 @@
-target_allocator:
-  endpoint: http://target-allocator-service:80
-  interval: 30s
-                         

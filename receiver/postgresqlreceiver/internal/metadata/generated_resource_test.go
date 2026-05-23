@@ -17,41 +17,46 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetPostgresqlIndexName("postgresql.index.name-val")
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 			rb.SetPostgresqlTableName("postgresql.table.name-val")
+			rb.SetServiceInstanceID("service.instance.id-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 4, res.Attributes().Len())
+				assert.Equal(t, 5, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 4, res.Attributes().Len())
+				assert.Equal(t, 5, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("postgresql.database.name")
+			postgresqlDatabaseNameAttrVal, ok := res.Attributes().Get("postgresql.database.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "postgresql.database.name-val", val.Str())
+				assert.Equal(t, "postgresql.database.name-val", postgresqlDatabaseNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("postgresql.index.name")
+			postgresqlIndexNameAttrVal, ok := res.Attributes().Get("postgresql.index.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "postgresql.index.name-val", val.Str())
+				assert.Equal(t, "postgresql.index.name-val", postgresqlIndexNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("postgresql.schema.name")
+			postgresqlSchemaNameAttrVal, ok := res.Attributes().Get("postgresql.schema.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "postgresql.schema.name-val", val.Str())
+				assert.Equal(t, "postgresql.schema.name-val", postgresqlSchemaNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("postgresql.table.name")
+			postgresqlTableNameAttrVal, ok := res.Attributes().Get("postgresql.table.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "postgresql.table.name-val", val.Str())
+				assert.Equal(t, "postgresql.table.name-val", postgresqlTableNameAttrVal.Str())
+			}
+			serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "service.instance.id-val", serviceInstanceIDAttrVal.Str())
 			}
 		})
 	}

@@ -50,14 +50,14 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 		name               string                                                                    // name of the test
 		metricsDataFn      func(metricType pmetric.MetricType, ts pcommon.Timestamp) pmetric.Metrics // function that generates the metric
 		metricDataType     pmetric.MetricType
-		expectedAdxMetrics []*AdxMetric // expected results
+		expectedAdxMetrics []*adxMetric // expected results
 	}{
 		{
 			//
 			name:           "metrics_counter_over_time",
 			metricsDataFn:  newMetrics,
 			metricDataType: pmetric.MetricTypeSum,
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "page_faults",
@@ -74,7 +74,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 			name:           "metrics_simple_histogram_with_value",
 			metricsDataFn:  newMetrics,
 			metricDataType: pmetric.MetricTypeHistogram,
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "http.server.duration_sum",
@@ -186,7 +186,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 		name               string                  // name of the test
 		resourceFn         func() pcommon.Resource // function that generates the resources
 		metricDataFn       func() pmetric.Metric   // function that generates the metric
-		expectedAdxMetrics []*AdxMetric            // expected results
+		expectedAdxMetrics []*adxMetric            // expected results
 		configFn           func() *Config          // the config to apply
 	}{
 		{
@@ -206,7 +206,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				return createDefaultConfig().(*Config)
 			},
 
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "page_faults",
@@ -236,7 +236,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				return createDefaultConfig().(*Config)
 			},
 
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "page_faults",
@@ -285,7 +285,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				return createDefaultConfig().(*Config)
 			},
 
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "http.server.duration_sum",
@@ -390,7 +390,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
 			},
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "cpu.frequency",
@@ -421,7 +421,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
 			},
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "cpu.frequency",
@@ -457,7 +457,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				qt2.SetValue(45)
 				return summary
 			},
-			expectedAdxMetrics: []*AdxMetric{
+			expectedAdxMetrics: []*adxMetric{
 				{
 					Timestamp:          tstr,
 					MetricName:         "http.server.duration_sum",

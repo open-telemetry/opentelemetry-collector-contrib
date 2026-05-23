@@ -134,18 +134,21 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "auto"),
 			expected: &Config{
+				MaxStaleness: 1 * time.Hour,
 				InitialValue: tracking.InitialValueAuto,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "keep"),
 			expected: &Config{
+				MaxStaleness: 1 * time.Hour,
 				InitialValue: tracking.InitialValueKeep,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "drop"),
 			expected: &Config{
+				MaxStaleness: 1 * time.Hour,
 				InitialValue: tracking.InitialValueDrop,
 			},
 		},

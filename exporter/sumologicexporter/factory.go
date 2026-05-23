@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -29,8 +30,11 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	qs := exporterhelper.NewDefaultQueueConfig()
-	qs.Enabled = false
+	qs := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	retryConfig := configretry.NewDefaultBackOffConfig()
+	retryConfig.Multiplier = DefaultRetryOnFailureMultiplier
+	retryConfig.MaxInterval = DefaultRetryOnFailureMaxInterval
+	retryConfig.MaxElapsedTime = DefaultRetryOnFailureMaxElapsedTime
 
 	return &Config{
 		MaxRequestBodySize: DefaultMaxRequestBodySize,
@@ -39,7 +43,7 @@ func createDefaultConfig() component.Config {
 		Client:             DefaultClient,
 
 		ClientConfig:         createDefaultClientConfig(),
-		BackOffConfig:        configretry.NewDefaultBackOffConfig(),
+		BackOffConfig:        retryConfig,
 		QueueSettings:        qs,
 		StickySessionEnabled: DefaultStickySessionEnabled,
 	}

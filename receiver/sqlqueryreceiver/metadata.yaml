@@ -1,4 +1,8 @@
+display_name: SQL Query Receiver
 type: sqlquery
+
+description: |
+  The SQL Query Receiver uses custom SQL queries to generate logs and/or metrics from a database connection.
 
 status:
   class: receiver
@@ -20,3 +24,17 @@ tests:
         # Can be removed once the following issue is resolved:
         # https://github.com/snowflakedb/gosnowflake/issues/1369
         - "github.com/snowflakedb/gosnowflake.initOCSPCacheClearer.func1"
+  config:
+    driver: postgres
+    host: localhost
+    port: 5432
+    database: test
+    username: test
+    password: test
+    queries:
+      - sql: "SELECT 1"
+        metrics:
+          - metric_name: test_metric
+            value_column: "1"
+            value_type: int
+            data_type: gauge

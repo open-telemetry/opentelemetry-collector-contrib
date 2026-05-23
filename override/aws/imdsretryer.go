@@ -5,47 +5,67 @@ package aws // import "github.com/amazon-contributing/opentelemetry-collector-co
 
 import (
 	"errors"
+	"os"
+	"strconv"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/client"
-	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"go.uber.org/zap"
 )
 
 const (
 	DefaultIMDSRetries = 1
+	EnvIMDSNumberRetry = "IMDS_NUMBER_RETRY"
 )
 
+// IMDSRetryer extends the SDK v2 standard retryer to treat IMDS errors
+// as retryable. The default SDK retryer treats bare IMDS failures
+// (which arrive as *smithyhttp.ResponseError without a more specific
+// type) as non-retryable; this override adds them to the retryable set
+// so a single transient IMDS blip does not abort agent startup.
 type IMDSRetryer struct {
-	client.DefaultRetryer
+	*retry.Standard
 	logger *zap.Logger
 }
 
-// NewIMDSRetryer allows us to retry imds errors
-func NewIMDSRetryer(retryNumber int) IMDSRetryer {
-	imdsRetryer := IMDSRetryer{
-		DefaultRetryer: client.DefaultRetryer{
-			NumMaxRetries: retryNumber,
-		},
+var _ aws.RetryerV2 = (*IMDSRetryer)(nil)
+
+// NewIMDSRetryer returns a retryer that retries up to `retries` times
+// in addition to the first attempt.
+func NewIMDSRetryer(retries int) *IMDSRetryer {
+	r := &IMDSRetryer{
+		Standard: retry.NewStandard(func(options *retry.StandardOptions) {
+			options.MaxAttempts = retries + 1 // MaxAttempts includes the first attempt
+		}),
 	}
-	logger, err := zap.NewDevelopment()
-	if err == nil {
-		imdsRetryer.logger = logger
+	if logger, err := zap.NewDevelopment(); err == nil {
+		r.logger = logger
 	}
-	return imdsRetryer
+	return r
 }
 
-func (r IMDSRetryer) ShouldRetry(req *request.Request) bool {
-	// there is no enum of error codes
-	// EC2MetadataError is not retryable by default
-	// Fallback to SDK's built in retry rules
-	shouldRetry := false
-	var awsError awserr.Error
-	if r.DefaultRetryer.ShouldRetry(req) || (errors.As(req.Error, &awsError) && awsError != nil && awsError.Code() == "EC2MetadataError") {
-		shouldRetry = true
-	}
+// IsErrorRetryable returns true for any error the standard retryer
+// considers retryable, plus any error that is or wraps a
+// *smithyhttp.ResponseError (the type IMDS middleware uses to surface
+// failures).
+func (r *IMDSRetryer) IsErrorRetryable(err error) bool {
+	var responseErr *smithyhttp.ResponseError
+	shouldRetry := errors.As(err, &responseErr) || r.Standard.IsErrorRetryable(err)
 	if r.logger != nil {
-		r.logger.Debug("imds error : ", zap.Bool("shouldRetry", shouldRetry), zap.Error(req.Error))
+		r.logger.Debug("imds error : ", zap.Bool("shouldRetry", shouldRetry), zap.Error(err))
 	}
 	return shouldRetry
+}
+
+// GetDefaultRetryNumber reads the IMDS retry count from the
+// IMDS_NUMBER_RETRY environment variable, falling back to
+// DefaultIMDSRetries when unset, non-numeric, or negative.
+func GetDefaultRetryNumber() int {
+	if v := os.Getenv(EnvIMDSNumberRetry); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			return n
+		}
+	}
+	return DefaultIMDSRetries
 }

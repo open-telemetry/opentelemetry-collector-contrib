@@ -1,0 +1,5 @@
+description: JournaldConfig defines configuration for the journald receiver
+type: object
+allOf:
+  - $ref: /pkg/stanza/adapter.base_config
+  - $ref: /pkg/stanza/operator/input/journald.config

@@ -6,16 +6,24 @@ package aggregator // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/model"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
+
+// FilterAttrsFunc is a lazy function that produces a filtered attribute map.
+// It is only called when the aggregator encounters a new unique attribute
+// set and needs to create a datapoint. This avoids allocating a pcommon.Map
+// for every signal item.
+type FilterAttrsFunc func() (pcommon.Map, error)
 
 // Aggregator provides a single interface to update all metrics
 // datastructures. The required datastructure is selected using
@@ -27,17 +35,23 @@ type Aggregator[K any] struct {
 	smLookup    map[[16]byte]pmetric.ScopeMetrics
 	valueCounts map[model.MetricKey]map[[16]byte]map[[16]byte]*valueCountDP
 	sums        map[model.MetricKey]map[[16]byte]map[[16]byte]*sumDP
+	gauges      map[model.MetricKey]map[[16]byte]map[[16]byte]*gaugeDP
 	timestamp   time.Time
+	errorMode   ottl.ErrorMode
+	logger      *zap.Logger
 }
 
 // NewAggregator creates a new instance of aggregator.
-func NewAggregator[K any](metrics pmetric.Metrics) *Aggregator[K] {
+func NewAggregator[K any](metrics pmetric.Metrics, errorMode ottl.ErrorMode, logger *zap.Logger) *Aggregator[K] {
 	return &Aggregator[K]{
 		result:      metrics,
 		smLookup:    make(map[[16]byte]pmetric.ScopeMetrics),
 		valueCounts: make(map[model.MetricKey]map[[16]byte]map[[16]byte]*valueCountDP),
 		sums:        make(map[model.MetricKey]map[[16]byte]map[[16]byte]*sumDP),
+		gauges:      make(map[model.MetricKey]map[[16]byte]map[[16]byte]*gaugeDP),
 		timestamp:   time.Now(),
+		errorMode:   errorMode,
+		logger:      logger,
 	}
 }
 
@@ -45,11 +59,13 @@ func (a *Aggregator[K]) Aggregate(
 	ctx context.Context,
 	tCtx K,
 	md model.MetricDef[K],
-	resAttrs, srcAttrs pcommon.Map,
+	resAttrs pcommon.Map,
+	attrID [16]byte,
+	filterAttrs FilterAttrsFunc,
 	defaultCount int64,
 ) error {
-	switch {
-	case md.ExponentialHistogram != nil:
+	switch md.Key.Type {
+	case pmetric.MetricTypeExponentialHistogram:
 		val, count, err := getValueCount(
 			ctx, tCtx,
 			md.ExponentialHistogram.Value,
@@ -57,10 +73,12 @@ func (a *Aggregator[K]) Aggregate(
 			defaultCount,
 		)
 		if err != nil {
-			return err
+			return a.handleError(err)
 		}
-		return a.aggregateValueCount(md, resAttrs, srcAttrs, val, count)
-	case md.ExplicitHistogram != nil:
+		if err := a.aggregateValueCount(md, resAttrs, attrID, filterAttrs, val, count); err != nil {
+			return a.handleError(err)
+		}
+	case pmetric.MetricTypeHistogram:
 		val, count, err := getValueCount(
 			ctx, tCtx,
 			md.ExplicitHistogram.Value,
@@ -68,27 +86,72 @@ func (a *Aggregator[K]) Aggregate(
 			defaultCount,
 		)
 		if err != nil {
-			return err
+			return a.handleError(err)
 		}
-		return a.aggregateValueCount(md, resAttrs, srcAttrs, val, count)
-	case md.Sum != nil:
+		if err := a.aggregateValueCount(md, resAttrs, attrID, filterAttrs, val, count); err != nil {
+			return a.handleError(err)
+		}
+	case pmetric.MetricTypeSum:
 		raw, err := md.Sum.Value.Eval(ctx, tCtx)
 		if err != nil {
-			return fmt.Errorf("failed to execute OTTL value for sum: %w", err)
+			return a.handleError(fmt.Errorf("failed to execute OTTL value for sum: %w", err))
 		}
 		switch v := raw.(type) {
 		case int64:
-			return a.aggregateInt(md, resAttrs, srcAttrs, v)
+			if err := a.aggregateInt(md, resAttrs, attrID, filterAttrs, v); err != nil {
+				return a.handleError(err)
+			}
 		case float64:
-			return a.aggregateDouble(md, resAttrs, srcAttrs, v)
+			if err := a.aggregateDouble(md, resAttrs, attrID, filterAttrs, v); err != nil {
+				return a.handleError(err)
+			}
 		default:
-			return fmt.Errorf(
+			return a.handleError(fmt.Errorf(
 				"failed to parse sum OTTL value of type %T into int64 or float64: %v",
 				v, v,
-			)
+			))
+		}
+	case pmetric.MetricTypeGauge:
+		raw, err := md.Gauge.Value.Eval(ctx, tCtx)
+		if err != nil {
+			if strings.Contains(err.Error(), "key not found in map") {
+				// Gracefully skip missing keys in ExtractGrokPatterns
+				return nil
+			}
+			return a.handleError(fmt.Errorf("failed to execute OTTL value for gauge: %w", err))
+		}
+		if raw == nil {
+			return nil
+		}
+		switch v := raw.(type) {
+		case int64, float64:
+			if err := a.aggregateGauge(md, resAttrs, attrID, filterAttrs, v); err != nil {
+				return a.handleError(err)
+			}
+		default:
+			return a.handleError(fmt.Errorf(
+				"failed to parse gauge OTTL value of type %T into int64 or float64: %v",
+				v, v,
+			))
 		}
 	}
 	return nil
+}
+
+// handleError handles errors based on the configured ErrorMode.
+// It returns nil for ignore/silent modes and returns the error for propagate mode.
+func (a *Aggregator[K]) handleError(err error) error {
+	switch a.errorMode {
+	case ottl.PropagateError:
+		return err
+	case ottl.IgnoreError:
+		a.logger.Error("Error processing data", zap.Error(err))
+		return nil
+	case ottl.SilentError:
+		return nil
+	default:
+		return err
+	}
 }
 
 // Finalize finalizes the aggregations performed by the aggregator so far into
@@ -103,20 +166,20 @@ func (a *Aggregator[K]) Finalize(mds []model.MetricDef[K]) {
 				destExpHist      pmetric.ExponentialHistogram
 				destExplicitHist pmetric.Histogram
 			)
-			switch {
-			case md.ExponentialHistogram != nil:
+			switch md.Key.Type {
+			case pmetric.MetricTypeExponentialHistogram:
 				destMetric := metrics.AppendEmpty()
 				destMetric.SetName(md.Key.Name)
+				destMetric.SetUnit(md.Key.Unit)
 				destMetric.SetDescription(md.Key.Description)
-				destMetric.SetUnit(md.Unit)
 				destExpHist = destMetric.SetEmptyExponentialHistogram()
 				destExpHist.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				destExpHist.DataPoints().EnsureCapacity(len(dpMap))
-			case md.ExplicitHistogram != nil:
+			case pmetric.MetricTypeHistogram:
 				destMetric := metrics.AppendEmpty()
 				destMetric.SetName(md.Key.Name)
+				destMetric.SetUnit(md.Key.Unit)
 				destMetric.SetDescription(md.Key.Description)
-				destMetric.SetUnit(md.Unit)
 				destExplicitHist = destMetric.SetEmptyHistogram()
 				destExplicitHist.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				destExplicitHist.DataPoints().EnsureCapacity(len(dpMap))
@@ -136,13 +199,29 @@ func (a *Aggregator[K]) Finalize(mds []model.MetricDef[K]) {
 			metrics := a.smLookup[resID].Metrics()
 			destMetric := metrics.AppendEmpty()
 			destMetric.SetName(md.Key.Name)
+			destMetric.SetUnit(md.Key.Unit)
 			destMetric.SetDescription(md.Key.Description)
-			destMetric.SetUnit(md.Unit)
 			destCounter := destMetric.SetEmptySum()
 			destCounter.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+			destCounter.SetIsMonotonic(md.Sum.IsMonotonic)
 			destCounter.DataPoints().EnsureCapacity(len(dpMap))
 			for _, dp := range dpMap {
 				dp.Copy(a.timestamp, destCounter.DataPoints().AppendEmpty())
+			}
+		}
+		for resID, dpMap := range a.gauges[md.Key] {
+			if md.Gauge == nil {
+				continue
+			}
+			metrics := a.smLookup[resID].Metrics()
+			destMetric := metrics.AppendEmpty()
+			destMetric.SetName(md.Key.Name)
+			destMetric.SetUnit(md.Key.Unit)
+			destMetric.SetDescription(md.Key.Description)
+			destGauge := destMetric.SetEmptyGauge()
+			destGauge.DataPoints().EnsureCapacity(len(dpMap))
+			for _, dp := range dpMap {
+				dp.Copy(a.timestamp, destGauge.DataPoints().AppendEmpty())
 			}
 		}
 		// If there are two metric defined with the same key required by metricKey
@@ -150,16 +229,18 @@ func (a *Aggregator[K]) Finalize(mds []model.MetricDef[K]) {
 		// together. Deleting the key ensures this while preventing duplicates.
 		delete(a.valueCounts, md.Key)
 		delete(a.sums, md.Key)
+		delete(a.gauges, md.Key)
 	}
 }
 
 func (a *Aggregator[K]) aggregateInt(
 	md model.MetricDef[K],
-	resAttrs, srcAttrs pcommon.Map,
+	resAttrs pcommon.Map,
+	attrID [16]byte,
+	filterAttrs FilterAttrsFunc,
 	v int64,
 ) error {
 	resID := a.getResourceID(resAttrs)
-	attrID := pdatautil.MapHash(srcAttrs)
 	if _, ok := a.sums[md.Key]; !ok {
 		a.sums[md.Key] = make(map[[16]byte]map[[16]byte]*sumDP)
 	}
@@ -167,7 +248,11 @@ func (a *Aggregator[K]) aggregateInt(
 		a.sums[md.Key][resID] = make(map[[16]byte]*sumDP)
 	}
 	if _, ok := a.sums[md.Key][resID][attrID]; !ok {
-		a.sums[md.Key][resID][attrID] = newSumDP(srcAttrs, false)
+		filtered, err := filterAttrs()
+		if err != nil {
+			return err
+		}
+		a.sums[md.Key][resID][attrID] = newSumDP(filtered, false)
 	}
 	a.sums[md.Key][resID][attrID].AggregateInt(v)
 	return nil
@@ -175,11 +260,12 @@ func (a *Aggregator[K]) aggregateInt(
 
 func (a *Aggregator[K]) aggregateDouble(
 	md model.MetricDef[K],
-	resAttrs, srcAttrs pcommon.Map,
+	resAttrs pcommon.Map,
+	attrID [16]byte,
+	filterAttrs FilterAttrsFunc,
 	v float64,
 ) error {
 	resID := a.getResourceID(resAttrs)
-	attrID := pdatautil.MapHash(srcAttrs)
 	if _, ok := a.sums[md.Key]; !ok {
 		a.sums[md.Key] = make(map[[16]byte]map[[16]byte]*sumDP)
 	}
@@ -187,15 +273,46 @@ func (a *Aggregator[K]) aggregateDouble(
 		a.sums[md.Key][resID] = make(map[[16]byte]*sumDP)
 	}
 	if _, ok := a.sums[md.Key][resID][attrID]; !ok {
-		a.sums[md.Key][resID][attrID] = newSumDP(srcAttrs, true)
+		filtered, err := filterAttrs()
+		if err != nil {
+			return err
+		}
+		a.sums[md.Key][resID][attrID] = newSumDP(filtered, true)
 	}
 	a.sums[md.Key][resID][attrID].AggregateDouble(v)
 	return nil
 }
 
+func (a *Aggregator[K]) aggregateGauge(
+	md model.MetricDef[K],
+	resAttrs pcommon.Map,
+	attrID [16]byte,
+	filterAttrs FilterAttrsFunc,
+	v any,
+) error {
+	resID := a.getResourceID(resAttrs)
+	if _, ok := a.gauges[md.Key]; !ok {
+		a.gauges[md.Key] = make(map[[16]byte]map[[16]byte]*gaugeDP)
+	}
+	if _, ok := a.gauges[md.Key][resID]; !ok {
+		a.gauges[md.Key][resID] = make(map[[16]byte]*gaugeDP)
+	}
+	if _, ok := a.gauges[md.Key][resID][attrID]; !ok {
+		filtered, err := filterAttrs()
+		if err != nil {
+			return err
+		}
+		a.gauges[md.Key][resID][attrID] = newGaugeDP(filtered)
+	}
+	a.gauges[md.Key][resID][attrID].Aggregate(v)
+	return nil
+}
+
 func (a *Aggregator[K]) aggregateValueCount(
 	md model.MetricDef[K],
-	resAttrs, srcAttrs pcommon.Map,
+	resAttrs pcommon.Map,
+	attrID [16]byte,
+	filterAttrs FilterAttrsFunc,
 	value float64, count int64,
 ) error {
 	if count == 0 {
@@ -203,7 +320,6 @@ func (a *Aggregator[K]) aggregateValueCount(
 		return nil
 	}
 	resID := a.getResourceID(resAttrs)
-	attrID := pdatautil.MapHash(srcAttrs)
 	if _, ok := a.valueCounts[md.Key]; !ok {
 		a.valueCounts[md.Key] = make(map[[16]byte]map[[16]byte]*valueCountDP)
 	}
@@ -211,7 +327,11 @@ func (a *Aggregator[K]) aggregateValueCount(
 		a.valueCounts[md.Key][resID] = make(map[[16]byte]*valueCountDP)
 	}
 	if _, ok := a.valueCounts[md.Key][resID][attrID]; !ok {
-		a.valueCounts[md.Key][resID][attrID] = newValueCountDP(md, srcAttrs)
+		filtered, err := filterAttrs()
+		if err != nil {
+			return err
+		}
+		a.valueCounts[md.Key][resID][attrID] = newValueCountDP(md, filtered)
 	}
 	a.valueCounts[md.Key][resID][attrID].Aggregate(value, count)
 	return nil

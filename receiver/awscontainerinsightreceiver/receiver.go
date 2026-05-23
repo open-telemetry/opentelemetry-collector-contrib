@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
@@ -83,13 +84,23 @@ func newAWSContainerInsightReceiver(
 // Start collecting metrics from cadvisor and k8s api server (if it is an elected leader)
 func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, acir.cancel = context.WithCancel(ctx)
-	var configurer *awsmiddleware.Configurer
-	if acir.config != nil && acir.config.MiddlewareID != nil {
-		configurer, _ = awsmiddleware.GetConfigurer(host.GetExtensions(), *acir.config.MiddlewareID)
+
+	// Build aws.Config and install awsmiddleware on cfg.APIOptions before any
+	// IMDS/EC2 client is constructed; APIOptions are snapshotted by SDK service
+	// constructors at build time, so the attach must happen here.
+	awsConfig, awsConfigErr := awsutil.GetAWSConfig(ctx, acir.settings.Logger, &acir.config.AWSSessionSettings)
+	if awsConfigErr != nil {
+		return awsConfigErr
+	}
+	if acir.config.MiddlewareID != nil {
+		awsmiddleware.TryConfigure(acir.settings.Logger, host, *acir.config.MiddlewareID,
+			awsmiddleware.SDKv2(&awsConfig))
 	}
 
-	hostInfo, hostInfoErr := hostinfo.NewInfo(acir.config.AWSSessionSettings, acir.config.ContainerOrchestrator,
-		acir.config.CollectionInterval, acir.settings.Logger, configurer, hostinfo.WithClusterName(acir.config.ClusterName),
+	hostInfo, hostInfoErr := hostinfo.NewInfo(ctx, acir.config.AWSSessionSettings, acir.config.ContainerOrchestrator,
+		acir.config.CollectionInterval, acir.settings.Logger,
+		hostinfo.WithAWSConfig(awsConfig),
+		hostinfo.WithClusterName(acir.config.ClusterName),
 		hostinfo.WithSystemdEnabled(acir.config.RunOnSystemd))
 	if hostInfoErr != nil {
 		return hostInfoErr

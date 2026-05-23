@@ -1,0 +1,4 @@
+$defs:
+  severity:
+    description: Severity indicates the seriousness of a log entry
+    type: integer

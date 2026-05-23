@@ -67,11 +67,13 @@ func (bq *bqTest) startWaiter(ctx context.Context, size uint64, relp *ReleaseFun
 }
 
 func (bq *bqTest) waitForPending(admitted, waiting uint64) {
+	// TODO: Remove time.Sleep below, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42514
+	time.Sleep(20 * time.Millisecond)
 	require.Eventually(bq.t, func() bool {
 		bq.lock.Lock()
 		defer bq.lock.Unlock()
 		return bq.currentAdmitted == admitted && bq.currentWaiting == waiting
-	}, time.Second, 20*time.Millisecond)
+	}, 10*time.Second, 20*time.Millisecond)
 }
 
 func mkRepeat(x uint64, n int) []uint64 {
@@ -262,7 +264,7 @@ func TestBoundedQueueLimits(t *testing.T) {
 	}
 }
 
-func (bq bqTest) verifyPoint(t *testing.T, m metricdata.Metrics) int64 {
+func (bqTest) verifyPoint(t *testing.T, m metricdata.Metrics) int64 {
 	switch a := m.Data.(type) {
 	case metricdata.Sum[int64]:
 		require.Len(t, a.DataPoints, 1)
@@ -279,7 +281,7 @@ func (bq bqTest) verifyPoint(t *testing.T, m metricdata.Metrics) int64 {
 	return -1
 }
 
-func (bq bqTest) verifyMetrics(t *testing.T) (inflight int64, waiting int64) {
+func (bq bqTest) verifyMetrics(t *testing.T) (inflight, waiting int64) {
 	inflight = -1
 	waiting = -1
 
@@ -299,7 +301,7 @@ func (bq bqTest) verifyMetrics(t *testing.T) (inflight int64, waiting int64) {
 			}
 		}
 	}
-	return
+	return inflight, waiting
 }
 
 func TestBoundedQueueLIFO(t *testing.T) {

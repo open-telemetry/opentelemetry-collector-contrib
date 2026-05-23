@@ -1,0 +1,74 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/11111111-1111-1111-1111-111111111111/RESOURCEGROUPS/EXAMPLE-FRONTDOOR/PROVIDERS/MICROSOFT.CDN/PROFILES/EXAMPLE-FRONTDOOR-PROFILE
+        - key: event.name
+          value:
+            stringValue: az.resource.log
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.recommendation.category
+                value:
+                  stringValue: HighAvailability
+              - key: azure.recommendation.impact
+                value:
+                  stringValue: High
+              - key: azure.recommendation.name
+                value:
+                  stringValue: Consider having at least two origins
+              - key: azure.recommendation.type
+                value:
+                  stringValue: 589ab0b0-1362-44fd-8551-0e7847767600
+              - key: azure.recommendation.schema_version
+                value:
+                  stringValue: "1.0"
+              - key: azure.recommendation.link
+                value:
+                  stringValue: https://portal.azure.com/#blade/Microsoft_Azure_Expert/RecommendationListBlade/source/ActivityLog/recommendationTypeId/589ab0b0-1362-44fd-8551-0e7847767600/resourceId/%2Fsubscriptions%2F11111111-1111-1111-1111-111111111111%2Fresourcegroups%2Fexample-frontdoor%2Fproviders%2FMicrosoft.Cdn%2Fprofiles%2Fexample-frontdoor-profile
+              - key: azure.category
+                value:
+                  stringValue: Recommendation
+              - key: azure.correlation_id
+                value:
+                  stringValue: aaaaaaaa-bbbb-cccc-dddd-333333333333
+              - key: azure.location
+                value:
+                  stringValue: global
+              - key: azure.operation.name
+                value:
+                  stringValue: Microsoft.Advisor/recommendations/available/action
+              - key: azure.operation.version
+                value:
+                  stringValue: "2017-03-31"
+              - key: azure.result.type
+                value:
+                  stringValue: Active
+              - key: azure.result.signature
+                value:
+                  stringValue: Succeeded
+              - key: azure.result.description
+                value:
+                  stringValue: A new recommendation is available.
+              - key: azure.duration
+                value:
+                  intValue: "10"
+              - key: network.peer.address
+                value:
+                  stringValue: 0.0.0.0
+              - key: user.email
+                value:
+                  stringValue: Microsoft.Advisor
+            body: {}
+            observedTimeUnixNano: "1766081218366802000"
+            severityNumber: 9
+            severityText: Informational
+            timeUnixNano: "1745503906421669000"
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3

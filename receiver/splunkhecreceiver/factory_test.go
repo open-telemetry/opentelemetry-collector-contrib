@@ -23,7 +23,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1" // Endpoint is required, not going to be used here.
+	cfg.NetAddr.Endpoint = "localhost:1" // Endpoint is required, not going to be used here.
 
 	mockLogsConsumer := consumertest.NewNop()
 	lReceiver, err := createLogsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, mockLogsConsumer)
@@ -42,7 +42,7 @@ func TestFactoryType(t *testing.T) {
 
 func TestMultipleLogsReceivers(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1"
+	cfg.NetAddr.Endpoint = "localhost:1"
 	mockLogsConsumer := consumertest.NewNop()
 	mReceiver, _ := createLogsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, mockLogsConsumer)
 	mReceiver2, _ := createLogsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, mockLogsConsumer)
@@ -51,7 +51,7 @@ func TestMultipleLogsReceivers(t *testing.T) {
 
 func TestMultipleMetricsReceivers(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1"
+	cfg.NetAddr.Endpoint = "localhost:1"
 	mockMetricsConsumer := consumertest.NewNop()
 	mReceiver, _ := createLogsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, mockMetricsConsumer)
 	mReceiver2, _ := createLogsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, mockMetricsConsumer)
@@ -60,7 +60,7 @@ func TestMultipleMetricsReceivers(t *testing.T) {
 
 func TestReuseLogsAndMetricsReceivers(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1"
+	cfg.NetAddr.Endpoint = "localhost:1"
 	mockMetricsConsumer := consumertest.NewNop()
 	mReceiver, _ := createLogsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, mockMetricsConsumer)
 	mReceiver2, _ := createMetricsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, mockMetricsConsumer)

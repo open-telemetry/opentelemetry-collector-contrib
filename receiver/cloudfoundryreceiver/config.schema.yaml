@@ -1,0 +1,38 @@
+$defs:
+  limited_client_config:
+    description: LimitedClientConfig is a subset of ClientConfig, implemented as a separate type due to the library this configuration is used with not taking a preconfigured http.Client as input, but only taking these specific options
+    type: object
+    properties:
+      endpoint:
+        type: string
+      tls:
+        $ref: limited_tls_client_setting
+  limited_tls_client_setting:
+    description: LimitedTLSClientSetting is a subset of TLSClientSetting, see LimitedClientConfig for more details
+    type: object
+    properties:
+      insecure_skip_verify:
+        type: boolean
+  rlp_gateway_config:
+    type: object
+    properties:
+      shard_id:
+        type: string
+    allOf:
+      - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  uaa_config:
+    type: object
+    properties:
+      password:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      username:
+        type: string
+    allOf:
+      - $ref: limited_client_config
+description: Config defines configuration for Collectd receiver.
+type: object
+properties:
+  rlp_gateway:
+    $ref: rlp_gateway_config
+  uaa:
+    $ref: uaa_config

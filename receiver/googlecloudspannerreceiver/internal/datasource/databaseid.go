@@ -12,7 +12,7 @@ type DatabaseID struct {
 	id           string
 }
 
-func NewDatabaseID(projectID string, instanceID string, databaseName string) *DatabaseID {
+func NewDatabaseID(projectID, instanceID, databaseName string) *DatabaseID {
 	return &DatabaseID{
 		projectID:    projectID,
 		instanceID:   instanceID,

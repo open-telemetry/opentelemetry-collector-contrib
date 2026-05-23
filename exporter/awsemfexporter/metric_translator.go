@@ -330,7 +330,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 			zap.String("Labels", string(labelsStr)),
 			zap.Strings("Metric Names", metricNames),
 		)
-		return
+		return cWMeasurements
 	}
 
 	// Group metrics by matched metric declarations
@@ -381,7 +381,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 	}
 
 	if len(metricDeclGroups) == 0 {
-		return
+		return cWMeasurements
 	}
 
 	// Apply single/zero dimension rollup to labels
@@ -412,7 +412,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 		}
 	}
 
-	return
+	return cWMeasurements
 }
 
 // translateCWMetricToEMF converts CloudWatch Metric format to EMF.

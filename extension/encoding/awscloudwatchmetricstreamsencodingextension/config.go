@@ -24,6 +24,9 @@ type Config struct {
 	//
 	// See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cloudwatch-metricstream.html#cfn-cloudwatch-metricstream-outputformat
 	Format string `mapstructure:"format"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (cfg *Config) Validate() error {

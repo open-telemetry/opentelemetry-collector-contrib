@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -25,17 +26,39 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					MemcachedBytes:              MetricConfig{Enabled: true},
-					MemcachedCommands:           MetricConfig{Enabled: true},
-					MemcachedConnectionsCurrent: MetricConfig{Enabled: true},
-					MemcachedConnectionsTotal:   MetricConfig{Enabled: true},
-					MemcachedCPUUsage:           MetricConfig{Enabled: true},
-					MemcachedCurrentItems:       MetricConfig{Enabled: true},
-					MemcachedEvictions:          MetricConfig{Enabled: true},
-					MemcachedNetwork:            MetricConfig{Enabled: true},
-					MemcachedOperationHitRatio:  MetricConfig{Enabled: true},
-					MemcachedOperations:         MetricConfig{Enabled: true},
-					MemcachedThreads:            MetricConfig{Enabled: true},
+					MemcachedBytes: MetricConfig{
+						Enabled: true,
+					},
+					MemcachedCommands: MetricConfig{
+						Enabled: true,
+					},
+					MemcachedConnectionsCurrent: MetricConfig{
+						Enabled: true,
+					},
+					MemcachedConnectionsTotal: MetricConfig{
+						Enabled: true,
+					},
+					MemcachedCPUUsage: MetricConfig{
+						Enabled: true,
+					},
+					MemcachedCurrentItems: MetricConfig{
+						Enabled: true,
+					},
+					MemcachedEvictions: MetricConfig{
+						Enabled: true,
+					},
+					MemcachedNetwork: MetricConfig{
+						Enabled: true,
+					},
+					MemcachedOperationHitRatio: MetricConfig{
+						Enabled: true,
+					},
+					MemcachedOperations: MetricConfig{
+						Enabled: true,
+					},
+					MemcachedThreads: MetricConfig{
+						Enabled: true,
+					},
 				},
 			},
 		},
@@ -43,17 +66,39 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					MemcachedBytes:              MetricConfig{Enabled: false},
-					MemcachedCommands:           MetricConfig{Enabled: false},
-					MemcachedConnectionsCurrent: MetricConfig{Enabled: false},
-					MemcachedConnectionsTotal:   MetricConfig{Enabled: false},
-					MemcachedCPUUsage:           MetricConfig{Enabled: false},
-					MemcachedCurrentItems:       MetricConfig{Enabled: false},
-					MemcachedEvictions:          MetricConfig{Enabled: false},
-					MemcachedNetwork:            MetricConfig{Enabled: false},
-					MemcachedOperationHitRatio:  MetricConfig{Enabled: false},
-					MemcachedOperations:         MetricConfig{Enabled: false},
-					MemcachedThreads:            MetricConfig{Enabled: false},
+					MemcachedBytes: MetricConfig{
+						Enabled: false,
+					},
+					MemcachedCommands: MetricConfig{
+						Enabled: false,
+					},
+					MemcachedConnectionsCurrent: MetricConfig{
+						Enabled: false,
+					},
+					MemcachedConnectionsTotal: MetricConfig{
+						Enabled: false,
+					},
+					MemcachedCPUUsage: MetricConfig{
+						Enabled: false,
+					},
+					MemcachedCurrentItems: MetricConfig{
+						Enabled: false,
+					},
+					MemcachedEvictions: MetricConfig{
+						Enabled: false,
+					},
+					MemcachedNetwork: MetricConfig{
+						Enabled: false,
+					},
+					MemcachedOperationHitRatio: MetricConfig{
+						Enabled: false,
+					},
+					MemcachedOperations: MetricConfig{
+						Enabled: false,
+					},
+					MemcachedThreads: MetricConfig{
+						Enabled: false,
+					},
 				},
 			},
 		},
@@ -73,6 +118,6 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

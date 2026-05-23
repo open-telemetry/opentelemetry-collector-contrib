@@ -118,7 +118,7 @@ func createServer(t *testing.T) *httptest.Server {
 	}))
 }
 
-func TestExporter_ErrorCases(t *testing.T) {
+func TestExporter_ResponseHandling(t *testing.T) {
 	testCases := []struct {
 		name               string
 		statusCode         int
@@ -159,6 +159,14 @@ func TestExporter_ErrorCases(t *testing.T) {
 			expectedThrottled: true,
 			responseBody:      "Service temporarily unavailable",
 			checkResponseBody: true,
+		},
+		{
+			name:       "ok",
+			statusCode: http.StatusOK,
+		},
+		{
+			name:       "accepted",
+			statusCode: http.StatusAccepted,
 		},
 	}
 

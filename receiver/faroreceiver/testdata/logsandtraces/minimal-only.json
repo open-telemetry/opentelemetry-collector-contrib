@@ -1,0 +1,98 @@
+{
+  "meta": {
+    "session": {
+      "id": "ABCD1234"
+    },
+    "sdk": {
+      "name": "@grafana/faro-core",
+      "version": "1.0.0",
+      "integrations": []
+    },
+    "app": {
+      "name": "example.com",
+      "version": "1.0.0",
+      "environment": "prod"
+    },
+    "view": {
+      "name": "default"
+    },
+    "browser": {},
+    "page": {
+      "url": "https://example.com/"
+    }
+  },
+  "logs": [
+    {
+      "context": {
+        "app": "foo"
+      },
+      "level": "info",
+      "message": "Hello world",
+      "timestamp": "2025-03-01T15:42:14Z"
+    }
+  ],
+  "traces": {
+    "resourceSpans": [
+      {
+        "resource": {
+          "attributes": [
+            {
+              "key": "service.name",
+              "value": {
+                "stringValue": "example.com"
+              }
+            },
+            {
+              "key": "service.version",
+              "value": {
+                "stringValue": "1.0.0"
+              }
+            },
+            {
+              "key": "deployment.environment",
+              "value": {
+                "stringValue": "prod"
+              }
+            },
+            {
+              "key": "telemetry.sdk.name",
+              "value": {
+                "stringValue": "@grafana/faro-core"
+              }
+            },
+            {
+              "key": "telemetry.sdk.version",
+              "value": {
+                "stringValue": "1.0.0"
+              }
+            }
+          ],
+          "droppedAttributesCount": 0
+        },
+        "scopeSpans": [
+          {
+            "spans": [
+              {
+                "traceId": "00000000000000000000000000000000",
+                "spanId": "0000000000000000",
+                "name": "test-span",
+                "kind": 1,
+                "startTimeUnixNano": "0",
+                "endTimeUnixNano": "0",
+                "attributes": [],
+                "droppedAttributesCount": 0,
+                "events": [],
+                "droppedEventsCount": 0,
+                "status": {
+                  "code": 0
+                },
+                "links": [],
+                "droppedLinksCount": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

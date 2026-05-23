@@ -4,13 +4,14 @@
 package entry
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func testMap() map[string]any {
@@ -286,25 +287,25 @@ func TestBodyFieldSet(t *testing.T) {
 
 func TestBodyFieldParent(t *testing.T) {
 	t.Run("Simple", func(t *testing.T) {
-		field := BodyField{[]string{"child"}}
-		require.Equal(t, BodyField{[]string{}}, field.Parent())
+		field := BodyField{Keys: []string{"child"}}
+		require.Equal(t, BodyField{Keys: []string{}}, field.Parent())
 	})
 
 	t.Run("Root", func(t *testing.T) {
-		field := BodyField{[]string{}}
-		require.Equal(t, BodyField{[]string{}}, field.Parent())
+		field := BodyField{Keys: []string{}}
+		require.Equal(t, BodyField{Keys: []string{}}, field.Parent())
 	})
 }
 
 func TestBodyFieldChild(t *testing.T) {
-	field := BodyField{[]string{"parent"}}
-	require.Equal(t, BodyField{[]string{"parent", "child"}}, field.Child("child"))
+	field := BodyField{Keys: []string{"parent"}}
+	require.Equal(t, BodyField{Keys: []string{"parent", "child"}}, field.Child("child"))
 }
 
 func TestBodyFieldMerge(t *testing.T) {
 	entry := &Entry{}
 	entry.Body = "raw_value"
-	field := BodyField{[]string{"embedded"}}
+	field := BodyField{Keys: []string{"embedded"}}
 	values := map[string]any{"new": "values"}
 	field.Merge(entry, values)
 	expected := map[string]any{"embedded": values}
@@ -347,12 +348,14 @@ func TestBodyFieldUnmarshal(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var fy BodyField
-			err := yaml.UnmarshalStrict([]byte(tc.jsonDot), &fy)
+			decoder := yaml.NewDecoder(bytes.NewReader([]byte(tc.jsonDot)))
+			decoder.KnownFields(true)
+			err := decoder.Decode(&fy)
 			require.NoError(t, err)
 			require.Equal(t, tc.keys, fy.Keys)
 
 			var fj BodyField
-			err = json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, tc.jsonDot)), &fj)
+			err = json.Unmarshal(fmt.Appendf(nil, `%q`, tc.jsonDot), &fj)
 			require.NoError(t, err)
 			require.Equal(t, tc.keys, fy.Keys)
 		})
@@ -385,7 +388,9 @@ func TestBodyFieldUnmarshalFailure(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var fy BodyField
-			err := yaml.UnmarshalStrict(tc.invalid, &fy)
+			decoder := yaml.NewDecoder(bytes.NewReader(tc.invalid))
+			decoder.KnownFields(true)
+			err := decoder.Decode(&fy)
 			require.ErrorContains(t, err, tc.expectedErr)
 
 			var fj BodyField

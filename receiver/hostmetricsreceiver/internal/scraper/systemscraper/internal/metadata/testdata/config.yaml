@@ -3,6 +3,10 @@ all_set:
   metrics:
     system.uptime:
       enabled: true
+reaggregate_set:
+  metrics:
+    system.uptime:
+      enabled: true
 none_set:
   metrics:
     system.uptime:

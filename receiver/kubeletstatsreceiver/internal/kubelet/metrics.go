@@ -17,26 +17,31 @@ func MetricsData(
 	logger *zap.Logger, summary *stats.Summary,
 	metadata Metadata,
 	metricGroupsToCollect map[MetricGroup]bool,
+	allNetworkInterfaces map[MetricGroup]bool,
 	mbs *metadata.MetricsBuilders,
 ) []pmetric.Metrics {
 	acc := &metricDataAccumulator{
 		metadata:              metadata,
 		logger:                logger,
 		metricGroupsToCollect: metricGroupsToCollect,
+		allNetworkInterfaces:  allNetworkInterfaces,
 		time:                  time.Now(),
 		mbs:                   mbs,
 	}
 	acc.nodeStats(summary.Node)
-	for _, podStats := range summary.Pods {
-		acc.podStats(podStats)
-		for _, containerStats := range podStats.Containers {
+	for i := range summary.Pods {
+		pod := &summary.Pods[i]
+		acc.podStats(pod)
+		for j := range pod.Containers {
+			containerStats := &pod.Containers[j]
 			// propagate the pod resource down to the container
-			acc.containerStats(podStats, containerStats)
+			acc.containerStats(pod, containerStats)
 		}
 
-		for _, volumeStats := range podStats.VolumeStats {
+		for j := range pod.VolumeStats {
+			volumeStats := &pod.VolumeStats[j]
 			// propagate the pod resource down to the container
-			acc.volumeStats(podStats, volumeStats)
+			acc.volumeStats(pod, volumeStats)
 		}
 	}
 	return acc.m

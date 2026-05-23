@@ -17,14 +17,14 @@ func NewSpanMetricDataConnector(receiverDataType string) *SpanMetricDataConnecto
 	return &SpanMetricDataConnector{DataConnectorBase: testbed.DataConnectorBase{ReceiverDataType: receiverDataType}}
 }
 
-func (smc *SpanMetricDataConnector) GenConfigYAMLStr() string {
+func (*SpanMetricDataConnector) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return `
   spanmetrics:`
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.
-func (smc *SpanMetricDataConnector) ProtocolName() string {
+func (*SpanMetricDataConnector) ProtocolName() string {
 	return "spanmetrics"
 }
 

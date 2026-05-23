@@ -39,8 +39,9 @@ func TestUnmarshalConfig(t *testing.T) {
 			},
 			InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
 			Capabilities: Capabilities{
-				ReportsEffectiveConfig: true,
-				ReportsHealth:          true,
+				ReportsEffectiveConfig:     true,
+				ReportsHealth:              true,
+				ReportsAvailableComponents: true,
 			},
 			PPIDPollInterval: 5 * time.Second,
 		}, cfg)
@@ -64,8 +65,9 @@ func TestUnmarshalHttpConfig(t *testing.T) {
 			},
 			InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
 			Capabilities: Capabilities{
-				ReportsEffectiveConfig: true,
-				ReportsHealth:          true,
+				ReportsEffectiveConfig:     true,
+				ReportsHealth:              true,
+				ReportsAvailableComponents: true,
 			},
 			PPIDPollInterval: 5 * time.Second,
 		}, cfg)
@@ -105,7 +107,7 @@ func TestConfig_Getters(t *testing.T) {
 						Headers: map[string]configopaque.String{
 							"test": configopaque.String("test"),
 						},
-						TLSSetting: configtls.ClientConfig{
+						TLS: configtls.ClientConfig{
 							Insecure: true,
 						},
 					},
@@ -127,7 +129,7 @@ func TestConfig_Getters(t *testing.T) {
 							Headers: map[string]configopaque.String{
 								"test": configopaque.String("test"),
 							},
-							TLSSetting: configtls.ClientConfig{
+							TLS: configtls.ClientConfig{
 								Insecure: true,
 							},
 						},
@@ -144,8 +146,68 @@ func TestConfig_Getters(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.expected.headers(t, tt.fields.Server.GetHeaders())
-			tt.expected.tls(t, tt.fields.Server.GetTLSSetting())
+			tt.expected.tls(t, tt.fields.Server.getTLS())
 			tt.expected.endpoint(t, tt.fields.Server.GetEndpoint())
+		})
+	}
+}
+
+func TestOpAMPServer_GetTLSConfig(t *testing.T) {
+	tests := []struct {
+		name              string
+		server            OpAMPServer
+		expectedTLSConfig assert.ValueAssertionFunc
+	}{
+		{
+			name: "wss endpoint",
+			server: OpAMPServer{
+				WS: &commonFields{
+					Endpoint: "wss://example.com",
+					TLS:      configtls.NewDefaultClientConfig(),
+				},
+			},
+			expectedTLSConfig: assert.NotNil,
+		},
+		{
+			name: "https endpoint",
+			server: OpAMPServer{
+				HTTP: &httpFields{
+					commonFields: commonFields{
+						Endpoint: "https://example.com",
+						TLS:      configtls.NewDefaultClientConfig(),
+					},
+				},
+			},
+			expectedTLSConfig: assert.NotNil,
+		},
+		{
+			name: "ws endpoint",
+			server: OpAMPServer{
+				WS: &commonFields{
+					Endpoint: "ws://example.com",
+				},
+			},
+			expectedTLSConfig: assert.Nil,
+		},
+		{
+			name: "http endpoint",
+			server: OpAMPServer{
+				HTTP: &httpFields{
+					commonFields: commonFields{
+						Endpoint: "http://example.com",
+					},
+				},
+			},
+			expectedTLSConfig: assert.Nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := t.Context()
+			tlsConfig, err := tt.server.GetTLSConfig(ctx)
+			assert.NoError(t, err)
+			tt.expectedTLSConfig(t, tlsConfig)
 		})
 	}
 }
@@ -275,6 +337,25 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
 				return assert.Equal(t, "opamp server must have only ws or http set", err.Error())
+			},
+		},
+		{
+			name: "accepts_restart_command capability without feature gate",
+			fields: fields{
+				Capabilities: Capabilities{
+					AcceptsRestartCommand: true,
+				},
+				Server: &OpAMPServer{
+					HTTP: &httpFields{
+						commonFields: commonFields{
+							Endpoint: "https://127.0.0.1:4320/v1/opamp",
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.Equal(t, "extension.opampextension.RemoteRestarts feature gate must be enabled to use the accepts_restart_command capability", err.Error())
 			},
 		},
 	}

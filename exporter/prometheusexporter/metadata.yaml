@@ -1,4 +1,5 @@
 type: prometheus
+display_name: Prometheus Exporter
 
 status:
   class: exporter
@@ -9,6 +10,13 @@ status:
   - contrib
   codeowners:
     active: [Aneurysm9, dashpole, ArthurSens]
+
+feature_gates:
+  - id: exporter.prometheusexporter.DisableAddMetricSuffixes
+    description: When enabled, the deprecated add_metric_suffixes configuration option is ignored and translation_strategy is always used
+    stage: alpha
+    from_version: "v0.132.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-specification/pull/4533
 
 tests:
   config:

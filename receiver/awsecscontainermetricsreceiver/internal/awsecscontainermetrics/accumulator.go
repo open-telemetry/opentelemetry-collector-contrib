@@ -24,7 +24,8 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	taskResource := taskResource(metadata)
 
-	for _, containerMetadata := range metadata.Containers {
+	for i := range metadata.Containers {
+		containerMetadata := &metadata.Containers[i]
 		containerResource := containerResource(containerMetadata, logger)
 		for k, av := range taskResource.Attributes().All() {
 			av.CopyTo(containerResource.Attributes().PutEmpty(k))
@@ -46,6 +47,10 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 		}
 	}
 	overrideWithTaskLevelLimit(&taskMetrics, metadata)
+	if metadata.EphemeralStorageMetrics != nil {
+		taskMetrics.EphemeralStorageUtilized = metadata.EphemeralStorageMetrics.Utilized
+		taskMetrics.EphemeralStorageReserved = metadata.EphemeralStorageMetrics.Reserved
+	}
 	acc.accumulate(convertToOTLPMetrics(taskPrefix, taskMetrics, taskResource, timestamp))
 }
 
@@ -57,7 +62,7 @@ func isEmptyStats(stats *ContainerStats) bool {
 	return stats == nil || stats.ID == ""
 }
 
-func convertContainerMetrics(stats *ContainerStats, logger *zap.Logger, containerMetadata ecsutil.ContainerMetadata) ECSMetrics {
+func convertContainerMetrics(stats *ContainerStats, logger *zap.Logger, containerMetadata *ecsutil.ContainerMetadata) ECSMetrics {
 	containerMetrics := getContainerMetrics(stats, logger)
 	if containerMetadata.Limits.Memory != nil {
 		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory

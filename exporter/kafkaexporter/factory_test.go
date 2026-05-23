@@ -4,16 +4,18 @@
 package kafkaexporter
 
 import (
-	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 // applyConfigOption is used to modify values of the
@@ -30,7 +32,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.Equal(t, configkafka.NewDefaultClientConfig(), cfg.ClientConfig)
-	assert.Empty(t, cfg.Topic)
 }
 
 func TestCreateMetricExporter(t *testing.T) {
@@ -39,35 +40,35 @@ func TestCreateMetricExporter(t *testing.T) {
 	tests := []struct {
 		name string
 		conf *Config
-		err  *net.DNSError
 	}{
 		{
 			name: "valid config (no validating broker)",
 			conf: applyConfigOption(func(conf *Config) {
-				// this disables contacting the broker so
-				// we can successfully create the exporter
 				conf.Metadata.Full = false
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			err: nil,
-		},
-		{
-			name: "invalid config (validating broker)",
-			conf: applyConfigOption(func(conf *Config) {
-				conf.Brokers = []string{"invalid:9092"}
-				conf.ProtocolVersion = "2.0.0"
-			}),
-			err: &net.DNSError{},
 		},
 		{
 			name: "default_encoding",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = "otlp_proto"
+				conf.Metrics.Encoding = "otlp_proto"
 			}),
-			err: nil,
+		},
+		{
+			name: "with include metadata keys and batch partition metadata keys",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check
+				conf.Metadata.Full = false
+				conf.IncludeMetadataKeys = []string{"k1", "k2"}
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
+					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
+					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
+					return batch
+				}())
+			}),
 		},
 	}
 
@@ -84,10 +85,6 @@ func TestCreateMetricExporter(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, exporter, "Must return valid exporter")
 			err = exporter.Start(t.Context(), componenttest.NewNopHost())
-			if tc.err != nil {
-				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
-				return
-			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
 			assert.NoError(t, exporter.Shutdown(t.Context()))
@@ -101,35 +98,35 @@ func TestCreateLogExporter(t *testing.T) {
 	tests := []struct {
 		name string
 		conf *Config
-		err  *net.DNSError
 	}{
 		{
 			name: "valid config (no validating broker)",
 			conf: applyConfigOption(func(conf *Config) {
-				// this disables contacting the broker so
-				// we can successfully create the exporter
 				conf.Metadata.Full = false
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			err: nil,
-		},
-		{
-			name: "invalid config (validating broker)",
-			conf: applyConfigOption(func(conf *Config) {
-				conf.Brokers = []string{"invalid:9092"}
-				conf.ProtocolVersion = "2.0.0"
-			}),
-			err: &net.DNSError{},
 		},
 		{
 			name: "default_encoding",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = "otlp_proto"
+				conf.Logs.Encoding = "otlp_proto"
 			}),
-			err: nil,
+		},
+		{
+			name: "with include metadata keys and batch partition metadata keys",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check
+				conf.Metadata.Full = false
+				conf.IncludeMetadataKeys = []string{"k1", "k2"}
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
+					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
+					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
+					return batch
+				}())
+			}),
 		},
 	}
 
@@ -146,10 +143,6 @@ func TestCreateLogExporter(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, exporter, "Must return valid exporter")
 			err = exporter.Start(t.Context(), componenttest.NewNopHost())
-			if tc.err != nil {
-				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
-				return
-			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
 			assert.NoError(t, exporter.Shutdown(t.Context()))
@@ -163,7 +156,6 @@ func TestCreateTraceExporter(t *testing.T) {
 	tests := []struct {
 		name string
 		conf *Config
-		err  *net.DNSError
 	}{
 		{
 			name: "valid config (no validating brokers)",
@@ -172,24 +164,27 @@ func TestCreateTraceExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			err: nil,
-		},
-		{
-			name: "invalid config (validating brokers)",
-			conf: applyConfigOption(func(conf *Config) {
-				conf.Brokers = []string{"invalid:9092"}
-				conf.ProtocolVersion = "2.0.0"
-			}),
-			err: &net.DNSError{},
 		},
 		{
 			name: "default_encoding",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = "otlp_proto"
+				conf.Traces.Encoding = "otlp_proto"
 			}),
-			err: nil,
+		},
+		{
+			name: "with include metadata keys and batch partition metadata keys",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check
+				conf.Metadata.Full = false
+				conf.IncludeMetadataKeys = []string{"k1", "k2"}
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
+					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
+					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
+					return batch
+				}())
+			}),
 		},
 	}
 
@@ -206,10 +201,64 @@ func TestCreateTraceExporter(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, exporter, "Must return valid exporter")
 			err = exporter.Start(t.Context(), componenttest.NewNopHost())
-			if tc.err != nil {
-				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
-				return
-			}
+			assert.NoError(t, err, "Must not error")
+			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
+			assert.NoError(t, exporter.Shutdown(t.Context()))
+		})
+	}
+}
+
+func TestCreateProfileExporter(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		conf *Config
+	}{
+		{
+			name: "valid config (no validating broker)",
+			conf: applyConfigOption(func(conf *Config) {
+				conf.Metadata.Full = false
+				conf.Brokers = []string{"invalid:9092"}
+				conf.ProtocolVersion = "2.0.0"
+			}),
+		},
+		{
+			name: "default_encoding",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check to ensure encoding work
+				conf.Metadata.Full = false
+				conf.Profiles.Encoding = "otlp_proto"
+			}),
+		},
+		{
+			name: "with include metadata keys and batch partition metadata keys",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check
+				conf.Metadata.Full = false
+				conf.IncludeMetadataKeys = []string{"k1", "k2"}
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
+					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
+					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
+					return batch
+				}())
+			}),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			f := NewFactory().(xexporter.Factory)
+			exporter, err := f.CreateProfiles(
+				t.Context(),
+				exportertest.NewNopSettings(metadata.Type),
+				tc.conf,
+			)
+			require.NoError(t, err)
+			assert.NotNil(t, exporter, "Must return valid exporter")
+			err = exporter.Start(t.Context(), componenttest.NewNopHost())
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
 			assert.NoError(t, exporter.Shutdown(t.Context()))

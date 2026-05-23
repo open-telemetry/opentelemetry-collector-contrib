@@ -1,0 +1,15 @@
+description: Config defines the configuration for the pprof receiver.
+type: object
+properties:
+  block_profile_fraction:
+    description: 'Self-scraper only: Fraction of blocking events that are profiled. A value <= 0 disables profiling. See https://golang.org/pkg/runtime/#SetBlockProfileRate for details.'
+    type: integer
+  include:
+    description: Include is the glob pattern for pprof files to scrape.
+    type: string
+  mutex_profile_fraction:
+    description: 'Self-scraper only: Fraction of mutex contention events that are profiled. A value <= 0 disables profiling. See https://golang.org/pkg/runtime/#SetMutexProfileFraction for details.'
+    type: integer
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config

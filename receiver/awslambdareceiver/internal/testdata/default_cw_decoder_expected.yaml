@@ -1,0 +1,22 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.account.id
+          value:
+            stringValue: "111222333444"
+        - key: aws.log.group.names
+          value:
+            stringValue: /test/log-group
+        - key: aws.log.stream.names
+          value:
+            stringValue: test-stream
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: some text
+            timeUnixNano: "1700000000000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver

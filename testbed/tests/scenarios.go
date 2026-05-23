@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -54,32 +55,32 @@ func createConfigYaml(
 
 	// Prepare extra processor config section and comma-separated list of extra processor
 	// names to use in corresponding "processors" settings.
-	processorsSections := ""
-	processorsList := ""
+	var processorsSections strings.Builder
+	var processorsList strings.Builder
 	if len(processors) > 0 {
 		first := true
 		for i := range processors {
-			processorsSections += processors[i].Body + "\n"
+			processorsSections.WriteString(processors[i].Body + "\n")
 			if !first {
-				processorsList += ","
+				processorsList.WriteString(",")
 			}
-			processorsList += processors[i].Name
+			processorsList.WriteString(processors[i].Name)
 			first = false
 		}
 	}
 
 	// Prepare extra extension config section and comma-separated list of extra extension
 	// names to use in corresponding "extensions" settings.
-	extensionsSections := ""
-	extensionsList := ""
+	var extensionsSections strings.Builder
+	var extensionsList strings.Builder
 	if len(extensions) > 0 {
 		first := true
 		for name, cfg := range extensions {
-			extensionsSections += cfg + "\n"
+			extensionsSections.WriteString(cfg + "\n")
 			if !first {
-				extensionsList += ","
+				extensionsList.WriteString(",")
 			}
-			extensionsList += name
+			extensionsList.WriteString(name)
 			first = false
 		}
 	}
@@ -122,13 +123,13 @@ service:
 		format,
 		sender.GenConfigYAMLStr(),
 		receiver.GenConfigYAMLStr(),
-		processorsSections,
+		processorsSections.String(),
 		resultDir,
-		extensionsSections,
-		extensionsList,
+		extensionsSections.String(),
+		extensionsList.String(),
 		pipeline,
 		sender.ProtocolName(),
-		processorsList,
+		processorsList.String(),
 		receiver.ProtocolName(),
 	)
 }
@@ -550,7 +551,7 @@ func ScenarioLong(
 
 	tc.StopLoad()
 
-	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, 60*time.Second, "all logs received")
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, 300*time.Second, "all logs received")
 
 	tc.ValidateData()
 }
@@ -687,7 +688,7 @@ func allElementsExistInSlice(slice1, slice2 []string) bool {
 	return true
 }
 
-// in case of filelog receiver, the batch_index and item_index are a part of log body.
+// in case of file_log receiver, the batch_index and item_index are a part of log body.
 // we use regex to extract them
 func extractIDFromLog(log plog.LogRecord) (string, string) {
 	var batch, item string

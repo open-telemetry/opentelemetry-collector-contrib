@@ -1,4 +1,4 @@
-signaltometrics:
+signal_to_metrics:
   spans:
     - name: span.sum
       attributes:
@@ -11,6 +11,11 @@ signaltometrics:
       sum: {}
   logs:
     - name: log.sum
+      attributes:
+        - key: key.1
+      sum: {}
+  profiles:
+    - name: profile.sum
       attributes:
         - key: key.1
       sum: {}

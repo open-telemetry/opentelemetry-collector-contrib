@@ -29,6 +29,7 @@ type scraperOptions struct {
 	collectionInterval    time.Duration
 	extraMetadataLabels   []kubelet.MetadataLabel
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
+	allNetworkInterfaces  map[kubelet.MetricGroup]bool
 	k8sAPIClient          kubernetes.Interface
 }
 
@@ -38,6 +39,7 @@ type kubeletScraper struct {
 	logger                *zap.Logger
 	extraMetadataLabels   []kubelet.MetadataLabel
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
+	allNetworkInterfaces  map[kubelet.MetricGroup]bool
 	k8sAPIClient          kubernetes.Interface
 	cachedVolumeSource    map[string]v1.PersistentVolumeSource
 	mbs                   *metadata.MetricsBuilders
@@ -63,6 +65,7 @@ func newKubeletScraper(
 		logger:                set.Logger,
 		extraMetadataLabels:   rOptions.extraMetadataLabels,
 		metricGroupsToCollect: rOptions.metricGroupsToCollect,
+		allNetworkInterfaces:  rOptions.allNetworkInterfaces,
 		k8sAPIClient:          rOptions.k8sAPIClient,
 		cachedVolumeSource:    make(map[string]v1.PersistentVolumeSource),
 		mbs: &metadata.MetricsBuilders{
@@ -121,7 +124,7 @@ func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	metaD := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, nodeInfo, r.detailedPVCLabelsSetter())
 
-	mds := kubelet.MetricsData(r.logger, summary, metaD, r.metricGroupsToCollect, r.mbs)
+	mds := kubelet.MetricsData(r.logger, summary, metaD, r.metricGroupsToCollect, r.allNetworkInterfaces, r.mbs)
 	md := pmetric.NewMetrics()
 	for i := range mds {
 		mds[i].ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())

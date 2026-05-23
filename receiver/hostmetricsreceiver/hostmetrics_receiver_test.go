@@ -6,6 +6,7 @@ package hostmetricsreceiver
 import (
 	"context"
 	"errors"
+	"maps"
 	"runtime"
 	"testing"
 	"time"
@@ -20,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
@@ -52,6 +53,7 @@ var allMetrics = []string{
 	"system.network.errors",
 	"system.network.io",
 	"system.network.packets",
+	"system.paging.faults",
 	"system.paging.operations",
 	"system.paging.usage",
 }
@@ -64,16 +66,18 @@ var resourceMetrics = []string{
 }
 
 var systemSpecificMetrics = map[string][]string{
-	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
-	"darwin":  {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
-	"freebsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
-	"openbsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
-	"solaris": {"system.filesystem.inodes.usage", "system.paging.faults"},
+	"linux":   {"system.disk.merged", "system.disk.weighted_io_time", "system.filesystem.inodes.usage", "system.processes.created", "system.processes.count"},
+	"darwin":  {"system.filesystem.inodes.usage", "system.processes.count"},
+	"freebsd": {"system.filesystem.inodes.usage", "system.processes.count"},
+	"openbsd": {"system.filesystem.inodes.usage", "system.processes.created", "system.processes.count"},
+	"solaris": {"system.filesystem.inodes.usage"},
+}
+
+var systemSpecificMetricsNFS = map[string][]string{
+	"linux": {"nfs.client.net.count", "nfs.client.net.tcp.connection.accepted", "nfs.client.rpc.count", "nfs.client.rpc.retransmit.count", "nfs.client.rpc.authrefresh.count", "nfs.client.procedure.count", "nfs.client.operation.count", "nfs.server.repcache.requests", "nfs.server.fh.stale.count", "nfs.server.io", "nfs.server.thread.count", "nfs.server.net.count", "nfs.server.net.tcp.connection.accepted", "nfs.server.rpc.count", "nfs.server.procedure.count", "nfs.server.operation.count"},
 }
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
-	t.Skip("Test does not work on my machine, skipping for local development. Do not configure this change.")
-
 	sink := new(consumertest.MetricsSink)
 
 	cfg := &Config{
@@ -92,6 +96,11 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		),
 	}
 
+	if runtime.GOOS == "linux" && nfsscraper.CanScrapeAll() {
+		f := nfsscraper.NewFactory()
+		cfg.Scrapers[f.Type()] = f.CreateDefaultConfig()
+	}
+
 	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
 		f := processscraper.NewFactory()
 		cfg.Scrapers[f.Type()] = f.CreateDefaultConfig()
@@ -108,8 +117,8 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	// canceling the context provided to Start should not cancel any async processes initiated by the receiver
 	cancelFn()
 
-	const tick = 50 * time.Millisecond
-	const waitFor = 10 * time.Second
+	const tick = 200 * time.Millisecond
+	const waitFor = 30 * time.Second
 	require.Eventuallyf(t, func() bool {
 		got := sink.AllMetrics()
 		if len(got) == 0 {
@@ -130,12 +139,12 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 		rm := rms.At(i)
 		metrics := getMetricSlice(t, rm)
 		returnedMetricNames := getReturnedMetricNames(metrics)
-		assert.Equal(t, conventions.SchemaURL, rm.SchemaUrl(),
+		assert.Equal(t, "https://opentelemetry.io/schemas/1.9.0", rm.SchemaUrl(),
 			"SchemaURL is incorrect for metrics: %v", returnedMetricNames)
 		if rm.Resource().Attributes().Len() == 0 {
-			appendMapInto(returnedMetrics, returnedMetricNames)
+			maps.Copy(returnedMetrics, returnedMetricNames)
 		} else {
-			appendMapInto(returnedResourceMetrics, returnedMetricNames)
+			maps.Copy(returnedResourceMetrics, returnedMetricNames)
 		}
 	}
 
@@ -143,6 +152,10 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 	expectedMetrics := allMetrics
 
 	expectedMetrics = append(expectedMetrics, systemSpecificMetrics[runtime.GOOS]...)
+	if nfsscraper.CanScrapeAll() {
+		expectedMetrics = append(expectedMetrics, systemSpecificMetricsNFS[runtime.GOOS]...)
+	}
+
 	assert.Len(t, returnedMetrics, len(expectedMetrics))
 	for _, expected := range expectedMetrics {
 		assert.Contains(t, returnedMetrics, expected)
@@ -173,12 +186,6 @@ func getReturnedMetricNames(metrics pmetric.MetricSlice) map[string]struct{} {
 		metricNames[metrics.At(i).Name()] = struct{}{}
 	}
 	return metricNames
-}
-
-func appendMapInto(m1 map[string]struct{}, m2 map[string]struct{}) {
-	for k, v := range m2 {
-		m1[k] = v
-	}
 }
 
 var mockType = component.MustNewType("mock")
@@ -222,7 +229,7 @@ type notifyingSink struct {
 	ch              chan int
 }
 
-func (s *notifyingSink) Capabilities() consumer.Capabilities {
+func (*notifyingSink) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -248,9 +255,9 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 	require.NoError(b, err)
 
 	require.NoError(b, receiver.Start(b.Context(), componenttest.NewNopHost()))
+	b.Cleanup(func() { require.NoError(b, receiver.Shutdown(b.Context())) })
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		tickerCh <- time.Now()
 		<-sink.ch
 	}
@@ -327,6 +334,19 @@ func Benchmark_ScrapePagingMetrics(b *testing.B) {
 	cfg := &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 		Scrapers:         newScrapersConfigs(pagingscraper.NewFactory()),
+	}
+
+	benchmarkScrapeMetrics(b, cfg)
+}
+
+func Benchmark_ScrapeNFSMetrics(b *testing.B) {
+	if !nfsscraper.CanScrapeAll() || runtime.GOOS != "linux" {
+		b.Skip("skipping test on unsupported platform")
+	}
+
+	cfg := &Config{
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		Scrapers:         newScrapersConfigs(nfsscraper.NewFactory()),
 	}
 
 	benchmarkScrapeMetrics(b, cfg)

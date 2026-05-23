@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -25,12 +26,24 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SshcheckDuration:     MetricConfig{Enabled: true},
-					SshcheckError:        MetricConfig{Enabled: true},
-					SshcheckSftpDuration: MetricConfig{Enabled: true},
-					SshcheckSftpError:    MetricConfig{Enabled: true},
-					SshcheckSftpStatus:   MetricConfig{Enabled: true},
-					SshcheckStatus:       MetricConfig{Enabled: true},
+					SshcheckDuration: MetricConfig{
+						Enabled: true,
+					},
+					SshcheckError: MetricConfig{
+						Enabled: true,
+					},
+					SshcheckSftpDuration: MetricConfig{
+						Enabled: true,
+					},
+					SshcheckSftpError: MetricConfig{
+						Enabled: true,
+					},
+					SshcheckSftpStatus: MetricConfig{
+						Enabled: true,
+					},
+					SshcheckStatus: MetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SSHEndpoint: ResourceAttributeConfig{Enabled: true},
@@ -41,12 +54,24 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SshcheckDuration:     MetricConfig{Enabled: false},
-					SshcheckError:        MetricConfig{Enabled: false},
-					SshcheckSftpDuration: MetricConfig{Enabled: false},
-					SshcheckSftpError:    MetricConfig{Enabled: false},
-					SshcheckSftpStatus:   MetricConfig{Enabled: false},
-					SshcheckStatus:       MetricConfig{Enabled: false},
+					SshcheckDuration: MetricConfig{
+						Enabled: false,
+					},
+					SshcheckError: MetricConfig{
+						Enabled: false,
+					},
+					SshcheckSftpDuration: MetricConfig{
+						Enabled: false,
+					},
+					SshcheckSftpError: MetricConfig{
+						Enabled: false,
+					},
+					SshcheckSftpStatus: MetricConfig{
+						Enabled: false,
+					},
+					SshcheckStatus: MetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SSHEndpoint: ResourceAttributeConfig{Enabled: false},
@@ -69,7 +94,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
 

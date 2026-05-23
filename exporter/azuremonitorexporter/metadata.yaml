@@ -1,4 +1,5 @@
 type: azuremonitor
+display_name: Azure Monitor Exporter
 
 status:
   class: exporter

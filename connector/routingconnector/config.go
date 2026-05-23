@@ -12,12 +12,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+type Action string
+
+const (
+	Copy Action = "copy"
+	Move Action = "move"
+)
+
 var (
 	errNoConditionOrStatement = errors.New("invalid route: no condition or statement provided")
 	errConditionAndStatement  = errors.New("invalid route: both condition and statement provided")
 	errNoPipelines            = errors.New("invalid route: no pipelines defined")
 	errUnexpectedConsumer     = errors.New("expected consumer to be a connector router")
 	errNoTableItems           = errors.New("invalid routing table: the routing table is empty")
+	errUnexpectedAction       = errors.New("invalid routing action: if provided should be one of move/copy")
 )
 
 // Config defines configuration for the Routing processor.
@@ -43,6 +51,25 @@ type Config struct {
 	_ struct{}
 }
 
+// UnmarshalText unmarshalls text to an Action.
+func (e *Action) UnmarshalText(text []byte) error {
+	if e == nil {
+		return errors.New("cannot unmarshal to a nil *Action")
+	}
+
+	str := string(text)
+	switch str {
+	case string(Copy):
+		*e = Copy
+	case string(Move):
+		*e = Move
+	default:
+		return fmt.Errorf("invalid Action string: %s", str)
+	}
+
+	return nil
+}
+
 // Validate checks if the processor configuration is valid.
 func (c *Config) Validate() error {
 	// validate that there's at least one item in the table
@@ -63,6 +90,14 @@ func (c *Config) Validate() error {
 			return errNoPipelines
 		}
 
+		switch item.Action {
+		case "":
+			item.Action = Move // use move if empty.
+		case Copy, Move: // ok
+		default:
+			return errUnexpectedAction
+		}
+
 		switch item.Context {
 		case "", "resource", "span", "metric", "datapoint", "log": // ok
 		case "request":
@@ -81,17 +116,24 @@ func (c *Config) Validate() error {
 
 // RoutingTableItem specifies how data should be routed to the different pipelines
 type RoutingTableItem struct {
-	// One of "request", "resource", "log" (other OTTL contexts will be added in the future)
+	// One of "request", "resource", "log", "span", "metric", "datapoint".
 	// Optional. Default "resource".
 	Context string `mapstructure:"context"`
 
-	// Statement is a OTTL statement used for making a routing decision.
-	// One of 'Statement' or 'Condition' must be provided.
+	// Statement is an OTTL statement used for making a routing decision.
+	// 'Statement' is disallowed for the "request" context.
+	// For other contexts, 'Statement' or 'Condition' must be provided.
 	Statement string `mapstructure:"statement"`
 
 	// Condition is an OTTL condition used for making a routing decision.
-	// One of 'Statement' or 'Condition' must be provided.
+	// For the "request" context, 'Condition' is required
+	// and must be of the form 'request["<attribute>"] {== | !=} <value>'.
+	// For all other contexts, 'Statement' or 'Condition' must be provided, and must be a valid OTTL condition.
 	Condition string `mapstructure:"condition"`
+
+	// Action indicates the type of operation we intend to do when the condition
+	// Matches for the corresponding context and data.
+	Action Action `mapstructure:"action"`
 
 	// Pipelines contains the list of pipelines to use when the value from the FromAttribute field
 	// matches this table item. When no pipelines are specified, the ones specified under

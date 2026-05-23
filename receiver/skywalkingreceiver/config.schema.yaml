@@ -1,0 +1,15 @@
+$defs:
+  protocols:
+    description: Protocols is the configuration for the supported protocols.
+    type: object
+    properties:
+      grpc:
+        x-pointer: true
+        $ref: go.opentelemetry.io/collector/config/configgrpc.server_config
+      http:
+        x-pointer: true
+        $ref: go.opentelemetry.io/collector/config/confighttp.server_config
+description: Config defines configuration for skywalking receiver.
+type: object
+allOf:
+  - $ref: protocols

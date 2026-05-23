@@ -1,4 +1,9 @@
+display_name: Libhoney Receiver
 type: libhoney
+
+description: |
+  The Libhoney Receiver will accept Trace and Logs signals that are emitted from applications that are
+  instrumented using [Libhoney](https://docs.honeycomb.io/send-data/logs/structured/libhoney/) libraries.
 
 status:
   class: receiver

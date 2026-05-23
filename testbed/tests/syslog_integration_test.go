@@ -6,6 +6,7 @@ package tests // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"fmt"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
@@ -43,11 +44,12 @@ func TestSyslogComplementaryRFC5424(t *testing.T) {
 						"iut": "3",
 					},
 				},
-				"hostname": "mymachine.example.com",
-				"appname":  "eventslog",
-				"priority": int64(165),
-				"version":  int64(1),
-				"facility": int64(20),
+				"hostname":      "mymachine.example.com",
+				"appname":       "eventslog",
+				"priority":      int64(165),
+				"version":       int64(1),
+				"facility":      int64(20),
+				"facility_text": "local4",
 			},
 		},
 		{
@@ -56,9 +58,10 @@ func TestSyslogComplementaryRFC5424(t *testing.T) {
 			severityText:   "alert",
 			timestamp:      1065910455008000000,
 			attributes: map[string]any{
-				"priority": int64(17),
-				"version":  int64(3),
-				"facility": int64(2),
+				"priority":      int64(17),
+				"version":       int64(3),
+				"facility":      int64(2),
+				"facility_text": "mail",
 			},
 		},
 	}
@@ -155,7 +158,7 @@ service:
 
 	// prepare data
 
-	message := ""
+	var message strings.Builder
 	expectedAttributes := []map[string]any{}
 	expectedLogs := plog.NewLogs()
 	rl := expectedLogs.ResourceLogs().AppendEmpty()
@@ -168,7 +171,7 @@ service:
 		lr.SetSeverityText(e.severityText)
 		lr.SetTimestamp(e.timestamp)
 		expectedAttributes = append(expectedAttributes, e.attributes)
-		message += e.message + "\n"
+		message.WriteString(e.message + "\n")
 	}
 
 	// Prepare client
@@ -176,7 +179,7 @@ service:
 	require.NoError(t, err)
 
 	// Write requests
-	fmt.Fprint(conn, message)
+	fmt.Fprint(conn, message.String())
 
 	// Wait for all messages
 	for len(backend.ReceivedLogs) < 1 {

@@ -26,6 +26,9 @@ type Config struct {
 	//
 	// The default value is unix:///var/run/chrony/chronyd.sock
 	Endpoint string `mapstructure:"endpoint"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var (

@@ -5,11 +5,13 @@ package splunkhecexporter
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
@@ -110,7 +112,12 @@ func TestFactory_EnabledBatchingMakesExporterMutable(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, le.Capabilities().MutatesData)
 
-	config.BatcherConfig = exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
+	config.QueueSettings = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
+	config.QueueSettings.Get().Sizer = exporterhelper.RequestSizerTypeItems
+	config.QueueSettings.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		MinSize:      8192,
+	})
 
 	me, err = createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)

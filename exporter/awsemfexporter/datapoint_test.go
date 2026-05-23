@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -87,7 +88,7 @@ func generateTestSumMetric(name string, valueType metricValueType) pmetric.Metri
 	otelMetrics := pmetric.NewMetrics()
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
 	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		metric := metrics.AppendEmpty()
 		metric.SetName(name)
 		metric.SetUnit("Count")
@@ -273,12 +274,42 @@ func generateTestExponentialHistogramMetricWithLongBuckets(name string) pmetric.
 	return otelMetrics
 }
 
+func generateTestExponentialHistogramMetricWithSpecifiedNumberOfBuckets(name string, bucketLength int) pmetric.Metrics {
+	halfBucketLength := bucketLength / 2
+	otelMetrics := pmetric.NewMetrics()
+	rs := otelMetrics.ResourceMetrics().AppendEmpty()
+	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
+	metric := metrics.AppendEmpty()
+	metric.SetName(name)
+	metric.SetUnit("Seconds")
+	exponentialHistogramMetric := metric.SetEmptyExponentialHistogram()
+
+	exponentialHistogramDatapoint := exponentialHistogramMetric.DataPoints().AppendEmpty()
+	exponentialHistogramDatapoint.SetCount(250550)
+	exponentialHistogramDatapoint.SetSum(10000)
+	exponentialHistogramDatapoint.SetMin(-9e+20)
+	exponentialHistogramDatapoint.SetMax(9e+20)
+	exponentialHistogramDatapoint.SetZeroCount(50)
+	posBucketCounts := make([]uint64, halfBucketLength)
+	for i := range posBucketCounts {
+		posBucketCounts[i] = uint64(i + 1)
+	}
+	exponentialHistogramDatapoint.Positive().BucketCounts().FromRaw(posBucketCounts)
+	negBucketCounts := make([]uint64, halfBucketLength)
+	for i := range negBucketCounts {
+		negBucketCounts[i] = uint64(i + 1)
+	}
+	exponentialHistogramDatapoint.Negative().BucketCounts().FromRaw(negBucketCounts)
+	exponentialHistogramDatapoint.Attributes().PutStr("label1", "value1")
+	return otelMetrics
+}
+
 func generateTestSummaryMetric(name string) pmetric.Metrics {
 	otelMetrics := pmetric.NewMetrics()
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
 	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
 
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		metric := metrics.AppendEmpty()
 		metric.SetName(name)
 		metric.SetUnit("Seconds")
@@ -303,7 +334,7 @@ func generateTestSummaryMetricWithNaN(name string) pmetric.Metrics {
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
 	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
 
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		metric := metrics.AppendEmpty()
 		metric.SetName(name)
 		metric.SetUnit("Seconds")
@@ -328,7 +359,7 @@ func generateTestSummaryMetricWithInf(name string) pmetric.Metrics {
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
 	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
 
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		metric := metrics.AppendEmpty()
 		metric.SetName(name)
 		metric.SetUnit("Seconds")
@@ -2129,7 +2160,7 @@ func TestGetDataPoints(t *testing.T) {
 		metric := pmetric.NewMetric()
 		metric.SetName("foo")
 		metric.SetUnit("Count")
-		metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", pmetric.MetricTypeEmpty)
+		metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", pmetric.MetricTypeEmpty, 0)
 		obs, logs := observer.New(zap.WarnLevel)
 		logger := zap.New(obs)
 
@@ -2152,12 +2183,15 @@ func TestGetDataPoints(t *testing.T) {
 	})
 }
 
-func BenchmarkGetAndCalculateDeltaDataPoints(b *testing.B) {
+func benchmarkGetAndCalculateDeltaDataPoints(b *testing.B, bucketLength int) {
 	generateMetrics := []pmetric.Metrics{
 		generateTestGaugeMetric("int-gauge", intValueType),
 		generateTestGaugeMetric("int-gauge", doubleValueType),
 		generateTestHistogramMetric("histogram"),
 		generateTestExponentialHistogramMetric("exponential-histogram"),
+		generateTestExponentialHistogramMetricWithSpecifiedNumberOfBuckets(
+			"exponential-histogram-buckets-"+strconv.Itoa(bucketLength), bucketLength,
+		),
 		generateTestSumMetric("int-sum", intValueType),
 		generateTestSumMetric("double-sum", doubleValueType),
 		generateTestSummaryMetric("summary"),
@@ -2168,8 +2202,8 @@ func BenchmarkGetAndCalculateDeltaDataPoints(b *testing.B) {
 	metrics := rms.At(0).ScopeMetrics().At(0).Metrics()
 	emfCalcs := setupEmfCalculators()
 	defer require.NoError(b, shutdownEmfCalculators(emfCalcs))
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+
+	for b.Loop() {
 		for i := 0; i < metrics.Len(); i++ {
 			metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type(), 0)
 			dps := getDataPoints(metrics.At(i), metadata, zap.NewNop())
@@ -2179,4 +2213,20 @@ func BenchmarkGetAndCalculateDeltaDataPoints(b *testing.B) {
 			}
 		}
 	}
+}
+
+func BenchmarkGetAndCalculateDeltaDataPointsInclude100Buckets(b *testing.B) {
+	benchmarkGetAndCalculateDeltaDataPoints(b, 100)
+}
+
+func BenchmarkGetAndCalculateDeltaDataPointsInclude200Buckets(b *testing.B) {
+	benchmarkGetAndCalculateDeltaDataPoints(b, 200)
+}
+
+func BenchmarkGetAndCalculateDeltaDataPointsInclude300Buckets(b *testing.B) {
+	benchmarkGetAndCalculateDeltaDataPoints(b, 300)
+}
+
+func BenchmarkGetAndCalculateDeltaDataPointsInclude500Buckets(b *testing.B) {
+	benchmarkGetAndCalculateDeltaDataPoints(b, 500)
 }

@@ -1,0 +1,9 @@
+type: xstreamencoding
+
+status:
+  disable_codecov_badge: true
+  class: pkg
+  stability:
+    development: [ extension ]
+  codeowners:
+    active: [Kavindu-Dodan, axw]

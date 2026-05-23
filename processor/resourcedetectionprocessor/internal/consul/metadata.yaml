@@ -7,11 +7,11 @@ resource_attributes:
     description: The cloud.region
     type: string
     enabled: true
-  host.name:
-    description: The hostname
-    type: string
-    enabled: true
   host.id:
     description: The host.id
+    type: string
+    enabled: true
+  host.name:
+    description: The hostname
     type: string
     enabled: true

@@ -8,8 +8,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
@@ -22,12 +24,13 @@ var receivers = sharedcomponent.NewSharedComponents()
 
 // NewFactory creates a factory for receiver creator.
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+		xreceiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+		xreceiver.WithProfiles(createProfilesReceiver, metadata.ProfilesStability),
 	)
 }
 
@@ -35,36 +38,39 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ResourceAttributes: resourceAttributes{
 			observer.PodType: map[string]string{
-				conventions.AttributeK8SPodName:       "`name`",
-				conventions.AttributeK8SPodUID:        "`uid`",
-				conventions.AttributeK8SNamespaceName: "`namespace`",
+				string(conventions.K8SPodNameKey):       "`name`",
+				string(conventions.K8SPodUIDKey):        "`uid`",
+				string(conventions.K8SNamespaceNameKey): "`namespace`",
 			},
 			observer.K8sServiceType: map[string]string{
-				conventions.AttributeK8SNamespaceName: "`namespace`",
+				string(conventions.K8SNamespaceNameKey): "`namespace`",
 			},
 			observer.K8sIngressType: map[string]string{
-				conventions.AttributeK8SNamespaceName: "`namespace`",
+				string(conventions.K8SNamespaceNameKey): "`namespace`",
 			},
 			observer.PortType: map[string]string{
-				conventions.AttributeK8SPodName:       "`pod.name`",
-				conventions.AttributeK8SPodUID:        "`pod.uid`",
-				conventions.AttributeK8SNamespaceName: "`pod.namespace`",
+				string(conventions.K8SPodNameKey):         "`pod.name`",
+				string(conventions.K8SPodUIDKey):          "`pod.uid`",
+				string(conventions.K8SNamespaceNameKey):   "`pod.namespace`",
+				string(conventions.K8SContainerNameKey):   "`container_name`",
+				string(conventions.ContainerIDKey):        "`container_id`",
+				string(conventions.ContainerImageNameKey): "`container_image`",
 			},
 			observer.PodContainerType: map[string]string{
-				conventions.AttributeK8SPodName:         "`pod.name`",
-				conventions.AttributeK8SPodUID:          "`pod.uid`",
-				conventions.AttributeK8SNamespaceName:   "`pod.namespace`",
-				conventions.AttributeK8SContainerName:   "`container_name`",
-				conventions.AttributeContainerID:        "`container_id`",
-				conventions.AttributeContainerImageName: "`container_image`",
+				string(conventions.K8SPodNameKey):         "`pod.name`",
+				string(conventions.K8SPodUIDKey):          "`pod.uid`",
+				string(conventions.K8SNamespaceNameKey):   "`pod.namespace`",
+				string(conventions.K8SContainerNameKey):   "`container_name`",
+				string(conventions.ContainerIDKey):        "`container_id`",
+				string(conventions.ContainerImageNameKey): "`container_image`",
 			},
 			observer.ContainerType: map[string]string{
-				conventions.AttributeContainerName:      "`name`",
-				conventions.AttributeContainerImageName: "`image`",
+				string(conventions.ContainerNameKey):      "`name`",
+				string(conventions.ContainerImageNameKey): "`image`",
 			},
 			observer.K8sNodeType: map[string]string{
-				conventions.AttributeK8SNodeName: "`name`",
-				conventions.AttributeK8SNodeUID:  "`uid`",
+				string(conventions.K8SNodeNameKey): "`name`",
+				string(conventions.K8SNodeUIDKey):  "`uid`",
 			},
 			observer.KafkaTopicType: map[string]string{},
 		},
@@ -108,5 +114,18 @@ func createTracesReceiver(
 		return newReceiverCreator(params, cfg.(*Config))
 	})
 	r.Component.(*receiverCreator).nextTracesConsumer = consumer
+	return r, nil
+}
+
+func createProfilesReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	cfg component.Config,
+	consumer xconsumer.Profiles,
+) (xreceiver.Profiles, error) {
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		return newReceiverCreator(params, cfg.(*Config))
+	})
+	r.Component.(*receiverCreator).nextProfilesConsumer = consumer
 	return r, nil
 }

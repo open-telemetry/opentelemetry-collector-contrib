@@ -58,7 +58,7 @@ func TestIntegration(t *testing.T) {
 
 type waitStrategy struct{}
 
-func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
+func (waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
 	if err := wait.ForListeningPort(apachePort).
 		WithStartupTimeout(time.Minute).
 		WaitUntilReady(ctx, st); err != nil {

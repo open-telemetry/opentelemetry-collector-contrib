@@ -34,6 +34,10 @@ datadog/api2:
   logs:
     endpoint: https://http-intake.logs.datadoghq.test
 
+  orchestrator_explorer:
+    endpoint: https://orchestrator.datadoghq.test/api/v2/orchmanif
+    enabled: false
+
 datadog/default:
   api:
     key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa

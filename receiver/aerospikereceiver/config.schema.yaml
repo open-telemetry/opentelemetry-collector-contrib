@@ -1,0 +1,22 @@
+description: Config is the receiver configuration
+type: object
+properties:
+  collect_cluster_metrics:
+    type: boolean
+  endpoint:
+    type: string
+  password:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  timeout:
+    type: string
+    format: duration
+  tls:
+    x-pointer: true
+    $ref: go.opentelemetry.io/collector/config/configtls.client_config
+  tlsname:
+    type: string
+  username:
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: ./internal/metadata.metrics_builder_config

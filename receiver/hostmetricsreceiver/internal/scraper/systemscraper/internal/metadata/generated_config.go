@@ -6,33 +6,34 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
+// SystemUptimeMetricConfig provides config for the system.uptime metric.
+type SystemUptimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
+
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
 // MetricsConfig provides config for system metrics.
 type MetricsConfig struct {
-	SystemUptime MetricConfig `mapstructure:"system.uptime"`
+	SystemUptime SystemUptimeMetricConfig `mapstructure:"system.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SystemUptime: MetricConfig{
+		SystemUptime: SystemUptimeMetricConfig{
 			Enabled: true,
 		},
 	}

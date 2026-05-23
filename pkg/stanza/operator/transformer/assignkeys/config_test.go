@@ -28,7 +28,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.Keys = []string{"foo", "bar"}
 					return cfg
 				}(),
-				ExpectErr: false,
+				ExpectUnmarshalErr: false,
 			},
 			{
 				Name: "assign_keys_body_nested",
@@ -38,7 +38,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.Keys = []string{"foo", "bar"}
 					return cfg
 				}(),
-				ExpectErr: false,
+				ExpectUnmarshalErr: false,
 			},
 			{
 				Name: "assign_keys_attributes",
@@ -48,7 +48,18 @@ func TestUnmarshal(t *testing.T) {
 					cfg.Keys = []string{"foo", "bar"}
 					return cfg
 				}(),
-				ExpectErr: false,
+				ExpectUnmarshalErr: false,
+			},
+			{
+				Name: "on_error_drop",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.Field = entry.NewBodyField()
+					cfg.Keys = []string{"foo", "bar"}
+					cfg.OnError = "drop"
+					return cfg
+				}(),
+				ExpectUnmarshalErr: false,
 			},
 		},
 	}.Run(t)

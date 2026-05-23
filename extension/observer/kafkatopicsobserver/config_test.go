@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/kafkatopicsobserver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -41,12 +41,14 @@ func TestLoadConfig(t *testing.T) {
 					ResolveCanonicalBootstrapServersOnly: false,
 					ClientID:                             "otel-collector",
 					Metadata:                             configkafka.NewDefaultMetadataConfig(),
+					UseLeaderEpoch:                       true,
 					Authentication: configkafka.AuthenticationConfig{
 						PlainText: &configkafka.PlainTextConfig{
 							Username: "fooUser",
 							Password: "fooPassword",
 						},
 					},
+					ConnIdleTimeout: 9 * time.Minute,
 				},
 				TopicRegex:         "^topic[0-9]$",
 				TopicsSyncInterval: 100 * time.Millisecond,

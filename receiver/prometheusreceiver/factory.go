@@ -6,42 +6,20 @@ package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 
-	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
-	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
+	_ "github.com/prometheus/prometheus/plugins" // init() of this package registers service discovery impl.
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
-// This file implements config for Prometheus receiver.
-var useCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.UseCreatedMetric",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
-		" retrieve the start time for Summary, Histogram and Sum metrics from _created metric"),
-)
-
-var enableNativeHistogramsGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.EnableNativeHistograms",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will convert"+
-		" Prometheus native histograms to OTEL exponential histograms and ignore"+
-		" those Prometheus classic histograms that have a native histogram alternative"),
-)
-
 // NewFactory creates a new Prometheus receiver factory.
 func NewFactory() receiver.Factory {
-	// Since Prometheus 3.0, the default validation scheme for metric names is UTF8.
-	// This includes ScrapeManager lib that is used by the Promethes receiver.
-	// We need to set the validation scheme to _something_ to avoid panics, and
-	// UTF8 is the default in Prometheus.
-	model.NameValidationScheme = model.UTF8Validation
-
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
@@ -49,9 +27,17 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
 	return &Config{
 		PrometheusConfig: &PromConfig{
 			GlobalConfig: promconfig.DefaultGlobalConfig,
+		},
+		APIServer: APIServer{
+			Enabled: false,
+			ServerConfig: confighttp.ServerConfig{
+				NetAddr: netAddr,
+			},
 		},
 	}
 }
@@ -63,7 +49,7 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	configWarnings(set.Logger, cfg.(*Config))
-	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer), nil
+	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer)
 }
 
 func configWarnings(logger *zap.Logger, cfg *Config) {

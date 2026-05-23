@@ -14,8 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/mgr"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/healthchecker"
 )
 
 const (
@@ -83,11 +81,6 @@ func TestSupervisorAsService(t *testing.T) {
 	require.NoError(t, err)
 
 	require.True(t, eventTime.After(startTime.In(time.UTC)))
-
-	// verify the collector is running healthy
-	hc := healthchecker.NewHTTPHealthChecker("http://127.0.0.1:12345")
-	err = hc.Check(t.Context())
-	require.NoError(t, err)
 }
 
 // Helper types to read the XML events from the event log using wevtutil

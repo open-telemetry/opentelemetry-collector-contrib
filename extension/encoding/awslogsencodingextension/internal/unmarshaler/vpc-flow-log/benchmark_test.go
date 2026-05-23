@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 )
 
 func createVPCFlowLogContent(b *testing.B, filename string, nLogs int) []byte {
@@ -26,7 +28,7 @@ func createVPCFlowLogContent(b *testing.B, filename string, nLogs int) []byte {
 
 	result := make([][]byte, nLogs+1)
 	result[0] = fieldLine
-	for i := 0; i < nLogs; i++ {
+	for i := range nLogs {
 		result[i+1] = flowLog
 	}
 	return bytes.Join(result, []byte{'\n'})
@@ -34,7 +36,7 @@ func createVPCFlowLogContent(b *testing.B, filename string, nLogs int) []byte {
 
 func BenchmarkUnmarshalUnmarshalPlainTextLogs(b *testing.B) {
 	// each log line of this file is around 80B
-	filename := "./testdata/valid_vpc_flow_log.log"
+	filename := "./testdata/valid_vpc_flow_log_single.log"
 
 	tests := map[string]struct {
 		nLogs int
@@ -47,10 +49,10 @@ func BenchmarkUnmarshalUnmarshalPlainTextLogs(b *testing.B) {
 		},
 	}
 
-	u := vpcFlowLogUnmarshaler{
-		fileFormat: fileFormatPlainText,
-		buildInfo:  component.BuildInfo{},
-		logger:     zap.NewNop(),
+	u := VPCFlowLogUnmarshaler{
+		cfg:       Config{FileFormat: constants.FileFormatPlainText},
+		buildInfo: component.BuildInfo{},
+		logger:    zap.NewNop(),
 	}
 
 	for name, test := range tests {
@@ -58,8 +60,8 @@ func BenchmarkUnmarshalUnmarshalPlainTextLogs(b *testing.B) {
 
 		b.Run(name, func(b *testing.B) {
 			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
-				_, err := u.unmarshalPlainTextLogs(bytes.NewReader(data))
+			for b.Loop() {
+				_, err := u.UnmarshalAWSLogs(bytes.NewReader(data))
 				require.NoError(b, err)
 			}
 		})

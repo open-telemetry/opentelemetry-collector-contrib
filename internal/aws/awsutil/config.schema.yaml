@@ -1,0 +1,52 @@
+$defs:
+  aws_session_settings:
+    description: AWSSessionSettings defines the common session configs for AWS components
+    type: object
+    properties:
+      certificate_file_path:
+        description: Add a custom certificates file
+        type: string
+      endpoint:
+        description: X-Ray service endpoint to which the collector sends segment documents.
+        type: string
+      external_id:
+        description: External ID to verify third party role assumption
+        type: string
+      imds_retries:
+        description: How many times should we retry imds v2
+        type: integer
+      local_mode:
+        description: Local mode to skip EC2 instance metadata check.
+        type: boolean
+      max_retries:
+        description: Maximum number of retries on top of the initial attempt before abandoning an attempt to post data. Total attempts = MaxRetries + 1.
+        type: integer
+      no_verify_ssl:
+        description: Enable or disable TLS certificate verification.
+        type: boolean
+      num_workers:
+        description: Maximum number of concurrent calls to AWS X-Ray to upload documents.
+        type: integer
+      profile:
+        description: Change the default profile for shared creds file
+        type: string
+      proxy_address:
+        description: Upload segments to AWS X-Ray through a proxy.
+        type: string
+      region:
+        description: Send segments to AWS X-Ray service in a specific region.
+        type: string
+      request_timeout_seconds:
+        description: Number of seconds before timing out a request.
+        type: integer
+      resource_arn:
+        description: Amazon Resource Name (ARN) of the AWS resource running the collector.
+        type: string
+      role_arn:
+        description: IAM role to upload segments to a different account.
+        type: string
+      shared_credentials_file:
+        description: Change the default shared creds file location
+        type: array
+        items:
+          type: string

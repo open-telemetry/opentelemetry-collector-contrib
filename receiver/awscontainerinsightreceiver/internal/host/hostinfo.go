@@ -8,9 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -20,7 +18,7 @@ import (
 type Info struct {
 	cancel                context.CancelFunc
 	logger                *zap.Logger
-	awsSession            *session.Session
+	awsConfig             aws.Config
 	refreshInterval       time.Duration
 	containerOrchestrator string
 	clusterName           string
@@ -36,11 +34,13 @@ type Info struct {
 	ebsVolume    ebsVolumeProvider
 	ec2Tags      ec2TagsProvider
 
-	awsSessionCreator   func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error)
+	awsConfigCreator    func(context.Context, *zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error)
 	nodeCapacityCreator func(*zap.Logger, ...Option) (nodeCapacityProvider, error)
-	ec2MetadataCreator  func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, int, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider
-	ebsVolumeCreator    func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger, ...ebsVolumeOption) ebsVolumeProvider
-	ec2TagsCreator      func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider
+	ec2MetadataCreator  func(context.Context, aws.Config, time.Duration, chan bool, chan bool, bool, int, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider
+	ebsVolumeCreator    func(context.Context, aws.Config, string, string, time.Duration, *zap.Logger, ...ebsVolumeOption) ebsVolumeProvider
+	ec2TagsCreator      func(context.Context, aws.Config, string, string, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider
+
+	preBuiltAWSConfig *aws.Config
 }
 
 type Option func(any)
@@ -64,13 +64,20 @@ func WithSystemdEnabled(enabled bool) Option {
 	}
 }
 
-func withConfigurer[T any](configurer *awsmiddleware.Configurer, creator func(configurer *awsmiddleware.Configurer) T) T {
-	return creator(configurer)
+// WithAWSConfig supplies a pre-built aws.Config (e.g. with awsmiddleware
+// already installed on cfg.APIOptions). When set, NewInfo uses this config
+// directly instead of invoking awsConfigCreator.
+func WithAWSConfig(cfg aws.Config) Option {
+	return func(info any) {
+		if i, ok := info.(*Info); ok {
+			i.preBuiltAWSConfig = &cfg
+		}
+	}
 }
 
-// NewInfo creates a new Info struct
-func NewInfo(awsSessionSettings awsutil.AWSSessionSettings, containerOrchestrator string, refreshInterval time.Duration, logger *zap.Logger, configurer *awsmiddleware.Configurer, options ...Option) (*Info, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+// NewInfo creates a new Info struct.
+func NewInfo(ctx context.Context, awsSessionSettings awsutil.AWSSessionSettings, containerOrchestrator string, refreshInterval time.Duration, logger *zap.Logger, options ...Option) (*Info, error) {
+	ctx, cancel := context.WithCancel(ctx)
 	mInfo := &Info{
 		cancel:           cancel,
 		refreshInterval:  refreshInterval,
@@ -79,11 +86,11 @@ func NewInfo(awsSessionSettings awsutil.AWSSessionSettings, containerOrchestrato
 		logger:           logger,
 
 		containerOrchestrator: containerOrchestrator,
-		awsSessionCreator:     awsutil.GetAWSConfigSession,
+		awsConfigCreator:      awsutil.GetAWSConfig,
 		nodeCapacityCreator:   newNodeCapacity,
-		ec2MetadataCreator:    createEC2MetadataCreator(configurer),
-		ebsVolumeCreator:      createEBSVolumeCreator(configurer),
-		ec2TagsCreator:        createEC2TagsCreator(configurer),
+		ec2MetadataCreator:    newEC2Metadata,
+		ebsVolumeCreator:      newEBSVolume,
+		ec2TagsCreator:        newEC2Tags,
 		ebsVolumeReadyC:       make(chan bool),
 		ec2TagsReadyC:         make(chan bool),
 	}
@@ -98,87 +105,34 @@ func NewInfo(awsSessionSettings awsutil.AWSSessionSettings, containerOrchestrato
 	}
 	mInfo.nodeCapacity = nodeCapacity
 
-	_, session, err := mInfo.awsSessionCreator(logger, &awsutil.Conn{}, &awsSessionSettings)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create aws session: %w", err)
+	var awsCfg aws.Config
+	if mInfo.preBuiltAWSConfig != nil {
+		awsCfg = *mInfo.preBuiltAWSConfig
+	} else {
+		awsCfg, err = mInfo.awsConfigCreator(ctx, logger, &awsSessionSettings)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create aws config: %w", err)
+		}
 	}
-	mInfo.awsSession = session
+	mInfo.awsConfig = awsCfg
 
-	mInfo.ec2Metadata = mInfo.ec2MetadataCreator(ctx, session, refreshInterval, mInfo.instanceIDReadyC, mInfo.instanceIPReadyC, awsSessionSettings.LocalMode, awsSessionSettings.IMDSRetries, logger)
+	mInfo.ec2Metadata = mInfo.ec2MetadataCreator(
+		ctx, awsCfg, refreshInterval,
+		mInfo.instanceIDReadyC, mInfo.instanceIPReadyC,
+		awsSessionSettings.LocalMode, awsSessionSettings.IMDSRetries,
+		logger,
+	)
 
 	go mInfo.lazyInitEBSVolume(ctx)
 	go mInfo.lazyInitEC2Tags(ctx)
 	return mInfo, nil
 }
 
-// createEC2MetadataCreator returns a function that creates an EC2 metadata provider.
-// It uses the provided configurer to set up AWS middleware for the EC2 metadata client.
-//
-// The returned function is a factory that, when called, creates an EC2 metadata provider
-// with the following capabilities:
-// - Fetches EC2 instance metadata
-// - Refreshes metadata at specified intervals
-// - Notifies when instance ID and IP are ready via channels
-// - Supports local mode and IMDS retries
-// - Configures logging
-// - Applies additional options for customization
-//
-// This layered approach allows for flexible configuration and dependency injection,
-// making it easier to customize behavior and improve testability.
-func createEC2MetadataCreator(configurer *awsmiddleware.Configurer) func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, int, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider {
-	return withConfigurer(configurer, func(c *awsmiddleware.Configurer) func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, int, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider {
-		return func(ctx context.Context, session *session.Session, refreshInterval time.Duration, instanceIDReadyC, instanceIPReadyC chan bool, localMode bool, imdsRetries int, logger *zap.Logger, options ...ec2MetadataOption) ec2MetadataProvider {
-			return newEC2Metadata(ctx, session, refreshInterval, instanceIDReadyC, instanceIPReadyC, localMode, imdsRetries, logger, c, options...)
-		}
-	})
-}
-
-// createEBSVolumeCreator returns a function that creates an EBS volume provider.
-// It uses the provided configurer to set up AWS middleware for the EBS volume client.
-//
-// The returned function is a factory that, when called, creates an EBS volume provider
-// with the following capabilities:
-// - Fetches EBS volume information for a specific EC2 instance
-// - Refreshes volume information at specified intervals
-// - Configures logging
-// - Applies additional options for customization
-//
-// This approach allows for flexible configuration of the EBS volume provider,
-// enabling easier testing and customization of behavior.
-func createEBSVolumeCreator(configurer *awsmiddleware.Configurer) func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger, ...ebsVolumeOption) ebsVolumeProvider {
-	return withConfigurer(configurer, func(c *awsmiddleware.Configurer) func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger, ...ebsVolumeOption) ebsVolumeProvider {
-		return func(ctx context.Context, session *session.Session, instanceID, region string, refreshInterval time.Duration, logger *zap.Logger, options ...ebsVolumeOption) ebsVolumeProvider {
-			return newEBSVolume(ctx, session, instanceID, region, refreshInterval, logger, c, options...)
-		}
-	})
-}
-
-// createEC2TagsCreator returns a function that creates an EC2 tags provider.
-// It uses the provided configurer to set up AWS middleware for the EC2 tags client.
-//
-// The returned function is a factory that, when called, creates an EC2 tags provider
-// with the following capabilities:
-// - Fetches EC2 instance tags
-// - Refreshes tag information at specified intervals
-// - Supports container orchestrator-specific tag handling
-// - Configures logging
-// - Applies additional options for customization
-//
-// This design allows for flexible configuration of the EC2 tags provider,
-// facilitating easier testing and customization of tag retrieval and processing.
-func createEC2TagsCreator(configurer *awsmiddleware.Configurer) func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider {
-	return withConfigurer(configurer, func(c *awsmiddleware.Configurer) func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider {
-		return func(ctx context.Context, session *session.Session, instanceID, region, containerOrchestrator string, refreshInterval time.Duration, logger *zap.Logger, options ...ec2TagsOption) ec2TagsProvider {
-			return newEC2Tags(ctx, session, instanceID, region, containerOrchestrator, refreshInterval, logger, c, options...)
-		}
-	})
-}
-
 func (m *Info) lazyInitEBSVolume(ctx context.Context) {
 	// wait until the instance id is ready
 	<-m.instanceIDReadyC
 	// Because ebs volumes only change occasionally, we refresh every 5 collection intervals to reduce ec2 api calls
-	m.ebsVolume = m.ebsVolumeCreator(ctx, m.awsSession, m.GetInstanceID(), m.GetRegion(),
+	m.ebsVolume = m.ebsVolumeCreator(ctx, m.awsConfig, m.GetInstanceID(), m.GetRegion(),
 		5*m.refreshInterval, m.logger)
 	close(m.ebsVolumeReadyC)
 }
@@ -186,7 +140,7 @@ func (m *Info) lazyInitEBSVolume(ctx context.Context) {
 func (m *Info) lazyInitEC2Tags(ctx context.Context) {
 	// wait until the instance id is ready
 	<-m.instanceIDReadyC
-	m.ec2Tags = m.ec2TagsCreator(ctx, m.awsSession, m.GetInstanceID(), m.GetRegion(), m.containerOrchestrator, m.refreshInterval, m.logger)
+	m.ec2Tags = m.ec2TagsCreator(ctx, m.awsConfig, m.GetInstanceID(), m.GetRegion(), m.containerOrchestrator, m.refreshInterval, m.logger)
 	close(m.ec2TagsReadyC)
 }
 

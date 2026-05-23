@@ -68,7 +68,7 @@ func TestPullTimestampsWithDifference(t *testing.T) {
 
 	expectedTimestamp = lowerBound.Add(time.Minute)
 
-	for i := 0; i < expectedAmountOfTimestamps; i++ {
+	for i := range expectedAmountOfTimestamps {
 		assert.Equal(t, expectedTimestamp, timestamps[i])
 		expectedTimestamp = expectedTimestamp.Add(time.Minute)
 	}

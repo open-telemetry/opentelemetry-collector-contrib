@@ -51,7 +51,7 @@ type benchCase struct {
 }
 
 func (bc benchCase) run(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		f := NewFactory(BenchReceiverType{}, component.StabilityLevelUndefined)
 		cfg := f.CreateDefaultConfig().(*BenchConfig)
 		cfg.maxBatchSize = bc.maxBatchSize
@@ -111,11 +111,11 @@ type BenchConfig struct {
 }
 type BenchReceiverType struct{}
 
-func (f BenchReceiverType) Type() component.Type {
+func (BenchReceiverType) Type() component.Type {
 	return benchType
 }
 
-func (f BenchReceiverType) CreateDefaultConfig() component.Config {
+func (BenchReceiverType) CreateDefaultConfig() component.Config {
 	return &BenchConfig{
 		BaseConfig: BaseConfig{
 			Operators: []operator.Config{},
@@ -124,11 +124,11 @@ func (f BenchReceiverType) CreateDefaultConfig() component.Config {
 	}
 }
 
-func (f BenchReceiverType) BaseConfig(cfg component.Config) BaseConfig {
+func (BenchReceiverType) BaseConfig(cfg component.Config) BaseConfig {
 	return cfg.(*BenchConfig).BaseConfig
 }
 
-func (f BenchReceiverType) InputConfig(cfg component.Config) operator.Config {
+func (BenchReceiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(cfg.(*BenchConfig))
 }
 
@@ -181,9 +181,7 @@ func (b *Input) Start(_ operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	b.cancel = cancel
 
-	b.wg.Add(1)
-	go func() {
-		defer b.wg.Done()
+	b.wg.Go(func() {
 		for n := 0; n < len(b.entries); n++ {
 			select {
 			case <-ctx.Done():
@@ -195,7 +193,7 @@ func (b *Input) Start(_ operator.Persister) error {
 				b.Logger().Error("failed to write entry", zap.Error(err))
 			}
 		}
-	}()
+	})
 	return nil
 }
 

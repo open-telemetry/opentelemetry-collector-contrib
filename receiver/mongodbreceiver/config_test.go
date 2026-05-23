@@ -27,6 +27,7 @@ func TestValidate(t *testing.T) {
 		desc      string
 		username  string
 		password  string
+		scheme    string
 		expected  error
 	}{
 		{
@@ -74,6 +75,36 @@ func TestValidate(t *testing.T) {
 			endpoints: []string{""},
 			expected:  errors.New("no endpoint specified for one of the hosts"),
 		},
+		{
+			desc:      "scheme mongodb is valid",
+			endpoints: []string{"localhost:27017"},
+			scheme:    "mongodb",
+			expected:  nil,
+		},
+		{
+			desc:      "scheme mongodb+srv with one host is valid",
+			endpoints: []string{"cluster0.example.mongodb.net"},
+			scheme:    "mongodb+srv",
+			expected:  nil,
+		},
+		{
+			desc:      "scheme mongodb+srv with multiple hosts is invalid",
+			endpoints: []string{"host1.example.net", "host2.example.net"},
+			scheme:    "mongodb+srv",
+			expected:  errors.New("mongodb+srv scheme requires exactly one host"),
+		},
+		{
+			desc:      "invalid scheme",
+			endpoints: []string{"localhost:27017"},
+			scheme:    "invalid",
+			expected:  errors.New("invalid scheme \"invalid\", must be \"mongodb\" or \"mongodb+srv\""),
+		},
+		{
+			desc:      "empty scheme defaults to mongodb",
+			endpoints: []string{"localhost:27017"},
+			scheme:    "",
+			expected:  nil,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -86,10 +117,12 @@ func TestValidate(t *testing.T) {
 			}
 
 			cfg := &Config{
-				Username:         tc.username,
-				Password:         configopaque.String(tc.password),
-				Hosts:            hosts,
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Username:             tc.username,
+				Password:             configopaque.String(tc.password),
+				Hosts:                hosts,
+				Scheme:               tc.scheme,
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			}
 			err := xconfmap.Validate(cfg)
 			if tc.expected == nil {
@@ -140,8 +173,9 @@ func TestBadTLSConfigs(t *testing.T) {
 						Endpoint: defaultEndpoint,
 					},
 				},
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-				ClientConfig:     tc.tlsConfig,
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				ClientConfig:         tc.tlsConfig,
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			}
 			err := xconfmap.Validate(cfg)
 			if tc.expectError {
@@ -173,6 +207,101 @@ func TestOptions(t *testing.T) {
 		(2 * time.Minute).Milliseconds(),
 	)
 	require.Equal(t, "rs-1", *clientOptions.ReplicaSet)
+}
+
+func TestOptionsWithAuthMechanismAndSource(t *testing.T) {
+	cfg := &Config{
+		Hosts: []confignet.TCPAddrConfig{
+			{
+				Endpoint: defaultEndpoint,
+			},
+		},
+		Username:      "uname",
+		Password:      "password",
+		AuthMechanism: "SCRAM-SHA-256",
+		AuthSource:    "admin",
+		AuthMechanismProperties: map[string]string{
+			"SERVICE_NAME": "mongodb",
+		},
+		Timeout:    2 * time.Minute,
+		ReplicaSet: "rs-1",
+	}
+
+	// Test primary connection options
+	clientOptions := cfg.ClientOptions(false)
+	require.Equal(t, clientOptions.Auth.Username, cfg.Username)
+	require.Equal(t, clientOptions.Auth.AuthMechanism, cfg.AuthMechanism)
+	require.Equal(t, clientOptions.Auth.AuthSource, cfg.AuthSource)
+	require.Equal(t, clientOptions.Auth.AuthMechanismProperties, cfg.AuthMechanismProperties)
+	require.Equal(t,
+		clientOptions.ConnectTimeout.Milliseconds(),
+		(2 * time.Minute).Milliseconds(),
+	)
+	require.Equal(t, "rs-1", *clientOptions.ReplicaSet)
+
+	// Test secondary connection options
+	secondaryOptions := cfg.ClientOptions(true)
+	require.Equal(t, secondaryOptions.Auth.Username, cfg.Username)
+	require.Equal(t, secondaryOptions.Auth.AuthMechanism, cfg.AuthMechanism)
+	require.Equal(t, secondaryOptions.Auth.AuthSource, cfg.AuthSource)
+	require.Equal(t, secondaryOptions.Auth.AuthMechanismProperties, cfg.AuthMechanismProperties)
+}
+
+func TestOptionsWithAuthMechanismOnly(t *testing.T) {
+	cfg := &Config{
+		Hosts: []confignet.TCPAddrConfig{
+			{
+				Endpoint: defaultEndpoint,
+			},
+		},
+		AuthMechanism: "MONGODB-X509",
+		AuthSource:    "$external",
+		Timeout:       2 * time.Minute,
+	}
+
+	// Test primary connection options
+	clientOptions := cfg.ClientOptions(false)
+	require.Empty(t, clientOptions.Auth.Username)
+	require.Empty(t, clientOptions.Auth.Password)
+	require.Equal(t, "MONGODB-X509", clientOptions.Auth.AuthMechanism)
+	require.Equal(t, "$external", clientOptions.Auth.AuthSource)
+
+	// Test secondary connection options
+	secondaryOptions := cfg.ClientOptions(true)
+	require.Empty(t, secondaryOptions.Auth.Username)
+	require.Empty(t, secondaryOptions.Auth.Password)
+	require.Equal(t, "MONGODB-X509", secondaryOptions.Auth.AuthMechanism)
+	require.Equal(t, "$external", secondaryOptions.Auth.AuthSource)
+}
+
+func TestOptionsDefaultScheme(t *testing.T) {
+	cfg := &Config{
+		Hosts: []confignet.TCPAddrConfig{
+			{
+				Endpoint: "localhost:27017",
+			},
+		},
+	}
+
+	clientOptions := cfg.ClientOptions(false)
+	require.Equal(t, []string{"localhost:27017"}, clientOptions.Hosts)
+}
+
+func TestOptionsSRVScheme(t *testing.T) {
+	cfg := &Config{
+		Hosts: []confignet.TCPAddrConfig{
+			{
+				Endpoint: "cluster0.example.mongodb.net",
+			},
+		},
+		Scheme: "mongodb+srv",
+	}
+
+	clientOptions := cfg.ClientOptions(false)
+	require.NotNil(t, clientOptions)
+	// mongodb+srv:// defers host resolution to connect time,
+	// so Hosts is not populated at parse time
+	require.Nil(t, clientOptions.Hosts)
 }
 
 func TestOptionsTLS(t *testing.T) {
@@ -213,6 +342,36 @@ func TestLoadConfig(t *testing.T) {
 			Endpoint: defaultEndpoint,
 		},
 	}
+	expected.Username = "otel"
+	expected.Password = "${env:MONGO_PASSWORD}"
+	expected.CollectionInterval = time.Minute
+	expected.AuthMechanism = "SCRAM-SHA-256"
+	expected.AuthSource = "admin"
+	expected.AuthMechanismProperties = map[string]string{
+		"SERVICE_NAME": "mongodb",
+	}
+
+	require.Equal(t, expected, cfg)
+}
+
+func TestLoadConfigSRV(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "srv").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.Hosts = []confignet.TCPAddrConfig{
+		{
+			Endpoint: "cluster0.example.mongodb.net",
+		},
+	}
+	expected.Scheme = "mongodb+srv"
 	expected.Username = "otel"
 	expected.Password = "${env:MONGO_PASSWORD}"
 	expected.CollectionInterval = time.Minute

@@ -1,4 +1,10 @@
+display_name: Cumulative to Delta Processor
 type: cumulativetodelta
+
+description: |
+  The cumulative to delta processor (`cumulativetodeltaprocessor`) converts monotonic sum, histogram, and exponential
+  histogram metrics from cumulative to delta aggregation temporality. Non-monotonic sums are excluded. Delta metrics are
+  excluded from any conversion and forwarded without changes.
 
 status:
   class: processor

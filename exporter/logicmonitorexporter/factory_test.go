@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -23,7 +24,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
@@ -58,7 +59,7 @@ func TestCreateLogs(t *testing.T) {
 			}
 			if tt.shouldError {
 				assert.Error(t, err)
-				if len(tt.errorMessage) != 0 {
+				if tt.errorMessage != "" {
 					assert.Equal(t, tt.errorMessage, err.Error())
 				}
 				return
@@ -98,7 +99,7 @@ func TestCreateTraces(t *testing.T) {
 			}
 			if tt.shouldError {
 				assert.Error(t, err)
-				if len(tt.errorMessage) != 0 {
+				if tt.errorMessage != "" {
 					assert.Equal(t, tt.errorMessage, err.Error())
 				}
 				return

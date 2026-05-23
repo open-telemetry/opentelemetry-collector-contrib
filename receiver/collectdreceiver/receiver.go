@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -28,6 +29,7 @@ var _ receiver.Metrics = (*collectdReceiver)(nil)
 type collectdReceiver struct {
 	logger             *zap.Logger
 	server             *http.Server
+	shutdownWG         sync.WaitGroup
 	defaultAttrsPrefix string
 	nextConsumer       consumer.Metrics
 	obsrecv            *receiverhelper.ObsReport
@@ -56,7 +58,7 @@ func newCollectdReceiver(
 // Start starts an HTTP server that can process CollectD JSON requests.
 func (cdr *collectdReceiver) Start(ctx context.Context, host component.Host) error {
 	var err error
-	cdr.server, err = cdr.config.ToServer(ctx, host, cdr.createSettings.TelemetrySettings, cdr)
+	cdr.server, err = cdr.config.ToServer(ctx, host.GetExtensions(), cdr.createSettings.TelemetrySettings, cdr)
 	if err != nil {
 		return err
 	}
@@ -74,11 +76,11 @@ func (cdr *collectdReceiver) Start(ctx context.Context, host component.Host) err
 	if err != nil {
 		return err
 	}
-	go func() {
+	cdr.shutdownWG.Go(func() {
 		if err := cdr.server.Serve(l); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
-	}()
+	})
 	return nil
 }
 
@@ -87,7 +89,9 @@ func (cdr *collectdReceiver) Shutdown(context.Context) error {
 	if cdr.server == nil {
 		return nil
 	}
-	return cdr.server.Shutdown(context.Background())
+	err := cdr.server.Shutdown(context.Background())
+	cdr.shutdownWG.Wait()
+	return err
 }
 
 // ServeHTTP acts as the default and only HTTP handler for the CollectD receiver.
@@ -119,7 +123,8 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	metrics := pmetric.NewMetrics()
 	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-	for _, record := range records {
+	for i := range records {
+		record := &records[i]
 		err = record.appendToMetrics(cdr.logger, scopeMetrics, defaultAttrs)
 		if err != nil {
 			cdr.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(records), err)
@@ -152,7 +157,7 @@ func (cdr *collectdReceiver) defaultAttributes(req *http.Request) map[string]str
 	for key := range params {
 		if strings.HasPrefix(key, cdr.defaultAttrsPrefix) {
 			value := params.Get(key)
-			if len(value) == 0 {
+			if value == "" {
 				cdr.logger.Debug("blank attribute value", zap.String("key", key))
 				continue
 			}

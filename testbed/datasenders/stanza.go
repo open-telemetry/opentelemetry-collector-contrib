@@ -54,11 +54,11 @@ func (f *FileLogWriter) WithStorage(storage string) *FileLogWriter {
 	return f
 }
 
-func (f *FileLogWriter) Capabilities() consumer.Capabilities {
+func (*FileLogWriter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (f *FileLogWriter) Start() error {
+func (*FileLogWriter) Start() error {
 	return nil
 }
 
@@ -77,7 +77,7 @@ func (f *FileLogWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
 	return nil
 }
 
-func (f *FileLogWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
+func (*FileLogWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 	sb := strings.Builder{}
 
 	// Timestamp
@@ -121,7 +121,7 @@ func (f *FileLogWriter) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	// We are testing stanza receiver here.
 	return fmt.Sprintf(`
-  filelog:
+  file_log:
     include: [ %s ]
     start_at: beginning
     operators:
@@ -137,11 +137,11 @@ func (f *FileLogWriter) GenConfigYAMLStr() string {
 `, f.file.Name(), f.retry, f.storage)
 }
 
-func (f *FileLogWriter) ProtocolName() string {
-	return "filelog"
+func (*FileLogWriter) ProtocolName() string {
+	return "file_log"
 }
 
-func (f *FileLogWriter) GetEndpoint() net.Addr {
+func (*FileLogWriter) GetEndpoint() net.Addr {
 	return nil
 }
 

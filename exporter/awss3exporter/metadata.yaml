@@ -1,4 +1,5 @@
 type: awss3
+display_name: AWS S3 Exporter
 
 status:
   class: exporter

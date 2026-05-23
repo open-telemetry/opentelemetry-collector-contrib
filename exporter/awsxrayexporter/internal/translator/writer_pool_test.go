@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv112 "go.opentelemetry.io/collector/semconv/v1.12.0"
 	"go.uber.org/zap"
 )
 
@@ -37,7 +36,7 @@ func TestWriterPoolBasic(t *testing.T) {
 
 func BenchmarkWithoutPool(b *testing.B) {
 	logger := zap.NewNop()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		b.StopTimer()
 		span := constructWriterPoolSpan()
 		b.StartTimer()
@@ -53,7 +52,7 @@ func BenchmarkWithoutPool(b *testing.B) {
 func BenchmarkWithPool(b *testing.B) {
 	logger := zap.NewNop()
 	wp := newWriterPool(2048)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		b.StopTimer()
 		span := constructWriterPoolSpan()
 		b.StartTimer()
@@ -67,9 +66,9 @@ func BenchmarkWithPool(b *testing.B) {
 
 func constructWriterPoolSpan() ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	attributes[conventionsv112.AttributeHTTPClientIP] = "192.168.15.32"
-	attributes[conventionsv112.AttributeHTTPStatusCode] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.url"] = "https://api.example.com/users/junit"
+	attributes["http.client_ip"] = "192.168.15.32"
+	attributes["http.status_code"] = 200
 	return constructHTTPServerSpan(attributes)
 }

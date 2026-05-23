@@ -4,15 +4,18 @@
 package telemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 
 import (
+	"bytes"
+	"context"
+	"io"
 	"os"
 	"sync"
 	"time"
 
 	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/xray"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/aws-sdk-go-v2/service/xray"
+	"github.com/aws/aws-sdk-go-v2/service/xray/types"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -34,7 +37,7 @@ const (
 type Sender interface {
 	Recorder
 	// Start send loop.
-	Start()
+	Start(ctx context.Context)
 	// Stop send loop.
 	Stop()
 }
@@ -60,7 +63,7 @@ type telemetrySender struct {
 
 	// queue is used to keep records that failed to send for retry during
 	// the next period.
-	queue []*xray.TelemetryRecord
+	queue []types.TelemetryRecord
 
 	startOnce sync.Once
 	stopWait  sync.WaitGroup
@@ -122,13 +125,13 @@ func WithBatchSize(batchSize int) Option {
 }
 
 type metadataProvider interface {
-	get() string
+	get(ctx context.Context) string
 }
 
-func getMetadata(providers ...metadataProvider) string {
+func getMetadata(ctx context.Context, providers ...metadataProvider) string {
 	var metadata string
 	for _, provider := range providers {
-		if metadata = provider.get(); metadata != "" {
+		if metadata = provider.get(ctx); metadata != "" {
 			break
 		}
 	}
@@ -139,7 +142,7 @@ type simpleMetadataProvider struct {
 	metadata string
 }
 
-func (p simpleMetadataProvider) get() string {
+func (p simpleMetadataProvider) get(_ context.Context) string {
 	return p.metadata
 }
 
@@ -147,28 +150,40 @@ type envMetadataProvider struct {
 	envKey string
 }
 
-func (p envMetadataProvider) get() string {
+func (p envMetadataProvider) get(_ context.Context) string {
 	return os.Getenv(p.envKey)
 }
 
 type ec2MetadataProvider struct {
-	client               *ec2metadata.EC2Metadata
-	clientFallbackEnable *ec2metadata.EC2Metadata
+	client               *imds.Client
+	clientFallbackEnable *imds.Client
 	metadataKey          string
 }
 
-func (p ec2MetadataProvider) get() string {
-	if result, err := p.client.GetMetadata(p.metadataKey); err == nil {
-		return result
+func (p ec2MetadataProvider) get(ctx context.Context) string {
+	if metadata, err := readMetadata(ctx, p.client, p.metadataKey); err == nil {
+		return metadata
 	}
-	if result, err := p.clientFallbackEnable.GetMetadata(p.metadataKey); err == nil {
-		return result
+	if metadata, err := readMetadata(ctx, p.clientFallbackEnable, p.metadataKey); err == nil {
+		return metadata
 	}
 	return ""
 }
 
+func readMetadata(ctx context.Context, c *imds.Client, key string) (string, error) {
+	resp, err := c.GetMetadata(ctx, &imds.GetMetadataInput{Path: key})
+	if err != nil {
+		return "", err
+	}
+	var metadata bytes.Buffer
+	if _, err := io.Copy(&metadata, resp.Content); err != nil {
+		return "", err
+	}
+	return metadata.String(), nil
+}
+
 // ToOptions returns the metadata options if enabled by the config.
-func ToOptions(cfg Config, sess *session.Session, settings *awsutil.AWSSessionSettings) []Option {
+func ToOptions(ctx context.Context, cfg Config, awsConfig aws.Config, settings *awsutil.AWSSessionSettings) []Option {
 	if !cfg.IncludeMetadata {
 		return nil
 	}
@@ -181,11 +196,13 @@ func ToOptions(cfg Config, sess *session.Session, settings *awsutil.AWSSessionSe
 		envMetadataProvider{envKey: envAWSInstanceID},
 	}
 	if !settings.LocalMode {
-		metadataClient := ec2metadata.New(sess, &aws.Config{
-			Retryer:                   override.NewIMDSRetryer(settings.IMDSRetries),
-			EC2MetadataEnableFallback: aws.Bool(false),
+		metadataClient := imds.NewFromConfig(awsConfig, func(o *imds.Options) {
+			o.Retryer = override.NewIMDSRetryer(settings.IMDSRetries)
+			o.EnableFallback = aws.FalseTernary
 		})
-		metadataClientFallbackEnable := ec2metadata.New(sess, &aws.Config{})
+		metadataClientFallbackEnable := imds.NewFromConfig(awsConfig, func(o *imds.Options) {
+			o.EnableFallback = aws.TrueTernary
+		})
 		hostnameProviders = append(hostnameProviders, ec2MetadataProvider{
 			client:               metadataClient,
 			clientFallbackEnable: metadataClientFallbackEnable,
@@ -194,13 +211,14 @@ func ToOptions(cfg Config, sess *session.Session, settings *awsutil.AWSSessionSe
 		instanceIDProviders = append(instanceIDProviders, ec2MetadataProvider{
 			client:               metadataClient,
 			clientFallbackEnable: metadataClientFallbackEnable,
-			metadataKey:          metadataHostname,
+			metadataKey:          metadataInstanceID,
 		})
 	}
 	return []Option{
-		WithHostname(getMetadata(hostnameProviders...)),
-		WithInstanceID(getMetadata(instanceIDProviders...)),
+		WithHostname(getMetadata(ctx, hostnameProviders...)),
+		WithInstanceID(getMetadata(ctx, instanceIDProviders...)),
 		WithResourceARN(getMetadata(
+			ctx,
 			simpleMetadataProvider{metadata: cfg.ResourceARN},
 			simpleMetadataProvider{metadata: settings.ResourceARN},
 		)),
@@ -228,13 +246,11 @@ func newSender(client awsxray.XRayClient, opts ...Option) *telemetrySender {
 }
 
 // Start starts the loop to send the records.
-func (ts *telemetrySender) Start() {
+func (ts *telemetrySender) Start(ctx context.Context) {
 	ts.startOnce.Do(func() {
-		ts.stopWait.Add(1)
-		go func() {
-			defer ts.stopWait.Done()
-			ts.run()
-		}()
+		ts.stopWait.Go(func() {
+			ts.run(ctx)
+		})
 	})
 }
 
@@ -247,7 +263,7 @@ func (ts *telemetrySender) Stop() {
 }
 
 // run sends the queued records once a minute if telemetry data was updated.
-func (ts *telemetrySender) run() {
+func (ts *telemetrySender) run(ctx context.Context) {
 	ticker := time.NewTicker(ts.interval)
 	defer ticker.Stop()
 	for {
@@ -257,16 +273,16 @@ func (ts *telemetrySender) run() {
 		case <-ticker.C:
 			if ts.HasRecording() {
 				ts.enqueue(ts.Rotate())
-				ts.send()
+				ts.send(ctx)
 			}
 		}
 	}
 }
 
 // enqueue the record. If queue is full, drop the head of the queue and add.
-func (ts *telemetrySender) enqueue(record *xray.TelemetryRecord) {
+func (ts *telemetrySender) enqueue(record types.TelemetryRecord) {
 	for len(ts.queue) >= ts.queueSize {
-		var dropped *xray.TelemetryRecord
+		var dropped types.TelemetryRecord
 		dropped, ts.queue = ts.queue[0], ts.queue[1:]
 		if ts.logger != nil {
 			ts.logger.Debug("queue full, dropping telemetry record", zap.Time("dropped_timestamp", *dropped.Timestamp))
@@ -276,19 +292,16 @@ func (ts *telemetrySender) enqueue(record *xray.TelemetryRecord) {
 }
 
 // send the records in the queue in batches. Updates the queue.
-func (ts *telemetrySender) send() {
+func (ts *telemetrySender) send(ctx context.Context) {
 	for i := len(ts.queue); i >= 0; i -= ts.batchSize {
-		startIndex := i - ts.batchSize
-		if startIndex < 0 {
-			startIndex = 0
-		}
+		startIndex := max(i-ts.batchSize, 0)
 		input := &xray.PutTelemetryRecordsInput{
 			EC2InstanceId:    &ts.instanceID,
 			Hostname:         &ts.hostname,
 			ResourceARN:      &ts.resourceARN,
 			TelemetryRecords: ts.queue[startIndex:i],
 		}
-		if _, err := ts.client.PutTelemetryRecords(input); err != nil {
+		if _, err := ts.client.PutTelemetryRecords(ctx, input); err != nil {
 			ts.RecordConnectionError(err)
 			ts.queue = ts.queue[:i]
 			return

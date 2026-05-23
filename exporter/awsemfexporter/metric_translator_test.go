@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -35,8 +34,8 @@ func createTestResourceMetrics() pmetric.ResourceMetrics {
 func createTestResourceMetricsHelper(numMetrics int) pmetric.ResourceMetrics {
 	rm := pmetric.NewResourceMetrics()
 	rm.Resource().Attributes().PutStr(occonventions.AttributeExporterVersion, "SomeVersion")
-	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "myServiceName")
-	rm.Resource().Attributes().PutStr(conventions.AttributeServiceNamespace, "myServiceNS")
+	rm.Resource().Attributes().PutStr("service.name", "myServiceName")
+	rm.Resource().Attributes().PutStr("service.namespace", "myServiceNS")
 	rm.Resource().Attributes().PutStr("ClusterName", "myCluster")
 	rm.Resource().Attributes().PutStr("PodName", "myPod")
 	rm.Resource().Attributes().PutStr(attributeReceiver, prometheusReceiver)
@@ -170,7 +169,7 @@ func hashMetricSlice(metricSlice []cWMetricInfo) []string {
 	// Convert to string for easier sorting
 	stringified := make([]string, len(metricSlice))
 	for i, v := range metricSlice {
-		stringified[i] = fmt.Sprint(v.Name) + "," + fmt.Sprint(v.Unit) + "," + fmt.Sprint(v.StorageResolution)
+		stringified[i] = fmt.Sprintf("%s,%s,%d", v.Name, v.Unit, v.StorageResolution)
 	}
 	// Sort across metrics for equality checking
 	sort.Strings(stringified)
@@ -266,22 +265,22 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	ilm.Scope().SetName("cloudwatch-lib")
 
 	noNamespaceMetric := createTestResourceMetrics()
-	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceNamespace)
-	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceName)
+	noNamespaceMetric.Resource().Attributes().Remove("service.namespace")
+	noNamespaceMetric.Resource().Attributes().Remove("service.name")
 
 	// need to have 1 more metric than the default because the first is not going to be retained because it is a delta metric
 	containerInsightMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
-	containerInsightMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsKubeAPIServerScraper")
+	containerInsightMetric.Resource().Attributes().PutStr("service.name", "containerInsightsKubeAPIServerScraper")
 	gpuMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
-	gpuMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsDCGMExporterScraper")
+	gpuMetric.Resource().Attributes().PutStr("service.name", "containerInsightsDCGMExporterScraper")
 	neuronMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
-	neuronMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsNeuronMonitorScraper")
+	neuronMetric.Resource().Attributes().PutStr("service.name", "containerInsightsNeuronMonitorScraper")
 	kueueMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
-	kueueMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsKueueMetricsScraper")
+	kueueMetric.Resource().Attributes().PutStr("service.name", "containerInsightsKueueMetricsScraper")
 	nvmeMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
-	nvmeMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsNVMeEBSScraper")
+	nvmeMetric.Resource().Attributes().PutStr("service.name", "containerInsightsNVMeEBSScraper")
 	nvmeLisMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
-	nvmeLisMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsNVMeLISScraper")
+	nvmeLisMetric.Resource().Attributes().PutStr("service.name", "containerInsightsNVMeLISScraper")
 
 	counterSumMetrics := map[string]*metricInfo{
 		"spanCounter": {
@@ -452,8 +451,9 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 					case pmetric.MetricTypeSum:
 						assert.Len(t, v.metrics, 2)
 						assert.Equal(t, tc.counterLabels, v.labels)
-						assert.True(t, reflect.DeepEqual(counterSumMetrics, v.metrics) ||
-							reflect.DeepEqual(counterGaugeMetrics, v.metrics),
+						assert.True(
+							t, reflect.DeepEqual(counterSumMetrics, v.metrics) ||
+								reflect.DeepEqual(counterGaugeMetrics, v.metrics),
 						)
 					case pmetric.MetricTypeHistogram:
 						assert.Len(t, v.metrics, 1)
@@ -487,7 +487,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	t.Run("No metrics", func(t *testing.T) {
 		rm := pmetric.NewResourceMetrics()
-		rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "myServiceName")
+		rm.Resource().Attributes().PutStr("service.name", "myServiceName")
 		rm.Resource().Attributes().PutStr(occonventions.AttributeExporterVersion, "SomeVersion")
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
@@ -1319,8 +1319,8 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 		{
 			"Single label, no rollup, w/ otel dim",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			"",
 			[][]string{
@@ -1338,8 +1338,8 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 		{
 			"Single label, single rollup, w/ otel dim",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			singleDimensionRollupOnly,
 			[][]string{
@@ -1358,8 +1358,8 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 		{
 			"Single label, zero + single rollup, w/ otel dim",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			zeroAndSingleDimensionRollup,
 			[][]string{
@@ -1382,10 +1382,10 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 		{
 			"Multiple label, no rollup, w/ otel dim",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				"c":                   "car",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				"c":                 "car",
+				oTellibDimensionKey: instrLibName,
 			},
 			"",
 			[][]string{
@@ -1411,10 +1411,10 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 		{
 			"Multiple label, rollup, w/ otel dim",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				"c":                   "car",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				"c":                 "car",
+				oTellibDimensionKey: instrLibName,
 			},
 			zeroAndSingleDimensionRollup,
 			[][]string{
@@ -1907,8 +1907,8 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"Single label w/ no rollup",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1922,8 +1922,8 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"Single label + OTelLib w/ no rollup",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1937,8 +1937,8 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"Single label w/ single rollup",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1952,8 +1952,8 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"Single label w/ zero/single rollup",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1967,8 +1967,8 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"Single label + Otel w/ zero/single rollup",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1982,9 +1982,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple labels w/ no rollup",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1998,9 +1998,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple labels w/ rollup",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -2019,9 +2019,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple labels + multiple dimensions w/ no rollup",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -2035,9 +2035,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple labels + multiple dimensions + oTellibDimensionKey w/ no rollup",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -2051,9 +2051,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple labels + multiple dimensions w/ rollup",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -2073,9 +2073,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple labels, multiple dimensions w/ invalid dimension",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -2094,10 +2094,10 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple labels, multiple dimensions w/ missing dimension",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				"c":                   "car",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				"c":                 "car",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -2118,10 +2118,10 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple metric declarations w/ no rollup",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				"c":                   "car",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				"c":                 "car",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -2149,10 +2149,10 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple metric declarations w/ rollup",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				"c":                   "car",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				"c":                 "car",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -2184,10 +2184,10 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"remove measurements with no dimensions",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				"c":                   "car",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				"c":                 "car",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -2208,10 +2208,10 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple declarations w/ no dimensions",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				"c":                   "car",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				"c":                 "car",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -2257,7 +2257,7 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 			groupedMetric := &groupedMetric{
 				labels: tc.labels,
 				metrics: map[string]*metricInfo{
-					(metricName): {
+					metricName: {
 						value: int64(5),
 						unit:  "Count",
 					},
@@ -2304,8 +2304,7 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 	translator := newMetricTranslator(*config)
 	defer require.NoError(b, translator.Shutdown())
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		groupedMetric := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetric, config)
 		assert.NoError(b, err)
@@ -2327,8 +2326,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B
 	translator := newMetricTranslator(*config)
 	defer require.NoError(b, translator.Shutdown())
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.NoError(b, err)
@@ -2350,8 +2348,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing
 	translator := newMetricTranslator(*config)
 	defer require.NoError(b, translator.Shutdown())
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.NoError(b, err)
@@ -2373,8 +2370,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B)
 	translator := newMetricTranslator(*config)
 	defer require.NoError(b, translator.Shutdown())
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.NoError(b, err)
@@ -2391,8 +2387,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutInstrLibrary(b *testing.B) {
 	translator := newMetricTranslator(*config)
 	defer require.NoError(b, translator.Shutdown())
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.NoError(b, err)
@@ -2428,8 +2423,7 @@ func BenchmarkTranslateGroupedMetricToCWMetric(b *testing.B) {
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
 	}
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		translateGroupedMetricToCWMetric(groupedMetric, config)
 	}
 }
@@ -2470,8 +2464,7 @@ func BenchmarkTranslateGroupedMetricToCWMetricWithFiltering(b *testing.B) {
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
 	}
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		translateGroupedMetricToCWMetric(groupedMetric, config)
 	}
 }
@@ -2497,8 +2490,7 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 		measurements: []cWMeasurement{cwMeasurement},
 	}
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		_, err := translateCWMetricToEMF(met, &Config{})
 		require.NoError(b, err)
 	}

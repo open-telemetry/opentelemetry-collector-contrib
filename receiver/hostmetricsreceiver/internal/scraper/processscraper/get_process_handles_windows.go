@@ -11,21 +11,10 @@ import (
 	"unsafe"
 
 	"github.com/shirou/gopsutil/v4/process"
-	"go.opentelemetry.io/collector/featuregate"
 	"golang.org/x/sys/windows"
 )
 
-var useNewGetProcessHandles = featuregate.GlobalRegistry().MustRegister(
-	"hostmetrics.process.onWindowsUseNewGetProcesses",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("If disabled, the scraper will use the legacy implementation to retrieve process handles."),
-)
-
 func getGopsutilProcessHandles(ctx context.Context) (processHandles, error) {
-	if !useNewGetProcessHandles.IsEnabled() {
-		return getGopsutilProcessHandlesLegacy(ctx)
-	}
-
 	snap, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
 	if err != nil {
 		return nil, fmt.Errorf("could not create snapshot: %w", err)
@@ -66,19 +55,4 @@ func getGopsutilProcessHandles(ctx context.Context) (processHandles, error) {
 	}
 
 	return &gopsProcessHandles{handles: wrappedProcesses}, nil
-}
-
-func getGopsutilProcessHandlesLegacy(ctx context.Context) (processHandles, error) {
-	processes, err := process.ProcessesWithContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	wrapped := make([]wrappedProcessHandle, len(processes))
-	for i, p := range processes {
-		wrapped[i] = wrappedProcessHandle{
-			Process: p,
-		}
-	}
-
-	return &gopsProcessHandles{handles: wrapped}, nil
 }

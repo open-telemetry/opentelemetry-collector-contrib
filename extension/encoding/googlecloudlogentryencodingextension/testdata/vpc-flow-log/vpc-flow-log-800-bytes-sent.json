@@ -1,0 +1,48 @@
+{
+  "insertId": "uuq3awf13s959",
+  "jsonPayload": {
+    "connection": {
+      "dest_ip": "192.0.2.3",
+      "src_ip": "203.0.113.3",
+      "protocol": 1
+    },
+    "start_time": "2025-09-27T21:11:25.762594203Z",
+    "dest_instance": {
+      "region": "asia-south1",
+      "project_id": "test-project-id",
+      "zone": "asia-south1-c",
+      "vm_name": "test-vm-3"
+    },
+    "bytes_sent": "800",
+    "end_time": "2025-09-27T21:11:25.762594203Z",
+    "src_location": {
+      "region": "Virginia",
+      "city": "Ashburn",
+      "asn": 14618,
+      "country": "usa",
+      "continent": "America"
+    },
+    "dest_vpc": {
+      "vpc_name": "default",
+      "subnetwork_name": "default",
+      "project_id": "test-project-id",
+      "subnetwork_region": "asia-south1"
+    },
+    "reporter": "DEST",
+    "packets_sent": "20"
+  },
+  "resource": {
+    "type": "vpc_flow_logs_config",
+    "labels": {
+      "resource_container": "projects/123456789012",
+      "location": "global",
+      "name": "test-flow-logs-config"
+    }
+  },
+  "timestamp": "2025-09-27T21:11:28.320127676Z",
+  "labels": {
+    "target_resource_name": "projects/123456789012/global/networks/default"
+  },
+  "logName": "projects/test-project-id/logs/networkmanagement.googleapis.com%2Fvpc_flows",
+  "receiveTimestamp": "2025-09-27T21:11:28.320127676Z"
+}

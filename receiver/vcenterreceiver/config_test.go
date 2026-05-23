@@ -107,7 +107,12 @@ func TestLoadConfig(t *testing.T) {
 	expected.Metrics.VcenterHostCPUUtilization.Enabled = false
 	expected.CollectionInterval = 5 * time.Minute
 
-	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
+	if diff := cmp.Diff(expected, cfg,
+		cmpopts.IgnoreFields(metadata.MetricsBuilderConfig{}, "Metrics"),
+		cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{}),
+	); diff != "" {
 		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 	}
+
+	require.False(t, cfg.(*Config).Metrics.VcenterHostCPUUtilization.Enabled)
 }

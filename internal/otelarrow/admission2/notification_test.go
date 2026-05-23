@@ -17,7 +17,7 @@ func TestNotification(t *testing.T) {
 	require.False(start.HasBeenNotified())
 
 	done := make([]N, 5)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		done[i] = newNotification()
 		go func(i int) {
 			start.WaitForNotification()

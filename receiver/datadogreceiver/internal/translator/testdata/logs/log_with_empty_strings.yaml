@@ -1,0 +1,25 @@
+resourceLogs:
+  - scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: status
+                value:
+                  stringValue: ""
+              - key: timestamp
+                value:
+                  intValue: 0
+              - key: hostname
+                value:
+                  stringValue: ""
+              - key: service
+                value:
+                  stringValue: ""
+              - key: ddsource
+                value:
+                  stringValue: ""
+              - key: ddtags
+                value:
+                  stringValue: ""
+            body:
+              stringValue: ""
+            timeUnixNano: "1736889934967986176"

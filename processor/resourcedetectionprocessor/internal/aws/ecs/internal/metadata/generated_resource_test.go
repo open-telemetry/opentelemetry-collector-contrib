@@ -43,81 +43,80 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("aws.ecs.cluster.arn")
+			awsEcsClusterArnAttrVal, ok := res.Attributes().Get("aws.ecs.cluster.arn")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "aws.ecs.cluster.arn-val", val.Str())
+				assert.Equal(t, "aws.ecs.cluster.arn-val", awsEcsClusterArnAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("aws.ecs.launchtype")
+			awsEcsLaunchtypeAttrVal, ok := res.Attributes().Get("aws.ecs.launchtype")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "aws.ecs.launchtype-val", val.Str())
+				assert.Equal(t, "aws.ecs.launchtype-val", awsEcsLaunchtypeAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("aws.ecs.task.arn")
+			awsEcsTaskArnAttrVal, ok := res.Attributes().Get("aws.ecs.task.arn")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "aws.ecs.task.arn-val", val.Str())
+				assert.Equal(t, "aws.ecs.task.arn-val", awsEcsTaskArnAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("aws.ecs.task.family")
+			awsEcsTaskFamilyAttrVal, ok := res.Attributes().Get("aws.ecs.task.family")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "aws.ecs.task.family-val", val.Str())
+				assert.Equal(t, "aws.ecs.task.family-val", awsEcsTaskFamilyAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("aws.ecs.task.id")
+			awsEcsTaskIDAttrVal, ok := res.Attributes().Get("aws.ecs.task.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "aws.ecs.task.id-val", val.Str())
+				assert.Equal(t, "aws.ecs.task.id-val", awsEcsTaskIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("aws.ecs.task.revision")
+			awsEcsTaskRevisionAttrVal, ok := res.Attributes().Get("aws.ecs.task.revision")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "aws.ecs.task.revision-val", val.Str())
+				assert.Equal(t, "aws.ecs.task.revision-val", awsEcsTaskRevisionAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("aws.log.group.arns")
+			awsLogGroupArnsAttrVal, ok := res.Attributes().Get("aws.log.group.arns")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, []any{"aws.log.group.arns-item1", "aws.log.group.arns-item2"}, val.Slice().AsRaw())
+				assert.Equal(t, []any{"aws.log.group.arns-item1", "aws.log.group.arns-item2"}, awsLogGroupArnsAttrVal.Slice().AsRaw())
 			}
-			val, ok = res.Attributes().Get("aws.log.group.names")
+			awsLogGroupNamesAttrVal, ok := res.Attributes().Get("aws.log.group.names")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, []any{"aws.log.group.names-item1", "aws.log.group.names-item2"}, val.Slice().AsRaw())
+				assert.Equal(t, []any{"aws.log.group.names-item1", "aws.log.group.names-item2"}, awsLogGroupNamesAttrVal.Slice().AsRaw())
 			}
-			val, ok = res.Attributes().Get("aws.log.stream.arns")
+			awsLogStreamArnsAttrVal, ok := res.Attributes().Get("aws.log.stream.arns")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, []any{"aws.log.stream.arns-item1", "aws.log.stream.arns-item2"}, val.Slice().AsRaw())
+				assert.Equal(t, []any{"aws.log.stream.arns-item1", "aws.log.stream.arns-item2"}, awsLogStreamArnsAttrVal.Slice().AsRaw())
 			}
-			val, ok = res.Attributes().Get("aws.log.stream.names")
+			awsLogStreamNamesAttrVal, ok := res.Attributes().Get("aws.log.stream.names")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, []any{"aws.log.stream.names-item1", "aws.log.stream.names-item2"}, val.Slice().AsRaw())
+				assert.Equal(t, []any{"aws.log.stream.names-item1", "aws.log.stream.names-item2"}, awsLogStreamNamesAttrVal.Slice().AsRaw())
 			}
-			val, ok = res.Attributes().Get("cloud.account.id")
+			cloudAccountIDAttrVal, ok := res.Attributes().Get("cloud.account.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.account.id-val", val.Str())
+				assert.Equal(t, "cloud.account.id-val", cloudAccountIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.availability_zone")
+			cloudAvailabilityZoneAttrVal, ok := res.Attributes().Get("cloud.availability_zone")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.availability_zone-val", val.Str())
+				assert.Equal(t, "cloud.availability_zone-val", cloudAvailabilityZoneAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.platform")
+			cloudPlatformAttrVal, ok := res.Attributes().Get("cloud.platform")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.platform-val", val.Str())
+				assert.Equal(t, "cloud.platform-val", cloudPlatformAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.provider")
+			cloudProviderAttrVal, ok := res.Attributes().Get("cloud.provider")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.provider-val", val.Str())
+				assert.Equal(t, "cloud.provider-val", cloudProviderAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.region")
+			cloudRegionAttrVal, ok := res.Attributes().Get("cloud.region")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.region-val", val.Str())
+				assert.Equal(t, "cloud.region-val", cloudRegionAttrVal.Str())
 			}
 		})
 	}

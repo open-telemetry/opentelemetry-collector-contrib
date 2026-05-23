@@ -1,0 +1,62 @@
+$defs:
+  store_config:
+    type: object
+    properties:
+      max_items:
+        description: MaxItems is the maximum number of items to keep in the store.
+        type: integer
+      ttl:
+        description: TTL is the time to live for items in the store.
+        type: string
+        format: duration
+description: Config defines the configuration options for servicegraphprocessor.
+type: object
+properties:
+  cache_loop:
+    description: CacheLoop is the time to cleans the cache periodically.
+    type: string
+    format: duration
+  database_name_attributes:
+    description: DatabaseNameAttributes is the attribute name list of attributes need to match used to identify the database name from span attributes, the higher the front, the higher the priority. The default value is {"db.name"}.
+    type: array
+    items:
+      type: string
+  dimensions:
+    description: 'Dimensions defines the list of additional dimensions on top of the provided: - client - server - failed - connection_type The dimensions will be fetched from the span''s attributes. Examples of some conventionally used attributes: https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.'
+    type: array
+    items:
+      type: string
+  exponential_histogram_max_size:
+    description: ExponentialHistogramMaxSize is the setting of exponential histogram
+    type: integer
+    x-customType: int32
+  latency_histogram_buckets:
+    description: LatencyHistogramBuckets is the list of durations representing latency histogram buckets. See defaultLatencyHistogramBucketsMs in processor.go for the default value. make sure use either `LatencyHistogramBuckets` or `ExponentialHistogramMaxSize`
+    type: array
+    items:
+      type: string
+      format: duration
+  metrics_flush_interval:
+    description: MetricsFlushInterval is the interval at which metrics are flushed to the exporter. If set to 0, metrics are flushed on every received batch of traces. Default is 60s if unset.
+    x-pointer: true
+    type: string
+    format: duration
+  metrics_timestamp_offset:
+    description: MetricsTimestampOffset is the offset to subtract from metric timestamps. If set to a positive duration, metric timestamps will be set to (current time - offset), effectively shifting metrics to appear as if they were generated in the past. Default is 0, which means no offset is applied.
+    type: string
+    format: duration
+  store:
+    description: Store contains the config for the in-memory store used to find requests between services by pairing spans.
+    $ref: store_config
+  store_expiration_loop:
+    description: CacheLoop is the time to expire old entries from the store periodically.
+    type: string
+    format: duration
+  virtual_node_extra_label:
+    description: VirtualNodeExtraLabel enables the `virtual_node` label to be added to the spans.
+    type: boolean
+  virtual_node_peer_attributes:
+    description: VirtualNodePeerAttributes the list of attributes need to match, the higher the front, the higher the priority.
+    type: array
+    items:
+      type: string

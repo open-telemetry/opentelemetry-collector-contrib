@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
@@ -41,21 +42,21 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_service_principal_secret"),
 			expected: &Config{
-				ServicePrincipal: &ServicePrincipal{
+				ServicePrincipal: configoptional.Some(ServicePrincipal{
 					TenantID:     "test",
 					ClientID:     "test",
 					ClientSecret: "test",
-				},
+				}),
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_service_principal_certificate"),
 			expected: &Config{
-				ServicePrincipal: &ServicePrincipal{
+				ServicePrincipal: configoptional.Some(ServicePrincipal{
 					TenantID:              "test",
 					ClientID:              "test",
 					ClientCertificatePath: "test",
-				},
+				}),
 			},
 		},
 		{
@@ -77,11 +78,11 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_workload_identity"),
 			expected: &Config{
-				Workload: &WorkloadIdentity{
+				Workload: configoptional.Some(WorkloadIdentity{
 					TenantID:           "test",
 					ClientID:           "test",
 					FederatedTokenFile: "test",
-				},
+				}),
 			},
 		},
 		{

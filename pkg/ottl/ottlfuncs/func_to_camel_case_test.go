@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -21,7 +22,7 @@ func Test_toCamelCase(t *testing.T) {
 		{
 			name: "simple",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "simple_string", nil
 				},
 			},
@@ -30,7 +31,7 @@ func Test_toCamelCase(t *testing.T) {
 		{
 			name: "already camel",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "SimpleString", nil
 				},
 			},
@@ -39,7 +40,7 @@ func Test_toCamelCase(t *testing.T) {
 		{
 			name: "hyphens",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "simple-string", nil
 				},
 			},
@@ -48,7 +49,7 @@ func Test_toCamelCase(t *testing.T) {
 		{
 			name: "empty string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "", nil
 				},
 			},
@@ -59,7 +60,7 @@ func Test_toCamelCase(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := toCamelCase(tt.target)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -74,7 +75,7 @@ func Test_toCamelCaseRuntimeError(t *testing.T) {
 		{
 			name: "non-string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return 10, nil
 				},
 			},
@@ -83,7 +84,7 @@ func Test_toCamelCaseRuntimeError(t *testing.T) {
 		{
 			name: "nil",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return nil, nil
 				},
 			},

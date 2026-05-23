@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 )
 
@@ -37,8 +38,16 @@ type pubsubReceiverFactory struct {
 	receivers map[*Config]*pubsubReceiver
 }
 
-func (factory *pubsubReceiverFactory) CreateDefaultConfig() component.Config {
-	return &Config{}
+func (*pubsubReceiverFactory) CreateDefaultConfig() component.Config {
+	fcc := internal.NewDefaultFlowControlConfig()
+	return &Config{
+		FlowControlConfig: FlowControlConfig{
+			TriggerAckBatchDuration: fcc.TriggerAckBatchDuration,
+			StreamAckDeadline:       fcc.StreamAckDeadline,
+			MaxOutstandingMessages:  fcc.MaxOutstandingMessages,
+			MaxOutstandingBytes:     fcc.MaxOutstandingBytes,
+		},
+	}
 }
 
 func (factory *pubsubReceiverFactory) ensureReceiver(settings receiver.Settings, config component.Config) (*pubsubReceiver, error) {

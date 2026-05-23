@@ -13,7 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -83,7 +85,38 @@ func TestLoadConfig(t *testing.T) {
 				return
 			}
 			assert.NoError(t, xconfmap.Validate(cfg))
-			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{})); diff != "" {
+			if diff := cmp.Diff(tt.expected, cfg,
+				cmpopts.IgnoreUnexported(
+					metadata.ProcessRuntimeMemstatsBuckHashSysMetricConfig{},
+					metadata.ProcessRuntimeMemstatsFreesMetricConfig{},
+					metadata.ProcessRuntimeMemstatsGcCPUFractionMetricConfig{},
+					metadata.ProcessRuntimeMemstatsGcSysMetricConfig{},
+					metadata.ProcessRuntimeMemstatsHeapAllocMetricConfig{},
+					metadata.ProcessRuntimeMemstatsHeapIdleMetricConfig{},
+					metadata.ProcessRuntimeMemstatsHeapInuseMetricConfig{},
+					metadata.ProcessRuntimeMemstatsHeapObjectsMetricConfig{},
+					metadata.ProcessRuntimeMemstatsHeapReleasedMetricConfig{},
+					metadata.ProcessRuntimeMemstatsHeapSysMetricConfig{},
+					metadata.ProcessRuntimeMemstatsLastPauseMetricConfig{},
+					metadata.ProcessRuntimeMemstatsLookupsMetricConfig{},
+					metadata.ProcessRuntimeMemstatsMallocsMetricConfig{},
+					metadata.ProcessRuntimeMemstatsMcacheInuseMetricConfig{},
+					metadata.ProcessRuntimeMemstatsMcacheSysMetricConfig{},
+					metadata.ProcessRuntimeMemstatsMspanInuseMetricConfig{},
+					metadata.ProcessRuntimeMemstatsMspanSysMetricConfig{},
+					metadata.ProcessRuntimeMemstatsNextGcMetricConfig{},
+					metadata.ProcessRuntimeMemstatsNumForcedGcMetricConfig{},
+					metadata.ProcessRuntimeMemstatsNumGcMetricConfig{},
+					metadata.ProcessRuntimeMemstatsOtherSysMetricConfig{},
+					metadata.ProcessRuntimeMemstatsPauseTotalMetricConfig{},
+					metadata.ProcessRuntimeMemstatsStackInuseMetricConfig{},
+					metadata.ProcessRuntimeMemstatsStackSysMetricConfig{},
+					metadata.ProcessRuntimeMemstatsSysMetricConfig{},
+					metadata.ProcessRuntimeMemstatsTotalAllocMetricConfig{},
+				),
+				cmpopts.IgnoreUnexported(configoptional.Optional[configauth.Config]{}),
+				cmpopts.IgnoreUnexported(configoptional.Optional[confighttp.CookiesConfig]{}),
+			); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})

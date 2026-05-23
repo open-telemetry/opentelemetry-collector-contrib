@@ -68,7 +68,7 @@ func GetConfigVariable(key string) string {
 	}
 }
 
-func SetConfigVariable(key string, value string) {
+func SetConfigVariable(key, value string) {
 	// Read YAML file
 	fileData, err := os.ReadFile(configFilePath)
 	if err != nil {

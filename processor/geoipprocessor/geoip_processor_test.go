@@ -5,10 +5,12 @@ package geoipprocessor
 
 import (
 	"context"
-	"net"
+	"errors"
+	"net/netip"
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -35,11 +37,11 @@ type providerFactoryMock struct {
 }
 
 type providerMock struct {
-	LocationF func(context.Context, net.IP) (attribute.Set, error)
+	LocationF func(context.Context, netip.Addr) (attribute.Set, error)
+	CloseF    func(context.Context) error
 }
 
 var (
-	_ provider.GeoIPProvider        = (*providerMock)(nil)
 	_ provider.GeoIPProvider        = (*providerMock)(nil)
 	_ provider.GeoIPProviderFactory = (*providerFactoryMock)(nil)
 )
@@ -56,13 +58,20 @@ func (fm *providerFactoryMock) CreateGeoIPProvider(ctx context.Context, settings
 	return fm.CreateGeoIPProviderF(ctx, settings, cfg)
 }
 
-func (pm *providerMock) Location(ctx context.Context, ip net.IP) (attribute.Set, error) {
+func (pm *providerMock) Location(ctx context.Context, ip netip.Addr) (attribute.Set, error) {
 	return pm.LocationF(ctx, ip)
 }
 
+func (pm *providerMock) Close(ctx context.Context) error {
+	return pm.CloseF(ctx)
+}
+
 var baseMockProvider = providerMock{
-	LocationF: func(context.Context, net.IP) (attribute.Set, error) {
+	LocationF: func(context.Context, netip.Addr) (attribute.Set, error) {
 		return attribute.Set{}, nil
+	},
+	CloseF: func(context.Context) error {
+		return nil
 	},
 }
 
@@ -76,8 +85,11 @@ var baseMockFactory = providerFactoryMock{
 }
 
 var baseProviderMock = providerMock{
-	LocationF: func(context.Context, net.IP) (attribute.Set, error) {
+	LocationF: func(context.Context, netip.Addr) (attribute.Set, error) {
 		return attribute.Set{}, nil
+	},
+	CloseF: func(context.Context) error {
+		return nil
 	},
 }
 
@@ -148,6 +160,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 
 		err = metricsProcessor.ConsumeMetrics(t.Context(), inputMetrics)
 		require.NoError(t, err)
+		require.NoError(t, metricsProcessor.Shutdown(t.Context()))
 
 		actualMetrics := nextMetrics.AllMetrics()
 		require.Len(t, actualMetrics, 1)
@@ -167,6 +180,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 
 		err = tracesProcessor.ConsumeTraces(t.Context(), inputTraces)
 		require.NoError(t, err)
+		require.NoError(t, tracesProcessor.Shutdown(t.Context()))
 
 		actualTraces := nextTraces.AllTraces()
 		require.Len(t, actualTraces, 1)
@@ -191,6 +205,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 		require.Len(t, actualLogs, 1)
 		// golden.WriteLogs(t, filepath.Join(dir, "output-logs.yaml"), actualLogs[0])
 		require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs[0]))
+		require.NoError(t, logsProcessor.Shutdown(t.Context()))
 	}
 }
 
@@ -201,8 +216,8 @@ func TestProcessor(t *testing.T) {
 		return &baseProviderMock, nil
 	}
 
-	baseProviderMock.LocationF = func(_ context.Context, sourceIP net.IP) (attribute.Set, error) {
-		if sourceIP.Equal(net.IPv4(1, 2, 3, 4)) {
+	baseProviderMock.LocationF = func(_ context.Context, sourceIP netip.Addr) (attribute.Set, error) {
+		if sourceIP.Compare(netip.AddrFrom4([4]byte{1, 2, 3, 4})) == 0 {
 			return attribute.NewSet([]attribute.KeyValue{
 				attribute.String(conventions.AttributeGeoCityName, "Boxford"),
 				attribute.String(conventions.AttributeGeoContinentCode, "EU"),
@@ -232,4 +247,24 @@ func TestProcessor(t *testing.T) {
 			compareAllSignals(cfg, tt.goldenDir)(t)
 		})
 	}
+}
+
+func TestProcessorShutdownError(t *testing.T) {
+	// processor with two mocked providers that return error on close
+	processor := geoIPProcessor{
+		providers: []provider.GeoIPProvider{
+			&providerMock{
+				CloseF: func(context.Context) error {
+					return errors.New("test error 1")
+				},
+			},
+			&providerMock{
+				CloseF: func(context.Context) error {
+					return errors.New("test error 2")
+				},
+			},
+		},
+	}
+
+	assert.EqualError(t, processor.shutdown(t.Context()), "test error 1; test error 2")
 }

@@ -3,6 +3,8 @@ kind: StatefulSet
 metadata: 
   name: {{ .Name }}-{{ .DataType }}-statefulset
   namespace: e2ek8sattribute-clusterrbac
+  annotations:
+    workload: statefulset-annotation
 spec:
   serviceName: {{ .Name }}-{{ .DataType }}-statefulset
   replicas: 1
@@ -24,8 +26,10 @@ spec:
         - --otlp-endpoint={{ .OTLPEndpoint }}
         - --duration=36000s
         - --rate=1
+        - --batch=false
         - --otlp-attributes=service.name="test-{{ .DataType }}-statefulset"
         - --otlp-attributes=k8s.container.name="telemetrygen"
+        - --allow-export-failures
 {{- if eq .DataType "traces" }}
         - --status-code=
 {{- end }}

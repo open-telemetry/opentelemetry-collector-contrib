@@ -1,0 +1,17 @@
+{
+  "awsAccountId": "111122223333",
+  "digestStartTime": "2015-08-20T17:01:31Z",
+  "digestEndTime": "2015-08-20T18:01:31Z",
+  "digestS3Bucket": "amzn-s3-demo-bucket",
+  "digestS3Object": "AWSLogs/111122223333/CloudTrail-Digest/us-east-2/2015/08/20/111122223333_CloudTrail-Digest_us-east-2_example-trail-name_us-east-2_20150820T180131Z.json.gz",
+  "digestPublicKeyFingerprint": "31e8b5433410dfb61a9dc45cc65b22ff",
+  "digestSignatureAlgorithm": "SHA256withRSA",
+  "newestEventTime": null,
+  "oldestEventTime": null,
+  "previousDigestS3Bucket": "amzn-s3-demo-bucket",
+  "previousDigestS3Object": "AWSLogs/111122223333/CloudTrail-Digest/us-east-2/2015/08/20/111122223333_CloudTrail-Digest_us-east-2_example-trail-name_us-east-2_20150820T170131Z.json.gz",
+  "previousDigestHashValue": "ed96c4bac9eaa8fe9716ca0e515da51938be651b1db31d781956416a9d05cdfa",
+  "previousDigestHashAlgorithm": "SHA-256",
+  "previousDigestSignature": "82705525fb0fe7f919f9434e5b7138cb41793c776c7414f3520c0242902daa8cc8286b29263d2627f2f259471c745b1654af76e2073264b2510fd45236b3aea4d80c0e8e6455223d7bd54ff80af0edf22a5f14fa856626daec919f0591479aa4f213787ba1e1076328dcf8ff624e03a977fa5612dcf58594c590fd8c1c5b48bddf43fc84ecc00b41bedd0ff7f293c3e2de8dcdc78f98b03e17577f5822ba842399d69eb79921c0429773509520e08c8b518702d987dfbb3a4e5d8c5f17673ce1f989dfff82d4becf24e452f20d3bcac94ad50131f93e57f10155536acb54c60efbe9d57228c2b930bc6082b2318e3ccd36834a8e835b8d112dbf32145f445c11",
+  "logFiles": []
+}

@@ -5,7 +5,7 @@
     "dependencies"
   ],
   "constraints": {
-    "go": "1.23.0"
+    "go": "1.25"
   },
   "schedule": [
     "on tuesday"
@@ -98,6 +98,20 @@
       "matchSourceUrls": [
         "https://github.com/datadog{/,}**"
       ]
+    },
+    {
+      "matchPackagePatterns": ["^github.com/DataDog/opentelemetry-mapping-go/"],
+      "enabled": false
+    },
+    {
+      "matchPaths": [
+        "exporter/datadogexporter/**",
+        "connector/datadogconnector/**",
+        "internal/datadog/**",
+        "pkg/datadog/**"
+      ],
+      "matchPackagePatterns": ["^github.com/DataDog/datadog-agent"],
+      "enabled": false
     },
     {
       "matchManagers": [
@@ -207,6 +221,30 @@
         "google.golang.org/grpc"
       ],
       "allowedVersions": "!/v1.68.0$/"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All github.com/knadh/koanf packages",
+      "matchPackageNames": [
+        "github.com/knadh/koanf{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All github.com/splunk/stef packages",
+      "matchPackageNames": [
+        "github.com/splunk/stef{/,}**"
+      ]
+    },
+    {
+      "matchPackageNames": [
+        "github.com/vmware/govmomi"
+      ],
+      "allowedVersions": "!/v0.51.0$/"
     }
   ],
   "ignoreDeps": [

@@ -7,10 +7,11 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("awslogs_encoding")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension"
+	Type           = component.MustNewType("aws_logs_encoding")
+	DeprecatedType = component.MustNewType("awslogs_encoding")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension"
 )
 
 const (
-	ExtensionStability = component.StabilityLevelDevelopment
+	ExtensionStability = component.StabilityLevelAlpha
 )

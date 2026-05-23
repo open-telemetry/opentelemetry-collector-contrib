@@ -6,7 +6,7 @@ package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -90,29 +90,29 @@ func (e *taskExporter) exportTask(task *taskAnnotated) ([]prometheusECSTarget, e
 
 	// Base for all the containers in this task, most attributes are same.
 	baseTarget := prometheusECSTarget{
-		Source:                 aws.StringValue(task.Task.TaskArn),
+		Source:                 aws.ToString(task.Task.TaskArn),
 		MetricsPath:            defaultMetricsPath,
 		ClusterName:            e.cluster,
-		TaskDefinitionFamily:   aws.StringValue(task.Definition.Family),
-		TaskDefinitionRevision: int(aws.Int64Value(task.Definition.Revision)),
-		TaskStartedBy:          aws.StringValue(task.Task.StartedBy),
-		TaskLaunchType:         aws.StringValue(task.Task.LaunchType),
-		TaskGroup:              aws.StringValue(task.Task.Group),
+		TaskDefinitionFamily:   aws.ToString(task.Definition.Family),
+		TaskDefinitionRevision: int(task.Definition.Revision),
+		TaskStartedBy:          aws.ToString(task.Task.StartedBy),
+		TaskLaunchType:         string(task.Task.LaunchType),
+		TaskGroup:              aws.ToString(task.Task.Group),
 		TaskTags:               task.TaskTags(),
-		HealthStatus:           aws.StringValue(task.Task.HealthStatus),
+		HealthStatus:           string(task.Task.HealthStatus),
 	}
 	if task.Service != nil {
-		baseTarget.ServiceName = aws.StringValue(task.Service.ServiceName)
+		baseTarget.ServiceName = aws.ToString(task.Service.ServiceName)
 	}
 	if task.EC2 != nil {
 		ec2 := task.EC2
-		baseTarget.EC2InstanceID = aws.StringValue(ec2.InstanceId)
-		baseTarget.EC2InstanceType = aws.StringValue(ec2.InstanceType)
+		baseTarget.EC2InstanceID = aws.ToString(ec2.InstanceId)
+		baseTarget.EC2InstanceType = string(ec2.InstanceType)
 		baseTarget.EC2Tags = task.EC2Tags()
-		baseTarget.EC2VpcID = aws.StringValue(ec2.VpcId)
-		baseTarget.EC2SubnetID = aws.StringValue(ec2.SubnetId)
+		baseTarget.EC2VpcID = aws.ToString(ec2.VpcId)
+		baseTarget.EC2SubnetID = aws.ToString(ec2.SubnetId)
 		baseTarget.EC2PrivateIP = privateIP
-		baseTarget.EC2PublicIP = aws.StringValue(ec2.PublicIpAddress)
+		baseTarget.EC2PublicIP = aws.ToString(ec2.PublicIpAddress)
 	}
 
 	var targetsInTask []prometheusECSTarget
@@ -122,13 +122,13 @@ func (e *taskExporter) exportTask(task *taskAnnotated) ([]prometheusECSTarget, e
 		// Shallow copy task level attributes
 		containerTarget := baseTarget
 		// Add container specific info
-		containerTarget.ContainerName = aws.StringValue(container.Name)
+		containerTarget.ContainerName = aws.ToString(container.Name)
 		containerTarget.ContainerLabels = task.ContainerLabels(m.ContainerIndex)
 		// Multiple targets for a single container
 		for _, matchedTarget := range m.Targets {
 			// Shallow copy from container
 			target := containerTarget
-			mappedPort, err := task.MappedPort(container, int64(matchedTarget.Port))
+			mappedPort, err := task.MappedPort(container, int32(matchedTarget.Port))
 			if err != nil {
 				err = errctx.WithValues(err, map[string]any{
 					errKeyTarget: matchedTarget,

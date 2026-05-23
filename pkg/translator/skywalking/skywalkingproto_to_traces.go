@@ -13,9 +13,11 @@ import (
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking/internal/metadata"
 )
 
 const (
@@ -31,12 +33,28 @@ const (
 	AttributeNetworkAddressUsedAtPeer  = "network.AddressUsedAtPeer"
 )
 
-var otSpanTagsMapping = map[string]string{
-	"url":         conventions.AttributeHTTPURL,
-	"status_code": conventions.AttributeHTTPStatusCode,
-	"db.type":     conventions.AttributeDBSystem,
-	"db.instance": conventions.AttributeDBName,
-	"mq.broker":   conventions.AttributeNetPeerName,
+var otSpanTagsMappingStable = map[string]string{
+	"url":         string(conventions.URLFullKey),
+	"status_code": string(conventions.HTTPResponseStatusCodeKey),
+	"db.type":     string(conventions.DBSystemNameKey),
+	"db.instance": string(conventions.DBNamespaceKey),
+	"mq.broker":   string(conventions.ServerAddressKey),
+}
+
+var otSpanTagsMappingLegacy = map[string]string{
+	"url":         "http.url",
+	"status_code": "http.status_code",
+	"db.type":     "db.system",
+	"db.instance": "db.name",
+	"mq.broker":   "net.peer.name",
+}
+
+// getOtSpanTagsMapping returns the appropriate mapping based on the feature gate
+func getOtSpanTagsMapping() map[string]string {
+	if metadata.TranslatorSkywalkingUseStableSemconvFeatureGate.IsEnabled() {
+		return otSpanTagsMappingStable
+	}
+	return otSpanTagsMappingLegacy
 }
 
 // ProtoToTraces converts multiple skywalking proto batches to internal traces
@@ -55,8 +73,8 @@ func ProtoToTraces(segment *agentV3.SegmentObject) ptrace.Traces {
 		swTagsToInternalResource(span, rs)
 	}
 
-	rs.Attributes().PutStr(conventions.AttributeServiceName, segment.GetService())
-	rs.Attributes().PutStr(conventions.AttributeServiceInstanceID, segment.GetServiceInstance())
+	rs.Attributes().PutStr(string(conventions.ServiceNameKey), segment.GetService())
+	rs.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), segment.GetServiceInstance())
 	rs.Attributes().PutStr(AttributeSkywalkingTraceID, segment.GetTraceId())
 
 	il := resourceSpan.ScopeSpans().AppendEmpty()
@@ -78,15 +96,16 @@ func swTagsToInternalResource(span *agentV3.SpanObject, dest pcommon.Resource) {
 		return
 	}
 
+	mapping := getOtSpanTagsMapping()
 	for _, tag := range tags {
-		otKey, ok := otSpanTagsMapping[tag.Key]
+		otKey, ok := mapping[tag.Key]
 		if ok {
 			attrs.PutStr(otKey, tag.Value)
 		}
 	}
 }
 
-func swSpansToSpanSlice(traceID string, segmentID string, spans []*agentV3.SpanObject, dest ptrace.SpanSlice) {
+func swSpansToSpanSlice(traceID, segmentID string, spans []*agentV3.SpanObject, dest ptrace.SpanSlice) {
 	if len(spans) == 0 {
 		return
 	}
@@ -100,7 +119,7 @@ func swSpansToSpanSlice(traceID string, segmentID string, spans []*agentV3.SpanO
 	}
 }
 
-func swSpanToSpan(traceID string, segmentID string, span *agentV3.SpanObject, dest ptrace.Span) {
+func swSpanToSpan(traceID, segmentID string, span *agentV3.SpanObject, dest ptrace.Span) {
 	dest.SetTraceID(swTraceIDToTraceID(traceID))
 	// skywalking defines segmentId + spanId as unique identifier
 	// so use segmentId to convert to an unique otel-span
@@ -300,7 +319,7 @@ func swStringToUUID(s string, extra uint32) (dst [16]byte) {
 	// uid = UUID(start) XOR [4]byte(extra)
 
 	if len(s) < 32 {
-		return
+		return dst
 	}
 
 	t := unsafeGetBytes(s)
@@ -310,8 +329,10 @@ func swStringToUUID(s string, extra uint32) (dst [16]byte) {
 		return uid
 	}
 
-	for i := 0; i < 4; i++ {
-		uid[i] ^= byte(extra)
+	for i := range 4 {
+		if i < len(uid) {
+			uid[i] ^= byte(extra)
+		}
 		extra >>= 8
 	}
 
@@ -322,17 +343,17 @@ func swStringToUUID(s string, extra uint32) (dst [16]byte) {
 	index1 := bytes.IndexByte(t, '.')
 	index2 := bytes.LastIndexByte(t, '.')
 	if index1 != 32 || index2 < 0 {
-		return
+		return dst
 	}
 
 	mid, err := strconv.Atoi(s[index1+1 : index2])
 	if err != nil {
-		return
+		return dst
 	}
 
 	last, err := strconv.Atoi(s[index2+1:])
 	if err != nil {
-		return
+		return dst
 	}
 
 	for i := 4; i < 8; i++ {
@@ -351,8 +372,10 @@ func swStringToUUID(s string, extra uint32) (dst [16]byte) {
 func uuidTo8Bytes(uuid [16]byte) [8]byte {
 	// high bit XOR low bit
 	var dst [8]byte
-	for i := 0; i < 8; i++ {
-		dst[i] = uuid[i] ^ uuid[i+8]
+	for i := range 8 {
+		if i < len(dst) && i+8 < len(uuid) {
+			dst[i] = uuid[i] ^ uuid[i+8]
+		}
 	}
 	return dst
 }

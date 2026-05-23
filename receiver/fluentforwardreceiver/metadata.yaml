@@ -1,4 +1,9 @@
+display_name: Fluent Forward Receiver
 type: fluentforward
+
+description: |
+  This receiver runs a TCP server that accepts events via the
+  [Fluent Forward protocol](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1).
 
 status:
   class: receiver
@@ -13,16 +18,10 @@ tests:
 
 telemetry:
   metrics:
-    fluent_opened_connections:
-      enabled: true
-      description: Number of connections opened to the fluentforward receiver
-      unit: "1"
-      sum:
-        value_type: int
-        monotonic:
     fluent_closed_connections:
       enabled: true
       description: Number of connections closed to the fluentforward receiver
+      stability: development
       unit: "1"
       sum:
         value_type: int
@@ -30,6 +29,15 @@ telemetry:
     fluent_events_parsed:
       enabled: true
       description: Number of Fluent events parsed successfully
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic:
+    fluent_opened_connections:
+      enabled: true
+      description: Number of connections opened to the fluentforward receiver
+      stability: development
       unit: "1"
       sum:
         value_type: int
@@ -37,6 +45,7 @@ telemetry:
     fluent_parse_failures:
       enabled: true
       description: Number of times Fluent messages failed to be decoded
+      stability: development
       unit: "1"
       sum:
         value_type: int
@@ -44,6 +53,7 @@ telemetry:
     fluent_records_generated:
       enabled: true
       description: Number of log records generated from Fluent forward input
+      stability: development
       unit: "1"
       sum:
         value_type: int

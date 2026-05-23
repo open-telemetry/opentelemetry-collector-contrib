@@ -1,4 +1,5 @@
 type: stef
+display_name: STEF Exporter
 
 status:
   class: exporter

@@ -23,6 +23,7 @@ components:
         - health_check
         - host_observer
         - http_forwarder
+        - k8s_leader_elector
         - k8s_observer
         - oauth2client
         - oidc
@@ -37,7 +38,7 @@ components:
         - groupbyattrs
         - groupbytrace
         - interval
-        - k8sattributes
+        - k8s_attributes
         - logdedup
         - metricstransform
         - probabilistic_sampler
@@ -48,17 +49,16 @@ components:
         - tail_sampling
         - transform
     receiver:
-        - filelog
+        - file_log
         - fluentforward
         - hostmetrics
-        - httpcheck
+        - http_check
         - jaeger
         - journald
         - k8s_cluster
         - k8s_events
         - k8sobjects
         - kubeletstats
-        - opencensus
         - otelarrow
         - prometheus
         - receiver_creator
@@ -70,6 +70,7 @@ components:
         - load
         - memory
         - network
+        - nfs
         - paging
         - process
         - processes

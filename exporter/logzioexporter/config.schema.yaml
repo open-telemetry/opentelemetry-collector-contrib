@@ -1,0 +1,22 @@
+description: Config contains Logz.io specific configuration such as Account TracesToken, Region, etc.
+type: object
+properties:
+  account_token:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  custom_endpoint:
+    type: string
+  drain_interval:
+    type: integer
+  queue_capacity:
+    type: integer
+    x-customType: int64
+  queue_max_length:
+    type: integer
+  region:
+    type: string
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

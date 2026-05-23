@@ -19,14 +19,14 @@ import (
 
 type errorRoundTripper struct{}
 
-func (ert *errorRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error) {
+func (*errorRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
 	return nil, errors.New("error")
 }
 
 func TestRoundTrip(t *testing.T) {
 	awsCredsProvider := mockCredentials()
 
-	defaultRoundTripper := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
+	defaultRoundTripper := http.RoundTripper(http.DefaultTransport.(*http.Transport).Clone())
 	errorRoundTripper := &errorRoundTripper{}
 
 	tests := []struct {
@@ -95,25 +95,25 @@ func TestRoundTrip(t *testing.T) {
 }
 
 func TestInferServiceAndRegion(t *testing.T) {
-	req1, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
+	req1, err := http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	assert.NoError(t, err)
 
-	req2, err := http.NewRequest(http.MethodGet, "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write", nil)
+	req2, err := http.NewRequest(http.MethodGet, "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write", http.NoBody)
 	assert.NoError(t, err)
 
-	req3, err := http.NewRequest(http.MethodGet, "https://search-my-domain.us-east-1.es.amazonaws.com/_search?q=house", nil)
+	req3, err := http.NewRequest(http.MethodGet, "https://search-my-domain.us-east-1.es.amazonaws.com/_search?q=house", http.NoBody)
 	assert.NoError(t, err)
 
-	req4, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
+	req4, err := http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	assert.NoError(t, err)
 
-	req5, err := http.NewRequest(http.MethodGet, "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write", nil)
+	req5, err := http.NewRequest(http.MethodGet, "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write", http.NoBody)
 	assert.NoError(t, err)
 
-	req6, err := http.NewRequest(http.MethodGet, "https://logs.us-east-1.amazonaws.com/v1/logs", nil)
+	req6, err := http.NewRequest(http.MethodGet, "https://logs.us-east-1.amazonaws.com/v1/logs", http.NoBody)
 	assert.NoError(t, err)
 
-	req7, err := http.NewRequest(http.MethodGet, "https://xray.us-east-1.amazonaws.com/v1/traces", nil)
+	req7, err := http.NewRequest(http.MethodGet, "https://xray.us-east-1.amazonaws.com/v1/traces", http.NoBody)
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -180,7 +180,7 @@ func TestInferServiceAndRegion(t *testing.T) {
 			sa := newSigv4Extension(testcase.cfg, "awsSDKInfo", zap.NewNop())
 			assert.NotNil(t, sa)
 
-			rt, err := sa.RoundTripper((http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone()))
+			rt, err := sa.RoundTripper(http.RoundTripper(http.DefaultTransport.(*http.Transport).Clone()))
 			assert.NoError(t, err)
 			si := rt.(*signingRoundTripper)
 
@@ -192,13 +192,13 @@ func TestInferServiceAndRegion(t *testing.T) {
 }
 
 func TestHashPayload(t *testing.T) {
-	req1, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
+	req1, err := http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	assert.NoError(t, err)
 
 	req2, err := http.NewRequest(http.MethodGet, "https://example.com", bytes.NewReader([]byte("This is a test.")))
 	assert.NoError(t, err)
 
-	req3, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
+	req3, err := http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	assert.NoError(t, err)
 	req3.GetBody = func() (io.ReadCloser, error) { return nil, errors.New("this will always fail") }
 

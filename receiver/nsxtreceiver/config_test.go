@@ -100,7 +100,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.Endpoint = "https://nsx-manager-endpoint"
 	expected.Username = "admin"
 	expected.Password = "${env:NSXT_PASSWORD}"
-	expected.TLSSetting.Insecure = true
+	expected.TLS.Insecure = true
 	expected.CollectionInterval = time.Minute
 
 	require.Equal(t, expected, cfg)

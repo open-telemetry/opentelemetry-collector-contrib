@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
@@ -35,7 +36,7 @@ func TestClientCreation(t *testing.T) {
 	cfg := &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
-			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
@@ -64,7 +65,7 @@ func TestClientCreateRequest(t *testing.T) {
 	cfg := &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
-			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
@@ -95,11 +96,13 @@ func TestClientCreateRequest(t *testing.T) {
 			desc: "First req, no jobid",
 			sr: &searchResponse{
 				search: "example search",
+				count:  100,
+				offset: 0,
 			},
 			client: client,
 			expected: func() *http.Request {
 				method := http.MethodPost
-				path := "/services/search/jobs/"
+				path := "/services/search/v2/jobs/"
 				testEndpoint, _ := url.Parse("https://localhost:8089")
 				url, _ := url.JoinPath(testEndpoint.String(), path)
 				data := strings.NewReader("example search")
@@ -112,14 +115,21 @@ func TestClientCreateRequest(t *testing.T) {
 			sr: &searchResponse{
 				search: "example search",
 				Jobid:  &testJobID,
+				count:  100,
+				offset: 0,
 			},
 			client: client,
 			expected: func() *http.Request {
-				method := http.MethodGet
-				path := fmt.Sprintf("/services/search/jobs/%s/results", testJobID)
+				method := http.MethodPost
+				path := fmt.Sprintf("/services/search/v2/jobs/%s/results", testJobID)
 				testEndpoint, _ := url.Parse("https://localhost:8089")
+				data := url.Values{}
+				data.Add("add_summary_to_metadata", "true")
+				data.Add("count", fmt.Sprintf("%v", 100))
+				data.Add("offset", fmt.Sprintf("%v", 0))
 				url, _ := url.JoinPath(testEndpoint.String(), path)
-				req, _ := http.NewRequest(method, url, nil)
+				req, _ := http.NewRequest(method, url, strings.NewReader(data.Encode()))
+				req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 				return req
 			}(),
 		},
@@ -143,7 +153,7 @@ func TestAPIRequestCreate(t *testing.T) {
 	cfg := &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
-			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
@@ -167,7 +177,7 @@ func TestAPIRequestCreate(t *testing.T) {
 
 	// build the expected request
 	expectedURL := client.clients[typeIdx].endpoint.String() + "/test/endpoint"
-	expected, _ := http.NewRequest(http.MethodGet, expectedURL, nil)
+	expected, _ := http.NewRequest(http.MethodGet, expectedURL, http.NoBody)
 
 	require.Equal(t, expected.URL, req.URL)
 	require.Equal(t, expected.Method, req.Method)

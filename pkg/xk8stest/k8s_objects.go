@@ -7,7 +7,9 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -51,9 +53,36 @@ func DeleteObject(client *K8sClient, obj *unstructured.Unstructured) error {
 		resource = client.DynamicClient.Resource(gvr.Resource)
 	}
 	deletePolicy := metav1.DeletePropagationForeground
-	return resource.Delete(context.Background(), obj.GetName(), metav1.DeleteOptions{
+	err = resource.Delete(context.Background(), obj.GetName(), metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
 	})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return err
+	}
+
+	if gvk.Kind != "Namespace" {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	ticker := time.NewTicker(250 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			_, err := resource.Get(context.Background(), obj.GetName(), metav1.GetOptions{})
+			switch {
+			case apierrors.IsNotFound(err):
+				return nil
+			case err != nil:
+				return err
+			}
+		}
+	}
 }
 
 func CreateObjects(client *K8sClient, dir string) ([]*unstructured.Unstructured, error) {

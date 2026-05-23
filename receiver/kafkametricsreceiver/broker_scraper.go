@@ -48,7 +48,7 @@ func (s *brokerScraper) shutdown(context.Context) error {
 func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	scrapeErrors := scrapererror.ScrapeErrors{}
 
-	if s.client == nil {
+	if s.client == nil || s.client.Closed() {
 		client, err := newSaramaClient(context.Background(), s.config.ClientConfig)
 		if err != nil {
 			return pmetric.Metrics{}, fmt.Errorf("failed to create client in brokers scraper: %w", err)

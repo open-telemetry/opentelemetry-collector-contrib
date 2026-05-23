@@ -1,0 +1,54 @@
+type: scalewaydetector
+
+status:
+  class: processor
+  stability:
+    alpha: [traces, metrics, logs, profiles]
+  codeowners:
+    active: [Aneurysm9, dashpole, paulojmdias]
+
+resource_attributes:
+  cloud.account.id:
+    description: The cloud account id
+    type: string
+    enabled: true
+  cloud.availability_zone:
+    description: The cloud availability zone
+    type: string
+    enabled: true
+  cloud.platform:
+    description: The cloud platform
+    enabled: true
+    type: string
+  cloud.provider:
+    description: The cloud provider
+    enabled: true
+    type: string
+  cloud.region:
+    description: The cloud region
+    type: string
+    enabled: true
+  host.id:
+    description: The host.id
+    type: string
+    enabled: true
+  host.image.id:
+    description: The host image id
+    type: string
+    enabled: true
+  host.image.name:
+    description: The host image name
+    type: string
+    enabled: true
+  host.name:
+    description: The hostname
+    type: string
+    enabled: true
+  host.type:
+    description: The host instance type
+    type: string
+    enabled: true
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

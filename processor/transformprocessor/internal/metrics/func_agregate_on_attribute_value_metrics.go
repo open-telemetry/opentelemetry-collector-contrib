@@ -23,11 +23,11 @@ type aggregateOnAttributeValueArguments struct {
 	NewValue            string
 }
 
-func newAggregateOnAttributeValueFactory() ottl.Factory[ottlmetric.TransformContext] {
+func newAggregateOnAttributeValueFactory() ottl.Factory[*ottlmetric.TransformContext] {
 	return ottl.NewFactory("aggregate_on_attribute_value", &aggregateOnAttributeValueArguments{}, createAggregateOnAttributeValueFunction)
 }
 
-func createAggregateOnAttributeValueFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func createAggregateOnAttributeValueFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	args, ok := oArgs.(*aggregateOnAttributeValueArguments)
 
 	if !ok {
@@ -42,8 +42,8 @@ func createAggregateOnAttributeValueFunction(_ ottl.FunctionContext, oArgs ottl.
 	return AggregateOnAttributeValue(t, args.Attribute, args.Values, args.NewValue)
 }
 
-func AggregateOnAttributeValue(aggregationType aggregateutil.AggregationType, attribute string, values []string, newValue string) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+func AggregateOnAttributeValue(aggregationType aggregateutil.AggregationType, attribute string, values []string, newValue string) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
+	return func(_ context.Context, tCtx *ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
 		aggregateutil.RangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {

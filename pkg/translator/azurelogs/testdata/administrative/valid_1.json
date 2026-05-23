@@ -1,0 +1,76 @@
+{
+    "records": [
+        {
+            "RoleLocation": "France South",
+            "Stamp": "FDWeb",
+            "ReleaseVersion": "6.2025.14.4+0123456.release_2025w14",
+            "time": "2025-04-15T10:16:32.9873441Z",
+            "resourceId": "/SUBSCRIPTIONS/11111111-1111-1111-1111-111111111111/PROVIDERS/MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/EXAMPLE-COLLECT-SAMPLE-LOGS",
+            "operationName": "MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/WRITE",
+            "category": "Administrative",
+            "resultType": "Start",
+            "resultSignature": "Started.",
+            "durationMs": "0",
+            "callerIpAddress": "203.0.113.10",
+            "correlationId": "aaaaaaaa-bbbb-cccc-dddd-111111111111",
+            "identity": {
+                "authorization": {
+                    "scope": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/microsoft.insights/diagnosticSettings/example-collect-sample-logs",
+                    "action": "microsoft.insights/diagnosticSettings/write",
+                    "evidence": {
+                        "role": "Owner",
+                        "roleAssignmentScope": "/subscriptions/11111111-1111-1111-1111-111111111111",
+                        "roleAssignmentId": "33333333333333333333333333333333",
+                        "roleDefinitionId": "44444444444444444444444444444444",
+                        "principalId": "55555555555555555555555555555555",
+                        "principalType": "User"
+                    }
+                },
+                "claims": {
+                    "aud": "https://management.core.windows.net/",
+                    "iss": "https://sts.windows.net/22222222-2222-2222-2222-222222222222/",
+                    "iat": "1744711621",
+                    "nbf": "1744711621",
+                    "exp": "1744717084",
+                    "http://schemas.microsoft.com/claims/authnclassreference": "1",
+                    "aio": "AaQAW/8ZAAAAZgO/4jIRs/N/KB2dU/OBCRIKqhlJptIDhdwKznsOAvG9l6XBKLVbb3gcOhXy9f7l7PPh72wUbG+ej/8K+eWceVLG+R554s0NPw8+L9LbF/FkzqSnEd3FGiBccK4bL1UbJ0B9ddpT60CbBOgu/xF9JTzYPu3Mtl7em3l+o4oybByk52SljldSN5LizwAmpC0b/rho3D6WMskK7fBotCV3XQ==",
+                    "altsecid": "5::10032001EEC259BA",
+                    "http://schemas.microsoft.com/claims/authnmethodsreferences": "pwd,mfa",
+                    "appid": "66666666-6666-6666-6666-666666666666",
+                    "appidacr": "0",
+                    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress": "user@example.com",
+                    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname": "Doe",
+                    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname": "John",
+                    "groups": "77777777-7777-7777-7777-777777777777,88888888-8888-8888-8888-888888888888,99999999-9999-9999-9999-999999999999",
+                    "http://schemas.microsoft.com/identity/claims/identityprovider": "https://sts.windows.net/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/",
+                    "idtyp": "user",
+                    "ipaddr": "203.0.113.10",
+                    "name": "John Doe",
+                    "http://schemas.microsoft.com/identity/claims/objectidentifier": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                    "puid": "100320024FCDB44E",
+                    "rh": "1.AUgAW2hAqn1BZEa07I92QHGa20ZIf3kAutdPukPawfj2MBMLAR1IAA.",
+                    "http://schemas.microsoft.com/identity/claims/scope": "user_impersonation",
+                    "sid": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier": "8lEWzt6Ed5a3RZMV7p9x6FI31xksIsZsmh09g0Lbdq0",
+                    "http://schemas.microsoft.com/identity/claims/tenantid": "22222222-2222-2222-2222-222222222222",
+                    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name": "user@example.com",
+                    "uti": "s4OAwbVGQ0CX8sNFq4tAAA",
+                    "ver": "1.0",
+                    "wids": "dddddddd-dddd-dddd-dddd-dddddddddddd,eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee,ffffffff-ffff-ffff-ffff-ffffffffffff",
+                    "xms_edov": "true",
+                    "xms_idrel": "5 26",
+                    "xms_tcdt": "1391159646"
+                }
+            },
+            "level": "Informational",
+            "properties": {
+                "requestbody": "{\"id\":\"/subscriptions/11111111-1111-1111-1111-111111111111/providers/microsoft.insights/diagnosticSettings/example-collect-sample-logs\",\"name\":\"example-collect-sample-logs\",\"properties\":{\"logs\":[{\"category\":\"Administrative\",\"categoryGroup\":null,\"enabled\":true,\"retentionPolicy\":{\"days\":0,\"enabled\":false}},{\"category\":\"Security\",\"categoryGroup\":null,\"enabled\":true,\"retentionPolicy\":{\"days\":0,\"enabled\":false}},{\"category\":\"ServiceHealth\",\"categoryGroup\":null,\"enabled\":true,\"retentionPolicy\":{\"days\":0,\"enabled\":false}},{\"category\":\"Alert\",\"categoryGroup\":null,\"enabled\":true,\"retentionPolicy\":{\"days\":0,\"enabled\":false}},{\"category\":\"Recommendation\",\"categoryGroup\":null,\"enabled\":true,\"retentionPolicy\":{\"days\":0,\"enabled\":false}},{\"category\":\"Policy\",\"categoryGroup\":null,\"enabled\":true,\"retentionPolicy\":{\"days\":0,\"enabled\":false}},{\"category\":\"Autoscale\",\"categoryGroup\":null,\"enabled\":true,\"retentionPolicy\":{\"days\":0,\"enabled\":false}},{\"category\":\"ResourceHealth\",\"categoryGroup\":null,\"enabled\":true,\"retentionPolicy\":{\"days\":0,\"enabled\":false}}],\"metrics\":[],\"storageAccountId\":\"/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/example-resource-group/providers/Microsoft.Storage/storageAccounts/examplestorageacct\",\"eventHubAuthorizationRuleId\":\"/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/example-resource-group/providers/Microsoft.EventHub/namespaces/exampleeventhubns/authorizationrules/RootManageSharedAccessKey\",\"eventHubName\":\"logs\"}}",
+                "eventCategory": "Administrative",
+                "entity": "/subscriptions/11111111-1111-1111-1111-111111111111/providers/microsoft.insights/diagnosticSettings/example-collect-sample-logs",
+                "message": "microsoft.insights/diagnosticSettings/write",
+                "hierarchy": "22222222-2222-2222-2222-222222222222/11111111-1111-1111-1111-111111111111"
+            },
+            "tenantId": "22222222-2222-2222-2222-222222222222"
+        }
+    ]
+}

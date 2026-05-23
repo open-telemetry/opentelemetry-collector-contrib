@@ -14,8 +14,7 @@ import (
 	"testing"
 	"time"
 
-	as "github.com/aerospike/aerospike-client-go/v7"
-	"github.com/docker/go-connections/nat"
+	as "github.com/aerospike/aerospike-client-go/v8"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
@@ -72,9 +71,9 @@ func integrationTest(cfgMod func(*Config)) func(*testing.T) {
 
 type waitStrategy struct{}
 
-func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
+func (waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
 	if err := wait.ForAll(
-		wait.ForListeningPort(nat.Port(aerospikePort)),
+		wait.ForListeningPort(aerospikePort),
 		wait.ForLog("service ready: soon there will be cake!"),
 		wait.ForLog("NODE-ID"),
 	).
@@ -105,11 +104,11 @@ func aerospikeHost(ctx context.Context, st wait.StrategyTarget) (*as.Host, error
 	if err != nil {
 		return nil, err
 	}
-	port, err := st.MappedPort(ctx, nat.Port(aerospikePort))
+	port, err := st.MappedPort(ctx, aerospikePort)
 	if err != nil {
 		return nil, err
 	}
-	return as.NewHost(host, port.Int()), nil
+	return as.NewHost(host, int(port.Num())), nil
 }
 
 type doneCheckable interface {
@@ -175,7 +174,7 @@ func populateMetrics(host *as.Host) error {
 	sibin := "bin2"
 
 	// write 100 records to get some memory usage
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		var key *as.Key
 		key, err = as.NewKey(ns, set, i)
 		if err != nil {
@@ -202,7 +201,7 @@ func populateMetrics(host *as.Host) error {
 	if err != nil {
 		return errors.New("failed registering udf file")
 	}
-	if nil != <-task.OnComplete() {
+	if <-task.OnComplete() != nil {
 		return errors.New("failed while registering udf file")
 	}
 

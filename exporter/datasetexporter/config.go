@@ -8,12 +8,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/scalyr/dataset-go/pkg/buffer"
 	"github.com/scalyr/dataset-go/pkg/buffer_config"
 	datasetConfig "github.com/scalyr/dataset-go/pkg/config"
 	"github.com/scalyr/dataset-go/pkg/server_host_config"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -169,8 +170,8 @@ type Config struct {
 	LogsSettings              `mapstructure:"logs"`
 	ServerHostSettings        `mapstructure:"server_host"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
-	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:"timeout"`
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig                             `mapstructure:"timeout"`
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
@@ -212,8 +213,8 @@ func (c *Config) String() string {
 	return s
 }
 
-func (c *Config) convert() *ExporterConfig {
-	return &ExporterConfig{
+func (c *Config) convert() *exporterConfig {
+	return &exporterConfig{
 		datasetConfig: &datasetConfig.DataSetConfig{
 			Endpoint: c.DatasetURL,
 			Tokens:   datasetConfig.DataSetTokens{WriteLog: string(c.APIKey)},
@@ -242,7 +243,7 @@ func (c *Config) convert() *ExporterConfig {
 	}
 }
 
-type ExporterConfig struct {
+type exporterConfig struct {
 	datasetConfig      *datasetConfig.DataSetConfig
 	tracesSettings     TracesSettings
 	logsSettings       LogsSettings

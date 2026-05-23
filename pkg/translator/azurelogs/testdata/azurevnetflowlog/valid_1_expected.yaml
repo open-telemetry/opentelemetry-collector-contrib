@@ -1,0 +1,58 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet
+        - key: event.name
+          value:
+            stringValue: az.resource.log
+    scopeLogs:
+      - logRecords:
+          - body:
+              kvlistValue:
+                values:
+                  - key: event.original
+                    value:
+                      stringValue: |-
+                        {
+                        	"time": "2025-11-07T15:59:52.9326845Z",
+                        	"flowLogGUID": "00000000-0000-0000-0000-000000000000",
+                        	"macAddress": "000000000000",
+                        	"category": "FlowLogFlowEvent",
+                        	"flowLogResourceID": "/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/TEST-RG/PROVIDERS/MICROSOFT.NETWORK/NETWORKWATCHERS/NETWORKWATCHER_EASTUS2/FLOWLOGS/TEST-VNET-FLOWLOG",
+                        	"targetResourceID": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet",
+                        	"flowLogVersion": 4,
+                        	"operationName": "FlowLogFlowEvent",
+                        	"resourceId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.Network/virtualNetworks/test-vnet",
+                        	"flowRecords": {
+                        		"flows": [
+                        			{
+                        				"aclID": "00000000-0000-0000-0000-000000000000",
+                        				"flowGroups": [
+                        					{
+                        						"rule": "PlatformRule",
+                        						"flowTuples": [
+                        							"1762531163718,10.0.0.1,1.1.1.1,43652,443,6,O,E,NX,1,66,1,635",
+                        							"1762531163718,10.0.0.1,1.1.1.1,43652,443,6,O,B,NX,0,0,0,0"
+                        						]
+                        					}
+                        				]
+                        			}
+                        		]
+                        	}
+                        }
+                  - key: category
+                    value:
+                      stringValue: FlowLogFlowEvent
+                  - key: operation.name
+                    value:
+                      stringValue: FlowLogFlowEvent
+            observedTimeUnixNano: "1766081218366073000"
+            timeUnixNano: "1762531192932684500"
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3

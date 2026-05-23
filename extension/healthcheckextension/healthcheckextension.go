@@ -32,10 +32,10 @@ func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) 
 	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
 	ln, err := hc.config.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", hc.config.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", hc.config.NetAddr.Endpoint, err)
 	}
 
-	hc.server, err = hc.config.ToServer(ctx, host, hc.settings, nil)
+	hc.server, err = hc.config.ToServer(ctx, host.GetExtensions(), hc.settings, nil)
 	if err != nil {
 		return err
 	}

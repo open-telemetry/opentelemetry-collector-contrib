@@ -60,7 +60,7 @@ func newScraper(logger *zap.Logger, cfg *Config, settings receiver.Settings) *ra
 // start starts the scraper by creating a new HTTP Client on the scraper
 func (r *rabbitmqScraper) start(ctx context.Context, host component.Host) (err error) {
 	r.client, err = newClient(ctx, r.cfg, host, r.settings, r.logger)
-	return
+	return err
 }
 
 // scrape collects metrics from the RabbitMQ API

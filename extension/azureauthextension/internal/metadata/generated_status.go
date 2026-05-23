@@ -7,10 +7,11 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("azureauth")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/azureauthextension"
+	Type           = component.MustNewType("azure_auth")
+	DeprecatedType = component.MustNewType("azureauth")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/azureauthextension"
 )
 
 const (
-	ExtensionStability = component.StabilityLevelDevelopment
+	ExtensionStability = component.StabilityLevelAlpha
 )

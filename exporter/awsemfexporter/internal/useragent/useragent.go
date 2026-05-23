@@ -11,14 +11,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/smithy-go/middleware"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/jellydator/ttlcache/v3"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 const (
-	handlerName = "aws.appsignals.UserAgentHandler"
+	middlewareID = "aws.appsignals.UserAgentHandler"
 	// defaultTTL is how long an item in the cache will remain if it has not been re-seen.
 	defaultTTL = time.Minute
 	// cacheSize is the maximum number of unique telemetry SDK languages that can be stored before one will be evicted.
@@ -26,10 +27,13 @@ const (
 	// attrLengthLimit is the maximum length of the language and version that will be used for the user agent.
 	attrLengthLimit = 20
 
-	// TODO: Available in semconv/v1.21.0+. Replace after collector dependency is v0.91.0+.
-	attributeTelemetryDistroVersion = "telemetry.distro.version"
-	attributeEBS                    = "ci_ebs"
-	attributeLocalInstanceStore     = "ci_lis"
+	// telemetry.auto.version was deprecated in OTel semconv 1.21.0 in favor of
+	// telemetry.distro.version and was dropped from the typed-key API in
+	// otelgo semconv 1.40.0. Kept as a fallback for SDKs still emitting it.
+	attributeTelemetryAutoVersion = "telemetry.auto.version"
+
+	attributeEBS                = "ci_ebs"
+	attributeLocalInstanceStore = "ci_lis"
 )
 
 // Map of NVMe feature attributes to their corresponding metric prefixes
@@ -64,28 +68,49 @@ func newUserAgent(ttl time.Duration) *UserAgent {
 	return ua
 }
 
-// Handler creates a named handler with the UserAgent's handle function.
-func (ua *UserAgent) Handler() request.NamedHandler {
-	return request.NamedHandler{
-		Name: handlerName,
-		Fn:   ua.handle,
+// ID implements middleware.BuildMiddleware.
+func (ua *UserAgent) ID() string { return middlewareID }
+
+// HandleBuild implements middleware.BuildMiddleware. Appends the dynamic
+// user-agent string to the outgoing request's User-Agent header.
+func (ua *UserAgent) HandleBuild(
+	ctx context.Context,
+	in middleware.BuildInput,
+	next middleware.BuildHandler,
+) (out middleware.BuildOutput, metadata middleware.Metadata, err error) {
+	ua.mu.RLock()
+	val := ua.prebuiltStr
+	ua.mu.RUnlock()
+
+	if val != "" {
+		if req, ok := in.Request.(*smithyhttp.Request); ok {
+			cur := req.Header.Get("User-Agent")
+			if cur != "" {
+				req.Header.Set("User-Agent", cur+" "+val)
+			} else {
+				req.Header.Set("User-Agent", val)
+			}
+		}
 	}
+	return next.HandleBuild(ctx, in)
 }
 
-// handle adds the pre-built user agent string to the user agent header.
-func (ua *UserAgent) handle(r *request.Request) {
-	ua.mu.RLock()
-	defer ua.mu.RUnlock()
-	request.AddToUserAgent(r, ua.prebuiltStr)
+// APIOption returns a smithy stack mutator that registers ua as a Build-step
+// middleware. Append it to aws.Config.APIOptions before the AWS service client
+// is constructed (APIOptions are snapshotted by NewFromConfig).
+func (ua *UserAgent) APIOption() func(*middleware.Stack) error {
+	return func(stack *middleware.Stack) error {
+		return stack.Build.Add(ua, middleware.After)
+	}
 }
 
 // Process takes the telemetry SDK language and version and adds them to the cache. If it already exists in the
 // cache and has the same value, extends the TTL. If not, then it sets it and rebuilds the user agent string.
 func (ua *UserAgent) Process(labels map[string]string) {
-	language := labels[semconv.AttributeTelemetrySDKLanguage]
-	version := labels[attributeTelemetryDistroVersion]
+	language := labels[string(semconv.TelemetrySDKLanguageKey)]
+	version := labels[string(semconv.TelemetryDistroVersionKey)]
 	if version == "" {
-		version = labels[semconv.AttributeTelemetryAutoVersion]
+		version = labels[attributeTelemetryAutoVersion]
 	}
 	if language != "" && version != "" {
 		language = truncate(language, attrLengthLimit)

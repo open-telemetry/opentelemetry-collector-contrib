@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"time"
 
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
@@ -26,11 +28,13 @@ const (
 
 // NewFactory creates a factory for MongoDB Atlas receiver
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(createCombinedLogReceiver, metadata.LogsStability))
+		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithLogs(createCombinedLogReceiver, metadata.LogsStability),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 func createMetricsReceiver(
@@ -40,13 +44,16 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
-	recv := newMongoDBAtlasReceiver(params, cfg)
+	recv, err := newMongoDBAtlasReceiver(params, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create a MongoDB Atlas Receiver instance: %w", err)
+	}
 	ms, err := newMongoDBAtlasScraper(recv)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create a MongoDB Atlas Scraper instance: %w", err)
 	}
 
-	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, ms))
+	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, ms))
 }
 
 func createCombinedLogReceiver(
@@ -57,7 +64,7 @@ func createCombinedLogReceiver(
 ) (receiver.Logs, error) {
 	cfg := rConf.(*Config)
 
-	if !cfg.Alerts.Enabled && !cfg.Logs.Enabled && cfg.Events == nil {
+	if !cfg.Alerts.Enabled && !cfg.Logs.Enabled && !cfg.Events.HasValue() {
 		return nil, errors.New("one of 'alerts', 'events', or 'logs' must be enabled")
 	}
 
@@ -75,18 +82,27 @@ func createCombinedLogReceiver(
 	}
 
 	if cfg.Logs.Enabled {
-		recv.logs = newMongoDBAtlasLogsReceiver(params, cfg, consumer)
+		recv.logs, err = newMongoDBAtlasLogsReceiver(params, cfg, consumer)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create a MongoDB Atlas Logs Receiver instance: %w", err)
+		}
 		// Confirm at least one project is enabled for access logs before adding
 		for _, project := range cfg.Logs.Projects {
 			if project.AccessLogs != nil && project.AccessLogs.IsEnabled() {
-				recv.accessLogs = newAccessLogsReceiver(params, cfg, consumer)
+				recv.accessLogs, err = newAccessLogsReceiver(params, cfg, consumer)
+				if err != nil {
+					return nil, fmt.Errorf("unable to create a MongoDB Atlas Access Logs Receiver instance: %w", err)
+				}
 				break
 			}
 		}
 	}
 
-	if cfg.Events != nil {
-		recv.events = newEventsReceiver(params, cfg, consumer)
+	if cfg.Events.HasValue() {
+		recv.events, err = newEventsReceiver(params, cfg, consumer)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create a MongoDB Atlas Events Receiver instance: %w", err)
+		}
 	}
 
 	return recv, nil
@@ -94,6 +110,7 @@ func createCombinedLogReceiver(
 
 func createDefaultConfig() component.Config {
 	c := &Config{
+		BaseURL:              mongodbatlas.CloudURL,
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		Granularity:          defaultGranularity,
 		BackOffConfig:        configretry.NewDefaultBackOffConfig(),

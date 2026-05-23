@@ -14,10 +14,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -37,23 +36,22 @@ type azureType struct {
 
 func newBatchScraper(conf *Config, settings receiver.Settings) *azureBatchScraper {
 	return &azureBatchScraper{
-		cfg:                      conf,
-		settings:                 settings.TelemetrySettings,
-		mb:                       metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
-		azDefaultCredentialsFunc: azidentity.NewDefaultAzureCredential,
-		azIDCredentialsFunc:      azidentity.NewClientSecretCredential,
-		azIDWorkloadFunc:         azidentity.NewWorkloadIdentityCredential,
-		azManagedIdentityFunc:    azidentity.NewManagedIdentityCredential,
-		mutex:                    &sync.Mutex{},
-		time:                     &timeWrapper{},
-		clientOptionsResolver:    newClientOptionsResolver(conf.Cloud),
+		cfg:                          conf,
+		receiverSettings:             settings,
+		settings:                     settings.TelemetrySettings,
+		mutex:                        &sync.Mutex{},
+		time:                         &timeWrapper{},
+		clientOptionsResolver:        newClientOptionsResolver(conf.Cloud),
+		mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(conf.Services),
 	}
 }
 
 type azureBatchScraper struct {
-	cred     azcore.TokenCredential
-	cfg      *Config
-	settings component.TelemetrySettings
+	cred             azcore.TokenCredential
+	cfg              *Config
+	receiverSettings receiver.Settings
+	settings         component.TelemetrySettings
 	// resources on which we'll get attributes. Stored by resource id and subscription id.
 	resources map[string]map[string]*azureResource
 	// resourceTypes on which we'll collect metrics. Stored by resource type and subscription id.
@@ -62,16 +60,13 @@ type azureBatchScraper struct {
 	subscriptions        map[string]*azureSubscription
 	subscriptionsUpdated time.Time
 	// regions on which we'll collect metrics. Stored by subscription id.
-	regions                  map[string]map[string]struct{}
-	mb                       *metadata.MetricsBuilder
-	azDefaultCredentialsFunc func(options *azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error)
-	azIDCredentialsFunc      func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
-	azIDWorkloadFunc         func(options *azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error)
-	azManagedIdentityFunc    func(options *azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error)
+	regions map[string]map[string]struct{}
+	mbs     concurrentMetricsBuilderMap[*metadata.MetricsBuilder]
 
-	mutex                 *sync.Mutex
-	time                  timeNowIface
-	clientOptionsResolver ClientOptionsResolver
+	mutex                        *sync.Mutex
+	time                         timeNowIface
+	clientOptionsResolver        ClientOptionsResolver
+	storageAccountSpecificConfig storageAccountSpecificConfig
 }
 
 func (s *azureBatchScraper) GetMetricsBatchValuesClient(region string) (*azmetrics.Client, error) {
@@ -80,8 +75,8 @@ func (s *azureBatchScraper) GetMetricsBatchValuesClient(region string) (*azmetri
 	return azmetrics.NewClient(endpoint, s.cred, s.clientOptionsResolver.GetAzMetricsClientOptions())
 }
 
-func (s *azureBatchScraper) start(_ context.Context, _ component.Host) (err error) {
-	if err = s.loadCredentials(); err != nil {
+func (s *azureBatchScraper) start(_ context.Context, host component.Host) (err error) {
+	if s.cred, err = loadCredentials(s.settings.Logger, s.cfg, host); err != nil {
 		return err
 	}
 
@@ -90,7 +85,7 @@ func (s *azureBatchScraper) start(_ context.Context, _ component.Host) (err erro
 	s.resources = map[string]map[string]*azureResource{}
 	s.regions = map[string]map[string]struct{}{}
 
-	return
+	return err
 }
 
 func (s *azureBatchScraper) loadSubscription(sub azureSubscription) {
@@ -104,91 +99,90 @@ func (s *azureBatchScraper) loadSubscription(sub azureSubscription) {
 }
 
 func (s *azureBatchScraper) unloadSubscription(id string) {
+	s.settings.Logger.Debug("Unloading subscription", zap.String("subscription_id", id))
+
 	delete(s.subscriptions, id)
 	delete(s.resourceTypes, id)
 	delete(s.resources, id)
 	delete(s.regions, id)
 }
 
-// TODO: duplicate
-func (s *azureBatchScraper) loadCredentials() (err error) {
-	switch s.cfg.Authentication {
-	case defaultCredentials:
-		if s.cred, err = s.azDefaultCredentialsFunc(nil); err != nil {
-			return err
-		}
-	case servicePrincipal:
-		if s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil); err != nil {
-			return err
-		}
-	case workloadIdentity:
-		if s.cred, err = s.azIDWorkloadFunc(nil); err != nil {
-			return err
-		}
-	case managedIdentity:
-		var options *azidentity.ManagedIdentityCredentialOptions
-		if s.cfg.ClientID != "" {
-			options = &azidentity.ManagedIdentityCredentialOptions{
-				ID: azidentity.ClientID(s.cfg.ClientID),
-			}
-		}
-		if s.cred, err = s.azManagedIdentityFunc(options); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("unknown authentication %v", s.cfg.Authentication)
-	}
-	return nil
-}
-
 func (s *azureBatchScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	s.getSubscriptions(ctx)
+	s.loadSubscriptions(ctx)
 
-	for subscriptionID, subscription := range s.subscriptions {
-		s.getResourcesAndTypes(ctx, subscriptionID)
+	var subWG sync.WaitGroup
 
-		resourceTypesWithDefinitions := make(chan string)
+	for subID, subscription := range s.subscriptions {
+		s.mbs.Set(subID, metadata.NewMetricsBuilder(s.cfg.MetricsBuilderConfig, s.receiverSettings))
+		subWG.Add(1)
 		go func(subscriptionID string) {
-			defer close(resourceTypesWithDefinitions)
-			for resourceType := range s.resourceTypes[subscriptionID] {
-				s.getResourceMetricsDefinitionsByType(ctx, subscriptionID, resourceType)
-				resourceTypesWithDefinitions <- resourceType
+			defer subWG.Done()
+			s.loadResourcesAndTypes(ctx, subscriptionID)
+
+			resourceTypesWithDefinitions := make(chan string)
+			go func() {
+				defer close(resourceTypesWithDefinitions)
+				for resourceType := range s.resourceTypes[subscriptionID] {
+					s.loadResourceMetricsDefinitionsByType(ctx, subscriptionID, resourceType)
+					resourceTypesWithDefinitions <- resourceType
+				}
+			}()
+
+			var resourceTypeWG sync.WaitGroup
+			for resourceType := range resourceTypesWithDefinitions {
+				resourceTypeWG.Add(1)
+				go func(subscriptionID, resourceType string) {
+					defer resourceTypeWG.Done()
+					s.loadBatchMetricsValues(ctx, subscriptionID, resourceType)
+				}(subscriptionID, resourceType)
 			}
-		}(subscriptionID)
 
-		var wg sync.WaitGroup
-		for resourceType := range resourceTypesWithDefinitions {
-			wg.Add(1)
-			go func(subscriptionID, resourceType string) {
-				defer wg.Done()
-				s.getBatchMetricsValues(ctx, subscriptionID, resourceType)
-			}(subscriptionID, resourceType)
-		}
+			resourceTypeWG.Wait()
 
-		wg.Wait()
-
-		// Once all metrics has been collected for one subscription, we move to the next.
-		// We need to keep it synchronous to have the subscription id in resource attributes and not metrics attributes.
-		// It can be revamped later if we need to parallelize more, but currently, resource emit is not thread safe.
-		rb := s.mb.NewResourceBuilder()
-		rb.SetAzuremonitorTenantID(s.cfg.TenantID)
-		rb.SetAzuremonitorSubscriptionID(subscriptionID)
-		rb.SetAzuremonitorSubscription(subscription.DisplayName)
-		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+			// Once all metrics has been collected for one subscription, we save them in the associated metrics builder.
+			// Having a map of metrics builders, one per subscription, allows us to collect each subscription concurrently.
+			// We'll be able to emit them all at once at the end of the scrape, once all subscriptions have been processed.
+			mb, ok := s.mbs.Get(subID)
+			if !ok {
+				s.settings.Logger.Fatal("error: metrics builder not found for subscription")
+			}
+			rb := mb.NewResourceBuilder()
+			rb.SetAzuremonitorTenantID(s.cfg.TenantID)
+			rb.SetAzuremonitorSubscriptionID(subID)
+			rb.SetAzuremonitorSubscription(subscription.DisplayName)
+			mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		}(subID)
 	}
-	return s.mb.Emit(), nil
+	subWG.Wait()
+
+	resultMetrics := pmetric.NewMetrics()
+	s.mbs.Range(func(_ string, mb *metadata.MetricsBuilder) {
+		metrics := mb.Emit()
+		for _, resourceMetrics := range metrics.ResourceMetrics().All() {
+			resourceMetrics.MoveTo(resultMetrics.ResourceMetrics().AppendEmpty())
+		}
+	})
+
+	s.mbs.Clear()
+	return resultMetrics, nil
 }
 
 // TODO: duplicate
-func (s *azureBatchScraper) getSubscriptions(ctx context.Context) {
+func (s *azureBatchScraper) loadSubscriptions(ctx context.Context) {
+	s.settings.Logger.Debug("Loading the list of Azure Subscriptions", zap.Bool("discover_subscriptions", s.cfg.DiscoverSubscriptions))
 	if time.Since(s.subscriptionsUpdated).Seconds() < s.cfg.CacheResources {
+		s.settings.Logger.Debug("Azure subscriptions are cached, skipping refresh")
 		return
 	}
 
-	// if subscriptions discovery is enabled, we'll need a client
+	// Subscriptions discovery enabled or not, we'll need a client.
+	// - If enabled, to get the subscription list
+	// - If not, to get more info about the subscription
+	// The only case where it won't be needed is when we don't want the subscription name in resource attributes.
 	armSubscriptionClient, clientErr := armsubscriptions.NewClient(s.cred, s.clientOptionsResolver.GetArmSubscriptionsClientOptions())
 	if clientErr != nil {
-		s.settings.Logger.Error("failed to initialize the client to get Azure Subscriptions", zap.Error(clientErr))
+		s.settings.Logger.Error("Failed to initialize the client for Azure Subscriptions",
+			zap.Error(clientErr))
 		return
 	}
 
@@ -207,33 +201,45 @@ func (s *azureBatchScraper) getSubscriptions(ctx context.Context) {
 			// We need additional info,
 			// => It makes some get requests
 			resp, err := armSubscriptionClient.Get(ctx, subID, &armsubscriptions.ClientGetOptions{})
+			logFields := []zap.Field{zap.String("subscription_id", subID)}
 			if err != nil {
-				s.settings.Logger.Error("failed to get Azure Subscription", zap.String("subscription_id", subID), zap.Error(err))
+				logFields = append(logFields, zap.Error(err))
+				s.settings.Logger.Error("Failed to collect Subscription info from Azure", logFields...)
 				return
 			}
+			logFields = append(logFields, zap.String("subscription_display_name", *resp.DisplayName))
+			s.settings.Logger.Debug("Collected Subscription info from Azure", logFields...)
 			s.loadSubscription(azureSubscription{
 				SubscriptionID: *resp.SubscriptionID,
 				DisplayName:    *resp.DisplayName,
 			})
 		}
 		s.subscriptionsUpdated = time.Now()
+		s.settings.Logger.Info("Loaded the list of Azure Subscriptions",
+			zap.Int("subscriptions_count", len(s.subscriptions)))
 		return
 	}
 
-	opts := &armsubscriptions.ClientListOptions{}
-	pager := armSubscriptionClient.NewListPager(opts)
-
+	// Prepare a map of existing subscriptions to detect removed ones later
 	existingSubscriptions := map[string]void{}
 	for id := range s.subscriptions {
 		existingSubscriptions[id] = void{}
 	}
 
+	opts := &armsubscriptions.ClientListOptions{}
+	pager := armSubscriptionClient.NewListPager(opts)
+	page := 0
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)
+		logFields := []zap.Field{zap.Int("page", page)}
 		if err != nil {
-			s.settings.Logger.Error("failed to get Azure Subscriptions", zap.Error(err))
+			logFields = append(logFields, zap.Error(err))
+			s.settings.Logger.Error("Failed to collect Subscription list from Azure", logFields...)
 			return
 		}
+		logFields = append(logFields, zap.Int("subscriptions_count", len(nextResult.Value)))
+		s.settings.Logger.Debug("Collected Subscription list page from Azure", logFields...)
+		page++
 
 		for _, subscription := range nextResult.Value {
 			s.loadSubscription(azureSubscription{
@@ -243,6 +249,8 @@ func (s *azureBatchScraper) getSubscriptions(ctx context.Context) {
 			delete(existingSubscriptions, *subscription.SubscriptionID)
 		}
 	}
+
+	// Unload subscriptions that are no longer present
 	if len(existingSubscriptions) > 0 {
 		for idToDelete := range existingSubscriptions {
 			s.unloadSubscription(idToDelete)
@@ -250,24 +258,39 @@ func (s *azureBatchScraper) getSubscriptions(ctx context.Context) {
 	}
 
 	s.subscriptionsUpdated = time.Now()
+	s.settings.Logger.Info("Loaded the list of Azure Subscriptions",
+		zap.Int("subscriptions_count", len(s.subscriptions)),
+		zap.Int("deleted_subscriptions_count", len(existingSubscriptions)))
 }
 
 // TODO: partially duplicate
-func (s *azureBatchScraper) getResourcesAndTypes(ctx context.Context, subscriptionID string) {
+func (s *azureBatchScraper) loadResourcesAndTypes(ctx context.Context, subscriptionID string) {
+	s.settings.Logger.Debug("Loading the list of Azure Resources",
+		zap.String("subscription_id", subscriptionID))
 	if time.Since(s.subscriptions[subscriptionID].resourcesUpdated).Seconds() < s.cfg.CacheResources {
+		s.settings.Logger.Debug("Azure Resources are cached, skipping refresh",
+			zap.String("subscription_id", subscriptionID))
 		return
 	}
 	clientResources, clientErr := armresources.NewClient(subscriptionID, s.cred, s.clientOptionsResolver.GetArmResourceClientOptions(subscriptionID))
 	if clientErr != nil {
-		s.settings.Logger.Error("failed to initialize the client to get Azure Resources", zap.Error(clientErr))
+		s.settings.Logger.Error("Failed to initialize the client for Azure Resources",
+			zap.String("subscription_id", subscriptionID),
+			zap.Error(clientErr))
 		return
 	}
 
+	// Prepare a map of existing resources to detect removed ones later
 	existingResources := map[string]void{}
 	for id := range s.resources[subscriptionID] {
 		existingResources[id] = void{}
 	}
 
+	// Prepare the tags filter to apply on resources later on.
+	// TODO: We don't need to do it per subscription. It can be done upper in the code to improve performances.
+	tagsFilterMap := getTagsFilterMap(s.cfg.AppendTagsAsAttributes)
+
+	// Prepare the options to get the resource list.
 	filter := s.getResourcesFilter()
 	opts := &armresources.ClientListOptions{
 		Filter: &filter,
@@ -275,14 +298,25 @@ func (s *azureBatchScraper) getResourcesAndTypes(ctx context.Context, subscripti
 
 	resourceTypes := map[string]*azureType{}
 	pager := clientResources.NewListPager(opts)
+	page := 0
 
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)
+		logFields := []zap.Field{
+			zap.String("subscription_id", subscriptionID),
+			zap.String("filter", filter),
+			zap.Int("page", page),
+		}
 		if err != nil {
-			s.settings.Logger.Error("failed to get Azure Resources data", zap.Error(err))
+			logFields = append(logFields, zap.Error(err))
+			s.settings.Logger.Error("Failed to collect Resource list from Azure", logFields...)
 			return
 		}
-		for _, resource := range nextResult.Value {
+		logFields = append(logFields, zap.Int("resources_count", len(nextResult.Value)))
+		s.settings.Logger.Debug("Collected Resource list from Azure", logFields...)
+		page++
+
+		for _, resource := range s.processResources(nextResult.Value) {
 			if _, ok := s.resources[subscriptionID][*resource.ID]; !ok {
 				resourceGroup := getResourceGroupFromID(*resource.ID)
 				attributes := map[string]*string{
@@ -296,7 +330,7 @@ func (s *azureBatchScraper) getResourcesAndTypes(ctx context.Context, subscripti
 				}
 				s.resources[subscriptionID][*resource.ID] = &azureResource{
 					attributes:   attributes,
-					tags:         resource.Tags,
+					tags:         filterResourceTags(tagsFilterMap, resource.Tags),
 					resourceType: resource.Type,
 				}
 				if resourceTypes[*resource.Type] == nil {
@@ -311,6 +345,8 @@ func (s *azureBatchScraper) getResourcesAndTypes(ctx context.Context, subscripti
 			delete(existingResources, *resource.ID)
 		}
 	}
+
+	// Unload resources that are no longer present
 	if len(existingResources) > 0 {
 		for idToDelete := range existingResources {
 			delete(s.resources[subscriptionID], idToDelete)
@@ -318,7 +354,49 @@ func (s *azureBatchScraper) getResourcesAndTypes(ctx context.Context, subscripti
 	}
 
 	s.subscriptions[subscriptionID].resourcesUpdated = time.Now()
+	s.settings.Logger.Info("Loaded the list of Azure Resources",
+		zap.String("subscription_id", subscriptionID),
+		zap.Int("resources_count", len(s.resources[subscriptionID])),
+		zap.Int("deleted_resources_count", len(existingResources)))
 	maps.Copy(s.resourceTypes[subscriptionID], resourceTypes)
+}
+
+// processResources is a workaround specially done for the storageAccount metrics.
+// Every StorageAccount resources have some implicit sub resources (/blobServices/default, fileServices/default, etc...) that are not returned by the API.
+// We need to add them manually to the resources and resourceTypes map.
+// Note that we add these virtual sub resources only if the user has asked the sub resource types explicitly in the services config.
+// Example:
+// For each resource with id .../Microsoft.Storage/storageAccount/myResource of type Microsoft.Storage/storageAccount,
+// It will create a virtual resource with id .../Microsoft.Storage/storageAccount/myResource/blobServices/default of type Microsoft.Storage/storageAccounts/blobServices.
+// TODO: duplicate
+func (s *azureBatchScraper) processResources(resources []*armresources.GenericResourceExpanded) []*armresources.GenericResourceExpanded {
+	var subTypeResources []*armresources.GenericResourceExpanded
+	for _, resource := range resources {
+		subTypeResources = append(subTypeResources, resource)
+		if resource != nil && resource.Type != nil && *resource.Type == storageAccountType {
+			if s.storageAccountSpecificConfig.askedBlobServices {
+				if r := buildSubTypeResource(*resource, "Microsoft.Storage/storageAccounts/blobServices", fmt.Sprintf("%s/blobServices/default", *resource.ID)); r != nil {
+					subTypeResources = append(subTypeResources, r)
+				}
+			}
+			if s.storageAccountSpecificConfig.askedFileServices {
+				if r := buildSubTypeResource(*resource, "Microsoft.Storage/storageAccounts/fileServices", fmt.Sprintf("%s/fileServices/default", *resource.ID)); r != nil {
+					subTypeResources = append(subTypeResources, r)
+				}
+			}
+			if s.storageAccountSpecificConfig.askedQueueServices {
+				if r := buildSubTypeResource(*resource, "Microsoft.Storage/storageAccounts/queueServices", fmt.Sprintf("%s/queueServices/default", *resource.ID)); r != nil {
+					subTypeResources = append(subTypeResources, r)
+				}
+			}
+			if s.storageAccountSpecificConfig.askedTableServices {
+				if r := buildSubTypeResource(*resource, "Microsoft.Storage/storageAccounts/tableServices", fmt.Sprintf("%s/tableServices/default", *resource.ID)); r != nil {
+					subTypeResources = append(subTypeResources, r)
+				}
+			}
+		}
+	}
+	return subTypeResources
 }
 
 // TODO: duplicate
@@ -337,35 +415,53 @@ func (s *azureBatchScraper) getResourcesFilter() string {
 }
 
 // TODO: Partially duplicate
-func (s *azureBatchScraper) getResourceMetricsDefinitionsByType(ctx context.Context, subscriptionID, resourceType string) {
+func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Context, subscriptionID, resourceType string) {
+	s.settings.Logger.Debug("Loading the list of Azure Metrics Definitions",
+		zap.String("resource_type", resourceType),
+		zap.String("subscription_id", subscriptionID))
 	if time.Since(s.resourceTypes[subscriptionID][resourceType].metricsDefinitionsUpdated).Seconds() < s.cfg.CacheResourcesDefinitions {
+		s.settings.Logger.Debug("Azure Metrics Definitions are cached, skipping refresh",
+			zap.String("resource_type", resourceType),
+			zap.String("subscription_id", subscriptionID))
 		return
 	}
+
+	// Prepare the map of metrics by composite key.
+	s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey = map[metricsCompositeKey]*azureResourceMetrics{}
 
 	clientMetricsDefinitions, clientErr := armmonitor.NewMetricDefinitionsClient(subscriptionID, s.cred, s.clientOptionsResolver.GetArmMonitorClientOptions())
 	if clientErr != nil {
-		s.settings.Logger.Error("failed to initialize the client to get Azure Metrics definitions", zap.Error(clientErr))
+		s.settings.Logger.Error("Failed to initialize the client for Azure Metrics definitions",
+			zap.Error(clientErr))
 		return
 	}
 
-	s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey = map[metricsCompositeKey]*azureResourceMetrics{}
-
 	resourceIDs := s.resourceTypes[subscriptionID][resourceType].resourceIDs
-	if len(resourceIDs) == 0 && len(resourceIDs[0]) > 0 {
+	if len(resourceIDs) == 0 && resourceIDs[0] != "" {
 		return
 	}
 
 	pager := clientMetricsDefinitions.NewListPager(resourceIDs[0], nil)
+	page := 0
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)
+		logFields := []zap.Field{
+			zap.String("resource_type", resourceType),
+			zap.String("subscription_id", subscriptionID),
+			zap.Int("page", page),
+		}
 		if err != nil {
-			s.settings.Logger.Error("failed to get Azure Metrics definitions data", zap.Error(err))
+			logFields = append(logFields, zap.Error(err))
+			s.settings.Logger.Error("Failed to collect Azure Definitions list from Azure", logFields...)
 			return
 		}
+		logFields = append(logFields, zap.Int("definitions_count", len(nextResult.Value)))
+		s.settings.Logger.Debug("Collected Azure Metrics Definitions list from Azure", logFields...)
+		page++
 
 		for _, v := range nextResult.Value {
 			metricName := *v.Name.Value
-			metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics)
+			metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics, convertAggregationsToStr(v.SupportedAggregationTypes))
 			if len(metricAggregations) == 0 {
 				continue
 			}
@@ -377,25 +473,47 @@ func (s *azureBatchScraper) getResourceMetricsDefinitionsByType(ctx context.Cont
 				dimensions:   serializeDimensions(dimensions),
 				aggregations: strings.Join(metricAggregations, ","),
 			}
-			s.storeMetricsDefinitionByType(subscriptionID, resourceType, metricName, compositeKey)
+			s.loadMetricsDefinitionByType(subscriptionID, resourceType, metricName, compositeKey)
 		}
 	}
 	s.resourceTypes[subscriptionID][resourceType].metricsDefinitionsUpdated = time.Now()
+	s.settings.Logger.Info("Loaded the list of Azure Metrics Definitions",
+		zap.Int("metrics_definitions_count", len(s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey)),
+		zap.String("resource_type", resourceType),
+		zap.String("subscription_id", subscriptionID))
 }
 
 // TODO: duplicate
-func (s *azureBatchScraper) storeMetricsDefinitionByType(subscriptionID string, resourceType string, name string, compositeKey metricsCompositeKey) {
+func (s *azureBatchScraper) loadMetricsDefinitionByType(subscriptionID, resourceType, metricName string, compositeKey metricsCompositeKey) {
+	s.settings.Logger.Debug("Loading metric definition",
+		zap.String("dimensions", compositeKey.dimensions),
+		zap.String("aggregations", compositeKey.aggregations),
+		zap.String("timegrain", compositeKey.timeGrain),
+		zap.String("metric", metricName),
+		zap.String("resource_type", resourceType),
+		zap.String("subscription_id", subscriptionID))
 	if _, ok := s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey]; ok {
 		s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey].metrics = append(
-			s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey].metrics, name,
+			s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey].metrics, metricName,
 		)
 	} else {
-		s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey] = &azureResourceMetrics{metrics: []string{name}}
+		s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey] = &azureResourceMetrics{metrics: []string{metricName}}
 	}
 }
 
-func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscriptionID, resourceType string) {
+func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscriptionID, resourceType string) {
+	s.settings.Logger.Debug("Loading the Azure Metrics",
+		zap.String("resource_type", resourceType),
+		zap.String("subscription_id", subscriptionID))
 	resType := *s.resourceTypes[subscriptionID][resourceType]
+	maxPerBatch := defaultMaximumResourcesPerBatch
+	if s.cfg.MaximumResourcesPerBatch > 0 {
+		maxPerBatch = s.cfg.MaximumResourcesPerBatch
+	}
+	mb, ok := s.mbs.Get(subscriptionID)
+	if !ok {
+		s.settings.Logger.Fatal("error: metrics builder not found for subscription")
+	}
 
 	for compositeKey, metricsByGrain := range resType.metricsByCompositeKey {
 		now := time.Now().UTC()
@@ -406,41 +524,40 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 		for region := range s.regions[subscriptionID] {
 			clientMetrics, clientErr := s.GetMetricsBatchValuesClient(region)
 			if clientErr != nil {
-				s.settings.Logger.Error("failed to initialize the client to get Azure Metrics values", zap.Error(clientErr))
+				s.settings.Logger.Error("Failed to initialize the client for Azure Metrics",
+					zap.String("resource_type", resourceType),
+					zap.String("subscription_id", subscriptionID),
+					zap.Error(clientErr))
 				return
 			}
 
 			start := 0
 			for start < len(metricsByGrain.metrics) {
-				end := start + s.cfg.MaximumNumberOfMetricsInACall
-				if end > len(metricsByGrain.metrics) {
-					end = len(metricsByGrain.metrics)
-				}
+				end := min(start+s.cfg.MaximumNumberOfMetricsInACall, len(metricsByGrain.metrics))
 
 				startResources := 0
 				for startResources < len(resType.resourceIDs) {
-					endResources := startResources + 50 // getBatch API is limited to 50 resources max
-					if endResources > len(resType.resourceIDs) {
-						endResources = len(resType.resourceIDs)
-					}
+					endResources := min(startResources+maxPerBatch, len(resType.resourceIDs))
 
-					s.settings.Logger.Debug(
-						"scrape",
-						zap.String("subscription", subscriptionID),
-						zap.String("region", region),
-						zap.String("resourceType", resourceType),
-						zap.Any("resourceIDs", resType.resourceIDs[startResources:endResources]),
+					logFields := []zap.Field{
 						zap.Any("metrics", metricsByGrain.metrics[start:end]),
-						zap.Int("startResources", startResources),
-						zap.Int("endResources", endResources),
+						zap.String("dimensions", compositeKey.dimensions),
+						zap.String("aggregations", compositeKey.aggregations),
+						zap.String("timegrain", compositeKey.timeGrain),
+						zap.String("resource_type", resourceType),
+						zap.Any("resourceIDs", resType.resourceIDs[startResources:endResources]),
+						zap.String("subscription_id", subscriptionID),
+						zap.String("region", region),
 						zap.Time("startTime", startTime),
 						zap.Time("endTime", now),
-						zap.String("interval", compositeKey.timeGrain),
-					)
+						zap.Int("startResources", startResources),
+						zap.Int("endResources", endResources),
+					}
 
 					opts := newQueryResourcesOptions(
 						compositeKey.dimensions,
 						compositeKey.timeGrain,
+						compositeKey.aggregations,
 						startTime,
 						now,
 						s.cfg.MaximumNumberOfRecordsPerResource,
@@ -457,13 +574,15 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 					if err != nil {
 						var respErr *azcore.ResponseError
 						if errors.As(err, &respErr) {
-							s.settings.Logger.Error("failed to get Azure Metrics values data", zap.String("subscription", subscriptionID), zap.String("region", region), zap.String("resourceType", resourceType), zap.Any("metrics", metricsByGrain.metrics[start:end]), zap.Any("resources", resType.resourceIDs[startResources:endResources]), zap.Any("response", response), zap.Error(err))
+							logFields = append(logFields, zap.Any("error", respErr))
+						} else {
+							logFields = append(logFields, zap.Error(err))
 						}
-						s.settings.Logger.Error("failed to get Azure Metrics values data", zap.String("subscription", subscriptionID), zap.String("region", region), zap.String("resourceType", resourceType), zap.Any("metrics", metricsByGrain.metrics[start:end]), zap.Any("resources", resType.resourceIDs[startResources:endResources]), zap.Any("response", response), zap.Any("responseError", respErr))
+						s.settings.Logger.Error("Failed to collect Azure Metrics values from Azure", logFields...)
 						break
 					}
-
-					s.settings.Logger.Debug("response", zap.Any("raw", response))
+					logFields = append(logFields, zap.Int("metrics_count", len(response.Values)))
+					s.settings.Logger.Debug("Collected Azure Metrics values from Azure", logFields...)
 
 					for _, metricValues := range response.Values {
 						if metricValues.ResourceID == nil {
@@ -477,24 +596,20 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 									continue
 								}
 								attributes := map[string]*string{}
-								for name, value := range res.attributes {
-									attributes[name] = value
-								}
+								maps.Copy(attributes, res.attributes)
 								for _, value := range timeseriesElement.MetadataValues {
 									name := metadataPrefix + *value.Name.Value
 									attributes[name] = value.Value
 								}
-								if s.cfg.AppendTagsAsAttributes {
-									for tagName, value := range res.tags {
-										name := tagPrefix + tagName
-										attributes[name] = value
-									}
+								for tagName, value := range res.tags {
+									name := tagPrefix + tagName
+									attributes[name] = value
 								}
 								attributes["timegrain"] = &compositeKey.timeGrain
 								for i := len(timeseriesElement.Data) - 1; i >= 0; i-- { // reverse for loop because newest timestamp is at the end of the slice
 									metricValue := timeseriesElement.Data[i]
-									if metricValue.Average != nil {
-										s.processQueryTimeseriesData(resID, metric, metricValue, attributes)
+									if metricValueIsNotEmpty(metricValue) {
+										s.processQueryTimeseriesData(mb, resID, metric, metricValue, attributes)
 										break
 									}
 								}
@@ -507,36 +622,39 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 			}
 		}
 	}
+	s.settings.Logger.Info("Loaded the Azure Metrics",
+		zap.String("resource_type", resourceType),
+		zap.String("subscription_id", subscriptionID))
 }
 
 // newQueryResourcesOptions builds the options to make the QueryResources request.
 func newQueryResourcesOptions(
 	dimensionsStr string,
 	timeGrain string,
+	aggregationsStr string,
 	start time.Time,
 	end time.Time,
 	top int32,
 ) azmetrics.QueryResourcesOptions {
 	return azmetrics.QueryResourcesOptions{
-		Aggregation: to.Ptr(strings.Join(
-			[]string{
-				string(armmonitor.AggregationTypeAverage),
-				string(armmonitor.AggregationTypeMaximum),
-				string(armmonitor.AggregationTypeMinimum),
-				string(armmonitor.AggregationTypeTotal),
-				string(armmonitor.AggregationTypeCount),
-			},
-			",",
-		)),
-		StartTime: to.Ptr(start.Format(time.RFC3339)),
-		EndTime:   to.Ptr(end.Format(time.RFC3339)),
-		Interval:  to.Ptr(timeGrain),
-		Top:       to.Ptr(top), // Defaults to 10 (may be limiting results)
-		Filter:    buildDimensionsFilter(dimensionsStr),
+		Aggregation: to.Ptr(aggregationsStr),
+		StartTime:   to.Ptr(start.Format(time.RFC3339)),
+		EndTime:     to.Ptr(end.Format(time.RFC3339)),
+		Interval:    to.Ptr(timeGrain),
+		Top:         to.Ptr(top), // Defaults to 10 (may be limiting results)
+		Filter:      buildDimensionsFilter(dimensionsStr),
 	}
 }
 
+// metricValueIsNotEmpty checks if the metric value is empty.
+// This is necessary to compensate for the fact that Azure Monitor sometimes returns empty values.
+func metricValueIsNotEmpty(metricValue azmetrics.MetricValue) bool {
+	// Using an "or" chain is a bet on performance improvement. Assuming that it's not checking others if one is not nil. Not strictly verified though.
+	return metricValue.Average != nil || metricValue.Count != nil || metricValue.Maximum != nil || metricValue.Minimum != nil || metricValue.Total != nil
+}
+
 func (s *azureBatchScraper) processQueryTimeseriesData(
+	mb *metadata.MetricsBuilder,
 	resourceID string,
 	metric azmetrics.Metric,
 	metricValue azmetrics.MetricValue,
@@ -559,7 +677,7 @@ func (s *azureBatchScraper) processQueryTimeseriesData(
 	}
 	for _, aggregation := range aggregationsData {
 		if aggregation.value != nil {
-			s.mb.AddDataPoint(
+			mb.AddDataPoint(
 				resourceID,
 				*metric.Name.Value,
 				aggregation.name,

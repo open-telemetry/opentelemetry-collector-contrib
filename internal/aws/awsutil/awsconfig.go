@@ -12,7 +12,8 @@ type AWSSessionSettings struct {
 	Endpoint string `mapstructure:"endpoint"`
 	// Number of seconds before timing out a request.
 	RequestTimeoutSeconds int `mapstructure:"request_timeout_seconds"`
-	// Maximum number of retries before abandoning an attempt to post data.
+	// Maximum number of retries on top of the initial attempt before
+	// abandoning an attempt to post data. Total attempts = MaxRetries + 1.
 	MaxRetries int `mapstructure:"max_retries"`
 	// Enable or disable TLS certificate verification.
 	NoVerifySSL bool `mapstructure:"no_verify_ssl"`

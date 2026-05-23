@@ -55,6 +55,15 @@ type Config struct {
 
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+
+	// NetworkCollectAllInterfaces allows to enable collecting metrics from all network interfaces instead of default one
+	// Can be set separately for Pod and Node network metrics
+	NetworkCollectAllInterfaces NetworkInterfacesEnablerConfig `mapstructure:"collect_all_network_interfaces"`
+}
+
+type NetworkInterfacesEnablerConfig struct {
+	PodMetrics  bool `mapstructure:"pod"`
+	NodeMetrics bool `mapstructure:"node"`
 }
 
 // getReceiverOptions returns scraperOptions is the config is valid,
@@ -70,6 +79,11 @@ func (cfg *Config) getReceiverOptions() (*scraperOptions, error) {
 		return nil, err
 	}
 
+	ifaces := map[kubelet.MetricGroup]bool{
+		kubelet.NodeMetricGroup: cfg.NetworkCollectAllInterfaces.NodeMetrics,
+		kubelet.PodMetricGroup:  cfg.NetworkCollectAllInterfaces.PodMetrics,
+	}
+
 	var k8sAPIClient kubernetes.Interface
 	if cfg.K8sAPIConfig != nil {
 		k8sAPIClient, err = k8sconfig.MakeClient(*cfg.K8sAPIConfig)
@@ -82,6 +96,7 @@ func (cfg *Config) getReceiverOptions() (*scraperOptions, error) {
 		collectionInterval:    cfg.CollectionInterval,
 		extraMetadataLabels:   cfg.ExtraMetadataLabels,
 		metricGroupsToCollect: mgs,
+		allNetworkInterfaces:  ifaces,
 		k8sAPIClient:          k8sAPIClient,
 	}, nil
 }

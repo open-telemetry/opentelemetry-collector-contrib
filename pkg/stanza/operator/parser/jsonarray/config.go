@@ -8,8 +8,8 @@ import (
 
 	"github.com/valyala/fastjson"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -17,13 +17,6 @@ import (
 const (
 	operatorType    = "json_array_parser"
 	headerDelimiter = ","
-)
-
-var jsonArrayParserFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"logs.jsonParserArray",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, allows usage of `json_array_parser`."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30321"),
 )
 
 func init() {
@@ -50,7 +43,7 @@ type Config struct {
 
 // Build will build a json array parser operator.
 func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
-	if !jsonArrayParserFeatureGate.IsEnabled() {
+	if !metadata.LogsJSONParserArrayFeatureGate.IsEnabled() {
 		return nil, fmt.Errorf("%s operator disabled", operatorType)
 	}
 

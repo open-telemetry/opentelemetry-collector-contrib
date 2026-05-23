@@ -1,0 +1,44 @@
+$defs:
+  config:
+    description: Config is the general configuration for the parser to be used.
+    type: object
+    properties:
+      config:
+        description: Config placeholder for the configuration object of the selected parser.
+        $ref: parser_config
+      type:
+        description: Type of the parser to be used with the arriving data.
+        type: string
+  regex_parser_config:
+    description: 'RegexParserConfig has the configuration for a parser that can breakdown a Carbon "metric path" and transform it in corresponding metric labels according to a series of regular expressions rules (see below for details). This is typically used to extract labels from a "naming hierarchy", see https://graphite.readthedocs.io/en/latest/feeding-carbon.html#step-1-plan-a-naming-hierarchy Examples: 1. Rule: - regexp: "(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.cpu\.seconds" name_prefix: cpu_seconds labels: k: v Metric path: "service_name.host00.cpu.seconds" Resulting metric: name: cpu_seconds label keys: {"svc", "host", "k"} label values: {"service_name", "host00", "k"} 2. Rule: - regexp: "^(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.(?P<name_0>[^.]+).(?P<name_1>[^.]+)$" Metric path: "svc_02.host02.avg.duration" Resulting metric: name: avgduration label keys: {"svc", "host"} label values: {"svc_02", "host02"}'
+    type: object
+    properties:
+      name_separator:
+        description: MetricNameSeparator is used when joining the name prefix of each individual rule and the respective named captures that start with the prefix "name_" (see RegexRule for more information).
+        type: string
+      rules:
+        description: Rules contains the regular expression rules to be used by the parser. The first rule that matches and applies the transformations configured in the respective RegexRule struct. If no rules match the metric is then processed by the "plaintext" parser.
+        type: array
+        items:
+          x-pointer: true
+          $ref: regex_rule
+  regex_rule:
+    description: RegexRule describes how parts of the name of metric are going to be mapped to metric labels. The rule is only applied if the name matches the given regular expression.
+    type: object
+    properties:
+      labels:
+        description: Labels are key-value pairs added as labels to the metrics that match this rule.
+        type: object
+        additionalProperties:
+          type: string
+      name_prefix:
+        description: NamePrefix is the prefix added to the metric name after extracting the parts that will form labels and final metric name.
+        type: string
+      regexp:
+        description: Regular expression from which named matches are used to extract label keys and values from Carbon metric paths.
+        type: string
+      type:
+        description: MetricType selects the type of metric to be generated, supported values are "gauge" (the default) and "cumulative".
+        type: string
+  target_metric_type:
+    type: string

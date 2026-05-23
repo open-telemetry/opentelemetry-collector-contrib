@@ -6,19 +6,55 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"math/rand/v2"
 	"net/http"
+	"net/url"
+	"strings"
+	"sync/atomic"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
-	elasticsearchv8 "github.com/elastic/go-elasticsearch/v8"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
+	"github.com/elastic/elastic-transport-go/v8/elastictransport"
+	elastictransportversion "github.com/elastic/elastic-transport-go/v8/elastictransport/version"
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
+
+type attemptCounterKey struct{}
+
+// attemptCounter tracks the number of round-trip attempts for a single
+// _bulk request call in the Elasticsearch client.
+type attemptCounter struct {
+	value atomic.Int64
+}
+
+func (c *attemptCounter) Attempts() int { return int(c.value.Load()) }
+func (c *attemptCounter) Retries() int  { return max(c.Attempts()-1, 0) }
+
+// newAttemptContext returns a context carrying a fresh attemptCounter,
+// along with the counter itself so the caller can inspect it after.
+func newAttemptContext(ctx context.Context) (context.Context, *attemptCounter) {
+	counter := &attemptCounter{}
+	return context.WithValue(ctx, attemptCounterKey{}, counter), counter
+}
+
+// countRetriesInterceptor returns an interceptor that increments the
+// attemptCounter stored in the request context on every round-trip.
+func countRetriesInterceptor() elastictransport.InterceptorFunc {
+	return func(next elastictransport.RoundTripFunc) elastictransport.RoundTripFunc {
+		return func(req *http.Request) (*http.Response, error) {
+			if counter, ok := req.Context().Value(attemptCounterKey{}).(*attemptCounter); ok {
+				counter.value.Add(1)
+			}
+			return next(req)
+		}
+	}
+}
 
 // clientLogger implements the estransport.Logger interface
 // that is required by the Elasticsearch client for logging.
@@ -26,6 +62,7 @@ type clientLogger struct {
 	*zap.Logger
 	logRequestBody  bool
 	logResponseBody bool
+	componentHost   component.Host
 }
 
 // LogRoundTrip should not modify the request or response, except for consuming and closing the body.
@@ -62,6 +99,15 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, cl
 			zap.String("status", resp.Status),
 		)
 		zl.Debug("Request roundtrip completed.", fields...)
+		if resp.StatusCode == http.StatusOK {
+			// Success
+			componentstatus.ReportStatus(
+				cl.componentHost, componentstatus.NewEvent(componentstatus.StatusOK))
+		} else if httpRecoverableErrorStatus(resp.StatusCode) {
+			err := fmt.Errorf("Elasticsearch request failed: %v", resp.Status)
+			componentstatus.ReportStatus(
+				cl.componentHost, componentstatus.NewRecoverableErrorEvent(err))
+		}
 
 	case clientErr != nil:
 		fields = append(
@@ -69,6 +115,9 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, cl
 			zap.NamedError("reason", clientErr),
 		)
 		zl.Debug("Request failed.", fields...)
+		err := fmt.Errorf("Elasticsearch request failed: %w", clientErr)
+		componentstatus.ReportStatus(
+			cl.componentHost, componentstatus.NewRecoverableErrorEvent(err))
 	}
 
 	return nil
@@ -84,21 +133,64 @@ func (cl *clientLogger) ResponseBodyEnabled() bool {
 	return cl.logResponseBody
 }
 
-// newElasticsearchClient returns a new esapi.Transport.
+const (
+	unknownProduct = "the client noticed that the server is not Elasticsearch and we do not support this unknown product"
+	defaultURL     = "http://localhost:9200"
+)
+
+// genuineCheckHeader validates the presence of the X-Elastic-Product header
+func genuineCheckHeader(header http.Header) error {
+	if header.Get("X-Elastic-Product") != "Elasticsearch" {
+		return errors.New(unknownProduct)
+	}
+	return nil
+}
+
+type esClient struct {
+	transport           elastictransport.Interface
+	productCheckSuccess atomic.Bool
+}
+
+func (e *esClient) Perform(req *http.Request) (*http.Response, error) {
+	res, err := e.transport.Perform(req)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode >= 200 && res.StatusCode < 300 {
+		checkHeader := func() error { return genuineCheckHeader(res.Header) }
+		if err := e.doProductCheck(checkHeader); err != nil {
+			res.Body.Close()
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (e *esClient) doProductCheck(f func() error) error {
+	if e.productCheckSuccess.Load() {
+		return nil
+	}
+	if err := f(); err != nil {
+		return err
+	}
+	e.productCheckSuccess.Store(true)
+	return nil
+}
+
+// newElasticsearchClient returns a new elastictransport.Interface.
 func newElasticsearchClient(
 	ctx context.Context,
 	config *Config,
 	host component.Host,
 	telemetry component.TelemetrySettings,
 	userAgent string,
-) (esapi.Transport, error) {
-	httpClient, err := config.ToClient(ctx, host, telemetry)
+) (elastictransport.Interface, error) {
+	httpClient, err := config.ToClient(ctx, host.GetExtensions(), telemetry)
 	if err != nil {
 		return nil, err
 	}
 
 	headers := make(http.Header)
-	headers.Set("User-Agent", userAgent)
 
 	// endpoints converts Config.Endpoints, Config.CloudID,
 	// and Config.ClientConfig.Endpoint to a list of addresses.
@@ -111,61 +203,117 @@ func newElasticsearchClient(
 		Logger:          telemetry.Logger,
 		logRequestBody:  config.LogRequestBody,
 		logResponseBody: config.LogResponseBody,
+		componentHost:   host,
 	}
 
-	return elasticsearchv8.NewClient(elasticsearchv8.Config{
-		Transport: httpClient.Transport,
+	maxRetries := defaultMaxRetries
+	if config.Retry.MaxRetries != 0 {
+		maxRetries = config.Retry.MaxRetries
+	}
 
-		// configure connection setup
-		Addresses: endpoints,
-		Username:  config.Authentication.User,
-		Password:  string(config.Authentication.Password),
-		APIKey:    string(config.Authentication.APIKey),
-		Header:    headers,
+	// Convert addresses to URLs
+	urls, err := addrsToURLs(endpoints)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create client: %w", err)
+	}
 
-		// configure retry behavior
+	if len(urls) == 0 {
+		u, _ := url.Parse(defaultURL)
+		urls = append(urls, u)
+	}
+
+	username := config.Authentication.User
+	password := string(config.Authentication.Password)
+	if user := urls[0].User; user != nil {
+		username = user.Username()
+		password, _ = user.Password()
+	}
+
+	// Create transport configuration matching elasticsearch.newTransport structure
+	tpConfig := elastictransport.Config{
+		UserAgent: userAgent,
+
+		URLs:     urls,
+		Username: username,
+		Password: password,
+		APIKey:   string(config.Authentication.APIKey),
+
+		Header: headers,
+
 		RetryOnStatus: config.Retry.RetryOnStatus,
 		DisableRetry:  !config.Retry.Enabled,
 		RetryOnError: func(_ *http.Request, err error) bool {
 			return !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
 		},
-		MaxRetries:   min(defaultMaxRetries, config.Retry.MaxRetries),
+		MaxRetries:   maxRetries,
 		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
 
-		// configure sniffing
-		DiscoverNodesOnStart:  config.Discovery.OnStart,
-		DiscoverNodesInterval: config.Discovery.Interval,
-
-		// configure internal metrics reporting and logging
 		EnableMetrics:     false, // TODO
 		EnableDebugLogger: false, // TODO
-		Instrumentation: elasticsearchv8.NewOpenTelemetryInstrumentation(
+
+		DiscoverNodesInterval: config.Discovery.Interval,
+
+		Transport: httpClient.Transport,
+		Logger:    esLogger,
+		Instrumentation: elastictransport.NewOtelInstrumentation(
 			telemetry.TracerProvider,
 			false, /* captureSearchBody */
+			elastictransportversion.Version,
 		),
-		Logger: esLogger,
-	})
+		Interceptors: []elastictransport.InterceptorFunc{
+			countRetriesInterceptor(),
+		},
+	}
+
+	tp, err := elastictransport.New(tpConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error creating transport: %w", err)
+	}
+
+	// Handle node discovery on start, matching elasticsearch.NewClient behavior
+	if config.Discovery.OnStart {
+		go func() {
+			_ = tp.DiscoverNodesContext(ctx)
+		}()
+	}
+
+	return &esClient{transport: tp}, nil
 }
 
+// addrsToURLs creates a list of url.URL structures from url list.
+func addrsToURLs(addrs []string) ([]*url.URL, error) {
+	var urls []*url.URL
+	for _, addr := range addrs {
+		u, err := url.Parse(strings.TrimRight(addr, "/"))
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse url: %w", err)
+		}
+
+		urls = append(urls, u)
+	}
+	return urls, nil
+}
+
+// createElasticsearchBackoffFunc creates an exponential backoff with equal jitter.
 func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Duration {
 	if !config.Enabled {
 		return nil
 	}
 
-	expBackoff := backoff.NewExponentialBackOff()
-	if config.InitialInterval > 0 {
-		expBackoff.InitialInterval = config.InitialInterval
-	}
-	if config.MaxInterval > 0 {
-		expBackoff.MaxInterval = config.MaxInterval
-	}
-	expBackoff.Reset()
-
 	return func(attempts int) time.Duration {
-		if attempts == 1 {
-			expBackoff.Reset()
+		next := config.InitialInterval << (attempts - 1) // config.InitialInterval * 2 ^ (attempts - 1)
+		if next <= 0 || next > config.MaxInterval {      // guard against overflow
+			next = config.MaxInterval
 		}
-
-		return expBackoff.NextBackOff()
+		nextWithJitter := next/2 + time.Duration(rand.Float64()*float64(next/2))
+		return nextWithJitter
 	}
+}
+
+func httpRecoverableErrorStatus(statusCode int) bool {
+	// Elasticsearch uses 409 conflict to report duplicates, which aren't really
+	// an error state, so those return false (but if we were already in an error
+	// state, we will still wait until we get an actual 200 OK before changing
+	// our state back).
+	return statusCode >= 300 && statusCode != http.StatusConflict
 }

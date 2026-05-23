@@ -88,6 +88,36 @@ func newVcenterScrapeData() *vcenterScrapeData {
 	}
 }
 
+func (v *vcenterMetricScraper) hasEnabledVSANMetrics() bool {
+	metrics := v.config.Metrics
+
+	// Check cluster vSAN metrics
+	if metrics.VcenterClusterVsanCongestions.Enabled ||
+		metrics.VcenterClusterVsanLatencyAvg.Enabled ||
+		metrics.VcenterClusterVsanOperations.Enabled ||
+		metrics.VcenterClusterVsanThroughput.Enabled {
+		return true
+	}
+
+	// Check host vSAN metrics
+	if metrics.VcenterHostVsanCacheHitRate.Enabled ||
+		metrics.VcenterHostVsanCongestions.Enabled ||
+		metrics.VcenterHostVsanLatencyAvg.Enabled ||
+		metrics.VcenterHostVsanOperations.Enabled ||
+		metrics.VcenterHostVsanThroughput.Enabled {
+		return true
+	}
+
+	// Check VM vSAN metrics
+	if metrics.VcenterVMVsanLatencyAvg.Enabled ||
+		metrics.VcenterVMVsanOperations.Enabled ||
+		metrics.VcenterVMVsanThroughput.Enabled {
+		return true
+	}
+
+	return false
+}
+
 func (v *vcenterMetricScraper) Start(ctx context.Context, _ component.Host) error {
 	connectErr := v.client.EnsureConnection(ctx)
 	// don't fail to start if we cannot establish connection, just log an error
@@ -246,13 +276,15 @@ func (v *vcenterMetricScraper) scrapeComputes(ctx context.Context, dc *mo.Datace
 		}
 	}
 
-	// Get all Cluster vSAN metrics and store for later retrieval
-	vSANMetrics, err := v.client.VSANClusters(ctx, v.scrapeData.clusterRefs)
-	if err != nil {
-		errs.AddPartial(1, fmt.Errorf("failed to retrieve vSAN metrics for Clusters: %w", err))
-		return
+	if v.hasEnabledVSANMetrics() {
+		// Get all Cluster vSAN metrics and store for later retrieval (only if vSAN metrics are enabled)
+		vSANMetrics, err := v.client.VSANClusters(ctx, v.scrapeData.clusterRefs)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf("failed to retrieve vSAN metrics for Clusters: %w", err))
+			return
+		}
+		v.scrapeData.clusterVSANMetricsByUUID = vSANMetrics.MetricResultsByUUID
 	}
-	v.scrapeData.clusterVSANMetricsByUUID = vSANMetrics.MetricResultsByUUID
 }
 
 // scrapeHosts scrapes and stores all relevant metric/property data for a Datacenter's HostSystems
@@ -287,12 +319,15 @@ func (v *vcenterMetricScraper) scrapeHosts(ctx context.Context, dc *mo.Datacente
 		v.scrapeData.hostPerfMetricsByRef = results.resultsByRef
 	}
 
-	vSANMetrics, err := v.client.VSANHosts(ctx, v.scrapeData.clusterRefs)
-	if err != nil {
-		errs.AddPartial(1, fmt.Errorf("failed to retrieve vSAN metrics for Hosts: %w", err))
-		return
+	if v.hasEnabledVSANMetrics() {
+		// Get all Host vSAN metrics and store for later retrieval
+		vSANMetrics, err := v.client.VSANHosts(ctx, v.scrapeData.clusterRefs)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf("failed to retrieve vSAN metrics for Hosts: %w", err))
+			return
+		}
+		v.scrapeData.hostVSANMetricsByUUID = vSANMetrics.MetricResultsByUUID
 	}
-	v.scrapeData.hostVSANMetricsByUUID = vSANMetrics.MetricResultsByUUID
 }
 
 // scrapeResourcePools scrapes and stores all relevant property data for a Datacenter's ResourcePools/vApps
@@ -343,12 +378,13 @@ func (v *vcenterMetricScraper) scrapeVirtualMachines(ctx context.Context, dc *mo
 		v.scrapeData.vmPerfMetricsByRef = results.resultsByRef
 	}
 
-	// Get all VirtualMachine vSAN metrics and store for later retrieval
-	vSANMetrics, err := v.client.VSANVirtualMachines(ctx, v.scrapeData.clusterRefs)
-	if err != nil {
-		errs.AddPartial(1, fmt.Errorf("failed to retrieve vSAN metrics for VirtualMachines: %w", err))
-		return
+	if v.hasEnabledVSANMetrics() {
+		// Get all VirtualMachine vSAN metrics and store for later retrieval
+		vSANMetrics, err := v.client.VSANVirtualMachines(ctx, v.scrapeData.clusterRefs)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf("failed to retrieve vSAN metrics for VirtualMachines: %w", err))
+			return
+		}
+		v.scrapeData.vmVSANMetricsByUUID = vSANMetrics.MetricResultsByUUID
 	}
-
-	v.scrapeData.vmVSANMetricsByUUID = vSANMetrics.MetricResultsByUUID
 }

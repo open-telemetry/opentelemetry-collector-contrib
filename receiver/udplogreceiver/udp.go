@@ -6,6 +6,7 @@ package udplogreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -13,9 +14,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver/internal/metadata"
 )
 
-// NewFactory creates a factory for udp receiver
+// NewFactory creates a factory for udp_log receiver
 func NewFactory() receiver.Factory {
-	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability)
+	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability,
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 // ReceiverType implements adapter.LogReceiverType
@@ -23,12 +26,12 @@ func NewFactory() receiver.Factory {
 type ReceiverType struct{}
 
 // Type is the receiver type
-func (f ReceiverType) Type() component.Type {
+func (ReceiverType) Type() component.Type {
 	return metadata.Type
 }
 
 // CreateDefaultConfig creates a config with type and version
-func (f ReceiverType) CreateDefaultConfig() component.Config {
+func (ReceiverType) CreateDefaultConfig() component.Config {
 	return &UDPLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			Operators: []operator.Config{},
@@ -38,17 +41,20 @@ func (f ReceiverType) CreateDefaultConfig() component.Config {
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
+func (ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*UDPLogConfig).BaseConfig
 }
 
-// UDPLogConfig defines configuration for the udp receiver
+// UDPLogConfig defines configuration for the udp_log receiver
 type UDPLogConfig struct {
 	InputConfig        udp.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // InputConfig unmarshals the input operator
-func (f ReceiverType) InputConfig(cfg component.Config) operator.Config {
+func (ReceiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(&cfg.(*UDPLogConfig).InputConfig)
 }

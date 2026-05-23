@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"maps"
 	"regexp"
 	"strings"
 	"sync"
@@ -872,9 +873,7 @@ func addContainerID(pod *corev1.Pod, metric CIMetric, kubernetesBlob map[string]
 
 func addLabels(pod *corev1.Pod, kubernetesBlob map[string]any) {
 	labels := make(map[string]string)
-	for k, v := range pod.Labels {
-		labels[k] = v
-	}
+	maps.Copy(labels, pod.Labels)
 	if len(labels) > 0 {
 		kubernetesBlob["labels"] = labels
 	}
@@ -888,41 +887,42 @@ func (p *PodStore) addPodOwnersAndPodName(metric CIMetric, pod *corev1.Pod, kube
 	var owners []any
 	podName := ""
 	for _, owner := range pod.OwnerReferences {
-		if owner.Kind != "" && owner.Name != "" {
-			kind := owner.Kind
-			name := owner.Name
+		if owner.Kind == "" || owner.Name == "" {
+			continue
+		}
+		kind := owner.Kind
+		name := owner.Name
 
-			switch owner.Kind {
-			case ci.ReplicaSet:
-				if p.k8sClient != nil {
-					replicaSetClient := p.k8sClient.GetReplicaSetClient()
-					rsToDeployment := replicaSetClient.ReplicaSetToDeployment()
-					if parent := rsToDeployment[owner.Name]; parent != "" {
-						kind = ci.Deployment
-						name = parent
-					} else if parent := parseDeploymentFromReplicaSet(owner.Name); parent != "" {
-						kind = ci.Deployment
-						name = parent
-					}
-				}
-			case ci.Job:
-				if parent := parseCronJobFromJob(owner.Name); parent != "" {
-					kind = ci.CronJob
+		switch owner.Kind {
+		case ci.ReplicaSet:
+			if p.k8sClient != nil {
+				replicaSetClient := p.k8sClient.GetReplicaSetClient()
+				rsToDeployment := replicaSetClient.ReplicaSetToDeployment()
+				if parent := rsToDeployment[owner.Name]; parent != "" {
+					kind = ci.Deployment
 					name = parent
-				} else if !p.prefFullPodName {
-					name = getJobNamePrefix(name)
+				} else if parent := parseDeploymentFromReplicaSet(owner.Name); parent != "" {
+					kind = ci.Deployment
+					name = parent
 				}
 			}
+		case ci.Job:
+			if parent := parseCronJobFromJob(owner.Name); parent != "" {
+				kind = ci.CronJob
+				name = parent
+			} else if !p.prefFullPodName {
+				name = getJobNamePrefix(name)
+			}
+		}
 
-			owners = append(owners, map[string]string{"owner_kind": kind, "owner_name": name})
+		owners = append(owners, map[string]string{"owner_kind": kind, "owner_name": name})
 
-			if podName == "" {
-				switch owner.Kind {
-				case ci.StatefulSet:
-					podName = pod.Name
-				case ci.DaemonSet, ci.Job, ci.ReplicaSet, ci.ReplicationController:
-					podName = name
-				}
+		if podName == "" {
+			switch owner.Kind {
+			case ci.StatefulSet:
+				podName = pod.Name
+			case ci.DaemonSet, ci.Job, ci.ReplicaSet, ci.ReplicationController:
+				podName = name
 			}
 		}
 	}

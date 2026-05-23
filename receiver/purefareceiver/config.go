@@ -50,6 +50,9 @@ type Config struct {
 
 type Settings struct {
 	ReloadIntervals *ReloadIntervals `mapstructure:"reload_intervals"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ReloadIntervals struct {
@@ -58,6 +61,9 @@ type ReloadIntervals struct {
 	Directories time.Duration `mapstructure:"directories"`
 	Pods        time.Duration `mapstructure:"pods"`
 	Volumes     time.Duration `mapstructure:"volumes"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() error {

@@ -6,3 +6,5 @@ redis_storage/all_settings:
   db: 1
   expiration: 3h
   prefix: test_
+  tls:
+    insecure: true

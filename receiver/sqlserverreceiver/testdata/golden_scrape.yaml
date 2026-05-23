@@ -74,6 +74,10 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "3"
+                  attributes:
+                    - key: performance_counter.object_name
+                      value:
+                        stringValue: Buffer Manager
                   startTimeUnixNano: "1679438452495397400"
                   timeUnixNano: "1679438452496922500"
             name: sqlserver.page.life_expectancy

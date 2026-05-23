@@ -17,7 +17,7 @@ func NewRoutingDataConnector(receiverDataType string) *RoutingDataConnector {
 	return &RoutingDataConnector{DataConnectorBase: testbed.DataConnectorBase{ReceiverDataType: receiverDataType}}
 }
 
-func (rc *RoutingDataConnector) GenConfigYAMLStr() string {
+func (*RoutingDataConnector) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return `
   routing:
@@ -27,7 +27,7 @@ func (rc *RoutingDataConnector) GenConfigYAMLStr() string {
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.
-func (rc *RoutingDataConnector) ProtocolName() string {
+func (*RoutingDataConnector) ProtocolName() string {
 	return "routing"
 }
 

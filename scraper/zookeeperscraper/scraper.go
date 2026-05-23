@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper/internal/metadata"
 )
 
-var zookeeperFormatRE = regexp.MustCompile(`(^zk_\w+)\s+([\w\.\-]+)`)
+var zookeeperFormatRE = regexp.MustCompile(`(^zk_\w+)\s+([\w.\-]+)`)
 
 const (
 	mntrCommand = "mntr"

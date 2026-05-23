@@ -1,0 +1,36 @@
+$defs:
+  gitlab_headers:
+    type: object
+    properties:
+      Customizable:
+        type: object
+        additionalProperties:
+          type: string
+      Fixed:
+        type: object
+        additionalProperties:
+          type: string
+  web_hook:
+    type: object
+    properties:
+      health_path:
+        type: string
+      include_user_attributes:
+        description: 'IncludeUserAttributes controls whether user information (commit author, pipeline actor) is included Default: false (user information is excluded by default for privacy)'
+        type: boolean
+      path:
+        type: string
+      required_headers:
+        type: object
+        additionalProperties:
+          $ref: go.opentelemetry.io/collector/config/configopaque.string
+      secret:
+        type: string
+    allOf:
+      - $ref: go.opentelemetry.io/collector/config/confighttp.server_config
+      - $ref: gitlab_headers
+description: Config that is exposed to this gitlab receiver through the OTEL config.yaml
+type: object
+properties:
+  webhook:
+    $ref: web_hook

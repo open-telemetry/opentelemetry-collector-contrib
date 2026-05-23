@@ -1,0 +1,11 @@
+description: Config defines the configuration options for the Grafana Cloud connector.
+type: object
+properties:
+  host_identifiers:
+    description: HostIdentifiers defines the list of resource attributes used to derive a unique `grafana.host.id` value. In most cases, this should be [ "host.id" ]
+    type: array
+    items:
+      type: string
+  metrics_flush_interval:
+    type: string
+    format: duration

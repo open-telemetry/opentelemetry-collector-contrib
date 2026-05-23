@@ -133,10 +133,10 @@ func Test_Heartbeat_success(t *testing.T) {
 			sentMetricsName := getMetricsName(tt.metricsOverrides, defaultHBSentMetricsName)
 			var got []int64
 			var err error
-			assert.Eventually(t, func() bool {
+			assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 				got, err = getMetricValue(reader, sentMetricsName)
-				require.NoError(t, err)
-				return len(got) != 0
+				require.NoError(tt, err)
+				assert.NotEmpty(tt, got)
 			}, time.Second, 10*time.Millisecond)
 			assert.Positive(t, got[0], "there should be at least one success metric datapoint")
 			attrs, err := getAttributes(reader, sentMetricsName)
@@ -156,10 +156,10 @@ func Test_Heartbeat_failure(t *testing.T) {
 
 	var got []int64
 	var err error
-	assert.Eventually(t, func() bool {
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 		got, err = getMetricValue(reader, defaultHBFailedMetricsName)
-		require.NoError(t, err)
-		return len(got) != 0
+		require.NoError(tt, err)
+		assert.NotEmpty(tt, got)
 	}, time.Second, 10*time.Millisecond)
 	assert.Positive(t, got[0], "there should be at least one failure metric datapoint")
 	attrs, err := getAttributes(reader, defaultHBFailedMetricsName)

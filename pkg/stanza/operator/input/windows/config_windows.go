@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
@@ -24,8 +25,12 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		return nil, err
 	}
 
-	if c.Channel == "" {
-		return nil, errors.New("missing required `channel` field")
+	if c.Channel == "" && c.Query == nil {
+		return nil, errors.New("either `channel` or `query` must be set")
+	}
+
+	if c.Channel != "" && c.Query != nil {
+		return nil, errors.New("either `channel` or `query` must be set, but not both")
 	}
 
 	if c.MaxReads < 1 {
@@ -36,22 +41,37 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		return nil, errors.New("the `start_at` field must be set to `beginning` or `end`")
 	}
 
+	if c.EventDataFormat != EventDataFormatMap && c.EventDataFormat != EventDataFormatArray {
+		return nil, errors.New("the `event_data_format` field must be set to `map` or `array`")
+	}
+
 	if (c.Remote.Server != "" || c.Remote.Username != "" || c.Remote.Password != "") && // any not empty
 		(c.Remote.Server == "" || c.Remote.Username == "" || c.Remote.Password == "") { // any empty
 		return nil, errors.New("remote configuration must have non-empty `username` and `password`")
 	}
 
+	maxEventsPerPoll := c.MaxEventsPerPoll
+	if metadata.StanzaWindowsEventDrivenScrapingFeatureGate.IsEnabled() {
+		maxEventsPerPoll = 0
+	}
+
 	input := &Input{
-		InputOperator:    inputOperator,
-		buffer:           NewBuffer(),
-		channel:          c.Channel,
-		maxReads:         c.MaxReads,
-		currentMaxReads:  c.MaxReads,
-		startAt:          c.StartAt,
-		pollInterval:     c.PollInterval,
-		raw:              c.Raw,
-		excludeProviders: excludeProvidersSet(c.ExcludeProviders),
-		remote:           c.Remote,
+		InputOperator:            inputOperator,
+		buffer:                   NewBuffer(),
+		channel:                  c.Channel,
+		ignoreChannelErrors:      c.IgnoreChannelErrors,
+		maxReads:                 c.MaxReads,
+		maxEventsPerPollCycle:    maxEventsPerPoll,
+		currentMaxReads:          c.MaxReads,
+		startAt:                  c.StartAt,
+		pollInterval:             c.PollInterval,
+		waitTimeout:              c.WaitTimeout,
+		raw:                      c.Raw,
+		eventDataFormat:          c.EventDataFormat,
+		includeLogRecordOriginal: c.IncludeLogRecordOriginal,
+		excludeProviders:         excludeProvidersSet(c.ExcludeProviders),
+		remote:                   c.Remote,
+		query:                    c.Query,
 	}
 	input.startRemoteSession = input.defaultStartRemoteSession
 

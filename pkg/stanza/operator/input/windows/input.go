@@ -13,10 +13,12 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -24,24 +26,36 @@ import (
 // Input is an operator that creates entries using the windows event log api.
 type Input struct {
 	helper.InputOperator
-	bookmark            Bookmark
-	buffer              *Buffer
-	channel             string
-	maxReads            int
-	currentMaxReads     int
-	startAt             string
-	raw                 bool
-	excludeProviders    map[string]struct{}
-	pollInterval        time.Duration
-	persister           operator.Persister
-	publisherCache      publisherCache
-	cancel              context.CancelFunc
-	wg                  sync.WaitGroup
-	subscription        Subscription
-	remote              RemoteConfig
-	remoteSessionHandle windows.Handle
-	startRemoteSession  func() error
-	processEvent        func(context.Context, Event) error
+	bookmark                 Bookmark
+	buffer                   *Buffer
+	channel                  string
+	ignoreChannelErrors      bool
+	query                    *string
+	maxReads                 int
+	currentMaxReads          int
+	startAt                  string
+	raw                      bool
+	eventDataFormat          EventDataFormat
+	includeLogRecordOriginal bool
+	excludeProviders         map[string]struct{}
+	pollInterval             time.Duration
+	waitTimeout              time.Duration
+	// cancelEvent is a manual-reset Windows event handle signaled by Stop() to unblock
+	// WaitForMultipleObjects in awaitAndReadEvents. A plain context cancellation cannot
+	// interrupt a blocking Windows syscall, so this handle bridges Go's cancellation model
+	// to the Windows API layer.
+	cancelEvent           windows.Handle
+	persister             operator.Persister
+	publisherCache        publisherCache
+	cancel                context.CancelFunc
+	wg                    sync.WaitGroup
+	subscription          Subscription
+	maxEventsPerPollCycle int
+	eventsReadInPollCycle int
+	remote                RemoteConfig
+	remoteSessionHandle   windows.Handle
+	startRemoteSession    func() error
+	processEvent          func(context.Context, Event) error
 }
 
 // newInput creates a new Input operator.
@@ -70,6 +84,9 @@ func (i *Input) defaultStartRemoteSession() error {
 		Server:   windows.StringToUTF16Ptr(i.remote.Server),
 		User:     windows.StringToUTF16Ptr(i.remote.Username),
 		Password: windows.StringToUTF16Ptr(i.remote.Password),
+	}
+	if i.remote.Domain != "" {
+		login.Domain = windows.StringToUTF16Ptr(i.remote.Domain)
 	}
 
 	sessionHandle, err := evtOpenSession(EvtRPCLoginClass, &login, 0, 0)
@@ -117,7 +134,7 @@ func (i *Input) Start(persister operator.Persister) error {
 	i.bookmark = NewBookmark()
 	offsetXML, err := i.getBookmarkOffset(ctx)
 	if err != nil {
-		_ = i.persister.Delete(ctx, i.channel)
+		_ = i.persister.Delete(ctx, i.getPersistKey())
 	}
 
 	if offsetXML != "" {
@@ -128,28 +145,49 @@ func (i *Input) Start(persister operator.Persister) error {
 
 	i.publisherCache = newPublisherCache()
 
-	subscription := NewLocalSubscription()
+	subscriptionError := false
+	subscription := NewLocalSubscription(i.Logger())
 	if i.isRemote() {
-		subscription = NewRemoteSubscription(i.remote.Server)
+		subscription = NewRemoteSubscription(i.remote.Server, i.Logger())
 	}
 
-	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.bookmark); err != nil {
+	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
+		var errorString string
 		if isNonTransientError(err) {
 			if i.isRemote() {
-				return fmt.Errorf("failed to open subscription for remote server %s: %w", i.remote.Server, err)
+				errorString = fmt.Sprintf("failed to open subscription for remote server: %s", i.remote.Server)
+			} else {
+				errorString = "failed to open local subscription"
 			}
-			return fmt.Errorf("failed to open local subscription: %w", err)
-		}
-		if i.isRemote() {
-			i.Logger().Warn("Transient error opening subscription for remote server, continuing", zap.String("server", i.remote.Server), zap.Error(err))
+			if !i.ignoreChannelErrors {
+				return fmt.Errorf("%s, error: %w", errorString, err)
+			}
+			subscriptionError = true
+			i.Logger().Warn(errorString, zap.Error(err))
 		} else {
-			i.Logger().Warn("Transient error opening local subscription, continuing", zap.Error(err))
+			if i.isRemote() {
+				i.Logger().Warn("Transient error opening subscription for remote server, continuing", zap.String("server", i.remote.Server), zap.Error(err))
+			} else {
+				i.Logger().Warn("Transient error opening local subscription, continuing", zap.Error(err))
+			}
 		}
 	}
 
-	i.subscription = subscription
-	i.wg.Add(1)
-	go i.readOnInterval(ctx)
+	if !subscriptionError {
+		i.subscription = subscription
+		if metadata.StanzaWindowsEventDrivenScrapingFeatureGate.IsEnabled() {
+			cancelEvent, err := windows.CreateEvent(nil, 1, 0, nil) // manual-reset, initially non-signaled
+			if err != nil {
+				return fmt.Errorf("failed to create cancel event: %w", err)
+			}
+			i.cancelEvent = cancelEvent
+			i.wg.Add(1)
+			go i.awaitAndReadEvents(ctx)
+		} else {
+			i.wg.Add(1)
+			go i.pollAndRead(ctx)
+		}
+	}
 
 	return nil
 }
@@ -162,9 +200,24 @@ func (i *Input) Stop() error {
 		i.cancel()
 	}
 
+	if i.cancelEvent != 0 {
+		// If this fails, wg.Wait() below will block forever since awaitAndReadEvents will never
+		// return from WaitForMultipleObjects. Log loudly and continue.
+		if err := windows.SetEvent(i.cancelEvent); err != nil {
+			i.Logger().Error("Failed to signal cancel event during stop; shutdown may hang", zap.Error(err))
+		}
+	}
+
 	i.wg.Wait()
 
 	var errs error
+	if i.cancelEvent != 0 {
+		if err := windows.CloseHandle(i.cancelEvent); err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("failed to close cancel event: %w", err))
+		}
+		i.cancelEvent = 0
+	}
+
 	if err := i.subscription.Close(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to close subscription: %w", err))
 	}
@@ -180,29 +233,45 @@ func (i *Input) Stop() error {
 	return multierr.Append(errs, i.stopRemoteSession())
 }
 
-// readOnInterval will read events with respect to the polling interval until it reaches the end of the channel.
-func (i *Input) readOnInterval(ctx context.Context) {
+func (i *Input) pollAndRead(ctx context.Context) {
 	defer i.wg.Done()
 
-	ticker := time.NewTicker(i.pollInterval)
-	defer ticker.Stop()
-
 	for {
+		i.eventsReadInPollCycle = 0
+
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
+		case <-time.After(i.pollInterval):
 			i.read(ctx)
 		}
 	}
 }
 
-// read will read events from the subscription.
 func (i *Input) read(ctx context.Context) {
-	events, actualMaxReads, err := i.subscription.Read(i.currentMaxReads)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if !i.readBatch(ctx) {
+				return
+			}
+		}
+	}
+}
+
+// readBatch will read events from the subscription
+func (i *Input) readBatch(ctx context.Context) bool {
+	maxBatchSize := i.getCurrentBatchSize()
+	if maxBatchSize <= 0 {
+		return false
+	}
+
+	events, actualMaxReads, err := i.subscription.Read(maxBatchSize)
 
 	// Update the current max reads if it changed
-	if err == nil && actualMaxReads < i.currentMaxReads {
+	if err == nil && actualMaxReads < maxBatchSize {
 		i.currentMaxReads = actualMaxReads
 		i.Logger().Debug("Encountered RPC_S_INVALID_BOUND, reduced batch size", zap.Int("current_batch_size", i.currentMaxReads), zap.Int("original_batch_size", i.maxReads))
 	}
@@ -214,23 +283,23 @@ func (i *Input) read(ctx context.Context) {
 			closeErr := i.subscription.Close()
 			if closeErr != nil {
 				i.Logger().Error("Failed to close remote subscription", zap.Error(closeErr))
-				return
+				return false
 			}
 			if err := i.stopRemoteSession(); err != nil {
 				i.Logger().Error("Failed to close remote session", zap.Error(err))
 			}
 			i.Logger().Info("Resubscribing, creating remote subscription")
-			i.subscription = NewRemoteSubscription(i.remote.Server)
+			i.subscription = NewRemoteSubscription(i.remote.Server, i.Logger())
 			if err := i.startRemoteSession(); err != nil {
 				i.Logger().Error("Failed to re-establish remote session", zap.String("server", i.remote.Server), zap.Error(err))
-				return
+				return false
 			}
-			if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.bookmark); err != nil {
+			if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
 				i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
-				return
+				return false
 			}
 		}
-		return
+		return false
 	}
 
 	for n, event := range events {
@@ -244,6 +313,32 @@ func (i *Input) read(ctx context.Context) {
 			}
 		}
 		event.Close()
+	}
+
+	i.eventsReadInPollCycle += len(events)
+	return len(events) != 0
+}
+
+// awaitAndReadEvents is the event-driven alternative to pollAndRead. Instead of sleeping
+// for a fixed interval it blocks on a Windows wait object that is signaled by the subscription
+// when new events arrive. This reduces latency and avoids unnecessary wakeups.
+func (i *Input) awaitAndReadEvents(ctx context.Context) {
+	defer i.wg.Done()
+
+	timeoutMs := uint32(i.waitTimeout.Milliseconds())
+	for {
+		ready, err := i.subscription.Wait(i.cancelEvent, timeoutMs)
+		if err != nil {
+			i.Logger().Error("Failed to wait for subscription signal", zap.Error(err))
+			return
+		}
+		if !ready {
+			// cancel event was signaled
+			return
+		}
+
+		i.eventsReadInPollCycle = 0
+		i.read(ctx)
 	}
 }
 
@@ -261,7 +356,11 @@ func (i *Input) getPublisherName(event Event) (name string, excluded bool) {
 }
 
 func (i *Input) renderSimpleAndSend(ctx context.Context, event Event) error {
-	simpleEvent, err := event.RenderSimple(i.buffer)
+	render := event.RenderSimple
+	if i.raw {
+		render = event.RenderSimpleRaw
+	}
+	simpleEvent, err := render(i.buffer)
 	if err != nil {
 		return fmt.Errorf("render simple event: %w", err)
 	}
@@ -269,7 +368,11 @@ func (i *Input) renderSimpleAndSend(ctx context.Context, event Event) error {
 }
 
 func (i *Input) renderDeepAndSend(ctx context.Context, event Event, publisher Publisher) error {
-	deepEvent, err := event.RenderDeep(i.buffer, publisher)
+	render := event.RenderDeep
+	if i.raw {
+		render = event.RenderDeepRaw
+	}
+	deepEvent, err := render(i.buffer, publisher)
 	if err == nil {
 		return i.sendEvent(ctx, deepEvent)
 	}
@@ -310,11 +413,15 @@ func (i *Input) processEventWithRenderingInfo(ctx context.Context, event Event) 
 	return i.renderSimpleAndSend(ctx, event)
 }
 
-// sendEvent will send EventXML as an entry to the operator's output.
-func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
-	var body any = eventXML.Original
+// sendEvent will send a parsedEvent as an entry to the operator's output.
+//
+// raw=true path: only event.getOriginal(), event.getSystemTime(), event.getLevel(),
+// and event.getRenderedLevel() are called. If you add a field access here that
+// runs when raw=true, add a corresponding method to parsedEvent and rawParsedEvent.
+func (i *Input) sendEvent(ctx context.Context, event parsedEvent) error {
+	var body any = event.getOriginal()
 	if !i.raw {
-		body = formattedBody(eventXML)
+		body = formattedBody(event.toEventXML(), i.eventDataFormat)
 	}
 
 	e, err := i.NewEntry(body)
@@ -322,11 +429,15 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 		return fmt.Errorf("create entry: %w", err)
 	}
 
-	e.Timestamp = parseTimestamp(eventXML.TimeCreated.SystemTime)
-	e.Severity = parseSeverity(eventXML.RenderedLevel, eventXML.Level)
+	e.Timestamp = parseTimestamp(event.getSystemTime())
+	e.Severity = parseSeverity(event.getRenderedLevel(), event.getLevel())
 
 	if i.remote.Server != "" {
-		e.Attributes["server.address"] = i.remote.Server
+		e.AddAttribute("server.address", i.remote.Server)
+	}
+
+	if i.includeLogRecordOriginal {
+		e.AddAttribute(string(conventions.LogRecordOriginalKey), event.getOriginal())
 	}
 
 	return i.Write(ctx, e)
@@ -334,7 +445,7 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 
 // getBookmarkXML will get the bookmark xml from the offsets database.
 func (i *Input) getBookmarkOffset(ctx context.Context) (string, error) {
-	bytes, err := i.persister.Get(ctx, i.channel)
+	bytes, err := i.persister.Get(ctx, i.getPersistKey())
 	return string(bytes), err
 }
 
@@ -351,8 +462,24 @@ func (i *Input) updateBookmarkOffset(ctx context.Context, event Event) {
 		return
 	}
 
-	if err := i.persister.Set(ctx, i.channel, []byte(bookmarkXML)); err != nil {
+	if err := i.persister.Set(ctx, i.getPersistKey(), []byte(bookmarkXML)); err != nil {
 		i.Logger().Error("failed to set offsets", zap.Error(err))
 		return
 	}
+}
+
+func (i *Input) getPersistKey() string {
+	if i.query != nil {
+		return *i.query
+	}
+
+	return i.channel
+}
+
+func (i *Input) getCurrentBatchSize() int {
+	if i.maxEventsPerPollCycle == 0 {
+		return i.currentMaxReads
+	}
+
+	return min(i.currentMaxReads, i.maxEventsPerPollCycle-i.eventsReadInPollCycle)
 }

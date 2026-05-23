@@ -7,9 +7,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
@@ -79,6 +80,28 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 			},
 		},
 		{
+			name:         "convert_summary_count_val_to_sum custom suffix",
+			input:        getTestSummaryMetric(),
+			temporality:  "cumulative",
+			monotonicity: false,
+			suffix:       ottl.NewTestingOptional("_custom_suf"),
+			want: func(metrics pmetric.MetricSlice) {
+				summaryMetric := getTestSummaryMetric()
+				summaryMetric.CopyTo(metrics.AppendEmpty())
+				sumMetric := metrics.AppendEmpty()
+				sumMetric.SetEmptySum()
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sumMetric.Sum().SetIsMonotonic(false)
+
+				sumMetric.SetName("summary_metric_custom_suf")
+				dp := sumMetric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntValue(100)
+
+				attrs := getTestAttributes()
+				attrs.CopyTo(dp.Attributes())
+			},
+		},
+		{
 			name:         "convert_summary_count_val_to_sum (no op)",
 			input:        getTestGaugeMetric(),
 			temporality:  "cumulative",
@@ -91,18 +114,20 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualMetrics := pmetric.NewMetricSlice()
-			tt.input.CopyTo(actualMetrics.AppendEmpty())
+			smetrics := pmetric.NewScopeMetrics()
+			tt.input.CopyTo(smetrics.Metrics().AppendEmpty())
 
-			evaluate, err := convertSummaryCountValToSum(tt.temporality, tt.monotonicity)
-			assert.NoError(t, err)
+			evaluate, err := convertSummaryCountValToSum(tt.temporality, tt.monotonicity, tt.suffix)
+			require.NoError(t, err)
 
-			_, err = evaluate(nil, ottldatapoint.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
-			assert.NoError(t, err)
+			tCtx := ottldatapoint.NewTransformContextPtr(pmetric.NewResourceMetrics(), smetrics, smetrics.Metrics().At(0), pmetric.NewNumberDataPoint())
+			defer tCtx.Close()
+			_, err = evaluate(t.Context(), tCtx)
+			require.NoError(t, err)
 
 			expected := pmetric.NewMetricSlice()
 			tt.want(expected)
-			assert.Equal(t, expected, actualMetrics)
+			assert.Equal(t, expected, smetrics.Metrics())
 		})
 	}
 }
@@ -119,7 +144,7 @@ func Test_ConvertSummaryCountValToSum_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := convertSummaryCountValToSum(tt.stringAggTemp, true)
+			_, err := convertSummaryCountValToSum(tt.stringAggTemp, true, ottl.Optional[string]{})
 			assert.Error(t, err, "unknown aggregation temporality: not a real aggregation temporality")
 		})
 	}

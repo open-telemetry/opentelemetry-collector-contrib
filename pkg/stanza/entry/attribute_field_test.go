@@ -4,13 +4,14 @@
 package entry
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func TestAttributeFieldGet(t *testing.T) {
@@ -360,25 +361,25 @@ func TestAttributeFieldSet(t *testing.T) {
 
 func TestAttributeFieldParent(t *testing.T) {
 	t.Run("Simple", func(t *testing.T) {
-		field := AttributeField{[]string{"child"}}
-		require.Equal(t, AttributeField{[]string{}}, field.Parent())
+		field := AttributeField{Keys: []string{"child"}}
+		require.Equal(t, AttributeField{Keys: []string{}}, field.Parent())
 	})
 
 	t.Run("Root", func(t *testing.T) {
-		field := AttributeField{[]string{}}
-		require.Equal(t, AttributeField{[]string{}}, field.Parent())
+		field := AttributeField{Keys: []string{}}
+		require.Equal(t, AttributeField{Keys: []string{}}, field.Parent())
 	})
 }
 
 func TestAttributeFieldChild(t *testing.T) {
-	field := AttributeField{[]string{"parent"}}
-	require.Equal(t, AttributeField{[]string{"parent", "child"}}, field.Child("child"))
+	field := AttributeField{Keys: []string{"parent"}}
+	require.Equal(t, AttributeField{Keys: []string{"parent", "child"}}, field.Child("child"))
 }
 
 func TestAttributeFieldMerge(t *testing.T) {
 	entry := &Entry{}
 	entry.Attributes = map[string]any{"old": "values"}
-	field := AttributeField{[]string{"embedded"}}
+	field := AttributeField{Keys: []string{"embedded"}}
 	values := map[string]any{"new": "values"}
 	field.Merge(entry, values)
 	expected := map[string]any{"embedded": values, "old": "values"}
@@ -421,12 +422,14 @@ func TestAttributeFieldUnmarshal(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var fy AttributeField
-			err := yaml.UnmarshalStrict([]byte(tc.jsonDot), &fy)
+			decoder := yaml.NewDecoder(bytes.NewReader([]byte(tc.jsonDot)))
+			decoder.KnownFields(true)
+			err := decoder.Decode(&fy)
 			require.NoError(t, err)
 			require.Equal(t, tc.keys, fy.Keys)
 
 			var fj AttributeField
-			err = json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, tc.jsonDot)), &fj)
+			err = json.Unmarshal(fmt.Appendf(nil, `%q`, tc.jsonDot), &fj)
 			require.NoError(t, err)
 			require.Equal(t, tc.keys, fy.Keys)
 		})
@@ -459,7 +462,9 @@ func TestAttributeFieldUnmarshalFailure(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var fy AttributeField
-			err := yaml.UnmarshalStrict(tc.invalid, &fy)
+			decoder := yaml.NewDecoder(bytes.NewReader(tc.invalid))
+			decoder.KnownFields(true)
+			err := decoder.Decode(&fy)
 			require.ErrorContains(t, err, tc.expectedErr)
 
 			var fj AttributeField

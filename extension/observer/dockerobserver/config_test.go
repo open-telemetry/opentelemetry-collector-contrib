@@ -19,7 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
-var version = "1.40"
+var version = "1.45"
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -67,7 +67,7 @@ func TestValidateConfig(t *testing.T) {
 	assert.ErrorContains(t, xconfmap.Validate(cfg), "endpoint must be specified")
 
 	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: "1.23"}}
-	assert.ErrorContains(t, xconfmap.Validate(cfg), `"api_version" 1.23 must be at least 1.24`)
+	assert.ErrorContains(t, xconfmap.Validate(cfg), `"api_version" 1.23 must be at least 1.44`)
 
 	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: version}}
 	assert.ErrorContains(t, xconfmap.Validate(cfg), "timeout must be specified")
@@ -101,7 +101,7 @@ func TestApiVersionCustomError(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	err := sub.Unmarshal(cfg)
 	assert.ErrorContains(t, err,
-		`Hint: You may want to wrap the 'api_version' value in quotes (api_version: "1.40")`,
+		`Hint: You may want to wrap the 'api_version' value in quotes (api_version: "1.45")`,
 	)
 
 	sub = loadConf(t, "api_version_string.yaml", component.NewID(metadata.Type))

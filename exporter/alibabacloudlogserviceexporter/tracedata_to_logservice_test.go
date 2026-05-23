@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 type logKeyValuePair struct {
@@ -52,7 +51,7 @@ func TestTraceDataToLogService(t *testing.T) {
 		t.Errorf("Failed load log key value pairs from %q: %v", resultLogFile, err)
 		return
 	}
-	for j := 0; j < len(gotLogs); j++ {
+	for j := range gotLogs {
 		sort.Sort(logKeyValuePairs(gotLogPairs[j]))
 		sort.Sort(logKeyValuePairs(wantLogs[j]))
 		assert.Equal(t, wantLogs[j], gotLogPairs[j])
@@ -85,22 +84,22 @@ func constructSpanData() ptrace.Traces {
 
 func fillResource(resource pcommon.Resource) {
 	attrs := resource.Attributes()
-	attrs.PutStr(conventions.AttributeServiceName, "signup_aggregator")
-	attrs.PutStr(conventions.AttributeHostName, "xxx.et15")
-	attrs.PutStr(conventions.AttributeContainerName, "signup_aggregator")
-	attrs.PutStr(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.PutStr(conventions.AttributeContainerImageTag, "v1")
-	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.PutStr(conventions.AttributeCloudAccountID, "999999998")
-	attrs.PutStr(conventions.AttributeCloudRegion, "us-west-2")
-	attrs.PutStr(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
+	attrs.PutStr("service.name", "signup_aggregator")
+	attrs.PutStr("host.name", "xxx.et15")
+	attrs.PutStr("container.name", "signup_aggregator")
+	attrs.PutStr("container.image.name", "otel/signupaggregator")
+	attrs.PutStr("container.image.tag", "v1")
+	attrs.PutStr("cloud.provider", "aws")
+	attrs.PutStr("cloud.account.id", "999999998")
+	attrs.PutStr("cloud.region", "us-west-2")
+	attrs.PutStr("cloud.availability_zone", "us-west-1b")
 }
 
 func fillHTTPClientSpan(span ptrace.Span) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	attributes[conventions.AttributeHTTPStatusCode] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.url"] = "https://api.example.com/users/junit"
+	attributes["http.status_code"] = 200
 	endTime := time.Unix(12300, 123456789)
 	startTime := endTime.Add(-90 * time.Second)
 	constructSpanAttributes(attributes).CopyTo(span.Attributes())
@@ -130,10 +129,10 @@ func fillHTTPClientSpan(span ptrace.Span) {
 
 func fillHTTPServerSpan(span ptrace.Span) {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
-	attributes[conventions.AttributeHTTPStatusCode] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.url"] = "https://api.example.com/users/junit"
+	attributes["http.client_ip"] = "192.168.15.32"
+	attributes["http.status_code"] = 200
 	endTime := time.Unix(12300, 123456789)
 	startTime := endTime.Add(-90 * time.Second)
 	constructSpanAttributes(attributes).CopyTo(span.Attributes())
@@ -154,11 +153,12 @@ func fillHTTPServerSpan(span ptrace.Span) {
 func constructSpanAttributes(attributes map[string]any) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for key, value := range attributes {
-		if cast, ok := value.(int); ok {
+		switch cast := value.(type) {
+		case int:
 			attrs.PutInt(key, int64(cast))
-		} else if cast, ok := value.(int64); ok {
+		case int64:
 			attrs.PutInt(key, cast)
-		} else {
+		default:
 			attrs.PutStr(key, fmt.Sprintf("%v", value))
 		}
 	}

@@ -152,20 +152,20 @@ func TestUnmarshalByteSize(t *testing.T) {
 				}(),
 			},
 			{
-				Name:      `invalid_3ii3`,
-				ExpectErr: true,
+				Name:               `invalid_3ii3`,
+				ExpectUnmarshalErr: true,
 			},
 			{
-				Name:      `invalid_--ii3`,
-				ExpectErr: true,
+				Name:               `invalid_--ii3`,
+				ExpectUnmarshalErr: true,
 			},
 			{
-				Name:      `invalid_map`,
-				ExpectErr: true,
+				Name:               `invalid_map`,
+				ExpectUnmarshalErr: true,
 			},
 			{
-				Name:      `invalid_map2`,
-				ExpectErr: true,
+				Name:               `invalid_map2`,
+				ExpectUnmarshalErr: true,
 			},
 		},
 	}.Run(t)

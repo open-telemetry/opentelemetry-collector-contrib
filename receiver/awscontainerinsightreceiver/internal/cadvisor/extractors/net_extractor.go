@@ -27,7 +27,7 @@ func getInterfacesStats(stats *cinfo.ContainerStats) []cinfo.InterfaceStats {
 	return ifceStats
 }
 
-func (n *NetMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
+func (*NetMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 	return info.Spec.HasNetwork
 }
 

@@ -41,6 +41,21 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
+	sub, err := cm.Sub(component.MustNewID("named_pipe").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	assert.NoError(t, xconfmap.Validate(cfg))
+	assert.Equal(t, testdataConfigYaml(), cfg)
+}
+
+func TestLoadConfigDeprecatedTypeAlias(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-deprecated.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
 	sub, err := cm.Sub(component.MustNewID("namedpipe").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
@@ -67,7 +82,7 @@ func TestReadPipe(t *testing.T) {
 
 	// Write 10 logs into the pipe and assert that they all come out the other end.
 	numLogs := 10
-	for i := 0; i < numLogs; i++ {
+	for range numLogs {
 		_, err = pipe.WriteString("test\n")
 		require.NoError(t, err, "failed to write to pipe")
 	}

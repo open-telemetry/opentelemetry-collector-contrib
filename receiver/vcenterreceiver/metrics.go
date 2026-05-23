@@ -23,7 +23,7 @@ var enableResourcePoolMemoryUsageAttr = featuregate.GlobalRegistry().MustRegiste
 // recordDatacenterStats records stat metrics for a vSphere Datacenter
 func (v *vcenterMetricScraper) recordDatacenterStats(
 	ts pcommon.Timestamp,
-	dcStat *DatacenterStats,
+	dcStat *datacenterStats,
 ) {
 	// Cluster metrics
 	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatusCounts[types.ManagedEntityStatusRed], metadata.AttributeEntityStatusRed)
@@ -258,6 +258,9 @@ func (v *vcenterMetricScraper) recordVMStats(
 	vm *mo.VirtualMachine,
 	hs *mo.HostSystem,
 ) {
+	if vm.Summary.Storage == nil || vm.Config == nil || hs == nil || hs.Summary.Hardware == nil {
+		return
+	}
 	diskUsed := vm.Summary.Storage.Committed
 	diskFree := vm.Summary.Storage.Uncommitted
 

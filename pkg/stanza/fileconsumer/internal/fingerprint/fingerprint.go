@@ -5,11 +5,17 @@ package fingerprint // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/compression"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 )
 
 const DefaultSize = 1000 // bytes
@@ -26,8 +32,29 @@ func New(first []byte) *Fingerprint {
 	return &Fingerprint{firstBytes: first}
 }
 
-func NewFromFile(file *os.File, size int) (*Fingerprint, error) {
+// NewFromFile computes fingerprint of the given file using first 'N' bytes
+// Set decompressData to true to compute fingerprint of compressed files by decompressing its data first
+func NewFromFile(file *os.File, size int, decompressData bool, logger *zap.Logger) (*Fingerprint, error) {
 	buf := make([]byte, size)
+	if metadata.FilelogDecompressFingerprintFeatureGate.IsEnabled() {
+		if decompressData {
+			if compression.IsGzipFile(file, logger) {
+				// If the file is of compressed type, uncompress the data before creating its fingerprint
+				uncompressedData, err := gzip.NewReader(file)
+				if err != nil {
+					return nil, fmt.Errorf("error uncompressing gzip file: %w", err)
+				}
+				defer uncompressedData.Close()
+
+				n, err := uncompressedData.Read(buf)
+				if err != nil && !errors.Is(err, io.EOF) {
+					return nil, fmt.Errorf("error reading fingerprint bytes: %w", err)
+				}
+				return New(buf[:n]), nil
+			}
+		}
+	}
+
 	n, err := file.ReadAt(buf, 0)
 	if err != nil && !errors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("reading fingerprint bytes: %w", err)
@@ -51,17 +78,7 @@ func (f *Fingerprint) Len() int {
 // because the primary purpose of a fingerprint is to convey a unique
 // identity, and only the FirstBytes field contributes to this goal.
 func (f Fingerprint) Equal(other *Fingerprint) bool {
-	l0 := len(other.firstBytes)
-	l1 := len(f.firstBytes)
-	if l0 != l1 {
-		return false
-	}
-	for i := 0; i < l0; i++ {
-		if other.firstBytes[i] != f.firstBytes[i] {
-			return false
-		}
-	}
-	return true
+	return bytes.Equal(f.firstBytes, other.firstBytes)
 }
 
 // StartsWith returns true if the fingerprints are the same
@@ -98,4 +115,11 @@ func (f *Fingerprint) UnmarshalJSON(data []byte) error {
 
 type marshal struct {
 	FirstBytes []byte `json:"first_bytes"`
+}
+
+// Bytes returns a copy of the raw fingerprint bytes.
+func (f *Fingerprint) Bytes() []byte {
+	buf := make([]byte, len(f.firstBytes))
+	copy(buf, f.firstBytes)
+	return buf
 }

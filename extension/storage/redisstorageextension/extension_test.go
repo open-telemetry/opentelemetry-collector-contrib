@@ -54,28 +54,28 @@ func TestExtensionIntegrity(t *testing.T) {
 		myBytes := []byte(n.Name())
 
 		// Set my values
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			err := c.Set(ctx, keys[i], myBytes)
 			require.NoError(t, err)
 		}
 
 		// Repeatedly thrash client
-		for j := 0; j < 100; j++ {
+		for range 100 {
 			// Make sure my values are still mine
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				v, err := c.Get(ctx, keys[i])
 				require.NoError(t, err)
 				require.Equal(t, myBytes, v)
 			}
 
 			// Delete my values
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				err := c.Delete(ctx, keys[i])
 				require.NoError(t, err)
 			}
 
 			// Reset my values
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				err := c.Set(ctx, keys[i], myBytes)
 				require.NoError(t, err)
 			}
@@ -195,12 +195,10 @@ func TestRedisKey(t *testing.T) {
 
 		ops := []*storage.Operation{
 			{Type: storage.Set, Key: "key1", Value: []byte("val1")},
-			{Type: storage.Get, Key: "key1"},
 			{Type: storage.Delete, Key: "key1"},
 		}
 
 		mock.ExpectSet(client.prefix+"key1", []byte("val1"), 0).SetVal("OK")
-		mock.ExpectGet(client.prefix + "key1").SetVal("val1")
 		mock.ExpectDel(client.prefix + "key1").SetVal(1)
 
 		err := client.Batch(ctx, ops...)

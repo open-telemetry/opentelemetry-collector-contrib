@@ -1,10 +1,13 @@
+display_name: STEF Receiver
 type: stef
+
+description: |
+  Receives data via gRPC in OTel/STEF format.
 
 status:
   class: receiver
   stability:
-    development: [metrics]
-  distributions: []
+    alpha: [metrics]
+  distributions: [contrib]
   codeowners:
     active: [tigrannajaryan, MovieStoreGuy, dmitryax, atoulme, pjanotti, crobert-1]
-

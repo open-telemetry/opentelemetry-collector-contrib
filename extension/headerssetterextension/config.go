@@ -6,24 +6,30 @@ package headerssetterextension // import "github.com/open-telemetry/opentelemetr
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 var (
 	errMissingHeader        = errors.New("missing header name")
 	errMissingHeadersConfig = errors.New("missing headers configuration")
-	errMissingSource        = errors.New("missing header source, must be 'from_context', 'from_attribute' or 'value'")
-	errConflictingSources   = errors.New("invalid header source, must either 'from_context', 'from_attribute' or 'value'")
+	errMissingSource        = errors.New("missing header source, must be 'from_context', 'from_attribute', 'value', or 'value_file'")
+	errConflictingSources   = errors.New("invalid header source, must be only one of 'from_context', 'from_attribute', 'value', or 'value_file'")
 )
 
 type Config struct {
-	HeadersConfig []HeaderConfig `mapstructure:"headers"`
+	HeadersConfig  []HeaderConfig `mapstructure:"headers"`
+	AdditionalAuth *component.ID  `mapstructure:"additional_auth"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type HeaderConfig struct {
 	Action        ActionValue          `mapstructure:"action"`
 	Key           *string              `mapstructure:"key"`
 	Value         *string              `mapstructure:"value"`
+	ValueFile     *string              `mapstructure:"value_file"`
 	FromContext   *string              `mapstructure:"from_context"`
 	FromAttribute *string              `mapstructure:"from_attribute"`
 	DefaultValue  *configopaque.String `mapstructure:"default_value"`
@@ -58,12 +64,23 @@ func (cfg *Config) Validate() error {
 		}
 
 		if header.Action != DELETE {
-			if header.FromContext == nil && header.FromAttribute == nil && header.Value == nil {
+			if header.FromContext == nil && header.FromAttribute == nil && header.Value == nil && header.ValueFile == nil {
 				return errMissingSource
 			}
-			if (header.FromContext != nil && header.FromAttribute != nil) ||
-				(header.FromContext != nil && header.Value != nil) ||
-				(header.Value != nil && header.FromAttribute != nil) {
+			sourceCount := 0
+			if header.FromContext != nil {
+				sourceCount++
+			}
+			if header.FromAttribute != nil {
+				sourceCount++
+			}
+			if header.Value != nil {
+				sourceCount++
+			}
+			if header.ValueFile != nil {
+				sourceCount++
+			}
+			if sourceCount > 1 {
 				return errConflictingSources
 			}
 		}

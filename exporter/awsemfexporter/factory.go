@@ -27,7 +27,8 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability))
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+	)
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
@@ -55,7 +56,7 @@ func createDefaultConfig() component.Config {
 func createMetricsExporter(ctx context.Context, params exporter.Settings, config component.Config) (exporter.Metrics, error) {
 	expCfg := config.(*Config)
 
-	emfExp, err := newEmfExporter(expCfg, params)
+	emfExp, err := newEmfExporter(ctx, expCfg, params)
 	if err != nil {
 		return nil, err
 	}

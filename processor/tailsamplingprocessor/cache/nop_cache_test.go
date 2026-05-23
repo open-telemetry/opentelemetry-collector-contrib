@@ -11,11 +11,12 @@ import (
 )
 
 func TestNopCache(t *testing.T) {
-	c := NewNopDecisionCache[bool]()
+	c := NewNopDecisionCache()
 	id, err := traceIDFromHex("12341234123412341234123412341234")
 	require.NoError(t, err)
-	c.Put(id, true)
-	v, ok := c.Get(id)
-	assert.False(t, v)
+	c.Put(id, DecisionMetadata{
+		PolicyName: "mock-policy",
+	})
+	_, ok := c.Get(id)
 	assert.False(t, ok)
 }

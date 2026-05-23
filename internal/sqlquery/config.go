@@ -8,25 +8,69 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Driver                         string          `mapstructure:"driver"`
-	DataSource                     string          `mapstructure:"datasource"`
-	Queries                        []Query         `mapstructure:"queries"`
-	StorageID                      *component.ID   `mapstructure:"storage"`
-	Telemetry                      TelemetryConfig `mapstructure:"telemetry"`
+	Driver                         string              `mapstructure:"driver"`
+	DataSource                     string              `mapstructure:"datasource"`
+	Host                           string              `mapstructure:"host"`
+	Port                           int                 `mapstructure:"port"`
+	Database                       string              `mapstructure:"database"`
+	Username                       string              `mapstructure:"username"`
+	Password                       configopaque.String `mapstructure:"password"`
+	AdditionalParams               map[string]any      `mapstructure:"additional_params"`
+	Queries                        []Query             `mapstructure:"queries"`
+	StorageID                      *component.ID       `mapstructure:"storage"`
+	Telemetry                      TelemetryConfig     `mapstructure:"telemetry"`
 }
 
 func (c Config) Validate() error {
 	if c.Driver == "" {
 		return errors.New("'driver' cannot be empty")
 	}
-	if c.DataSource == "" {
-		return errors.New("'datasource' cannot be empty")
+
+	// check if driver is supported
+	if !IsValidDriver(c.Driver) {
+		return fmt.Errorf("unsupported driver: %s", c.Driver)
 	}
+
+	// If datasource is set, none of the individual connection parameters should be set
+	if c.DataSource != "" {
+		if c.Host != "" {
+			return errors.New("'host' cannot be set when 'datasource' is specified")
+		}
+		if c.Port != 0 {
+			return errors.New("'port' cannot be set when 'datasource' is specified")
+		}
+		if c.Database != "" {
+			return errors.New("'database' cannot be set when 'datasource' is specified")
+		}
+		if c.Username != "" {
+			return errors.New("'username' cannot be set when 'datasource' is specified")
+		}
+		if c.Password != "" {
+			return errors.New("'password' cannot be set when 'datasource' is specified")
+		}
+		if len(c.AdditionalParams) > 0 {
+			return errors.New("'additional_params' cannot be set when 'datasource' is specified")
+		}
+	} else {
+		// If datasource is not set, host, port, and database are required
+		if c.Host == "" {
+			return errors.New("'host' or 'datasource' must be specified")
+		}
+		// For sqlserver, port is optional
+		if c.Driver != DriverSQLServer && c.Port == 0 {
+			return errors.New("'port' or 'datasource' must be specified")
+		}
+		if c.Database == "" {
+			return errors.New("'database' or 'datasource' must be specified")
+		}
+	}
+
 	if len(c.Queries) == 0 {
 		return errors.New("'queries' cannot be empty")
 	}
@@ -59,7 +103,8 @@ func (q Query) Validate() error {
 			errs = append(errs, err)
 		}
 	}
-	for _, metric := range q.Metrics {
+	for i := range q.Metrics {
+		metric := &q.Metrics[i]
 		if err := metric.Validate(); err != nil {
 			errs = append(errs, err)
 		}
@@ -80,6 +125,16 @@ func (config LogsCfg) Validate() error {
 	return errors.Join(errs...)
 }
 
+// RowCondition filters query result rows for a metric. Only rows where the
+// specified column equals the specified value are used to produce the metric.
+// This is useful when a single query returns a pivot-style result set (e.g.
+// pgbouncer's SHOW LISTS) where each row represents a different metric and
+// must be selected individually.
+type RowCondition struct {
+	Column string `mapstructure:"column"`
+	Value  string `mapstructure:"value"`
+}
+
 type MetricCfg struct {
 	MetricName       string            `mapstructure:"metric_name"`
 	ValueColumn      string            `mapstructure:"value_column"`
@@ -93,6 +148,7 @@ type MetricCfg struct {
 	StaticAttributes map[string]string `mapstructure:"static_attributes"`
 	StartTsColumn    string            `mapstructure:"start_ts_column"`
 	TsColumn         string            `mapstructure:"ts_column"`
+	RowCondition     *RowCondition     `mapstructure:"row_condition"`
 }
 
 func (c MetricCfg) Validate() error {
@@ -114,6 +170,11 @@ func (c MetricCfg) Validate() error {
 	}
 	if c.DataType == MetricTypeGauge && c.Aggregation != "" {
 		errs = append(errs, fmt.Errorf("aggregation=%s but data_type=%s does not support aggregation", c.Aggregation, c.DataType))
+	}
+	if c.RowCondition != nil {
+		if c.RowCondition.Column == "" {
+			errs = append(errs, errors.New("'row_condition.column' cannot be empty"))
+		}
 	}
 	if errs != nil && c.MetricName != "" {
 		errs = append(errs, fmt.Errorf("invalid metric config with metric_name '%s'", c.MetricName))

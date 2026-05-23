@@ -1,13 +1,22 @@
+display_name: Health Check Extension
 type: health_check
 
 status:
   class: extension
   stability:
-    beta: [extension]
+    alpha: [extension]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: []
+    active: [evan-bradley]
+    seeking_new: true
 
+feature_gates:
+  - id: extension.healthcheck.useComponentStatus
+    description: >-
+      Switch to the shared healthcheck implementation powered by component status events
+    stage: alpha
+    from_version: "v0.142.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42256
 tests:
   config:
     endpoint: localhost:0

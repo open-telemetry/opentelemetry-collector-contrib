@@ -136,5 +136,5 @@ func (c Config) Validate() (err error) {
 		}
 	}
 
-	return
+	return err
 }

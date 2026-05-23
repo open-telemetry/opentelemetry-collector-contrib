@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -25,22 +26,54 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ZookeeperConnectionActive:            MetricConfig{Enabled: true},
-					ZookeeperDataTreeEphemeralNodeCount:  MetricConfig{Enabled: true},
-					ZookeeperDataTreeSize:                MetricConfig{Enabled: true},
-					ZookeeperFileDescriptorLimit:         MetricConfig{Enabled: true},
-					ZookeeperFileDescriptorOpen:          MetricConfig{Enabled: true},
-					ZookeeperFollowerCount:               MetricConfig{Enabled: true},
-					ZookeeperFsyncExceededThresholdCount: MetricConfig{Enabled: true},
-					ZookeeperLatencyAvg:                  MetricConfig{Enabled: true},
-					ZookeeperLatencyMax:                  MetricConfig{Enabled: true},
-					ZookeeperLatencyMin:                  MetricConfig{Enabled: true},
-					ZookeeperPacketCount:                 MetricConfig{Enabled: true},
-					ZookeeperRequestActive:               MetricConfig{Enabled: true},
-					ZookeeperRuok:                        MetricConfig{Enabled: true},
-					ZookeeperSyncPending:                 MetricConfig{Enabled: true},
-					ZookeeperWatchCount:                  MetricConfig{Enabled: true},
-					ZookeeperZnodeCount:                  MetricConfig{Enabled: true},
+					ZookeeperConnectionActive: MetricConfig{
+						Enabled: true,
+					},
+					ZookeeperDataTreeEphemeralNodeCount: MetricConfig{
+						Enabled: true,
+					},
+					ZookeeperDataTreeSize: MetricConfig{
+						Enabled: true,
+					},
+					ZookeeperFileDescriptorLimit: MetricConfig{
+						Enabled: true,
+					},
+					ZookeeperFileDescriptorOpen: MetricConfig{
+						Enabled: true,
+					},
+					ZookeeperFollowerCount: MetricConfig{
+						Enabled: true,
+					},
+					ZookeeperFsyncExceededThresholdCount: MetricConfig{
+						Enabled: true,
+					},
+					ZookeeperLatencyAvg: MetricConfig{
+						Enabled: true,
+					},
+					ZookeeperLatencyMax: MetricConfig{
+						Enabled: true,
+					},
+					ZookeeperLatencyMin: MetricConfig{
+						Enabled: true,
+					},
+					ZookeeperPacketCount: MetricConfig{
+						Enabled: true,
+					},
+					ZookeeperRequestActive: MetricConfig{
+						Enabled: true,
+					},
+					ZookeeperRuok: MetricConfig{
+						Enabled: true,
+					},
+					ZookeeperSyncPending: MetricConfig{
+						Enabled: true,
+					},
+					ZookeeperWatchCount: MetricConfig{
+						Enabled: true,
+					},
+					ZookeeperZnodeCount: MetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ServerState: ResourceAttributeConfig{Enabled: true},
@@ -52,22 +85,54 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ZookeeperConnectionActive:            MetricConfig{Enabled: false},
-					ZookeeperDataTreeEphemeralNodeCount:  MetricConfig{Enabled: false},
-					ZookeeperDataTreeSize:                MetricConfig{Enabled: false},
-					ZookeeperFileDescriptorLimit:         MetricConfig{Enabled: false},
-					ZookeeperFileDescriptorOpen:          MetricConfig{Enabled: false},
-					ZookeeperFollowerCount:               MetricConfig{Enabled: false},
-					ZookeeperFsyncExceededThresholdCount: MetricConfig{Enabled: false},
-					ZookeeperLatencyAvg:                  MetricConfig{Enabled: false},
-					ZookeeperLatencyMax:                  MetricConfig{Enabled: false},
-					ZookeeperLatencyMin:                  MetricConfig{Enabled: false},
-					ZookeeperPacketCount:                 MetricConfig{Enabled: false},
-					ZookeeperRequestActive:               MetricConfig{Enabled: false},
-					ZookeeperRuok:                        MetricConfig{Enabled: false},
-					ZookeeperSyncPending:                 MetricConfig{Enabled: false},
-					ZookeeperWatchCount:                  MetricConfig{Enabled: false},
-					ZookeeperZnodeCount:                  MetricConfig{Enabled: false},
+					ZookeeperConnectionActive: MetricConfig{
+						Enabled: false,
+					},
+					ZookeeperDataTreeEphemeralNodeCount: MetricConfig{
+						Enabled: false,
+					},
+					ZookeeperDataTreeSize: MetricConfig{
+						Enabled: false,
+					},
+					ZookeeperFileDescriptorLimit: MetricConfig{
+						Enabled: false,
+					},
+					ZookeeperFileDescriptorOpen: MetricConfig{
+						Enabled: false,
+					},
+					ZookeeperFollowerCount: MetricConfig{
+						Enabled: false,
+					},
+					ZookeeperFsyncExceededThresholdCount: MetricConfig{
+						Enabled: false,
+					},
+					ZookeeperLatencyAvg: MetricConfig{
+						Enabled: false,
+					},
+					ZookeeperLatencyMax: MetricConfig{
+						Enabled: false,
+					},
+					ZookeeperLatencyMin: MetricConfig{
+						Enabled: false,
+					},
+					ZookeeperPacketCount: MetricConfig{
+						Enabled: false,
+					},
+					ZookeeperRequestActive: MetricConfig{
+						Enabled: false,
+					},
+					ZookeeperRuok: MetricConfig{
+						Enabled: false,
+					},
+					ZookeeperSyncPending: MetricConfig{
+						Enabled: false,
+					},
+					ZookeeperWatchCount: MetricConfig{
+						Enabled: false,
+					},
+					ZookeeperZnodeCount: MetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ServerState: ResourceAttributeConfig{Enabled: false},
@@ -91,7 +156,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
 

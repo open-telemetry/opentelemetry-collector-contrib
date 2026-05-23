@@ -18,6 +18,7 @@ type MappingHint string
 const (
 	HintAggregateMetricDouble MappingHint = "aggregate_metric_double"
 	HintDocCount              MappingHint = "_doc_count"
+	HintHistogramRaw          MappingHint = "histogram:raw"
 )
 
 type MappingHintGetter struct {
@@ -28,14 +29,14 @@ type MappingHintGetter struct {
 func NewMappingHintGetter(attr pcommon.Map) (g MappingHintGetter) {
 	v, ok := attr.Get(MappingHintsAttrKey)
 	if !ok || v.Type() != pcommon.ValueTypeSlice {
-		return
+		return g
 	}
 	slice := v.Slice()
 	g.hints = slices.Grow(g.hints, slice.Len())
-	for i := range slice.Len() {
-		g.hints = append(g.hints, MappingHint(slice.At(i).Str()))
+	for _, hint := range slice.All() {
+		g.hints = append(g.hints, MappingHint(hint.Str()))
 	}
-	return
+	return g
 }
 
 // HasMappingHint checks whether the getter contains the requested mapping hint

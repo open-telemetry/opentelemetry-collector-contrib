@@ -48,8 +48,11 @@ func TestPodObjectToPortEndpoint(t *testing.T) {
 					UID:       "pod-2-UID",
 					Labels:    map[string]string{"env": "prod"},
 				},
-				Port:      443,
-				Transport: observer.ProtocolTCP,
+				Port:           443,
+				Transport:      observer.ProtocolTCP,
+				ContainerName:  "container-2",
+				ContainerID:    "a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
+				ContainerImage: "container-image-2",
 			},
 		},
 	}

@@ -8,7 +8,8 @@ import (
 	"regexp"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -24,19 +25,19 @@ func addSQLToSpan(sql *awsxray.SQLData, attrs pcommon.Map) error {
 		if err != nil {
 			return err
 		}
-		attrs.PutStr(conventions.AttributeDBConnectionString, dbURL)
-		attrs.PutStr(conventions.AttributeDBName, dbName)
+		attrs.PutStr(string(conventionsv125.DBConnectionStringKey), dbURL)
+		attrs.PutStr(string(conventionsv125.DBNameKey), dbName)
 	}
 	// not handling sql.ConnectionString for now because the X-Ray exporter
 	// does not support it
-	addString(sql.DatabaseType, conventions.AttributeDBSystem, attrs)
-	addString(sql.SanitizedQuery, conventions.AttributeDBStatement, attrs)
-	addString(sql.User, conventions.AttributeDBUser, attrs)
+	addString(sql.DatabaseType, string(conventionsv128.DBSystemKey), attrs)
+	addString(sql.SanitizedQuery, string(conventionsv125.DBStatementKey), attrs)
+	addString(sql.User, string(conventionsv125.DBUserKey), attrs)
 	return nil
 }
 
 // SQL URL is of the format: protocol+transport://host:port/dbName?queryParam
-var re = regexp.MustCompile(`^(.+\/\/.+)\/([^\?]+)\??.*$`)
+var re = regexp.MustCompile(`^(.+//.+)/([^\?]+)\??.*$`)
 
 const (
 	dbURLI  = 1

@@ -70,7 +70,7 @@ func (proc *translateAttributesProcessor) processMetrics(metrics pmetric.Metrics
 	return nil
 }
 
-func (proc *translateAttributesProcessor) processTraces(_ ptrace.Traces) error {
+func (*translateAttributesProcessor) processTraces(ptrace.Traces) error {
 	// No-op. Traces should not be translated.
 	return nil
 }

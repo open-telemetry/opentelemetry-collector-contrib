@@ -12,29 +12,28 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 )
 
 const defaultZeroThreshold = 1e-128
 
 func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
-	resource pcommon.Resource, settings Settings, baseName string,
+	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, baseName string,
 ) error {
+	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
-		lbls := createAttributes(
-			resource,
-			pt.Attributes(),
-			settings.ExternalLabels,
-			nil,
-			true,
-			model.MetricNameLabel,
-			baseName,
-		)
+		lbls, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, baseName)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
 		ts, _ := c.getOrCreateTimeSeries(lbls)
 
 		histogram, err := exponentialToNativeHistogram(pt)
 		if err != nil {
-			return err
+			errs = multierr.Append(errs, err)
+			continue
 		}
 		ts.Histograms = append(ts.Histograms, histogram)
 
@@ -42,7 +41,7 @@ func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetr
 		ts.Exemplars = append(ts.Exemplars, exemplars...)
 	}
 
-	return nil
+	return errs
 }
 
 // exponentialToNativeHistogram  translates OTel Exponential Histogram data point
@@ -78,9 +77,6 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		Schema:    scale,
 
 		ZeroCount: &prompb.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
-		// TODO use zero_threshold, if set, see
-		// https://github.com/open-telemetry/opentelemetry-proto/pull/441
-		ZeroThreshold: defaultZeroThreshold,
 
 		PositiveSpans:  pSpans,
 		PositiveDeltas: pDeltas,
@@ -88,6 +84,12 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		NegativeDeltas: nDeltas,
 
 		Timestamp: convertTimeStamp(p.Timestamp()),
+	}
+
+	if p.ZeroThreshold() != 0 {
+		h.ZeroThreshold = p.ZeroThreshold()
+	} else {
+		h.ZeroThreshold = defaultZeroThreshold
 	}
 
 	if p.Flags().NoRecordedValue() {
@@ -142,7 +144,7 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 		Length: 0,
 	})
 
-	for i := 0; i < numBuckets; i++ {
+	for i := range numBuckets {
 		// The offset is scaled and adjusted by 1 as described above.
 		nextBucketIdx := (int32(i)+buckets.Offset())>>scaleDown + 1
 		if bucketIdx == nextBucketIdx { // We have not collected enough buckets to merge yet.
@@ -166,7 +168,7 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 		} else {
 			// We have found a small gap (or no gap at all).
 			// Insert empty buckets as needed.
-			for j := int32(0); j < gap; j++ {
+			for range gap {
 				appendDelta(0)
 			}
 		}
@@ -187,7 +189,7 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 	} else {
 		// We have found a small gap (or no gap at all).
 		// Insert empty buckets as needed.
-		for j := int32(0); j < gap; j++ {
+		for range gap {
 			appendDelta(0)
 		}
 	}

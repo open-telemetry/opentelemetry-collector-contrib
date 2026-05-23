@@ -19,13 +19,18 @@ type ConfigUnmarshalTests struct {
 	DefaultConfig operator.Builder
 	TestsFile     string
 	Tests         []ConfigUnmarshalTest
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ConfigUnmarshalTest is used for testing golden configs
 type ConfigUnmarshalTest struct {
-	Name      string
-	Expect    any
-	ExpectErr bool
+	Name               string
+	Expect             any
+	ExpectUnmarshalErr bool
+	ExpectBuildErrs    []error
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Run Unmarshals yaml files and compares them against the expected.
@@ -42,12 +47,21 @@ func (c ConfigUnmarshalTests) Run(t *testing.T) {
 			cfg := newAnyOpConfig(c.DefaultConfig)
 			err = testConfMap.Unmarshal(cfg)
 
-			if tc.ExpectErr {
+			if tc.ExpectUnmarshalErr {
 				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tc.Expect, cfg.Operator.Builder)
+				return
 			}
+
+			if tc.ExpectBuildErrs != nil {
+				_, err = cfg.Operator.Build(componenttest.NewNopTelemetrySettings())
+				for _, expectedErr := range tc.ExpectBuildErrs {
+					require.ErrorIs(t, err, expectedErr)
+				}
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.Expect, cfg.Operator.Builder)
 		})
 	}
 }
@@ -69,6 +83,8 @@ func (a *anyOpConfig) Unmarshal(component *confmap.Conf) error {
 // ConfigBuilderTests is used for testing build failures
 type ConfigBuilderTests struct {
 	Tests []ConfigBuilderTest
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ConfigBuilderTest is used for testing build failures
@@ -76,6 +92,8 @@ type ConfigBuilderTest struct {
 	Name       string
 	Cfg        operator.Builder
 	BuildError string
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Run Build on a malformed config and expect an error.

@@ -14,15 +14,15 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
-	ec2Attributes "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/ec2"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/gcp"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata/payload"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
+	ec2Attributes "github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/ec2"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/gcp"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
@@ -43,14 +43,14 @@ func metadataFromAttributes(attrs pcommon.Map, hostFromAttributesHandler attribu
 	}
 
 	// AWS EC2 resource metadata
-	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
+	cloudProvider, ok := attrs.Get(string(conventions.CloudProviderKey))
 	switch {
-	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderAWS:
+	case ok && cloudProvider.Str() == conventions.CloudProviderAWS.Value.AsString():
 		ec2HostInfo := ec2Attributes.HostInfoFromAttributes(attrs)
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
-	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderGCP:
+	case ok && cloudProvider.Str() == conventions.CloudProviderGCP.Value.AsString():
 		gcpHostInfo := gcp.HostInfoFromAttrs(attrs)
 		hm.Tags.GCP = gcpHostInfo.GCPTags
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
@@ -88,6 +88,13 @@ func fillHostMetadata(params exporter.Settings, pcfg PusherConfig, p source.Prov
 		hm.Meta.SocketHostname = systemHostInfo.OS
 		hm.Meta.SocketFqdn = systemHostInfo.FQDN
 	}
+}
+
+type pusher struct {
+	params     exporter.Settings
+	pcfg       PusherConfig
+	retrier    *clientutil.Retrier
+	httpClient *http.Client
 }
 
 func (p *pusher) pushMetadata(hm payload.HostMetadata) error {
@@ -150,13 +157,6 @@ func (p *pusher) Push(_ context.Context, hm payload.HostMetadata) error {
 
 var _ inframetadata.Pusher = (*pusher)(nil)
 
-type pusher struct {
-	params     exporter.Settings
-	pcfg       PusherConfig
-	retrier    *clientutil.Retrier
-	httpClient *http.Client
-}
-
 // NewPusher creates a new inframetadata.Pusher that pushes metadata payloads
 func NewPusher(params exporter.Settings, pcfg PusherConfig) inframetadata.Pusher {
 	return &pusher{
@@ -165,6 +165,29 @@ func NewPusher(params exporter.Settings, pcfg PusherConfig) inframetadata.Pusher
 		retrier:    clientutil.NewRetrier(params.Logger, pcfg.RetrySettings, scrub.NewScrubber()),
 		httpClient: clientutil.NewHTTPClient(pcfg.ClientConfig),
 	}
+}
+
+// deepCopyHostMetadata creates a deep copy of the host metadata payload to avoid
+// race conditions when the payload is shared with the reporter's gohai collector
+// that may refresh its internal maps concurrently.
+// If deep copying fails, it returns the original payload to ensure the operation
+// can still proceed (though this should not happen in normal operation).
+func deepCopyHostMetadata(hm payload.HostMetadata) payload.HostMetadata {
+	// Use JSON marshal/unmarshal to create a deep copy
+	// This ensures all nested maps and slices are properly copied
+	marshaled, err := json.Marshal(hm)
+	if err != nil {
+		// Return original payload if marshaling fails
+		return hm
+	}
+
+	var copied payload.HostMetadata
+	if err := json.Unmarshal(marshaled, &copied); err != nil {
+		// Return original payload if unmarshaling fails
+		return hm
+	}
+
+	return copied
 }
 
 // RunPusher to push host metadata payloads from the host where the Collector is running periodically to Datadog intake.
@@ -179,17 +202,19 @@ func RunPusher(ctx context.Context, params exporter.Settings, pcfg PusherConfig,
 	// Currently we only retrieve it once but still send the same payload
 	// every 30 minutes for consistency with the Datadog Agent behavior.
 	//
-	// All fields that are being filled in by our exporter
-	// do not change over time. If this ever changes `hostMetadata`
-	// *must* be deep copied before calling `fillHostMetadata`.
+	// NOTE: The gohai payload contains maps that are shared with the reporter's
+	// internal gohai collector. We deep copy the payload before each
+	// ConsumeHostMetadata call to avoid race conditions when the reporter refreshes
+	// maps concurrently with JSON marshaling.
 	hostMetadata := payload.NewEmpty()
 	if pcfg.UseResourceMetadata {
 		hostMetadata = metadataFromAttributes(attrs, nil)
 	}
 	fillHostMetadata(params, pcfg, p, &hostMetadata)
-	// Consume one first time
-	if err := reporter.ConsumeHostMetadata(hostMetadata); err != nil {
-		params.Logger.Warn("Failed to consume host metadata", zap.Any("payload", hostMetadata))
+	// Consume one first time - deep copy to avoid race condition
+	hostMetadataCopy := deepCopyHostMetadata(hostMetadata)
+	if err := reporter.ConsumeHostMetadata(hostMetadataCopy); err != nil {
+		params.Logger.Warn("Failed to consume host metadata", zap.Any("payload", hostMetadataCopy))
 	}
 
 	for {
@@ -197,8 +222,10 @@ func RunPusher(ctx context.Context, params exporter.Settings, pcfg PusherConfig,
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := reporter.ConsumeHostMetadata(hostMetadata); err != nil {
-				params.Logger.Warn("Failed to consume host metadata", zap.Any("payload", hostMetadata))
+			// Deep copy before each consumption to avoid race condition with reporter's gohai refresh
+			hostMetadataCopy := deepCopyHostMetadata(hostMetadata)
+			if err := reporter.ConsumeHostMetadata(hostMetadataCopy); err != nil {
+				params.Logger.Warn("Failed to consume host metadata", zap.Any("payload", hostMetadataCopy))
 			}
 		}
 	}

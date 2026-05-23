@@ -71,16 +71,126 @@ type Parser struct {
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return p.ProcessBatchWith(ctx, entries, p.Process)
+	processedEntries := make([]*entry.Entry, 0, len(entries))
+	write := func(_ context.Context, ent *entry.Entry) error {
+		processedEntries = append(processedEntries, ent)
+		return nil
+	}
+	var errs []error
+	var criEntries []*entry.Entry
+
+	for _, ent := range entries {
+		skip, err := p.Skip(ctx, ent)
+		if err != nil {
+			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+			continue
+		}
+		if skip {
+			_ = write(ctx, ent)
+			continue
+		}
+
+		format := p.format
+		if format == "" {
+			format, err = p.detectFormat(ent)
+			if err != nil {
+				errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, fmt.Errorf("failed to detect a valid container log format: %w", err), write))
+				continue
+			}
+		}
+
+		switch format {
+		case dockerFormat:
+			p.timeLayout = goTimeLayout
+			if err = p.ParseWith(ctx, ent, p.parseDocker, write); err != nil {
+				if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+					errs = append(errs, fmt.Errorf("failed to process the docker log: %w", err))
+				}
+				continue
+			}
+			if err = p.handleTimeAndAttributeMappings(ent); err != nil {
+				errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+				continue
+			}
+			_ = write(ctx, ent)
+
+		case containerdFormat, crioFormat:
+			p.criConsumerStartOnce.Do(func() {
+				err = p.criLogEmitter.Start(nil)
+				if err != nil {
+					p.Logger().Error("unable to start the internal LogEmitter", zap.Error(err))
+					return
+				}
+				err = p.recombineParser.Start(nil)
+				if err != nil {
+					p.Logger().Error("unable to start the internal recombine operator", zap.Error(err))
+					return
+				}
+				p.asyncConsumerStarted = true
+			})
+
+			if format == containerdFormat {
+				err = p.ParseWith(ctx, ent, p.parseContainerd, write)
+				if err != nil {
+					if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+						errs = append(errs, fmt.Errorf("failed to parse containerd log: %w", err))
+					}
+					continue
+				}
+				p.timeLayout = goTimeLayout
+			} else {
+				err = p.ParseWith(ctx, ent, p.parseCRIO, write)
+				if err != nil {
+					if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+						errs = append(errs, fmt.Errorf("failed to parse crio log: %w", err))
+					}
+					continue
+				}
+				p.timeLayout = crioTimeLayout
+			}
+
+			if err = p.handleTimeAndAttributeMappings(ent); err != nil {
+				errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+				continue
+			}
+			criEntries = append(criEntries, ent)
+
+		default:
+			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, errors.New("failed to detect a valid container log format"), write))
+		}
+	}
+
+	// Send CRI entries as a batch to recombine
+	if len(criEntries) > 0 {
+		if err := p.recombineParser.ProcessBatch(ctx, criEntries); err != nil {
+			errs = append(errs, fmt.Errorf("failed to recombine cri logs: %w", err))
+		}
+	}
+
+	// Write all docker/skipped entries as a batch
+	if len(processedEntries) > 0 {
+		errs = append(errs, p.WriteBatch(ctx, processedEntries))
+	}
+
+	return errors.Join(errs...)
 }
 
 // Process will parse an entry of Container logs
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
+	// Short circuit if the "if" condition does not match
+	skip, err := p.Skip(ctx, entry)
+	if err != nil {
+		return p.HandleEntryError(ctx, entry, err)
+	}
+	if skip {
+		return p.Write(ctx, entry)
+	}
+
 	format := p.format
 	if format == "" {
 		format, err = p.detectFormat(entry)
 		if err != nil {
-			return fmt.Errorf("failed to detect a valid container log format: %w", err)
+			return p.HandleEntryError(ctx, entry, fmt.Errorf("failed to detect a valid container log format: %w", err))
 		}
 	}
 
@@ -106,25 +216,16 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			p.asyncConsumerStarted = true
 		})
 
-		// Short circuit if the "if" condition does not match
-		skip, err := p.Skip(ctx, entry)
-		if err != nil {
-			return p.HandleEntryError(ctx, entry, err)
-		}
-		if skip {
-			return p.Write(ctx, entry)
-		}
-
 		if format == containerdFormat {
 			// parse the message
-			err = p.ParseWith(ctx, entry, p.parseContainerd)
+			err = p.ParseWith(ctx, entry, p.parseContainerd, p.Write)
 			if err != nil {
 				return fmt.Errorf("failed to parse containerd log: %w", err)
 			}
 			p.timeLayout = goTimeLayout
 		} else {
 			// parse the message
-			err = p.ParseWith(ctx, entry, p.parseCRIO)
+			err = p.ParseWith(ctx, entry, p.parseCRIO, p.Write)
 			if err != nil {
 				return fmt.Errorf("failed to parse crio log: %w", err)
 			}
@@ -195,7 +296,7 @@ func (p *Parser) detectFormat(e *entry.Entry) (string, error) {
 }
 
 // parseCRIO will parse a crio log value based on a fixed regexp
-func (p *Parser) parseCRIO(value any) (any, error) {
+func (*Parser) parseCRIO(value any) (any, error) {
 	raw, ok := value.(string)
 	if !ok {
 		return "", fmt.Errorf("type '%T' cannot be parsed as cri-o container logs", value)
@@ -205,7 +306,7 @@ func (p *Parser) parseCRIO(value any) (any, error) {
 }
 
 // parseContainerd will parse a containerd log value based on a fixed regexp
-func (p *Parser) parseContainerd(value any) (any, error) {
+func (*Parser) parseContainerd(value any) (any, error) {
 	raw, ok := value.(string)
 	if !ok {
 		return nil, fmt.Errorf("type '%T' cannot be parsed as containerd logs", value)
@@ -215,7 +316,7 @@ func (p *Parser) parseContainerd(value any) (any, error) {
 }
 
 // parseDocker will parse a docker log value as JSON
-func (p *Parser) parseDocker(value any) (any, error) {
+func (*Parser) parseDocker(value any) (any, error) {
 	raw, ok := value.(string)
 	if !ok {
 		return nil, fmt.Errorf("type '%T' cannot be parsed as docker container logs", value)
@@ -249,7 +350,7 @@ func (p *Parser) handleTimeAndAttributeMappings(e *entry.Entry) error {
 }
 
 // handleMoveAttributes moves fields to final attributes
-func (p *Parser) handleMoveAttributes(e *entry.Entry) error {
+func (*Parser) handleMoveAttributes(e *entry.Entry) error {
 	// move `log` to `body` explicitly first to avoid
 	// moving after more attributes have been added under the `log.*` key
 	err := moveFieldToBody(e, "log", "body")
@@ -272,7 +373,14 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 		return nil
 	}
 
-	logPath := e.Attributes[logPathField]
+	logPath, ok := e.Attributes[logPathField]
+	if !ok {
+		return fmt.Errorf(
+			"operator '%s' has 'add_metadata_from_filepath' enabled, but the log record attribute '%s' is missing. Perhaps enable the 'include_file_path' option?",
+			p.OperatorID,
+			logPathField)
+	}
+
 	rawLogPath, ok := logPath.(string)
 	if !ok {
 		return fmt.Errorf("type '%T' cannot be parsed as log path field", logPath)
@@ -293,11 +401,8 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 }
 
 func (p *Parser) consumeEntries(ctx context.Context, entries []*entry.Entry) {
-	for _, e := range entries {
-		err := p.Write(ctx, e)
-		if err != nil {
-			p.Logger().Error("failed to write entry", zap.Error(err))
-		}
+	if err := p.WriteBatch(ctx, entries); err != nil {
+		p.Logger().Error("failed to write batch of entries", zap.Error(err))
 	}
 }
 

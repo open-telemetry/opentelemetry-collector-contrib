@@ -6,6 +6,7 @@ package zipkinv1
 import (
 	"encoding/hex"
 	"encoding/json"
+	"maps"
 	"os"
 	"strconv"
 	"testing"
@@ -16,7 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
@@ -128,10 +128,10 @@ func TestZipkinJSONFallbackToLocalComponent(t *testing.T) {
 	require.Equal(t, 2, reqs.ResourceSpans().Len(), "Invalid trace service requests count")
 
 	// First span didn't have a host/endpoint to give service name, use the local component.
-	gotFirst, found := reqs.ResourceSpans().At(0).Resource().Attributes().Get(conventions.AttributeServiceName)
+	gotFirst, found := reqs.ResourceSpans().At(0).Resource().Attributes().Get("service.name")
 	require.True(t, found)
 
-	gotSecond, found := reqs.ResourceSpans().At(1).Resource().Attributes().Get(conventions.AttributeServiceName)
+	gotSecond, found := reqs.ResourceSpans().At(1).Resource().Attributes().Get("service.name")
 	require.True(t, found)
 
 	if gotFirst.AsString() == "myLocalComponent" {
@@ -180,9 +180,7 @@ func TestMultipleJSONV1BatchesToTraces(t *testing.T) {
 				sps = map[string]ptrace.Span{}
 				got[k] = map[string]ptrace.Span{}
 			}
-			for kk, vv := range v {
-				sps[kk] = vv
-			}
+			maps.Copy(sps, v)
 		}
 	}
 
@@ -201,7 +199,7 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 		{
 			name: "only otel.status_code tag",
 			haveTags: []*binaryAnnotation{{
-				Key:   conventions.OtelStatusCode,
+				Key:   "otel.status_code",
 				Value: "2",
 			}},
 			wantAttributes: pcommon.NewMap(),
@@ -215,7 +213,7 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 		{
 			name: "only otel.status_description tag",
 			haveTags: []*binaryAnnotation{{
-				Key:   conventions.OtelStatusDescription,
+				Key:   "otel.status_description",
 				Value: "Forbidden",
 			}},
 			wantAttributes: pcommon.NewMap(),
@@ -226,11 +224,11 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 			name: "both otel.status_code and otel.status_description",
 			haveTags: []*binaryAnnotation{
 				{
-					Key:   conventions.OtelStatusCode,
+					Key:   "otel.status_code",
 					Value: "2",
 				},
 				{
-					Key:   conventions.OtelStatusDescription,
+					Key:   "otel.status_description",
 					Value: "Forbidden",
 				},
 			},
@@ -257,7 +255,7 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 			},
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
-				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
+				ret.PutInt("http.status_code", 404)
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
@@ -281,17 +279,17 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 					Value: "NotFound",
 				},
 				{
-					Key:   conventions.OtelStatusCode,
+					Key:   "otel.status_code",
 					Value: "2",
 				},
 				{
-					Key:   conventions.OtelStatusDescription,
+					Key:   "otel.status_description",
 					Value: "Forbidden",
 				},
 			},
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
-				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
+				ret.PutInt("http.status_code", 404)
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
@@ -315,13 +313,13 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 					Value: "NotFound",
 				},
 				{
-					Key:   conventions.OtelStatusCode,
+					Key:   "otel.status_code",
 					Value: "2",
 				},
 			},
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
-				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
+				ret.PutInt("http.status_code", 404)
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
@@ -344,13 +342,13 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 					Value: "NotFound",
 				},
 				{
-					Key:   conventions.OtelStatusDescription,
+					Key:   "otel.status_description",
 					Value: "Forbidden",
 				},
 			},
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
-				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
+				ret.PutInt("http.status_code", 404)
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
@@ -403,17 +401,17 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 					Value: "NotFound",
 				},
 				{
-					Key:   conventions.OtelStatusDescription,
+					Key:   "otel.status_description",
 					Value: "Forbidden",
 				},
 				{
-					Key:   conventions.OtelStatusCode,
+					Key:   "otel.status_code",
 					Value: "7",
 				},
 			},
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
-				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
+				ret.PutInt("http.status_code", 404)
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
@@ -529,7 +527,7 @@ func TestJSONHTTPToStatusCode(t *testing.T) {
 var tracesFromZipkinV1 = func() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rm := td.ResourceSpans().AppendEmpty()
-	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "front-proxy")
+	rm.Resource().Attributes().PutStr("service.name", "front-proxy")
 	rm.Resource().Attributes().PutStr("ipv4", "172.31.0.2")
 
 	span := rm.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -541,7 +539,7 @@ var tracesFromZipkinV1 = func() ptrace.Traces {
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(1544805927, 459699000)))
 
 	rm = td.ResourceSpans().AppendEmpty()
-	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service1")
+	rm.Resource().Attributes().PutStr("service.name", "service1")
 	rm.Resource().Attributes().PutStr("ipv4", "172.31.0.4")
 
 	span = rm.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -565,7 +563,7 @@ var tracesFromZipkinV1 = func() ptrace.Traces {
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(1544805927, 457663000)))
 
 	rm = td.ResourceSpans().AppendEmpty()
-	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service2")
+	rm.Resource().Attributes().PutStr("service.name", "service2")
 	rm.Resource().Attributes().PutStr("ipv4", "172.31.0.7")
 	span = rm.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0xd2, 0xe6, 0x3c, 0xbe, 0x71, 0xf5, 0xa8})
@@ -584,7 +582,7 @@ var tracesFromZipkinV1 = func() ptrace.Traces {
 	})
 
 	rm = td.ResourceSpans().AppendEmpty()
-	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "unknown-service")
+	rm.Resource().Attributes().PutStr("service.name", "unknown-service")
 	span = rm.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0xd2, 0xe6, 0x3c, 0xbe, 0x71, 0xf5, 0xa8})
 	span.SetSpanID([8]byte{0xfe, 0x35, 0x1a, 0x05, 0x3f, 0xbc, 0xac, 0x1f})

@@ -8,17 +8,26 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
@@ -38,6 +47,7 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlQueryClientCount.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlQueryCount.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlQuerySlowCount.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlPageSize.Enabled = true
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitReadCount.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitReadTime.Enabled = true
@@ -57,7 +67,10 @@ func TestScrape(t *testing.T) {
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlConnectionCount.Enabled = true
 
-		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+		cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+		cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats",
 			innodbStatsFile:             "innodb_stats",
@@ -67,6 +80,8 @@ func TestScrape(t *testing.T) {
 			statementEventsFile:         "statement_events",
 			tableLockWaitEventStatsFile: "table_lock_wait_event_stats",
 			replicaStatusFile:           "replica_stats",
+			querySamplesFile:            "query_samples",
+			topQueriesFile:              "top_queries",
 		}
 
 		scraper.renameCommands = true
@@ -78,8 +93,35 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+
+		actualQuerySamples, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err)
+		expectedQuerySampleFile := filepath.Join("testdata", "scraper", "expectedQuerySamples.yaml")
+		// Uncomment this to regenerate the expected logs file
+		// golden.WriteLogs(t, expectedQuerySampleFile, actualQuerySamples)
+		expectedQuerySample, err := golden.ReadLogs(expectedQuerySampleFile)
+		require.NoError(t, err)
+
+		require.NoError(t, plogtest.CompareLogs(expectedQuerySample, actualQuerySamples,
+			plogtest.IgnoreTimestamp()))
+		assertLogsHaveInstanceEndpoint(t, actualQuerySamples, cfg.Endpoint)
+
+		// Scrape top queries
+		scraper.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "count_star", 1)
+		scraper.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "sum_timer_wait", 1)
+		actualTopQueries, err := scraper.scrapeTopQueryFunc(t.Context())
+		require.NoError(t, err)
+		expectedTopQueriesFile := filepath.Join("testdata", "scraper", "expectedTopQueries.yaml")
+		// Uncomment this to regenerate the expected logs file
+		// golden.WriteLogs(t, expectedTopQueriesFile, actualTopQueries)
+		expectedTopQueries, err := golden.ReadLogs(expectedTopQueriesFile)
+		require.NoError(t, err)
+
+		require.NoError(t, plogtest.CompareLogs(expectedTopQueries, actualTopQueries,
+			plogtest.IgnoreTimestamp()))
+		assertLogsHaveInstanceEndpoint(t, actualTopQueries, cfg.Endpoint)
 	})
 
 	t.Run("scrape has partial failure", func(t *testing.T) {
@@ -95,7 +137,7 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteCount.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
 
-		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats_partial",
 			innodbStatsFile:             "innodb_stats_empty",
@@ -113,7 +155,7 @@ func TestScrape(t *testing.T) {
 		expectedFile := filepath.Join("testdata", "scraper", "expected_partial.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
-		assert.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+		assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp()))
 
@@ -135,7 +177,7 @@ func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 
-	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 	scraper.sqlclient = &mockClient{
 		globalStatsFile:             "global_stats_oob",
 		innodbStatsFile:             "innodb_stats_empty",
@@ -151,8 +193,100 @@ func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
 
 	actualMetrics, err := scraper.scrape(t.Context())
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+}
+
+// assertLogsHaveInstanceEndpoint verifies that every ResourceLogs in logs carries
+// mysql.instance.endpoint as a resource attribute with the expected value.
+func assertLogsHaveInstanceEndpoint(t *testing.T, logs plog.Logs, expectedEndpoint string) {
+	t.Helper()
+	require.Positive(t, logs.ResourceLogs().Len(), "expected at least one ResourceLogs")
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		attrs := logs.ResourceLogs().At(i).Resource().Attributes()
+		val, ok := attrs.Get("mysql.instance.endpoint")
+		require.True(t, ok, "ResourceLogs[%d] missing mysql.instance.endpoint resource attribute", i)
+		require.Equal(t, expectedEndpoint, val.Str(), "ResourceLogs[%d] mysql.instance.endpoint mismatch", i)
+	}
+}
+
+func TestContextWithTraceparent(t *testing.T) {
+	t.Run("valid traceparent sets span context", func(t *testing.T) {
+		ctx, err := contextWithTraceparent("00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01")
+		require.NoError(t, err)
+		spanCtx := trace.SpanContextFromContext(ctx)
+		require.True(t, spanCtx.IsValid())
+		assert.Equal(t, "4bf92f3577b34da6a3ce929d0e0e4736", spanCtx.TraceID().String())
+		assert.Equal(t, "00f067aa0ba902b7", spanCtx.SpanID().String())
+	})
+
+	t.Run("invalid traceparent returns error and empty span context", func(t *testing.T) {
+		ctx, err := contextWithTraceparent("trace-id")
+		require.Error(t, err)
+		spanCtx := trace.SpanContextFromContext(ctx)
+		assert.False(t, spanCtx.IsValid())
+	})
+
+	t.Run("result is rooted at context.Background, not a caller context", func(t *testing.T) {
+		// contextWithTraceparent always uses context.Background() as its base,
+		// so a collector scrape span in the caller's context must not bleed through.
+		collectorTraceID, _ := trace.TraceIDFromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+		collectorSpanID, _ := trace.SpanIDFromHex("bbbbbbbbbbbbbbbb")
+		collectorSpanCtx := trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    collectorTraceID,
+			SpanID:     collectorSpanID,
+			TraceFlags: trace.FlagsSampled,
+		})
+		// Verify that the function ignores any span context present on a hypothetical
+		// caller context by confirming it returns the app trace IDs, not the collector ones.
+		appTraceparent := "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+		_ = collectorSpanCtx // would be on the caller ctx in production; not passed in here
+
+		ctx, err := contextWithTraceparent(appTraceparent)
+		require.NoError(t, err)
+
+		spanCtx := trace.SpanContextFromContext(ctx)
+		require.True(t, spanCtx.IsValid())
+		assert.Equal(t, "4bf92f3577b34da6a3ce929d0e0e4736", spanCtx.TraceID().String())
+		assert.Equal(t, "00f067aa0ba902b7", spanCtx.SpanID().String())
+		assert.NotEqual(t, collectorTraceID.String(), spanCtx.TraceID().String(), "collector TraceID must not bleed through")
+		assert.NotEqual(t, collectorSpanID.String(), spanCtx.SpanID().String(), "collector SpanID must not bleed through")
+	})
+}
+
+func TestScrapeQuerySamplesTraceparent(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+
+	t.Run("empty traceparent produces zero TraceID and SpanID", func(t *testing.T) {
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_no_traceparent"}
+
+		logs, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, 1, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+		record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+		assert.Equal(t, pcommon.TraceID{}, record.TraceID(), "TraceID must be zero when no traceparent is set")
+		assert.Equal(t, pcommon.SpanID{}, record.SpanID(), "SpanID must be zero when no traceparent is set")
+	})
+
+	t.Run("invalid traceparent logs warning and produces zero TraceID and SpanID", func(t *testing.T) {
+		core, logs := observer.New(zapcore.WarnLevel)
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper.logger = zap.New(core)
+		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_invalid_traceparent"}
+
+		result, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, 1, logs.FilterMessage("Invalid traceparent; omitting trace context").Len(), "expected one warn log for invalid traceparent")
+		require.Equal(t, 1, result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+		record := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+		assert.Equal(t, pcommon.TraceID{}, record.TraceID(), "TraceID must be zero when traceparent is invalid")
+		assert.Equal(t, pcommon.SpanID{}, record.SpanID(), "SpanID must be zero when traceparent is invalid")
+	})
 }
 
 var _ client = (*mockClient)(nil)
@@ -166,6 +300,8 @@ type mockClient struct {
 	statementEventsFile         string
 	tableLockWaitEventStatsFile string
 	replicaStatusFile           string
+	querySamplesFile            string
+	topQueriesFile              string
 }
 
 func readFile(fname string) (map[string]string, error) {
@@ -184,11 +320,11 @@ func readFile(fname string) (map[string]string, error) {
 	return stats, nil
 }
 
-func (c *mockClient) Connect() error {
+func (*mockClient) Connect() error {
 	return nil
 }
 
-func (c *mockClient) getVersion() (*version.Version, error) {
+func (*mockClient) getVersion() (*version.Version, error) {
 	version, _ := version.NewVersion("8.0.27")
 	return version, nil
 }
@@ -201,8 +337,8 @@ func (c *mockClient) getInnodbStats() (map[string]string, error) {
 	return readFile(c.innodbStatsFile)
 }
 
-func (c *mockClient) getTableStats() ([]TableStats, error) {
-	var stats []TableStats
+func (c *mockClient) getTableStats() ([]tableStats, error) {
+	var stats []tableStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.tableStatsFile+".txt"))
 	if err != nil {
 		return nil, err
@@ -211,7 +347,7 @@ func (c *mockClient) getTableStats() ([]TableStats, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var s TableStats
+		var s tableStats
 		text := strings.Split(scanner.Text(), "\t")
 		s.schema = text[0]
 		s.name = text[1]
@@ -225,8 +361,8 @@ func (c *mockClient) getTableStats() ([]TableStats, error) {
 	return stats, nil
 }
 
-func (c *mockClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
-	var stats []TableIoWaitsStats
+func (c *mockClient) getTableIoWaitsStats() ([]tableIoWaitsStats, error) {
+	var stats []tableIoWaitsStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.tableIoWaitsFile+".txt"))
 	if err != nil {
 		return nil, err
@@ -235,7 +371,7 @@ func (c *mockClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var s TableIoWaitsStats
+		var s tableIoWaitsStats
 		text := strings.Split(scanner.Text(), "\t")
 
 		s.schema = text[0]
@@ -254,8 +390,8 @@ func (c *mockClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
 	return stats, nil
 }
 
-func (c *mockClient) getIndexIoWaitsStats() ([]IndexIoWaitsStats, error) {
-	var stats []IndexIoWaitsStats
+func (c *mockClient) getIndexIoWaitsStats() ([]indexIoWaitsStats, error) {
+	var stats []indexIoWaitsStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.indexIoWaitsFile+".txt"))
 	if err != nil {
 		return nil, err
@@ -264,7 +400,7 @@ func (c *mockClient) getIndexIoWaitsStats() ([]IndexIoWaitsStats, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var s IndexIoWaitsStats
+		var s indexIoWaitsStats
 		text := strings.Split(scanner.Text(), "\t")
 
 		s.schema = text[0]
@@ -284,8 +420,8 @@ func (c *mockClient) getIndexIoWaitsStats() ([]IndexIoWaitsStats, error) {
 	return stats, nil
 }
 
-func (c *mockClient) getStatementEventsStats() ([]StatementEventStats, error) {
-	var stats []StatementEventStats
+func (c *mockClient) getStatementEventsStats() ([]statementEventStats, error) {
+	var stats []statementEventStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.statementEventsFile+".txt"))
 	if err != nil {
 		return nil, err
@@ -294,7 +430,7 @@ func (c *mockClient) getStatementEventsStats() ([]StatementEventStats, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var s StatementEventStats
+		var s statementEventStats
 		text := strings.Split(scanner.Text(), "\t")
 
 		s.schema = text[0]
@@ -358,8 +494,8 @@ func (c *mockClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, er
 	return stats, nil
 }
 
-func (c *mockClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
-	var stats []ReplicaStatusStats
+func (c *mockClient) getReplicaStatusStats() ([]replicaStatusStats, error) {
+	var stats []replicaStatusStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.replicaStatusFile+".txt"))
 	if err != nil {
 		return nil, err
@@ -368,7 +504,7 @@ func (c *mockClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		var s ReplicaStatusStats
+		var s replicaStatusStats
 		text := strings.Split(scanner.Text(), "\t")
 
 		s.replicaIOState = text[0]
@@ -439,6 +575,73 @@ func (c *mockClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 	return stats, nil
 }
 
-func (c *mockClient) Close() error {
+// Generate a function for getQuerySamples to read data from a static file
+func (c *mockClient) getQuerySamples(uint64) ([]querySample, error) {
+	var samples []querySample
+	file, err := os.Open(filepath.Join("testdata", "scraper", c.querySamplesFile+".txt"))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		var s querySample
+		text := strings.Split(scanner.Text(), "\t")
+
+		s.sessionID, _ = parseInt(text[0])
+		s.threadID, _ = parseInt(text[1])
+		s.processlistUser = text[2]
+		s.processlistHost = text[3]
+		s.processlistDB = text[4]
+		s.processlistCommand = text[5]
+		s.processlistState = text[6]
+		s.sqlText = text[7]
+		s.digest = text[8]
+		s.eventID, _ = parseInt(text[9])
+		s.sessionStatus = text[10]
+		s.waitEvent = text[11]
+		s.waitTime, _ = strconv.ParseFloat(text[12], 64)
+		s.traceparent = text[13]
+
+		samples = append(samples, s)
+	}
+
+	return samples, nil
+}
+
+func (c *mockClient) getTopQueries(uint64, uint64) ([]topQuery, error) {
+	var queries []topQuery
+	file, err := os.Open(filepath.Join("testdata", "scraper", c.topQueriesFile+".txt"))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		var q topQuery
+		text := strings.Split(scanner.Text(), "\t")
+
+		q.schemaName = text[0]
+		q.digest = text[1]
+		q.digestText = text[2]
+		q.countStar, _ = parseInt(text[3])
+		q.sumTimerWaitInPicoSeconds, _ = parseInt(text[4])
+		q.querySampleText = text[5]
+
+		queries = append(queries, q)
+	}
+
+	return queries, nil
+}
+
+func (*mockClient) explainQuery(_, _, _, _ string, _ *zap.Logger) string {
+	file, _ := os.ReadFile(filepath.Join("testdata", "obfuscate", "inputQueryPlan.json"))
+
+	return string(file)
+}
+
+func (*mockClient) Close() error {
 	return nil
 }

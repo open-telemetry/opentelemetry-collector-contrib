@@ -9,10 +9,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking/internal/metadata"
 )
 
 func TestSetInternalSpanStatus(t *testing.T) {
@@ -215,7 +219,7 @@ func Test_stringToTraceID_Unique(t *testing.T) {
 	}
 
 	var results [2][16]byte
-	for i := 0; i < len(tests); i++ {
+	for i := range tests {
 		tt := tests[i]
 		t.Run(tt.name, func(_ *testing.T) {
 			got := swTraceIDToTraceID(tt.segmentObject.traceID)
@@ -289,15 +293,22 @@ func Test_segmentIdToSpanId_Unique(t *testing.T) {
 		},
 	}
 	var results [2][8]byte
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
+		if i >= len(tests) {
+			break
+		}
 		tt := tests[i]
 		t.Run(tt.name, func(_ *testing.T) {
 			got := segmentIDToSpanID(tt.args.segmentID, tt.args.spanID)
-			results[i] = got
+			if i < len(results) {
+				results[i] = got
+			}
 		})
 	}
 
-	assert.NotEqual(t, results[0], results[1])
+	if len(results) >= 2 {
+		assert.NotEqual(t, results[0], results[1])
+	}
 }
 
 func Test_swSpanToSpan_ParentSpanId(t *testing.T) {
@@ -427,4 +438,32 @@ func mockGrpcTraceSegment(sequence int) *agent.SegmentObject {
 			},
 		},
 	}
+}
+
+func TestGetOtSpanTagsMapping(t *testing.T) {
+	t.Run("feature_gate_disabled", func(t *testing.T) {
+		mapping := getOtSpanTagsMapping()
+
+		assert.Equal(t, "http.url", mapping["url"])
+		assert.Equal(t, "http.status_code", mapping["status_code"])
+		assert.Equal(t, "db.system", mapping["db.type"])
+		assert.Equal(t, "db.name", mapping["db.instance"])
+		assert.Equal(t, "net.peer.name", mapping["mq.broker"])
+	})
+
+	t.Run("feature_gate_enabled", func(t *testing.T) {
+		previousValue := metadata.TranslatorSkywalkingUseStableSemconvFeatureGate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TranslatorSkywalkingUseStableSemconvFeatureGate.ID(), true))
+		defer func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TranslatorSkywalkingUseStableSemconvFeatureGate.ID(), previousValue))
+		}()
+
+		mapping := getOtSpanTagsMapping()
+
+		assert.Equal(t, "url.full", mapping["url"])
+		assert.Equal(t, "http.response.status_code", mapping["status_code"])
+		assert.Equal(t, "db.system.name", mapping["db.type"])
+		assert.Equal(t, "db.namespace", mapping["db.instance"])
+		assert.Equal(t, "server.address", mapping["mq.broker"])
+	})
 }

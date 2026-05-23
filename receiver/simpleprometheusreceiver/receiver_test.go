@@ -69,13 +69,13 @@ func TestReceiver(t *testing.T) {
 func TestGetPrometheusConfig(t *testing.T) {
 	clientConfigTLS := confighttp.NewDefaultClientConfig()
 	clientConfigTLS.Endpoint = "localhost:1234"
-	clientConfigTLS.TLSSetting = configtls.ClientConfig{
+	clientConfigTLS.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
 
 	clientConfigCA := confighttp.NewDefaultClientConfig()
 	clientConfigCA.Endpoint = "localhost:1234"
-	clientConfigCA.TLSSetting = configtls.ClientConfig{
+	clientConfigCA.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: "./testdata/test_cert.pem",
 		},
@@ -111,11 +111,12 @@ func TestGetPrometheusConfig(t *testing.T) {
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue("localhost:1234")},
 										},
+										Labels: map[model.LabelName]model.LabelValue{},
 									},
 								},
 							},
@@ -146,11 +147,12 @@ func TestGetPrometheusConfig(t *testing.T) {
 							Scheme:          "https",
 							MetricsPath:     "/metric",
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue("localhost:1234")},
 										},
+										Labels: map[model.LabelName]model.LabelValue{},
 									},
 								},
 							},
@@ -178,11 +180,12 @@ func TestGetPrometheusConfig(t *testing.T) {
 							MetricsPath:     "/metrics",
 							Scheme:          "https",
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue("localhost:1234")},
 										},
+										Labels: map[model.LabelName]model.LabelValue{},
 									},
 								},
 							},
@@ -219,13 +222,15 @@ func TestGetPrometheusConfig(t *testing.T) {
 							MetricsPath:     "/metrics",
 							Scheme:          "https",
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{
-												model.AddressLabel:     model.LabelValue("localhost:1234"),
-												model.LabelName("key"): model.LabelValue("value"),
+												model.AddressLabel: model.LabelValue("localhost:1234"),
 											},
+										},
+										Labels: model.LabelSet{
+											model.LabelName("key"): model.LabelValue("value"),
 										},
 									},
 								},
@@ -248,17 +253,17 @@ func TestGetPrometheusConfig(t *testing.T) {
 func TestGetPrometheusConfigWrapper(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = defaultEndpoint
-	clientConfig.TLSSetting = configtls.ClientConfig{}
+	clientConfig.TLS = configtls.ClientConfig{}
 
 	clientConfigInsecure := confighttp.NewDefaultClientConfig()
 	clientConfigInsecure.Endpoint = defaultEndpoint
-	clientConfigInsecure.TLSSetting = configtls.ClientConfig{
+	clientConfigInsecure.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
 
 	clientConfigCA := confighttp.NewDefaultClientConfig()
 	clientConfigCA.Endpoint = defaultEndpoint
-	clientConfigCA.TLSSetting = configtls.ClientConfig{
+	clientConfigCA.TLS = configtls.ClientConfig{
 		Insecure: false,
 		Config: configtls.Config{
 			CAFile: "./testdata/test_cert.pem",
@@ -298,11 +303,12 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
 										},
+										Labels: map[model.LabelName]model.LabelValue{},
 									},
 								},
 							},
@@ -341,11 +347,12 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
 										},
+										Labels: map[model.LabelName]model.LabelValue{},
 									},
 								},
 							},
@@ -378,11 +385,12 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
 										},
+										Labels: map[model.LabelName]model.LabelValue{},
 									},
 								},
 							},
@@ -415,11 +423,12 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
-								&discovery.StaticConfig{
+								discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
 										},
+										Labels: map[model.LabelName]model.LabelValue{},
 									},
 								},
 							},

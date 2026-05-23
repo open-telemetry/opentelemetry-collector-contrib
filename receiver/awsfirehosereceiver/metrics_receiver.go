@@ -13,11 +13,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/otlpmetricstream"
 )
 
 const defaultMetricsEncoding = cwmetricstream.TypeStr
@@ -56,7 +57,7 @@ func newMetricsReceiver(
 	}, nil
 }
 
-func (c *metricsConsumer) Start(_ context.Context, host component.Host) error {
+func (c *metricsConsumer) Start(ctx context.Context, host component.Host) error {
 	encoding := c.config.Encoding
 	if encoding == "" {
 		encoding = c.config.RecordType
@@ -66,11 +67,21 @@ func (c *metricsConsumer) Start(_ context.Context, host component.Host) error {
 	}
 	switch encoding {
 	case cwmetricstream.TypeStr:
-		// TODO: make cwmetrics an encoding extension
+		c.settings.Logger.Warn(
+			"The built-in \"cwmetrics\" encoding is deprecated and will be removed in a future version. " +
+				"Use the \"awscloudwatchmetricstreams_encoding\" encoding extension with format \"json\" instead.",
+		)
 		c.unmarshaler = cwmetricstream.NewUnmarshaler(c.settings.Logger, c.settings.BuildInfo)
-	case otlpmetricstream.TypeStr:
-		// TODO: make otlp_v1 an encoding extension
-		c.unmarshaler = otlpmetricstream.NewUnmarshaler(c.settings.Logger, c.settings.BuildInfo)
+	case "otlp_v1":
+		c.settings.Logger.Warn(
+			"The built-in \"otlp_v1\" encoding is deprecated and will be removed in a future version. " +
+				"Use the \"awscloudwatchmetricstreams_encoding\" encoding extension with format \"opentelemetry1.0\" instead.",
+		)
+		unmarshaler, err := c.newUnmarshalerFromEncoding(ctx, encoding, "opentelemetry1.0")
+		if err != nil {
+			return err
+		}
+		c.unmarshaler = unmarshaler
 	default:
 		unmarshaler, err := loadEncodingExtension[pmetric.Unmarshaler](host, encoding, "metrics")
 		if err != nil {
@@ -79,6 +90,31 @@ func (c *metricsConsumer) Start(_ context.Context, host component.Host) error {
 		c.unmarshaler = unmarshaler
 	}
 	return nil
+}
+
+// newUnmarshalerFromEncoding creates a new unmarshaler from
+// aws cloudwatch metric streams encoding extension.
+func (c *metricsConsumer) newUnmarshalerFromEncoding(
+	ctx context.Context,
+	encoding string,
+	format string,
+) (pmetric.Unmarshaler, error) {
+	f := awscloudwatchmetricstreamsencodingextension.NewFactory()
+	ext, err := f.Create(ctx, extension.Settings{
+		ID:                component.NewID(f.Type()),
+		BuildInfo:         c.settings.BuildInfo,
+		TelemetrySettings: c.settings.TelemetrySettings,
+	}, &awscloudwatchmetricstreamsencodingextension.Config{
+		Format: format,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create encoding extension for %q format: %w", encoding, err)
+	}
+	unmarshaler, ok := ext.(pmetric.Unmarshaler)
+	if !ok {
+		return nil, errors.New("unexpected: failed to cast aws cloudwatch metric streams encoding extension to unmarshaler")
+	}
+	return unmarshaler, nil
 }
 
 // Consume uses the configured unmarshaler to deserialize each record,

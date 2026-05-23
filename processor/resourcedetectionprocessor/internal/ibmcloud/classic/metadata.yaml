@@ -1,0 +1,42 @@
+type: ibmcloudclassicdetector
+
+status:
+  class: processor
+  stability:
+    development: [traces, metrics, logs, profiles]
+  codeowners:
+    active: [dashpole, paulojmdias]
+
+resource_attributes:
+  cloud.account.id:
+    description: The IBM Cloud account ID.
+    type: string
+    enabled: true
+  cloud.availability_zone:
+    description: The IBM Cloud Classic datacenter (e.g., dal13, par01).
+    type: string
+    enabled: true
+  cloud.platform:
+    description: The cloud platform (ibm_cloud.classic).
+    type: string
+    enabled: true
+  cloud.provider:
+    description: The cloud provider (ibm_cloud).
+    type: string
+    enabled: true
+  cloud.resource_id:
+    description: The global unique identifier (UUID) of the instance.
+    type: string
+    enabled: true
+  host.id:
+    description: The SoftLayer instance ID.
+    type: string
+    enabled: true
+  host.name:
+    description: The hostname of the instance.
+    type: string
+    enabled: true
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

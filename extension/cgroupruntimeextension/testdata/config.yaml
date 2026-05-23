@@ -1,13 +1,13 @@
-cgroupruntime:
-cgroupruntime/invalid_ratio:
+cgroup_runtime:
+cgroup_runtime/invalid_ratio:
   gomemlimit:
     ratio: 1.1
-cgroupruntime/invalid_ratio_disabled:
+cgroup_runtime/invalid_ratio_disabled:
   gomemlimit:
     ratio: 0
-cgroupruntime/invalid_ratio_negative:
+cgroup_runtime/invalid_ratio_negative:
   gomemlimit:
     ratio: -12.5
-cgroupruntime/invalid_ratio_type:
+cgroup_runtime/invalid_ratio_type:
   gomemlimit:
     ratio: "not_valid"

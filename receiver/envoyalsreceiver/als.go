@@ -31,7 +31,7 @@ type alsReceiver struct {
 
 func (r *alsReceiver) Start(ctx context.Context, host component.Host) error {
 	var err error
-	r.serverGRPC, err = r.conf.ToServer(ctx, host, r.settings.TelemetrySettings)
+	r.serverGRPC, err = r.conf.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings)
 	if err != nil {
 		return fmt.Errorf("failed create grpc server error: %w", err)
 	}

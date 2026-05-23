@@ -6,19 +6,22 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Azure Monitor
 type Config struct {
-	QueueSettings       exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
-	Endpoint            string                          `mapstructure:"endpoint"`
-	ConnectionString    configopaque.String             `mapstructure:"connection_string"`
-	InstrumentationKey  configopaque.String             `mapstructure:"instrumentation_key"`
-	MaxBatchSize        int                             `mapstructure:"maxbatchsize"`
-	MaxBatchInterval    time.Duration                   `mapstructure:"maxbatchinterval"`
-	SpanEventsEnabled   bool                            `mapstructure:"spaneventsenabled"`
-	ShutdownTimeout     time.Duration                   `mapstructure:"shutdown_timeout"`
-	CustomEventsEnabled bool                            `mapstructure:"custom_events_enabled"`
+	QueueSettings          configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	ConnectionString       configopaque.String                                      `mapstructure:"connection_string"`
+	InstrumentationKey     configopaque.String                                      `mapstructure:"instrumentation_key"`
+	MaxBatchSize           int                                                      `mapstructure:"maxbatchsize"`
+	MaxBatchInterval       time.Duration                                            `mapstructure:"maxbatchinterval"`
+	SpanEventsEnabled      bool                                                     `mapstructure:"spaneventsenabled"`
+	ShutdownTimeout        time.Duration                                            `mapstructure:"shutdown_timeout"`
+	CustomEventsEnabled    bool                                                     `mapstructure:"custom_events_enabled"`
+	ExceptionEventsEnabled bool                                                     `mapstructure:"exception_events_enabled"`
+	ClientConfig           confighttp.ClientConfig                                  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }

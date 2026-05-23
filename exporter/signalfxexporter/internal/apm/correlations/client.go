@@ -44,7 +44,7 @@ var _ error = (*ErrMaxEntries)(nil)
 type CorrelationClient interface {
 	Correlate(*Correlation, CorrelateCB)
 	Delete(*Correlation, SuccessfulDeleteCB)
-	Get(dimName string, dimValue string, cb SuccessfulGetCB)
+	Get(dimName, dimValue string, cb SuccessfulGetCB)
 	Start()
 	Shutdown()
 }
@@ -237,7 +237,7 @@ func (cc *Client) Delete(cor *Correlation, callback SuccessfulDeleteCB) {
 type SuccessfulGetCB func(map[string][]string)
 
 // Get
-func (cc *Client) Get(dimName string, dimValue string, callback SuccessfulGetCB) {
+func (cc *Client) Get(dimName, dimValue string, callback SuccessfulGetCB) {
 	err := cc.putRequestOnChan(&request{
 		Correlation: &Correlation{
 			DimName:  dimName,
@@ -279,7 +279,7 @@ func (cc *Client) makeRequest(r *request) {
 
 	switch r.operation {
 	case http.MethodGet:
-		req, err = http.NewRequest(r.operation, endpoint, nil)
+		req, err = http.NewRequest(r.operation, endpoint, http.NoBody)
 	case http.MethodPut:
 		// TODO: pool the reader
 		endpoint = fmt.Sprintf("%s/%s", endpoint, r.Type)
@@ -287,7 +287,7 @@ func (cc *Client) makeRequest(r *request) {
 		req.Header.Add("Content-Type", "text/plain")
 	case http.MethodDelete:
 		endpoint = fmt.Sprintf("%s/%s/%s", endpoint, r.Type, url.PathEscape(r.Value))
-		req, err = http.NewRequest(r.operation, endpoint, nil)
+		req, err = http.NewRequest(r.operation, endpoint, http.NoBody)
 	default:
 		err = errors.New("unknown operation")
 	}

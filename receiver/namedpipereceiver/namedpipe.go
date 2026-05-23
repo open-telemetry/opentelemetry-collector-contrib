@@ -6,6 +6,7 @@ package namedpipereceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -14,19 +15,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver/internal/metadata"
 )
 
+// NewFactory creates a factory for the named_pipe receiver.
 func NewFactory() receiver.Factory {
-	return adapter.NewFactory(&ReceiverType{}, metadata.LogsStability)
+	return adapter.NewFactory(&ReceiverType{}, metadata.LogsStability,
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 type ReceiverType struct{}
 
 // Type is the receiver type
-func (f ReceiverType) Type() component.Type {
+func (ReceiverType) Type() component.Type {
 	return metadata.Type
 }
 
 // CreateDefaultConfig creates a config with type and version
-func (f ReceiverType) CreateDefaultConfig() component.Config {
+func (ReceiverType) CreateDefaultConfig() component.Config {
 	return createDefaultConfig()
 }
 
@@ -46,17 +50,20 @@ func createDefaultConfig() *NamedPipeConfig {
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
+func (ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*NamedPipeConfig).BaseConfig
 }
 
-// NamedPipeConfig defines configuration for the namedpipe receiver
+// NamedPipeConfig defines configuration for the named_pipe receiver
 type NamedPipeConfig struct {
 	InputConfig        namedpipe.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // InputConfig unmarshals the input operator
-func (f ReceiverType) InputConfig(cfg component.Config) operator.Config {
+func (ReceiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(&cfg.(*NamedPipeConfig).InputConfig)
 }

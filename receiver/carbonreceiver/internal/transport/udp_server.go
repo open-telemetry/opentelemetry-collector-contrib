@@ -96,7 +96,7 @@ func (u *udpServer) handlePacket(
 
 	buf := bytes.NewBuffer(data)
 	for {
-		bytes, err := buf.ReadBytes((byte)('\n'))
+		bytes, err := buf.ReadBytes(byte('\n'))
 		if errors.Is(err, io.EOF) {
 			if len(bytes) == 0 {
 				// Completed without errors.

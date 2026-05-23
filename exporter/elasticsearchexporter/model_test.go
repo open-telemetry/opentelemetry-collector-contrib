@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
@@ -29,44 +28,139 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
 
-var expectedSpanBody = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attributes.service.instance.id":"23","Duration":1000000,"EndTimestamp":"2023-04-19T03:04:06.000000006Z","Events.fooEvent.eventMockBar":"bar","Events.fooEvent.eventMockFoo":"foo","Events.fooEvent.time":"2023-04-19T03:04:05.000000006Z","Kind":"SPAN_KIND_CLIENT","Link":"[{\"attribute\":{},\"spanID\":\"\",\"traceID\":\"01020304050607080807060504030200\"}]","Name":"client span","Resource.cloud.platform":"aws_elastic_beanstalk","Resource.cloud.provider":"aws","Resource.deployment.environment":"BETA","Resource.service.instance.id":"23","Resource.service.name":"some-service","Resource.service.version":"env-version-1234","Scope.lib-foo":"lib-bar","Scope.name":"io.opentelemetry.rabbitmq-2.7","Scope.version":"1.30.0-alpha","SpanId":"1920212223242526","TraceId":"01020304050607080807060504030201","TraceStatus":2,"TraceStatusDescription":"Test"}`
+const (
+	expectedSpanBody               = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attributes.service.instance.id":"23","Duration":1000000,"EndTimestamp":"2023-04-19T03:04:06.000000006Z","Events.fooEvent.eventMockBar":"bar","Events.fooEvent.eventMockFoo":"foo","Events.fooEvent.time":"2023-04-19T03:04:05.000000006Z","Kind":"SPAN_KIND_CLIENT","Link":"[{\"attribute\":{},\"spanID\":\"\",\"traceID\":\"01020304050607080807060504030200\"}]","Name":"client span","Resource.cloud.platform":"aws_elastic_beanstalk","Resource.cloud.provider":"aws","Resource.deployment.environment":"BETA","Resource.service.instance.id":"23","Resource.service.name":"some-service","Resource.service.version":"env-version-1234","Scope.lib-foo":"lib-bar","Scope.name":"io.opentelemetry.rabbitmq-2.7","Scope.version":"1.30.0-alpha","SpanId":"1920212223242526","TraceId":"01020304050607080807060504030201","TraceStatus":2,"TraceStatusDescription":"Test"}`
+	expectedSpanBodyWithDataStream = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attributes.data_stream.dataset":"two","Attributes.data_stream.namespace":"three","Attributes.data_stream.type":"one","Attributes.service.instance.id":"23","Duration":1000000,"EndTimestamp":"2023-04-19T03:04:06.000000006Z","Events.fooEvent.eventMockBar":"bar","Events.fooEvent.eventMockFoo":"foo","Events.fooEvent.time":"2023-04-19T03:04:05.000000006Z","Kind":"SPAN_KIND_CLIENT","Link":"[{\"attribute\":{},\"spanID\":\"\",\"traceID\":\"01020304050607080807060504030200\"}]","Name":"client span","Resource.cloud.platform":"aws_elastic_beanstalk","Resource.cloud.provider":"aws","Resource.deployment.environment":"BETA","Resource.service.instance.id":"23","Resource.service.name":"some-service","Resource.service.version":"env-version-1234","Scope.lib-foo":"lib-bar","Scope.name":"io.opentelemetry.rabbitmq-2.7","Scope.version":"1.30.0-alpha","SpanId":"1920212223242526","TraceId":"01020304050607080807060504030201","TraceStatus":2,"TraceStatusDescription":"Test"}`
+)
 
-var (
+const (
 	expectedLogBody                   = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
 	expectedLogBodyWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
 )
 
-var expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":440.23}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0.0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.14}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.77}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0.0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":24.8}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":64.78}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":1.65}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":475.69}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0.0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.1}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.57}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0.0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":15.88}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
+const expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":440.23}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0.0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.14}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.77}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0.0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":24.8}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":64.78}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":1.65}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":475.69}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0.0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.1}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.57}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0.0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":15.88}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
+
+func TestDynamicTemplateMode(t *testing.T) {
+	ts := pcommon.NewTimestampFromTime(time.Unix(0, 0))
+
+	// Build the four metric + DataPoint fixtures once.
+	m := pmetric.NewMetric()
+	m.SetName("g")
+	gauge := m.SetEmptyGauge()
+	dp := gauge.DataPoints().AppendEmpty()
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(1.0)
+
+	m2 := pmetric.NewMetric()
+	m2.SetName("c")
+	sum := m2.SetEmptySum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	dp2 := sum.DataPoints().AppendEmpty()
+	dp2.SetTimestamp(ts)
+	dp2.SetIntValue(2)
+
+	m3 := pmetric.NewMetric()
+	m3.SetName("h")
+	hist := m3.SetEmptyHistogram()
+	histDp := hist.DataPoints().AppendEmpty()
+	histDp.SetTimestamp(ts)
+	histDp.ExplicitBounds().FromRaw([]float64{1, 2})
+	histDp.BucketCounts().FromRaw([]uint64{1, 2, 3})
+
+	m4 := pmetric.NewMetric()
+	m4.SetName("s")
+	summaryDp := m4.SetEmptySummary().DataPoints().AppendEmpty()
+	summaryDp.SetTimestamp(ts)
+	summaryDp.SetSum(10)
+	summaryDp.SetCount(5)
+
+	metrics := []struct {
+		m  pmetric.Metric
+		dp datapoints.DataPoint
+	}{
+		{m, datapoints.NewNumber(m, dp)},
+		{m2, datapoints.NewNumber(m2, dp2)},
+		{m3, datapoints.NewHistogram(m3, histDp)},
+		{m4, datapoints.NewSummary(m4, summaryDp)},
+	}
+
+	tests := []struct {
+		name          string
+		mode          datapoints.DynamicTemplateMode
+		wantTemplates []string
+	}{
+		{
+			name:          "OTel",
+			mode:          datapoints.DynamicTemplateModeOTel,
+			wantTemplates: []string{"gauge_double", "counter_long", "histogram", "summary"},
+		},
+		{
+			name:          "ECS",
+			mode:          datapoints.DynamicTemplateModeECS,
+			wantTemplates: []string{"double_metrics", "double_metrics", "histogram_metrics", "summary_metrics"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			for i, metric := range metrics {
+				got := metric.dp.DynamicTemplate(metric.m, tc.mode)
+				require.Equal(t, tc.wantTemplates[i], got)
+			}
+		})
+	}
+}
 
 func TestEncodeSpan(t *testing.T) {
-	encoder, _ := newEncoder(MappingNone)
-	td := mockResourceSpans()
-	var buf bytes.Buffer
-	err := encoder.encodeSpan(
-		encodingContext{
-			resource: td.ResourceSpans().At(0).Resource(),
-			scope:    td.ResourceSpans().At(0).ScopeSpans().At(0).Scope(),
-		},
-		td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0),
-		elasticsearch.Index{}, &buf,
-	)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedSpanBody, buf.String())
+	t.Run("non data stream", func(t *testing.T) {
+		encoder, _ := newEncoder(MappingNone)
+		td := mockResourceSpans()
+		var buf bytes.Buffer
+		err := encoder.encodeSpan(
+			encodingContext{
+				resource: td.ResourceSpans().At(0).Resource(),
+				scope:    td.ResourceSpans().At(0).ScopeSpans().At(0).Scope(),
+			},
+			td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0),
+			elasticsearch.Index{}, &buf,
+		)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedSpanBody, buf.String())
+	})
+
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42454.
+	t.Run("data stream", func(t *testing.T) {
+		encoder, _ := newEncoder(MappingNone)
+		td := mockResourceSpans()
+		var buf bytes.Buffer
+		err := encoder.encodeSpan(
+			encodingContext{
+				resource: td.ResourceSpans().At(0).Resource(),
+				scope:    td.ResourceSpans().At(0).ScopeSpans().At(0).Scope(),
+			},
+			td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0),
+			elasticsearch.NewDataStreamIndex("one", "two", "three"),
+			&buf,
+		)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedSpanBodyWithDataStream, buf.String())
+	})
 }
 
 func TestEncodeLog(t *testing.T) {
@@ -125,8 +219,8 @@ func TestEncodeMetric(t *testing.T) {
 	dps := m.Sum().DataPoints()
 	hasher.UpdateResource(rm.Resource())
 	hasher.UpdateScope(sm.Scope())
-	for i := 0; i < dps.Len(); i++ {
-		dp := datapoints.NewNumber(m, dps.At(i))
+	for _, dp := range dps.All() {
+		dp := datapoints.NewNumber(m, dp)
 		hasher.UpdateDataPoint(dp)
 		dpHash := hasher.HashKey()
 		dataPoints, ok := groupedDataPoints[dpHash]
@@ -156,6 +250,98 @@ func TestEncodeMetric(t *testing.T) {
 
 	allDocsSorted := docBytesToSortedString(docsBytes)
 	assert.Equal(t, expectedMetricsEncoded, allDocsSorted)
+}
+
+func TestEncodeMetricDocCountHint(t *testing.T) {
+	encoder, err := newEncoder(MappingECS)
+	require.NoError(t, err)
+
+	ec := encodingContext{
+		resource:          pcommon.NewResource(),
+		resourceSchemaURL: "",
+		scope:             pcommon.NewInstrumentationScope(),
+		scopeSchemaURL:    "",
+	}
+	idx := elasticsearch.Index{}
+	ts := pcommon.NewTimestampFromTime(time.Unix(0, 0))
+
+	tests := []struct {
+		name              string
+		buildDataPoints   func() []datapoints.DataPoint
+		wantDocCountInDoc bool
+		wantDocCountValue uint64
+	}{
+		{
+			name: "doc count hint absent",
+			buildDataPoints: func() []datapoints.DataPoint {
+				m := pmetric.NewMetric()
+				m.SetName("gauge")
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+				dp.SetDoubleValue(1.0)
+				return []datapoints.DataPoint{datapoints.NewNumber(m, dp)}
+			},
+			wantDocCountInDoc: false,
+		},
+		{
+			name: "doc count hint present with zero doc count",
+			buildDataPoints: func() []datapoints.DataPoint {
+				m := pmetric.NewMetric()
+				m.SetName("summary")
+				summaryDp := m.SetEmptySummary().DataPoints().AppendEmpty()
+				summaryDp.SetTimestamp(ts)
+				summaryDp.SetSum(0)
+				summaryDp.SetCount(0)
+
+				hints := summaryDp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				hints.AppendEmpty().SetStr(string(elasticsearch.HintDocCount))
+
+				return []datapoints.DataPoint{datapoints.NewSummary(m, summaryDp)}
+			},
+			wantDocCountInDoc: false,
+		},
+		{
+			name: "doc count hint with positive doc count",
+			buildDataPoints: func() []datapoints.DataPoint {
+				m := pmetric.NewMetric()
+				m.SetName("gauge")
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+				dp.SetDoubleValue(2.5)
+
+				hints := dp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				hints.AppendEmpty().SetStr(string(elasticsearch.HintDocCount))
+
+				return []datapoints.DataPoint{datapoints.NewNumber(m, dp)}
+			},
+			wantDocCountInDoc: true,
+			wantDocCountValue: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dataPoints := tt.buildDataPoints()
+
+			var buf bytes.Buffer
+			validationErrors := make([]error, 0)
+			_, err := encoder.encodeMetrics(ec, dataPoints, &validationErrors, idx, &buf)
+			require.NoError(t, err)
+			require.Empty(t, validationErrors)
+
+			if !tt.wantDocCountInDoc {
+				var doc map[string]any
+				require.NoError(t, json.Unmarshal(buf.Bytes(), &doc))
+				_, hasDocCount := doc["_doc_count"]
+				assert.False(t, hasDocCount, "expected no _doc_count in document")
+				return
+			}
+
+			docCount := gjson.GetBytes(buf.Bytes(), "_doc_count")
+			require.True(t, docCount.Exists(), "expected _doc_count in document")
+			assert.Equal(t, tt.wantDocCountValue, docCount.Uint(), "_doc_count value")
+		})
+	}
 }
 
 func docBytesToSortedString(docsBytes [][]byte) string {
@@ -190,7 +376,7 @@ func mockResourceSpans() ptrace.Traces {
 	attr.PutStr("service.instance.id", "23")
 	attr.PutStr("service.version", "env-version-1234")
 
-	resourceSpans.Resource().Attributes().PutStr(semconv.AttributeServiceName, "some-service")
+	resourceSpans.Resource().Attributes().PutStr("service.name", "some-service")
 
 	tStart := time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)
 	tEnd := time.Date(2023, 4, 19, 3, 4, 6, 6, time.UTC)
@@ -233,14 +419,19 @@ func mockResourceLogs() plog.ResourceLogs {
 func TestEncodeAttributes(t *testing.T) {
 	t.Parallel()
 
-	logRecord := plog.NewLogRecord()
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().Attributes().PutStr("keyStr", "val str")
+	scopeLogs.Scope().Attributes().PutInt("keyInt", 42)
+	logRecord := scopeLogs.LogRecords().AppendEmpty()
 	err := logRecord.Attributes().FromRaw(map[string]any{
 		"s": "baz",
 		"o": map[string]any{
 			"sub_i": 19,
 		},
 	})
-	require.NoError(t, err)
+	require.NoError(t, err, "failed to set attributes on logRecord")
 
 	tests := map[string]struct {
 		mappingMode MappingMode
@@ -253,6 +444,8 @@ func TestEncodeAttributes(t *testing.T) {
 			  "@timestamp": "1970-01-01T00:00:00.000000000Z",
 			  "Scope.name": "",
 			  "Scope.version": "",
+			  "Scope.keyInt": 42,
+			  "Scope.keyStr": "val str",
 			  "SeverityNumber": 0,
 			  "TraceFlags": 0,
 			  "o.sub_i": 19,
@@ -266,6 +459,8 @@ func TestEncodeAttributes(t *testing.T) {
 			  "@timestamp": "1970-01-01T00:00:00.000000000Z",
 			  "Scope.name": "",
 			  "Scope.version": "",
+			  "Scope.keyInt": 42,
+			  "Scope.keyStr": "val str",
 			  "SeverityNumber": 0,
 			  "TraceFlags": 0,
 			  "Attributes.o.sub_i": 19,
@@ -277,9 +472,8 @@ func TestEncodeAttributes(t *testing.T) {
 			want: `
 			{
 			  "@timestamp": "1970-01-01T00:00:00.000000000Z",
-			  "agent": {
-			    "name": "otlp"
-			  },
+			  "keyInt": 42,
+			  "keyStr": "val str",
 			  "o": {
 			    "sub_i": 19
 			  },
@@ -295,8 +489,8 @@ func TestEncodeAttributes(t *testing.T) {
 
 			var buf bytes.Buffer
 			err = encoder.encodeLog(encodingContext{
-				resource: pcommon.NewResource(),
-				scope:    pcommon.NewInstrumentationScope(),
+				resource: resourceLogs.Resource(),
+				scope:    scopeLogs.Scope(),
 			}, logRecord, elasticsearch.Index{}, &buf)
 			require.NoError(t, err)
 			require.JSONEq(t, test.want, buf.String())
@@ -308,7 +502,7 @@ func TestEncodeSpan_Events(t *testing.T) {
 	t.Parallel()
 
 	span := ptrace.NewSpan()
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		event := span.Events().AppendEmpty()
 		event.SetName(fmt.Sprintf("event_%d", i))
 	}
@@ -353,28 +547,6 @@ func TestEncodeSpan_Events(t *testing.T) {
 			  "Events.event_3.time": "1970-01-01T00:00:00.000000000Z"
 			}`,
 		},
-		"ecs": {
-			mappingMode: MappingECS,
-			want: `
-			{
-			  "@timestamp": "1970-01-01T00:00:00.000000000Z",
-			  "Duration": 0,
-			  "EndTimestamp": "1970-01-01T00:00:00.000000000Z",
-			  "Scope": {
-			    "name": "",
-			    "version": ""
-			  },
-			  "Kind": "SPAN_KIND_UNSPECIFIED",
-			  "Link": "[]",
-			  "TraceStatus": 0,
-			  "Events": {
-			    "event_0": {"time": "1970-01-01T00:00:00.000000000Z"},
-			    "event_1": {"time": "1970-01-01T00:00:00.000000000Z"},
-			    "event_2": {"time": "1970-01-01T00:00:00.000000000Z"},
-			    "event_3": {"time": "1970-01-01T00:00:00.000000000Z"}
-			  }
-			}`,
-		},
 	}
 
 	for name, test := range tests {
@@ -397,20 +569,21 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	logs := plog.NewLogs()
 	resource := logs.ResourceLogs().AppendEmpty().Resource()
 	err := resource.Attributes().FromRaw(map[string]any{
-		semconv.AttributeServiceName:    "foo.bar",
-		semconv.AttributeHostName:       "localhost",
-		semconv.AttributeServiceVersion: "1.1.0",
-		semconv.AttributeOSType:         "darwin",
-		semconv.AttributeOSDescription:  "Mac OS Mojave",
-		semconv.AttributeOSName:         "Mac OS X",
-		semconv.AttributeOSVersion:      "10.14.1",
+		"agent.name":      "custom-agent",
+		"agent.version":   "1.2.3",
+		"service.name":    "foo.bar",
+		"host.name":       "localhost",
+		"service.version": "1.1.0",
+		"os.type":         "darwin",
+		"os.description":  "Mac OS Mojave",
+		"os.name":         "Mac OS X",
+		"os.version":      "10.14.1",
 	})
 	require.NoError(t, err)
 
-	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"otlp"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","type":"macos","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
-	require.NoError(t, err)
+	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"custom-agent","version":"1.2.3"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
 
-	resourceContainerImageTags := resource.Attributes().PutEmptySlice(semconv.AttributeContainerImageTags)
+	resourceContainerImageTags := resource.Attributes().PutEmptySlice("container.image.tags")
 	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
 	require.NoError(t, err)
 
@@ -436,58 +609,217 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	assert.Equal(t, want, buf.String())
 }
 
+func TestEncodeSpanECSMode(t *testing.T) {
+	encoder, _ := newEncoder(MappingECS)
+
+	resource := pcommon.NewResource()
+	err := resource.Attributes().FromRaw(map[string]any{
+		"cloud.provider":              "aws",
+		"cloud.platform":              "aws_elastic_beanstalk",
+		"deployment.environment":      "BETA",
+		"deployment.environment.name": "BETA",
+		"service.instance.id":         "23",
+		"service.name":                "some-service",
+		"service.version":             "env-version-1234",
+		"telemetry.sdk.version":       "1.2.3",
+		"telemetry.sdk.language":      "go",
+		"process.parent_pid":          "42",
+		"process.executable.name":     "node",
+		"client.address":              "12.53.12.1",
+		"source.address":              "12.53.12.1",
+		"faas.instance":               "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		"faas.trigger":                "api-gateway",
+	})
+	require.NoError(t, err)
+
+	// add slice attributes
+	processCommandLineSlice := resource.Attributes().PutEmptySlice("process.command_line")
+	err = processCommandLineSlice.FromRaw([]any{"node", "app.js"})
+	require.NoError(t, err)
+
+	scope := pcommon.NewInstrumentationScope()
+
+	traces := ptrace.NewTraces()
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	resource.CopyTo(resourceSpans.Resource())
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scope.CopyTo(scopeSpans.Scope())
+
+	span := scopeSpans.Spans().AppendEmpty()
+	err = span.Attributes().FromRaw(map[string]any{
+		"db.system":               "sql",
+		"db.namespace":            "users",
+		"db.query.text":           "SELECT * FROM users WHERE user_id=?",
+		"http.response.body.size": "http.response.encoded_body_size",
+	})
+	require.NoError(t, err)
+
+	span.SetName("client span")
+	span.SetSpanID([8]byte{0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26})
+	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	span.SetParentSpanID([8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08})
+	span.SetKind(ptrace.SpanKindClient)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 6, 6, time.UTC)))
+	span.Status().SetCode(ptrace.StatusCodeError)
+	span.Status().SetMessage("Test")
+	require.NoError(t, err)
+
+	link1 := span.Links().AppendEmpty()
+	link1.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01})
+	link1.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+
+	link2 := span.Links().AppendEmpty()
+	link2.SetTraceID([16]byte{0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x28, 0x27, 0x26, 0x25, 0x24, 0x23, 0x22, 0x21})
+	link2.SetSpanID([8]byte{0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38})
+
+	var buf bytes.Buffer
+	err = encoder.encodeSpan(
+		encodingContext{
+			resource: resource,
+			scope:    scope,
+		},
+		span,
+		elasticsearch.Index{},
+		&buf,
+	)
+	assert.NoError(t, err)
+
+	assert.JSONEq(t, `{
+	  "@timestamp": "2023-04-19T03:04:05.000000006Z",
+	  "trace": {
+		"id": "01020304050607080807060504030201"
+	  },
+	  "span": {
+		"id": "1920212223242526",
+		"name": "client span",
+		"kind": "CLIENT",
+		"db": {
+		  "instance": "users",
+		  "statement": "SELECT * FROM users WHERE user_id=?",
+		  "type": "sql"
+		},
+		"links": [
+		  {
+			"span"  : { "id": "1112131415161718" },
+			"trace" : { "id": "01020304050607080807060504030201" }
+		  },
+		  {
+			"span"  : { "id": "3132333435363738" },
+			"trace" : { "id": "21222324252627282827262524232221" }
+		  }
+		]
+	  },
+      "parent": {
+		"id": "0102030405060708"
+	  },
+	  "cloud": {
+		"provider": "aws",
+		"service": {
+		  "name": "aws_elastic_beanstalk"
+		}
+	  },
+	  "event": {
+		"outcome": "failure"
+	  },
+	  "service": {
+		"environment": "BETA",
+		"language": {
+		  "name": "go",
+		  "version": "1.2.3"
+		},
+		"name": "some-service",
+		"node": {
+		  "name": "23"
+		},
+		"version": "env-version-1234"
+	  },
+	  "process": {
+		"parent": { "pid": "42" },
+		"title": "node",
+		"args" : ["node", "app.js"]
+	  },
+	  "client": {
+		"ip": "12.53.12.1"
+      },
+	  "source": {
+		"ip": "12.53.12.1"
+      },
+	  "faas": {
+		"id" : "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		"trigger": { "type": "api-gateway" }
+	  },
+	  "http": {
+		"response": {
+		  "encoded_body_size": "http.response.encoded_body_size"
+		}
+	  }
+	}`, buf.String())
+}
+
 func TestEncodeLogECSMode(t *testing.T) {
 	logs := plog.NewLogs()
 	resource := logs.ResourceLogs().AppendEmpty().Resource()
 	err := resource.Attributes().FromRaw(map[string]any{
-		semconv.AttributeServiceName:           "foo.bar",
-		semconv.AttributeServiceVersion:        "1.1.0",
-		semconv.AttributeServiceInstanceID:     "i-103de39e0a",
-		semconv.AttributeTelemetrySDKName:      "opentelemetry",
-		semconv.AttributeTelemetrySDKVersion:   "7.9.12",
-		semconv.AttributeTelemetrySDKLanguage:  "perl",
-		semconv.AttributeCloudProvider:         "gcp",
-		semconv.AttributeCloudAccountID:        "19347013",
-		semconv.AttributeCloudRegion:           "us-west-1",
-		semconv.AttributeCloudAvailabilityZone: "us-west-1b",
-		semconv.AttributeCloudPlatform:         "gke",
-		semconv.AttributeContainerName:         "happy-seger",
-		semconv.AttributeContainerID:           "e69cc5d3dda",
-		semconv.AttributeContainerImageName:    "my-app",
-		semconv.AttributeContainerRuntime:      "docker",
-		semconv.AttributeHostName:              "i-103de39e0a.gke.us-west-1b.cloud.google.com",
-		semconv.AttributeHostID:                "i-103de39e0a",
-		semconv.AttributeHostType:              "t2.medium",
-		semconv.AttributeHostArch:              "x86_64",
-		semconv.AttributeProcessPID:            9833,
-		semconv.AttributeProcessCommandLine:    "/usr/bin/ssh -l user 10.0.0.16",
-		semconv.AttributeProcessExecutablePath: "/usr/bin/ssh",
-		semconv.AttributeProcessRuntimeName:    "OpenJDK Runtime Environment",
-		semconv.AttributeProcessRuntimeVersion: "14.0.2",
-		semconv.AttributeOSType:                "darwin",
-		semconv.AttributeOSDescription:         "Mac OS Mojave",
-		semconv.AttributeOSName:                "Mac OS X",
-		semconv.AttributeOSVersion:             "10.14.1",
-		semconv.AttributeDeviceID:              "00000000-54b3-e7c7-0000-000046bffd97",
-		semconv.AttributeDeviceModelIdentifier: "SM-G920F",
-		semconv.AttributeDeviceModelName:       "Samsung Galaxy S6",
-		semconv.AttributeDeviceManufacturer:    "Samsung",
-		"k8s.namespace.name":                   "default",
-		"k8s.node.name":                        "node-1",
-		"k8s.pod.name":                         "opentelemetry-pod-autoconf",
-		"k8s.pod.uid":                          "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
-		"k8s.deployment.name":                  "coredns",
-		semconv.AttributeK8SJobName:            "job.name",
-		semconv.AttributeK8SCronJobName:        "cronjob.name",
-		semconv.AttributeK8SStatefulSetName:    "statefulset.name",
-		semconv.AttributeK8SReplicaSetName:     "replicaset.name",
-		semconv.AttributeK8SDaemonSetName:      "daemonset.name",
-		semconv.AttributeK8SContainerName:      "container.name",
-		semconv.AttributeK8SClusterName:        "cluster.name",
+		"agent.name":                  "custom-agent",
+		"agent.version":               "1.2.3",
+		"service.name":                "foo.bar",
+		"deployment.environment":      "BETA",
+		"deployment.environment.name": "BETA",
+		"service.version":             "1.1.0",
+		"service.instance.id":         "i-103de39e0a",
+		"telemetry.sdk.name":          "opentelemetry",
+		"telemetry.sdk.version":       "7.9.12",
+		"telemetry.sdk.language":      "perl",
+		"cloud.provider":              "gcp",
+		"cloud.account.id":            "19347013",
+		"cloud.region":                "us-west-1",
+		"cloud.availability_zone":     "us-west-1b",
+		"cloud.platform":              "gke",
+		"container.name":              "happy-seger",
+		"container.id":                "e69cc5d3dda",
+		"container.image.name":        "my-app",
+		"container.runtime":           "docker",
+		"host.name":                   "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		"host.hostname":               "hostname.example.com",
+		"host.id":                     "i-103de39e0a",
+		"host.type":                   "t2.medium",
+		"host.arch":                   "x86_64",
+		"process.pid":                 9833,
+		"process.command_line":        "/usr/bin/ssh -l user 10.0.0.16",
+		"process.executable.path":     "/usr/bin/ssh",
+		"process.runtime.name":        "OpenJDK Runtime Environment",
+		"process.runtime.version":     "14.0.2",
+		"os.type":                     "darwin",
+		"os.description":              "Mac OS Mojave",
+		"os.name":                     "Mac OS X",
+		"os.version":                  "10.14.1",
+		"device.id":                   "00000000-54b3-e7c7-0000-000046bffd97",
+		"device.model.identifier":     "SM-G920F",
+		"device.model.name":           "Samsung Galaxy S6",
+		"device.manufacturer":         "Samsung",
+		"k8s.namespace.name":          "default",
+		"k8s.node.name":               "node-1",
+		"k8s.pod.name":                "opentelemetry-pod-autoconf",
+		"k8s.pod.uid":                 "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
+		"k8s.deployment.name":         "coredns",
+		"k8s.job.name":                "job.name",
+		"k8s.cronjob.name":            "cronjob.name",
+		"k8s.statefulset.name":        "statefulset.name",
+		"k8s.replicaset.name":         "replicaset.name",
+		"k8s.daemonset.name":          "daemonset.name",
+		"k8s.container.name":          "container.name",
+		"k8s.cluster.name":            "cluster.name",
+		"process.parent_pid":          "42",
+		"process.executable.name":     "node",
+		"client.address":              "12.53.12.1",
+		"source.address":              "12.53.12.1",
+		"faas.instance":               "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		"faas.trigger":                "api-gateway",
 	})
 	require.NoError(t, err)
 
-	resourceContainerImageTags := resource.Attributes().PutEmptySlice(semconv.AttributeContainerImageTags)
+	resourceContainerImageTags := resource.Attributes().PutEmptySlice("container.image.tags")
 	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
 	require.NoError(t, err)
 
@@ -495,7 +827,8 @@ func TestEncodeLogECSMode(t *testing.T) {
 
 	record := plog.NewLogRecord()
 	err = record.Attributes().FromRaw(map[string]any{
-		"event.name": "user-password-change",
+		"event.name":              "user-password-change",
+		"http.response.body.size": 1024,
 	})
 	require.NoError(t, err)
 	observedTimestamp := pcommon.Timestamp(1710273641123456789)
@@ -513,8 +846,8 @@ func TestEncodeLogECSMode(t *testing.T) {
 	require.JSONEq(t, `{
 		"@timestamp": "2024-03-12T20:00:41.123456789Z",
 		"agent": {
-		  "name": "opentelemetry/perl",
-		  "version": "7.9.12"
+		  "name": "custom-agent",
+		  "version": "1.2.3"
 		},
 		"cloud": {
 		  "provider": "gcp",
@@ -533,7 +866,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		  "runtime": "docker"
 		},
 		"host": {
-		  "hostname": "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		  "hostname": "hostname.example.com",
 		  "name": "i-103de39e0a.gke.us-west-1b.cloud.google.com",
 		  "id": "i-103de39e0a",
 		  "type": "t2.medium",
@@ -542,17 +875,23 @@ func TestEncodeLogECSMode(t *testing.T) {
 		    "platform": "darwin",
 		    "full": "Mac OS Mojave",
 		    "name": "Mac OS X",
-		    "version": "10.14.1",
-		    "type": "macos"
+		    "version": "10.14.1"
 		  }
 		},
 		"process": {
 		  "pid": 9833,
-		  "command_line": "/usr/bin/ssh -l user 10.0.0.16",
-		  "executable": "/usr/bin/ssh"
+		  "args": "/usr/bin/ssh -l user 10.0.0.16",
+		  "executable": "/usr/bin/ssh",
+          "parent": { "pid": "42" },
+		  "title": "node"
 		},
 		"service": {
 		  "name": "foo.bar",
+		  "environment": "BETA",
+		  "language": {
+		    "name": "perl",
+		    "version": "7.9.12"
+		  },
 		  "version": "1.1.0",
 		  "node": {"name": "i-103de39e0a"},
 		  "runtime": {
@@ -569,6 +908,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		  "manufacturer": "Samsung"
 		},
 		"event": {"action": "user-password-change"},
+		"http": { "response": {"encoded_body_size": 1024 }} ,
 		"kubernetes": {
 		  "namespace": "default",
 		  "node": {"name": "node-1"},
@@ -584,288 +924,18 @@ func TestEncodeLogECSMode(t *testing.T) {
 		  "daemonset": {"name": "daemonset.name"},
 		  "container": {"name": "container.name"}
 		},
-		"orchestrator": {"cluster": {"name": "cluster.name"}}
+		"orchestrator": {"cluster": {"name": "cluster.name"}},
+        "client": {
+			"ip": "12.53.12.1"
+		},
+        "source": {
+			"ip": "12.53.12.1"
+		},
+        "faas": {
+		    "id" : "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		     "trigger": { "type": "api-gateway" }
+	  }
 	}`, buf.String())
-}
-
-func TestEncodeLogECSModeAgentName(t *testing.T) {
-	tests := map[string]struct {
-		telemetrySdkName     string
-		telemetrySdkLanguage string
-		telemetryDistroName  string
-
-		expectedAgentName           string
-		expectedServiceLanguageName string
-	}{
-		"none_set": {
-			expectedAgentName:           "otlp",
-			expectedServiceLanguageName: "unknown",
-		},
-		"name_set": {
-			telemetrySdkName:            "opentelemetry",
-			expectedAgentName:           "opentelemetry",
-			expectedServiceLanguageName: "unknown",
-		},
-		"language_set": {
-			telemetrySdkLanguage:        "java",
-			expectedAgentName:           "otlp/java",
-			expectedServiceLanguageName: "java",
-		},
-		"distro_set": {
-			telemetryDistroName:         "parts-unlimited-java",
-			expectedAgentName:           "otlp/unknown/parts-unlimited-java",
-			expectedServiceLanguageName: "unknown",
-		},
-		"name_language_set": {
-			telemetrySdkName:            "opentelemetry",
-			telemetrySdkLanguage:        "java",
-			expectedAgentName:           "opentelemetry/java",
-			expectedServiceLanguageName: "java",
-		},
-		"name_distro_set": {
-			telemetrySdkName:            "opentelemetry",
-			telemetryDistroName:         "parts-unlimited-java",
-			expectedAgentName:           "opentelemetry/unknown/parts-unlimited-java",
-			expectedServiceLanguageName: "unknown",
-		},
-		"language_distro_set": {
-			telemetrySdkLanguage:        "java",
-			telemetryDistroName:         "parts-unlimited-java",
-			expectedAgentName:           "otlp/java/parts-unlimited-java",
-			expectedServiceLanguageName: "java",
-		},
-		"name_language_distro_set": {
-			telemetrySdkName:            "opentelemetry",
-			telemetrySdkLanguage:        "java",
-			telemetryDistroName:         "parts-unlimited-java",
-			expectedAgentName:           "opentelemetry/java/parts-unlimited-java",
-			expectedServiceLanguageName: "java",
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			logs := plog.NewLogs()
-			resource := logs.ResourceLogs().AppendEmpty().Resource()
-			scope := pcommon.NewInstrumentationScope()
-			record := plog.NewLogRecord()
-
-			if test.telemetrySdkName != "" {
-				resource.Attributes().PutStr(semconv.AttributeTelemetrySDKName, test.telemetrySdkName)
-			}
-			if test.telemetrySdkLanguage != "" {
-				resource.Attributes().PutStr(semconv.AttributeTelemetrySDKLanguage, test.telemetrySdkLanguage)
-			}
-			if test.telemetryDistroName != "" {
-				resource.Attributes().PutStr(semconv.AttributeTelemetryDistroName, test.telemetryDistroName)
-			}
-
-			timestamp := pcommon.Timestamp(1710373859123456789)
-			record.SetTimestamp(timestamp)
-			logs.MarkReadOnly()
-
-			var buf bytes.Buffer
-			encoder, _ := newEncoder(MappingECS)
-			err := encoder.encodeLog(
-				encodingContext{resource: resource, scope: scope},
-				record, elasticsearch.Index{}, &buf,
-			)
-			require.NoError(t, err)
-			require.JSONEq(t, fmt.Sprintf(`{
-				"@timestamp": "2024-03-13T23:50:59.123456789Z",
-				"agent": {"name": %q}
-			}`, test.expectedAgentName), buf.String())
-		})
-	}
-}
-
-func TestEncodeLogECSModeAgentVersion(t *testing.T) {
-	tests := map[string]struct {
-		telemetryDistroVersion string
-		telemetrySdkVersion    string
-		expectedAgentVersion   string
-	}{
-		"none_set": {
-			expectedAgentVersion: "",
-		},
-		"distro_version_set": {
-			telemetryDistroVersion: "7.9.2",
-			expectedAgentVersion:   "7.9.2",
-		},
-		"sdk_version_set": {
-			telemetrySdkVersion:  "8.10.3",
-			expectedAgentVersion: "8.10.3",
-		},
-		"both_set": {
-			telemetryDistroVersion: "7.9.2",
-			telemetrySdkVersion:    "8.10.3",
-			expectedAgentVersion:   "7.9.2",
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			logs := plog.NewLogs()
-			resource := logs.ResourceLogs().AppendEmpty().Resource()
-			scope := pcommon.NewInstrumentationScope()
-			record := plog.NewLogRecord()
-
-			if test.telemetryDistroVersion != "" {
-				resource.Attributes().PutStr(semconv.AttributeTelemetryDistroVersion, test.telemetryDistroVersion)
-			}
-			if test.telemetrySdkVersion != "" {
-				resource.Attributes().PutStr(semconv.AttributeTelemetrySDKVersion, test.telemetrySdkVersion)
-			}
-
-			timestamp := pcommon.Timestamp(1710373859123456789)
-			record.SetTimestamp(timestamp)
-			logs.MarkReadOnly()
-
-			var buf bytes.Buffer
-			encoder, _ := newEncoder(MappingECS)
-			err := encoder.encodeLog(
-				encodingContext{resource: resource, scope: scope},
-				record, elasticsearch.Index{}, &buf,
-			)
-			require.NoError(t, err)
-
-			if test.expectedAgentVersion == "" {
-				require.JSONEq(t, `{
-					"@timestamp": "2024-03-13T23:50:59.123456789Z",
-					"agent": {"name": "otlp"}
-				}`, buf.String())
-			} else {
-				require.JSONEq(t, fmt.Sprintf(`{
-					"@timestamp": "2024-03-13T23:50:59.123456789Z",
-					"agent": {"name": "otlp", "version": %q}
-				}`, test.expectedAgentVersion), buf.String())
-			}
-		})
-	}
-}
-
-func TestEncodeLogECSModeHostOSType(t *testing.T) {
-	tests := map[string]struct {
-		osType string
-		osName string
-
-		expectedHostOsName     string
-		expectedHostOsType     string
-		expectedHostOsPlatform string
-	}{
-		"none_set": {
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "", // should not be set
-			expectedHostOsPlatform: "", // should not be set
-		},
-		"type_windows": {
-			osType:                 "windows",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "windows",
-			expectedHostOsPlatform: "windows",
-		},
-		"type_linux": {
-			osType:                 "linux",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "linux",
-			expectedHostOsPlatform: "linux",
-		},
-		"type_darwin": {
-			osType:                 "darwin",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "macos",
-			expectedHostOsPlatform: "darwin",
-		},
-		"type_aix": {
-			osType:                 "aix",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "unix",
-			expectedHostOsPlatform: "aix",
-		},
-		"type_hpux": {
-			osType:                 "hpux",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "unix",
-			expectedHostOsPlatform: "hpux",
-		},
-		"type_solaris": {
-			osType:                 "solaris",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "unix",
-			expectedHostOsPlatform: "solaris",
-		},
-		"type_unknown": {
-			osType:                 "unknown",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "", // should not be set
-			expectedHostOsPlatform: "unknown",
-		},
-		"name_android": {
-			osName:                 "Android",
-			expectedHostOsName:     "Android",
-			expectedHostOsType:     "android",
-			expectedHostOsPlatform: "", // should not be set
-		},
-		"name_ios": {
-			osName:                 "iOS",
-			expectedHostOsName:     "iOS",
-			expectedHostOsType:     "ios",
-			expectedHostOsPlatform: "", // should not be set
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			logs := plog.NewLogs()
-			resource := logs.ResourceLogs().AppendEmpty().Resource()
-			scope := pcommon.NewInstrumentationScope()
-			record := plog.NewLogRecord()
-
-			if test.osType != "" {
-				resource.Attributes().PutStr(semconv.AttributeOSType, test.osType)
-			}
-			if test.osName != "" {
-				resource.Attributes().PutStr(semconv.AttributeOSName, test.osName)
-			}
-
-			timestamp := pcommon.Timestamp(1710373859123456789)
-			record.SetTimestamp(timestamp)
-			logs.MarkReadOnly()
-
-			var buf bytes.Buffer
-			encoder, _ := newEncoder(MappingECS)
-			err := encoder.encodeLog(
-				encodingContext{resource: resource, scope: scope},
-				record, elasticsearch.Index{}, &buf,
-			)
-			require.NoError(t, err)
-
-			expectedJSON := `{"@timestamp":"2024-03-13T23:50:59.123456789Z", "agent":{"name":"otlp"}`
-			if test.expectedHostOsName != "" ||
-				test.expectedHostOsPlatform != "" ||
-				test.expectedHostOsType != "" {
-				expectedJSON += `, "host":{"os":{`
-
-				first := true
-				maybeAdd := func(k, v string) {
-					if v != "" {
-						if first {
-							first = false
-						} else {
-							expectedJSON += ","
-						}
-						expectedJSON += fmt.Sprintf("%q:%q", k, v)
-					}
-				}
-				maybeAdd("name", test.expectedHostOsName)
-				maybeAdd("type", test.expectedHostOsType)
-				maybeAdd("platform", test.expectedHostOsPlatform)
-				expectedJSON += "}}"
-			}
-			expectedJSON += "}"
-			require.JSONEq(t, expectedJSON, buf.String())
-		})
-	}
 }
 
 func TestEncodeLogECSModeTimestamps(t *testing.T) {
@@ -891,6 +961,9 @@ func TestEncodeLogECSModeTimestamps(t *testing.T) {
 			scope := pcommon.NewInstrumentationScope()
 			record := plog.NewLogRecord()
 
+			resource.Attributes().PutStr("agent.name", "custom-agent")
+			resource.Attributes().PutStr("agent.version", "1.2.3")
+
 			if test.timeUnixNano > 0 {
 				record.SetTimestamp(pcommon.Timestamp(test.timeUnixNano))
 			}
@@ -907,7 +980,7 @@ func TestEncodeLogECSModeTimestamps(t *testing.T) {
 			require.NoError(t, err)
 
 			require.JSONEq(t, fmt.Sprintf(
-				`{"@timestamp":%q,"agent":{"name":"otlp"}}`, test.expectedTimestamp,
+				`{"@timestamp":%q,"agent":{"name":"custom-agent","version":"1.2.3"}}`, test.expectedTimestamp,
 			), buf.String())
 		})
 	}
@@ -916,14 +989,14 @@ func TestEncodeLogECSModeTimestamps(t *testing.T) {
 func TestMapLogAttributesToECS(t *testing.T) {
 	tests := map[string]struct {
 		attrs         func() pcommon.Map
-		conversionMap map[string]string
+		conversionMap map[string]conversionEntry
 		preserveMap   map[string]bool
 		expectedDoc   func() objmodel.Document
 	}{
 		"no_attrs": {
 			attrs: pcommon.NewMap,
-			conversionMap: map[string]string{
-				"foo.bar": "baz",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "baz"},
 			},
 			expectedDoc: func() objmodel.Document {
 				return objmodel.Document{}
@@ -947,7 +1020,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutStr("foo.bar", "baz")
 				return m
 			},
-			conversionMap: map[string]string{},
+			conversionMap: map[string]conversionEntry{},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
 				d.AddString("foo.bar", "baz")
@@ -961,9 +1034,9 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutInt("qux", 17)
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
-				"qux":     "foo",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux"},
+				"qux":     {to: "foo"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -979,8 +1052,8 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutInt("qux", 17)
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -996,8 +1069,8 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutInt("qux", 17)
 				return m
 			},
-			conversionMap: map[string]string{
-				"baz": "qux",
+			conversionMap: map[string]conversionEntry{
+				"baz": {to: "qux"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1012,9 +1085,9 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutStr("foo.bar", "baz")
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
-				"qux":     "foo",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux"},
+				"qux":     {to: "foo"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1028,11 +1101,9 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutStr("foo.bar", "baz")
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
-				"qux":     "foo",
-			}, preserveMap: map[string]bool{
-				"foo.bar": true,
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux", preserveOriginal: true},
+				"qux":     {to: "foo"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1046,7 +1117,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var doc objmodel.Document
-			encodeAttributesECSMode(&doc, test.attrs(), test.conversionMap, test.preserveMap)
+			encodeAttributesECSMode(&doc, test.attrs(), test.conversionMap)
 
 			expectedDoc := test.expectedDoc()
 			require.Equal(t, expectedDoc, doc)
@@ -1054,27 +1125,64 @@ func TestMapLogAttributesToECS(t *testing.T) {
 	}
 }
 
+func TestEncodeLogECSModeKnownFieldConflict(t *testing.T) {
+	t.Run("protected_field_wins_over_nested_attributes", func(t *testing.T) {
+		logs := plog.NewLogs()
+		resource := logs.ResourceLogs().AppendEmpty().Resource()
+		err := resource.Attributes().FromRaw(map[string]any{
+			"service.name":            "test-service",
+			"process.executable.path": "/usr/bin/ssh",
+		})
+		require.NoError(t, err)
+
+		scope := pcommon.NewInstrumentationScope()
+		record := plog.NewLogRecord()
+		err = record.Attributes().FromRaw(map[string]any{
+			"process.executable.name":    "ssh",
+			"process.executable.foo":     "bar",
+			"process.executable.foo.bar": "baz",
+		})
+		require.NoError(t, err)
+
+		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
+		logs.MarkReadOnly()
+
+		var buf bytes.Buffer
+		encoder, _ := newEncoder(MappingECS)
+		err = encoder.encodeLog(
+			encodingContext{resource: resource, scope: scope},
+			record, elasticsearch.Index{}, &buf,
+		)
+		require.NoError(t, err)
+
+		// process.executable should be string "/usr/bin/ssh", not an object
+		// any other fields under process.executable should be ignored
+		output := buf.String()
+		assert.Equal(t, "/usr/bin/ssh", gjson.Get(output, "process.executable").String())
+	})
+}
+
 // JSON serializable structs for OTel test convenience
-type OTelRecord struct {
-	TraceID                OTelTraceID          `json:"trace_id"`
-	SpanID                 OTelSpanID           `json:"span_id"`
+type oTelRecord struct {
+	TraceID                oTelTraceID          `json:"trace_id"`
+	SpanID                 oTelSpanID           `json:"span_id"`
 	SeverityNumber         int32                `json:"severity_number"`
 	SeverityText           string               `json:"severity_text"`
 	EventName              string               `json:"event_name"`
 	Attributes             map[string]any       `json:"attributes"`
 	DroppedAttributesCount uint32               `json:"dropped_attributes_count"`
-	Scope                  OTelScope            `json:"scope"`
-	Resource               OTelResource         `json:"resource"`
-	Datastream             OTelRecordDatastream `json:"data_stream"`
+	Scope                  oTelScope            `json:"scope"`
+	Resource               oTelResource         `json:"resource"`
+	Datastream             oTelRecordDatastream `json:"data_stream"`
 }
 
-type OTelRecordDatastream struct {
+type oTelRecordDatastream struct {
 	Dataset   string `json:"dataset"`
 	Namespace string `json:"namespace"`
 	Type      string `json:"type"`
 }
 
-type OTelScope struct {
+type oTelScope struct {
 	Name                   string         `json:"name"`
 	Version                string         `json:"version"`
 	Attributes             map[string]any `json:"attributes"`
@@ -1082,19 +1190,19 @@ type OTelScope struct {
 	SchemaURL              string         `json:"schema_url"`
 }
 
-type OTelResource struct {
+type oTelResource struct {
 	Attributes             map[string]any `json:"attributes"`
 	DroppedAttributesCount uint32         `json:"dropped_attributes_count"`
 	SchemaURL              string         `json:"schema_url"`
 }
 
-type OTelSpanID pcommon.SpanID
+type oTelSpanID pcommon.SpanID
 
-func (o OTelSpanID) MarshalJSON() ([]byte, error) {
+func (oTelSpanID) MarshalJSON() ([]byte, error) {
 	return nil, nil
 }
 
-func (o *OTelSpanID) UnmarshalJSON(data []byte) error {
+func (o *oTelSpanID) UnmarshalJSON(data []byte) error {
 	b, err := decodeOTelID(data)
 	if err != nil {
 		return err
@@ -1103,13 +1211,13 @@ func (o *OTelSpanID) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type OTelTraceID pcommon.TraceID
+type oTelTraceID pcommon.TraceID
 
-func (o OTelTraceID) MarshalJSON() ([]byte, error) {
+func (oTelTraceID) MarshalJSON() ([]byte, error) {
 	return nil, nil
 }
 
-func (o *OTelTraceID) UnmarshalJSON(data []byte) error {
+func (o *oTelTraceID) UnmarshalJSON(data []byte) error {
 	b, err := decodeOTelID(data)
 	if err != nil {
 		return err
@@ -1134,23 +1242,23 @@ func TestEncodeLogOtelMode(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		rec    OTelRecord
-		wantFn func(OTelRecord) OTelRecord // Allows each test to customized the expectations from the original test record data
+		rec    oTelRecord
+		wantFn func(oTelRecord) oTelRecord // Allows each test to customized the expectations from the original test record data
 	}{
 		{
 			name: "default", // Expecting default data_stream values
 			rec:  buildOTelRecordTestData(t, nil),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				return assignDatastreamData(or)
 			},
 		},
 		{
 			name: "custom dataset",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["data_stream.dataset"] = "custom"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				// Datastream attributes are expected to be deleted from under the attributes
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "custom.otel")
@@ -1158,71 +1266,71 @@ func TestEncodeLogOtelMode(t *testing.T) {
 		},
 		{
 			name: "custom dataset with otel suffix",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["data_stream.dataset"] = "custom.otel"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "custom.otel.otel")
 			},
 		},
 		{
 			name: "custom dataset/namespace",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["data_stream.dataset"] = "customds"
 				or.Attributes["data_stream.namespace"] = "customns"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "customds.otel", "customns")
 			},
 		},
 		{
 			name: "dataset attributes priority",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["data_stream.dataset"] = "first"
 				or.Scope.Attributes["data_stream.dataset"] = "second"
 				or.Resource.Attributes["data_stream.dataset"] = "third"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "first.otel")
 			},
 		},
 		{
 			name: "dataset scope attribute priority",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Scope.Attributes["data_stream.dataset"] = "second"
 				or.Resource.Attributes["data_stream.dataset"] = "third"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "second.otel")
 			},
 		},
 		{
 			name: "dataset resource attribute priority",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Resource.Attributes["data_stream.dataset"] = "third"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "third.otel")
 			},
 		},
 		{
 			name: "sanitize dataset/namespace",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["data_stream.dataset"] = disallowedDatasetRunes + randomString
 				or.Attributes["data_stream.namespace"] = disallowedNamespaceRunes + randomString
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				deleteDatasetAttributes(or)
 				ds := strings.Repeat("_", len(disallowedDatasetRunes)) + randomString[:maxLenDataset] + ".otel"
 				ns := strings.Repeat("_", len(disallowedNamespaceRunes)) + randomString[:maxLenNamespace]
@@ -1231,24 +1339,24 @@ func TestEncodeLogOtelMode(t *testing.T) {
 		},
 		{
 			name: "event_name from attributes.event.name",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["event.name"] = "foo"
 				or.EventName = ""
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				or.EventName = "foo"
 				return assignDatastreamData(or)
 			},
 		},
 		{
 			name: "event_name takes precedent over attributes.event.name",
-			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+			rec: buildOTelRecordTestData(t, func(or oTelRecord) oTelRecord {
 				or.Attributes["event.name"] = "foo"
 				or.EventName = "bar"
 				return or
 			}),
-			wantFn: func(or OTelRecord) OTelRecord {
+			wantFn: func(or oTelRecord) oTelRecord {
 				or.EventName = "bar"
 				return assignDatastreamData(or)
 			},
@@ -1281,7 +1389,7 @@ func TestEncodeLogOtelMode(t *testing.T) {
 			want = tc.wantFn(want)
 		}
 
-		var got OTelRecord
+		var got oTelRecord
 		err = json.Unmarshal(buf.Bytes(), &got)
 
 		require.NoError(t, err)
@@ -1291,7 +1399,7 @@ func TestEncodeLogOtelMode(t *testing.T) {
 }
 
 // helper function that creates the OTel LogRecord from the test structure
-func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
+func createTestOTelLogRecord(t *testing.T, rec oTelRecord) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
 	record := plog.NewLogRecord()
 
 	record.SetTraceID(pcommon.TraceID(rec.TraceID))
@@ -1319,7 +1427,7 @@ func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcom
 	return record, scope, resource
 }
 
-func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelRecord {
+func buildOTelRecordTestData(t *testing.T, fn func(oTelRecord) oTelRecord) oTelRecord {
 	s := `{
     "@timestamp": "2024-03-12T20:00:41.123456780Z",
     "attributes": {
@@ -1353,7 +1461,7 @@ func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelR
     "trace_id": "01020304050607080900010203040506"
 }`
 
-	var record OTelRecord
+	var record oTelRecord
 	err := json.Unmarshal([]byte(s), &record)
 	assert.NoError(t, err)
 	if fn != nil {
@@ -1362,7 +1470,7 @@ func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelR
 	return record
 }
 
-func deleteDatasetAttributes(or OTelRecord) {
+func deleteDatasetAttributes(or oTelRecord) {
 	deleteDatasetAttributesFromMap(or.Attributes)
 	deleteDatasetAttributesFromMap(or.Scope.Attributes)
 	deleteDatasetAttributesFromMap(or.Resource.Attributes)
@@ -1374,8 +1482,8 @@ func deleteDatasetAttributesFromMap(m map[string]any) {
 	delete(m, "data_stream.type")
 }
 
-func assignDatastreamData(or OTelRecord, a ...string) OTelRecord {
-	r := OTelRecordDatastream{
+func assignDatastreamData(or oTelRecord, a ...string) oTelRecord {
+	r := oTelRecordDatastream{
 		Dataset:   "generic.otel",
 		Namespace: "default",
 		Type:      "logs",

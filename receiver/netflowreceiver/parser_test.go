@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 func TestGetProtoName(t *testing.T) {
@@ -57,6 +56,7 @@ func TestConvertToOtel(t *testing.T) {
 			TimeFlowEndNs:   1000000200,
 			SequenceNum:     1,
 			SamplingRate:    1,
+			TcpFlags:        1,
 		},
 	}
 
@@ -71,12 +71,12 @@ func TestConvertToOtel(t *testing.T) {
 	assert.Equal(t, int64(1000000000), record.ObservedTimestamp().AsTime().UnixNano())
 
 	expectedAttributes := pcommon.NewMap()
-	expectedAttributes.PutStr(semconv.AttributeSourceAddress, "192.168.1.1")
-	expectedAttributes.PutInt(semconv.AttributeSourcePort, 0)
-	expectedAttributes.PutStr(semconv.AttributeDestinationAddress, "192.168.1.2")
-	expectedAttributes.PutInt(semconv.AttributeDestinationPort, 2055)
-	expectedAttributes.PutStr(semconv.AttributeNetworkTransport, getTransportName(6))
-	expectedAttributes.PutStr(semconv.AttributeNetworkType, getEtypeName(0x800))
+	expectedAttributes.PutStr("source.address", "192.168.1.1")
+	expectedAttributes.PutInt("source.port", 0)
+	expectedAttributes.PutStr("destination.address", "192.168.1.2")
+	expectedAttributes.PutInt("destination.port", 2055)
+	expectedAttributes.PutStr("network.transport", getTransportName(6))
+	expectedAttributes.PutStr("network.type", getEtypeName(0x800))
 	expectedAttributes.PutInt("flow.io.bytes", 100)
 	expectedAttributes.PutInt("flow.io.packets", 1)
 	expectedAttributes.PutStr("flow.type", getFlowTypeName(3))
@@ -86,6 +86,7 @@ func TestConvertToOtel(t *testing.T) {
 	expectedAttributes.PutInt("flow.end", 1000000200)
 	expectedAttributes.PutInt("flow.sampling_rate", 1)
 	expectedAttributes.PutStr("flow.sampler_address", "192.168.1.100")
+	expectedAttributes.PutInt("flow.tcp_flags", 1)
 
 	assert.Equal(t, expectedAttributes, record.Attributes())
 }
@@ -104,12 +105,12 @@ func TestEmptyConvertToOtel(t *testing.T) {
 	assert.Equal(t, int64(0), record.ObservedTimestamp().AsTime().UnixNano())
 
 	expectedAttributes := pcommon.NewMap()
-	expectedAttributes.PutStr(semconv.AttributeSourceAddress, "invalid IP")
-	expectedAttributes.PutInt(semconv.AttributeSourcePort, 0)
-	expectedAttributes.PutStr(semconv.AttributeDestinationAddress, "invalid IP")
-	expectedAttributes.PutInt(semconv.AttributeDestinationPort, 0)
-	expectedAttributes.PutStr(semconv.AttributeNetworkTransport, "hopopt")
-	expectedAttributes.PutStr(semconv.AttributeNetworkType, "unknown")
+	expectedAttributes.PutStr("source.address", "invalid IP")
+	expectedAttributes.PutInt("source.port", 0)
+	expectedAttributes.PutStr("destination.address", "invalid IP")
+	expectedAttributes.PutInt("destination.port", 0)
+	expectedAttributes.PutStr("network.transport", "hopopt")
+	expectedAttributes.PutStr("network.type", "unknown")
 	expectedAttributes.PutInt("flow.io.bytes", 0)
 	expectedAttributes.PutInt("flow.io.packets", 0)
 	expectedAttributes.PutStr("flow.type", "unknown")
@@ -119,6 +120,7 @@ func TestEmptyConvertToOtel(t *testing.T) {
 	expectedAttributes.PutInt("flow.end", 0)
 	expectedAttributes.PutInt("flow.sampling_rate", 0)
 	expectedAttributes.PutStr("flow.sampler_address", "invalid IP")
+	expectedAttributes.PutInt("flow.tcp_flags", 0)
 
 	assert.Equal(t, expectedAttributes, record.Attributes())
 }

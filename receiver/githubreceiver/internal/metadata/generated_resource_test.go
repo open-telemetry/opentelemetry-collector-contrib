@@ -13,8 +13,8 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
-			rb.SetOrganizationName("organization.name-val")
-			rb.SetVcsVendorName("vcs.vendor.name-val")
+			rb.SetVcsOwnerName("vcs.owner.name-val")
+			rb.SetVcsProviderName("vcs.provider.name-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
@@ -30,16 +30,15 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("organization.name")
+			vcsOwnerNameAttrVal, ok := res.Attributes().Get("vcs.owner.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "organization.name-val", val.Str())
+				assert.Equal(t, "vcs.owner.name-val", vcsOwnerNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("vcs.vendor.name")
+			vcsProviderNameAttrVal, ok := res.Attributes().Get("vcs.provider.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "vcs.vendor.name-val", val.Str())
+				assert.Equal(t, "vcs.provider.name-val", vcsProviderNameAttrVal.Str())
 			}
 		})
 	}

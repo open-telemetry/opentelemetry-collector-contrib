@@ -98,10 +98,16 @@ func Test_replaceMatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
 
-			exprFunc, err := replaceMatch(tt.target, tt.pattern, tt.replacement, tt.function, tt.replacementFormat)
-			assert.NoError(t, err)
+			pattern := ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(_ context.Context, _ pcommon.Value) (any, error) {
+					return tt.pattern, nil
+				},
+			}
+
+			exprFunc, err := replaceMatch(tt.target, pattern, tt.replacement, tt.function, tt.replacementFormat)
+			require.NoError(t, err)
 			result, err := exprFunc(nil, scenarioValue)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Nil(t, result)
 
 			expected := pcommon.NewValueStr("")
@@ -118,7 +124,7 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -131,11 +137,17 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 	function := ottl.Optional[ottl.FunctionGetter[any]]{}
 	replacementFormat := ottl.Optional[ottl.StringGetter[any]]{}
 
-	exprFunc, err := replaceMatch[any](target, "*", replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	pattern := ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "*", nil
+		},
+	}
+
+	exprFunc, err := replaceMatch[any](target, pattern, replacement, function, replacementFormat)
+	require.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 
 	assert.Equal(t, pcommon.NewValueInt(1), input)
@@ -147,7 +159,7 @@ func Test_replaceMatch_bad_function_input(t *testing.T) {
 		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -160,8 +172,14 @@ func Test_replaceMatch_bad_function_input(t *testing.T) {
 	function := ottl.Optional[ottl.FunctionGetter[any]]{}
 	replacementFormat := ottl.Optional[ottl.StringGetter[any]]{}
 
-	exprFunc, err := replaceMatch[any](target, "regexp", replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	pattern := ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "regexp", nil
+		},
+	}
+
+	exprFunc, err := replaceMatch[any](target, pattern, replacement, function, replacementFormat)
+	require.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
 	require.Error(t, err)
@@ -175,7 +193,7 @@ func Test_replaceMatch_bad_function_result(t *testing.T) {
 		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -194,8 +212,14 @@ func Test_replaceMatch_bad_function_result(t *testing.T) {
 	function := ottl.NewTestingOptional[ottl.FunctionGetter[any]](ottlValue)
 	replacementFormat := ottl.Optional[ottl.StringGetter[any]]{}
 
-	exprFunc, err := replaceMatch[any](target, "regexp", replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	pattern := ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "regexp", nil
+		},
+	}
+
+	exprFunc, err := replaceMatch[any](target, pattern, replacement, function, replacementFormat)
+	require.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
 	require.Error(t, err)
@@ -208,7 +232,7 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(_ context.Context, _ any, _ any) error {
+		Setter: func(context.Context, any, any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -221,10 +245,16 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 	function := ottl.Optional[ottl.FunctionGetter[any]]{}
 	replacementFormat := ottl.Optional[ottl.StringGetter[any]]{}
 
-	exprFunc, err := replaceMatch[any](target, "*", replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	pattern := ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "*", nil
+		},
+	}
+
+	exprFunc, err := replaceMatch[any](target, pattern, replacement, function, replacementFormat)
+	require.NoError(t, err)
 
 	result, err := exprFunc(nil, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, result)
 }

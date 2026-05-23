@@ -4,6 +4,7 @@
 package client // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport/client"
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -19,7 +20,7 @@ type StatsD struct {
 
 // NewStatsD creates a new StatsD instance to support the need for testing
 // the statsdreceiver package and is not intended/tested to be used in production.
-func NewStatsD(transport string, address string) (*StatsD, error) {
+func NewStatsD(transport, address string) (*StatsD, error) {
 	statsd := &StatsD{
 		transport: transport,
 		address:   address,
@@ -84,6 +85,19 @@ func (s *StatsD) SendMetric(metric Metric) error {
 		return fmt.Errorf("send metric on test client: %w", err)
 	}
 	return nil
+}
+
+func (s *StatsD) ConnectionLocalAddress() (net.Addr, error) {
+	if s.conn == nil {
+		return nil, errors.New("connection is not established")
+	}
+
+	conn, ok := s.conn.(net.Conn)
+	if !ok {
+		return nil, fmt.Errorf("unknown/unsupported connection type: %T", s.conn)
+	}
+
+	return conn.LocalAddr(), nil
 }
 
 // Metric contains the metric fields for a StatsD message.

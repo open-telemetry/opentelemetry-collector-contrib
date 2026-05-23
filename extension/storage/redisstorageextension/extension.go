@@ -33,11 +33,16 @@ func newRedisStorage(logger *zap.Logger, config *Config) (extension.Extension, e
 }
 
 // Start runs cleanup if configured
-func (rs *redisStorage) Start(context.Context, component.Host) error {
+func (rs *redisStorage) Start(ctx context.Context, _ component.Host) error {
+	tlsConfig, err := rs.cfg.TLS.LoadTLSConfig(ctx)
+	if err != nil {
+		return err
+	}
 	c := redis.NewClient(&redis.Options{
-		Addr:     rs.cfg.Endpoint,
-		Password: string(rs.cfg.Password),
-		DB:       rs.cfg.DB,
+		Addr:      rs.cfg.Endpoint,
+		Password:  string(rs.cfg.Password),
+		DB:        rs.cfg.DB,
+		TLSConfig: tlsConfig,
 	})
 	rs.client = c
 	return nil
@@ -83,17 +88,39 @@ func (rc redisClient) Batch(ctx context.Context, ops ...*storage.Operation) erro
 		switch op.Type {
 		case storage.Delete:
 			p.Del(ctx, rc.prefix+op.Key)
-		case storage.Get:
-			p.Get(ctx, rc.prefix+op.Key)
 		case storage.Set:
 			p.Set(ctx, rc.prefix+op.Key, op.Value, rc.expiration)
 		}
 	}
 	_, err := p.Exec(ctx)
+	if err != nil {
+		return err
+	}
+	// once the pipeline has been executed, we need to fetch all the values
+	// and set them on the op
+	for _, op := range ops {
+		if op.Type == storage.Get {
+			value, e := rc.client.Get(ctx, rc.prefix+op.Key).Bytes()
+			if e != nil {
+				if errors.Is(e, redis.Nil) {
+					continue
+				}
+				return e
+			}
+			if value != nil {
+				// the output of Bucket.Get is only valid within a transaction, so we need to make a copy
+				// to be able to return the value
+				op.Value = make([]byte, len(value))
+				copy(op.Value, value)
+			} else {
+				op.Value = nil
+			}
+		}
+	}
 	return err
 }
 
-func (rc redisClient) Close(_ context.Context) error {
+func (redisClient) Close(context.Context) error {
 	return nil
 }
 

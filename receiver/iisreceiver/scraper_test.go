@@ -45,6 +45,13 @@ func TestScrape(t *testing.T) {
 	require.NoError(t, err)
 
 	actualMetrics, err := scraper.scrape(t.Context())
+	defer func() {
+		if t.Failed() {
+			metricBytes, errMarshal := golden.MarshalMetricsYAML(actualMetrics)
+			require.NoError(t, errMarshal)
+			t.Errorf("latest result:\n%s", metricBytes)
+		}
+	}()
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
@@ -174,8 +181,18 @@ func newMockWatcherFactorFromPath(watchErr error, value float64) func(string) (w
 	}
 }
 
+// ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
+func (*mockPerfCounter) ScrapeRawValue(*int64) (bool, error) {
+	panic("unimplemented")
+}
+
+// ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
+func (*mockPerfCounter) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+	panic("unimplemented")
+}
+
 // Path
-func (mpc *mockPerfCounter) Path() string {
+func (*mockPerfCounter) Path() string {
 	return ""
 }
 
@@ -185,10 +202,10 @@ func (mpc *mockPerfCounter) ScrapeData() ([]winperfcounters.CounterValue, error)
 }
 
 // Close
-func (mpc *mockPerfCounter) Close() error {
+func (*mockPerfCounter) Close() error {
 	return nil
 }
 
-func (mpc *mockPerfCounter) Reset() error {
+func (*mockPerfCounter) Reset() error {
 	return nil
 }

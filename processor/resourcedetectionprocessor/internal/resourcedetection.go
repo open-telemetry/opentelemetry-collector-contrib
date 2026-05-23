@@ -11,24 +11,13 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
-	"github.com/aws/aws-sdk-go/aws/request"
 	backoff "github.com/cenkalti/backoff/v5"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
-)
-
-var allowErrorPropagationFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.resourcedetection.propagateerrors",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, allows errors returned from resource detectors to propagate in the Start() method and stop the collector."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37961"),
-	featuregate.WithRegisterFromVersion("v0.121.0"),
 )
 
 type DetectorType string
@@ -37,9 +26,6 @@ type Detector interface {
 	Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error)
 }
 
-type HandlerProvider interface {
-	ExposeHandlers() *request.Handlers
-}
 type DetectorConfig any
 
 type ResourceDetectorConfig interface {
@@ -60,7 +46,6 @@ func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourcePro
 func (f *ResourceProviderFactory) CreateResourceProvider(
 	params processor.Settings,
 	timeout time.Duration,
-	attributes []string,
 	detectorConfigs ResourceDetectorConfig,
 	detectorTypes ...DetectorType,
 ) (*ResourceProvider, error) {
@@ -69,14 +54,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 		return nil, err
 	}
 
-	attributesToKeep := make(map[string]struct{})
-	if len(attributes) > 0 {
-		for _, attribute := range attributes {
-			attributesToKeep[attribute] = struct{}{}
-		}
-	}
-
-	provider := NewResourceProvider(params.Logger, timeout, attributesToKeep, detectors...)
+	provider := NewResourceProvider(params.Logger, timeout, detectors...)
 	return provider, nil
 }
 
@@ -103,9 +81,15 @@ type ResourceProvider struct {
 	logger           *zap.Logger
 	timeout          time.Duration
 	detectors        []Detector
-	detectedResource *resourceResult
-	once             sync.Once
-	attributesToKeep map[string]struct{}
+	detectedResource atomic.Pointer[resourceResult]
+
+	// Refresh loop control
+	refreshInterval time.Duration
+	stopCh          chan struct{}
+	cancelFunc      context.CancelFunc
+	wg              sync.WaitGroup
+	startOnce       sync.Once
+	stopOnce        sync.Once
 }
 
 type resourceResult struct {
@@ -114,101 +98,133 @@ type resourceResult struct {
 	err       error
 }
 
-func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesToKeep map[string]struct{}, detectors ...Detector) *ResourceProvider {
+func NewResourceProvider(logger *zap.Logger, timeout time.Duration, detectors ...Detector) *ResourceProvider {
 	return &ResourceProvider{
-		logger:           logger,
-		timeout:          timeout,
-		detectors:        detectors,
-		attributesToKeep: attributesToKeep,
+		logger:          logger,
+		timeout:         timeout,
+		detectors:       detectors,
+		refreshInterval: 0, // No periodic refresh by default
 	}
 }
 
-func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resource pcommon.Resource, schemaURL string, err error) {
-	p.once.Do(func() {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, client.Timeout)
-		defer cancel()
-		p.detectResource(ctx, client.Timeout)
+func (p *ResourceProvider) Get(_ context.Context, _ *http.Client) (pcommon.Resource, string, error) {
+	result := p.detectedResource.Load()
+	if result != nil {
+		return result.resource, result.schemaURL, result.err
+	}
+	return pcommon.NewResource(), "", nil
+}
+
+// Refresh recomputes the resource, replacing any previous result.
+func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) error {
+	ctx, cancel := context.WithTimeout(ctx, client.Timeout)
+	defer cancel()
+
+	res, schemaURL, err := p.detectResource(ctx)
+	prev := p.detectedResource.Load()
+
+	// Check if we have a previous successful snapshot
+	hadPrevSuccess := prev != nil && prev.err == nil && !IsEmptyResource(prev.resource)
+
+	// Keep the last good snapshot if the refresh errored.
+	// Note: An empty resource with no error is considered a success (e.g., detector determined
+	// it's not running on that cloud provider), so we accept it rather than keeping stale data.
+	if hadPrevSuccess && err != nil {
+		p.logger.Warn("resource refresh failed; keeping previous snapshot", zap.Error(err))
+		// Return nil error since we're successfully keeping the cached resource
+		return nil
+	}
+
+	// Accept the new snapshot (even if empty, as long as there was no error).
+	p.detectedResource.Store(&resourceResult{
+		resource:  res,
+		schemaURL: schemaURL,
+		err:       err,
 	})
 
-	return p.detectedResource.resource, p.detectedResource.schemaURL, p.detectedResource.err
+	return err
 }
 
-func (p *ResourceProvider) ConfigureHandlers(_ context.Context, host component.Host, middlewareID component.ID) {
-	for _, detector := range p.detectors {
-		if handlerDetector, ok := detector.(HandlerProvider); ok {
-			awsmiddleware.TryConfigure(p.logger, host, middlewareID, awsmiddleware.SDKv1(handlerDetector.ExposeHandlers()))
-		}
-	}
-}
-
-func (p *ResourceProvider) detectResource(ctx context.Context, timeout time.Duration) {
-	p.detectedResource = &resourceResult{}
-
+func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource, string, error) {
 	res := pcommon.NewResource()
 	mergedSchemaURL := ""
+	var joinedErr error
+	successes := 0
 
 	p.logger.Info("began detecting resource information")
 
 	resultsChan := make([]chan resourceResult, len(p.detectors))
 	for i, detector := range p.detectors {
-		resultsChan[i] = make(chan resourceResult)
-		go func(detector Detector) {
+		ch := make(chan resourceResult, 1)
+		resultsChan[i] = ch
+
+		go func(detector Detector, ch chan resourceResult) {
 			sleep := backoff.ExponentialBackOff{
 				InitialInterval:     1 * time.Second,
 				RandomizationFactor: 1.5,
 				Multiplier:          2,
-				MaxInterval:         timeout,
 			}
 			sleep.Reset()
-			var err error
-			var r pcommon.Resource
-			var schemaURL string
+
 			for {
-				r, schemaURL, err = detector.Detect(ctx)
+				r, schemaURL, err := detector.Detect(ctx)
 				if err == nil {
-					resultsChan[i] <- resourceResult{resource: r, schemaURL: schemaURL, err: nil}
+					ch <- resourceResult{resource: r, schemaURL: schemaURL}
 					return
 				}
+
 				p.logger.Warn("failed to detect resource", zap.Error(err))
 
-				timer := time.NewTimer(sleep.NextBackOff())
-				select {
-				case <-timer.C:
-					fmt.Println("Retrying fetching data...")
-				case <-ctx.Done():
-					p.logger.Warn("Context was cancelled: %w", zap.Error(ctx.Err()))
-					resultsChan[i] <- resourceResult{resource: r, schemaURL: schemaURL, err: err}
+				next := sleep.NextBackOff()
+				if next == backoff.Stop {
+					ch <- resourceResult{err: err}
 					return
 				}
+
+				timer := time.NewTimer(next)
+				select {
+				case <-ctx.Done():
+					p.logger.Warn("context was cancelled", zap.Error(ctx.Err()))
+					timer.Stop()
+					ch <- resourceResult{err: err}
+					return
+				case <-timer.C:
+					// retry
+				}
 			}
-		}(detector)
+		}(detector, ch)
 	}
 
 	for _, ch := range resultsChan {
 		result := <-ch
 		if result.err != nil {
-			if allowErrorPropagationFeatureGate.IsEnabled() {
-				p.detectedResource.err = errors.Join(p.detectedResource.err, result.err)
-			}
-		} else {
-			mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, result.schemaURL)
-			MergeResource(res, result.resource, false)
+			joinedErr = errors.Join(joinedErr, result.err)
+			continue
 		}
+		successes++
+		mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, result.schemaURL)
+		MergeResource(res, result.resource, false)
 	}
-
-	droppedAttributes := filterAttributes(res.Attributes(), p.attributesToKeep)
 
 	p.logger.Info("detected resource information", zap.Any("resource", res.Attributes().AsRaw()))
-	if len(droppedAttributes) > 0 {
-		p.logger.Info("dropped resource information", zap.Strings("resource keys", droppedAttributes))
+
+	var returnErr error
+	if successes == 0 && joinedErr == nil {
+		returnErr = errors.New("resource detection failed: no detectors succeeded")
+	} else {
+		returnErr = joinedErr
 	}
 
-	p.detectedResource.resource = res
-	p.detectedResource.schemaURL = mergedSchemaURL
+	// If all detectors failed, return empty resource.
+	if successes == 0 {
+		return pcommon.NewResource(), "", returnErr
+	}
+
+	// Partial or full success: return merged resources.
+	return res, mergedSchemaURL, returnErr
 }
 
-func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {
+func MergeSchemaURL(currentSchemaURL, newSchemaURL string) string {
 	if currentSchemaURL == "" {
 		return newSchemaURL
 	}
@@ -223,38 +239,82 @@ func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {
 	return currentSchemaURL
 }
 
-func filterAttributes(am pcommon.Map, attributesToKeep map[string]struct{}) []string {
-	if len(attributesToKeep) > 0 {
-		var droppedAttributes []string
-		am.RemoveIf(func(k string, _ pcommon.Value) bool {
-			_, keep := attributesToKeep[k]
-			if !keep {
-				droppedAttributes = append(droppedAttributes, k)
-			}
-			return !keep
-		})
-		return droppedAttributes
-	}
-	return nil
-}
-
 func MergeResource(to, from pcommon.Resource, overrideTo bool) {
 	if IsEmptyResource(from) {
 		return
 	}
 
 	toAttr := to.Attributes()
-	for k, v := range from.Attributes().All() {
+	fromAttr := from.Attributes()
+	if toAttr.Len() == 0 {
+		toAttr.EnsureCapacity(fromAttr.Len())
+		fromAttr.CopyTo(toAttr)
+		return
+	}
+
+	for k, v := range fromAttr.All() {
 		if overrideTo {
 			v.CopyTo(toAttr.PutEmpty(k))
 		} else {
-			if _, found := toAttr.Get(k); !found {
-				v.CopyTo(toAttr.PutEmpty(k))
+			if targetVal, found := toAttr.GetOrPutEmpty(k); !found {
+				v.CopyTo(targetVal)
 			}
 		}
 	}
 }
 
 func IsEmptyResource(res pcommon.Resource) bool {
+	if res == (pcommon.Resource{}) {
+		return true
+	}
 	return res.Attributes().Len() == 0
+}
+
+// StartRefreshing begins periodic resource refresh if refreshInterval > 0.
+// It is safe to call multiple times; only the first call starts the goroutine.
+func (p *ResourceProvider) StartRefreshing(refreshInterval time.Duration, client *http.Client) {
+	p.startOnce.Do(func() {
+		p.refreshInterval = refreshInterval
+		if p.refreshInterval <= 0 {
+			return
+		}
+
+		p.stopCh = make(chan struct{})
+		ctx, cancel := context.WithCancel(context.Background())
+		p.cancelFunc = cancel
+		p.wg.Add(1)
+		go p.refreshLoop(ctx, client)
+	})
+}
+
+// StopRefreshing stops the periodic refresh goroutine.
+// It is safe to call multiple times; only the first call stops the goroutine.
+func (p *ResourceProvider) StopRefreshing() {
+	p.stopOnce.Do(func() {
+		if p.cancelFunc != nil {
+			p.cancelFunc()
+		}
+		if p.stopCh != nil {
+			close(p.stopCh)
+			p.wg.Wait()
+		}
+	})
+}
+
+func (p *ResourceProvider) refreshLoop(ctx context.Context, client *http.Client) {
+	defer p.wg.Done()
+	ticker := time.NewTicker(p.refreshInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			err := p.Refresh(ctx, client)
+			if err != nil {
+				p.logger.Warn("resource refresh failed", zap.Error(err))
+			}
+		case <-p.stopCh:
+			return
+		}
+	}
 }

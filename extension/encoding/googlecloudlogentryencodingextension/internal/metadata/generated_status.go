@@ -7,10 +7,11 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("googlecloudlogentry_encoding")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension"
+	Type           = component.MustNewType("google_cloud_logentry_encoding")
+	DeprecatedType = component.MustNewType("googlecloudlogentry_encoding")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension"
 )
 
 const (
-	ExtensionStability = component.StabilityLevelDevelopment
+	ExtensionStability = component.StabilityLevelAlpha
 )

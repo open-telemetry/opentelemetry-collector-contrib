@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
@@ -16,7 +18,7 @@ func newMetadataConfigfromConfig(cfg *datadogconfig.Config) hostmetadata.PusherC
 		MetricsEndpoint:     cfg.Metrics.Endpoint,
 		APIKey:              string(cfg.API.Key),
 		UseResourceMetadata: cfg.HostMetadata.HostnameSource == datadogconfig.HostnameSourceFirstResource,
-		InsecureSkipVerify:  cfg.TLSSetting.InsecureSkipVerify,
+		InsecureSkipVerify:  cfg.TLS.InsecureSkipVerify,
 		ClientConfig:        cfg.ClientConfig,
 		RetrySettings:       cfg.BackOffConfig,
 		ReporterPeriod:      cfg.HostMetadata.ReporterPeriod,

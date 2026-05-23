@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
@@ -358,7 +357,7 @@ func Test_Matching_True(t *testing.T) {
 	}))
 
 	resource := pcommon.NewResource()
-	resource.Attributes().PutStr(conventions.AttributeServiceName, "svcA")
+	resource.Attributes().PutStr("service.name", "svcA")
 	resource.Attributes().PutStr("resString", "arithmetic")
 
 	library := pcommon.NewInstrumentationScope()
@@ -378,6 +377,6 @@ func Test_Matching_True(t *testing.T) {
 
 func resource(service string) pcommon.Resource {
 	r := pcommon.NewResource()
-	r.Attributes().PutStr(conventions.AttributeServiceName, service)
+	r.Attributes().PutStr("service.name", service)
 	return r
 }

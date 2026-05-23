@@ -49,7 +49,23 @@ func (opt ignoreResourceAttributeValue) maskProfilesResourceAttributeValue(profi
 	}
 }
 
-// IgnoreResourceAttributeValue is a CompareProfilesOption that removes a resource attribute
+// IgnoreResourceEntityRefs is a CompareProfilesOption that clears entity references
+// on all resources.
+func IgnoreResourceEntityRefs() CompareProfilesOption {
+	return compareProfilesOptionFunc(func(expected, actual pprofile.Profiles) {
+		maskProfilesResourceEntityRefs(expected)
+		maskProfilesResourceEntityRefs(actual)
+	})
+}
+
+func maskProfilesResourceEntityRefs(profiles pprofile.Profiles) {
+	rps := profiles.ResourceProfiles()
+	for i := 0; i < rps.Len(); i++ {
+		internal.MaskResourceEntityRefs(rps.At(i).Resource())
+	}
+}
+
+// IgnoreScopeAttributeValue is a CompareProfilesOption that removes a scope attribute
 // from all resources.
 func IgnoreScopeAttributeValue(attributeName string) CompareProfilesOption {
 	return ignoreScopeAttributeValue{
@@ -98,20 +114,11 @@ func (opt ignoreProfileAttributeValue) applyOnProfiles(expected, actual pprofile
 }
 
 func (opt ignoreProfileAttributeValue) maskProfileAttributeValue(profiles pprofile.Profiles) {
-	rls := profiles.ResourceProfiles()
-	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
-		sls := rls.At(i).ScopeProfiles()
-		for j := 0; j < sls.Len(); j++ {
-			lrs := sls.At(j).Profiles()
-			for k := 0; k < lrs.Len(); k++ {
-				lr := lrs.At(k)
-				for l := 0; l < lr.AttributeTable().Len(); l++ {
-					a := lr.AttributeTable().At(l)
-					if a.Key() == opt.attributeName {
-						a.Value().SetEmptyBytes()
-					}
-				}
-			}
+	dic := profiles.Dictionary()
+	for l := 0; l < dic.AttributeTable().Len(); l++ {
+		a := dic.AttributeTable().At(l)
+		if dic.StringTable().At(int(a.KeyStrindex())) == opt.attributeName {
+			a.Value().SetEmptyBytes()
 		}
 	}
 }
@@ -129,7 +136,7 @@ func (opt ignoreProfileTimestampValues) applyOnProfiles(expected, actual pprofil
 	opt.maskProfileTimestampValues(actual)
 }
 
-func (opt ignoreProfileTimestampValues) maskProfileTimestampValues(profiles pprofile.Profiles) {
+func (ignoreProfileTimestampValues) maskProfileTimestampValues(profiles pprofile.Profiles) {
 	rls := profiles.ResourceProfiles()
 	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
 		sls := rls.At(i).ScopeProfiles()
@@ -137,8 +144,8 @@ func (opt ignoreProfileTimestampValues) maskProfileTimestampValues(profiles ppro
 			lrs := sls.At(j).Profiles()
 			for k := 0; k < lrs.Len(); k++ {
 				lr := lrs.At(k)
-				lr.SetStartTime(pcommon.NewTimestampFromTime(time.Time{}))
-				lr.SetDuration(pcommon.NewTimestampFromTime(time.Time{}))
+				lr.SetTime(pcommon.NewTimestampFromTime(time.Time{}))
+				lr.SetDurationNano(1)
 			}
 		}
 	}
@@ -197,41 +204,25 @@ func sortProfileSlices(ls pprofile.Profiles) {
 	for i := 0; i < ls.ResourceProfiles().Len(); i++ {
 		for j := 0; j < ls.ResourceProfiles().At(i).ScopeProfiles().Len(); j++ {
 			ls.ResourceProfiles().At(i).ScopeProfiles().At(j).Profiles().Sort(func(a, b pprofile.Profile) bool {
-				if a.StartTime() != b.StartTime() {
-					return a.StartTime() < b.StartTime()
+				if a.Time() != b.Time() {
+					return a.Time() < b.Time()
 				}
-				if a.Duration() != b.Duration() {
-					return a.Duration() < b.Duration()
+				if a.DurationNano() != b.DurationNano() {
+					return a.DurationNano() < b.DurationNano()
 				}
 				as := a.ProfileID()
 				bs := b.ProfileID()
-				if !bytes.Equal(as[:], bs[:]) {
-					return bytes.Compare(as[:], bs[:]) < 0
-				}
-				am := pcommon.NewMap()
-				for _, i := range a.AttributeIndices().AsRaw() {
-					v := a.AttributeTable().At(int(i))
-					am.PutStr(v.Key(), v.Value().AsString())
-				}
-				bm := pcommon.NewMap()
-				for _, i := range b.AttributeIndices().AsRaw() {
-					v := b.AttributeTable().At(int(i))
-					bm.PutStr(v.Key(), v.Value().AsString())
-				}
-
-				aAttrs := pdatautil.MapHash(am)
-				bAttrs := pdatautil.MapHash(bm)
-				return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
+				return bytes.Compare(as[:], bs[:]) < 0
 			})
 		}
 	}
 }
 
-func profileAttributesToMap(p pprofile.Profile) map[string]string {
+func profileAttributesToMap(dic pprofile.ProfilesDictionary, p pprofile.Profile) map[string]string {
 	d := map[string]string{}
 	for _, i := range p.AttributeIndices().AsRaw() {
-		v := p.AttributeTable().At(int(i))
-		d[v.Key()] = v.Value().AsString()
+		v := dic.AttributeTable().At(int(i))
+		d[dic.StringTable().At(int(v.KeyStrindex()))] = v.Value().AsString()
 	}
 
 	return d

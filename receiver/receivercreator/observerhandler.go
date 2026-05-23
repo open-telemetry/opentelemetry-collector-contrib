@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -38,6 +39,8 @@ type observerHandler struct {
 	nextMetricsConsumer consumer.Metrics
 	// nextTracesConsumer is the receiver_creator's own consumer
 	nextTracesConsumer consumer.Traces
+	// nextProfilesConsumer is the receiver_creator's own consumer
+	nextProfilesConsumer xconsumer.Profiles
 	// runner starts and stops receiver instances.
 	runner runner
 }
@@ -143,6 +146,11 @@ func (obs *observerHandler) OnChange(changed []observer.Endpoint) {
 }
 
 func (obs *observerHandler) startReceiver(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) {
+	obs.params.Logger.Debug("expanding the following template config",
+		zap.String("name", template.id.String()),
+		zap.String("endpoint", e.Target),
+		zap.String("endpoint_id", string(e.ID)),
+		zap.Any("config", template.config))
 	resolvedConfig, err := expandConfig(template.config, env)
 	if err != nil {
 		obs.params.Logger.Error("unable to resolve template config", zap.String("receiver", template.id.String()), zap.Error(err))
@@ -186,6 +194,7 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		obs.nextLogsConsumer,
 		obs.nextMetricsConsumer,
 		obs.nextTracesConsumer,
+		obs.nextProfilesConsumer,
 	); err != nil {
 		obs.params.Logger.Error("failed creating resource enhancer", zap.String("receiver", template.id.String()), zap.Error(err))
 		return
@@ -194,7 +203,7 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 	filterConsumerSignals(consumer, template.signals)
 
 	// short-circuit if no consumers are set
-	if consumer.metrics == nil && consumer.logs == nil && consumer.traces == nil {
+	if consumer.metrics == nil && consumer.logs == nil && consumer.traces == nil && consumer.profiles == nil {
 		return
 	}
 
@@ -202,7 +211,10 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		zap.String("name", template.id.String()),
 		zap.String("endpoint", e.Target),
 		zap.String("endpoint_id", string(e.ID)),
-		zap.Any("config", template.config))
+	)
+
+	// TODO: we should consider about applying sensitive data redaction
+	obs.params.Logger.Debug("starting receiver with resolved config", zap.Any("config", resolvedConfig))
 
 	var receiver component.Component
 	if receiver, err = obs.runner.start(
@@ -227,7 +239,10 @@ func filterConsumerSignals(consumer *enhancingConsumer, signals receiverSignals)
 	if !signals.logs {
 		consumer.logs = nil
 	}
-	if !signals.metrics {
+	if !signals.traces {
 		consumer.traces = nil
+	}
+	if !signals.profiles {
+		consumer.profiles = nil
 	}
 }

@@ -39,19 +39,21 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 	}}
 
 	// Map of running containers by name.
-	runningContainers := map[string]RunningContainer{}
+	runningContainers := map[string]runningContainer{}
 
-	for _, container := range pod.Status.ContainerStatuses {
+	for i := range pod.Status.ContainerStatuses {
+		container := &pod.Status.ContainerStatuses[i]
 		if container.State.Running != nil {
 			runningContainers[container.Name] = containerIDWithRuntime(container)
 		}
 	}
 
 	// Create endpoint for each named container port.
-	for _, container := range pod.Spec.Containers {
-		var runningContainer RunningContainer
+	for i := range pod.Spec.Containers {
+		container := &pod.Spec.Containers[i]
+		var rc runningContainer
 		var ok bool
-		if runningContainer, ok = runningContainers[container.Name]; !ok {
+		if rc, ok = runningContainers[container.Name]; !ok {
 			continue
 		}
 
@@ -65,7 +67,7 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 			Target: podIP,
 			Details: &observer.PodContainer{
 				Name:        container.Name,
-				ContainerID: runningContainer.ID,
+				ContainerID: rc.ID,
 				Image:       container.Image,
 				Pod:         podDetails,
 			},
@@ -82,10 +84,13 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 				ID:     endpointID,
 				Target: fmt.Sprintf("%s:%d", podIP, port.ContainerPort),
 				Details: &observer.Port{
-					Pod:       podDetails,
-					Name:      port.Name,
-					Port:      uint16(port.ContainerPort),
-					Transport: getTransport(port.Protocol),
+					Pod:            podDetails,
+					Name:           port.Name,
+					Port:           uint16(port.ContainerPort),
+					Transport:      getTransport(port.Protocol),
+					ContainerName:  container.Name,
+					ContainerID:    rc.ID,
+					ContainerImage: container.Image,
 				},
 			})
 		}
@@ -105,18 +110,18 @@ func getTransport(protocol v1.Protocol) observer.Transport {
 }
 
 // containerIDWithRuntime parses the container ID to get the actual ID string
-func containerIDWithRuntime(c v1.ContainerStatus) RunningContainer {
+func containerIDWithRuntime(c *v1.ContainerStatus) runningContainer {
 	cID := c.ContainerID
 	if cID != "" {
 		parts := strings.Split(cID, "://")
 		if len(parts) == 2 {
-			return RunningContainer{parts[1], parts[0]}
+			return runningContainer{parts[1], parts[0]}
 		}
 	}
-	return RunningContainer{}
+	return runningContainer{}
 }
 
-type RunningContainer struct {
+type runningContainer struct {
 	ID      string
 	Runtime string
 }

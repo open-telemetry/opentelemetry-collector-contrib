@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap/zaptest"
 
 	ocp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openshift"
@@ -80,14 +79,14 @@ func TestDetect(t *testing.T) {
 			detector:          newTestDetector(t, &providerResponse{}, someErr, nil, nil),
 			expectedErr:       someErr,
 			expectedResource:  pcommon.NewResource(),
-			expectedSchemaURL: conventions.SchemaURL,
+			expectedSchemaURL: "https://opentelemetry.io/schemas/",
 		},
 		{
 			name:              "error getting k8s cluster version",
 			detector:          newTestDetector(t, &providerResponse{}, nil, someErr, nil),
 			expectedErr:       someErr,
 			expectedResource:  pcommon.NewResource(),
-			expectedSchemaURL: conventions.SchemaURL,
+			expectedSchemaURL: "https://opentelemetry.io/schemas/",
 		},
 		{
 			name:             "error getting infrastructure details",
@@ -118,13 +117,13 @@ func TestDetect(t *testing.T) {
 			expectedResource: func() pcommon.Resource {
 				res := pcommon.NewResource()
 				attrs := res.Attributes()
-				attrs.PutStr(conventions.AttributeK8SClusterName, "test-d-bm4rt")
-				attrs.PutStr(conventions.AttributeCloudProvider, "aws")
-				attrs.PutStr(conventions.AttributeCloudPlatform, "aws_openshift")
-				attrs.PutStr(conventions.AttributeCloudRegion, "us-east-1")
+				attrs.PutStr("k8s.cluster.name", "test-d-bm4rt")
+				attrs.PutStr("cloud.provider", "aws")
+				attrs.PutStr("cloud.platform", "aws_openshift")
+				attrs.PutStr("cloud.region", "us-east-1")
 				return res
 			}(),
-			expectedSchemaURL: conventions.SchemaURL,
+			expectedSchemaURL: "https://opentelemetry.io/schemas/",
 		},
 	}
 	for _, tc := range tt {
@@ -137,7 +136,7 @@ func TestDetect(t *testing.T) {
 			}
 
 			assert.Equal(t, tc.expectedResource, resource)
-			assert.Equal(t, tc.expectedSchemaURL, schemaURL)
+			assert.Contains(t, schemaURL, tc.expectedSchemaURL)
 		})
 	}
 }

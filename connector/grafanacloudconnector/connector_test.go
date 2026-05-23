@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -141,7 +142,7 @@ func TestConsumeTraces(t *testing.T) {
 			assert.NilError(t, err)
 
 			ctx := t.Context()
-			assert.NilError(t, c.Start(ctx, nil))
+			assert.NilError(t, c.Start(ctx, componenttest.NewNopHost()))
 			err = c.ConsumeTraces(ctx, tc.input)
 			assert.NilError(t, err)
 			assert.NilError(t, c.Shutdown(ctx))

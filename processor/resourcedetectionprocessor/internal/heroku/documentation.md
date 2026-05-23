@@ -6,13 +6,13 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| cloud.provider | The cloud.provider | Any Str | true |
-| heroku.app.id | The heroku.app.id | Any Str | true |
-| heroku.dyno.id | The heroku.dyno.id | Any Str | true |
-| heroku.release.commit | The heroku.release.commit | Any Str | true |
-| heroku.release.creation_timestamp | The heroku.release.creation_timestamp | Any Str | true |
-| service.instance.id | The service.instance.id | Any Str | true |
-| service.name | Heroku app name recorded as service.name. | Any Str | true |
-| service.version | Heroku release version set as service.version. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| cloud.provider | The cloud.provider | Any Str | true | - |
+| heroku.app.id | The heroku.app.id | Any Str | true | - |
+| heroku.dyno.id | The heroku.dyno.id | Any Str | true | - |
+| heroku.release.commit | The heroku.release.commit | Any Str | true | - |
+| heroku.release.creation_timestamp | The heroku.release.creation_timestamp | Any Str | true | - |
+| service.instance.id | The service.instance.id | Any Str | true | - |
+| service.name | Heroku app name recorded as service.name. | Any Str | true | - |
+| service.version | Heroku release version set as service.version. | Any Str | true | - |
