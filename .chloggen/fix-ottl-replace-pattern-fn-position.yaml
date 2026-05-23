@@ -7,7 +7,7 @@ change_type: bug_fix
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix `replace_pattern` with a `Function` argument so each match is replaced only at its position instead of everywhere the matched text appears.
+note: Fix `replace_pattern` and `replace_all_patterns` using a `Function` argument so each match is replaced only at its position, instead of everywhere the matched text appears.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48437]

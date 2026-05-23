@@ -247,7 +247,7 @@ func Test_replacePattern(t *testing.T) {
 			},
 		},
 		{
-			name:    "function with empty trailing submatch keeps suffix",
+			name:    "function preserves prefix and suffix around match",
 			input:   "abc",
 			target:  target,
 			pattern: `b`,
