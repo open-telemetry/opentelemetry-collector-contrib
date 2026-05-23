@@ -212,6 +212,12 @@ func (m *encodeModel) encodeTrace(
 	sso.Status.Message = span.Status().Message()
 	sso.TraceID = span.TraceID().String()
 	sso.TraceState = span.TraceState().AsRaw()
+	ts := span.StartTimestamp().AsTime()
+	if !ts.IsZero() {
+		sso.Timestamp = ts
+	} else {
+		sso.Timestamp = time.Now()
+	}
 
 	if span.Events().Len() > 0 {
 		sso.Events = make([]ssoSpanEvent, span.Events().Len())
