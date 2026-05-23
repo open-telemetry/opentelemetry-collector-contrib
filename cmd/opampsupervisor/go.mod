@@ -10,6 +10,9 @@ require (
 	github.com/knadh/koanf/providers/rawbytes v1.0.0
 	github.com/knadh/koanf/v2 v2.3.4
 	github.com/open-telemetry/opamp-go v0.23.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.152.1-0.20260514231715-e7f22744c28c
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.152.1-0.20260514231715-e7f22744c28c
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.152.1-0.20260514231715-e7f22744c28c
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.152.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.58.1-0.20260514231715-e7f22744c28c
@@ -23,6 +26,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.58.1-0.20260514231715-e7f22744c28c
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.58.1-0.20260514231715-e7f22744c28c
 	go.opentelemetry.io/collector/extension v1.58.1-0.20260514231715-e7f22744c28c
+	go.opentelemetry.io/collector/extension/extensionauth v1.58.1-0.20260514231715-e7f22744c28c
 	go.opentelemetry.io/collector/extension/extensiontest v0.152.1-0.20260514231715-e7f22744c28c
 	go.opentelemetry.io/collector/featuregate v1.58.1-0.20260514231715-e7f22744c28c
 	go.opentelemetry.io/collector/pdata v1.58.1-0.20260514231715-e7f22744c28c
@@ -37,12 +41,13 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.28.0
-	golang.org/x/sys v0.44.0
+	golang.org/x/sys v0.45.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
+	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.2.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect
@@ -73,6 +78,7 @@ require (
 	github.com/goccy/go-json v0.10.6 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
@@ -109,6 +115,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter v0.152.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.152.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.152.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth v0.152.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.152.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.152.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.152.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.152.0 // indirect
@@ -146,6 +154,7 @@ require (
 	github.com/splunk/stef/go/otel v0.1.2 // indirect
 	github.com/splunk/stef/go/pdata v0.1.2 // indirect
 	github.com/splunk/stef/go/pkg v0.1.2 // indirect
+	github.com/tg123/go-htpasswd v1.2.4 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/twmb/murmur3 v1.1.8 // indirect
@@ -181,7 +190,6 @@ require (
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.152.1-0.20260514231715-e7f22744c28c // indirect
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.152.1-0.20260514231715-e7f22744c28c // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.152.1-0.20260514231715-e7f22744c28c // indirect
-	go.opentelemetry.io/collector/extension/extensionauth v1.58.1-0.20260514231715-e7f22744c28c // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.152.1-0.20260514231715-e7f22744c28c // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.152.1-0.20260514231715-e7f22744c28c // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.152.1-0.20260514231715-e7f22744c28c // indirect
@@ -230,10 +238,11 @@ require (
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.51.0 // indirect
+	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/exp v0.0.0-20260312153236-7ab1446f8b90 // indirect
 	golang.org/x/mod v0.36.0 // indirect
-	golang.org/x/net v0.54.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260508192327-42602be52be6 // indirect
 	golang.org/x/text v0.37.0 // indirect
@@ -355,3 +364,13 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcu
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk => ../../pkg/translator/splunk
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension => ../../extension/bearertokenauthextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension => ../../extension/basicauthextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth => ../../extension/internal/basicauth
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension => ../../extension/oauth2clientauthextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile => ../../extension/internal/credentialsfile
