@@ -286,7 +286,7 @@ A single ClickHouse instance with 32 CPU cores and 128 GB RAM can handle around 
 the data compression ratio is 7 ~ 11, the compressed data store in disk is 1.8 TB ~ 2.85 TB,
 add more clickhouse node to cluster can increase linearly.
 
-The otel-collector with `otlp receiver/batch processor/clickhouse tcp exporter` can process
+The otel-collector with `otlp receiver/clickhouse tcp exporter` (with `sending_queue` batching enabled) can process
 around 40k/s logs entry per CPU cores, add more collector node can increase linearly.
 
 ## Configuration options
