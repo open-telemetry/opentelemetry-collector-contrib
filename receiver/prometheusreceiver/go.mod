@@ -49,7 +49,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	go.uber.org/zap/exp v0.3.0
-	golang.org/x/net v0.54.0
+	golang.org/x/net v0.55.0
 )
 
 require (
