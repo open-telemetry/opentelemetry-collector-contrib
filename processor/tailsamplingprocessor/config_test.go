@@ -298,4 +298,3 @@ func TestDefaultOTTLErrorMode(t *testing.T) {
 		})
 	}
 }
-
