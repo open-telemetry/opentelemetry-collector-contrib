@@ -4,6 +4,7 @@
 package pmetricassert // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetricassert"
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -57,7 +58,7 @@ func (r *resourceAssertion) UnmarshalYAML(node *yaml.Node) error {
 	}
 	if inc, ok := raw["attributes/include"]; ok {
 		if _, dup := raw["attributes"]; dup {
-			return fmt.Errorf("resource assertion: cannot specify both 'attributes' and 'attributes/include'")
+			return errors.New("resource assertion: cannot specify both 'attributes' and 'attributes/include'")
 		}
 		var attrs map[string]any
 		if err := inc.Decode(&attrs); err != nil {
@@ -110,7 +111,7 @@ func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
 	}
 	if inc, ok := raw["attributes/include"]; ok {
 		if _, dup := raw["attributes"]; dup {
-			return fmt.Errorf("datapoint assertion: cannot specify both 'attributes' and 'attributes/include'")
+			return errors.New("datapoint assertion: cannot specify both 'attributes' and 'attributes/include'")
 		}
 		var attrs map[string]any
 		if err := inc.Decode(&attrs); err != nil {
