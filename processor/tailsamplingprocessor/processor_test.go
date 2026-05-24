@@ -1788,3 +1788,57 @@ func (*nonTailStorageExtension) Start(context.Context, component.Host) error {
 func (*nonTailStorageExtension) Shutdown(context.Context) error {
 	return nil
 }
+
+// TestOTTLConditionDefaultErrorModeGate verifies that getSharedPolicyEvaluator
+// correctly resolves the error_mode when OTTLConditionCfg.ErrorMode is unset
+// (empty string sentinel). The feature gate controls whether the resolved mode
+// is "propagate" (gate disabled) or "ignore" (gate enabled). Passing "" raw to
+// NewOTTLConditionFilter would result in undefined eval-time behavior, so this
+// test ensures the gate logic actually fires in the evaluation path.
+func TestOTTLConditionDefaultErrorModeGate(t *testing.T) {
+	spanCond := `attributes["http.status_code"] == 200`
+	cfg := &sharedPolicyCfg{
+		Name: "test-ottl-default-error-mode",
+		Type: OTTLCondition,
+		OTTLConditionCfg: OTTLConditionCfg{
+			// ErrorMode intentionally left unset (empty string) to exercise the
+			// feature-gate-controlled default path in getSharedPolicyEvaluator.
+			SpanConditions: []string{spanCond},
+		},
+	}
+
+	for _, tc := range []struct {
+		name        string
+		gateEnabled bool
+	}{
+		{name: "gate disabled uses propagate", gateEnabled: false},
+		{name: "gate enabled uses ignore", gateEnabled: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prev := metadata.ProcessorTailsamplingprocessorDefaultOTTLErrorModeIgnoreFeatureGate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(
+				metadata.ProcessorTailsamplingprocessorDefaultOTTLErrorModeIgnoreFeatureGate.ID(), tc.gateEnabled))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					metadata.ProcessorTailsamplingprocessorDefaultOTTLErrorModeIgnoreFeatureGate.ID(), prev))
+			})
+
+			settings := componenttest.NewNopTelemetrySettings()
+			evaluator, err := getSharedPolicyEvaluator(settings, cfg, nil)
+			require.NoError(t, err, "getSharedPolicyEvaluator must succeed with unset error_mode")
+			require.NotNil(t, evaluator)
+
+			// Evaluate a trace whose span satisfies the condition — this should always
+			// be Sampled regardless of error mode (no error occurs on a matched span).
+			traceData := &samplingpolicy.TraceData{}
+			traceData.ReceivedBatches = ptrace.NewTraces()
+			span := traceData.ReceivedBatches.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+			span.SetTraceID(pcommon.TraceID([16]byte{1}))
+			span.Attributes().PutInt("http.status_code", 200)
+
+			decision, err := evaluator.Evaluate(t.Context(), pcommon.TraceID([16]byte{1}), traceData)
+			require.NoError(t, err)
+			assert.Equal(t, samplingpolicy.Sampled, decision)
+		})
+	}
+}
