@@ -262,6 +262,7 @@ $defs:
     type: object
     properties:
       error_mode:
+        description: 'ErrorMode determines how errors are handled when evaluating OTTL conditions. Valid values are "propagate", "ignore", and "silent". When left unset (empty string, the Go zero value), the effective default is controlled by the processor.tailsamplingprocessor.defaultOTTLErrorModeIgnore feature gate: "propagate" when the gate is disabled (current default), "ignore" when the gate is enabled. Explicitly setting this field always takes precedence over the feature gate.'
         $ref: /pkg/ottl.error_mode
       span:
         type: array
