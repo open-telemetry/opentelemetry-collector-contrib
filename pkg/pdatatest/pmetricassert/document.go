@@ -15,11 +15,24 @@ import (
 // accompanied by a migration.
 const documentVersion = 1
 
+// attributeMode controls how an attribute map assertion is evaluated.
+type attributeMode int
+
+const (
+	// attributeModeExact requires actual attributes to match expected
+	// attributes exactly — no missing and no extra keys.
+	attributeModeExact attributeMode = iota
+	// attributeModeInclude requires every expected key/value to be present
+	// in the actual attributes but allows additional keys.
+	attributeModeInclude
+)
+
 // document is the YAML-serializable form of a metrics assertion snapshot.
 //
 // The schema implements the identity-only subset of the grammar proposed in
 // issue #48079: default-exact matching, order-insensitive collections,
-// identity fields only. Operator-suffix extensions (/include, /regex,
+// identity fields only. Attribute maps support /include mode.
+// Collection operator-suffix extensions (/include, /exclude, /regex,
 // /count, ...) are tracked as follow-ups.
 type document struct {
 	Version   int                 `yaml:"version"`
@@ -28,8 +41,44 @@ type document struct {
 }
 
 type resourceAssertion struct {
-	Attributes map[string]any   `yaml:"attributes,omitempty"`
-	Scopes     []scopeAssertion `yaml:"scopes"`
+	Attributes    map[string]any   `yaml:"attributes,omitempty"`
+	AttributeMode attributeMode    `yaml:"-"`
+	Scopes        []scopeAssertion `yaml:"scopes"`
+}
+
+// UnmarshalYAML implements custom unmarshaling to support `attributes/include`
+// as an alternative to `attributes`. When `attributes/include` is used the
+// AttributeMode is set to attributeModeInclude; specifying both keys is an error.
+func (r *resourceAssertion) UnmarshalYAML(node *yaml.Node) error {
+	// Decode into a raw map to detect operator-suffixed keys.
+	var raw map[string]yaml.Node
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	if inc, ok := raw["attributes/include"]; ok {
+		if _, dup := raw["attributes"]; dup {
+			return fmt.Errorf("resource assertion: cannot specify both 'attributes' and 'attributes/include'")
+		}
+		var attrs map[string]any
+		if err := inc.Decode(&attrs); err != nil {
+			return fmt.Errorf("resource assertion: decode attributes/include: %w", err)
+		}
+		r.Attributes = attrs
+		r.AttributeMode = attributeModeInclude
+	} else if exact, ok := raw["attributes"]; ok {
+		var attrs map[string]any
+		if err := exact.Decode(&attrs); err != nil {
+			return fmt.Errorf("resource assertion: decode attributes: %w", err)
+		}
+		r.Attributes = attrs
+		r.AttributeMode = attributeModeExact
+	}
+	if scopesNode, ok := raw["scopes"]; ok {
+		if err := scopesNode.Decode(&r.Scopes); err != nil {
+			return fmt.Errorf("resource assertion: decode scopes: %w", err)
+		}
+	}
+	return nil
 }
 
 type scopeAssertion struct {
@@ -48,7 +97,36 @@ type metricAssertion struct {
 }
 
 type datapointAssertion struct {
-	Attributes map[string]any `yaml:"attributes,omitempty"`
+	Attributes    map[string]any `yaml:"attributes,omitempty"`
+	AttributeMode attributeMode  `yaml:"-"`
+}
+
+// UnmarshalYAML implements custom unmarshaling to support `attributes/include`
+// as an alternative to `attributes` on datapoint assertions.
+func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
+	var raw map[string]yaml.Node
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	if inc, ok := raw["attributes/include"]; ok {
+		if _, dup := raw["attributes"]; dup {
+			return fmt.Errorf("datapoint assertion: cannot specify both 'attributes' and 'attributes/include'")
+		}
+		var attrs map[string]any
+		if err := inc.Decode(&attrs); err != nil {
+			return fmt.Errorf("datapoint assertion: decode attributes/include: %w", err)
+		}
+		d.Attributes = attrs
+		d.AttributeMode = attributeModeInclude
+	} else if exact, ok := raw["attributes"]; ok {
+		var attrs map[string]any
+		if err := exact.Decode(&attrs); err != nil {
+			return fmt.Errorf("datapoint assertion: decode attributes: %w", err)
+		}
+		d.Attributes = attrs
+		d.AttributeMode = attributeModeExact
+	}
+	return nil
 }
 
 func readDocument(path string) (*document, error) {

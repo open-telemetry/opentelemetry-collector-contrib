@@ -257,3 +257,166 @@ func appendDatapointWithKindAndID(dps pmetric.NumberDataPointSlice, id, kind str
 	dp.Attributes().PutStr("kind", kind)
 	dp.SetIntValue(1)
 }
+
+func TestAssertMetrics_AttributeIncludeResourceAttributes(t *testing.T) {
+	m := buildSampleMetrics()
+	// Add an extra resource attribute that the assertion does not mention.
+	rm := m.ResourceMetrics().At(0)
+	rm.Resource().Attributes().PutStr("extra.env", "staging")
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes/include:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+}
+
+func TestAssertMetrics_AttributeIncludeResourceAttributesMissingKey(t *testing.T) {
+	m := buildSampleMetrics()
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	// Assert an attribute that does not exist on the resource.
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes/include:
+        service.name: svc
+        missing.key: required
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing expected resource")
+}
+
+func TestAssertMetrics_AttributeIncludeDatapointAttributes(t *testing.T) {
+	m := buildSampleMetrics()
+	// Add extra datapoint attributes that the assertion does not mention.
+	rm := m.ResourceMetrics().At(0)
+	dps := rm.ScopeMetrics().At(0).Metrics().At(1).Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dps.At(i).Attributes().PutStr("region", "us-east-1")
+	}
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes/include:
+                    method: GET
+                - attributes/include:
+                    method: POST
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+}
+
+func TestAssertMetrics_AttributeIncludeWithExists(t *testing.T) {
+	m := buildSampleMetrics()
+	rm := m.ResourceMetrics().At(0)
+	rm.Resource().Attributes().PutStr("service.instance.id", "generated-abc")
+	rm.Resource().Attributes().PutStr("extra.env", "staging")
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes/include:
+        service.name: svc
+        service.instance.id/exists: true
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+}
+
+func TestAssertMetrics_AttributeIncludeBothKeysIsError(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      attributes/include:
+        service.name: svc
+      scopes:
+        - name: scope
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+`), 0o600))
+
+	err := AssertMetrics(path, buildSampleMetrics())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cannot specify both")
+}

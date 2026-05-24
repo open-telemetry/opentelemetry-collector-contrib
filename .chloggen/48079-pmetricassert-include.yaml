@@ -1,0 +1,5 @@
+change_type: enhancement
+component: pkg/pdatatest
+note: Add `attributes/include` map operator to `pmetricassert` for resource and datapoint attributes
+issues: [48079]
+change_logs: [api]
