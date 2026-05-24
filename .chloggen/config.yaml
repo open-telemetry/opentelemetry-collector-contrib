@@ -57,7 +57,7 @@ components:
     - exporter/honeycomb_marker
     - exporter/influxdb
     - exporter/kafka
-    - exporter/loadbalancing
+    - exporter/load_balancing
     - exporter/logicmonitor
     - exporter/logzio
     - exporter/mezmo
@@ -227,6 +227,7 @@ components:
     - processor/tail_sampling
     - processor/tencentcvmdetector
     - processor/transform
+    - processor/transformprocessor/internal/logparsingfuncs
     - processor/unroll
     - processor/upclouddetector
     - processor/vultrdetector
