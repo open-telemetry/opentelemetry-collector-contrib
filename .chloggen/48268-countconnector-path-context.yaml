@@ -1,0 +1,16 @@
+change_type: enhancement
+
+component: connector/count
+
+note: Support OTTL path context names in `conditions`.
+
+issues: [48316]
+
+subtext: |
+  Conditions for spans, span events, metrics, data points, logs, and profiles can now use
+  context-prefixed paths (e.g. `span.attributes["env"]`, `resource.attributes["host"]`,
+  `metric.name`). Existing un-prefixed paths continue to work; they are interpreted in
+  the context of the enclosing block. It is recommend to update your configuration to the new syntax
+  to avoid breaking changes in the future.
+
+change_logs: [user]

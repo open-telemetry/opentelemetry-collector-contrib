@@ -5,3 +5,10 @@ googlecloudmonitoring:
     - metric_name: "compute.googleapis.com/instance/cpu/usage_time"
     - metric_name: "connectors.googleapis.com/flex/instance/cpu/usage_time"
     - metric_descriptor_filter: "metric.type = starts_with(\"compute.googleapis.com\")"
+
+googlecloudmonitoring/endpoint:
+  collection_interval: 2m
+  project_id: my-project-id
+  endpoint: monitoring.example.com:443
+  metrics_list:
+    - metric_name: "compute.googleapis.com/instance/cpu/usage_time"

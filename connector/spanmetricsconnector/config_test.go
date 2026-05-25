@@ -26,7 +26,7 @@ import (
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(useSecondAsDefaultMetricsUnit.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConnectorSpanmetricsUseSecondAsDefaultMetricsUnitFeatureGate.ID(), true))
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
@@ -109,6 +109,26 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name:         "invalid_metrics_expiration",
 			id:           component.NewIDWithName(metadata.Type, "invalid_metrics_expiration"),
+			errorMessage: "the duration should be positive",
+		},
+		{
+			name: "series_expiration",
+			id:   component.NewIDWithName(metadata.Type, "series_expiration"),
+			expected: &Config{
+				AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     60 * time.Second,
+				SeriesExpiration:         5 * time.Minute,
+				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
+				Exemplars: ExemplarsConfig{
+					MaxPerDataPoint: defaultMaxPerDatapoint,
+				},
+				Namespace: DefaultNamespace,
+			},
+		},
+		{
+			name:         "invalid_series_expiration",
+			id:           component.NewIDWithName(metadata.Type, "invalid_series_expiration"),
 			errorMessage: "the duration should be positive",
 		},
 		{
@@ -365,6 +385,15 @@ func TestConfigValidate(t *testing.T) {
 				MetricsExpiration:        -1 * time.Second,
 			},
 			expectedErr: "invalid metrics_expiration: -1s, the duration should be positive",
+		},
+		{
+			name: "invalid series expiration",
+			config: Config{
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				SeriesExpiration:         -1 * time.Second,
+			},
+			expectedErr: "invalid series_expiration: -1s, the duration should be positive",
 		},
 		{
 			name: "invalid delta timestamp cache size",

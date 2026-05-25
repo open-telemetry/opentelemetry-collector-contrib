@@ -14,6 +14,14 @@ status:
     emeritus: [StefanKurek]
     seeking_new: true
 
+feature_gates:
+  - id: receiver.vcenter.resourcePoolMemoryUsageAttribute
+    description: >-
+      Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric
+    stage: alpha
+    from_version: "v0.104.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/33741
+
 resource_attributes:
   vcenter.cluster.name:
     description: The name of the vCenter cluster.

@@ -193,7 +193,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
 					Metrics: metadata.MetricsConfig{
-						K8sContainerCPUNodeUtilization: metadata.MetricConfig{
+						K8sContainerCPUNodeUtilization: metadata.K8sContainerCPUNodeUtilizationMetricConfig{
 							Enabled: true,
 						},
 					},
@@ -221,7 +221,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
 					Metrics: metadata.MetricsConfig{
-						K8sPodCPUNodeUtilization: metadata.MetricConfig{
+						K8sPodCPUNodeUtilization: metadata.K8sPodCPUNodeUtilizationMetricConfig{
 							Enabled: true,
 						},
 					},
@@ -249,7 +249,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
 					Metrics: metadata.MetricsConfig{
-						K8sContainerMemoryNodeUtilization: metadata.MetricConfig{
+						K8sContainerMemoryNodeUtilization: metadata.K8sContainerMemoryNodeUtilizationMetricConfig{
 							Enabled: true,
 						},
 					},
@@ -277,7 +277,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
 					Metrics: metadata.MetricsConfig{
-						K8sPodMemoryNodeUtilization: metadata.MetricConfig{
+						K8sPodMemoryNodeUtilization: metadata.K8sPodMemoryNodeUtilizationMetricConfig{
 							Enabled: true,
 						},
 					},
