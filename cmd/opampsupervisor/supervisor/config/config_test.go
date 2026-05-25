@@ -4,6 +4,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -465,11 +466,12 @@ func TestValidate(t *testing.T) {
 
 			err := confmap.Validate(tc.config)
 
-			if tc.expectedErrorFunc != nil && tc.expectedErrorFunc() != "" {
+			switch {
+			case tc.expectedErrorFunc != nil && tc.expectedErrorFunc() != "":
 				require.ErrorContains(t, err, tc.expectedErrorFunc())
-			} else if tc.err != "" {
+			case tc.err != "":
 				require.ErrorContains(t, err, tc.err)
-			} else {
+			default:
 				require.NoError(t, err)
 			}
 		})
@@ -818,11 +820,11 @@ agent:
 	// Assert log_format parses as an empty string default
 	got, err := Load(cfgPath)
 	require.NoError(t, err)
-	require.Equal(t, "", got.Telemetry.Logs.LogFormat)
+	require.Empty(t, got.Telemetry.Logs.LogFormat)
 
 	// Assert loading a deleted file fails
 	require.NoError(t, os.Remove(cfgPath))
-	runSupervisorConfigLoadTest(t, cfgPath, Supervisor{}, fmt.Errorf("cannot retrieve the configuration: unable to read the file"))
+	runSupervisorConfigLoadTest(t, cfgPath, Supervisor{}, errors.New("cannot retrieve the configuration: unable to read the file"))
 
 	// Assert loading an empty path fails
 	_, err = Load("")
