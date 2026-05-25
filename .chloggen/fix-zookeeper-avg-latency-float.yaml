@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: scraper/zookeeper
+note: Fix zk_avg_latency metric being silently dropped on Zookeeper 3.7+ where the value is reported as a float.
+issues: [47320]
+subtext: ""
+change_logs: [user]

@@ -88,11 +88,60 @@ func TestIsQueryExplainable(t *testing.T) {
 			input:    "SELECT * FROM very_long_table_na...",
 			expected: true, // still starts with SELECT
 		},
-		// Any leading block comment makes the query not explainable; digest_text
-		// from performance_schema does not include them, so this won't arise in practice.
+		// Leading comments (/* */, --, #) are stripped before checking the keyword,
+		// so queries with any leading comment are correctly identified as explainable.
+		// Block comments
 		{
-			name:     "leading block comment before SELECT is not explainable",
-			input:    "/* a comment */ SELECT * FROM t",
+			name:     "block comment",
+			input:    "/* ApplicationName=DBeaver */ SELECT * FROM t",
+			expected: true,
+		},
+		{
+			name:     "multiple block comments",
+			input:    "/* comment1 */ /* comment2 */ SELECT * FROM t",
+			expected: true,
+		},
+
+		// Line comments with --
+		{
+			name:     "line comment",
+			input:    "-- comment\nSELECT * FROM t",
+			expected: true,
+		},
+		{
+			name:     "multiple line comments",
+			input:    "-- comment line1\n-- comment line2\nSELECT * FROM t",
+			expected: true,
+		},
+
+		// Line comments with #
+		{
+			name:     "hash comment",
+			input:    "# comment\nSELECT * FROM t",
+			expected: true,
+		},
+		{
+			name:     "multiple hash comments",
+			input:    "# comment line1\n# comment line2\nSELECT * FROM t",
+			expected: true,
+		},
+
+		// Mixed comments
+		{
+			name:     "mixed comments",
+			input:    "/* block */ -- line\nSELECT * FROM t",
+			expected: true,
+		},
+
+		// Others
+		{
+			name:     "comment only",
+			input:    "-- just a comment",
+			expected: false,
+		},
+		{
+			name:     "unclosed block comment",
+			input:    "/* unclosed comment SELECT * FROM t",
 			expected: false,
 		},
 	}
@@ -140,66 +189,77 @@ func TestDBVersionCapabilities(t *testing.T) {
 		dv                          dbVersion
 		wantSupportsQuerySampleText bool
 		wantSupportsReplicaStatus   bool
+		wantSupportsProcesslist     bool
 	}{
 		{
 			name:                        "MySQL 8.0.27",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.27")},
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   true,
+			wantSupportsProcesslist:     true,
 		},
 		{
 			name:                        "MySQL 8.0.3 (minimum for query_sample_text)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.3")},
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "MySQL 8.0.2 (below query_sample_text minimum)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.2")},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "MySQL 8.0.0 (below query_sample_text minimum)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.0")},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
-			name:                        "MySQL 8.0.22 (minimum for SHOW REPLICA STATUS)",
+			name:                        "MySQL 8.0.22 (minimum for SHOW REPLICA STATUS and processlist)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.22")},
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   true,
+			wantSupportsProcesslist:     true,
 		},
 		{
 			name:                        "MySQL 8.0.21 (below SHOW REPLICA STATUS minimum)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.21")},
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "MySQL 5.7.44",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "5.7.44")},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "MariaDB 10.11.6",
 			dv:                          dbVersion{product: dbProductMariaDB, version: mustParseVersion(t, "10.11.6")},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "MariaDB 11.4.2",
 			dv:                          dbVersion{product: dbProductMariaDB, version: mustParseVersion(t, "11.4.2")},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "zero value (version unknown)",
 			dv:                          dbVersion{},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 	}
 
@@ -207,6 +267,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.wantSupportsQuerySampleText, tt.dv.supportsQuerySampleText(), "supportsQuerySampleText()")
 			assert.Equal(t, tt.wantSupportsReplicaStatus, tt.dv.supportsReplicaStatus(), "supportsReplicaStatus()")
+			assert.Equal(t, tt.wantSupportsProcesslist, tt.dv.supportsProcesslist(), "supportsProcesslist()")
 		})
 	}
 }

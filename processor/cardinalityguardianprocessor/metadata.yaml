@@ -1,0 +1,55 @@
+type: cardinality_guardian
+
+status:
+  class: processor
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: [atoulme, YElayyat, jmacd]
+
+telemetry:
+  metrics:
+    processor_cardinality_labels.stripped:
+      enabled: true
+      stability: development
+      description: Total number of high-cardinality labels stripped or tagged.
+      unit: "{labels}"
+      sum:
+        value_type: int
+        monotonic: true
+        async: true
+    processor_cardinality_savings.estimated:
+      enabled: true
+      stability: development
+      description: Cumulative estimated dollar value of time-series churn prevented by the processor.
+      unit: "{dollars}"
+      sum:
+        value_type: double
+        monotonic: true
+        async: true
+    processor_cardinality_top.offenders:
+      enabled: true
+      stability: development
+      description: Cardinality delta of the top-N highest-growth (metric, label) pairs from the last epoch rotation.
+      unit: "{pairs}"
+      gauge:
+        value_type: int
+        async: true
+    processor_cardinality_trackers.active:
+      enabled: true
+      stability: development
+      description: Current number of active cardinality trackers across all shards.
+      unit: "{trackers}"
+      gauge:
+        value_type: int
+        async: true
+    processor_cardinality_trackers.rejected:
+      enabled: true
+      stability: development
+      description: Number of new (metric, label) pairs ignored because max_tracker_count was reached.
+      unit: "{trackers}"
+      sum:
+        value_type: int
+        monotonic: true
+        async: true

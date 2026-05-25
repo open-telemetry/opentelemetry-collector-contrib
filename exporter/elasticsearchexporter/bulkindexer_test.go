@@ -458,6 +458,73 @@ func TestNewBulkIndexer(t *testing.T) {
 	t.Cleanup(func() { bi.Close(t.Context()) })
 }
 
+func TestBulkResponseFilterPath(t *testing.T) {
+	tests := []struct {
+		name                   string
+		bulkResponseFilterPath string
+		wantFilterPath         string
+	}{
+		{
+			name:                   "default filter_path when not set",
+			bulkResponseFilterPath: "",
+			wantFilterPath:         docappender.DefaultFilterPath,
+		},
+		{
+			name:                   "custom filter_path when set",
+			bulkResponseFilterPath: "items.*.status,items.*.error",
+			wantFilterPath:         "items.*.status,items.*.error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoints = []string{"http://localhost:9200"}
+			cfg.BulkResponseFilterPath = tt.bulkResponseFilterPath
+
+			client, err := newElasticsearchClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewTelemetry().NewTelemetrySettings(), "")
+			require.NoError(t, err)
+
+			// Verify the FilterPath is correctly set in the BulkIndexerConfig.
+			bi := bulkIndexerConfig(client, cfg, false, zaptest.NewLogger(t))
+			require.Equal(t, tt.bulkResponseFilterPath, bi.FilterPath)
+
+			// Verify the filter_path query param is sent correctly in the HTTP request.
+			var gotFilterPath string
+			esClient, err := elastictransport.New(elastictransport.Config{
+				URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+				Transport: &mockTransport{
+					RoundTripFunc: func(r *http.Request) (*http.Response, error) {
+						if r.URL.Path == "/_bulk" {
+							gotFilterPath = r.URL.Query().Get("filter_path")
+						}
+						return &http.Response{
+							Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+							Body:       io.NopCloser(strings.NewReader(successResp)),
+							StatusCode: http.StatusOK,
+						}, nil
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			ct := componenttest.NewTelemetry()
+			tb, err := metadata.NewTelemetryBuilder(metadatatest.NewSettings(ct).TelemetrySettings)
+			require.NoError(t, err)
+
+			syncBI := newSyncBulkIndexer(esClient, cfg, false, tb, zaptest.NewLogger(t), nil)
+			ctx := t.Context()
+			session := syncBI.StartSession(ctx)
+			require.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+			require.NoError(t, session.Flush(ctx))
+			session.End()
+			require.NoError(t, syncBI.Close(ctx))
+
+			assert.Equal(t, tt.wantFilterPath, gotFilterPath)
+		})
+	}
+}
+
 func TestGetErrorHint(t *testing.T) {
 	tests := []struct {
 		name      string

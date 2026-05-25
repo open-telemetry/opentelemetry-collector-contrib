@@ -872,6 +872,76 @@ func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
 	assert.Contains(t, sampledTraceIDs, uInt64ToTraceID(2))
 }
 
+func TestDropPolicyWithLateMatchingSpans(t *testing.T) {
+	traceID := uInt64ToTraceID(1)
+
+	policyCfgs := []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "always-sample",
+				Type: AlwaysSample,
+			},
+		},
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "drop-metrics",
+				Type: Drop,
+			},
+			DropCfg: DropCfg{
+				SubPolicyCfg: []AndSubPolicyCfg{
+					{
+						sharedPolicyCfg: sharedPolicyCfg{
+							Name: "metrics-path",
+							Type: StringAttribute,
+							StringAttributeCfg: StringAttributeCfg{
+								Key:    "url.path",
+								Values: []string{"/metrics"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, strategy := range []samplingStrategy{samplingStrategyTraceComplete, samplingStrategySpanIngest} {
+		t.Run(string(strategy), func(t *testing.T) {
+			controller := newTestTSPController()
+			msp := new(consumertest.TracesSink)
+
+			p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, Config{
+				SamplingStrategy: strategy,
+				DecisionWait:     defaultTestDecisionWait,
+				NumTraces:        defaultNumTraces,
+				PolicyCfgs:       policyCfgs,
+				Options: []Option{
+					withTestController(controller),
+				},
+			})
+			require.NoError(t, err)
+			require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, p.Shutdown(t.Context()))
+			}()
+
+			// Batch 1: no url.path attribute, does not match drop policy.
+			batch1 := simpleTracesWithID(traceID)
+			require.NoError(t, p.ConsumeTraces(t.Context(), batch1))
+
+			// Batch 2: url.path="/metrics", matches drop policy.
+			batch2 := simpleTracesWithID(traceID)
+			batch2.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url.path", "/metrics")
+			require.NoError(t, p.ConsumeTraces(t.Context(), batch2))
+
+			// Not strictly necessary in the span ingest case, but doesn't harm anything either.
+			controller.waitForTick()
+			controller.waitForTick()
+
+			assert.Empty(t, msp.AllTraces(), "Trace should be dropped because a span matched the drop policy")
+		})
+	}
+}
+
 func TestDecisionHooks(t *testing.T) {
 	controller := newTestTSPController()
 

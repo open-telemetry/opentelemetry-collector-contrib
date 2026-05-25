@@ -1,0 +1,5 @@
+change_type: deprecation
+component: connector/metrics_as_logs
+note: Rename component type from `metricsaslogs` to `metrics_as_logs` to follow snake_case naming convention. The old name is kept as a deprecated alias.
+issues: [48016]
+change_logs: [user]
