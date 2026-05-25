@@ -127,9 +127,6 @@ linters:
         path: connector/servicegraphconnector/
       - linters:
           - forbidigo
-        path: connector/spanmetricsconnector/
-      - linters:
-          - forbidigo
         path: exporter/awsemfexporter/
       - linters:
           - forbidigo
@@ -139,40 +136,18 @@ linters:
         path: exporter/clickhouseexporter/
       - linters:
           - forbidigo
-        path: exporter/signalfxexporter/
-      - linters:
-          - forbidigo
         path: extension/encoding/awslogsencodingextension/
       - linters:
           - forbidigo
-        path: extension/opampextension/
-      - linters:
-          - forbidigo
         path: internal/filter/
-      - linters:
-          - forbidigo
-        path: pkg/ottl/
-      - linters:
-          - forbidigo
-        path: pkg/translator/prometheus/
       - linters:
           - forbidigo
         path: receiver/awscontainerinsightreceiver/
       - linters:
           - forbidigo
         path: receiver/datadogreceiver/
-      - linters:
-          - forbidigo
-        path: receiver/hostmetricsreceiver/
-      - linters:
-          - forbidigo
-        path: receiver/vcenterreceiver/
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47586
-      - linters:
-          - forbidigo
-        path: internal/aws/proxy/
-        text: confighttp
       - linters:
           - forbidigo
         path: testbed/
@@ -271,6 +246,7 @@ linters:
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47543
             - go.opentelemetry.io/otel/semconv/v1.39.0
             - go.opentelemetry.io/otel/semconv/v1.40.0
+            - go.opentelemetry.io/otel/semconv/v1.41.0
 
         semconv-in-test:
           list-mode: lax

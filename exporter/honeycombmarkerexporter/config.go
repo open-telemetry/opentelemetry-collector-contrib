@@ -81,7 +81,7 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf("marker must have rules %v", m)
 		}
 
-		_, err := filterottl.NewBoolExprForLog(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+		_, err := filterottl.NewBoolExprForLogWithPathContextNames(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
 		if err != nil {
 			return err
 		}

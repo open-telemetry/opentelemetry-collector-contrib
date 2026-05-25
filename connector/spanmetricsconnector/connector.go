@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	utilattri "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
@@ -282,7 +283,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 
 	p.resourceMetrics.ForEach(func(_ resourceKey, rawMetrics *resourceMetrics) {
 		rm := m.ResourceMetrics().AppendEmpty()
-		if !excludeResourceMetrics.IsEnabled() || p.config.AddResourceAttributes {
+		if !metadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.IsEnabled() || p.config.AddResourceAttributes {
 			rawMetrics.attributes.CopyTo(rm.Resource().Attributes())
 		}
 
@@ -307,7 +308,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		}
 
 		metricsNamespace := p.config.Namespace
-		if legacyMetricNamesFeatureGate.IsEnabled() && metricsNamespace == DefaultNamespace {
+		if metadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.IsEnabled() && metricsNamespace == DefaultNamespace {
 			metricsNamespace = ""
 		}
 
@@ -349,7 +350,7 @@ func (p *connectorImp) resetState() {
 
 		// If none of these features are enabled then we can skip the remaining operations.
 		// Enabling either of these features requires to go over resource metrics and do operation on each.
-		if p.config.Histogram.Disable && p.config.MetricsExpiration == 0 && !p.config.Exemplars.Enabled {
+		if p.config.Histogram.Disable && p.config.MetricsExpiration == 0 && p.config.SeriesExpiration == 0 && !p.config.Exemplars.Enabled {
 			return
 		}
 
@@ -361,6 +362,14 @@ func (p *connectorImp) resetState() {
 				m.events.ClearExemplars()
 				if !p.config.Histogram.Disable {
 					m.histograms.ClearExemplars()
+				}
+			}
+
+			if p.config.SeriesExpiration > 0 {
+				m.sums.ExpireSeries(p.config.SeriesExpiration, now)
+				m.events.ExpireSeries(p.config.SeriesExpiration, now)
+				if !p.config.Histogram.Disable {
+					m.histograms.ExpireSeries(p.config.SeriesExpiration, now)
 				}
 			}
 
@@ -382,6 +391,7 @@ func (p *connectorImp) resetState() {
 // dimensions the user has configured.
 func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	startTimestamp := pcommon.NewTimestampFromTime(p.clock.Now())
+	lastSeen := p.clock.Now()
 
 	// Local cache for adjusted count - no synchronization needed.
 	// Consecutive spans from the same trace share identical tracestates.
@@ -425,7 +435,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				}
 
 				// aggregate sums metrics
-				s, limitReached := sums.GetOrCreate(key, attributesFun, startTimestamp)
+				s, limitReached := sums.GetOrCreate(key, attributesFun, startTimestamp, lastSeen)
 				if !limitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 					s.AddExemplar(span.TraceID(), span.SpanID(), duration)
 				}
@@ -440,7 +450,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					attributesFun = func() pcommon.Map {
 						return p.buildAttributes(serviceName, span, resourceAttr, durationDimensions, ils.Scope(), isAdjusted)
 					}
-					h, durationLimitReached := histograms.GetOrCreate(durationKey, attributesFun, startTimestamp)
+					h, durationLimitReached := histograms.GetOrCreate(durationKey, attributesFun, startTimestamp, lastSeen)
 					if !durationLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 						p.addExemplar(span, duration, h)
 					}
@@ -468,7 +478,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 						attributesFun = func() pcommon.Map {
 							return p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope(), isAdjusted)
 						}
-						e, eventLimitReached := events.GetOrCreate(eKey, attributesFun, startTimestamp)
+						e, eventLimitReached := events.GetOrCreate(eKey, attributesFun, startTimestamp, lastSeen)
 						if !eventLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 							e.AddExemplar(span.TraceID(), span.SpanID(), duration)
 						}
@@ -550,7 +560,7 @@ func (p *connectorImp) buildAttributes(
 	if !slices.Contains(p.config.ExcludeDimensions, spanKindKey) {
 		attr.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
 	}
-	if useOtelStatusCodeAttribute.IsEnabled() {
+	if metadata.SpanmetricsStatusCodeConventionUseOtelPrefixFeatureGate.IsEnabled() {
 		if !slices.Contains(p.config.ExcludeDimensions, otelStatusCodeKey) {
 			if span.Status().Code() == ptrace.StatusCodeError {
 				attr.PutStr(otelStatusCodeKey, "ERROR")
@@ -563,7 +573,7 @@ func (p *connectorImp) buildAttributes(
 			attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 		}
 	}
-	if includeCollectorInstanceID.IsEnabled() {
+	if metadata.ConnectorSpanmetricsIncludeCollectorInstanceIDFeatureGate.IsEnabled() {
 		if !slices.Contains(p.config.ExcludeDimensions, collectorInstanceKey) {
 			attr.PutStr(collectorInstanceKey, p.instanceID)
 		}
@@ -624,7 +634,7 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 	if !slices.Contains(p.config.ExcludeDimensions, spanKindKey) {
 		concatDimensionValue(p.keyBuf, traceutil.SpanKindStr(span.Kind()), true)
 	}
-	if useOtelStatusCodeAttribute.IsEnabled() {
+	if metadata.SpanmetricsStatusCodeConventionUseOtelPrefixFeatureGate.IsEnabled() {
 		if !slices.Contains(p.config.ExcludeDimensions, otelStatusCodeKey) {
 			concatDimensionValue(p.keyBuf, traceutil.StatusCodeStr(span.Status().Code()), true)
 		}

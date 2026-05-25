@@ -12,6 +12,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadatatest"
 )
 
 // slowProvider simulates a slow HTTP fetch with a fixed delay.
@@ -40,6 +46,61 @@ func (p *firstErrorProvider) Retrieve(_ context.Context, key string) (string, er
 	return key, nil
 }
 
+type staticProvider struct{ value string }
+
+func (p *staticProvider) Retrieve(_ context.Context, _ string) (string, error) {
+	return p.value, nil
+}
+
+func TestCacheableProviderCounters(t *testing.T) {
+	tests := []struct {
+		name       string
+		retrievals []string
+		wantHits   int64
+		wantMisses int64
+	}{
+		{
+			name:       "first retrieval is a miss",
+			retrievals: []string{"key"},
+			wantHits:   0,
+			wantMisses: 1,
+		},
+		{
+			name:       "second retrieval for same key is a hit",
+			retrievals: []string{"key", "key"},
+			wantHits:   1,
+			wantMisses: 1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testTel := componenttest.NewTelemetry()
+
+			tb, err := metadata.NewTelemetryBuilder(metadatatest.NewSettings(testTel).TelemetrySettings)
+			require.NoError(t, err)
+
+			cp := NewCacheableProvider(&staticProvider{value: "result"}, 0, 5, tb)
+
+			for _, key := range tt.retrievals {
+				_, err := cp.Retrieve(t.Context(), key)
+				require.NoError(t, err)
+			}
+
+			if tt.wantHits > 0 {
+				metadatatest.AssertEqualProcessorSchemaCacheHits(t, testTel,
+					[]metricdata.DataPoint[int64]{{Value: tt.wantHits}},
+					metricdatatest.IgnoreTimestamp())
+			}
+			if tt.wantMisses > 0 {
+				metadatatest.AssertEqualProcessorSchemaCacheMisses(t, testTel,
+					[]metricdata.DataPoint[int64]{{Value: tt.wantMisses}},
+					metricdatatest.IgnoreTimestamp())
+			}
+			require.NoError(t, testTel.Shutdown(t.Context()))
+		})
+	}
+}
+
 // BenchmarkCacheableProviderConcurrentFetch measures throughput of concurrent fetches
 // for distinct keys. With the lock released during the HTTP call, goroutines can fetch
 // in parallel rather than serializing behind the mutex.
@@ -48,6 +109,8 @@ func (p *firstErrorProvider) Retrieve(_ context.Context, key string) (string, er
 //   - Lock released before fetch: ~100ms total (goroutines overlap)
 //   - Lock held during fetch:     ~1000ms total (goroutines serialize)
 func BenchmarkCacheableProviderConcurrentFetch(b *testing.B) {
+	tb, _ := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+
 	const (
 		goroutines    = 10
 		fetchesPerG   = 100
@@ -55,7 +118,7 @@ func BenchmarkCacheableProviderConcurrentFetch(b *testing.B) {
 	)
 
 	for range b.N {
-		cp := NewCacheableProvider(&slowProvider{delay: providerDelay}, time.Minute, 10)
+		cp := NewCacheableProvider(&slowProvider{delay: providerDelay}, time.Minute, 10, tb)
 		var wg sync.WaitGroup
 		for g := range goroutines {
 			wg.Add(1)
@@ -89,7 +152,8 @@ func (p *alwaysErrorProvider) Retrieve(_ context.Context, _ string) (string, err
 // than allowing another burst of `limit` calls through.
 func TestCacheableProviderRateLimit(t *testing.T) {
 	provider := &alwaysErrorProvider{}
-	cp := NewCacheableProvider(provider, time.Hour, 3)
+	tb, _ := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	cp := NewCacheableProvider(provider, time.Hour, 3, tb).(*CacheableProvider)
 
 	// Exhaust the limit: 3 calls should reach the provider.
 	for range 3 {
@@ -138,7 +202,8 @@ func TestCacheableProvider(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a new cacheable provider
-			provider := NewCacheableProvider(&firstErrorProvider{}, 0*time.Nanosecond, tt.limit)
+			tb, _ := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+			provider := NewCacheableProvider(&firstErrorProvider{}, 0*time.Nanosecond, tt.limit, tb)
 
 			var p string
 			var err error

@@ -345,6 +345,10 @@ component_management:
     name: extension_httpforwarder
     paths:
     - extension/httpforwarderextension/**
+  - component_id: extension_internal_basicauth
+    name: extension_internal_basicauth
+    paths:
+    - extension/internal/basicauth/**
   - component_id: extension_internal_credentialsfile
     name: extension_internal_credentialsfile
     paths:
@@ -357,6 +361,10 @@ component_management:
     name: extension_k8sleaderelector
     paths:
     - extension/k8sleaderelector/**
+  - component_id: extension_mcp
+    name: extension_mcp
+    paths:
+    - extension/mcp/**
   - component_id: extension_oauth2clientauth
     name: extension_oauth2clientauth
     paths:
@@ -445,6 +453,10 @@ component_management:
     name: processor_attributes
     paths:
     - processor/attributesprocessor/**
+  - component_id: processor_cardinalityguardian
+    name: processor_cardinalityguardian
+    paths:
+    - processor/cardinalityguardianprocessor/**
   - component_id: processor_coralogix
     name: processor_coralogix
     paths:
@@ -469,6 +481,10 @@ component_management:
     name: processor_filter
     paths:
     - processor/filterprocessor/**
+  - component_id: processor_genainormalizer
+    name: processor_genainormalizer
+    paths:
+    - processor/genainormalizerprocessor/**
   - component_id: processor_geoip
     name: processor_geoip
     paths:
