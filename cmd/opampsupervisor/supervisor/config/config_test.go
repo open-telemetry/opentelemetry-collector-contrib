@@ -410,6 +410,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					UseHUPConfigReload:      true,
 				},
 				HealthCheck: defaultHealthCheck,
 			},
