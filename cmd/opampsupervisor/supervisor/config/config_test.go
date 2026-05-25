@@ -8,16 +8,22 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/extensions"
 )
 
 func simpleError(err string) func() string {
@@ -28,13 +34,374 @@ func TestValidate(t *testing.T) {
 	tlsConfig := configtls.NewDefaultClientConfig()
 	tlsConfig.InsecureSkipVerify = true
 
+	// Cases that exercise a non-HealthCheck failure path still need a
+	// HealthCheck with a valid transport so confmap.Validate doesn't trip on
+	// the empty default before reaching the field under test.
+	defaultHealthCheck := HealthCheck{
+		ServerConfig: confighttp.ServerConfig{
+			NetAddr: confignet.AddrConfig{Transport: confignet.TransportTypeTCP},
+		},
+	}
+
 	testCases := []struct {
-		name   string
-		config Supervisor
-		err    string
+		name              string
+		config            Supervisor
+		err               string
+		expectedErrorFunc func() string
 	}{
 		{
-			name: "valid config",
+			name: "Valid filled out config",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					UseHUPConfigReload:      false,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+				HealthCheck: defaultHealthCheck,
+			},
+		},
+		{
+			name: "Endpoint unspecified",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					ConfigApplyTimeout:      2 * time.Second,
+					OrphanDetectionInterval: 5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("server::endpoint must be specified"),
+		},
+		{
+			name: "Invalid URL",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "\000",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					ConfigApplyTimeout:      2 * time.Second,
+					OrphanDetectionInterval: 5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("invalid URL for server::endpoint:"),
+		},
+		{
+			name: "Invalid endpoint scheme",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "tcp://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					ConfigApplyTimeout:      2 * time.Second,
+					OrphanDetectionInterval: 5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError(`invalid scheme "tcp" for server::endpoint, must be one of "http", "https", "ws", or "wss"`),
+		},
+		{
+			name: "Invalid tls settings",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: configtls.ClientConfig{
+						Insecure: true,
+						Config: configtls.Config{
+							MaxVersion: "1.2",
+							MinVersion: "1.3",
+						},
+					},
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					ConfigApplyTimeout:      2 * time.Second,
+					OrphanDetectionInterval: 5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("invalid server::tls settings:"),
+		},
+		{
+			name: "Empty agent executable path",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("agent::executable must be specified"),
+		},
+		{
+			name: "agent executable does not exist",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "./path/does/not/exist",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("could not stat agent::executable path:"),
+		},
+		{
+			name: "Invalid orphan detection interval",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					ConfigApplyTimeout:      2 * time.Second,
+					OrphanDetectionInterval: -1,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("agent::orphan_detection_interval must be positive"),
+		},
+		{
+			name: "Zero value health check port number",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+				HealthCheck: defaultHealthCheck,
+			},
+		},
+		{
+			name: "Normal health check port number",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+				HealthCheck: defaultHealthCheck,
+			},
+		},
+		{
+			name: "config with invalid agent bootstrap timeout",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        -5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("agent::bootstrap_timeout must be positive"),
+		},
+		{
+			name: "Invalid opamp server port number",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					OpAMPServerPort:         65536,
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("agent::opamp_server_port must be a valid port number"),
+		},
+		{
+			name: "Zero value opamp server port number",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					OpAMPServerPort:         0,
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+				HealthCheck: defaultHealthCheck,
+			},
+		},
+		{
+			name: "Invalid config apply timeout",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					OpAMPServerPort:         8080,
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("agent::config_apply_timeout must be valid duration"),
+		},
+		{
+			name: "HUP config reload not supported on Windows",
 			config: Supervisor{
 				Server: OpAMPServer{Endpoint: "wss://localhost:9090/opamp", TLS: tlsConfig},
 				Agent: Agent{
@@ -43,8 +410,13 @@ func TestValidate(t *testing.T) {
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
-				Capabilities: Capabilities{AcceptsRemoteConfig: true},
-				Storage:      Storage{Directory: "/tmp/storage"},
+				HealthCheck: defaultHealthCheck,
+			},
+			expectedErrorFunc: func() string {
+				if runtime.GOOS != "windows" {
+					return ""
+				}
+				return "agent::use_hup_config_reload is not supported on Windows"
 			},
 		},
 		{
@@ -56,8 +428,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 				},
-				Capabilities: Capabilities{AcceptsRemoteConfig: true},
-				Storage:      Storage{Directory: "/tmp/storage"},
+				HealthCheck: defaultHealthCheck,
 			},
 			err: "server::endpoint must be specified",
 		},
@@ -92,12 +463,176 @@ func TestValidate(t *testing.T) {
 				return ""
 			})
 
-			err := tc.config.Validate()
-			if tc.err == "" {
+			err := confmap.Validate(tc.config)
+
+			if tc.expectedErrorFunc != nil && tc.expectedErrorFunc() != "" {
+				require.ErrorContains(t, err, tc.expectedErrorFunc())
+			} else if tc.err != "" {
+				require.ErrorContains(t, err, tc.err)
+			} else {
 				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestSupervisor_UnmarshalExtensions(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"extensions": map[string]any{
+			"nop":          map[string]any{},
+			"nop/instance": map[string]any{},
+		},
+	})
+
+	cfg := DefaultSupervisor()
+	require.NoError(t, conf.Unmarshal(&cfg))
+
+	defaultCfg := extensiontest.NewNopFactory().CreateDefaultConfig()
+	require.Equal(t, defaultCfg, cfg.Extensions[component.NewID(extensiontest.NopType)])
+	require.Equal(t, defaultCfg, cfg.Extensions[component.MustNewIDWithName(extensiontest.NopType.String(), "instance")])
+	require.Len(t, cfg.Extensions, 2)
+}
+
+func TestSupervisor_UnmarshalExtensionsUnknownType(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"extensions": map[string]any{
+			"doesnotexist": map[string]any{},
+		},
+	})
+
+	cfg := DefaultSupervisor()
+	err := conf.Unmarshal(&cfg)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unknown extension type")
+}
+
+func TestSupervisor_Validate(t *testing.T) {
+	bearerID := component.MustNewID("bearertokenauth")
+	namedBearerID := component.MustNewIDWithName("bearertokenauth", "primary")
+	nopFactory := extensiontest.NewNopFactory()
+
+	testCases := []struct {
+		name        string
+		auth        component.ID
+		extensions  extensions.Config
+		errContains string
+	}{
+		{
+			name: "auth unset",
+		},
+		{
+			name: "auth references existing extension",
+			auth: bearerID,
+			extensions: extensions.Config{
+				bearerID: nopFactory.CreateDefaultConfig(),
+			},
+		},
+		{
+			name: "auth references named extension",
+			auth: namedBearerID,
+			extensions: extensions.Config{
+				namedBearerID: nopFactory.CreateDefaultConfig(),
+			},
+		},
+		{
+			name:        "auth references missing extension",
+			auth:        bearerID,
+			errContains: `server.auth references "bearertokenauth" which is not configured under extensions`,
+		},
+		{
+			name: "auth references missing extension when others configured",
+			auth: namedBearerID,
+			extensions: extensions.Config{
+				bearerID: nopFactory.CreateDefaultConfig(),
+			},
+			errContains: `server.auth references "bearertokenauth/primary" which is not configured under extensions`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := Supervisor{
+				Server:     OpAMPServer{Auth: tc.auth},
+				Extensions: tc.extensions,
+			}
+			err := cfg.Validate()
+			if tc.errContains != "" {
+				require.ErrorContains(t, err, tc.errContains)
 				return
 			}
-			require.ErrorContains(t, err, tc.err)
+			require.NoError(t, err)
+		})
+	}
+}
+
+// TestSupervisor_TopLevelValidate confirms that confmap.Validate produces
+// path-prefixed errors when called at the supervisor-config root, which is
+// what NewSupervisor relies on for actionable validation messages.
+func TestSupervisor_TopLevelValidate(t *testing.T) {
+	cfg := DefaultSupervisor()
+	// HealthCheck endpoint with an invalid port produces a Validate() error
+	// from the HealthCheck substruct via reflection.
+	cfg.HealthCheck = HealthCheck{
+		ServerConfig: confighttp.ServerConfig{
+			NetAddr: confignet.AddrConfig{Endpoint: "localhost:99999"},
+		},
+	}
+
+	err := confmap.Validate(cfg)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "healthcheck")
+}
+
+func TestSupervisor_LoadServerAuth(t *testing.T) {
+	tmpDir := t.TempDir()
+	executablePath := filepath.Join(tmpDir, "binary")
+	require.NoError(t, os.WriteFile(executablePath, []byte{}, 0o600))
+
+	cases := []struct {
+		name     string
+		yaml     string
+		expected component.ID
+	}{
+		{
+			name: "type only",
+			yaml: `
+server:
+  endpoint: ws://localhost/v1/opamp
+  auth: bearerauth
+agent:
+  executable: %s
+`,
+			expected: component.MustNewID("bearerauth"),
+		},
+		{
+			name: "type and name",
+			yaml: `
+server:
+  endpoint: ws://localhost/v1/opamp
+  auth: bearerauth/primary
+agent:
+  executable: %s
+`,
+			expected: component.MustNewIDWithName("bearerauth", "primary"),
+		},
+		{
+			name: "unset",
+			yaml: `
+server:
+  endpoint: ws://localhost/v1/opamp
+agent:
+  executable: %s
+`,
+			expected: component.ID{},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfgPath := setupSupervisorConfigFile(t, tmpDir, fmt.Sprintf(tc.yaml, executablePath))
+			cfg, err := Load(cfgPath)
+			require.NoError(t, err)
+			require.Equal(t, tc.expected, cfg.Server.Auth)
 		})
 	}
 }
@@ -112,14 +647,74 @@ func TestOpAMPServer_OpaqueHeaders(t *testing.T) {
 }
 
 func TestCapabilities_SupportedCapabilities(t *testing.T) {
-	require.Equal(t,
-		protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus|
-			protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics|
-			protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig|
-			protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth|
-			protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat,
-		DefaultSupervisor().Capabilities.SupportedCapabilities(),
-	)
+	testCases := []struct {
+		name                      string
+		capabilities              Capabilities
+		expectedAgentCapabilities protobufs.AgentCapabilities
+	}{
+		{
+			name:         "Default capabilities",
+			capabilities: DefaultSupervisor().Capabilities,
+			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat,
+		},
+		{
+			name:                      "Empty capabilities",
+			capabilities:              Capabilities{},
+			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
+		},
+		{
+			name: "Package capabilities are reported",
+			capabilities: Capabilities{
+				AcceptsPackages:        true,
+				ReportsPackageStatuses: true,
+			},
+			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses,
+		},
+		{
+			name: "Many capabilities",
+			capabilities: Capabilities{
+				AcceptsRemoteConfig:            true,
+				AcceptsRestartCommand:          true,
+				AcceptsOpAMPConnectionSettings: true,
+				ReportsEffectiveConfig:         true,
+				ReportsOwnMetrics:              true,
+				ReportsOwnLogs:                 true,
+				ReportsOwnTraces:               true,
+				ReportsHealth:                  true,
+				ReportsRemoteConfig:            true,
+				ReportsAvailableComponents:     true,
+				ReportsHeartbeat:               true,
+				AcceptsPackages:                true,
+				ReportsPackageStatuses:         true,
+			},
+			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnLogs |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnTraces |
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig |
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand |
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat |
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.expectedAgentCapabilities, tc.capabilities.SupportedCapabilities())
+		})
+	}
 }
 
 func TestLoad(t *testing.T) {
@@ -210,19 +805,26 @@ func TestLoad_DefaultsAndErrors(t *testing.T) {
 	executablePath := filepath.Join(tmpDir, "binary")
 	require.NoError(t, os.WriteFile(executablePath, []byte{}, 0o600))
 
-	cfg := fmt.Sprintf(`
+	configString := fmt.Sprintf(`
 server:
   endpoint: ws://localhost/v1/opamp
 
 agent:
   executable: %s
 `, executablePath)
-	cfgPath := filepath.Join(tmpDir, "config.yaml")
-	require.NoError(t, os.WriteFile(cfgPath, []byte(cfg), 0o600))
+
+	cfgPath := setupSupervisorConfigFile(t, tmpDir, configString)
+
+	// Assert log_format parses as an empty string default
 	got, err := Load(cfgPath)
 	require.NoError(t, err)
 	require.Equal(t, "", got.Telemetry.Logs.LogFormat)
 
+	// Assert loading a deleted file fails
+	require.NoError(t, os.Remove(cfgPath))
+	runSupervisorConfigLoadTest(t, cfgPath, Supervisor{}, fmt.Errorf("cannot retrieve the configuration: unable to read the file"))
+
+	// Assert loading an empty path fails
 	_, err = Load("")
 	require.ErrorContains(t, err, "path to config file cannot be empty")
 }
