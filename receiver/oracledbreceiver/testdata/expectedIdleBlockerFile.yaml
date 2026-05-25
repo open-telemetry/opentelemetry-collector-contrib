@@ -15,94 +15,94 @@ resourceLogs:
           - attributes:
               - key: db.query.text
                 value:
-                  stringValue: test_query
+                  stringValue: UPDATE orders SET status = ? WHERE id = ?
               - key: db.system.name
                 value:
                   stringValue: oracle
               - key: user.name
                 value:
-                  stringValue: ADMIN
+                  stringValue: DBA_USER
               - key: db.namespace
                 value:
-                  stringValue: ""
+                  stringValue: ORCL
               - key: client.address
                 value:
-                  stringValue: TEST-MACHINE
+                  stringValue: DBA-WORKSTATION
               - key: client.port
                 value:
-                  intValue: "54440"
+                  intValue: "54442"
               - key: network.peer.address
                 value:
-                  stringValue: TEST-MACHINE
+                  stringValue: DBA-WORKSTATION
               - key: network.peer.port
                 value:
-                  intValue: "54440"
+                  intValue: "54442"
               - key: oracledb.plan_hash_value
                 value:
-                  stringValue: "34313939393139353638"
+                  stringValue: "39383736353433323130"
               - key: oracledb.sql_id
                 value:
-                  stringValue: 48bc50b6fuz4y
+                  stringValue: 7abc123def456
               - key: oracledb.child_number
                 value:
                   stringValue: "0"
               - key: oracledb.child_address
                 value:
-                  stringValue: SDF3SDF1234D
+                  stringValue: DEADBEEF
               - key: oracledb.sid
                 value:
-                  stringValue: "675"
+                  stringValue: "100"
               - key: oracledb.serial
                 value:
-                  stringValue: "51295"
+                  stringValue: "5678"
               - key: oracledb.process
                 value:
-                  stringValue: "1115"
+                  stringValue: "1234"
               - key: oracledb.schemaname
                 value:
-                  stringValue: ADMIN
+                  stringValue: DBA_USER
               - key: oracledb.program
                 value:
-                  stringValue: Oracle SQL Developer for VS Code
+                  stringValue: SQL*Plus
               - key: oracledb.module
                 value:
-                  stringValue: Oracle SQL Developer for VS Code
+                  stringValue: ""
               - key: oracledb.status
                 value:
-                  stringValue: ACTIVE
+                  stringValue: INACTIVE
               - key: oracledb.state
                 value:
                   stringValue: WAITED KNOWN TIME
               - key: oracledb.wait_class
                 value:
-                  stringValue: ONE
+                  stringValue: ""
               - key: oracledb.event
                 value:
                   stringValue: ""
               - key: oracledb.query.wait_time
                 value:
-                  doubleValue: 0.5
+                  doubleValue: 0
               - key: oracledb.procedure_id
                 value:
-                  intValue: "12345"
+                  intValue: "0"
               - key: oracledb.procedure_name
                 value:
-                  stringValue: BLAH
+                  stringValue: ""
               - key: oracledb.procedure_type
                 value:
-                  stringValue: PROCEDURE_TYPE-A
+                  stringValue: ""
               - key: oracledb.osuser
                 value:
-                  stringValue: test-user
+                  stringValue: dba
               - key: oracledb.duration_sec
                 value:
-                  doubleValue: 1
+                  doubleValue: 120
               - key: oracledb.query.started
                 value:
-                  stringValue: "2026-01-01T12:00:00Z"
+                  stringValue: ""
               - key: oracledb.session.started
                 value:
-                  stringValue: "2026-01-01T12:00:00Z"
+                  stringValue: ""
               - key: oracledb.session.duration
                 value:
                   doubleValue: 0
@@ -135,9 +135,7 @@ resourceLogs:
                   stringValue: ""
             body: {}
             eventName: db.server.query_sample
-            spanId: a7ad6b7169203331
-            timeUnixNano: "1779182973079606000"
-            traceId: 0af7651916cd43dd8448eb211c80319c
+            timeUnixNano: "1779182973082763000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
           version: latest
