@@ -19,6 +19,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -89,6 +91,8 @@ func TestIntegration_OtelV1Mapping_Traces(t *testing.T) {
 			cfg.Endpoint = endpoint
 			cfg.TLS.Insecure = true
 			cfg.Mode = "otel-v1"
+			// Fix CI race condition by disabling queue soConsumeTraces blocks until complete
+			cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 
 			require.NoError(t, cfg.Validate())
 
@@ -167,6 +171,8 @@ func TestIntegration_OtelV1Mapping_Logs(t *testing.T) {
 	cfg.Endpoint = endpoint
 	cfg.TLS.Insecure = true
 	cfg.Mode = "otel-v1"
+	// Fix CI race condition by disabling queue so ConsumeLogs blocks until complete
+	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 
 	require.NoError(t, cfg.Validate())
 
