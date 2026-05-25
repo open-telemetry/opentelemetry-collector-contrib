@@ -35,14 +35,8 @@ func Test_Sort(t *testing.T) {
 					return s, nil
 				},
 			},
-			order: sortAsc,
-			expected: func() pcommon.Slice {
-				s := pcommon.NewSlice()
-				s.AppendEmpty().SetInt(3)
-				s.AppendEmpty().SetInt(6)
-				s.AppendEmpty().SetInt(9)
-				return s
-			}(),
+			order:    sortAsc,
+			expected: []any{int64(3), int64(6), int64(9)},
 		},
 		{
 			name: "int slice desc",
@@ -53,14 +47,8 @@ func Test_Sort(t *testing.T) {
 					return s, nil
 				},
 			},
-			order: sortDesc,
-			expected: func() pcommon.Slice {
-				s := pcommon.NewSlice()
-				s.AppendEmpty().SetInt(9)
-				s.AppendEmpty().SetInt(6)
-				s.AppendEmpty().SetInt(3)
-				return s
-			}(),
+			order:    sortDesc,
+			expected: []any{int64(9), int64(6), int64(3)},
 		},
 		{
 			name: "string slice",
@@ -71,15 +59,8 @@ func Test_Sort(t *testing.T) {
 					return s, nil
 				},
 			},
-			order: sortAsc,
-			expected: func() pcommon.Slice {
-				s := pcommon.NewSlice()
-				s.AppendEmpty().SetStr("am")
-				s.AppendEmpty().SetStr("awesome")
-				s.AppendEmpty().SetStr("i")
-				s.AppendEmpty().SetStr("slice")
-				return s
-			}(),
+			order:    sortAsc,
+			expected: []any{"am", "awesome", "i", "slice"},
 		},
 		{
 			name: "double slice",
@@ -90,15 +71,8 @@ func Test_Sort(t *testing.T) {
 					return s, nil
 				},
 			},
-			order: sortAsc,
-			expected: func() pcommon.Slice {
-				s := pcommon.NewSlice()
-				s.AppendEmpty().SetDouble(0.5)
-				s.AppendEmpty().SetDouble(1.5)
-				s.AppendEmpty().SetDouble(2.3)
-				s.AppendEmpty().SetDouble(10.2)
-				return s
-			}(),
+			order:    sortAsc,
+			expected: []any{0.5, 1.5, 2.3, 10.2},
 		},
 		{
 			name: "empty slice",
@@ -120,15 +94,8 @@ func Test_Sort(t *testing.T) {
 					return s, nil
 				},
 			},
-			order: sortAsc,
-			expected: func() pcommon.Slice {
-				s := pcommon.NewSlice()
-				s.AppendEmpty().SetBool(false)
-				s.AppendEmpty().SetBool(false)
-				s.AppendEmpty().SetBool(true)
-				s.AppendEmpty().SetBool(true)
-				return s
-			}(),
+			order:    sortAsc,
+			expected: []any{false, false, true, true},
 		},
 		{
 			name: "mixed types slice compares as string",
@@ -139,15 +106,8 @@ func Test_Sort(t *testing.T) {
 					return s, nil
 				},
 			},
-			order: sortAsc,
-			expected: func() pcommon.Slice {
-				s := pcommon.NewSlice()
-				s.AppendEmpty().SetInt(1)
-				s.AppendEmpty().SetDouble(3.33)
-				s.AppendEmpty().SetBool(false)
-				s.AppendEmpty().SetStr("two")
-				return s
-			}(),
+			order:    sortAsc,
+			expected: []any{int64(1), 3.33, false, "two"},
 		},
 		{
 			name: "double and string slice compares as string",
@@ -158,15 +118,8 @@ func Test_Sort(t *testing.T) {
 					return s, nil
 				},
 			},
-			order: sortAsc,
-			expected: func() pcommon.Slice {
-				s := pcommon.NewSlice()
-				s.AppendEmpty().SetDouble(0.5)
-				s.AppendEmpty().SetDouble(1.5)
-				s.AppendEmpty().SetStr("10.2")
-				s.AppendEmpty().SetDouble(2.3)
-				return s
-			}(),
+			order:    sortAsc,
+			expected: []any{0.5, 1.5, "10.2", 2.3},
 		},
 		{
 			name: "mixed numeric types slice compares as double",
@@ -177,15 +130,8 @@ func Test_Sort(t *testing.T) {
 					return s, nil
 				},
 			},
-			order: sortAsc,
-			expected: func() pcommon.Slice {
-				s := pcommon.NewSlice()
-				s.AppendEmpty().SetInt(0)
-				s.AppendEmpty().SetInt(0)
-				s.AppendEmpty().SetInt(2)
-				s.AppendEmpty().SetDouble(3.33)
-				return s
-			}(),
+			order:    sortAsc,
+			expected: []any{int64(0), int64(0), int64(2), 3.33},
 		},
 		{
 			name: "mixed numeric types slice compares as double desc",
@@ -196,15 +142,8 @@ func Test_Sort(t *testing.T) {
 					return s, nil
 				},
 			},
-			order: sortDesc,
-			expected: func() pcommon.Slice {
-				s := pcommon.NewSlice()
-				s.AppendEmpty().SetDouble(3.33)
-				s.AppendEmpty().SetDouble(3.14)
-				s.AppendEmpty().SetInt(2)
-				s.AppendEmpty().SetInt(0)
-				return s
-			}(),
+			order:    sortDesc,
+			expected: []any{3.33, 3.14, int64(2), int64(0)},
 		},
 		{
 			name: "[]any compares as string",
@@ -213,15 +152,8 @@ func Test_Sort(t *testing.T) {
 					return []any{1, "two", 3.33, false}, nil
 				},
 			},
-			order: sortAsc,
-			expected: func() pcommon.Slice {
-				s := pcommon.NewSlice()
-				s.AppendEmpty().SetInt(1)
-				s.AppendEmpty().SetDouble(3.33)
-				s.AppendEmpty().SetBool(false)
-				s.AppendEmpty().SetStr("two")
-				return s
-			}(),
+			order:    sortAsc,
+			expected: []any{int64(1), 3.33, false, "two"},
 		},
 		{
 			name: "[]string",
@@ -273,14 +205,8 @@ func Test_Sort(t *testing.T) {
 					return pv, nil
 				},
 			},
-			order: sortAsc,
-			expected: func() pcommon.Slice {
-				s := pcommon.NewSlice()
-				s.AppendEmpty().SetStr("a")
-				s.AppendEmpty().SetStr("a")
-				s.AppendEmpty().SetStr("slice")
-				return s
-			}(),
+			order:    sortAsc,
+			expected: []any{"a", "a", "slice"},
 		},
 		{
 			name: "pcommon.Value is empty",

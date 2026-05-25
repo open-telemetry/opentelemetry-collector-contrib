@@ -267,45 +267,7 @@ func Test_Append(t *testing.T) {
 				expectedValue.AppendEmpty().SetStr("b")
 			},
 		},
-		{
-			"Single: []any target - nested pcommon.Slice",
-			&ottl.StandardGetSetter[any]{
-				Getter: func(context.Context, any) (any, error) {
-					ps := pcommon.NewSlice()
-					ps.AppendEmpty().SetInt(7)
-					return []any{5, 6, ps}, nil
-				},
-				Setter: setter,
-			},
-			singleGetter,
-			nilSliceOptional,
-			func(expectedValue pcommon.Slice) {
-				expectedValue.AppendEmpty().SetInt(5)
-				expectedValue.AppendEmpty().SetInt(6)
-				expectedValue.AppendEmpty().SetInt(7)
-				expectedValue.AppendEmpty().SetStr("a")
-			},
-		},
-		{
-			"Slice: []any target - nested pcommon.Slice",
-			&ottl.StandardGetSetter[any]{
-				Getter: func(context.Context, any) (any, error) {
-					ps := pcommon.NewSlice()
-					ps.AppendEmpty().SetInt(7)
-					return []any{5, 6, ps}, nil
-				},
-				Setter: setter,
-			},
-			nilOptional,
-			multiGetter,
-			func(expectedValue pcommon.Slice) {
-				expectedValue.AppendEmpty().SetInt(5)
-				expectedValue.AppendEmpty().SetInt(6)
-				expectedValue.AppendEmpty().SetInt(7)
-				expectedValue.AppendEmpty().SetStr("a")
-				expectedValue.AppendEmpty().SetStr("b")
-			},
-		},
+
 		{
 			"Single: pcommon.Value - string",
 			&ottl.StandardGetSetter[any]{

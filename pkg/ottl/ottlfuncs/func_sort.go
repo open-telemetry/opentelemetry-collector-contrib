@@ -127,7 +127,7 @@ func sortSlice(slice pcommon.Slice, order string) (any, error) {
 		arr := makeConvertedCopy(slice, func(idx int) int64 {
 			return slice.At(idx).Int()
 		})
-		return sortConvertedSlice(arr, order)
+		return sortConvertedSlice(arr, order), nil
 	case pcommon.ValueTypeDouble:
 		arr := makeConvertedCopy(slice, func(idx int) float64 {
 			s := slice.At(idx)
@@ -137,12 +137,12 @@ func sortSlice(slice pcommon.Slice, order string) (any, error) {
 
 			return s.Double()
 		})
-		return sortConvertedSlice(arr, order)
+		return sortConvertedSlice(arr, order), nil
 	case pcommon.ValueTypeStr:
 		arr := makeConvertedCopy(slice, func(idx int) string {
 			return slice.At(idx).AsString()
 		})
-		return sortConvertedSlice(arr, order)
+		return sortConvertedSlice(arr, order), nil
 	default:
 		return nil, fmt.Errorf("sort with unsupported type: '%T'", commonType)
 	}
@@ -241,7 +241,7 @@ func makeConvertedCopy[T targetType](slice pcommon.Slice, converter func(idx int
 	return out
 }
 
-func sortConvertedSlice[T targetType](cvs []convertedValue[T], order string) (any, error) {
+func sortConvertedSlice[T targetType](cvs []convertedValue[T], order string) []any {
 	slices.SortFunc(cvs, func(a, b convertedValue[T]) int {
 		if order == sortDesc {
 			return cmp.Compare(b.value, a.value)
@@ -249,15 +249,10 @@ func sortConvertedSlice[T targetType](cvs []convertedValue[T], order string) (an
 		return cmp.Compare(a.value, b.value)
 	})
 
-	out := pcommon.NewSlice()
-	out.EnsureCapacity(len(cvs))
-
+	out := make([]any, 0, len(cvs))
 	for _, cv := range cvs {
-		err := out.AppendEmpty().FromRaw(cv.originalValue)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert value: '%w'", err)
-		}
+		out = append(out, cv.originalValue)
 	}
 
-	return out, nil
+	return out
 }
