@@ -58,7 +58,7 @@ kubelet_stats/all_network_interfaces_metrics:
   collect_all_network_interfaces:
     pod: true
     node: true
-kubeletstats/connection_pooling:
+kubelet_stats/connection_pooling:
   collection_interval: 10s
   auth_type: "serviceAccount"
   endpoint: "https://localhost:10250"

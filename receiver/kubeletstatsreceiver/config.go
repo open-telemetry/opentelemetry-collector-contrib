@@ -25,16 +25,8 @@ var _ component.Config = (*Config)(nil)
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
-	kube.ClientConfig `mapstructure:",squash"`
-
-	// Endpoint is the URL of the kubelet on the node. The scheme, host, and port can be specified
-	// in this field (e.g., https://hostname:10250). The scheme must be https.
-	// If the scheme is omitted, https will be used.
-	Endpoint string `mapstructure:"endpoint"`
-
-	// DialerConfig contains options for connecting to an address.
-	// Retained for backwards compatibility with confignet.TCPAddrConfig.
-	DialerConfig confignet.DialerConfig `mapstructure:"dialer,omitempty"`
+	kube.ClientConfig       `mapstructure:",squash"`
+	confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	// HTTP connection pooling settings to reduce TLS handshake overhead.
 	// These settings can significantly improve performance when scraping metrics at high frequency.

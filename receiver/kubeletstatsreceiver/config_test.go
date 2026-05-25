@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -62,7 +63,9 @@ func TestLoadConfig(t *testing.T) {
 					CollectionInterval: duration,
 					InitialDelay:       time.Second,
 				},
-				Endpoint: "1.2.3.4:5555",
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "1.2.3.4:5555",
+				},
 				ClientConfig: kube.ClientConfig{
 					APIConfig: k8sconfig.APIConfig{
 						AuthType: "tls",
@@ -290,7 +293,9 @@ func TestLoadConfig(t *testing.T) {
 					CollectionInterval: duration,
 					InitialDelay:       time.Second,
 				},
-				Endpoint: "https://localhost:10250",
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "https://localhost:10250",
+				},
 				ClientConfig: kube.ClientConfig{
 					APIConfig: k8sconfig.APIConfig{
 						AuthType: "serviceAccount",
@@ -304,7 +309,7 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.PodMetricGroup,
 					kubelet.NodeMetricGroup,
 				},
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 		},
 	}
