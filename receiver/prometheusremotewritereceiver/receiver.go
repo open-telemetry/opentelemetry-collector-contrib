@@ -93,6 +93,7 @@ type metricIdentity struct {
 	Type       writev2.Metadata_MetricType
 }
 
+// createMetricIdentity creates a metricIdentity struct from the required components
 func createMetricIdentity(res identity.Resource, metricName, unit string, si scopeInfo, metricType writev2.Metadata_MetricType) metricIdentity {
 	is := pcommon.NewInstrumentationScope()
 	is.SetName(si.Name)
@@ -109,6 +110,8 @@ func createMetricIdentity(res identity.Resource, metricName, unit string, si sco
 	}
 }
 
+// Hash generates a unique hash for the metric identity using the identity library's hasher
+// as a foundation, extended with scope and metric fields.
 func (mi metricIdentity) Hash() uint64 {
 	h := mi.Scope.Hash()
 	h.Write([]byte(mi.SchemaURL))
@@ -395,11 +398,11 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		resourceID := identity.OfResource(rm.Resource())
 		metricID := createMetricIdentity(
-			resourceID,
-			metricName,
-			unit,
-			si,
-			ts.Metadata.Type,
+			resourceID,       // Resource identity
+			metricName,       // Metric name
+			unit,             // Unit
+			si,               // Scope info
+			ts.Metadata.Type, // Metric type
 		)
 
 		metricKey := metricID.Hash()
