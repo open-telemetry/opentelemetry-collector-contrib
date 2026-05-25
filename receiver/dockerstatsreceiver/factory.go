@@ -67,6 +67,19 @@ func createMetricsReceiver(
 			dockerConfig.Metrics.ContainerMemoryUsageTotal.Enabled = false
 			dockerConfig.Metrics.ContainerMemoryUsage.Enabled = true
 		}
+		dockerConfig.Metrics.ContainerMemoryAvailable.Enabled = true
+		if dockerConfig.Metrics.ContainerMemoryTotalPgfault.Enabled {
+			dockerConfig.Metrics.ContainerMemoryTotalPgfault.Enabled = false
+			dockerConfig.Metrics.ContainerMemoryPagingFaults.Enabled = true
+		}
+		if dockerConfig.Metrics.ContainerNetworkIoUsageRxBytes.Enabled {
+			dockerConfig.Metrics.ContainerNetworkIoUsageRxBytes.Enabled = false
+			dockerConfig.Metrics.ContainerNetworkIo.Enabled = true
+		}
+		if dockerConfig.Metrics.ContainerNetworkIoUsageTxBytes.Enabled {
+			dockerConfig.Metrics.ContainerNetworkIoUsageTxBytes.Enabled = false
+			dockerConfig.Metrics.ContainerNetworkIo.Enabled = true
+		}
 	} else {
 		if dockerConfig.Metrics.ContainerCPUUsageTotal.Enabled {
 			params.Logger.Warn("The default container.cpu.usage.total metric is being replaced by the container.cpu.time metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
@@ -82,6 +95,15 @@ func createMetricsReceiver(
 		}
 		if dockerConfig.Metrics.ContainerMemoryUsageTotal.Enabled {
 			params.Logger.Warn("The default container.memory.usage.total metric is being replaced by the container.memory.usage metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
+		}
+		if dockerConfig.Metrics.ContainerMemoryTotalPgfault.Enabled {
+			params.Logger.Warn("The default container.memory.total_pgfault metric is being replaced by the container.memory.paging.faults metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
+		}
+		if dockerConfig.Metrics.ContainerNetworkIoUsageRxBytes.Enabled {
+			params.Logger.Warn("The default container.network.io.usage.rx_bytes metric is being replaced by the container.network.io{network.io.direction=receive} metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
+		}
+		if dockerConfig.Metrics.ContainerNetworkIoUsageTxBytes.Enabled {
+			params.Logger.Warn("The default container.network.io.usage.tx_bytes metric is being replaced by the container.network.io{network.io.direction=transmit} metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
 		}
 	}
 

@@ -412,6 +412,14 @@ Amount of memory used in anonymous mappings such as brk(), sbrk(), and mmap(MAP_
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
+### container.memory.available
+
+Container memory available. Not supported on Windows.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
 ### container.memory.cache
 
 The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device (Only available with cgroups v1).
@@ -477,6 +485,14 @@ Indicates the amount of memory mapped by the processes in the control group (Onl
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
+
+### container.memory.paging.faults
+
+Container memory paging faults. (Only available with cgroups v1).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {faults} | Sum | Int | Cumulative | true | Development |
 
 ### container.memory.pgfault
 
@@ -677,6 +693,21 @@ Number of bytes of file/anon cache that are queued for syncing to disk in this c
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
+
+### container.network.io
+
+Network bytes for the container.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| network.io.direction | The network IO operation direction. | Any Str | Recommended | - |
+| network.interface.name | The network interface name. | Any Str | Recommended | - |
 
 ### container.network.io.usage.rx_errors
 

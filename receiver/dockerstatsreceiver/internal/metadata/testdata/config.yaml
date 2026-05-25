@@ -58,6 +58,8 @@ all_set:
       enabled: true
     container.memory.anon:
       enabled: true
+    container.memory.available:
+      enabled: true
     container.memory.cache:
       enabled: true
     container.memory.dirty:
@@ -75,6 +77,8 @@ all_set:
     container.memory.inactive_file:
       enabled: true
     container.memory.mapped_file:
+      enabled: true
+    container.memory.paging.faults:
       enabled: true
     container.memory.percent:
       enabled: true
@@ -132,6 +136,9 @@ all_set:
       enabled: true
     container.memory.writeback:
       enabled: true
+    container.network.io:
+      enabled: true
+      attributes: ["network.io.direction","network.interface.name"]
     container.network.io.usage.rx_bytes:
       enabled: true
       attributes: ["interface"]
@@ -238,6 +245,8 @@ reaggregate_set:
       enabled: true
     container.memory.anon:
       enabled: true
+    container.memory.available:
+      enabled: true
     container.memory.cache:
       enabled: true
     container.memory.dirty:
@@ -255,6 +264,8 @@ reaggregate_set:
     container.memory.inactive_file:
       enabled: true
     container.memory.mapped_file:
+      enabled: true
+    container.memory.paging.faults:
       enabled: true
     container.memory.percent:
       enabled: true
@@ -312,6 +323,9 @@ reaggregate_set:
       enabled: true
     container.memory.writeback:
       enabled: true
+    container.network.io:
+      enabled: true
+      attributes: []
     container.network.io.usage.rx_bytes:
       enabled: true
       attributes: []
@@ -418,6 +432,8 @@ none_set:
       enabled: false
     container.memory.anon:
       enabled: false
+    container.memory.available:
+      enabled: false
     container.memory.cache:
       enabled: false
     container.memory.dirty:
@@ -435,6 +451,8 @@ none_set:
     container.memory.inactive_file:
       enabled: false
     container.memory.mapped_file:
+      enabled: false
+    container.memory.paging.faults:
       enabled: false
     container.memory.percent:
       enabled: false
@@ -492,6 +510,9 @@ none_set:
       enabled: false
     container.memory.writeback:
       enabled: false
+    container.network.io:
+      enabled: false
+      attributes: ["network.io.direction","network.interface.name"]
     container.network.io.usage.rx_bytes:
       enabled: false
       attributes: ["interface"]

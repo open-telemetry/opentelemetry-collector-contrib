@@ -81,6 +81,14 @@ attributes:
     description: "Network interface."
     type: string
     requirement_level: recommended
+  network.interface.name:
+    description: "The network interface name."
+    type: string
+    requirement_level: recommended
+  network.io.direction:
+    description: "The network IO operation direction."
+    type: string
+    requirement_level: recommended
   operation:
     description: "Type of BlockIO operation."
     type: string
@@ -352,6 +360,15 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+  container.memory.available:
+    enabled: false
+    stability: development
+    description: "Container memory available. Not supported on Windows."
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
   container.memory.cache:
     enabled: false
     stability: development
@@ -438,6 +455,15 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+  container.memory.paging.faults:
+    enabled: false
+    stability: development
+    description: "Container memory paging faults. (Only available with cgroups v1)."
+    unit: "{faults}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
   container.memory.percent:
     enabled: true
     stability: development
@@ -692,6 +718,18 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+  container.network.io:
+    enabled: false
+    stability: development
+    description: "Network bytes for the container."
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes:
+      - network.io.direction
+      - network.interface.name
   container.network.io.usage.rx_bytes:
     enabled: true
     stability: development
