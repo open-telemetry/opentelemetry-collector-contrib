@@ -685,7 +685,7 @@ func runBlockedCall(t *testing.T, cfg *Config) (cleanup func()) {
 			"SELECT COUNT(*) FROM performance_schema.events_statements_current esc " +
 				"JOIN performance_schema.threads t ON t.thread_id = esc.thread_id " +
 				"WHERE t.processlist_command != 'Sleep' " +
-				"AND esc.sql_text LIKE '%GET_LOCK%otel_test_lock%'"+
+				"AND esc.sql_text LIKE '%GET_LOCK%otel_test_lock%'" +
 				"AND COALESCE(esc.DIGEST_TEXT, '') != ''",
 		).Scan(&count)
 		return count > 0

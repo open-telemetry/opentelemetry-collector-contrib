@@ -789,10 +789,10 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 
 	for i := range samples {
 		sample := &samples[i]
-		//if sample.digestText == "" {
+		// if sample.digestText == "" {
 		//	droppedSamples++
 		//	continue
-		//}
+		// }
 
 		clientAddress := sample.processlistHost
 		clientPort := int64(sample.clientPort)
