@@ -18,6 +18,7 @@ import (
 	"sort"
 	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -55,10 +56,14 @@ type redaction struct {
 	urlSanitizer *url.URLSanitizer
 	// Database obfuscator
 	dbObfuscator *db.Obfuscator
+	// Conditional skip evaluators
+	traceSkipper  *traceSkipper
+	logSkipper    *logSkipper
+	metricSkipper *metricSkipper
 }
 
 // newRedaction creates a new instance of the redaction processor
-func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*redaction, error) {
+func newRedaction(ctx context.Context, config *Config, settings component.TelemetrySettings) (*redaction, error) {
 	allowList := makeAllowList(config)
 	ignoreList := makeIgnoreList(config)
 	ignoreKeysRegexList, err := makeRegexList(ctx, config.IgnoredKeyPatterns)
@@ -90,7 +95,19 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 			return nil, fmt.Errorf("failed to create URL sanitizer: %w", err)
 		}
 	}
-	dbObfuscator := db.NewObfuscator(config.DBSanitizer, logger)
+	dbObfuscator := db.NewObfuscator(config.DBSanitizer, settings.Logger)
+	traceSkipper, err := newTraceSkipper(config.SkipConditions, settings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create trace skip conditions: %w", err)
+	}
+	logSkipper, err := newLogSkipper(config.SkipConditions, settings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create log skip conditions: %w", err)
+	}
+	metricSkipper, err := newMetricSkipper(config.SkipConditions, settings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create metric skip conditions: %w", err)
+	}
 
 	return &redaction{
 		allowList:          allowList,
@@ -101,9 +118,12 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 		blockKeyRegexList:  blockKeysRegexList,
 		hashFunction:       config.HashFunction,
 		config:             config,
-		logger:             logger,
+		logger:             settings.Logger,
 		urlSanitizer:       urlSanitizer,
 		dbObfuscator:       dbObfuscator,
+		traceSkipper:       traceSkipper,
+		logSkipper:         logSkipper,
+		metricSkipper:      metricSkipper,
 	}, nil
 }
 
@@ -112,7 +132,9 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 func (s *redaction) processTraces(ctx context.Context, batch ptrace.Traces) (ptrace.Traces, error) {
 	for i := 0; i < batch.ResourceSpans().Len(); i++ {
 		rs := batch.ResourceSpans().At(i)
-		s.processResourceSpan(ctx, rs)
+		if err := s.processResourceSpan(ctx, rs); err != nil {
+			return batch, err
+		}
 	}
 	return batch, nil
 }
@@ -120,7 +142,9 @@ func (s *redaction) processTraces(ctx context.Context, batch ptrace.Traces) (ptr
 func (s *redaction) processLogs(ctx context.Context, logs plog.Logs) (plog.Logs, error) {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		rl := logs.ResourceLogs().At(i)
-		s.processResourceLog(ctx, rl)
+		if err := s.processResourceLog(ctx, rl); err != nil {
+			return logs, err
+		}
 	}
 	return logs, nil
 }
@@ -128,14 +152,24 @@ func (s *redaction) processLogs(ctx context.Context, logs plog.Logs) (plog.Logs,
 func (s *redaction) processMetrics(ctx context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
-		s.processResourceMetric(ctx, rm)
+		if err := s.processResourceMetric(ctx, rm); err != nil {
+			return metrics, err
+		}
 	}
 	return metrics, nil
 }
 
 // processResourceSpan processes the RS and all of its spans and then returns the last
 // view metric context. The context can be used for tests
-func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceSpans) {
+func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceSpans) error {
+	skip, err := s.traceSkipper.skipResource(ctx, rs)
+	if err != nil {
+		return err
+	}
+	if skip {
+		return nil
+	}
+
 	rsAttrs := rs.Resource().Attributes()
 
 	// Attributes can be part of a resource span
@@ -143,46 +177,94 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 
 	for j := 0; j < rs.ScopeSpans().Len(); j++ {
 		ils := rs.ScopeSpans().At(j)
+		skip, err = s.traceSkipper.skipScope(ctx, rs, ils)
+		if err != nil {
+			return err
+		}
+		if skip {
+			continue
+		}
 		scopeAttrs := ils.Scope().Attributes()
 		s.processAttrs(ctx, scopeAttrs)
 		for k := 0; k < ils.Spans().Len(); k++ {
 			span := ils.Spans().At(k)
+			skip, err = s.traceSkipper.skipSpan(ctx, rs, ils, span)
+			if err != nil {
+				return err
+			}
+			if skip {
+				continue
+			}
 			spanAttrs := span.Attributes()
 
 			// Attributes can also be part of span
 			s.processAttrs(ctx, spanAttrs)
 
 			// Attributes can also be part of span events
-			s.processSpanEvents(ctx, span.Events())
+			if err := s.processSpanEvents(ctx, rs, ils, span, span.Events()); err != nil {
+				return err
+			}
 
 			s.sanitizeSpanName(span)
 		}
 	}
+	return nil
 }
 
-func (s *redaction) processSpanEvents(ctx context.Context, events ptrace.SpanEventSlice) {
+func (s *redaction) processSpanEvents(ctx context.Context, rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, span ptrace.Span, events ptrace.SpanEventSlice) error {
 	for i := 0; i < events.Len(); i++ {
+		skip, err := s.traceSkipper.skipSpanEvent(ctx, rs, ss, span, events.At(i))
+		if err != nil {
+			return err
+		}
+		if skip {
+			continue
+		}
 		s.processAttrs(ctx, events.At(i).Attributes())
 	}
+	return nil
 }
 
 // processResourceLog processes the log resource and all of its logs and then returns the last
 // view metric context. The context can be used for tests
-func (s *redaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs) {
+func (s *redaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs) error {
+	skip, err := s.logSkipper.skipResource(ctx, rl)
+	if err != nil {
+		return err
+	}
+	if skip {
+		return nil
+	}
+
 	rsAttrs := rl.Resource().Attributes()
 
 	s.processAttrs(ctx, rsAttrs)
 
 	for j := 0; j < rl.ScopeLogs().Len(); j++ {
 		ils := rl.ScopeLogs().At(j)
+		skip, err = s.logSkipper.skipScope(ctx, rl, ils)
+		if err != nil {
+			return err
+		}
+		if skip {
+			continue
+		}
 		scopeAttrs := ils.Scope().Attributes()
 		s.processAttrs(ctx, scopeAttrs)
 		for k := 0; k < ils.LogRecords().Len(); k++ {
 			log := ils.LogRecords().At(k)
+			skip, err = s.logSkipper.skipLogRecord(ctx, rl, ils, log)
+			if err != nil {
+				return err
+			}
+			if skip {
+				continue
+			}
 			s.processAttrs(ctx, log.Attributes())
 			s.processLogBody(ctx, log.Body(), log.Attributes())
 		}
 	}
+	return nil
 }
 
 func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attributes pcommon.Map) {
@@ -281,47 +363,105 @@ func (s *redaction) redactLogBodyRecursive(ctx context.Context, key string, valu
 	}
 }
 
-func (s *redaction) processResourceMetric(ctx context.Context, rm pmetric.ResourceMetrics) {
+func (s *redaction) processResourceMetric(ctx context.Context, rm pmetric.ResourceMetrics) error {
+	skip, err := s.metricSkipper.skipResource(ctx, rm)
+	if err != nil {
+		return err
+	}
+	if skip {
+		return nil
+	}
+
 	rsAttrs := rm.Resource().Attributes()
 
 	s.processAttrs(ctx, rsAttrs)
 
 	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 		ils := rm.ScopeMetrics().At(j)
+		skip, err = s.metricSkipper.skipScope(ctx, rm, ils)
+		if err != nil {
+			return err
+		}
+		if skip {
+			continue
+		}
 		scopeAttrs := ils.Scope().Attributes()
 		s.processAttrs(ctx, scopeAttrs)
 		for k := 0; k < ils.Metrics().Len(); k++ {
 			metric := ils.Metrics().At(k)
+			skip, err = s.metricSkipper.skipMetric(ctx, rm, ils, metric)
+			if err != nil {
+				return err
+			}
+			if skip {
+				continue
+			}
 			switch metric.Type() {
 			case pmetric.MetricTypeGauge:
 				dps := metric.Gauge().DataPoints()
 				for i := 0; i < dps.Len(); i++ {
+					skip, err = s.metricSkipper.skipNumberDataPoint(ctx, rm, ils, metric, dps.At(i))
+					if err != nil {
+						return err
+					}
+					if skip {
+						continue
+					}
 					s.processAttrs(ctx, dps.At(i).Attributes())
 				}
 			case pmetric.MetricTypeSum:
 				dps := metric.Sum().DataPoints()
 				for i := 0; i < dps.Len(); i++ {
+					skip, err = s.metricSkipper.skipNumberDataPoint(ctx, rm, ils, metric, dps.At(i))
+					if err != nil {
+						return err
+					}
+					if skip {
+						continue
+					}
 					s.processAttrs(ctx, dps.At(i).Attributes())
 				}
 			case pmetric.MetricTypeHistogram:
 				dps := metric.Histogram().DataPoints()
 				for i := 0; i < dps.Len(); i++ {
+					skip, err = s.metricSkipper.skipHistogramDataPoint(ctx, rm, ils, metric, dps.At(i))
+					if err != nil {
+						return err
+					}
+					if skip {
+						continue
+					}
 					s.processAttrs(ctx, dps.At(i).Attributes())
 				}
 			case pmetric.MetricTypeExponentialHistogram:
 				dps := metric.ExponentialHistogram().DataPoints()
 				for i := 0; i < dps.Len(); i++ {
+					skip, err = s.metricSkipper.skipExponentialHistogramDataPoint(ctx, rm, ils, metric, dps.At(i))
+					if err != nil {
+						return err
+					}
+					if skip {
+						continue
+					}
 					s.processAttrs(ctx, dps.At(i).Attributes())
 				}
 			case pmetric.MetricTypeSummary:
 				dps := metric.Summary().DataPoints()
 				for i := 0; i < dps.Len(); i++ {
+					skip, err = s.metricSkipper.skipSummaryDataPoint(ctx, rm, ils, metric, dps.At(i))
+					if err != nil {
+						return err
+					}
+					if skip {
+						continue
+					}
 					s.processAttrs(ctx, dps.At(i).Attributes())
 				}
 			case pmetric.MetricTypeEmpty:
 			}
 		}
 	}
+	return nil
 }
 
 // processAttrs redacts the attributes of a resource span or a span
