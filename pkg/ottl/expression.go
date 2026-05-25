@@ -208,11 +208,17 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 					}
 				}
 			}
-
 		default:
-			err := evaluated.AppendEmpty().FromRaw(tVal)
-			if err != nil {
-				return nil, err
+			pSlice, typedErr := newPSliceFromTypedSlice(tVal)
+			if typedErr != nil {
+				// not typed slice, attempt scalar value.
+				err := evaluated.AppendEmpty().FromRaw(tVal)
+				if err != nil {
+					return nil, TypeError(fmt.Sprintf("Unrecognized value (%T). expected typed slice []T or scalar value", tVal))
+				}
+			} else {
+				s := evaluated.AppendEmpty().SetEmptySlice()
+				pSlice.CopyTo(s)
 			}
 		}
 	}
@@ -366,7 +372,18 @@ func (g StandardPSliceGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Slice
 			return pcommon.Slice{}, err
 		}
 		return s, nil
-	// Handle common slice types returned by OTTL functions
+	default:
+		// Handle common slice types returned by OTTL functions
+		pSlice, err := newPSliceFromTypedSlice(v)
+		if err != nil {
+			return pcommon.Slice{}, TypeError(fmt.Sprintf("expected pcommon.Slice but got %T", val))
+		}
+		return pSlice, nil
+	}
+}
+
+func newPSliceFromTypedSlice(slice any) (pcommon.Slice, error) {
+	switch v := slice.(type) {
 	case []string:
 		return newPSliceFrom(v, func(target *pcommon.Value, value string) { target.SetStr(value) })
 	case []int:
@@ -392,7 +409,7 @@ func (g StandardPSliceGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Slice
 	case []bool:
 		return newPSliceFrom(v, func(target *pcommon.Value, value bool) { target.SetBool(value) })
 	default:
-		return pcommon.Slice{}, TypeError(fmt.Sprintf("expected pcommon.Slice but got %T", val))
+		return pcommon.Slice{}, TypeError(fmt.Sprintf("Unrecognized typed slice: %T", v))
 	}
 }
 
