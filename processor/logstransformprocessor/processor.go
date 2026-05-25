@@ -35,6 +35,7 @@ type logsTransformProcessor struct {
 	emitter       helper.LogEmitter
 	fromConverter *adapter.FromPdataConverter
 	shutdownFns   []component.ShutdownFunc
+	wg            sync.WaitGroup
 }
 
 func newProcessor(config *Config, nextConsumer consumer.Logs, set component.TelemetrySettings) (*logsTransformProcessor, error) {
@@ -122,12 +123,10 @@ func (ltp *logsTransformProcessor) startFromConverter() {
 // startConverterLoop starts the converter loop, which reads all the logs translated by the fromConverter and then forwards
 // them to pipeline
 func (ltp *logsTransformProcessor) startConverterLoop(ctx context.Context) {
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	go ltp.converterLoop(ctx, wg)
+	ltp.wg.Go(func() { ltp.converterLoop(ctx) })
 
 	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
-		wg.Wait()
+		ltp.wg.Wait()
 		return nil
 	})
 }
@@ -159,9 +158,7 @@ func (ltp *logsTransformProcessor) ConsumeLogs(_ context.Context, ld plog.Logs) 
 
 // converterLoop reads the log entries produced by the fromConverter and sends them
 // into the pipeline
-func (ltp *logsTransformProcessor) converterLoop(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (ltp *logsTransformProcessor) converterLoop(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
