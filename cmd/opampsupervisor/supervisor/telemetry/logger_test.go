@@ -16,7 +16,13 @@ import (
 )
 
 func TestNewLogger_LogFormatConsole(t *testing.T) {
-	logFile := filepath.Join(t.TempDir(), "console.log")
+	tmpDir, err := os.MkdirTemp("", "opamp-logger-test") //nolint:usetesting // Zap logger holds file locks on Windows, preventing t.TempDir cleanup
+	require.NoError(t, err)
+	defer func() {
+		_ = os.RemoveAll(tmpDir)
+	}()
+
+	logFile := filepath.Join(tmpDir, "console.log")
 
 	logger, err := NewLogger(config.Logs{
 		Level:       zapcore.InfoLevel,
@@ -38,7 +44,13 @@ func TestNewLogger_LogFormatConsole(t *testing.T) {
 }
 
 func TestNewLogger_DefaultLogFormatJSON(t *testing.T) {
-	logFile := filepath.Join(t.TempDir(), "json.log")
+	tmpDir, err := os.MkdirTemp("", "opamp-logger-test") //nolint:usetesting // Zap logger holds file locks on Windows, preventing t.TempDir cleanup
+	require.NoError(t, err)
+	defer func() {
+		_ = os.RemoveAll(tmpDir)
+	}()
+
+	logFile := filepath.Join(tmpDir, "json.log")
 
 	logger, err := NewLogger(config.Logs{
 		Level:       zapcore.InfoLevel,
