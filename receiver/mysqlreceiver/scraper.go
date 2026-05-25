@@ -789,10 +789,10 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 
 	for i := range samples {
 		sample := &samples[i]
-		if sample.digestText == "" {
-			droppedSamples++
-			continue
-		}
+		//if sample.digestText == "" {
+		//	droppedSamples++
+		//	continue
+		//}
 
 		clientAddress := sample.processlistHost
 		clientPort := int64(sample.clientPort)
@@ -896,7 +896,7 @@ func (m *mySQLScraper) retrieveQueryPlan(queryDigestText, querySampleText, schem
 }
 
 func createCacheKey(dbName, digestTextHash string) string {
-	return dbName + "_" + digestTextHash
+	return dbName + "-" + digestTextHash
 }
 
 func getDigestTextHash(digestText string) string {
