@@ -69,3 +69,12 @@ k8s_objects/exclude_namespaces:
       mode: watch
       exclude_namespaces:
         - regexp: default_ignore
+k8s_objects/top_level_interval:
+  auth_type: serviceAccount
+  interval: 30m
+  objects:
+    - name: pods
+      mode: pull
+    - name: nodes
+      mode: pull
+      interval: 5m

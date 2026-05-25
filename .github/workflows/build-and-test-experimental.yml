@@ -2,7 +2,10 @@ name: build-and-test-experimental
 on:
   pull_request:
     # `labeled`/`unlabeled` are required so that adding/removing `ci:full` on
-    # an open PR retriggers the workflow with the new scope.
+    # an open PR retriggers the workflow with the new scope. GitHub doesn't
+    # let us filter these events by label name at the trigger level, so root
+    # jobs below also gate on `github.event.label.name == 'ci:full'` to skip
+    # unrelated label churn (e.g. `waiting-for-code-owners`).
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions: read-all
@@ -19,7 +22,7 @@ jobs:
   exp-setup-environment:
     timeout-minutes: 30
     runs-on: ubuntu-24.04
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
@@ -53,7 +56,7 @@ jobs:
   # which doesn't fit the group-matrix shape.
   exp-ci-scope:
     runs-on: ubuntu-24.04
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     outputs:
       matrix: ${{ steps.post.outputs.matrix }}
       direct_matrix: ${{ steps.post.outputs.direct_matrix }}
@@ -161,7 +164,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   exp-lint:
-    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [exp-setup-environment, exp-lint-matrix]
     steps:
@@ -195,7 +198,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   exp-govulncheck:
-    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [exp-setup-environment, exp-govulncheck-matrix]
     steps:
@@ -221,8 +224,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # codegen is split across the standard module groups so the slowest
+        # shard bounds wall time. Each codegen-<group> shard runs
+        # `make generate GROUP=<group>` over only that subset.
         shard:
-          - codegen
+          - codegen-receiver-0
+          - codegen-receiver-1
+          - codegen-receiver-2
+          - codegen-receiver-3
+          - codegen-processor-0
+          - codegen-processor-1
+          - codegen-exporter-0
+          - codegen-exporter-1
+          - codegen-exporter-2
+          - codegen-exporter-3
+          - codegen-extension
+          - codegen-connector
+          - codegen-internal
+          - codegen-pkg
+          - codegen-cmd-0
+          - codegen-other
           - porto-and-gci
           - go-mod-hygiene
           - small-generators
@@ -233,6 +254,11 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
+          # read-only-checks only runs checkdoc/checkmetadata/checkapi/
+          # multimod-verify. genotelcontribcol below still pulls what it
+          # actually needs lazily, but bulk-downloading every module up
+          # front isn't required.
+          gomoddownload: ${{ matrix.shard == 'read-only-checks' && 'false' || 'true' }}
       - run: make genotelcontribcol
       - name: Run shard ${{ matrix.shard }}
         run: ./.github/workflows/scripts/run-checks-shard.sh "${{ matrix.shard }}"
@@ -275,7 +301,7 @@ jobs:
           fi
 
   exp-unittest:
-    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [exp-setup-environment, exp-unittest-matrix]
     steps:
@@ -300,7 +326,7 @@ jobs:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -317,10 +343,25 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
+      - name: Compute Docker cache key
+        id: docker-cache-key
+        env:
+          GROUP: ${{ matrix.group }}
+        run: |
+          normalized_group="$(
+            printf '%s' "$GROUP" \
+              | tr '[:space:]' '\n' \
+              | sed '/^$/d' \
+              | sort \
+              | tr '\n' ' ' \
+              | sed 's/[[:space:]]\+$//'
+          )"
+          group_hash="$(printf '%s' "$normalized_group" | sha256sum | cut -d ' ' -f 1)"
+          echo "key=docker-experimental-${group_hash}" >> "$GITHUB_OUTPUT"
       - name: Cache Docker images.
         uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
         with:
-          key: docker-experimental-${{ matrix.group }}
+          key: ${{ steps.docker-cache-key.outputs.key }}
       - name: Run Integration Tests
         run: make gointegration-test GROUP="${{ matrix.group }}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
@@ -349,7 +390,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   exp-integration-tests:
-    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [exp-setup-environment, exp-integration-tests-matrix, exp-integration-sudo-tests-matrix]
     steps:
@@ -522,6 +563,9 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
+          # Only a handful of modules build here; let `go build` fetch what it
+          # needs lazily rather than pre-downloading every module in the repo.
+          gomoddownload: "false"
       - name: Build affected modules for ${{ matrix.os }}/${{ matrix.arch }}${{ matrix.arm && format('v{0}', matrix.arm) || '' }}
         env:
           MATRIX: ${{ needs.exp-ci-scope.outputs.matrix }}

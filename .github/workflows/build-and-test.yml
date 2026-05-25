@@ -39,39 +39,124 @@ jobs:
       - run: make genotelcontribcol
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
+
+  # Runs compute-ci-scope.sh to classify the PR's change set. Outputs two JSON
+  # matrices that downstream jobs consume directly as their `group` dimension:
+  #   - matrix:        modules + transitive dependents (build/test/checks).
+  #   - direct_matrix: modules whose files actually changed (lint-only). A
+  #                    downstream module's lint result doesn't depend on
+  #                    whether an upstream module's source changed, so lint
+  #                    skips transitive dependents.
+  # In both:
+  #   - full mode: ["receiver-0", "receiver-1", ...] (the named groups)
+  #   - scoped mode: ["receiver/foo receiver/bar", ...] (bucketed module dirs)
+  #   - skip: []
+  # The Makefile's FOR_GROUP_TARGET handling treats both formats correctly.
+  # `mode` is a derived output (skip / full / scoped) used by cross-compile,
+  # which doesn't fit the group-matrix shape.
+  ci-scope:
+    runs-on: ubuntu-24.04
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    outputs:
+      matrix: ${{ steps.post.outputs.matrix }}
+      direct_matrix: ${{ steps.post.outputs.direct_matrix }}
+      mode: ${{ steps.post.outputs.mode }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+      - name: Compute scope
+        id: scope
+        shell: bash
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          BASE_REF: ${{ github.base_ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          TARGET_CONCURRENCY: 10
+          FORCE_ALL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+          # `^` anchors mean these match files at repo root, not in subdirectories,
+          # so a receiver-component Makefile change doesn't trigger the full suite.
+          CRITICAL_FILES: '[
+            "^Makefile",
+            "^Makefile.Common",
+            "^.golangci.yml",
+            "^.github/workflows/",
+            "^.github/actions/",
+            "^internal/tools/",
+            "^versions.yaml",
+            "^cmd/otelcontribcol/"
+          ]'
+          ALL_TEST_GROUPS: '[
+            "receiver-0",
+            "receiver-1",
+            "receiver-2",
+            "receiver-3",
+            "processor-0",
+            "processor-1",
+            "exporter-0",
+            "exporter-1",
+            "exporter-2",
+            "exporter-3",
+            "extension",
+            "connector",
+            "internal",
+            "pkg",
+            "cmd-0",
+            "other"
+          ]'
+        run: ./.github/workflows/scripts/compute-ci-scope.sh
+      - name: Filter matrix and derive mode
+        id: post
+        shell: bash
+        env:
+          RAW_MATRIX: ${{ steps.scope.outputs.matrix }}
+          RAW_DIRECT_MATRIX: ${{ steps.scope.outputs.direct_matrix }}
+        run: |
+          # The script maps top-level files (Makefile, .github/, etc.) to "."
+          # the root module. Strip "." entries from buckets and drop buckets
+          # that become empty -- the Makefile's per-module delegation rules
+          # don't define a target for ".", so `make TARGET GROUP="."` would
+          # fail with "No rule to make target 'for-.-target'". Top-level paths
+          # that should force a full run belong in CRITICAL_FILES instead.
+          filter='[.[] | split(" ") | map(select(. != ".")) | join(" ") | select(. != "")]'
+          matrix=$(echo "$RAW_MATRIX" | jq -c "$filter")
+          direct_matrix=$(echo "$RAW_DIRECT_MATRIX" | jq -c "$filter")
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "direct_matrix=$direct_matrix" >> "$GITHUB_OUTPUT"
+
+          # Scoped buckets contain "/" (module paths); full mode emits named
+          # groups like "receiver-0" (no slashes). [] is skip. `mode` is
+          # derived from the transitive matrix -- it drives cross-compile
+          # and gating decisions that need the broader view.
+          if [[ "$matrix" == "[]" ]]; then
+            mode=skip
+          elif [[ "$matrix" == *"/"* ]]; then
+            mode=scoped
+          else
+            mode=full
+          fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "Raw matrix:             $RAW_MATRIX"
+          echo "Filtered matrix:        $matrix"
+          echo "Raw direct matrix:      $RAW_DIRECT_MATRIX"
+          echo "Filtered direct matrix: $direct_matrix"
+          echo "Mode:                   $mode"
   lint-matrix:
+    needs: [setup-environment, ci-scope]
+    if: ${{ needs.ci-scope.outputs.direct_matrix != '[]' && needs.ci-scope.outputs.direct_matrix != '' }}
     strategy:
       fail-fast: false
       matrix:
-        goos:
-          - windows
-          - linux
-        group:
-          - receiver-0
-          - receiver-1
-          - receiver-2
-          - receiver-3
-          - processor-0
-          - processor-1
-          - exporter-0
-          - exporter-1
-          - exporter-2
-          - exporter-3
-          - extension
-          - connector
-          - internal
-          - pkg
-          - cmd-0
-          - other
+        goos: [windows, linux]
+        group: ${{ fromJSON(needs.ci-scope.outputs.direct_matrix) }}
     runs-on: ubuntu-24.04
-    needs: [setup-environment]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - name: Lint
-        run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
+        run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP="${{ matrix.group }}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
@@ -82,7 +167,7 @@ jobs:
         run: echo ${{ needs.lint-matrix.result }}
       - name: Interpret result
         run: |
-          if [[ success == ${{ needs.lint-matrix.result }} ]]
+          if [[ success == ${{ needs.lint-matrix.result }} || skipped == ${{ needs.lint-matrix.result }} ]]
           then
             echo "All matrix jobs passed!"
           else
@@ -293,7 +378,7 @@ jobs:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 

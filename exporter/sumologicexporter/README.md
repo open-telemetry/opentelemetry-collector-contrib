@@ -150,6 +150,24 @@ exporters:
       # num_seconds is the number of seconds to buffer in case of a backend outage,
       # requests_per_second is the average number of requests per seconds.
       queue_size: <queue_size>
+      # BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
+      # To enable the batching with sumologic specific default setting add the key with empty value
+      # batch: {}
+      batch:
+        # FlushTimeout sets the time after which a batch will be sent regardless of its size.
+        # default = 1s
+        flush_timeout: <>
+        # Sizer determines the type of size measurement used by the batch.
+        # If not configured, use the same configuration as the queue.
+        # It accepts "requests", "items", or "bytes".
+        # default = requests
+        sizer: <>
+        # MinSize defines the configuration for the minimum size of a batch.
+        # default = 1024
+        min_size: <>
+        # MaxSize defines the configuration for the minimum size of a batch.
+        # default = 2048
+        max_size: <>
 ```
 
 ## Source Templates
