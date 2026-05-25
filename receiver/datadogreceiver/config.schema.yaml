@@ -18,6 +18,14 @@ $defs:
         $ref: /pkg/datadog/config.api_config
 type: object
 properties:
+  idle_series_cleanup_interval:
+    description: IdleSeriesCleanupInterval defines how frequently the receiver checks for and removes idle series. Defaults to 5 minutes.
+    type: string
+    format: duration
+  idle_series_timeout:
+    description: IdleSeriesTimeout is the duration after which a series is considered stale and removed from memory if no new data points are received. The default value is 0, which disables this feature.
+    type: string
+    format: duration
   intake:
     description: Intake controls the `/intake` endpoint behavior
     $ref: intake_config

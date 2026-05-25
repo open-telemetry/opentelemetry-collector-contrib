@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: processor/k8s_attributes
+note: Preserve an upstream-set container.image.tags resource attribute when processor.k8sattributes.EmitV1K8sConventions is enabled, matching the behavior of container.image.tag and container.image.repo_digests.
+issues: [45869]
+change_logs: [user]

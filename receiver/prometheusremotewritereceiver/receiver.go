@@ -7,12 +7,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/cespare/xxhash/v2"
 	"github.com/gogo/protobuf/proto"
 	lru "github.com/hashicorp/golang-lru/v2"
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
@@ -69,10 +69,6 @@ type prometheusRemoteWriteReceiver struct {
 	bodyBufferPool *sync.Pool
 }
 
-// labelSeparator is used as a separator when building hashes from label values.
-// 0xff is chosen because it cannot appear in valid UTF-8, avoiding accidental collisions.
-const labelSeparator = "\xff"
-
 // scopeInfo holds instrumentation scope fields extracted from otel_scope_* labels.
 type scopeInfo struct {
 	Name       string
@@ -87,21 +83,11 @@ type attribute struct {
 	Value string
 }
 
-func (si scopeInfo) key() string {
-	const fixedFields = 3 // Name, Version, SchemaURL
-	parts := make([]string, 0, fixedFields+len(si.scopeAttrs))
-	parts = append(parts, si.Name, si.Version, si.SchemaURL)
-	for _, kv := range si.scopeAttrs {
-		parts = append(parts, kv.Key+labelSeparator+kv.Value)
-	}
-	return strings.Join(parts, labelSeparator)
-}
-
 // metricIdentity contains all the components that uniquely identify a metric
 // according to the OpenTelemetry Protocol data model.
 // The definition of the metric uniqueness is based on the following document. Ref: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model
 type metricIdentity struct {
-	ResourceID     string
+	resource       identity.Resource
 	ScopeName      string
 	ScopeVersion   string
 	ScopeSchemaURL string
@@ -112,9 +98,9 @@ type metricIdentity struct {
 }
 
 // createMetricIdentity creates a metricIdentity struct from the required components
-func createMetricIdentity(resourceID, metricName, unit string, si scopeInfo, metricType writev2.Metadata_MetricType) metricIdentity {
+func createMetricIdentity(resource identity.Resource, metricName, unit string, si scopeInfo, metricType writev2.Metadata_MetricType) metricIdentity {
 	return metricIdentity{
-		ResourceID:     resourceID,
+		resource:       resource,
 		ScopeName:      si.Name,
 		ScopeVersion:   si.Version,
 		ScopeSchemaURL: si.SchemaURL,
@@ -125,21 +111,28 @@ func createMetricIdentity(resourceID, metricName, unit string, si scopeInfo, met
 	}
 }
 
-// Hash generates a unique hash for the metric identity
+// Hash generates a unique hash for the metric identity using the identity library's hasher
+// as a foundation, extended with scope and metric fields.
 func (mi metricIdentity) Hash() uint64 {
-	parts := []string{
-		mi.ResourceID,
-		mi.ScopeName,
-		mi.ScopeVersion,
-		mi.ScopeSchemaURL,
-		mi.MetricName,
-		mi.Unit,
-		fmt.Sprintf("%d", mi.Type),
-	}
+	h := mi.resource.Hash()
+	h.Write([]byte(mi.ScopeName))
+	h.Write(sep)
+	h.Write([]byte(mi.ScopeVersion))
+	h.Write(sep)
+	h.Write([]byte(mi.ScopeSchemaURL))
+	h.Write(sep)
 	for _, kv := range mi.ScopeAttrs {
-		parts = append(parts, kv.Key+labelSeparator+kv.Value)
+		h.Write([]byte(kv.Key))
+		h.Write(sep)
+		h.Write([]byte(kv.Value))
+		h.Write(sep)
 	}
-	return xxhash.Sum64String(strings.Join(parts, labelSeparator))
+	h.Write([]byte(mi.MetricName))
+	h.Write(sep)
+	h.Write([]byte(mi.Unit))
+	h.Write(sep)
+	h.Write([]byte(mi.Type.String()))
+	return h.Sum64()
 }
 
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
@@ -237,8 +230,8 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	}
 
 	obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
-	err = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
-	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.ResourceMetrics().Len(), err)
+	err = prw.nextConsumer.ConsumeMetrics(obsrecvCtx, m)
+	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.DataPointCount(), err)
 	if err != nil {
 		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 		if consumererror.IsPermanent(err) {
@@ -296,7 +289,15 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.
 // from the LRU cache when available. Never returns cached objects to avoid shared
 // mutation across concurrent requests.
 func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMetrics pmetric.Metrics, reqRM map[uint64]pmetric.ResourceMetrics) (pmetric.ResourceMetrics, uint64) {
-	hashedLabels := xxhash.Sum64String(ls.Get("job") + labelSeparator + ls.Get("instance"))
+	// Hash job+instance directly to avoid allocating a temporary pcommon.Resource
+	// on every call (which happens once per time series).
+	job := ls.Get("job")
+	instance := ls.Get("instance")
+	h := identity.Resource{}.Hash()
+	h.Write([]byte(job))
+	h.Write(sep)
+	h.Write([]byte(instance))
+	hashedLabels := h.Sum64()
 
 	if rm, ok := reqRM[hashedLabels]; ok {
 		return rm, hashedLabels
@@ -408,11 +409,11 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		resourceID := identity.OfResource(rm.Resource())
 		metricID := createMetricIdentity(
-			resourceID.String(), // Resource identity
-			metricName,          // Metric name
-			unit,                // Unit
-			si,                  // Scope info
-			ts.Metadata.Type,    // Metric type
+			resourceID,       // Resource identity
+			metricName,       // Metric name
+			unit,             // Unit
+			si,               // Scope info
+			ts.Metadata.Type, // Metric type
 		)
 
 		metricKey := metricID.Hash()
@@ -560,7 +561,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		}
 		// Create resource if needed (only for the first valid histogram)
 		if hashedLabels == 0 {
-			rm, _ = prw.getOrCreateRM(ls, otelMetrics, modifiedRM)
+			rm, hashedLabels = prw.getOrCreateRM(ls, otelMetrics, modifiedRM)
 			resourceID = identity.OfResource(rm.Resource())
 		}
 
@@ -579,15 +580,27 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			applyScopeInfo(scope, si)
 		}
 
-		metricID := fmt.Sprintf("%s:%s:%s:%s:%s:%s",
-			resourceID.String(),
-			si.key(),
-			metricName,
-			unit,
-			fmt.Sprintf("%d", ts.Metadata.Type),
-			histogramType,
-		)
-		metricIDHash := xxhash.Sum64String(metricID)
+		histogramOpts := resourceID.Hash()
+		histogramOpts.Write([]byte(si.Name))
+		histogramOpts.Write(sep)
+		histogramOpts.Write([]byte(si.Version))
+		histogramOpts.Write(sep)
+		histogramOpts.Write([]byte(si.SchemaURL))
+		histogramOpts.Write(sep)
+		for _, kv := range si.scopeAttrs {
+			histogramOpts.Write([]byte(kv.Key))
+			histogramOpts.Write(sep)
+			histogramOpts.Write([]byte(kv.Value))
+			histogramOpts.Write(sep)
+		}
+		histogramOpts.Write([]byte(metricName))
+		histogramOpts.Write(sep)
+		histogramOpts.Write([]byte(unit))
+		histogramOpts.Write(sep)
+		histogramOpts.Write([]byte(ts.Metadata.Type.String()))
+		histogramOpts.Write(sep)
+		histogramOpts.Write([]byte(histogramType))
+		metricIDHash := histogramOpts.Sum64()
 
 		histMetric, exists := metricCache[metricIDHash]
 		if !exists {
@@ -702,7 +715,20 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 	dp.SetZeroThreshold(histogram.ZeroThreshold)
 
 	// Set count and sum using common helper
-	setCountAndSum(histogram, dp)
+	if value.IsStaleNaN(histogram.Sum) {
+		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+	} else {
+		setCountAndSum(histogram, dp)
+	}
+
+	// The maximum bucket index is derived from the formula (2^(2^-n))^i <= MaxFloat64.
+	// MaxFloat64 is approx 2^1024. So (2^-n) * i <= 1024 => i <= 1024 * 2^n.
+	// The bucket containing MaxFloat64 has index i_max = 1024 * 2^n.
+	// The next bucket (i_max + 1) is the +Inf overflow bucket, which is also allowed.
+	// Buckets with an index strictly greater than i_max + 1 must be dropped.
+	// See https://prometheus.io/docs/specs/native_histograms/#schema for more information.
+	overflowLimit := int32(math.Ldexp(1024, int(histogram.Schema))) + 1
+	var droppedCount uint64
 
 	// The difference between float and integer histograms is that float histograms are stored as absolute counts
 	// while integer histograms are stored as deltas.
@@ -713,11 +739,11 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 
 		if len(histogram.PositiveSpans) > 0 {
 			dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			convertAbsoluteBuckets(histogram.PositiveSpans, histogram.PositiveCounts, dp.Positive().BucketCounts())
+			droppedCount += convertAbsoluteBuckets(histogram.PositiveSpans, histogram.PositiveCounts, dp.Positive().BucketCounts(), overflowLimit)
 		}
 		if len(histogram.NegativeSpans) > 0 {
 			dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			convertAbsoluteBuckets(histogram.NegativeSpans, histogram.NegativeCounts, dp.Negative().BucketCounts())
+			droppedCount += convertAbsoluteBuckets(histogram.NegativeSpans, histogram.NegativeCounts, dp.Negative().BucketCounts(), overflowLimit)
 		}
 	} else {
 		// Integer histograms
@@ -726,11 +752,22 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 
 		if len(histogram.PositiveSpans) > 0 {
 			dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			convertDeltaBuckets(histogram.PositiveSpans, histogram.PositiveDeltas, dp.Positive().BucketCounts())
+			droppedCount += convertDeltaBuckets(histogram.PositiveSpans, histogram.PositiveDeltas, dp.Positive().BucketCounts(), overflowLimit)
 		}
 		if len(histogram.NegativeSpans) > 0 {
 			dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			convertDeltaBuckets(histogram.NegativeSpans, histogram.NegativeDeltas, dp.Negative().BucketCounts())
+			droppedCount += convertDeltaBuckets(histogram.NegativeSpans, histogram.NegativeDeltas, dp.Negative().BucketCounts(), overflowLimit)
+		}
+	}
+
+	if droppedCount > 0 && !value.IsStaleNaN(histogram.Sum) {
+		count := dp.Count()
+		if droppedCount > count {
+			prw.settings.Logger.Info("Clamping Native Histogram count to zero due to inconsistent dropped overflow bucket count",
+				zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
+			dp.SetCount(0)
+		} else {
+			dp.SetCount(count - droppedCount)
 		}
 	}
 
@@ -788,7 +825,7 @@ func hasNegativeCounts(histogram *writev2.Histogram) bool {
 
 // convertDeltaBuckets converts Prometheus native histogram spans and deltas to OpenTelemetry bucket counts
 // For integer buckets, the values are deltas between the buckets. i.e a bucket list of 1,2,-2 would correspond to a bucket count of 1,3,1
-func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pcommon.UInt64Slice) {
+func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pcommon.UInt64Slice, overflowLimit int32) uint64 {
 	// The total capacity is the sum of the deltas and the offsets of the spans.
 	totalCapacity := len(deltas)
 	for _, span := range spans {
@@ -798,23 +835,37 @@ func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pco
 
 	bucketIdx := 0
 	bucketCount := int64(0)
+	var droppedCount uint64
+	initialOffset := spans[0].Offset
+	k := initialOffset
+
 	for spanIdx, span := range spans {
 		if spanIdx > 0 {
 			for i := int32(0); i < span.Offset; i++ {
-				buckets.Append(uint64(0))
+				if k <= overflowLimit {
+					buckets.Append(uint64(0))
+				}
+				k++
 			}
 		}
 		for i := uint32(0); i < span.Length; i++ {
 			bucketCount += deltas[bucketIdx]
 			bucketIdx++
-			buckets.Append(uint64(bucketCount))
+
+			if k <= overflowLimit {
+				buckets.Append(uint64(bucketCount))
+			} else {
+				droppedCount += uint64(bucketCount)
+			}
+			k++
 		}
 	}
+	return droppedCount
 }
 
 // convertAbsoluteBuckets converts Prometheus native histogram spans and absolute counts to OpenTelemetry bucket counts
 // For float buckets, the values are absolute counts, and must be 0 or positive.
-func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, buckets pcommon.UInt64Slice) {
+func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, buckets pcommon.UInt64Slice, overflowLimit int32) uint64 {
 	// The total capacity is the sum of the counts and the offsets of the spans.
 	totalCapacity := len(counts)
 	for _, span := range spans {
@@ -823,17 +874,30 @@ func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, bucket
 	buckets.EnsureCapacity(totalCapacity)
 
 	bucketIdx := 0
+	var droppedCount uint64
+	initialOffset := spans[0].Offset
+	k := initialOffset
+
 	for spanIdx, span := range spans {
 		if spanIdx > 0 {
 			for i := int32(0); i < span.Offset; i++ {
-				buckets.Append(uint64(0))
+				if k <= overflowLimit {
+					buckets.Append(uint64(0))
+				}
+				k++
 			}
 		}
 		for i := uint32(0); i < span.Length; i++ {
-			buckets.Append(uint64(counts[bucketIdx]))
+			if k <= overflowLimit {
+				buckets.Append(uint64(counts[bucketIdx]))
+			} else {
+				droppedCount += uint64(counts[bucketIdx])
+			}
 			bucketIdx++
+			k++
 		}
 	}
+	return droppedCount
 }
 
 // extractAttributes returns metric data point attributes, excluding job, instance, metric name, and all otel_scope_* labels.
