@@ -7,7 +7,7 @@ change_type: bug_fix
 component: processor/logstransform
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Detach the converter loop goroutine from the Start context per component.Component contract; the loop now runs under a dedicated context.Background()-derived context that is cancelled on Shutdown instead of the soon-cancelled Start context.
+note: Fix a bug where the logstransform processor's internal converter loop was tied to the short-lived Start context, causing the processor to stop processing logs shortly after startup. The loop now runs for the full lifetime of the component and stops cleanly on Shutdown.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [31140]
