@@ -9,10 +9,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func TestWithAPIConfig(t *testing.T) {
@@ -56,6 +58,13 @@ func TestWithPassthrough(t *testing.T) {
 
 func TestEnabledAttributes(t *testing.T) {
 	// This list needs to be updated when the defaults in metadata.yaml are updated.
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
+	}()
+
 	expected := []string{
 		"k8s.namespace.name",
 		"k8s.pod.name",
@@ -64,7 +73,8 @@ func TestEnabledAttributes(t *testing.T) {
 		"k8s.deployment.name",
 		"k8s.node.name",
 		"container.image.name",
-		containerImageTag,
+		"container.image.tag",
+		"container.image.tags",
 	}
 	assert.ElementsMatch(t, expected, enabledAttributes())
 }

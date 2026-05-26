@@ -17,7 +17,7 @@ var K8sattrLabelsAnnotationsSingularAllowFeatureGate = featuregate.GlobalRegistr
 
 var ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.k8sattributes.DontEmitV0K8sConventions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, semconv legacy attributes are disabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589"),
 	featuregate.WithRegisterFromVersion("v0.145.0"),
@@ -25,7 +25,7 @@ var ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate = featuregate.Glob
 
 var ProcessorK8sattributesEmitV1K8sConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.k8sattributes.EmitV1K8sConventions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, semconv stable attributes are enabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589"),
 	featuregate.WithRegisterFromVersion("v0.145.0"),
@@ -33,7 +33,7 @@ var ProcessorK8sattributesEmitV1K8sConventionsFeatureGate = featuregate.GlobalRe
 
 var ProcessorK8sattributesShareProcessorBetweenPipelinesFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.k8sattributes.ShareProcessorBetweenPipelines",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, processor instances with identical configuration are shared across different signal type pipelines, reducing duplicate Kubernetes API watchers."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/2450"),
 	featuregate.WithRegisterFromVersion("v0.150.0"),
@@ -41,7 +41,7 @@ var ProcessorK8sattributesShareProcessorBetweenPipelinesFeatureGate = featuregat
 
 var ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.k8sattributes.telemetry.disableOldFormatMetrics",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, old formatted internal telemetry metrics are disabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871"),
 	featuregate.WithRegisterFromVersion("v0.146.0"),
@@ -49,7 +49,7 @@ var ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate = featureg
 
 var ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.k8sattributes.telemetry.enableNewFormatMetrics",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, new formatted internal telemetry metrics are enabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871"),
 	featuregate.WithRegisterFromVersion("v0.146.0"),

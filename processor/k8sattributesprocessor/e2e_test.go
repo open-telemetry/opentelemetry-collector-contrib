@@ -153,10 +153,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -177,10 +177,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":                newExpectedValue(regex, uidRe),
 				"container.image.name":           newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":   newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":            newExpectedValue(equal, "latest"),
+				"container.image.tags":           newExpectedValue(equal, "latest"),
 				"container.id":                   newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":            newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":     newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":             newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":      newExpectedValue(equal, "barns"),
 				"simple-job-workload-annotation": newExpectedValue(equal, "job-annotation"),
 			},
 		},
@@ -202,10 +202,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":                        newExpectedValue(regex, uidRe),
 				"container.image.name":                   newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":           newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                    newExpectedValue(equal, "latest"),
+				"container.image.tags":                   newExpectedValue(equal, "latest"),
 				"container.id":                           newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":                    newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":             newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":                     newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":              newExpectedValue(equal, "barns"),
 				"simple-statefulset-workload-annotation": newExpectedValue(equal, "statefulset-annotation"),
 			},
 		},
@@ -229,9 +229,9 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":                       newExpectedValue(regex, uidRe),
 				"container.image.name":                  newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":          newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                   newExpectedValue(equal, "latest"),
+				"container.image.tags":                  newExpectedValue(equal, "latest"),
 				"container.id":                          newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":            newExpectedValue(equal, "barns"),
+				"k8s.namespace.label.foons":             newExpectedValue(equal, "barns"),
 				"simple-deployment-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
 			},
 		},
@@ -253,10 +253,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":                      newExpectedValue(regex, uidRe),
 				"container.image.name":                 newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":         newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                  newExpectedValue(equal, "latest"),
+				"container.image.tags":                 newExpectedValue(equal, "latest"),
 				"container.id":                         newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":                  newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":           newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":                   newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":            newExpectedValue(equal, "barns"),
 				"simple-daemonset-workload-annotation": newExpectedValue(equal, "daemonset-annotation"),
 			},
 		},
@@ -280,10 +280,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -304,10 +304,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":                newExpectedValue(regex, uidRe),
 				"container.image.name":           newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":   newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":            newExpectedValue(equal, "latest"),
+				"container.image.tags":           newExpectedValue(equal, "latest"),
 				"container.id":                   newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":            newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":     newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":             newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":      newExpectedValue(equal, "barns"),
 				"simple-job-workload-annotation": newExpectedValue(equal, "job-annotation"),
 			},
 		},
@@ -329,10 +329,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":                        newExpectedValue(regex, uidRe),
 				"container.image.name":                   newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":           newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                    newExpectedValue(equal, "latest"),
+				"container.image.tags":                   newExpectedValue(equal, "latest"),
 				"container.id":                           newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":                    newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":             newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":                     newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":              newExpectedValue(equal, "barns"),
 				"simple-statefulset-workload-annotation": newExpectedValue(equal, "statefulset-annotation"),
 			},
 		},
@@ -356,9 +356,9 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":                       newExpectedValue(regex, uidRe),
 				"container.image.name":                  newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":          newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                   newExpectedValue(equal, "latest"),
+				"container.image.tags":                  newExpectedValue(equal, "latest"),
 				"container.id":                          newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":            newExpectedValue(equal, "barns"),
+				"k8s.namespace.label.foons":             newExpectedValue(equal, "barns"),
 				"simple-deployment-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
 			},
 		},
@@ -380,10 +380,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":                      newExpectedValue(regex, uidRe),
 				"container.image.name":                 newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":         newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                  newExpectedValue(equal, "latest"),
+				"container.image.tags":                 newExpectedValue(equal, "latest"),
 				"container.id":                         newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":                  newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":           newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":                   newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":            newExpectedValue(equal, "barns"),
 				"simple-daemonset-workload-annotation": newExpectedValue(equal, "daemonset-annotation"),
 			},
 		},
@@ -407,10 +407,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -431,10 +431,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":                newExpectedValue(regex, uidRe),
 				"container.image.name":           newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":   newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":            newExpectedValue(equal, "latest"),
+				"container.image.tags":           newExpectedValue(equal, "latest"),
 				"container.id":                   newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":            newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":     newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":             newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":      newExpectedValue(equal, "barns"),
 				"simple-job-workload-annotation": newExpectedValue(equal, "job-annotation"),
 			},
 		},
@@ -456,9 +456,9 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":                        newExpectedValue(regex, uidRe),
 				"container.image.name":                   newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":           newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                    newExpectedValue(equal, "latest"),
+				"container.image.tags":                   newExpectedValue(equal, "latest"),
 				"container.id":                           newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":             newExpectedValue(equal, "barns"),
+				"k8s.namespace.label.foons":              newExpectedValue(equal, "barns"),
 				"simple-statefulset-workload-annotation": newExpectedValue(equal, "statefulset-annotation"),
 			},
 		},
@@ -482,10 +482,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":                       newExpectedValue(regex, uidRe),
 				"container.image.name":                  newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":          newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                   newExpectedValue(equal, "latest"),
+				"container.image.tags":                  newExpectedValue(equal, "latest"),
 				"container.id":                          newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":                   newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":            newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":                    newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":             newExpectedValue(equal, "barns"),
 				"simple-deployment-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
 			},
 		},
@@ -507,10 +507,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":                      newExpectedValue(regex, uidRe),
 				"container.image.name":                 newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":         newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                  newExpectedValue(equal, "latest"),
+				"container.image.tags":                 newExpectedValue(equal, "latest"),
 				"container.id":                         newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":                  newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":           newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":                   newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":            newExpectedValue(equal, "barns"),
 				"simple-daemonset-workload-annotation": newExpectedValue(equal, "daemonset-annotation"),
 			},
 		},
@@ -534,10 +534,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -558,10 +558,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -582,9 +582,9 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -607,10 +607,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -631,10 +631,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 	}
@@ -732,9 +732,9 @@ func TestE2E_ClusterRBACHeuristic(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -757,9 +757,9 @@ func TestE2E_ClusterRBACHeuristic(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -782,9 +782,9 @@ func TestE2E_ClusterRBACHeuristic(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -807,9 +807,9 @@ func TestE2E_ClusterRBACHeuristic(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -832,9 +832,9 @@ func TestE2E_ClusterRBACHeuristic(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -857,10 +857,10 @@ func TestE2E_ClusterRBACHeuristic(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 	}
@@ -956,7 +956,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -979,7 +979,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -1002,7 +1002,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -1025,7 +1025,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -1140,10 +1140,10 @@ func TestE2E_MixRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "0.112.0"),
+				"container.image.tags":         newExpectedValue(equal, "0.112.0"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 			},
 		},
@@ -1167,10 +1167,10 @@ func TestE2E_MixRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "0.112.0"),
+				"container.image.tags":         newExpectedValue(equal, "0.112.0"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 			},
 		},
@@ -1194,10 +1194,10 @@ func TestE2E_MixRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "0.112.0"),
+				"container.image.tags":         newExpectedValue(equal, "0.112.0"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 			},
 		},
@@ -1221,10 +1221,10 @@ func TestE2E_MixRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 			},
 		},
@@ -1328,7 +1328,7 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(shouldnotexist, ""),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -1352,7 +1352,7 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(shouldnotexist, ""),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -1376,7 +1376,7 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(shouldnotexist, ""),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -1400,7 +1400,7 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(shouldnotexist, ""),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -1517,10 +1517,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -1541,10 +1541,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":                newExpectedValue(regex, uidRe),
 				"container.image.name":           newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":   newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":            newExpectedValue(equal, "latest"),
+				"container.image.tags":           newExpectedValue(equal, "latest"),
 				"container.id":                   newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":            newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":     newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":             newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":      newExpectedValue(equal, "barns"),
 				"simple-job-workload-annotation": newExpectedValue(equal, "job-annotation"),
 			},
 		},
@@ -1566,10 +1566,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":                        newExpectedValue(regex, uidRe),
 				"container.image.name":                   newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":           newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                    newExpectedValue(equal, "latest"),
+				"container.image.tags":                   newExpectedValue(equal, "latest"),
 				"container.id":                           newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":                    newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":             newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":                     newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":              newExpectedValue(equal, "barns"),
 				"simple-statefulset-workload-annotation": newExpectedValue(equal, "statefulset-annotation"),
 			},
 		},
@@ -1593,9 +1593,9 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":                       newExpectedValue(regex, uidRe),
 				"container.image.name":                  newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":          newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                   newExpectedValue(equal, "latest"),
+				"container.image.tags":                  newExpectedValue(equal, "latest"),
 				"container.id":                          newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":            newExpectedValue(equal, "barns"),
+				"k8s.namespace.label.foons":             newExpectedValue(equal, "barns"),
 				"simple-deployment-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
 			},
 		},
@@ -1617,10 +1617,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":                      newExpectedValue(regex, uidRe),
 				"container.image.name":                 newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":         newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                  newExpectedValue(equal, "latest"),
+				"container.image.tags":                 newExpectedValue(equal, "latest"),
 				"container.id":                         newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":                  newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":           newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":                   newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":            newExpectedValue(equal, "barns"),
 				"simple-daemonset-workload-annotation": newExpectedValue(equal, "daemonset-annotation"),
 			},
 		},
@@ -1644,10 +1644,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -1668,10 +1668,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":                newExpectedValue(regex, uidRe),
 				"container.image.name":           newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":   newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":            newExpectedValue(equal, "latest"),
+				"container.image.tags":           newExpectedValue(equal, "latest"),
 				"container.id":                   newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":            newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":     newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":             newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":      newExpectedValue(equal, "barns"),
 				"simple-job-workload-annotation": newExpectedValue(equal, "job-annotation"),
 			},
 		},
@@ -1693,10 +1693,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":                        newExpectedValue(regex, uidRe),
 				"container.image.name":                   newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":           newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                    newExpectedValue(equal, "latest"),
+				"container.image.tags":                   newExpectedValue(equal, "latest"),
 				"container.id":                           newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":                    newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":             newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":                     newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":              newExpectedValue(equal, "barns"),
 				"simple-statefulset-workload-annotation": newExpectedValue(equal, "statefulset-annotation"),
 			},
 		},
@@ -1720,9 +1720,9 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":                       newExpectedValue(regex, uidRe),
 				"container.image.name":                  newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":          newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                   newExpectedValue(equal, "latest"),
+				"container.image.tags":                  newExpectedValue(equal, "latest"),
 				"container.id":                          newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":            newExpectedValue(equal, "barns"),
+				"k8s.namespace.label.foons":             newExpectedValue(equal, "barns"),
 				"simple-deployment-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
 			},
 		},
@@ -1744,10 +1744,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":                      newExpectedValue(regex, uidRe),
 				"container.image.name":                 newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":         newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                  newExpectedValue(equal, "latest"),
+				"container.image.tags":                 newExpectedValue(equal, "latest"),
 				"container.id":                         newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":                  newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":           newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":                   newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":            newExpectedValue(equal, "barns"),
 				"simple-daemonset-workload-annotation": newExpectedValue(equal, "daemonset-annotation"),
 			},
 		},
@@ -1771,10 +1771,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -1795,10 +1795,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":                newExpectedValue(regex, uidRe),
 				"container.image.name":           newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":   newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":            newExpectedValue(equal, "latest"),
+				"container.image.tags":           newExpectedValue(equal, "latest"),
 				"container.id":                   newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":            newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":     newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":             newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":      newExpectedValue(equal, "barns"),
 				"simple-job-workload-annotation": newExpectedValue(equal, "job-annotation"),
 			},
 		},
@@ -1820,9 +1820,9 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":                        newExpectedValue(regex, uidRe),
 				"container.image.name":                   newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":           newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                    newExpectedValue(equal, "latest"),
+				"container.image.tags":                   newExpectedValue(equal, "latest"),
 				"container.id":                           newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":             newExpectedValue(equal, "barns"),
+				"k8s.namespace.label.foons":              newExpectedValue(equal, "barns"),
 				"simple-statefulset-workload-annotation": newExpectedValue(equal, "statefulset-annotation"),
 			},
 		},
@@ -1846,10 +1846,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":                       newExpectedValue(regex, uidRe),
 				"container.image.name":                  newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":          newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                   newExpectedValue(equal, "latest"),
+				"container.image.tags":                  newExpectedValue(equal, "latest"),
 				"container.id":                          newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":                   newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":            newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":                    newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":             newExpectedValue(equal, "barns"),
 				"simple-deployment-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
 			},
 		},
@@ -1871,10 +1871,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":                      newExpectedValue(regex, uidRe),
 				"container.image.name":                 newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests":         newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":                  newExpectedValue(equal, "latest"),
+				"container.image.tags":                 newExpectedValue(equal, "latest"),
 				"container.id":                         newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":                  newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":           newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":                   newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":            newExpectedValue(equal, "barns"),
 				"simple-daemonset-workload-annotation": newExpectedValue(equal, "daemonset-annotation"),
 			},
 		},
@@ -1898,10 +1898,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -1922,10 +1922,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -1946,9 +1946,9 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -1971,10 +1971,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 		{
@@ -1995,10 +1995,10 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tags":         newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
-				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
-				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.label.foo":           newExpectedValue(equal, "too"),
+				"k8s.namespace.label.foons":    newExpectedValue(equal, "barns"),
 			},
 		},
 	}
@@ -2130,11 +2130,11 @@ func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedVa
 			if val, ok := kvs[k]; ok {
 				switch val.mode {
 				case equal:
-					if val.value == v.AsString() {
+					if attributeValueMatchesExpected(k, v, val.value) {
 						foundAttrs[k] = true
 					}
 				case regex:
-					matched, _ := regexp.MatchString(val.value, v.AsString())
+					matched := attributeValueMatchesRegex(k, v, val.value)
 					if matched {
 						foundAttrs[k] = true
 					}
@@ -2148,6 +2148,34 @@ func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedVa
 		},
 	)
 
+	for k, val := range kvs {
+		if foundAttrs[k] || val.mode == shouldnotexist {
+			continue
+		}
+		for _, alias := range attributeAliases(k) {
+			aliasValue, ok := resource.Attributes().Get(alias)
+			if !ok {
+				continue
+			}
+			switch val.mode {
+			case equal:
+				if attributeValueMatchesExpected(alias, aliasValue, val.value) {
+					foundAttrs[k] = true
+				}
+			case regex:
+				matched := attributeValueMatchesRegex(alias, aliasValue, val.value)
+				if matched {
+					foundAttrs[k] = true
+				}
+			case exist:
+				foundAttrs[k] = true
+			}
+			if foundAttrs[k] {
+				break
+			}
+		}
+	}
+
 	var err error
 	for k, v := range shouldNotFoundAttrs {
 		if v {
@@ -2160,6 +2188,58 @@ func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedVa
 		}
 	}
 	return err
+}
+
+func attributeAliases(key string) []string {
+	aliases := []string{}
+	if key == "container.image.tag" {
+		return []string{"container.image.tags"}
+	}
+	if key == "container.image.tags" {
+		return []string{"container.image.tag"}
+	}
+	for _, prefixPair := range []struct{ singular, plural string }{
+		{singular: "k8s.pod.label.", plural: "k8s.pod.labels."},
+		{singular: "k8s.pod.annotation.", plural: "k8s.pod.annotations."},
+		{singular: "k8s.node.label.", plural: "k8s.node.labels."},
+		{singular: "k8s.node.annotation.", plural: "k8s.node.annotations."},
+		{singular: "k8s.namespace.label.", plural: "k8s.namespace.labels."},
+	} {
+		if strings.HasPrefix(key, prefixPair.singular) {
+			aliases = append(aliases, prefixPair.plural+strings.TrimPrefix(key, prefixPair.singular))
+		}
+		if strings.HasPrefix(key, prefixPair.plural) {
+			aliases = append(aliases, prefixPair.singular+strings.TrimPrefix(key, prefixPair.plural))
+		}
+	}
+	return aliases
+}
+
+func attributeValueMatchesExpected(key string, value pcommon.Value, expected string) bool {
+	if key == "container.image.tags" {
+		if value.Type() != pcommon.ValueTypeSlice {
+			return false
+		}
+		slice := value.Slice()
+		return slice.Len() == 1 && slice.At(0).AsString() == expected
+	}
+	return value.AsString() == expected
+}
+
+func attributeValueMatchesRegex(key string, value pcommon.Value, pattern string) bool {
+	if key == "container.image.tags" {
+		if value.Type() != pcommon.ValueTypeSlice {
+			return false
+		}
+		slice := value.Slice()
+		if slice.Len() != 1 {
+			return false
+		}
+		matched, _ := regexp.MatchString(pattern, slice.At(0).AsString())
+		return matched
+	}
+	matched, _ := regexp.MatchString(pattern, value.AsString())
+	return matched
 }
 
 func startUpSinks(t *testing.T, mc *consumertest.MetricsSink, tc *consumertest.TracesSink, lc *consumertest.LogsSink, pc *consumertest.ProfilesSink) func() {
@@ -2410,18 +2490,18 @@ func TestE2E_ContainerIDAssociation(t *testing.T) {
 			dataType: pipeline.SignalTraces,
 			service:  "test-traces-deployment",
 			attrs: map[string]*expectedValue{
-				"k8s.pod.name":                        newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment-[a-z0-9]*-[a-z0-9]*"),
-				"k8s.pod.uid":                         newExpectedValue(regex, uidRe),
-				"k8s.namespace.name":                  newExpectedValue(equal, testNs),
-				"k8s.deployment.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment"),
-				"k8s.node.name":                       newExpectedValue(exist, ""),
-				"k8s.cluster.uid":                     newExpectedValue(regex, uidRe),
-				"k8s.labels.app":                      newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment"),
-				"k8s.namespace.labels.test-namespace": newExpectedValue(equal, "container-id-association"),
-				"k8s.container.name":                  newExpectedValue(equal, "telemetrygen"),
-				"container.image.name":                newExpectedValue(exist, ""),
-				"container.image.tag":                 newExpectedValue(exist, ""),
-				"container.id":                        newExpectedValue(regex, "[a-f0-9]{64}"),
+				"k8s.pod.name":                       newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment-[a-z0-9]*-[a-z0-9]*"),
+				"k8s.pod.uid":                        newExpectedValue(regex, uidRe),
+				"k8s.namespace.name":                 newExpectedValue(equal, testNs),
+				"k8s.deployment.name":                newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment"),
+				"k8s.node.name":                      newExpectedValue(exist, ""),
+				"k8s.cluster.uid":                    newExpectedValue(regex, uidRe),
+				"k8s.labels.app":                     newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment"),
+				"k8s.namespace.label.test-namespace": newExpectedValue(equal, "container-id-association"),
+				"k8s.container.name":                 newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":               newExpectedValue(exist, ""),
+				"container.image.tags":               newExpectedValue(exist, ""),
+				"container.id":                       newExpectedValue(regex, "[a-f0-9]{64}"),
 			},
 		},
 		{
@@ -2429,18 +2509,18 @@ func TestE2E_ContainerIDAssociation(t *testing.T) {
 			dataType: pipeline.SignalMetrics,
 			service:  "test-metrics-deployment",
 			attrs: map[string]*expectedValue{
-				"k8s.pod.name":                        newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment-[a-z0-9]*-[a-z0-9]*"),
-				"k8s.pod.uid":                         newExpectedValue(regex, uidRe),
-				"k8s.namespace.name":                  newExpectedValue(equal, testNs),
-				"k8s.deployment.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment"),
-				"k8s.node.name":                       newExpectedValue(exist, ""),
-				"k8s.cluster.uid":                     newExpectedValue(regex, uidRe),
-				"k8s.labels.app":                      newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment"),
-				"k8s.namespace.labels.test-namespace": newExpectedValue(equal, "container-id-association"),
-				"k8s.container.name":                  newExpectedValue(equal, "telemetrygen"),
-				"container.image.name":                newExpectedValue(exist, ""),
-				"container.image.tag":                 newExpectedValue(exist, ""),
-				"container.id":                        newExpectedValue(regex, "[a-f0-9]{64}"),
+				"k8s.pod.name":                       newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment-[a-z0-9]*-[a-z0-9]*"),
+				"k8s.pod.uid":                        newExpectedValue(regex, uidRe),
+				"k8s.namespace.name":                 newExpectedValue(equal, testNs),
+				"k8s.deployment.name":                newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment"),
+				"k8s.node.name":                      newExpectedValue(exist, ""),
+				"k8s.cluster.uid":                    newExpectedValue(regex, uidRe),
+				"k8s.labels.app":                     newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment"),
+				"k8s.namespace.label.test-namespace": newExpectedValue(equal, "container-id-association"),
+				"k8s.container.name":                 newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":               newExpectedValue(exist, ""),
+				"container.image.tags":               newExpectedValue(exist, ""),
+				"container.id":                       newExpectedValue(regex, "[a-f0-9]{64}"),
 			},
 		},
 		{
@@ -2448,18 +2528,18 @@ func TestE2E_ContainerIDAssociation(t *testing.T) {
 			dataType: pipeline.SignalLogs,
 			service:  "test-logs-deployment",
 			attrs: map[string]*expectedValue{
-				"k8s.pod.name":                        newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment-[a-z0-9]*-[a-z0-9]*"),
-				"k8s.pod.uid":                         newExpectedValue(regex, uidRe),
-				"k8s.namespace.name":                  newExpectedValue(equal, testNs),
-				"k8s.deployment.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment"),
-				"k8s.node.name":                       newExpectedValue(exist, ""),
-				"k8s.cluster.uid":                     newExpectedValue(regex, uidRe),
-				"k8s.labels.app":                      newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment"),
-				"k8s.namespace.labels.test-namespace": newExpectedValue(equal, "container-id-association"),
-				"k8s.container.name":                  newExpectedValue(equal, "telemetrygen"),
-				"container.image.name":                newExpectedValue(exist, ""),
-				"container.image.tag":                 newExpectedValue(exist, ""),
-				"container.id":                        newExpectedValue(regex, "[a-f0-9]{64}"),
+				"k8s.pod.name":                       newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment-[a-z0-9]*-[a-z0-9]*"),
+				"k8s.pod.uid":                        newExpectedValue(regex, uidRe),
+				"k8s.namespace.name":                 newExpectedValue(equal, testNs),
+				"k8s.deployment.name":                newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment"),
+				"k8s.node.name":                      newExpectedValue(exist, ""),
+				"k8s.cluster.uid":                    newExpectedValue(regex, uidRe),
+				"k8s.labels.app":                     newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment"),
+				"k8s.namespace.label.test-namespace": newExpectedValue(equal, "container-id-association"),
+				"k8s.container.name":                 newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":               newExpectedValue(exist, ""),
+				"container.image.tags":               newExpectedValue(exist, ""),
+				"container.id":                       newExpectedValue(regex, "[a-f0-9]{64}"),
 			},
 		},
 	}

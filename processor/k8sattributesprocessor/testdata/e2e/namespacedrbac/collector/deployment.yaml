@@ -21,7 +21,7 @@ spec:
           command:
             - /otelcontribcol
             - --config=/conf/relay.yaml
-            - --feature-gates=service.profilesSupport
+            - --feature-gates=service.profilesSupport,processor.k8sattributes.EmitV1K8sConventions,processor.k8sattributes.DontEmitV0K8sConventions
           image: "otelcontribcol:latest"
           imagePullPolicy: Never
           ports:

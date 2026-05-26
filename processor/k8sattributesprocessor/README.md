@@ -1097,7 +1097,7 @@ Feature gates can be enabled using the `--feature-gates` flag:
 ## Semantic Conventions Compatibility
 
 The processor is moving towards the latest [Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/registry/attributes/k8s/)
-through the following feature gates:
+through the following beta feature gates, which are enabled by default:
 - `processor.k8sattributes.DontEmitV0K8sConventions`
 - `processor.k8sattributes.EmitV1K8sConventions`
 

@@ -25,7 +25,7 @@ data:
           - k8s.cluster.uid
           - k8s.container.name
           - container.image.name
-          - container.image.tag
+          - container.image.tags
           labels:
           - from: pod
             key: app

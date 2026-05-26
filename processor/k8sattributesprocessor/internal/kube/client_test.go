@@ -633,11 +633,6 @@ func TestHandlerWrongType(t *testing.T) {
 }
 
 func TestExtractionRules(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
-
-	// Disable saving ip into k8s.pod.ip
-	c.Associations[0].Sources[0].Name = ""
-
 	jobCronSuffixMinutes := int64(27667920)
 	pod := &api_v1.Pod{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -930,9 +925,10 @@ func TestExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.pod.labels.label1": "lv1",
-				"k8s.pod.labels.label2": "k1=v1 k5=v5 extra!",
+				"k8s.pod.label.label1": "lv1",
+				"k8s.pod.label.label2": "k1=v1 k5=v5 extra!",
 			},
+			singularFeatureGate: true,
 		},
 		{
 			name: "all-labels singular",
@@ -961,8 +957,9 @@ func TestExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.pod.annotations.annotation1": "av1",
+				"k8s.pod.annotation.annotation1": "av1",
 			},
+			singularFeatureGate: true,
 		},
 		{
 			name: "all-annotations singular",
@@ -1035,9 +1032,10 @@ func TestExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.pod.labels.label1": "lv1",
-				"k8s.pod.labels.label2": "k1=v1 k5=v5 extra!",
+				"k8s.pod.label.label1": "lv1",
+				"k8s.pod.label.label2": "k1=v1 k5=v5 extra!",
 			},
+			singularFeatureGate: true,
 		},
 		{
 			name: "captured-groups-no-tag-name singular",
@@ -1124,6 +1122,10 @@ func TestExtractionRules(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+			// Disable saving ip into k8s.pod.ip
+			c.Associations[0].Sources[0].Name = ""
+
 			if tc.singularFeatureGate {
 				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
 				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
@@ -1427,8 +1429,9 @@ func TestNamespaceExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.namespace.labels.label1": "lv1",
+				"k8s.namespace.label.label1": "lv1",
 			},
+			singularFeatureGate: true,
 		},
 		{
 			name: "all-labels singular",
@@ -1456,8 +1459,9 @@ func TestNamespaceExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.namespace.annotations.annotation1": "av1",
+				"k8s.namespace.annotation.annotation1": "av1",
 			},
+			singularFeatureGate: true,
 		},
 		{
 			name: "all-annotations singular",
@@ -1486,8 +1490,9 @@ func TestNamespaceExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.namespace.labels.label1": "lv1",
+				"k8s.namespace.label.label1": "lv1",
 			},
+			singularFeatureGate: true,
 		},
 		{
 			name: "captured-groups-no-tag-name singular",
@@ -1718,8 +1723,9 @@ func TestNodeExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.node.labels.label1": "lv1",
+				"k8s.node.label.label1": "lv1",
 			},
+			singularFeatureGate: true,
 		},
 		{
 			name: "all-labels singular",
@@ -1747,8 +1753,9 @@ func TestNodeExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.node.annotations.annotation1": "av1",
+				"k8s.node.annotation.annotation1": "av1",
 			},
+			singularFeatureGate: true,
 		},
 		{
 			name: "all-annotations singular",
@@ -1777,8 +1784,9 @@ func TestNodeExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.node.labels.label1": "lv1",
+				"k8s.node.label.label1": "lv1",
 			},
+			singularFeatureGate: true,
 		},
 		{
 			name: "captured-groups-no-tag-name singular",
