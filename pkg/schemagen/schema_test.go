@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package schemagen
 
 import (
 	"testing"
@@ -10,11 +10,11 @@ import (
 )
 
 func TestSchemaToJSON(t *testing.T) {
-	schema := CreateSchema()
+	schema := createSchema()
 	schema.Description = "An example schema for testing."
-	schema.ElementType = SchemaTypeObject
-	schema.AddProperty("name", CreateSimpleField(SchemaTypeString, "The name of the entity."))
-	schema.AddProperty("age", CreateSimpleField(SchemaTypeInteger, "The age of the entity."))
+	schema.ElementType = schemaTypeObject
+	schema.AddProperty("name", createSimpleField(schemaTypeString, "The name of the entity."))
+	schema.AddProperty("age", createSimpleField(schemaTypeInteger, "The age of the entity."))
 
 	rawJSON, err := schema.ToJSON()
 	require.NoError(t, err)
@@ -38,17 +38,17 @@ func TestSchemaToJSON(t *testing.T) {
 }
 
 func TestSchemaWithComplexFields(t *testing.T) {
-	schema := CreateSchema()
+	schema := createSchema()
 	schema.Description = "An example schema with nested struct."
-	schema.ElementType = SchemaTypeObject
+	schema.ElementType = schemaTypeObject
 
-	addressSchema := CreateObjectField("Address object")
-	addressSchema.AddProperty("street", CreateSimpleField(SchemaTypeString, "The street address."))
-	addressSchema.AddProperty("city", CreateSimpleField(SchemaTypeString, "The city."))
+	addressSchema := createObjectField("Address object")
+	addressSchema.AddProperty("street", createSimpleField(schemaTypeString, "The street address."))
+	addressSchema.AddProperty("city", createSimpleField(schemaTypeString, "The city."))
 
 	schema.AddProperty("address", addressSchema)
-	schema.AddProperty("tags", CreateArrayField(CreateSimpleField(SchemaTypeString, "A tag."), "Array of tags."))
-	schema.AddProperty("metadata", CreateRefField("#/definitions/Metadata", "Reference to Metadata definition."))
+	schema.AddProperty("tags", createArrayField(createSimpleField(schemaTypeString, "A tag."), "Array of tags."))
+	schema.AddProperty("metadata", createRefField("#/definitions/Metadata", "Reference to Metadata definition."))
 
 	rawJSON, err := schema.ToJSON()
 	require.NoError(t, err)
@@ -90,11 +90,11 @@ func TestSchemaWithComplexFields(t *testing.T) {
 }
 
 func TestSchemaToYAML(t *testing.T) {
-	schema := CreateSchema()
+	schema := createSchema()
 	schema.Description = "An example schema for testing."
-	schema.ElementType = SchemaTypeObject
-	schema.AddProperty("name", CreateSimpleField(SchemaTypeString, "The name of the entity."))
-	schema.AddProperty("age", CreateSimpleField(SchemaTypeInteger, "The age of the entity."))
+	schema.ElementType = schemaTypeObject
+	schema.AddProperty("name", createSimpleField(schemaTypeString, "The name of the entity."))
+	schema.AddProperty("age", createSimpleField(schemaTypeInteger, "The age of the entity."))
 
 	rawYAML, err := schema.ToYAML()
 	require.NoError(t, err)

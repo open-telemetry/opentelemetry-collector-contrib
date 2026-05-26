@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/schemagen"
 )
 
 func main() {
@@ -17,18 +17,18 @@ func main() {
 }
 
 func run() error {
-	config, err := internal.ReadConfig()
+	config, err := schemagen.ReadConfig()
 	if err != nil {
 		return err
 	}
 
-	parser := internal.NewParser(config)
+	parser := schemagen.NewParser(config)
 	schema, err := parser.Parse()
 	if err != nil {
 		return err
 	}
 
-	path, writeErr := internal.WriteSchemaToFile(schema, config)
+	path, writeErr := schemagen.WriteSchemaToFile(schema, config)
 	if writeErr != nil {
 		return writeErr
 	}

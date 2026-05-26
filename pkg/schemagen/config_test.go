@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package schemagen
 
 import (
 	"flag"
@@ -21,7 +21,7 @@ func TestReadConfig(t *testing.T) {
 	cfg, err := readConfigForTest(t, dir)
 	require.NoError(t, err)
 
-	require.Equal(t, Package, cfg.Mode)
+	require.Equal(t, modePackage, cfg.Mode)
 	require.Equal(t, dir, cfg.DirPath)
 	require.Equal(t, dir, cfg.OutputFolder)
 	require.Empty(t, cfg.ConfigType)
@@ -58,20 +58,20 @@ func TestReadConfig_RespectsRootTypeFlag(t *testing.T) {
 
 func TestReadConfig_ReadsSettingsFile(t *testing.T) {
 	projectDir := t.TempDir()
-	settings := Settings{
+	s := settings{
 		Namespace: "github.com/open-telemetry/opentelemetry-collector-contrib",
-		Mappings: Mappings{
-			"pkg": PackagesMapping{
-				"Thing": {
-					SchemaType: SchemaTypeString,
+		Mappings: mappings{
+			"pkg": packagesMapping{
+				"Thing": typeDesc{
+					SchemaType: schemaTypeString,
 					Format:     "uuid",
 				},
 			},
 		},
 	}
-	data, err := yaml.Marshal(settings)
+	data, err := yaml.Marshal(s)
 	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(filepath.Join(projectDir, SettingsFileName), data, 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(projectDir, settingsFileName), data, 0o600))
 
 	workDir := filepath.Join(projectDir, "workdir")
 	require.NoError(t, os.Mkdir(workDir, 0o700))
@@ -85,9 +85,9 @@ func TestReadConfig_ReadsSettingsFile(t *testing.T) {
 	expectedOutput := filepath.Join(projectDir, "workdir")
 	require.Equal(t, evalPath(t, expectedOutput), evalPath(t, cfg.OutputFolder))
 	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib", cfg.Namespace)
-	require.Equal(t, Mappings{
-		"pkg": PackagesMapping{
-			"Thing": {SchemaType: SchemaTypeString, Format: "uuid"},
+	require.Equal(t, mappings{
+		"pkg": packagesMapping{
+			"Thing": typeDesc{SchemaType: schemaTypeString, Format: "uuid"},
 		},
 	}, cfg.Mappings)
 }
@@ -96,7 +96,7 @@ func TestReadConfig_MetadataHandling(t *testing.T) {
 	tests := []struct {
 		name          string
 		metadata      string
-		expectedMode  RunMode
+		expectedMode  runMode
 		expectedClass string
 	}{
 		{
@@ -106,7 +106,7 @@ status:
   class: pkg
 parent: someparent
 `,
-			expectedMode:  Component,
+			expectedMode:  modeComponent,
 			expectedClass: "",
 		},
 		{
@@ -115,7 +115,7 @@ parent: someparent
 status:
   class: receiver
 `,
-			expectedMode:  Component,
+			expectedMode:  modeComponent,
 			expectedClass: "receiver",
 		},
 		{
@@ -124,7 +124,7 @@ status:
 status:
   class: processor
 `,
-			expectedMode:  Component,
+			expectedMode:  modeComponent,
 			expectedClass: "processor",
 		},
 		{
@@ -133,7 +133,7 @@ status:
 status:
   class: exporter
 `,
-			expectedMode:  Component,
+			expectedMode:  modeComponent,
 			expectedClass: "exporter",
 		},
 		{
@@ -142,7 +142,7 @@ status:
 status:
   class: connector
 `,
-			expectedMode:  Component,
+			expectedMode:  modeComponent,
 			expectedClass: "connector",
 		},
 		{
@@ -151,7 +151,7 @@ status:
 status:
   class: extension
 `,
-			expectedMode:  Component,
+			expectedMode:  modeComponent,
 			expectedClass: "extension",
 		},
 		{
@@ -160,7 +160,7 @@ status:
 status:
   class: pkg
 `,
-			expectedMode:  Package,
+			expectedMode:  modePackage,
 			expectedClass: "pkg",
 		},
 		{
@@ -169,13 +169,13 @@ status:
 status:
   class: scraper
 `,
-			expectedMode:  Package,
+			expectedMode:  modePackage,
 			expectedClass: "scraper",
 		},
 		{
 			name:          "no metadata file",
 			metadata:      "",
-			expectedMode:  Package,
+			expectedMode:  modePackage,
 			expectedClass: "",
 		},
 	}
@@ -186,7 +186,6 @@ status:
 			t.Chdir(dir)
 			createConfigFile(t, dir, "config.go")
 
-			// Create metadata.yaml if metadata content is provided
 			if tt.metadata != "" {
 				require.NoError(t, os.WriteFile(filepath.Join(dir, "metadata.yaml"), []byte(tt.metadata), 0o600))
 			}

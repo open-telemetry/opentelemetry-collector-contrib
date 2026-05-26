@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package schemagen
 
 import (
 	"go/ast"
@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func ExtractDescriptionFromComment(group *ast.CommentGroup) (string, bool) {
+func extractDescriptionFromComment(group *ast.CommentGroup) (string, bool) {
 	if group == nil {
 		return "", false
 	}
@@ -30,28 +30,28 @@ func ExtractDescriptionFromComment(group *ast.CommentGroup) (string, bool) {
 	return strings.Join(comments, " "), true
 }
 
-func goPrimitiveToSchemaType(typeName string) (SchemaType, bool) {
+func goPrimitiveToSchemaType(typeName string) (schemaType, bool) {
 	switch typeName {
 	case "string":
-		return SchemaTypeString, false
+		return schemaTypeString, false
 	case "rune", "byte":
-		return SchemaTypeString, true
+		return schemaTypeString, true
 	case "int", "uint", "int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64":
-		return SchemaTypeInteger, typeName != "int"
+		return schemaTypeInteger, typeName != "int"
 	case "float32", "float64":
-		return SchemaTypeNumber, true
+		return schemaTypeNumber, true
 	case "bool":
-		return SchemaTypeBoolean, false
+		return schemaTypeBoolean, false
 	case "any":
-		return SchemaTypeAny, true
+		return schemaTypeAny, true
 	default:
-		return SchemaTypeUnknown, false
+		return schemaTypeUnknown, false
 	}
 }
 
 var importRegExp = regexp.MustCompile(`^(.+?)(?:/([^/"]+))?$`)
 
-func ParseImport(imp *ast.ImportSpec) (string, string) {
+func parseImport(imp *ast.ImportSpec) (string, string) {
 	importStr := imp.Path.Value
 	if unquoted, err := strconv.Unquote(imp.Path.Value); err == nil {
 		importStr = unquoted
@@ -69,13 +69,13 @@ func ParseImport(imp *ast.ImportSpec) (string, string) {
 	return full, name
 }
 
-type TagInfo struct {
+type tagInfo struct {
 	Name      string
 	OmitEmpty bool
 	Squash    bool
 }
 
-func ParseTag(tag *ast.BasicLit) (*TagInfo, bool) {
+func parseTag(tag *ast.BasicLit) (*tagInfo, bool) {
 	if tag == nil {
 		return nil, false
 	}
@@ -94,7 +94,7 @@ func ParseTag(tag *ast.BasicLit) (*TagInfo, bool) {
 	}
 
 	parts := strings.Split(mapstructureTag, ",")
-	info := &TagInfo{
+	info := &tagInfo{
 		Name: parts[0],
 	}
 	if info.Name == "-" {

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package schemagen
 
 import (
 	"os"
@@ -14,7 +14,7 @@ import (
 func TestWriteSchemaToFile_YAML(t *testing.T) {
 	dir := t.TempDir()
 	cfg := &Config{
-		Mode:         Component,
+		Mode:         modeComponent,
 		OutputFolder: dir,
 		FileType:     "yaml",
 	}
@@ -38,7 +38,7 @@ func TestWriteSchemaToFile_YAML(t *testing.T) {
 func TestWriteSchemaToFile_JSON(t *testing.T) {
 	dir := t.TempDir()
 	cfg := &Config{
-		Mode:         Component,
+		Mode:         modeComponent,
 		OutputFolder: dir,
 		FileType:     "json",
 	}
@@ -62,7 +62,7 @@ func TestWriteSchemaToFile_JSON(t *testing.T) {
 func TestWriteSchemaToFile_Package(t *testing.T) {
 	dir := t.TempDir()
 	cfg := &Config{
-		Mode:         Package,
+		Mode:         modePackage,
 		DirPath:      dir,
 		OutputFolder: dir,
 		FileType:     "json",
@@ -86,9 +86,9 @@ func TestWriteSchemaToFile_Package(t *testing.T) {
 
 func TestWriteSchemaToFile_WriteError(t *testing.T) {
 	dir := t.TempDir()
-	unwritable := filepath.Join(dir, "missing") // dir absent so os.WriteFile fails
+	unwritable := filepath.Join(dir, "missing")
 	cfg := &Config{
-		Mode:         Component,
+		Mode:         modeComponent,
 		OutputFolder: unwritable,
 		FileType:     "yaml",
 	}
@@ -104,7 +104,7 @@ func TestWriteSchemaToFile_WriteError(t *testing.T) {
 
 func testSchema(t *testing.T) *Schema {
 	t.Helper()
-	schema := CreateSchema()
-	schema.AddProperty("name", CreateSimpleField(SchemaTypeString, "field"))
+	schema := createSchema()
+	schema.AddProperty("name", createSimpleField(schemaTypeString, "field"))
 	return schema
 }

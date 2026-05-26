@@ -2,7 +2,7 @@
 
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-package internal
+package schemagen
 
 import (
 	"os"
@@ -105,7 +105,7 @@ func TestComponentParser(t *testing.T) {
 
 			dir, _ := filepath.Abs(filepath.Dir(tc.inputFile))
 			cfg := &Config{
-				Mode:     Component,
+				Mode:     modeComponent,
 				DirPath:  dir,
 				Mappings: testMappings(),
 				AllowedRefs: []string{
@@ -134,7 +134,7 @@ func TestComponentParser(t *testing.T) {
 func TestPackageParser(t *testing.T) {
 	dir, _ := filepath.Abs("testdata/external/")
 	cfg := &Config{
-		Mode:     Package,
+		Mode:     modePackage,
 		DirPath:  dir,
 		Mappings: testMappings(),
 	}
@@ -157,15 +157,15 @@ func TestPackageParser(t *testing.T) {
 	require.YAMLEq(t, expectedSchema, givenYaml)
 }
 
-func testMappings() Mappings {
-	return Mappings{
-		"time": PackagesMapping{
-			"Time": TypeDesc{
-				SchemaType: SchemaTypeString,
+func testMappings() mappings {
+	return mappings{
+		"time": packagesMapping{
+			"Time": typeDesc{
+				SchemaType: schemaTypeString,
 				Format:     "date-time",
 			},
-			"Duration": TypeDesc{
-				SchemaType: SchemaTypeString,
+			"Duration": typeDesc{
+				SchemaType: schemaTypeString,
 				Format:     "duration",
 			},
 		},

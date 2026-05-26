@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package schemagen
 
 import (
 	"os"
@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Metadata struct {
+type metadata struct {
 	Type   string `mapstructure:"type"`
 	Status struct {
 		Class string `mapstructure:"class"`
@@ -18,10 +18,10 @@ type Metadata struct {
 	Parent string `mapstructure:"parent"`
 }
 
-func ReadMetadata(dir string) (*Metadata, bool) {
+func readMetadata(dir string) (*metadata, bool) {
 	mdPath := path.Join(dir, "metadata.yaml")
 	if data, err := os.ReadFile(mdPath); err == nil {
-		var m Metadata
+		var m metadata
 		if err := yaml.Unmarshal(data, &m); err == nil {
 			return &m, true
 		}

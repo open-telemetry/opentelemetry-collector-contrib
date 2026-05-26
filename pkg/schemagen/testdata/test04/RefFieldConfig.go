@@ -3,7 +3,7 @@
 
 package test04
 
-import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/test04/internal"
+import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/schemagen/testdata/test04/internal"
 
 type RefFieldConfig struct {
 	Database DatabaseConfig          `mapstructure:"database"`

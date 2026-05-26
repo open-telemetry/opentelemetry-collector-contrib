@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package schemagen
 
 import (
 	"fmt"
@@ -61,7 +61,7 @@ func TestExtractDescriptionFromComment(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			value, ok := ExtractDescriptionFromComment(tc.group)
+			value, ok := extractDescriptionFromComment(tc.group)
 			if ok != tc.ok {
 				t.Fatalf("expected ok=%v got %v", tc.ok, ok)
 			}
@@ -76,15 +76,15 @@ func TestGoPrimitiveToSchemaType(t *testing.T) {
 	testCases := []struct {
 		name         string
 		typeName     string
-		expectedType SchemaType
+		expectedType schemaType
 		isCustom     bool
 	}{
-		{"string type", "string", SchemaTypeString, false},
-		{"bool type", "bool", SchemaTypeBoolean, false},
-		{"integer types", "int32", SchemaTypeInteger, true},
-		{"number types", "float64", SchemaTypeNumber, true},
-		{"any type", "any", SchemaTypeAny, true},
-		{"unknown type", "Custom", SchemaTypeUnknown, false},
+		{"string type", "string", schemaTypeString, false},
+		{"bool type", "bool", schemaTypeBoolean, false},
+		{"integer types", "int32", schemaTypeInteger, true},
+		{"number types", "float64", schemaTypeNumber, true},
+		{"any type", "any", schemaTypeAny, true},
+		{"unknown type", "Custom", schemaTypeUnknown, false},
 	}
 
 	for _, tc := range testCases {
@@ -141,7 +141,7 @@ func TestParseImport(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			spec := buildImportSpec(tc.literal, tc.alias)
-			full, gotName := ParseImport(spec)
+			full, gotName := parseImport(spec)
 			if full != tc.expected {
 				t.Fatalf("expected full path %q got %q", tc.expected, full)
 			}
@@ -198,7 +198,7 @@ func TestParseTagInfo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			field := parseFieldWithTag(t, tc.tagContent)
-			tagValue, ok := ParseTag(field.Tag)
+			tagValue, ok := parseTag(field.Tag)
 
 			assert.Equal(t, tc.ok, ok)
 			if ok {

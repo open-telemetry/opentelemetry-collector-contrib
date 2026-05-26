@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package schemagen
 
 import (
 	"errors"
@@ -12,22 +12,22 @@ import (
 	"strings"
 )
 
-type RunMode string
+type runMode string
 
 const (
-	Component RunMode = "component"
-	Package   RunMode = "package"
+	modeComponent runMode = "component"
+	modePackage   runMode = "package"
 )
 
 type Config = struct {
-	Mode          RunMode
+	Mode          runMode
 	DirPath       string
 	OutputFolder  string
 	ConfigPackage string
 	ConfigType    string
 	FileType      string
 	Class         string
-	Mappings      Mappings
+	Mappings      mappings
 	AllowedRefs   []string
 	Namespace     string
 }
@@ -72,8 +72,8 @@ func ReadConfig() (*Config, error) {
 	var (
 		dirPath       string
 		output        = *outputFolder
-		mode          = Package
-		mappings      Mappings
+		mode          = modePackage
+		mp            mappings
 		ctype         string
 		class         string
 		configPackage string
@@ -96,23 +96,23 @@ func ReadConfig() (*Config, error) {
 		return nil, errors.New("unknown schema file type - use yaml or json: " + *fileType)
 	}
 
-	if md, ok := ReadMetadata(dirPath); ok {
+	if md, ok := readMetadata(dirPath); ok {
 		if md.Parent != "" {
-			mode = Component
+			mode = modeComponent
 		} else {
 			ctype = md.Type
 			class = md.Status.Class
 			switch class {
 			case "receiver", "processor", "exporter", "connector", "extension":
-				mode = Component
+				mode = modeComponent
 			default:
-				mode = Package
+				mode = modePackage
 			}
 		}
 	}
 
-	if s, ok := ReadSettingsFile(); ok {
-		mappings = s.Mappings
+	if s, ok := readSettingsFile(); ok {
+		mp = s.Mappings
 		comp := class + "/" + ctype
 		if override, found := s.ComponentOverrides[comp]; found {
 			*configType = override.ConfigName
@@ -134,7 +134,7 @@ func ReadConfig() (*Config, error) {
 		ConfigType:    *configType,
 		FileType:      *fileType,
 		Mode:          mode,
-		Mappings:      mappings,
+		Mappings:      mp,
 		Class:         class,
 		AllowedRefs:   allowedRefs,
 		Namespace:     namespace,
