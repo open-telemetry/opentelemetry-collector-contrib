@@ -77,6 +77,22 @@ resources:
                   method: POST
 ```
 
+### Attribute presence matcher
+
+Attribute keys can use the `/exists: true` suffix when the attribute must be
+present but its value is volatile:
+
+```yaml
+attributes:
+  service.name: svc
+  service.instance.id/exists: true
+```
+
+The attribute map remains exact: unexpected attributes still fail the
+assertion, so omitting a key is the way to assert that it must not appear.
+`/exists: true` is the only supported value; any other value is a schema
+error.
+
 ### Shorthand: single empty-attribute datapoint
 
 A metric with exactly one datapoint that has no attributes can omit
@@ -105,7 +121,7 @@ must contain at least one datapoint; see
 ## Roadmap
 
 This is the identity-only subset of the grammar in #48079. Operator-suffix
-extensions (`/include`, `/exclude`, `/all`, `/count`, `/regex`, `/exists`,
-`/approx`, `/gt|gte|lt|lte`) and opt-in fields (`IncludeValues()`,
-`IncludeTimestamps()`, `IncludeExemplars()`, type-specific histogram fields)
-are tracked as follow-ups under that issue.
+extensions beyond attribute `/exists` (`/include`, `/exclude`, `/all`,
+`/count`, `/regex`, `/approx`, `/gt|gte|lt|lte`) and opt-in fields
+(`IncludeValues()`, `IncludeTimestamps()`, `IncludeExemplars()`, type-specific
+histogram fields) are tracked as follow-ups under that issue.

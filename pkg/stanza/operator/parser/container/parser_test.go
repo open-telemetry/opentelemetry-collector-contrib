@@ -12,9 +12,11 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/recombine"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -42,6 +44,20 @@ func TestConfigBuildFailure(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
 	require.ErrorContains(t, err, "invalid `on_error` field")
+}
+
+func TestConfigBuildWithSyncLogEmitter(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.StanzaSynchronousLogEmitterFeatureGate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.StanzaSynchronousLogEmitterFeatureGate.ID(), false))
+	})
+
+	config := NewConfigWithID("test")
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := config.Build(set)
+	require.NoError(t, err)
+	require.IsType(t, &Parser{}, op)
+	require.NoError(t, op.Stop())
 }
 
 func TestConfigBuildFormatError(t *testing.T) {

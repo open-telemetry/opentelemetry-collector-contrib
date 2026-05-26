@@ -3,6 +3,7 @@ vcenter:
   username: otelu
   password: ${env:VCENTER_PASSWORD}
   collection_interval: 5m
+  max_query_metrics: 128
   metrics:
     vcenter.host.cpu.utilization:
       enabled: false

@@ -142,7 +142,7 @@ processors:
 
   # The resource detection processor adds context related to the cloud provider the Collector is running on.
   # It is necessary **only** on gateway deployment mode, to correctly identify the host that telemetry data comes from.
-  resourcedetection:
+  resource_detection:
     detectors: [gcp, ecs, ec2, azure, system]
 
 # Read more about exporters here:
@@ -532,10 +532,10 @@ service:
       #
       # metrics/gateway:
       #   receivers: [otlp]
-      #   processors: [resourcedetection]
+      #   processors: [resource_detection]
       #   exporters: [otlp]
       #
       # traces/gateway:
       #   receivers: [otlp]
-      #   processors: [resourcedetection]
+      #   processors: [resource_detection]
       #   exporters: [otlp]

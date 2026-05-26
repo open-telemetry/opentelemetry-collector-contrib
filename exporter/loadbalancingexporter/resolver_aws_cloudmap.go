@@ -127,7 +127,7 @@ func (r *cloudMapResolver) start(ctx context.Context) error {
 		r.logger.Warn("failed initial resolve", zap.Error(err))
 	}
 
-	go r.periodicallyResolve()
+	go r.periodicallyResolve(ctx)
 
 	r.logger.Info("AWS CloudMap resolver started",
 		zap.Stringp("service_name", r.serviceName),
@@ -148,14 +148,14 @@ func (r *cloudMapResolver) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (r *cloudMapResolver) periodicallyResolve() {
+func (r *cloudMapResolver) periodicallyResolve(ctx context.Context) {
 	ticker := time.NewTicker(r.resInterval)
 
 	for {
 		select {
 		case <-ticker.C:
-			ctx, cancel := context.WithTimeout(context.Background(), r.resTimeout)
-			if _, err := r.resolve(ctx); err != nil {
+			innerCtx, cancel := context.WithTimeout(ctx, r.resTimeout)
+			if _, err := r.resolve(innerCtx); err != nil {
 				r.logger.Warn("failed to resolve", zap.Error(err))
 			} else {
 				r.logger.Debug("resolved successfully")

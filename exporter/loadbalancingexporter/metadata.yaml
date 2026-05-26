@@ -1,4 +1,5 @@
-type: loadbalancing
+type: load_balancing
+deprecated_type: loadbalancing
 display_name: Load Balancing Exporter
 
 status:

@@ -28,3 +28,12 @@ func TestCreateTraces(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
+
+func TestCreateLogs(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	te, err := factory.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, te)
+}

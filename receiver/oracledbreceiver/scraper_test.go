@@ -405,29 +405,55 @@ var samplesQueryResponses = map[string][]metricRow{
 		"SQL_CHILD_NUMBER": "0", "SID": "675", "SERIAL#": "51295", "SQL_FULLTEXT": "test_query", "OSUSER": "test-user", "PROCESS": "1115", "PROCEDURE_TYPE": "PROCEDURE_TYPE-A", "PROCEDURE_ID": "12345",
 		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "4199919568", "DURATION_SEC": "1", "SERVICE_NAME": "",
 		"SQL_EXEC_START": "2026-01-01T12:00:00Z", "LOGON_TIME": "2026-01-01T12:00:00Z", "SESSION_DURATION_SEC": "0",
+		"BLOCKING_SESSION": "", "FINAL_BLOCKING_SESSION": "", "BLOCKING_SESSION_STATUS": "", "SECONDS_IN_WAIT": "0",
+		"BLOCKING_START_TIME": "", "LOCK_TYPE": "", "LOCK_MODE": "", "BLOCKED_OBJECT_OWNER": "", "BLOCKED_OBJECT_NAME": "",
 	}},
 	"invalidQuery": {{
 		"MACHINE": "TEST-MACHINE", "USERNAME": "ADMIN", "SCHEMANAME": "ADMIN", "SQL_ID": "48bc50b6fuz4y",
 		"SQL_CHILD_NUMBER": "0", "S.SID": "675", "SERIAL#": "51295", "SQL_FULLTEXT": "test_query", "OSUSER": "test-user", "PROCESS": "1115",
 		"PORT": "54440", "PROGRAM": "Oracle SQL Developer for VS Code", "MODULE": "Oracle SQL Developer for VS Code", "STATUS": "ACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "4199919568", "DURATION_SEC": "",
+		"SQL_EXEC_START": "", "LOGON_TIME": "", "SESSION_DURATION_SEC": "0",
+		"BLOCKING_SESSION": "", "FINAL_BLOCKING_SESSION": "", "BLOCKING_SESSION_STATUS": "", "SECONDS_IN_WAIT": "0",
+		"BLOCKING_START_TIME": "", "LOCK_TYPE": "", "LOCK_MODE": "", "BLOCKED_OBJECT_OWNER": "", "BLOCKED_OBJECT_NAME": "",
+	}},
+	"blockedQuery": {{
+		// Blocked session waiting on SID 100
+		"ACTION": "", "MACHINE": "DB-CLIENT-HOST", "USERNAME": "APP_USER", "SCHEMANAME": "APP_USER", "SQL_ID": "9fkq2mxyzabc1", "WAIT_CLASS": "Application", "PROCEDURE_NAME": "", "CHILD_ADDRESS": "ABCD1234",
+		"SQL_CHILD_NUMBER": "0", "SID": "200", "SERIAL#": "12345", "SQL_FULLTEXT": "UPDATE orders SET status = 1 WHERE id = 42", "OSUSER": "oracle", "PROCESS": "9876", "PROCEDURE_TYPE": "", "PROCEDURE_ID": "",
+		"PORT": "54441", "PROGRAM": "JDBC Thin Client", "MODULE": "app", "STATUS": "ACTIVE", "STATE": "WAITING", "PLAN_HASH_VALUE": "1234567890", "DURATION_SEC": "15", "SERVICE_NAME": "ORCL",
+		"SQL_EXEC_START": "2026-05-06T09:59:45Z", "LOGON_TIME": "2026-05-06T09:00:00Z", "SESSION_DURATION_SEC": "3600",
+		"BLOCKING_SESSION": "100", "FINAL_BLOCKING_SESSION": "100", "BLOCKING_SESSION_STATUS": "VALID", "SECONDS_IN_WAIT": "15",
+		"BLOCKING_START_TIME": "2026-05-06T10:00:00Z", "LOCK_TYPE": "TX", "LOCK_MODE": "EXCLUSIVE", "BLOCKED_OBJECT_OWNER": "APP_USER", "BLOCKED_OBJECT_NAME": "ORDERS",
+	}},
+	"idleBlockerQuery": {{
+		// Idle session (blocker) that is holding a lock — no longer ACTIVE but appearing in BLOCKING_SESSION subquery
+		"ACTION": "", "MACHINE": "DBA-WORKSTATION", "USERNAME": "DBA_USER", "SCHEMANAME": "DBA_USER", "SQL_ID": "7abc123def456", "WAIT_CLASS": "", "PROCEDURE_NAME": "", "CHILD_ADDRESS": "DEADBEEF",
+		"SQL_CHILD_NUMBER": "0", "SID": "100", "SERIAL#": "5678", "SQL_FULLTEXT": "UPDATE orders SET status = 2 WHERE id = 42", "OSUSER": "dba", "PROCESS": "1234", "PROCEDURE_TYPE": "", "PROCEDURE_ID": "",
+		"PORT": "54442", "PROGRAM": "SQL*Plus", "MODULE": "", "STATUS": "INACTIVE", "STATE": "WAITED KNOWN TIME", "PLAN_HASH_VALUE": "9876543210", "DURATION_SEC": "120", "SERVICE_NAME": "ORCL",
+		"SQL_EXEC_START": "", "LOGON_TIME": "", "SESSION_DURATION_SEC": "0",
+		"BLOCKING_SESSION": "", "FINAL_BLOCKING_SESSION": "", "BLOCKING_SESSION_STATUS": "", "SECONDS_IN_WAIT": "0",
+		"BLOCKING_START_TIME": "", "LOCK_TYPE": "", "LOCK_MODE": "", "BLOCKED_OBJECT_OWNER": "", "BLOCKED_OBJECT_NAME": "",
 	}},
 }
 
 func TestSamplesQuery(t *testing.T) {
 	tests := []struct {
-		name       string
-		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
-		errWanted  string
+		name              string
+		dbclientFn        func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted         string
+		goldenFile        string
+		checkBlockingAttr bool
 	}{
 		{
 			name: "valid",
-			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
 				return &fakeDbClient{
 					Responses: [][]metricRow{
-						samplesQueryResponses[s],
+						samplesQueryResponses[samplesQuery],
 					},
 				}
 			},
+			goldenFile: filepath.Join("testdata", "expectedSamplesFile.yaml"),
 		},
 		{
 			name: "bad samples data",
@@ -437,6 +463,25 @@ func TestSamplesQuery(t *testing.T) {
 				}}
 			},
 			errWanted: `failed to parse int64 for Duration, value was : strconv.ParseFloat: parsing "": invalid syntax`,
+		},
+		{
+			name: "blocked session emits blocking attributes",
+			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{Responses: [][]metricRow{
+					samplesQueryResponses["blockedQuery"],
+				}}
+			},
+			goldenFile:        filepath.Join("testdata", "expectedBlockedSessionFile.yaml"),
+			checkBlockingAttr: true,
+		},
+		{
+			name: "idle blocker session emits empty blocking attributes",
+			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{Responses: [][]metricRow{
+					samplesQueryResponses["idleBlockerQuery"],
+				}}
+			},
+			goldenFile: filepath.Join("testdata", "expectedIdleBlockerFile.yaml"),
 		},
 	}
 	for _, test := range tests {
@@ -467,17 +512,36 @@ func TestSamplesQuery(t *testing.T) {
 			}()
 			require.NoError(t, err)
 			logs, err := scrpr.scrapeLogs(t.Context())
-			expectedSamplesFile := filepath.Join("testdata", "expectedSamplesFile.yaml")
 
 			if test.errWanted != "" {
 				require.EqualError(t, err, test.errWanted)
-			} else {
-				// Uncomment line below to re-generate expected logs.
-				// golden.WriteLogs(t, expectedSamplesFile, logs)
-				require.NoError(t, err)
-				expectedLogs, _ := golden.ReadLogs(expectedSamplesFile)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Positive(t, logs.ResourceLogs().Len())
+			assert.Equal(t, "db.server.query_sample", logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
+
+			if test.checkBlockingAttr {
+				lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+				blockerSID, hasBlockerSID := lr.Attributes().Get("oracledb.blocking.blocker.sid")
+				assert.True(t, hasBlockerSID, "blocking.blocker.sid attribute must be present for a blocked session")
+				assert.Equal(t, "100", blockerSID.Str())
+
+				_, hasBlockerState := lr.Attributes().Get("oracledb.blocking.blocker.state")
+				assert.True(t, hasBlockerState, "blocking.blocker.state attribute must be present for a blocked session")
+
+				waitDuration, hasWaitDuration := lr.Attributes().Get("oracledb.blocking.wait_duration")
+				assert.True(t, hasWaitDuration, "blocking.wait_duration attribute must be present for a blocked session")
+				assert.Equal(t, int64(15), waitDuration.Int())
+			}
+
+			// Uncomment line below to re-generate expected golden files.
+			// golden.WriteLogs(t, test.goldenFile, logs)
+			if test.goldenFile != "" {
+				expectedLogs, readErr := golden.ReadLogs(test.goldenFile)
+				require.NoError(t, readErr)
 				errs := plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreTimestamp())
-				assert.Equal(t, "db.server.query_sample", logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 				assert.NoError(t, errs)
 			}
 		})

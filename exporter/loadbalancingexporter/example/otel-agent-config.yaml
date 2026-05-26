@@ -5,7 +5,7 @@ receivers:
 exporters:
   debug:
     verbosity: detailed
-  loadbalancing:
+  load_balancing:
     protocol:
       otlp:
         timeout: 1s
@@ -28,4 +28,4 @@ service:
   pipelines:
     logs:
       receivers: [fluentforward]
-      exporters: [loadbalancing, debug]
+      exporters: [load_balancing, debug]

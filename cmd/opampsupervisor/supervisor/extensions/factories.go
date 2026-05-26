@@ -7,6 +7,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 )
 
 // Factories returns the set of extension factories supported by the OpAMP
@@ -14,7 +18,15 @@ import (
 //
 // Extensions are added on a case by case basis as their functionality is wired in.
 func Factories() map[component.Type]extension.Factory {
-	return map[component.Type]extension.Factory{
-		extensiontest.NopType: extensiontest.NewNopFactory(),
+	fs := []extension.Factory{
+		extensiontest.NewNopFactory(),
+		bearertokenauthextension.NewFactory(),
+		basicauthextension.NewFactory(),
+		oauth2clientauthextension.NewFactory(),
 	}
+	result := make(map[component.Type]extension.Factory, len(fs))
+	for _, f := range fs {
+		result[f.Type()] = f
+	}
+	return result
 }

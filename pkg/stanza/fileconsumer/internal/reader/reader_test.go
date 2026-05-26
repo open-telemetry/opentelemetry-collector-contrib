@@ -332,6 +332,37 @@ func TestUntermintedLogEntryGrows(t *testing.T) {
 	sink.ExpectNoCalls(t)
 }
 
+// TestFileCacheAdvise verifies that enabling file_cache_advise does not affect the
+// correctness of token emission.
+func TestFileCacheAdvise(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	temp := filetest.OpenTemp(t, tempDir)
+
+	const numLines = 10
+	for i := range numLines {
+		filetest.WriteString(t, temp, fmt.Sprintf("log line %d\n", i))
+	}
+
+	f, sink := testFactory(t)
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err := f.NewReader(temp, fp)
+	require.NoError(t, err)
+	defer r.Close()
+
+	r.fileCacheAdvise = true
+	r.maxBatchSize = 3
+
+	r.ReadToEnd(t.Context())
+
+	for i := range numLines {
+		sink.ExpectToken(t, []byte(fmt.Sprintf("log line %d", i)))
+	}
+	sink.ExpectNoCalls(t)
+}
+
 func BenchmarkFileRead(b *testing.B) {
 	tempDir := b.TempDir()
 
