@@ -1014,3 +1014,135 @@ func TestResponseValidationFailures(t *testing.T) {
 	assert.True(t, foundMetrics["httpcheck.validation.passed"])
 	assert.True(t, foundMetrics["httpcheck.validation.failed"])
 }
+
+// numberDataPoints returns the number data points of a metric regardless of
+// whether it is a gauge or a sum.
+func numberDataPoints(m pmetric.Metric) pmetric.NumberDataPointSlice {
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
+		return m.Gauge().DataPoints()
+	case pmetric.MetricTypeSum:
+		return m.Sum().DataPoints()
+	default:
+		return pmetric.NewNumberDataPointSlice()
+	}
+}
+
+func TestScraperTargetAttributes(t *testing.T) {
+	ms1 := newMockServer(t, 200)
+	defer ms1.Close()
+	ms2 := newMockServer(t, 200)
+	defer ms2.Close()
+	ms3 := newMockServer(t, 200)
+	defer ms3.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Targets = []*targetConfig{
+		{
+			ClientConfig: confighttp.ClientConfig{Endpoint: ms1.URL},
+			Attributes:   map[string]string{"environment": "production", "team": "platform"},
+		},
+		{
+			ClientConfig: confighttp.ClientConfig{Endpoint: ms2.URL},
+			Attributes:   map[string]string{"tier": "internal"},
+		},
+		{
+			ClientConfig: confighttp.ClientConfig{Endpoint: ms3.URL},
+		},
+	}
+
+	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	actualMetrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	// Expected custom attributes per endpoint. The third target has none.
+	expected := map[string]map[string]string{
+		ms1.URL: {"environment": "production", "team": "platform"},
+		ms2.URL: {"tier": "internal"},
+		ms3.URL: {},
+	}
+	customKeys := []string{"environment", "team", "tier"}
+
+	dataPointsChecked := 0
+	rms := actualMetrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		sms := rms.At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				m := ms.At(k)
+				dps := numberDataPoints(m)
+				for l := 0; l < dps.Len(); l++ {
+					dp := dps.At(l)
+					url, ok := dp.Attributes().Get("http.url")
+					require.True(t, ok, "metric %s has a data point without http.url", m.Name())
+
+					want, known := expected[url.Str()]
+					require.True(t, known, "unexpected endpoint %q", url.Str())
+
+					// Each data point must carry exactly its own target's custom
+					// attributes: the configured ones are present with the right
+					// value, and no other target's keys leak in.
+					for _, key := range customKeys {
+						got, present := dp.Attributes().Get(key)
+						if value, owned := want[key]; owned {
+							assert.True(t, present, "metric %s data point for %q missing attribute %q", m.Name(), url.Str(), key)
+							assert.Equal(t, value, got.Str())
+						} else {
+							assert.False(t, present, "metric %s data point for %q unexpectedly has attribute %q", m.Name(), url.Str(), key)
+						}
+					}
+					dataPointsChecked++
+				}
+			}
+		}
+	}
+	assert.Positive(t, dataPointsChecked)
+}
+
+func TestScraperTargetAttributesDoNotOverrideReceiverAttributes(t *testing.T) {
+	server := newMockServer(t, 200)
+	defer server.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Targets = []*targetConfig{
+		{
+			ClientConfig: confighttp.ClientConfig{Endpoint: server.URL},
+			// http.url collides with an attribute the receiver sets itself.
+			Attributes: map[string]string{"http.url": "spoofed", "environment": "production"},
+		},
+	}
+
+	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	actualMetrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+
+	dataPointsChecked := 0
+	rms := actualMetrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		sms := rms.At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				m := ms.At(k)
+				dps := numberDataPoints(m)
+				for l := 0; l < dps.Len(); l++ {
+					dp := dps.At(l)
+					url, ok := dp.Attributes().Get("http.url")
+					require.True(t, ok)
+					assert.Equal(t, server.URL, url.Str(), "metric %s: receiver-set http.url must win over a configured attribute", m.Name())
+
+					env, ok := dp.Attributes().Get("environment")
+					require.True(t, ok, "metric %s: non-colliding custom attribute should still be added", m.Name())
+					assert.Equal(t, "production", env.Str())
+					dataPointsChecked++
+				}
+			}
+		}
+	}
+	assert.Positive(t, dataPointsChecked)
+}

@@ -459,6 +459,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	// Emit metrics and post-process to remove http.status_code when value is 0
 	metrics := h.mb.Emit()
 	removeStatusCodeForZeroValues(metrics)
+	addTargetAttributes(metrics, h.cfg.Targets)
 
 	return metrics, nil
 }
@@ -486,6 +487,60 @@ func removeStatusCodeForZeroValues(metrics pmetric.Metrics) {
 							}
 						}
 					}
+				}
+			}
+		}
+	}
+}
+
+// addTargetAttributes annotates each data point with the static attributes
+// configured on the target that produced it. Targets are matched by the
+// http.url attribute, which every httpcheck metric carries and which equals the
+// target endpoint. A configured attribute that collides with one already set by
+// the receiver is left untouched.
+func addTargetAttributes(metrics pmetric.Metrics, targets []*targetConfig) {
+	endpointAttributes := make(map[string]map[string]string, len(targets))
+	for _, target := range targets {
+		if len(target.Attributes) > 0 {
+			endpointAttributes[target.Endpoint] = target.Attributes
+		}
+	}
+	if len(endpointAttributes) == 0 {
+		return
+	}
+
+	annotate := func(dps pmetric.NumberDataPointSlice) {
+		for i := 0; i < dps.Len(); i++ {
+			dp := dps.At(i)
+			url, ok := dp.Attributes().Get("http.url")
+			if !ok {
+				continue
+			}
+			attributes, ok := endpointAttributes[url.Str()]
+			if !ok {
+				continue
+			}
+			for key, value := range attributes {
+				if _, exists := dp.Attributes().Get(key); exists {
+					continue
+				}
+				dp.Attributes().PutStr(key, value)
+			}
+		}
+	}
+
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		sms := rms.At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				m := ms.At(k)
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					annotate(m.Gauge().DataPoints())
+				case pmetric.MetricTypeSum:
+					annotate(m.Sum().DataPoints())
 				}
 			}
 		}
