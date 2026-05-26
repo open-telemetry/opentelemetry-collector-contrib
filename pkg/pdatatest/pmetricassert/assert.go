@@ -28,51 +28,40 @@ func AssertMetrics(expectedPath string, actual pmetric.Metrics) error {
 }
 
 func compareDocuments(expected, actual *document) error {
-	var errs []error
-	matched := make([]bool, len(actual.Resources))
-
-	for _, er := range expected.Resources {
-		idx := findMatchingAttributes(er.Attributes, matched, len(actual.Resources), func(i int) map[string]any {
-			return actual.Resources[i].Attributes
-		})
-		if idx < 0 {
-			errs = append(errs, fmt.Errorf("missing expected resource: %v", er.Attributes))
-			continue
-		}
-		matched[idx] = true
-		if err := compareResource(er, actual.Resources[idx]); err != nil {
-			errs = append(errs, fmt.Errorf("resource %v: %w", er.Attributes, err))
-		}
+	if err := expected.Resources.Validate(actual.Resources.Exact); err != nil {
+		return fmt.Errorf("resources assertion failed: %w", err)
 	}
-	for i, ar := range actual.Resources {
-		if !matched[i] {
-			errs = append(errs, fmt.Errorf("unexpected resource: %v", ar.Attributes))
-		}
-	}
-	return errors.Join(errs...)
+	return nil
 }
 
 func compareResource(expected, actual resourceAssertion) error {
-	var errs []error
-	expScopes := indexScopes(expected.Scopes)
-	actScopes := indexScopes(actual.Scopes)
+	if expected.Scopes.Count == nil {
+		var errs []error
+		expScopes := indexScopes(expected.Scopes.Exact)
+		actScopes := indexScopes(actual.Scopes.Exact)
 
-	for key, es := range expScopes {
-		as, ok := actScopes[key]
-		if !ok {
-			errs = append(errs, fmt.Errorf("missing expected scope name=%q version=%q", es.Name, es.Version))
-			continue
+		for key, es := range expScopes {
+			as, ok := actScopes[key]
+			if !ok {
+				errs = append(errs, fmt.Errorf("missing expected scope name=%q version=%q", es.Name, es.Version))
+				continue
+			}
+			if err := compareScope(es, as); err != nil {
+				errs = append(errs, fmt.Errorf("scope name=%q: %w", es.Name, err))
+			}
 		}
-		if err := compareScope(es, as); err != nil {
-			errs = append(errs, fmt.Errorf("scope name=%q: %w", es.Name, err))
+		for key, as := range actScopes {
+			if _, ok := expScopes[key]; !ok {
+				errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version))
+			}
 		}
+		return errors.Join(errs...)
 	}
-	for key, as := range actScopes {
-		if _, ok := expScopes[key]; !ok {
-			errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version))
-		}
+
+	if err := expected.Scopes.Validate(actual.Scopes.Exact); err != nil {
+		return fmt.Errorf("scopes assertion failed: %w", err)
 	}
-	return errors.Join(errs...)
+	return nil
 }
 
 func indexScopes(ss []scopeAssertion) map[string]scopeAssertion {
@@ -84,31 +73,40 @@ func indexScopes(ss []scopeAssertion) map[string]scopeAssertion {
 }
 
 func compareScope(expected, actual scopeAssertion) error {
-	var errs []error
-	expMetrics := indexMetrics(expected.Metrics)
-	actMetrics := indexMetrics(actual.Metrics)
+	if expected.Metrics.Count == nil {
+		var errs []error
+		expMetrics := indexMetrics(expected.Metrics.Exact)
+		actMetrics := indexMetrics(actual.Metrics.Exact)
 
-	for name, em := range expMetrics {
-		am, ok := actMetrics[name]
-		if !ok {
-			errs = append(errs, fmt.Errorf("missing expected metric %q", name))
-			continue
+		for name := range expMetrics {
+			em := expMetrics[name]
+			am, ok := actMetrics[name]
+			if !ok {
+				errs = append(errs, fmt.Errorf("missing expected metric %q", name))
+				continue
+			}
+			if err := compareMetric(em, am); err != nil {
+				errs = append(errs, fmt.Errorf("metric %q: %w", name, err))
+			}
 		}
-		if err := compareMetric(em, am); err != nil {
-			errs = append(errs, fmt.Errorf("metric %q: %w", name, err))
+		for name := range actMetrics {
+			if _, ok := expMetrics[name]; !ok {
+				errs = append(errs, fmt.Errorf("unexpected metric %q", name))
+			}
 		}
+		return errors.Join(errs...)
 	}
-	for name := range actMetrics {
-		if _, ok := expMetrics[name]; !ok {
-			errs = append(errs, fmt.Errorf("unexpected metric %q", name))
-		}
+
+	if err := expected.Metrics.ValidateAssertions(actual.Metrics.Exact); err != nil {
+		return fmt.Errorf("metrics assertion failed: %w", err)
 	}
-	return errors.Join(errs...)
+	return nil
 }
 
 func indexMetrics(ms []metricAssertion) map[string]metricAssertion {
 	out := make(map[string]metricAssertion, len(ms))
-	for _, m := range ms {
+	for i := range ms {
+		m := ms[i]
 		out[m.Name] = m
 	}
 	return out
@@ -129,8 +127,12 @@ func compareMetric(expected, actual metricAssertion) error {
 		errs = append(errs, fmt.Errorf("monotonic mismatch: expected %v, got %v",
 			boolPtrString(expected.Monotonic), boolPtrString(actual.Monotonic)))
 	}
-	if err := compareDatapoints(expected.Datapoints, actual.Datapoints); err != nil {
-		errs = append(errs, err)
+	if expected.Datapoints.Count == nil {
+		if err := compareDatapoints(expected.Datapoints.Exact, actual.Datapoints.Exact); err != nil {
+			errs = append(errs, err)
+		}
+	} else if err := expected.Datapoints.Validate(actual.Datapoints.Exact); err != nil {
+		errs = append(errs, fmt.Errorf("datapoints assertion failed: %w", err))
 	}
 	return errors.Join(errs...)
 }
