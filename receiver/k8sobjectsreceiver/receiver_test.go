@@ -15,9 +15,10 @@ import (
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
@@ -175,9 +176,10 @@ func TestPullObject(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
-	time.Sleep(time.Second)
+	require.Eventually(t, func() bool {
+		return consumer.Count() == 2
+	}, 5*time.Second, 10*time.Millisecond)
 	assert.Len(t, consumer.Logs(), 1)
-	assert.Equal(t, 2, consumer.Count())
 	assert.NoError(t, r.Shutdown(t.Context()))
 }
 
@@ -215,9 +217,7 @@ func TestWatchObject(t *testing.T) {
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
-	time.Sleep(time.Millisecond * 100)
-	assert.Empty(t, consumer.Logs())
-	assert.Equal(t, 0, consumer.Count())
+	require.Never(t, func() bool { return consumer.Count() > 0 }, 100*time.Millisecond, 10*time.Millisecond)
 
 	mockClient.createPods(
 		generatePod("pod2", "default", map[string]any{
@@ -230,18 +230,20 @@ func TestWatchObject(t *testing.T) {
 			"environment": "production",
 		}, "4"),
 	)
-	time.Sleep(time.Millisecond * 100)
+	require.Eventually(t, func() bool {
+		return consumer.Count() == 2
+	}, 5*time.Second, 10*time.Millisecond)
 	assert.Len(t, consumer.Logs(), 2)
-	assert.Equal(t, 2, consumer.Count())
 
 	mockClient.deletePods(
 		generatePod("pod2", "default", map[string]any{
 			"environment": "test",
 		}, "2"),
 	)
-	time.Sleep(time.Millisecond * 100)
+	require.Eventually(t, func() bool {
+		return consumer.Count() == 3
+	}, 5*time.Second, 10*time.Millisecond)
 	assert.Len(t, consumer.Logs(), 3)
-	assert.Equal(t, 3, consumer.Count())
 
 	assert.NoError(t, r.Shutdown(ctx))
 }
@@ -316,8 +318,13 @@ func TestIncludeInitialState(t *testing.T) {
 			require.NotNil(t, r)
 			require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
-			time.Sleep(time.Millisecond * 100)
-			assert.Equal(t, tt.expectedInitialLogs, consumer.Count())
+			if tt.expectedInitialLogs > 0 {
+				require.Eventually(t, func() bool {
+					return consumer.Count() == tt.expectedInitialLogs
+				}, 5*time.Second, 10*time.Millisecond)
+			} else {
+				require.Never(t, func() bool { return consumer.Count() > 0 }, 100*time.Millisecond, 10*time.Millisecond)
+			}
 
 			mockClient.createPods(
 				generatePod("pod3", "default", map[string]any{
@@ -325,8 +332,9 @@ func TestIncludeInitialState(t *testing.T) {
 				}, "3"),
 			)
 
-			time.Sleep(time.Millisecond * 100)
-			assert.Equal(t, tt.expectedInitialLogs+tt.expectedWatchLogs, consumer.Count())
+			require.Eventually(t, func() bool {
+				return consumer.Count() == tt.expectedInitialLogs+tt.expectedWatchLogs
+			}, 5*time.Second, 10*time.Millisecond)
 
 			logs := consumer.Logs()
 			assert.NotEmpty(t, logs)
@@ -367,6 +375,9 @@ func TestIncludeInitialState(t *testing.T) {
 func TestIncludeInitialStateWithPullMode(t *testing.T) {
 	t.Parallel()
 
+	core, observedLogs := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
+
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = newMockDynamicClient().getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
@@ -381,16 +392,21 @@ func TestIncludeInitialStateWithPullMode(t *testing.T) {
 		},
 	}
 
-	r, err := newReceiver(
-		receivertest.NewNopSettings(metadata.Type),
-		rCfg,
-		consumertest.NewNop(),
-	)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = logger
+
+	r, err := newReceiver(settings, rCfg, consumertest.NewNop())
 	require.NoError(t, err)
 
 	err = r.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	_ = r.Shutdown(t.Context())
+
+	warnMessages := make([]string, 0)
+	for _, e := range observedLogs.FilterLevelExact(zap.WarnLevel).All() {
+		warnMessages = append(warnMessages, e.Message)
+	}
+	assert.Contains(t, warnMessages, "include_initial_state has no effect in pull mode; it only applies to watch mode")
 }
 
 func TestExcludeDeletedTrue(t *testing.T) {
@@ -430,18 +446,14 @@ func TestExcludeDeletedTrue(t *testing.T) {
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
-	time.Sleep(time.Millisecond * 100)
-	assert.Empty(t, consumer.Logs())
-	assert.Equal(t, 0, consumer.Count())
+	require.Never(t, func() bool { return consumer.Count() > 0 }, 100*time.Millisecond, 10*time.Millisecond)
 
 	mockClient.deletePods(
 		generatePod("pod1", "default", map[string]any{
 			"environment": "test",
 		}, "1"),
 	)
-	time.Sleep(time.Millisecond * 100)
-	assert.Empty(t, consumer.Logs())
-	assert.Equal(t, 0, consumer.Count())
+	require.Never(t, func() bool { return consumer.Count() > 0 }, 100*time.Millisecond, 10*time.Millisecond)
 
 	assert.NoError(t, r.Shutdown(ctx))
 }
@@ -523,6 +535,63 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 		"logs not collected")
 }
 
+// TestNamespaceDenyListWithLeaderReelection verifies that excluded namespaces remain excluded
+// after a leader re-election, and that re-election does not register duplicate event handlers
+// (which would double-count events due to the same informer receiving the handler twice).
+func TestNamespaceDenyListWithLeaderReelection(t *testing.T) {
+	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{FakeLeaderElection: fakeLeaderElection}
+	leaderElectorID := component.MustNewID("k8s_leader_elector")
+
+	mockClient := newMockDynamicClient()
+	mockClient.createNamespaces(
+		generateNamespace("default", "1"),
+		generateNamespace("excluded", "2"),
+	)
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+	rCfg.Objects = []*K8sObjectsConfig{
+		{
+			Name: "pods",
+			Mode: k8sinventory.WatchMode,
+			ExcludeNamespaces: []filter.Config{
+				{Regex: "excluded"},
+			},
+		},
+	}
+	rCfg.K8sLeaderElector = &leaderElectorID
+
+	consumer := newMockLogConsumer()
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, consumer)
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context(), fakeHost))
+
+	// First election: create one pod in each namespace.
+	fakeLeaderElection.InvokeOnLeading()
+	mockClient.createPods(generatePod("pod1", "default", map[string]any{}, "1"))
+	mockClient.createPods(generatePod("pod2", "excluded", map[string]any{}, "2"))
+	require.Eventually(t, func() bool { return consumer.Count() == 1 }, 10*time.Second, 10*time.Millisecond,
+		"pod1 from default not received")
+
+	// Re-election: stop then re-lead.
+	fakeLeaderElection.InvokeOnStopping()
+	fakeLeaderElection.InvokeOnLeading()
+
+	// Create one more pod in default after re-election.
+	// If object.Namespaces was duplicated, the same informer would have two handlers registered,
+	// causing pod3 to be counted twice instead of once.
+	mockClient.createPods(generatePod("pod3", "default", map[string]any{}, "3"))
+	mockClient.createPods(generatePod("pod4", "excluded", map[string]any{}, "4"))
+
+	require.Eventually(t, func() bool { return consumer.Count() >= 2 }, 10*time.Second, 10*time.Millisecond,
+		"pod3 from default not received after re-election")
+	require.Never(t, func() bool { return consumer.Count() > 2 }, 200*time.Millisecond, 10*time.Millisecond,
+		"unexpected extra events: duplicate namespace watcher or excluded namespace leak")
+}
+
 func TestNamespaceDenyListWatchObject(t *testing.T) {
 	t.Parallel()
 
@@ -561,9 +630,7 @@ func TestNamespaceDenyListWatchObject(t *testing.T) {
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
-	time.Sleep(time.Millisecond * 100)
-	assert.Empty(t, consumer.Logs())
-	assert.Equal(t, 0, consumer.Count())
+	require.Never(t, func() bool { return consumer.Count() > 0 }, 100*time.Millisecond, 10*time.Millisecond)
 
 	mockClient.createPods(
 		generatePod("pod2", "default", map[string]any{
@@ -576,97 +643,66 @@ func TestNamespaceDenyListWatchObject(t *testing.T) {
 			"environment": "production",
 		}, "4"),
 	)
-	time.Sleep(time.Millisecond * 100)
+	require.Eventually(t, func() bool {
+		return consumer.Count() == 2
+	}, 5*time.Second, 10*time.Millisecond)
 	assert.Len(t, consumer.Logs(), 2)
-	assert.Equal(t, 2, consumer.Count())
 
 	assert.NoError(t, r.Shutdown(ctx))
 }
 
-func TestReceiverStorageInitialization(t *testing.T) {
-	tests := []struct {
-		name                string
-		storageID           *component.ID
-		expectStorageClient bool
-	}{
-		{
-			name:                "storage configured",
-			storageID:           ptr(storagetest.NewStorageID("file_storage")),
-			expectStorageClient: true,
-		},
-		{
-			name:                "no storage configured",
-			storageID:           nil,
-			expectStorageClient: false,
-		},
-	}
+func TestDeprecationWarningsForStorageAndResourceVersion(t *testing.T) {
+	t.Parallel()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockClient := newMockDynamicClient()
-			rCfg := createDefaultConfig().(*Config)
-			rCfg.makeDynamicClient = mockClient.getMockDynamicClient
-			rCfg.makeDiscoveryClient = getMockDiscoveryClient
-			rCfg.Storage = tt.storageID
-			rCfg.Objects = []*K8sObjectsConfig{
-				{
-					Name: "pods",
-					Mode: k8sinventory.WatchMode,
-				},
-			}
+	core, observedLogs := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
 
-			r, err := newReceiver(
-				receivertest.NewNopSettings(metadata.Type),
-				rCfg,
-				consumertest.NewNop(),
-			)
-			require.NoError(t, err)
-			require.NotNil(t, r)
-
-			// Create host with storage extension if needed
-			host := componenttest.NewNopHost()
-			if tt.storageID != nil {
-				storageHost := storagetest.NewStorageHost().WithInMemoryStorageExtension("file_storage")
-				host = storageHost
-			}
-
-			err = r.Start(t.Context(), host)
-			require.NoError(t, err)
-
-			kr := r.(*k8sobjectsreceiver)
-
-			if tt.expectStorageClient {
-				assert.NotNil(t, kr.storageClient, "storage client should be initialized")
-			} else {
-				assert.Nil(t, kr.storageClient, "storage client should be nil")
-			}
-
-			err = r.Shutdown(t.Context())
-			require.NoError(t, err)
-		})
-	}
-}
-
-func TestReceiverMultipleObjectsPersistence(t *testing.T) {
 	mockClient := newMockDynamicClient()
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
-	rCfg.Storage = ptr(storagetest.NewStorageID("file_storage"))
+	rCfg.ErrorMode = PropagateError
+	storageID := component.MustNewID("file_storage")
+	rCfg.Storage = &storageID
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
-			Name: "pods",
-			Mode: k8sinventory.WatchMode,
-		},
-		{
-			Name: "events",
-			Mode: k8sinventory.WatchMode,
-		},
-		{
-			Name: "myresources",
-			Mode: k8sinventory.WatchMode,
+			Name:            "pods",
+			Mode:            k8sinventory.WatchMode,
+			ResourceVersion: "100",
 		},
 	}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = logger
+
+	r, err := newReceiver(settings, rCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	err = r.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() { _ = r.Shutdown(t.Context()) }()
+
+	warnMessages := make([]string, 0)
+	for _, e := range observedLogs.FilterLevelExact(zap.WarnLevel).All() {
+		warnMessages = append(warnMessages, e.Message)
+	}
+	assert.Contains(t, warnMessages, "storage is no longer used; resourceVersion checkpointing is handled internally by the informer")
+	assert.Contains(t, warnMessages, "resource_version is no longer used; the informer manages watch resumption internally")
+}
+
+// TestFactorySharing verifies that two object configs with identical
+// (namespace, labelSelector, fieldSelector) tuples share a single
+// SharedInformerFactory rather than creating one per object. This is
+// the core scalability invariant: N objects with the same filter do not
+// open N separate List+Watch connections to the API server.
+func TestFactorySharing(t *testing.T) {
+	t.Parallel()
+
+	mockClient := newMockDynamicClient()
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
 
 	r, err := newReceiver(
 		receivertest.NewNopSettings(metadata.Type),
@@ -674,60 +710,25 @@ func TestReceiverMultipleObjectsPersistence(t *testing.T) {
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
-
-	host := storagetest.NewStorageHost().WithInMemoryStorageExtension("file_storage")
-
-	err = r.Start(t.Context(), host)
-	require.NoError(t, err)
-
 	kr := r.(*k8sobjectsreceiver)
 
-	// Storage client should be initialized because storage is configured
-	assert.NotNil(t, kr.storageClient)
-
-	err = r.Shutdown(t.Context())
+	// Inject the client directly — normally set in Start(), not needed here.
+	client, err := mockClient.getMockDynamicClient()
 	require.NoError(t, err)
-}
+	kr.client = client
 
-func TestReceiverStorageClientInitializedWhenConfigured(t *testing.T) {
-	mockClient := newMockDynamicClient()
-	rCfg := createDefaultConfig().(*Config)
-	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
-	rCfg.makeDiscoveryClient = getMockDiscoveryClient
-	rCfg.Storage = ptr(storagetest.NewStorageID("file_storage"))
-	rCfg.Objects = []*K8sObjectsConfig{
-		{
-			Name: "pods",
-			Mode: k8sinventory.WatchMode,
-		},
-		{
-			Name: "events",
-			Mode: k8sinventory.WatchMode,
-		},
-	}
+	sharedKey := factoryKey{namespace: "default", labelSelector: "env=prod", fieldSelector: ""}
+	differentKey := factoryKey{namespace: "kube-system", labelSelector: "env=prod", fieldSelector: ""}
 
-	r, err := newReceiver(
-		receivertest.NewNopSettings(metadata.Type),
-		rCfg,
-		consumertest.NewNop(),
-	)
-	require.NoError(t, err)
+	f1a := kr.getOrCreateFactory(sharedKey)
+	f1b := kr.getOrCreateFactory(sharedKey) // same tuple — must return same factory
+	f2 := kr.getOrCreateFactory(differentKey)
 
-	host := storagetest.NewStorageHost().WithInMemoryStorageExtension("file_storage")
+	assert.Equal(t, f1a, f1b, "identical filter tuple should return the same factory instance")
+	assert.NotEqual(t, f1a, f2, "different filter tuple should return a different factory instance")
 
-	err = r.Start(t.Context(), host)
-	require.NoError(t, err)
-
-	kr := r.(*k8sobjectsreceiver)
-
-	// Storage client should be initialized whenever storage is configured
-	assert.NotNil(t, kr.storageClient)
-
-	err = r.Shutdown(t.Context())
-	require.NoError(t, err)
-}
-
-// ptr is a helper to create a pointer to a value
-func ptr[T any](v T) *T {
-	return &v
+	kr.factoriesMu.Lock()
+	factoryCount := len(kr.factories)
+	kr.factoriesMu.Unlock()
+	assert.Equal(t, 2, factoryCount, "two distinct filter tuples should produce exactly two factories")
 }

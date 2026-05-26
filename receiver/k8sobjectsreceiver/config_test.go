@@ -405,7 +405,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 			},
 		},
 		{
-			desc: "include_initial_state true with pull mode is invalid",
+			desc: "include_initial_state true with pull mode is valid (silently ignored by informer)",
 			cfg: &Config{
 				APIConfig:           k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				ErrorMode:           PropagateError,
@@ -417,7 +417,6 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "include_initial_state can only be used with watch mode",
 		},
 		{
 			desc: "include_initial_state nil with watch mode is valid (defaults to false)",
@@ -522,4 +521,31 @@ func TestCreateDefaultConfigAPIRateLimit(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	assert.Equal(t, k8sconfig.DefaultKubeAPIQPS, cfg.KubeAPIQPS)
 	assert.Equal(t, k8sconfig.DefaultKubeAPIBurst, cfg.KubeAPIBurst)
+}
+
+func TestValidateAllowsStorageWithResourceVersion(t *testing.T) {
+	// Previously this was an error; now both fields are deprecated no-ops.
+	storageID := component.MustNewID("file_storage")
+	cfg := &Config{
+		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
+		ErrorMode: PropagateError,
+		Storage:   &storageID,
+		Objects: []*K8sObjectsConfig{
+			{Name: "pods", Mode: k8sinventory.WatchMode, ResourceVersion: "100"},
+		},
+	}
+	assert.NoError(t, cfg.Validate())
+}
+
+func TestValidateAllowsIncludeInitialStateWithPullMode(t *testing.T) {
+	// Previously this was an error; now include_initial_state is silently ignored for pull mode.
+	cfg := &Config{
+		APIConfig:           k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
+		ErrorMode:           PropagateError,
+		IncludeInitialState: true,
+		Objects: []*K8sObjectsConfig{
+			{Name: "pods", Mode: k8sinventory.PullMode},
+		},
+	}
+	assert.NoError(t, cfg.Validate())
 }

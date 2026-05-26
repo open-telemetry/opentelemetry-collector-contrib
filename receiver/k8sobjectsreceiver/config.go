@@ -22,9 +22,8 @@ import (
 )
 
 const (
-	defaultPullInterval    time.Duration     = time.Hour
-	defaultMode            k8sinventory.Mode = k8sinventory.PullMode
-	defaultResourceVersion                   = "1"
+	defaultPullInterval time.Duration     = time.Hour
+	defaultMode         k8sinventory.Mode = k8sinventory.PullMode
 )
 
 var modeMap = map[k8sinventory.Mode]bool{
@@ -107,14 +106,6 @@ func (c *Config) Validate() error {
 
 		if object.Mode == k8sinventory.PullMode && len(object.ExcludeWatchType) != 0 {
 			return errors.New("the Exclude config can only be used with watch mode")
-		}
-
-		if c.Storage != nil && object.ResourceVersion != "" {
-			return errors.New("resource_version cannot be set on an object when storage is configured for persistence")
-		}
-
-		if object.Mode == k8sinventory.PullMode && c.IncludeInitialState {
-			return errors.New("include_initial_state can only be used with watch mode")
 		}
 
 		if len(object.ExcludeNamespaces) != 0 && len(object.Namespaces) != 0 {
