@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -182,11 +183,12 @@ func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logge
 var _ client = (*postgreSQLClient)(nil)
 
 type postgreSQLConfig struct {
-	username string
-	password string
-	database string
-	address  confignet.AddrConfig
-	tls      configtls.ClientConfig
+	username     string
+	password     string
+	passwordFile string
+	database     string
+	address      confignet.AddrConfig
+	tls          configtls.ClientConfig
 }
 
 func sslConnectionString(tls configtls.ClientConfig) string {
@@ -235,7 +237,16 @@ func (c postgreSQLConfig) ConnectionString() (string, error) {
 		host = "/" + host
 	}
 
-	return fmt.Sprintf("port=%s host=%s user=%s password=%s dbname=%s %s", port, host, c.username, c.password, database, sslConnectionString(c.tls)), nil
+	password := c.password
+	if c.passwordFile != "" {
+		data, fileErr := os.ReadFile(c.passwordFile)
+		if fileErr != nil {
+			return "", fmt.Errorf("reading password_file %q: %w", c.passwordFile, fileErr)
+		}
+		password = strings.TrimRight(string(data), "\r\n")
+	}
+
+	return fmt.Sprintf("port=%s host=%s user=%s password=%s dbname=%s %s", port, host, c.username, password, database, sslConnectionString(c.tls)), nil
 }
 
 func (c *postgreSQLClient) Close() error {
