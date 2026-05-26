@@ -1286,9 +1286,7 @@ func TestProcessCurrentOpContentionAttributes(t *testing.T) {
 	requireIntAttribute(t, attrs, "mongodb.operation.prepared_read_conflict.count", 2)
 	requireIntAttribute(t, attrs, "mongodb.operation.write_conflict.count", 3)
 	requireIntAttribute(t, attrs, "mongodb.operation.yield.count", 4)
-	requireBoolAttribute(t, attrs, "mongodb.operation.waiting_for_lock", false)
-	requireBoolAttribute(t, attrs, "mongodb.operation.waiting_for_flow_control", true)
-	requireBoolAttribute(t, attrs, "mongodb.operation.waiting_for_latch", true)
+	requireSliceAttribute(t, attrs, "mongodb.operation.wait.type", []any{"flow_control", "latch"})
 	requireStringAttribute(t, attrs, "mongodb.operation.state", metadata.AttributeMongodbOperationStateWaiting.String())
 
 	locks, ok := attrs.Get("mongodb.operation.locks")
@@ -1306,6 +1304,11 @@ func TestProcessCurrentOpContentionAttributes(t *testing.T) {
 	latchDetails, ok := attrs.Get("mongodb.operation.waiting_for_latch.details")
 	require.True(t, ok)
 	require.JSONEq(t, `{"timestamp":{"$date":"2020-03-19T23:25:58.412Z"},"captureName":"FutureResolution","backtrace":["frame"]}`, latchDetails.Str())
+
+	secondAttrs := records.At(1).Attributes()
+	secondWaitType, ok := secondAttrs.Get("mongodb.operation.wait.type")
+	require.True(t, ok)
+	require.Equal(t, 0, secondWaitType.Slice().Len())
 }
 
 func requireIntAttribute(t *testing.T, attrs pcommon.Map, key string, expected int64) {
@@ -1314,16 +1317,16 @@ func requireIntAttribute(t *testing.T, attrs pcommon.Map, key string, expected i
 	require.Equal(t, expected, attr.Int())
 }
 
-func requireBoolAttribute(t *testing.T, attrs pcommon.Map, key string, expected bool) {
-	attr, ok := attrs.Get(key)
-	require.True(t, ok)
-	require.Equal(t, expected, attr.Bool())
-}
-
 func requireStringAttribute(t *testing.T, attrs pcommon.Map, key, expected string) {
 	attr, ok := attrs.Get(key)
 	require.True(t, ok)
 	require.Equal(t, expected, attr.Str())
+}
+
+func requireSliceAttribute(t *testing.T, attrs pcommon.Map, key string, expected []any) {
+	attr, ok := attrs.Get(key)
+	require.True(t, ok)
+	require.Equal(t, expected, attr.Slice().AsRaw())
 }
 
 func TestProcessCurrentOpMaxRowsPerQueryAppliesAfterSkipping(t *testing.T) {

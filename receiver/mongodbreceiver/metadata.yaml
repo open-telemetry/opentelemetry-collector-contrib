@@ -156,18 +156,13 @@ attributes:
   mongodb.operation.type:
     description: The low-level MongoDB operation type (e.g. query, insert, update, remove, getmore, command).
     type: string
-  mongodb.operation.waiting_for_flow_control:
-    description: Whether the MongoDB operation had to wait because of flow control.
-    type: bool
-  mongodb.operation.waiting_for_latch:
-    description: Whether the MongoDB operation is waiting to acquire an internal latch or for an internal condition to be met.
-    type: bool
+  mongodb.operation.wait.type:
+    description: |
+      The set of wait conditions the MongoDB operation is currently blocked on. Possible values: `lock` (from `waitingForLock`), `flow_control` (from `waitingForFlowControl`), and `latch` (when `waitingForLatch` is a non-empty document). An empty slice indicates the operation is not waiting on any of these conditions.
+    type: slice
   mongodb.operation.waiting_for_latch.details:
     description: Details about the MongoDB operation's internal latch wait.
     type: string
-  mongodb.operation.waiting_for_lock:
-    description: Whether the MongoDB operation is waiting for a lock.
-    type: bool
   mongodb.operation.write_conflict.count:
     description: The number of times the MongoDB operation conflicted with another write operation on the same document.
     type: int
@@ -244,12 +239,10 @@ events:
       - mongodb.operation.prepared_read_conflict.count
       - mongodb.operation.write_conflict.count
       - mongodb.operation.yield.count
-      - mongodb.operation.waiting_for_lock
+      - mongodb.operation.wait.type
       - mongodb.operation.locks
       - mongodb.operation.lock_stats
-      - mongodb.operation.waiting_for_flow_control
       - mongodb.operation.flow_control_stats
-      - mongodb.operation.waiting_for_latch
       - mongodb.operation.waiting_for_latch.details
 
 metrics:

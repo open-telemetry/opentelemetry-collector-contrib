@@ -590,12 +590,10 @@ query sample
 | mongodb.operation.prepared_read_conflict.count | The number of times the MongoDB operation had to wait for a prepared transaction with a write to commit or abort. | Any Int | - |
 | mongodb.operation.write_conflict.count | The number of times the MongoDB operation conflicted with another write operation on the same document. | Any Int | - |
 | mongodb.operation.yield.count | The number of times the MongoDB operation yielded to allow other operations to complete. | Any Int | - |
-| mongodb.operation.waiting_for_lock | Whether the MongoDB operation is waiting for a lock. | Any Bool | - |
+| mongodb.operation.wait.type | The set of wait conditions the MongoDB operation is currently blocked on, derived from `$currentOp`. Possible values: `lock` (from `waitingForLock`), `flow_control` (from `waitingForFlowControl`), and `latch` (when `waitingForLatch` is a non-empty document). An empty slice indicates the operation is not waiting on any of these conditions. | Any Slice | - |
 | mongodb.operation.locks | The type and mode of locks the MongoDB operation currently holds. | Any Str | - |
 | mongodb.operation.lock_stats | The lock acquisition statistics for the MongoDB operation. | Any Str | - |
-| mongodb.operation.waiting_for_flow_control | Whether the MongoDB operation had to wait because of flow control. | Any Bool | - |
 | mongodb.operation.flow_control_stats | The flow control statistics for the MongoDB operation. | Any Str | - |
-| mongodb.operation.waiting_for_latch | Whether the MongoDB operation is waiting to acquire an internal latch or for an internal condition to be met. | Any Bool | - |
 | mongodb.operation.waiting_for_latch.details | Details about the MongoDB operation's internal latch wait. | Any Str | - |
 
 ## Resource Attributes

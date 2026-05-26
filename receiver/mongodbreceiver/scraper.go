@@ -273,6 +273,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		flowControlStats := getJSONValue(op, flowControlStatsKey)
 		waitingForLatchDetails := getJSONValue(op, waitingForLatchKey)
 		waitingForLatch := waitingForLatchDetails != ""
+		waitTypes := buildWaitTypes(waitingForLock, waitingForFlowControl, waitingForLatch)
 		operationState, ok := deriveOperationState(op, waitingForLock, waitingForFlowControl, waitingForLatch)
 		if !ok {
 			s.logger.Debug("Skipping operation without supported state", zap.Any("operation", op))
@@ -318,12 +319,10 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 			preparedReadConflictCount,
 			writeConflictCount,
 			yieldCount,
-			waitingForLock,
+			waitTypes,
 			locks,
 			lockStats,
-			waitingForFlowControl,
 			flowControlStats,
-			waitingForLatch,
 			waitingForLatchDetails,
 		)
 		emitted++
@@ -346,6 +345,20 @@ func deriveOperationState(op bson.M, waitingForLock, waitingForFlowControl, wait
 		return metadata.AttributeMongodbOperationStateActive, true
 	}
 	return 0, false
+}
+
+func buildWaitTypes(waitingForLock, waitingForFlowControl, waitingForLatch bool) []any {
+	waitTypes := []any{}
+	if waitingForLock {
+		waitTypes = append(waitTypes, "lock")
+	}
+	if waitingForFlowControl {
+		waitTypes = append(waitTypes, "flow_control")
+	}
+	if waitingForLatch {
+		waitTypes = append(waitTypes, "latch")
+	}
+	return waitTypes
 }
 
 func extractEffectiveUserName(op bson.M) string {
