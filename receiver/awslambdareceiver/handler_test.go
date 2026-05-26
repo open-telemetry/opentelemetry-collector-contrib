@@ -501,11 +501,12 @@ func TestCWLogsEnrichments(t *testing.T) {
 
 			v, b = resourceAttrs.Get("aws.log.group.names")
 			require.True(t, b)
-			require.Equal(t, "/aws/lambda/my-function", v.AsString())
+
+			require.Equal(t, "/aws/lambda/my-function", v.Slice().At(0).AsString())
 
 			v, b = resourceAttrs.Get("aws.log.stream.names")
 			require.True(t, b)
-			require.Equal(t, "test-stream", v.AsString())
+			require.Equal(t, "test-stream", v.Slice().At(0).AsString())
 		}
 	})
 

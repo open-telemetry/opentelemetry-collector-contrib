@@ -358,14 +358,24 @@ type cwMetadataEnvelop struct {
 	LogStream string `json:"logStream"`
 }
 
+// getEnrichedCWLog add extra metadata to resource attributes iff metadata is not already present.
+// This makes sure overrides do not happen if configured extensions already populate these attributes.
 func getEnrichedCWLog(logs plog.Logs, cwM cwMetadataEnvelop) {
 	for _, resourceLogs := range logs.ResourceLogs().All() {
 		resourceAttrs := resourceLogs.Resource().Attributes()
 
-		resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
-		resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), cwM.Owner)
-		resourceAttrs.PutStr(string(conventions.AWSLogGroupNamesKey), cwM.LogGroup)
-		resourceAttrs.PutStr(string(conventions.AWSLogStreamNamesKey), cwM.LogStream)
+		if _, ok := resourceAttrs.Get(string(conventions.CloudProviderKey)); !ok {
+			resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+		}
+		if _, ok := resourceAttrs.Get(string(conventions.CloudAccountIDKey)); !ok {
+			resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), cwM.Owner)
+		}
+		if _, ok := resourceAttrs.Get(string(conventions.AWSLogGroupNamesKey)); !ok {
+			resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwM.LogGroup)
+		}
+		if _, ok := resourceAttrs.Get(string(conventions.AWSLogStreamNamesKey)); !ok {
+			resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwM.LogStream)
+		}
 	}
 }
 
