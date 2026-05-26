@@ -1,4 +1,4 @@
-type: resourcedetectionprocessor/k8snode
+type: resourcedetectionprocessor/k8s
 
 parent: resourcedetection
 

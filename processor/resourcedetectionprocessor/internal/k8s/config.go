@@ -1,14 +1,14 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package k8snode // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
+package k8s // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8s"
 
 import (
 	"errors"
 	"os"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8s/internal/metadata"
 )
 
 type Config struct {
@@ -39,6 +39,9 @@ type Config struct {
 
 // UpdateDefaults validates and update the default config with user's provided settings
 func (c *Config) UpdateDefaults() error {
+	if !c.ResourceAttributes.K8sNodeName.Enabled && !c.ResourceAttributes.K8sNodeUID.Enabled {
+		return nil
+	}
 	if c.NodeFromEnvVar == "" {
 		c.NodeFromEnvVar = "K8S_NODE_NAME"
 	}

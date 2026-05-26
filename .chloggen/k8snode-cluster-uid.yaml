@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/resource_detection
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `k8s.cluster.uid` detection to the `k8snode` detector, derived from the `kube-system` namespace UID.
+note: Rename `k8snode` detector to `k8s` and add `k8s.cluster.uid` detection derived from the `kube-system` namespace UID.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48597]
@@ -16,7 +16,8 @@ issues: [48597]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The `k8s.cluster.uid` attribute is enabled by default. To disable it, set `resource_attributes.k8s.cluster.uid.enabled: false` under the `k8snode` detector config.
+  The `k8snode` detector name is deprecated; use `k8s` instead. Both names work and produce identical output.
+  The `k8s.cluster.uid` attribute is enabled by default. To disable it, set `resource_attributes.k8s.cluster.uid.enabled: false` under the `k8s` detector config.
   The detector requires `get` permission on the `kube-system` namespace. For backward compatibility, if the permission is missing, a warning is logged and detection continues without the attribute rather than failing.
 
 # If your change doesn't affect end users or the exported elements of any package,

@@ -596,11 +596,11 @@ roleRef:
 | ---- | ---- |----------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | auth_type | string | No       | `serviceAccount` | How to authenticate to the K8s API server.  This can be one of `none` (for no auth), `serviceAccount` (to use the standard service account token provided to the agent pod), or `kubeConfig` to use credentials from `~/.kube/config`. |
 
-### K8S Node Metadata
+### K8S Metadata
 
-Queries the K8S api server to retrieve node resource attributes.
+Queries the K8S API server to retrieve node and cluster resource attributes. The `k8snode` detector name is deprecated — use `k8s` instead.
 
-The list of the populated resource attributes can be found at [k8snode Detector Resource Attributes](./internal/k8snode/documentation.md).
+The list of the populated resource attributes can be found at [k8s Detector Resource Attributes](./internal/k8s/documentation.md).
 
 The following permissions are required:
 ```yaml
@@ -617,19 +617,19 @@ rules:
     verbs: ["get"]
 ```
 
-> **Note:** The `namespaces` permission is required for `k8s.cluster.uid` detection. If it is missing, a warning is logged and the attribute is omitted — other attributes are unaffected.
+> **Note:** The `nodes` permission is only required when `k8s.node.name` or `k8s.node.uid` are enabled. The `namespaces` permission is required for `k8s.cluster.uid`. If it is missing, a warning is logged and the attribute is omitted — other attributes are unaffected.
 
 | Name | Type | Required | Default         | Docs                                                                                                                                                                                                                                   |
 | ---- | ---- |----------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | auth_type | string | No       | `serviceAccount` | How to authenticate to the K8s API server.  This can be one of `none` (for no auth), `serviceAccount` (to use the standard service account token provided to the agent pod), or `kubeConfig` to use credentials from `~/.kube/config`. |
-| node_from_env_var | string | Yes      | `K8S_NODE_NAME` | The environment variable name that holds the name of the node to retrieve metadata from. Default value is `K8S_NODE_NAME`. You can set the env dynamically on the workload definition using the downward API; see example              |
+| node_from_env_var | string | No      | `K8S_NODE_NAME` | The environment variable name that holds the name of the node to retrieve metadata from. Required when `k8s.node.name` or `k8s.node.uid` are enabled. |
 
-#### Example using the default `node_from_env_var` option:
+#### Example: node + cluster attributes
 
 ```yaml
 processors:
-  resource_detection/k8snode:
-    detectors: [k8snode]
+  resource_detection:
+    detectors: [k8s]
 ```
 and add this to your workload:
 ```yaml
@@ -640,12 +640,28 @@ and add this to your workload:
                 fieldPath: spec.nodeName
 ```
 
+#### Example: cluster UID only (no node name required)
+
+```yaml
+processors:
+  resource_detection:
+    detectors: [k8s]
+    k8s:
+      resource_attributes:
+        k8s.node.name:
+          enabled: false
+        k8s.node.uid:
+          enabled: false
+        k8s.cluster.uid:
+          enabled: true
+```
+
 #### Example using a custom variable `node_from_env_var` option:
 ```yaml
 processors:
-  resource_detection/k8snode:
-    detectors: [k8snode]
-    k8snode:
+  resource_detection:
+    detectors: [k8s]
+    k8s:
       node_from_env_var: "my_custom_var"
 ```
 and add this to your workload:
@@ -962,7 +978,7 @@ processors:
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode", "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc", "ibmcloud_classic"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8s", "k8snode" (deprecated, use "k8s"), "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc", "ibmcloud_classic"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

@@ -29,9 +29,6 @@ type k8snodeProvider struct {
 }
 
 func NewProvider(nodeName string, apiConf k8sconfig.APIConfig) (Provider, error) {
-	if nodeName == "" {
-		return nil, errors.New("nodeName can't be empty")
-	}
 	k8sAPIClient, err := k8sconfig.MakeClient(apiConf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create K8s API client: %w", err)
