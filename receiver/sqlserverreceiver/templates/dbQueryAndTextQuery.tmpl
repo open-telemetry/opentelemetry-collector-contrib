@@ -37,6 +37,7 @@ SELECT qs.*,
 			 ((CASE statement_end_offset
 				   WHEN -1 THEN DATALENGTH(st.text)
 				   ELSE stats.statement_end_offset END - stats.statement_start_offset) / 2) + 1) AS query_text,
+	st.text AS full_query_text,
 	ISNULL(DB_NAME(st.dbid), '') AS database_name,
 	ISNULL(qp.query_plan, '') AS query_plan,
 	ISNULL(CASE WHEN qs.object_id > 0 THEN qs.object_id END, '') AS procedure_id,

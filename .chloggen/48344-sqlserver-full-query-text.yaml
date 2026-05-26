@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/sqlserver
+
+note: Add opt-in `collect_full_query_text` config option to capture the full SQL batch text as a new `db.query.full_text` log attribute, preserving SQL comments (e.g. W3C traceparent, SQLCommenter tags) that are otherwise stripped by the offset-based extraction.
+
+issues: [48344]
+
+subtext:
+
+change_logs: [user]

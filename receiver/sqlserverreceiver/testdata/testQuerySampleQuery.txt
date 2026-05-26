@@ -19,6 +19,7 @@
           END - r.statement_start_offset
         ) / 2
       ) + 1) AS statement_text,
+  o.TEXT AS full_query_text,
   r.blocking_session_id,
   CASE
     WHEN r.blocking_session_id > 0 AND r.wait_time > 0

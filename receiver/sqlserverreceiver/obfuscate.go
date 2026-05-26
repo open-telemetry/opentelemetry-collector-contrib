@@ -12,6 +12,23 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
 )
 
+var collectCommentsConfig = obfuscate.SQLConfig{
+	DBMS:            "mssql",
+	ObfuscationMode: "obfuscate_and_normalize",
+	CollectComments: true,
+	KeepSQLAlias:    true,
+	KeepBoolean:     true,
+	KeepNull:        true,
+}
+
+var fullQueryTextObfuscateConfig = obfuscate.SQLConfig{
+	DBMS:            "mssql",
+	ObfuscationMode: "obfuscate_only",
+	KeepSQLAlias:    true,
+	KeepBoolean:     true,
+	KeepNull:        true,
+}
+
 var xmlPlanObfuscationAttrs = []string{
 	"StatementText",
 	"ConstValue",
@@ -34,6 +51,28 @@ func (o *obfuscator) obfuscateSQLString(sql string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	return obfuscatedQuery.Query, nil
+}
+
+// obfuscateFullSQLString obfuscates a full SQL batch text using a two-step approach:
+// Step 1: collect comments and replace them with ? placeholders
+// Step 2: obfuscate literals using obfuscate_only mode
+func (o *obfuscator) obfuscateFullSQLString(sql string) (string, error) {
+	collectResult, err := (*obfuscate.Obfuscator)(o).ObfuscateSQLStringWithOptions(sql, &collectCommentsConfig, "")
+	if err != nil {
+		return "", err
+	}
+
+	sqlWithAnonymizedComments := sql
+	for _, comment := range collectResult.Metadata.Comments {
+		sqlWithAnonymizedComments = strings.Replace(sqlWithAnonymizedComments, comment, "?", 1)
+	}
+
+	obfuscatedQuery, err := (*obfuscate.Obfuscator)(o).ObfuscateSQLStringWithOptions(sqlWithAnonymizedComments, &fullQueryTextObfuscateConfig, "")
+	if err != nil {
+		return "", err
+	}
+
 	return obfuscatedQuery.Query, nil
 }
 

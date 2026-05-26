@@ -31,6 +31,9 @@ resourceLogs:
               - key: db.namespace
                 value:
                   stringValue: master
+              - key: db.query.full_text
+                value:
+                  stringValue: ""
               - key: db.query.text
                 value:
                   stringValue: ""
