@@ -67,9 +67,37 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["oracledb.consistent_gets"] = mb.metricOracledbConsistentGets.config.AggregationStrategy
+			aggMap["oracledb.cpu_time"] = mb.metricOracledbCPUTime.config.AggregationStrategy
+			aggMap["oracledb.db_block_gets"] = mb.metricOracledbDbBlockGets.config.AggregationStrategy
+			aggMap["oracledb.ddl_statements_parallelized"] = mb.metricOracledbDdlStatementsParallelized.config.AggregationStrategy
+			aggMap["oracledb.dml_statements_parallelized"] = mb.metricOracledbDmlStatementsParallelized.config.AggregationStrategy
+			aggMap["oracledb.enqueue_deadlocks"] = mb.metricOracledbEnqueueDeadlocks.config.AggregationStrategy
+			aggMap["oracledb.exchange_deadlocks"] = mb.metricOracledbExchangeDeadlocks.config.AggregationStrategy
+			aggMap["oracledb.executions"] = mb.metricOracledbExecutions.config.AggregationStrategy
+			aggMap["oracledb.hard_parses"] = mb.metricOracledbHardParses.config.AggregationStrategy
+			aggMap["oracledb.logical_reads"] = mb.metricOracledbLogicalReads.config.AggregationStrategy
+			aggMap["oracledb.logons"] = mb.metricOracledbLogons.config.AggregationStrategy
+			aggMap["oracledb.parallel_operations_downgraded_1_to_25_pct"] = mb.metricOracledbParallelOperationsDowngraded1To25Pct.config.AggregationStrategy
+			aggMap["oracledb.parallel_operations_downgraded_25_to_50_pct"] = mb.metricOracledbParallelOperationsDowngraded25To50Pct.config.AggregationStrategy
+			aggMap["oracledb.parallel_operations_downgraded_50_to_75_pct"] = mb.metricOracledbParallelOperationsDowngraded50To75Pct.config.AggregationStrategy
+			aggMap["oracledb.parallel_operations_downgraded_75_to_99_pct"] = mb.metricOracledbParallelOperationsDowngraded75To99Pct.config.AggregationStrategy
+			aggMap["oracledb.parallel_operations_downgraded_to_serial"] = mb.metricOracledbParallelOperationsDowngradedToSerial.config.AggregationStrategy
+			aggMap["oracledb.parallel_operations_not_downgraded"] = mb.metricOracledbParallelOperationsNotDowngraded.config.AggregationStrategy
+			aggMap["oracledb.parse_calls"] = mb.metricOracledbParseCalls.config.AggregationStrategy
+			aggMap["oracledb.pga_memory"] = mb.metricOracledbPgaMemory.config.AggregationStrategy
+			aggMap["oracledb.physical_read_io_requests"] = mb.metricOracledbPhysicalReadIoRequests.config.AggregationStrategy
+			aggMap["oracledb.physical_reads"] = mb.metricOracledbPhysicalReads.config.AggregationStrategy
+			aggMap["oracledb.physical_reads_direct"] = mb.metricOracledbPhysicalReadsDirect.config.AggregationStrategy
+			aggMap["oracledb.physical_write_io_requests"] = mb.metricOracledbPhysicalWriteIoRequests.config.AggregationStrategy
+			aggMap["oracledb.physical_writes"] = mb.metricOracledbPhysicalWrites.config.AggregationStrategy
+			aggMap["oracledb.physical_writes_direct"] = mb.metricOracledbPhysicalWritesDirect.config.AggregationStrategy
+			aggMap["oracledb.queries_parallelized"] = mb.metricOracledbQueriesParallelized.config.AggregationStrategy
 			aggMap["oracledb.sessions.usage"] = mb.metricOracledbSessionsUsage.config.AggregationStrategy
 			aggMap["oracledb.tablespace_size.limit"] = mb.metricOracledbTablespaceSizeLimit.config.AggregationStrategy
 			aggMap["oracledb.tablespace_size.usage"] = mb.metricOracledbTablespaceSizeUsage.config.AggregationStrategy
+			aggMap["oracledb.user_commits"] = mb.metricOracledbUserCommits.config.AggregationStrategy
+			aggMap["oracledb.user_rollbacks"] = mb.metricOracledbUserRollbacks.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -80,20 +108,32 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordOracledbConsistentGetsDataPoint(ts, "1")
+			mb.RecordOracledbConsistentGetsDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbConsistentGetsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbCPUTimeDataPoint(ts, 1)
+			mb.RecordOracledbCPUTimeDataPoint(ts, 1, "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbCPUTimeDataPoint(ts, 3, "oracle.db.pdb-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordOracledbDataDictionaryHitRatioDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordOracledbDbBlockGetsDataPoint(ts, "1")
+			mb.RecordOracledbDbBlockGetsDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbDbBlockGetsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			allMetricsCount++
-			mb.RecordOracledbDdlStatementsParallelizedDataPoint(ts, "1")
+			mb.RecordOracledbDdlStatementsParallelizedDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbDdlStatementsParallelizedDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -104,11 +144,17 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbDmlLocksUsageDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordOracledbDmlStatementsParallelizedDataPoint(ts, "1")
+			mb.RecordOracledbDmlStatementsParallelizedDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbDmlStatementsParallelizedDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbEnqueueDeadlocksDataPoint(ts, "1")
+			mb.RecordOracledbEnqueueDeadlocksDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbEnqueueDeadlocksDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -128,67 +174,124 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbExchangeDeadlocksDataPoint(ts, "1")
+			mb.RecordOracledbExchangeDeadlocksDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbExchangeDeadlocksDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbExecutionsDataPoint(ts, "1")
+			mb.RecordOracledbExecutionsDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbExecutionsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbHardParsesDataPoint(ts, "1")
+			mb.RecordOracledbHardParsesDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbHardParsesDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbLogicalReadsDataPoint(ts, "1")
+			mb.RecordOracledbLogicalReadsDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbLogicalReadsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			allMetricsCount++
-			mb.RecordOracledbLogonsDataPoint(ts, "1")
+			mb.RecordOracledbLogonsDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbLogonsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			allMetricsCount++
-			mb.RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(ts, "1")
+			mb.RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			allMetricsCount++
-			mb.RecordOracledbParallelOperationsDowngraded25To50PctDataPoint(ts, "1")
+			mb.RecordOracledbParallelOperationsDowngraded25To50PctDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbParallelOperationsDowngraded25To50PctDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			allMetricsCount++
-			mb.RecordOracledbParallelOperationsDowngraded50To75PctDataPoint(ts, "1")
+			mb.RecordOracledbParallelOperationsDowngraded50To75PctDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbParallelOperationsDowngraded50To75PctDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			allMetricsCount++
-			mb.RecordOracledbParallelOperationsDowngraded75To99PctDataPoint(ts, "1")
+			mb.RecordOracledbParallelOperationsDowngraded75To99PctDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbParallelOperationsDowngraded75To99PctDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			allMetricsCount++
-			mb.RecordOracledbParallelOperationsDowngradedToSerialDataPoint(ts, "1")
+			mb.RecordOracledbParallelOperationsDowngradedToSerialDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbParallelOperationsDowngradedToSerialDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			allMetricsCount++
-			mb.RecordOracledbParallelOperationsNotDowngradedDataPoint(ts, "1")
+			mb.RecordOracledbParallelOperationsNotDowngradedDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbParallelOperationsNotDowngradedDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbParseCallsDataPoint(ts, "1")
+			mb.RecordOracledbParseCallsDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbParseCallsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbPgaMemoryDataPoint(ts, "1")
+			mb.RecordOracledbPgaMemoryDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbPgaMemoryDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			allMetricsCount++
-			mb.RecordOracledbPhysicalReadIoRequestsDataPoint(ts, "1")
+			mb.RecordOracledbPhysicalReadIoRequestsDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbPhysicalReadIoRequestsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbPhysicalReadsDataPoint(ts, "1")
+			mb.RecordOracledbPhysicalReadsDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbPhysicalReadsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			allMetricsCount++
-			mb.RecordOracledbPhysicalReadsDirectDataPoint(ts, "1")
+			mb.RecordOracledbPhysicalReadsDirectDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbPhysicalReadsDirectDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			allMetricsCount++
-			mb.RecordOracledbPhysicalWriteIoRequestsDataPoint(ts, "1")
+			mb.RecordOracledbPhysicalWriteIoRequestsDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbPhysicalWriteIoRequestsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			allMetricsCount++
-			mb.RecordOracledbPhysicalWritesDataPoint(ts, "1")
+			mb.RecordOracledbPhysicalWritesDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbPhysicalWritesDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			allMetricsCount++
-			mb.RecordOracledbPhysicalWritesDirectDataPoint(ts, "1")
+			mb.RecordOracledbPhysicalWritesDirectDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbPhysicalWritesDirectDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -199,7 +302,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbProcessesUsageDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordOracledbQueriesParallelizedDataPoint(ts, "1")
+			mb.RecordOracledbQueriesParallelizedDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbQueriesParallelizedDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordOracledbRecycleBinLimitDataPoint(ts, 1)
@@ -210,9 +316,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbSessionsUsageDataPoint(ts, "1", "session_type-val", "session_status-val")
+			mb.RecordOracledbSessionsUsageDataPoint(ts, "1", "session_type-val", "session_status-val", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbSessionsUsageDataPoint(ts, "3", "session_type-val-2", "session_status-val-2")
+				mb.RecordOracledbSessionsUsageDataPoint(ts, "3", "session_type-val-2", "session_status-val-2", "oracle.db.pdb-val-2")
 			}
 
 			allMetricsCount++
@@ -223,16 +329,16 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 1, "tablespace_name-val")
+			mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 1, "tablespace_name-val", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 3, "tablespace_name-val-2")
+				mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 3, "tablespace_name-val-2", "oracle.db.pdb-val-2")
 			}
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, 1, "tablespace_name-val")
+			mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, 1, "tablespace_name-val", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, 3, "tablespace_name-val-2")
+				mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, 3, "tablespace_name-val-2", "oracle.db.pdb-val-2")
 			}
 
 			defaultMetricsCount++
@@ -245,11 +351,17 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbUserCommitsDataPoint(ts, "1")
+			mb.RecordOracledbUserCommitsDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbUserCommitsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbUserRollbacksDataPoint(ts, "1")
+			mb.RecordOracledbUserRollbacksDataPoint(ts, "1", "oracle.db.pdb-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbUserRollbacksDataPoint(ts, "3", "oracle.db.pdb-val-2")
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetHostName("host.name-val")
@@ -263,9 +375,37 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricOracledbConsistentGets.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbCPUTime.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbDbBlockGets.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbDdlStatementsParallelized.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbDmlStatementsParallelized.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbEnqueueDeadlocks.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbExchangeDeadlocks.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbExecutions.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbHardParses.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbLogicalReads.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbLogons.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbParallelOperationsDowngraded1To25Pct.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbParallelOperationsDowngraded25To50Pct.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbParallelOperationsDowngraded50To75Pct.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbParallelOperationsDowngraded75To99Pct.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbParallelOperationsDowngradedToSerial.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbParallelOperationsNotDowngraded.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbParseCalls.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbPgaMemory.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbPhysicalReadIoRequests.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbPhysicalReads.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbPhysicalReadsDirect.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbPhysicalWriteIoRequests.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbPhysicalWrites.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbPhysicalWritesDirect.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbQueriesParallelized.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbSessionsUsage.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbTablespaceSizeLimit.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbTablespaceSizeUsage.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbUserCommits.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbUserRollbacks.aggDataPoints)
 			}
 
 			if tt.expectEmpty {
@@ -294,33 +434,87 @@ func TestMetricsBuilder(t *testing.T) {
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
 				case "oracledb.consistent_gets":
-					assert.False(t, validatedMetrics["oracledb.consistent_gets"], "Found a duplicate in the metrics slice: oracledb.consistent_gets")
-					validatedMetrics["oracledb.consistent_gets"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times a consistent read was requested for a block from the buffer cache.", mi.Description())
-					assert.Equal(t, "{gets}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.consistent_gets"], "Found a duplicate in the metrics slice: oracledb.consistent_gets")
+						validatedMetrics["oracledb.consistent_gets"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times a consistent read was requested for a block from the buffer cache.", mi.Description())
+						assert.Equal(t, "{gets}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.consistent_gets"], "Found a duplicate in the metrics slice: oracledb.consistent_gets")
+						validatedMetrics["oracledb.consistent_gets"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times a consistent read was requested for a block from the buffer cache.", mi.Description())
+						assert.Equal(t, "{gets}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.consistent_gets"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.cpu_time":
-					assert.False(t, validatedMetrics["oracledb.cpu_time"], "Found a duplicate in the metrics slice: oracledb.cpu_time")
-					validatedMetrics["oracledb.cpu_time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Cumulative CPU time, in seconds", mi.Description())
-					assert.Equal(t, "s", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.cpu_time"], "Found a duplicate in the metrics slice: oracledb.cpu_time")
+						validatedMetrics["oracledb.cpu_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative CPU time, in seconds", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["oracledb.cpu_time"], "Found a duplicate in the metrics slice: oracledb.cpu_time")
+						validatedMetrics["oracledb.cpu_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative CPU time, in seconds", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["oracledb.cpu_time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.data_dictionary.hit_ratio":
 					assert.False(t, validatedMetrics["oracledb.data_dictionary.hit_ratio"], "Found a duplicate in the metrics slice: oracledb.data_dictionary.hit_ratio")
 					validatedMetrics["oracledb.data_dictionary.hit_ratio"] = true
@@ -334,33 +528,87 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "oracledb.db_block_gets":
-					assert.False(t, validatedMetrics["oracledb.db_block_gets"], "Found a duplicate in the metrics slice: oracledb.db_block_gets")
-					validatedMetrics["oracledb.db_block_gets"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times a current block was requested from the buffer cache.", mi.Description())
-					assert.Equal(t, "{gets}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.db_block_gets"], "Found a duplicate in the metrics slice: oracledb.db_block_gets")
+						validatedMetrics["oracledb.db_block_gets"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times a current block was requested from the buffer cache.", mi.Description())
+						assert.Equal(t, "{gets}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.db_block_gets"], "Found a duplicate in the metrics slice: oracledb.db_block_gets")
+						validatedMetrics["oracledb.db_block_gets"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times a current block was requested from the buffer cache.", mi.Description())
+						assert.Equal(t, "{gets}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.db_block_gets"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.ddl_statements_parallelized":
-					assert.False(t, validatedMetrics["oracledb.ddl_statements_parallelized"], "Found a duplicate in the metrics slice: oracledb.ddl_statements_parallelized")
-					validatedMetrics["oracledb.ddl_statements_parallelized"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of DDL statements that were executed in parallel", mi.Description())
-					assert.Equal(t, "{statements}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.ddl_statements_parallelized"], "Found a duplicate in the metrics slice: oracledb.ddl_statements_parallelized")
+						validatedMetrics["oracledb.ddl_statements_parallelized"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of DDL statements that were executed in parallel", mi.Description())
+						assert.Equal(t, "{statements}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.ddl_statements_parallelized"], "Found a duplicate in the metrics slice: oracledb.ddl_statements_parallelized")
+						validatedMetrics["oracledb.ddl_statements_parallelized"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of DDL statements that were executed in parallel", mi.Description())
+						assert.Equal(t, "{statements}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.ddl_statements_parallelized"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.dml_locks.limit":
 					assert.False(t, validatedMetrics["oracledb.dml_locks.limit"], "Found a duplicate in the metrics slice: oracledb.dml_locks.limit")
 					validatedMetrics["oracledb.dml_locks.limit"] = true
@@ -386,33 +634,87 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.dml_statements_parallelized":
-					assert.False(t, validatedMetrics["oracledb.dml_statements_parallelized"], "Found a duplicate in the metrics slice: oracledb.dml_statements_parallelized")
-					validatedMetrics["oracledb.dml_statements_parallelized"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of DML statements that were executed in parallel", mi.Description())
-					assert.Equal(t, "{statements}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.dml_statements_parallelized"], "Found a duplicate in the metrics slice: oracledb.dml_statements_parallelized")
+						validatedMetrics["oracledb.dml_statements_parallelized"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of DML statements that were executed in parallel", mi.Description())
+						assert.Equal(t, "{statements}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.dml_statements_parallelized"], "Found a duplicate in the metrics slice: oracledb.dml_statements_parallelized")
+						validatedMetrics["oracledb.dml_statements_parallelized"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of DML statements that were executed in parallel", mi.Description())
+						assert.Equal(t, "{statements}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.dml_statements_parallelized"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.enqueue_deadlocks":
-					assert.False(t, validatedMetrics["oracledb.enqueue_deadlocks"], "Found a duplicate in the metrics slice: oracledb.enqueue_deadlocks")
-					validatedMetrics["oracledb.enqueue_deadlocks"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of deadlocks between table or row locks in different sessions.", mi.Description())
-					assert.Equal(t, "{deadlocks}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.enqueue_deadlocks"], "Found a duplicate in the metrics slice: oracledb.enqueue_deadlocks")
+						validatedMetrics["oracledb.enqueue_deadlocks"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Total number of deadlocks between table or row locks in different sessions.", mi.Description())
+						assert.Equal(t, "{deadlocks}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.enqueue_deadlocks"], "Found a duplicate in the metrics slice: oracledb.enqueue_deadlocks")
+						validatedMetrics["oracledb.enqueue_deadlocks"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Total number of deadlocks between table or row locks in different sessions.", mi.Description())
+						assert.Equal(t, "{deadlocks}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.enqueue_deadlocks"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.enqueue_locks.limit":
 					assert.False(t, validatedMetrics["oracledb.enqueue_locks.limit"], "Found a duplicate in the metrics slice: oracledb.enqueue_locks.limit")
 					validatedMetrics["oracledb.enqueue_locks.limit"] = true
@@ -462,271 +764,784 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.exchange_deadlocks":
-					assert.False(t, validatedMetrics["oracledb.exchange_deadlocks"], "Found a duplicate in the metrics slice: oracledb.exchange_deadlocks")
-					validatedMetrics["oracledb.exchange_deadlocks"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges.", mi.Description())
-					assert.Equal(t, "{deadlocks}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.exchange_deadlocks"], "Found a duplicate in the metrics slice: oracledb.exchange_deadlocks")
+						validatedMetrics["oracledb.exchange_deadlocks"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges.", mi.Description())
+						assert.Equal(t, "{deadlocks}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.exchange_deadlocks"], "Found a duplicate in the metrics slice: oracledb.exchange_deadlocks")
+						validatedMetrics["oracledb.exchange_deadlocks"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges.", mi.Description())
+						assert.Equal(t, "{deadlocks}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.exchange_deadlocks"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.executions":
-					assert.False(t, validatedMetrics["oracledb.executions"], "Found a duplicate in the metrics slice: oracledb.executions")
-					validatedMetrics["oracledb.executions"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of calls (user and recursive) that executed SQL statements", mi.Description())
-					assert.Equal(t, "{executions}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.executions"], "Found a duplicate in the metrics slice: oracledb.executions")
+						validatedMetrics["oracledb.executions"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Total number of calls (user and recursive) that executed SQL statements", mi.Description())
+						assert.Equal(t, "{executions}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.executions"], "Found a duplicate in the metrics slice: oracledb.executions")
+						validatedMetrics["oracledb.executions"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Total number of calls (user and recursive) that executed SQL statements", mi.Description())
+						assert.Equal(t, "{executions}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.executions"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.hard_parses":
-					assert.False(t, validatedMetrics["oracledb.hard_parses"], "Found a duplicate in the metrics slice: oracledb.hard_parses")
-					validatedMetrics["oracledb.hard_parses"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of hard parses", mi.Description())
-					assert.Equal(t, "{parses}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.hard_parses"], "Found a duplicate in the metrics slice: oracledb.hard_parses")
+						validatedMetrics["oracledb.hard_parses"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of hard parses", mi.Description())
+						assert.Equal(t, "{parses}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.hard_parses"], "Found a duplicate in the metrics slice: oracledb.hard_parses")
+						validatedMetrics["oracledb.hard_parses"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of hard parses", mi.Description())
+						assert.Equal(t, "{parses}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.hard_parses"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.logical_reads":
-					assert.False(t, validatedMetrics["oracledb.logical_reads"], "Found a duplicate in the metrics slice: oracledb.logical_reads")
-					validatedMetrics["oracledb.logical_reads"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of logical reads", mi.Description())
-					assert.Equal(t, "{reads}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.logical_reads"], "Found a duplicate in the metrics slice: oracledb.logical_reads")
+						validatedMetrics["oracledb.logical_reads"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of logical reads", mi.Description())
+						assert.Equal(t, "{reads}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.logical_reads"], "Found a duplicate in the metrics slice: oracledb.logical_reads")
+						validatedMetrics["oracledb.logical_reads"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of logical reads", mi.Description())
+						assert.Equal(t, "{reads}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.logical_reads"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.logons":
-					assert.False(t, validatedMetrics["oracledb.logons"], "Found a duplicate in the metrics slice: oracledb.logons")
-					validatedMetrics["oracledb.logons"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of logon operations", mi.Description())
-					assert.Equal(t, "{operation}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.logons"], "Found a duplicate in the metrics slice: oracledb.logons")
+						validatedMetrics["oracledb.logons"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of logon operations", mi.Description())
+						assert.Equal(t, "{operation}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.logons"], "Found a duplicate in the metrics slice: oracledb.logons")
+						validatedMetrics["oracledb.logons"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of logon operations", mi.Description())
+						assert.Equal(t, "{operation}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.logons"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.parallel_operations_downgraded_1_to_25_pct":
-					assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_1_to_25_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_1_to_25_pct")
-					validatedMetrics["oracledb.parallel_operations_downgraded_1_to_25_pct"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers", mi.Description())
-					assert.Equal(t, "{executions}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_1_to_25_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_1_to_25_pct")
+						validatedMetrics["oracledb.parallel_operations_downgraded_1_to_25_pct"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers", mi.Description())
+						assert.Equal(t, "{executions}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_1_to_25_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_1_to_25_pct")
+						validatedMetrics["oracledb.parallel_operations_downgraded_1_to_25_pct"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers", mi.Description())
+						assert.Equal(t, "{executions}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.parallel_operations_downgraded_1_to_25_pct"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.parallel_operations_downgraded_25_to_50_pct":
-					assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_25_to_50_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_25_to_50_pct")
-					validatedMetrics["oracledb.parallel_operations_downgraded_25_to_50_pct"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers", mi.Description())
-					assert.Equal(t, "{executions}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_25_to_50_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_25_to_50_pct")
+						validatedMetrics["oracledb.parallel_operations_downgraded_25_to_50_pct"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers", mi.Description())
+						assert.Equal(t, "{executions}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_25_to_50_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_25_to_50_pct")
+						validatedMetrics["oracledb.parallel_operations_downgraded_25_to_50_pct"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers", mi.Description())
+						assert.Equal(t, "{executions}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.parallel_operations_downgraded_25_to_50_pct"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.parallel_operations_downgraded_50_to_75_pct":
-					assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_50_to_75_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_50_to_75_pct")
-					validatedMetrics["oracledb.parallel_operations_downgraded_50_to_75_pct"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 50-75% because of insufficient parallel execution servers", mi.Description())
-					assert.Equal(t, "{executions}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_50_to_75_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_50_to_75_pct")
+						validatedMetrics["oracledb.parallel_operations_downgraded_50_to_75_pct"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 50-75% because of insufficient parallel execution servers", mi.Description())
+						assert.Equal(t, "{executions}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_50_to_75_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_50_to_75_pct")
+						validatedMetrics["oracledb.parallel_operations_downgraded_50_to_75_pct"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 50-75% because of insufficient parallel execution servers", mi.Description())
+						assert.Equal(t, "{executions}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.parallel_operations_downgraded_50_to_75_pct"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.parallel_operations_downgraded_75_to_99_pct":
-					assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_75_to_99_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_75_to_99_pct")
-					validatedMetrics["oracledb.parallel_operations_downgraded_75_to_99_pct"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers", mi.Description())
-					assert.Equal(t, "{executions}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_75_to_99_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_75_to_99_pct")
+						validatedMetrics["oracledb.parallel_operations_downgraded_75_to_99_pct"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers", mi.Description())
+						assert.Equal(t, "{executions}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_75_to_99_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_75_to_99_pct")
+						validatedMetrics["oracledb.parallel_operations_downgraded_75_to_99_pct"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers", mi.Description())
+						assert.Equal(t, "{executions}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.parallel_operations_downgraded_75_to_99_pct"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.parallel_operations_downgraded_to_serial":
-					assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_to_serial"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_to_serial")
-					validatedMetrics["oracledb.parallel_operations_downgraded_to_serial"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times parallel execution was requested but execution was serial because of insufficient parallel execution servers", mi.Description())
-					assert.Equal(t, "{executions}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_to_serial"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_to_serial")
+						validatedMetrics["oracledb.parallel_operations_downgraded_to_serial"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times parallel execution was requested but execution was serial because of insufficient parallel execution servers", mi.Description())
+						assert.Equal(t, "{executions}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_to_serial"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_to_serial")
+						validatedMetrics["oracledb.parallel_operations_downgraded_to_serial"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times parallel execution was requested but execution was serial because of insufficient parallel execution servers", mi.Description())
+						assert.Equal(t, "{executions}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.parallel_operations_downgraded_to_serial"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.parallel_operations_not_downgraded":
-					assert.False(t, validatedMetrics["oracledb.parallel_operations_not_downgraded"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_not_downgraded")
-					validatedMetrics["oracledb.parallel_operations_not_downgraded"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times parallel execution was executed at the requested degree of parallelism", mi.Description())
-					assert.Equal(t, "{executions}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.parallel_operations_not_downgraded"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_not_downgraded")
+						validatedMetrics["oracledb.parallel_operations_not_downgraded"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times parallel execution was executed at the requested degree of parallelism", mi.Description())
+						assert.Equal(t, "{executions}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.parallel_operations_not_downgraded"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_not_downgraded")
+						validatedMetrics["oracledb.parallel_operations_not_downgraded"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times parallel execution was executed at the requested degree of parallelism", mi.Description())
+						assert.Equal(t, "{executions}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.parallel_operations_not_downgraded"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.parse_calls":
-					assert.False(t, validatedMetrics["oracledb.parse_calls"], "Found a duplicate in the metrics slice: oracledb.parse_calls")
-					validatedMetrics["oracledb.parse_calls"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of parse calls.", mi.Description())
-					assert.Equal(t, "{parses}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.parse_calls"], "Found a duplicate in the metrics slice: oracledb.parse_calls")
+						validatedMetrics["oracledb.parse_calls"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Total number of parse calls.", mi.Description())
+						assert.Equal(t, "{parses}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.parse_calls"], "Found a duplicate in the metrics slice: oracledb.parse_calls")
+						validatedMetrics["oracledb.parse_calls"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Total number of parse calls.", mi.Description())
+						assert.Equal(t, "{parses}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.parse_calls"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.pga_memory":
-					assert.False(t, validatedMetrics["oracledb.pga_memory"], "Found a duplicate in the metrics slice: oracledb.pga_memory")
-					validatedMetrics["oracledb.pga_memory"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Session PGA (Program Global Area) memory", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.pga_memory"], "Found a duplicate in the metrics slice: oracledb.pga_memory")
+						validatedMetrics["oracledb.pga_memory"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Session PGA (Program Global Area) memory", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.pga_memory"], "Found a duplicate in the metrics slice: oracledb.pga_memory")
+						validatedMetrics["oracledb.pga_memory"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Session PGA (Program Global Area) memory", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.pga_memory"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.physical_read_io_requests":
-					assert.False(t, validatedMetrics["oracledb.physical_read_io_requests"], "Found a duplicate in the metrics slice: oracledb.physical_read_io_requests")
-					validatedMetrics["oracledb.physical_read_io_requests"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of read requests for application activity", mi.Description())
-					assert.Equal(t, "{requests}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.physical_read_io_requests"], "Found a duplicate in the metrics slice: oracledb.physical_read_io_requests")
+						validatedMetrics["oracledb.physical_read_io_requests"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of read requests for application activity", mi.Description())
+						assert.Equal(t, "{requests}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.physical_read_io_requests"], "Found a duplicate in the metrics slice: oracledb.physical_read_io_requests")
+						validatedMetrics["oracledb.physical_read_io_requests"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of read requests for application activity", mi.Description())
+						assert.Equal(t, "{requests}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.physical_read_io_requests"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.physical_reads":
-					assert.False(t, validatedMetrics["oracledb.physical_reads"], "Found a duplicate in the metrics slice: oracledb.physical_reads")
-					validatedMetrics["oracledb.physical_reads"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of physical reads", mi.Description())
-					assert.Equal(t, "{reads}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.physical_reads"], "Found a duplicate in the metrics slice: oracledb.physical_reads")
+						validatedMetrics["oracledb.physical_reads"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of physical reads", mi.Description())
+						assert.Equal(t, "{reads}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.physical_reads"], "Found a duplicate in the metrics slice: oracledb.physical_reads")
+						validatedMetrics["oracledb.physical_reads"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of physical reads", mi.Description())
+						assert.Equal(t, "{reads}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.physical_reads"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.physical_reads_direct":
-					assert.False(t, validatedMetrics["oracledb.physical_reads_direct"], "Found a duplicate in the metrics slice: oracledb.physical_reads_direct")
-					validatedMetrics["oracledb.physical_reads_direct"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of reads directly from disk, bypassing the buffer cache", mi.Description())
-					assert.Equal(t, "{reads}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.physical_reads_direct"], "Found a duplicate in the metrics slice: oracledb.physical_reads_direct")
+						validatedMetrics["oracledb.physical_reads_direct"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of reads directly from disk, bypassing the buffer cache", mi.Description())
+						assert.Equal(t, "{reads}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.physical_reads_direct"], "Found a duplicate in the metrics slice: oracledb.physical_reads_direct")
+						validatedMetrics["oracledb.physical_reads_direct"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of reads directly from disk, bypassing the buffer cache", mi.Description())
+						assert.Equal(t, "{reads}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.physical_reads_direct"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.physical_write_io_requests":
-					assert.False(t, validatedMetrics["oracledb.physical_write_io_requests"], "Found a duplicate in the metrics slice: oracledb.physical_write_io_requests")
-					validatedMetrics["oracledb.physical_write_io_requests"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of write requests for application activity", mi.Description())
-					assert.Equal(t, "{requests}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.physical_write_io_requests"], "Found a duplicate in the metrics slice: oracledb.physical_write_io_requests")
+						validatedMetrics["oracledb.physical_write_io_requests"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of write requests for application activity", mi.Description())
+						assert.Equal(t, "{requests}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.physical_write_io_requests"], "Found a duplicate in the metrics slice: oracledb.physical_write_io_requests")
+						validatedMetrics["oracledb.physical_write_io_requests"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of write requests for application activity", mi.Description())
+						assert.Equal(t, "{requests}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.physical_write_io_requests"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.physical_writes":
-					assert.False(t, validatedMetrics["oracledb.physical_writes"], "Found a duplicate in the metrics slice: oracledb.physical_writes")
-					validatedMetrics["oracledb.physical_writes"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of physical writes", mi.Description())
-					assert.Equal(t, "{writes}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.physical_writes"], "Found a duplicate in the metrics slice: oracledb.physical_writes")
+						validatedMetrics["oracledb.physical_writes"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of physical writes", mi.Description())
+						assert.Equal(t, "{writes}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.physical_writes"], "Found a duplicate in the metrics slice: oracledb.physical_writes")
+						validatedMetrics["oracledb.physical_writes"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of physical writes", mi.Description())
+						assert.Equal(t, "{writes}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.physical_writes"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.physical_writes_direct":
-					assert.False(t, validatedMetrics["oracledb.physical_writes_direct"], "Found a duplicate in the metrics slice: oracledb.physical_writes_direct")
-					validatedMetrics["oracledb.physical_writes_direct"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of writes directly to disk, bypassing the buffer cache", mi.Description())
-					assert.Equal(t, "{writes}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.physical_writes_direct"], "Found a duplicate in the metrics slice: oracledb.physical_writes_direct")
+						validatedMetrics["oracledb.physical_writes_direct"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of writes directly to disk, bypassing the buffer cache", mi.Description())
+						assert.Equal(t, "{writes}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.physical_writes_direct"], "Found a duplicate in the metrics slice: oracledb.physical_writes_direct")
+						validatedMetrics["oracledb.physical_writes_direct"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of writes directly to disk, bypassing the buffer cache", mi.Description())
+						assert.Equal(t, "{writes}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.physical_writes_direct"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.processes.limit":
 					assert.False(t, validatedMetrics["oracledb.processes.limit"], "Found a duplicate in the metrics slice: oracledb.processes.limit")
 					validatedMetrics["oracledb.processes.limit"] = true
@@ -752,19 +1567,46 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.queries_parallelized":
-					assert.False(t, validatedMetrics["oracledb.queries_parallelized"], "Found a duplicate in the metrics slice: oracledb.queries_parallelized")
-					validatedMetrics["oracledb.queries_parallelized"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of SELECT statements executed in parallel", mi.Description())
-					assert.Equal(t, "{queries}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.queries_parallelized"], "Found a duplicate in the metrics slice: oracledb.queries_parallelized")
+						validatedMetrics["oracledb.queries_parallelized"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of SELECT statements executed in parallel", mi.Description())
+						assert.Equal(t, "{queries}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.queries_parallelized"], "Found a duplicate in the metrics slice: oracledb.queries_parallelized")
+						validatedMetrics["oracledb.queries_parallelized"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of SELECT statements executed in parallel", mi.Description())
+						assert.Equal(t, "{queries}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.queries_parallelized"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.recycle_bin.limit":
 					assert.False(t, validatedMetrics["oracledb.recycle_bin.limit"], "Found a duplicate in the metrics slice: oracledb.recycle_bin.limit")
 					validatedMetrics["oracledb.recycle_bin.limit"] = true
@@ -833,6 +1675,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("session_status")
 						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
 					}
 				case "oracledb.storage.usage":
 					assert.False(t, validatedMetrics["oracledb.storage.usage"], "Found a duplicate in the metrics slice: oracledb.storage.usage")
@@ -897,6 +1741,8 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("tablespace_name")
 						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
 					}
 				case "oracledb.tablespace_size.usage":
 					if tt.name != "reaggregate_set" {
@@ -937,6 +1783,8 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("tablespace_name")
 						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
 					}
 				case "oracledb.transactions.limit":
 					assert.False(t, validatedMetrics["oracledb.transactions.limit"], "Found a duplicate in the metrics slice: oracledb.transactions.limit")
@@ -963,33 +1811,87 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.user_commits":
-					assert.False(t, validatedMetrics["oracledb.user_commits"], "Found a duplicate in the metrics slice: oracledb.user_commits")
-					validatedMetrics["oracledb.user_commits"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.", mi.Description())
-					assert.Equal(t, "{commits}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.user_commits"], "Found a duplicate in the metrics slice: oracledb.user_commits")
+						validatedMetrics["oracledb.user_commits"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.", mi.Description())
+						assert.Equal(t, "{commits}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.user_commits"], "Found a duplicate in the metrics slice: oracledb.user_commits")
+						validatedMetrics["oracledb.user_commits"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.", mi.Description())
+						assert.Equal(t, "{commits}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.user_commits"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				case "oracledb.user_rollbacks":
-					assert.False(t, validatedMetrics["oracledb.user_rollbacks"], "Found a duplicate in the metrics slice: oracledb.user_rollbacks")
-					validatedMetrics["oracledb.user_rollbacks"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.user_rollbacks"], "Found a duplicate in the metrics slice: oracledb.user_rollbacks")
+						validatedMetrics["oracledb.user_rollbacks"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.user_rollbacks"], "Found a duplicate in the metrics slice: oracledb.user_rollbacks")
+						validatedMetrics["oracledb.user_rollbacks"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.user_rollbacks"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("oracle.db.pdb")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})

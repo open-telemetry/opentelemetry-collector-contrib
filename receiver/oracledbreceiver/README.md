@@ -64,46 +64,137 @@ receivers:
 
 ## Permissions
 
-The following grants are required for the receiver to function correctly.
+The receiver connects as a read-only user. The grants required depend on the
+Oracle deployment type: **Non-CDB** (single-tenant, all versions) or
+**Multitenant CDB** (Oracle 12c+, connected to the CDB root).
 
-### Instance detection (always required)
+### Non-CDB (single-tenant, all versions)
 
-These views are queried once at startup to detect Oracle version, role,
-open mode, and multitenant status.
+Connect to the database as `sysdba` and run:
 
 ```sql
+-- Instance detection (always required)
 GRANT SELECT ON V_$INSTANCE TO <username>;
 GRANT SELECT ON V_$DATABASE TO <username>;
-```
 
-> **Note:** `sys_context('USERENV', ...)` queries against `DUAL` require no
-> additional grant and are available to all database users.
-
-### Hosting type detection (Oracle >=19c only)
-
-Required to detect whether the instance is running on RDS or OCI.
-The `oracle.db.hosting_type` resource attribute is only populated on
-Oracle 19c and later.
-
-```sql
-GRANT SELECT ON V_$DATAFILE TO <username>;
-GRANT SELECT ON V_$PDBS TO <username>;        -- OCI detection, connected to PDB only
-GRANT SELECT ON CDB_SERVICES TO <username>;   -- OCI confirmation, connected to PDB only
-```
-
-### Metrics collection
-
-Depending on which metrics you collect, you will need to assign these
-permissions to the database user:
-
-```sql
-GRANT SELECT ON V_$SESSION TO <username>;
+-- Metrics collection
 GRANT SELECT ON V_$SYSSTAT TO <username>;
+GRANT SELECT ON V_$SESSION TO <username>;
 GRANT SELECT ON V_$RESOURCE_LIMIT TO <username>;
-GRANT SELECT ON DBA_TABLESPACES TO <username>;
-GRANT SELECT ON DBA_DATA_FILES TO <username>;
 GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO <username>;
+GRANT SELECT ON DBA_TABLESPACES TO <username>;
+
+-- Optional metrics (disabled by default)
+GRANT SELECT ON V_$ROWCACHE TO <username>;      -- oracledb.data_dictionary.hit_ratio
+GRANT SELECT ON DBA_RECYCLEBIN TO <username>;   -- oracledb.recycle_bin.limit
+GRANT SELECT ON V_$PARAMETER TO <username>;     -- oracledb.recycle_bin.limit (db_block_size)
+GRANT SELECT ON DBA_DATA_FILES TO <username>;   -- oracledb.storage.usage / oracledb.storage.utilization
+GRANT SELECT ON DBA_FREE_SPACE TO <username>;   -- oracledb.storage.utilization
+
+-- Hosting type detection (Oracle 19c+ only)
+-- Required to populate the oracle.db.hosting_type resource attribute.
+GRANT SELECT ON V_$DATAFILE TO <username>;
+
+-- Log collection (db.server.query_sample and db.server.top_query events)
+GRANT SELECT ON V_$SQL TO <username>;
+GRANT SELECT ON V_$SQL_PLAN TO <username>;
+GRANT SELECT ON V_$LOCK TO <username>;
+GRANT SELECT ON DBA_PROCEDURES TO <username>;
+GRANT SELECT ON DBA_OBJECTS TO <username>;
 ```
+
+### Multitenant CDB (Oracle 12c+, connected to CDB root)
+
+The receiver must connect to the **CDB root** using a common user (`c##`).
+It queries all PDBs from a single connection — do not create connections
+to individual PDBs.
+
+Connect as `sysdba` and run:
+
+```sql
+-- Create the common user (skip if already exists)
+CREATE USER c##otel IDENTIFIED BY <password> CONTAINER = ALL;
+ALTER USER c##otel SET CONTAINER_DATA = ALL CONTAINER = CURRENT;
+
+-- Instance detection (always required)
+GRANT CREATE SESSION TO c##otel CONTAINER = ALL;
+GRANT SELECT ON V_$INSTANCE TO c##otel CONTAINER = ALL;
+GRANT SELECT ON V_$DATABASE TO c##otel CONTAINER = ALL;
+
+-- CDB/PDB structure detection (always required for multitenant)
+-- Used to detect isCDB, connectedToPDB, databaseRole, openMode at startup.
+GRANT SELECT ON V_$CONTAINERS TO c##otel CONTAINER = ALL;
+
+-- Metrics collection
+GRANT SELECT ON V_$CON_SYSSTAT TO c##otel CONTAINER = ALL;  -- per-PDB sysstat (CDB root only)
+GRANT SELECT ON V_$SYSSTAT TO c##otel CONTAINER = ALL;
+GRANT SELECT ON V_$SESSION TO c##otel CONTAINER = ALL;
+GRANT SELECT ON V_$RESOURCE_LIMIT TO c##otel CONTAINER = ALL;
+GRANT SELECT ON CDB_TABLESPACE_USAGE_METRICS TO c##otel CONTAINER = ALL;
+GRANT SELECT ON CDB_TABLESPACES TO c##otel CONTAINER = ALL;
+
+-- Optional metrics (disabled by default)
+GRANT SELECT ON V_$ROWCACHE TO c##otel CONTAINER = ALL;      -- oracledb.data_dictionary.hit_ratio
+GRANT SELECT ON DBA_RECYCLEBIN TO c##otel CONTAINER = ALL;   -- oracledb.recycle_bin.limit
+GRANT SELECT ON V_$PARAMETER TO c##otel CONTAINER = ALL;     -- oracledb.recycle_bin.limit (db_block_size)
+GRANT SELECT ON DBA_DATA_FILES TO c##otel CONTAINER = ALL;   -- oracledb.storage.usage / oracledb.storage.utilization
+GRANT SELECT ON DBA_FREE_SPACE TO c##otel CONTAINER = ALL;   -- oracledb.storage.utilization
+
+-- Hosting type detection (Oracle 19c+ only)
+GRANT SELECT ON V_$DATAFILE TO c##otel CONTAINER = ALL;
+GRANT SELECT ON V_$PDBS TO c##otel CONTAINER = ALL;        -- OCI detection (connected to PDB only)
+GRANT SELECT ON CDB_SERVICES TO c##otel CONTAINER = ALL;   -- OCI confirmation (connected to PDB only)
+
+-- Log collection (db.server.query_sample and db.server.top_query events)
+GRANT SELECT ON V_$SQL TO c##otel CONTAINER = ALL;
+GRANT SELECT ON V_$SQL_PLAN TO c##otel CONTAINER = ALL;
+GRANT SELECT ON V_$LOCK TO c##otel CONTAINER = ALL;
+GRANT SELECT ON DBA_PROCEDURES TO c##otel CONTAINER = ALL;
+GRANT SELECT ON DBA_OBJECTS TO c##otel CONTAINER = ALL;
+```
+
+> **Note:** `sys_context('USERENV', ...)` queries against `DUAL` and
+> `V_$ROWCACHE` require no additional grant beyond `CREATE SESSION` and are
+> available to all database users.
+
+#### Per-PDB metrics (`oracle.db.pdb` attribute)
+
+When connected to the CDB root, the receiver automatically collects
+per-PDB breakdowns of sysstat and tablespace metrics. These are tagged with
+the `oracle.db.pdb` attribute, which is **opt-in** (not emitted by default).
+To enable it, list the attribute explicitly in your collector config:
+
+```yaml
+metrics:
+  oracledb.tablespace_size.usage:
+    enabled: true
+    attributes: ["tablespace_name", "oracle.db.pdb"]
+  oracledb.tablespace_size.limit:
+    enabled: true
+    attributes: ["tablespace_name", "oracle.db.pdb"]
+  oracledb.executions:
+    enabled: true
+    attributes: ["oracle.db.pdb"]
+  # ... repeat for any other metric where per-PDB breakdown is desired
+```
+
+The `V_$CONTAINERS` grant (listed above) is what enables this per-PDB
+tagging — no additional grants are needed.
+
+> **Important — avoid duplicate data:** When using a CDB root connection to
+> collect per-PDB metrics, do **not** also configure a separate receiver
+> instance connecting directly to the same PDB. Doing so results in duplicate
+> metric series for the same PDB: one tagged with `oracle.db.pdb` from the
+> CDB root receiver, and one without the attribute from the direct PDB
+> receiver. The two series may also report slightly different values due to
+> timing and Oracle's internal counter scoping.
+>
+> **Recommended setup:**
+> - Use a **single CDB root receiver** to monitor all PDBs at once (enables
+>   `oracle.db.pdb` per-PDB breakdown).
+> - Use a **direct PDB receiver** only for PDBs that are **not** already
+>   covered by a CDB root receiver (e.g. when CDB root access is not
+>   available).
 
 ## Enabling metrics.
 
