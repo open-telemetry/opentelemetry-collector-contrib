@@ -2063,7 +2063,8 @@ if [ "$1" = "validate" ]; then
 fi
 exit 0
 `, exitCode)
-	require.NoError(t, os.WriteFile(executablePath, []byte(script), 0o700))
+	require.NoError(t, os.WriteFile(executablePath, []byte(script), 0o600))
+	require.NoError(t, os.Chmod(executablePath, 0o700))
 	return executablePath
 }
 
@@ -2087,7 +2088,7 @@ func newComposeMergedConfigTestSupervisor(t *testing.T, executablePath string, v
 		hasNewConfig:                   make(chan struct{}, 1),
 		agentConfigOwnTelemetrySection: &atomic.Value{},
 		cfgState:                       &atomic.Value{},
-		runCtx:                         context.Background(),
+		runCtx:                         t.Context(),
 	}
 	agentDesc := &atomic.Value{}
 	agentDesc.Store(&protobufs.AgentDescription{

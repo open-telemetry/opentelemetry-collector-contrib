@@ -1409,7 +1409,7 @@ func normalizeTelemetryResourceConfig(raw map[string]any) error {
 		if value == nil {
 			continue
 		}
-		if _, ok := seen[name]; ok {
+		if _, exists := seen[name]; exists {
 			continue
 		}
 		legacyNames = append(legacyNames, name)
@@ -2353,7 +2353,7 @@ func configMergeFunc(src, dest map[string]any) error {
 	srcResourceAttributes := maps.Search(src, []string{"service", "telemetry", "resource", "attributes"})
 	destResourceAttributes := maps.Search(dest, []string{"service", "telemetry", "resource", "attributes"})
 	if resource, ok := maps.Search(src, []string{"service", "telemetry", "resource"}).(map[string]any); ok {
-		if clear, ok := resource[clearResourceAttributesKey].(bool); ok && clear {
+		if shouldClear, ok := resource[clearResourceAttributesKey].(bool); ok && shouldClear {
 			if destResource, ok := maps.Search(dest, []string{"service", "telemetry", "resource"}).(map[string]any); ok {
 				clearResourceAttributes(destResource)
 			}
