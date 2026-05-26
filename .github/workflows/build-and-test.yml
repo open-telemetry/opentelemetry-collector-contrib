@@ -30,6 +30,28 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
+      # DIAGNOSTIC: throwaway step to measure module cache composition.
+      # Revert before merging the cache-size optimization that follows.
+      - name: Inspect module cache size
+        shell: bash
+        run: |
+          echo "=== Total ~/go/pkg/mod ==="
+          du -sh ~/go/pkg/mod 2>/dev/null || echo "missing"
+          echo
+          echo "=== By host (depth 1) ==="
+          du -sh ~/go/pkg/mod/*/ 2>/dev/null | sort -h
+          echo
+          echo "=== Top 25 owner directories (depth 2) ==="
+          du -sh ~/go/pkg/mod/*/*/ 2>/dev/null | sort -h | tail -25
+          echo
+          echo "=== Top 40 individual module@version (depth 3) ==="
+          du -sh ~/go/pkg/mod/*/*/*/ 2>/dev/null | sort -h | tail -40
+          echo
+          echo "=== ~/go/pkg/mod/cache (download zips) ==="
+          du -sh ~/go/pkg/mod/cache 2>/dev/null || echo "missing"
+          echo
+          echo "=== ~/.cache/go-build ==="
+          du -sh ~/.cache/go-build 2>/dev/null || echo "missing"
       - run: ./.github/workflows/scripts/check-disk-space.sh
   check-collector-module-version:
     runs-on: ubuntu-24.04
