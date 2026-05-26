@@ -1,5 +1,0 @@
-change_type: enhancement
-component: pkg/pdatatest
-note: Introduce `pmetricassert` package for MTS-focused YAML metric assertions
-issues: [48079]
-change_logs: [api]

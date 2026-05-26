@@ -1,5 +1,0 @@
-change_type: deprecation
-component: processor/k8s_attributes
-note: Deprecate `deployment_name_from_replicaset` and default deployment name extraction to the ReplicaSet name heuristic.
-issues: [48447]
-change_logs: [user]
