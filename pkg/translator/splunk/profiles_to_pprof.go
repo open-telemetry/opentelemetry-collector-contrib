@@ -182,18 +182,18 @@ func checkValid(p *profile.Profile) error {
 	// Check that sample values are consistent
 	sampleLen := len(p.SampleType)
 	if sampleLen == 0 && len(p.Sample) != 0 {
-		return fmt.Errorf("missing sample type information")
+		return errors.New("missing sample type information")
 	}
 	for _, s := range p.Sample {
 		if s == nil {
-			return fmt.Errorf("profile has nil sample")
+			return errors.New("profile has nil sample")
 		}
 		if len(s.Value) != sampleLen {
 			return fmt.Errorf("mismatch: sample has %d values vs. %d types", len(s.Value), len(p.SampleType))
 		}
 		for _, l := range s.Location {
 			if l == nil {
-				return fmt.Errorf("sample has nil location")
+				return errors.New("sample has nil location")
 			}
 		}
 	}
@@ -203,10 +203,10 @@ func checkValid(p *profile.Profile) error {
 	mappings := make(map[uint64]*profile.Mapping, len(p.Mapping))
 	for _, m := range p.Mapping {
 		if m == nil {
-			return fmt.Errorf("profile has nil mapping")
+			return errors.New("profile has nil mapping")
 		}
 		if m.ID == 0 {
-			return fmt.Errorf("found mapping with reserved ID=0")
+			return errors.New("found mapping with reserved ID=0")
 		}
 		if mappings[m.ID] != nil {
 			return fmt.Errorf("multiple mappings with same id: %d", m.ID)
@@ -216,10 +216,10 @@ func checkValid(p *profile.Profile) error {
 	functions := make(map[uint64]*profile.Function, len(p.Function))
 	for _, f := range p.Function {
 		if f == nil {
-			return fmt.Errorf("profile has nil function")
+			return errors.New("profile has nil function")
 		}
 		if f.ID == 0 {
-			return fmt.Errorf("found function with reserved ID=0")
+			return errors.New("found function with reserved ID=0")
 		}
 		if functions[f.ID] != nil {
 			return fmt.Errorf("multiple functions with same id: %d", f.ID)
@@ -229,10 +229,10 @@ func checkValid(p *profile.Profile) error {
 	locations := make(map[uint64]*profile.Location, len(p.Location))
 	for _, l := range p.Location {
 		if l == nil {
-			return fmt.Errorf("profile has nil location")
+			return errors.New("profile has nil location")
 		}
 		if l.ID == 0 {
-			return fmt.Errorf("found location with reserved id=0")
+			return errors.New("found location with reserved id=0")
 		}
 		if locations[l.ID] != nil {
 			return fmt.Errorf("multiple locations with same id: %d", l.ID)

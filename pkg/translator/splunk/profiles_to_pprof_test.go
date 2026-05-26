@@ -146,7 +146,7 @@ func TestGetAttributeStringWithPrefix_NonContiguousKeys(t *testing.T) {
 
 	result, err := getAttributeStringWithPrefix(dict)
 	require.NoError(t, err)
-	require.True(t, len(result) >= 8, "result slice must accommodate index 7")
+	require.GreaterOrEqual(t, len(result), 8, "result slice must accommodate index 7")
 	assert.Equal(t, "hello", result[3])
 	assert.Equal(t, "world", result[7])
 }
@@ -236,9 +236,9 @@ func TestConvertPprofileToPprof_SampleTypeCount(t *testing.T) {
 			result, err := ConvertPprofileToPprof(dict, sp.Scope(), p)
 			require.NoError(t, err)
 
-			assert.Equal(t, tc.nValues, len(result.SampleType),
+			assert.Len(t, result.SampleType, tc.nValues,
 				"SampleType length must equal the number of value columns, not nSamples × nValues")
-			assert.Equal(t, tc.nSamples, len(result.Sample))
+			assert.Len(t, result.Sample, tc.nSamples)
 		})
 	}
 }
