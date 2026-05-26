@@ -49,6 +49,7 @@ type metricAssertion struct {
 
 type datapointAssertion struct {
 	Attributes map[string]any `yaml:"attributes,omitempty"`
+	Value      any            `yaml:"value,omitempty"`
 }
 
 func readDocument(path string) (*document, error) {
@@ -110,7 +111,7 @@ func compactShorthand(doc *document) {
 		for j := range doc.Resources[i].Scopes {
 			for k := range doc.Resources[i].Scopes[j].Metrics {
 				m := &doc.Resources[i].Scopes[j].Metrics[k]
-				if len(m.Datapoints) == 1 && len(m.Datapoints[0].Attributes) == 0 {
+				if len(m.Datapoints) == 1 && len(m.Datapoints[0].Attributes) == 0 && m.Datapoints[0].Value == nil {
 					m.Datapoints = nil
 				}
 			}
