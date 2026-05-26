@@ -1833,7 +1833,7 @@ func TestProfileDataMultipleResources(t *testing.T) {
 
 	httpClient, _ := newTestClientWithBodyReader(200, "OK", func(body []byte) {
 		// Each HEC batch may contain multiple newline-delimited JSON events.
-		for _, line := range bytes.Split(bytes.TrimSpace(body), []byte("\n")) {
+		for line := range bytes.SplitSeq(bytes.TrimSpace(body), []byte("\n")) {
 			if len(line) == 0 {
 				continue
 			}
@@ -1880,7 +1880,7 @@ func TestProfileDataTotalFrameCount(t *testing.T) {
 	var observedFrameCounts []int64
 
 	httpClient, _ := newTestClientWithBodyReader(200, "OK", func(body []byte) {
-		for _, line := range bytes.Split(bytes.TrimSpace(body), []byte("\n")) {
+		for line := range bytes.SplitSeq(bytes.TrimSpace(body), []byte("\n")) {
 			if len(line) == 0 {
 				continue
 			}
