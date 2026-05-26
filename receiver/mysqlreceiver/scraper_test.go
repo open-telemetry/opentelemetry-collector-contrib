@@ -923,7 +923,7 @@ func TestQueryPlanCacheReuse(t *testing.T) {
 		_, err = scraper.scrapeTopQueryFunc(t.Context())
 		require.NoError(t, err)
 
-		require.Equal(t, 2, spy.explainCalls, "query plan should be fetched only once across both flows")
+		require.Equal(t, 1, spy.explainCalls, "query plan should be fetched only once across both flows")
 	})
 
 	t.Run("query plan hash should be empty if plan is empty", func(t *testing.T) {
@@ -1021,7 +1021,7 @@ func TestQueryPlanCacheReuse(t *testing.T) {
 		_, err = scraper.scrapeQuerySampleFunc(t.Context())
 		require.NoError(t, err)
 
-		require.Equal(t, 2, spy.explainCalls, "query plan should be fetched only once across both flows")
+		require.Equal(t, 1, spy.explainCalls, "query plan should be fetched only once across both flows")
 	})
 }
 
