@@ -37,9 +37,6 @@ resourceLogs:
               - key: rpc.jsonrpc.error_message
                 value:
                   stringValue: 'Instance Group Manager ''instance-group-1'' initiated recreateInstance on instance ''projects/8560181848/zones/us-central1-a/instances/instance-group-1-p327''. Reason: Instance eligible for repair: instance should be RUNNING, but it doesn''t exist.'
-              - key: error.message
-                value:
-                  stringValue: 'Instance Group Manager ''instance-group-1'' initiated recreateInstance on instance ''projects/8560181848/zones/us-central1-a/instances/instance-group-1-p327''. Reason: Instance eligible for repair: instance should be RUNNING, but it doesn''t exist.'
               - key: user.email
                 value:
                   stringValue: system@google.com

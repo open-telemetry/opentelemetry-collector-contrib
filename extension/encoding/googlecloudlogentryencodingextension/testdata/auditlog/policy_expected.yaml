@@ -43,9 +43,6 @@ resourceLogs:
               - key: rpc.jsonrpc.error_message
                 value:
                   stringValue: PERMISSION_DENIED
-              - key: error.message
-                value:
-                  stringValue: PERMISSION_DENIED
               - key: client.address
                 value:
                   stringValue: 192.168.1.1
