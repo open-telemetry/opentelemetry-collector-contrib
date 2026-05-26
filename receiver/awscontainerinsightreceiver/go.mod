@@ -5,14 +5,14 @@ go 1.25.0
 require (
 	github.com/aws/aws-sdk-go-v2 v1.41.7
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.23
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.303.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.304.0
 	github.com/google/cadvisor v0.57.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.152.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.152.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.152.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.152.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.152.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.152.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.153.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.153.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.153.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.153.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.153.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.153.0
 	github.com/shirou/gopsutil/v4 v4.26.4
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.59.0
@@ -36,8 +36,8 @@ require (
 
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.32.17 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.19.16 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.32.18 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.17 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.23 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.23 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.24 // indirect
@@ -45,7 +45,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.23 // indirect
 	github.com/aws/aws-sdk-go-v2/service/signin v1.0.11 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.30.17 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.21 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.36.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.42.1 // indirect
 	github.com/aws/smithy-go v1.25.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
@@ -104,7 +104,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.152.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.153.0 // indirect
 	github.com/opencontainers/cgroups v0.0.6 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
