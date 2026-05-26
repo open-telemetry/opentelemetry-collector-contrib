@@ -1,5 +1,0 @@
-change_type: enhancement
-component: pkg/pdatatest
-note: Add `/exists` operator support to `pmetricassert`
-issues: [48079]
-change_logs: [api]
