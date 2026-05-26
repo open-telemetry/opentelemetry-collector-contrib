@@ -15,11 +15,12 @@ The GenAI Normalizer Processor rewrites attributes on spans emitted by non-OTel 
 
 ## Configuration
 
-### Supported sources:
+### Built-in sources:
 
 - `openinference` — [OpenInference](https://github.com/Arize-ai/openinference) instrumentation
 - `openllmetry` — [OpenLLMetry (Traceloop)](https://github.com/traceloop/openllmetry) instrumentation
-- `custom` — user-defined attribute renames and value foldings; see [Source: custom](#source-custom)
+
+Any other `name` is a [user-defined source](#user-defined-sources): the entry's `mappings` and `value_mappings` drive the normalization.
 
 ### Top-level fields
 
@@ -33,11 +34,11 @@ Each entry in `sources` accepts the following fields:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `name` | string | _required_ | Source convention name. One of `openinference`, `openllmetry`, `custom`. |
+| `name` | string | _required_ | Source identifier. Built-in names (`openinference`, `openllmetry`) use pre-defined mapping tables. Any other name is a user-defined source. Names must be unique across `sources`. |
 | `remove_originals` | bool | `false` | Delete source attributes after mapping. |
 | `overwrite` | bool | `false` | When `true`, overwrite the target attribute if it already exists. When `false`, skip the mapping. |
-| `mappings` | map\[string]string | _required for `custom`, rejected otherwise_ | Source-attribute → target-attribute rename table. See [Source: custom](#source-custom). |
-| `value_mappings` | map\[string]map\[string]string | _custom only_ | Per-target value-fold rules, keyed by post-rename target attribute. See [Source: custom](#source-custom). |
+| `mappings` | map\[string]string | _required for user-defined sources, rejected on built-ins_ | Source-attribute → target-attribute rename table. See [User-defined sources](#user-defined-sources). |
+| `value_mappings` | map\[string]map\[string]string | _user-defined sources only_ | Per-target value-fold rules, keyed by post-rename target attribute. See [User-defined sources](#user-defined-sources). |
 
 ### Scope
 
@@ -114,13 +115,13 @@ processors:
         remove_originals: true
 ```
 
-User-defined renames and value foldings (see [Source: custom](#source-custom)):
+User-defined renames and value foldings (see [User-defined sources](#user-defined-sources)):
 
 ```yaml
 processors:
   genainormalizer:
     sources:
-      - name: custom
+      - name: my_vendor
         remove_originals: true
         mappings:
           my_vendor.model: gen_ai.request.model
@@ -131,23 +132,23 @@ processors:
             tool_invoke: execute_tool
 ```
 
-## Source: custom
+## User-defined sources
 
-The `custom` source applies user-defined rename and value-fold tables. It reuses the same `remove_originals`, `overwrite`, and type-coercion semantics as the built-in sources.
+Any `name` that is not a built-in (`openinference`, `openllmetry`) is a user-defined source. The entry's `mappings` and `value_mappings` drive the normalization. User-defined sources reuse the same `remove_originals`, `overwrite`, and type-coercion semantics as the built-in sources.
 
 | Field | Type | Description |
 |---|---|---|
 | `mappings` | map\[string]string | Required. Source-attribute → target-attribute rename table. Must be non-empty. |
-| `value_mappings` | map\[string]map\[string]string | Optional. Outer key is the post-rename target attribute name; inner map folds source string values onto preferred target string values. Source-value lookups are case-insensitive. Non-string sources, missing rules, and unmatched source values pass through verbatim. |
+| `value_mappings` | map\[string]map\[string]string | Optional. Outer key is the post-rename target attribute name; inner map folds source string values onto preferred target string values. Source-value lookups are exact-match. Non-string sources, missing rules, and unmatched source values pass through verbatim. |
 
 Validation rules:
 
-- `mappings` must be non-empty when `name: custom`.
-- `mappings` and `value_mappings` are rejected on any non-custom source.
+- `mappings` must be non-empty on any user-defined source.
+- `mappings` and `value_mappings` are rejected on built-in sources.
 - Each `value_mappings` outer key must appear as a target in `mappings` (catches unreachable rules at config time).
-- Multiple `custom` blocks are allowed in one config; built-in sources still reject duplicates.
+- `name` must be unique across `sources`.
 
-Custom mappings landing on typed `gen_ai.*` targets get the same int/float/string/bool/`[]string` coercion as built-in mappings (see [Type handling](#type-handling)). Custom mappings landing on non-`gen_ai.*` targets pass through verbatim.
+User-defined mappings landing on typed `gen_ai.*` targets get the same int/float/string/bool/`[]string` coercion as built-in mappings (see [Type handling](#type-handling)). User-defined mappings landing on non-`gen_ai.*` targets pass through verbatim.
 
 ## Built-in mappings
 

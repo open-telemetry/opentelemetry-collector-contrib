@@ -13,7 +13,7 @@ tests:
   config:
     sources:
       - name: openinference
-      - name: custom
+      - name: my_vendor
         mappings:
           my_vendor.op: gen_ai.operation.name
         value_mappings:

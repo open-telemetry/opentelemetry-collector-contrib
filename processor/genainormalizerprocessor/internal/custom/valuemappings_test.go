@@ -27,7 +27,7 @@ func TestTransform_MappedStringValue(t *testing.T) {
 	assert.Equal(t, "chat", dst.Str())
 }
 
-func TestTransform_CaseInsensitiveSourceValue(t *testing.T) {
+func TestTransform_CaseSensitiveSourceValue(t *testing.T) {
 	rules := map[string]map[string]string{
 		"gen_ai.operation.name": {"chat_completion": "chat"},
 	}
@@ -37,7 +37,7 @@ func TestTransform_CaseInsensitiveSourceValue(t *testing.T) {
 	dst := pcommon.NewValueEmpty()
 	transform("gen_ai.operation.name", src, dst)
 
-	assert.Equal(t, "chat", dst.Str())
+	assert.Equal(t, "Chat_Completion", dst.Str())
 }
 
 func TestTransform_UnmatchedSourceValuePassesThrough(t *testing.T) {

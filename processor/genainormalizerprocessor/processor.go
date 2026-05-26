@@ -28,7 +28,9 @@ type sourceNormalizer struct {
 }
 
 // newSourceNormalizer wires up a sourceNormalizer from a validated Source
-// config. Unknown source names produce a no-op normalizer.
+// config. Built-in source names use pre-defined mapping tables; any other
+// name is a user-defined source driven by the config's Mappings and
+// ValueMappings fields.
 func newSourceNormalizer(src Source) sourceNormalizer {
 	sn := sourceNormalizer{
 		removeOriginals: src.RemoveOriginals,
@@ -41,7 +43,7 @@ func newSourceNormalizer(src Source) sourceNormalizer {
 	case SourceOpenLLMetry:
 		sn.lookupTable = openllmetry.LookupTable
 		sn.transformValue = openllmetry.Transform
-	case SourceCustom:
+	default:
 		sn.lookupTable = src.Mappings
 		if len(src.ValueMappings) > 0 {
 			sn.transformValue = custom.Transform(src.ValueMappings)

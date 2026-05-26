@@ -6,11 +6,15 @@ package genainormalizerprocessor // import "github.com/open-telemetry/openteleme
 import (
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
-// SourceName identifies a supported source instrumentation convention.
+// SourceName identifies a source instrumentation convention. Built-in
+// names (e.g. "openinference") get pre-defined mapping tables; any other
+// name is a user-defined source whose mappings come from the config.
 type SourceName string
 
 const (
@@ -18,21 +22,21 @@ const (
 	SourceOpenInference SourceName = "openinference"
 	// SourceOpenLLMetry enables normalization of OpenLLMetry (Traceloop) attributes.
 	SourceOpenLLMetry SourceName = "openllmetry"
-	// SourceCustom enables user-defined attribute and value mappings.
-	SourceCustom SourceName = "custom"
 )
 
-var supportedSources = map[SourceName]struct{}{
+var builtInSources = map[SourceName]struct{}{
 	SourceOpenInference: {},
 	SourceOpenLLMetry:   {},
-	SourceCustom:        {},
 }
 
 // Source configures normalization behavior for a single source convention.
 type Source struct {
-	_ struct{} // required by componenttest.CheckConfigStruct: forces keyed literals
+	_ struct{}
 
-	// Name identifies the source convention (e.g. "openinference").
+	// Name identifies the source. Built-in names (e.g. "openinference",
+	// "openllmetry") use pre-defined mapping tables; any other name is a
+	// user-defined source whose mappings come from this entry's Mappings
+	// and ValueMappings fields.
 	Name SourceName `mapstructure:"name"`
 
 	// RemoveOriginals deletes source attributes after mapping.
@@ -42,21 +46,20 @@ type Source struct {
 	// When false (default), existing target attributes are left unchanged.
 	Overwrite bool `mapstructure:"overwrite"`
 
-	// Mappings is the source-attribute -> target-attribute rename table for
-	// the "custom" source. Required when Name == SourceCustom and rejected
-	// for any other source.
+	// Mappings is the source-attribute -> target-attribute rename table.
+	// Required for user-defined sources; rejected on built-in sources.
 	Mappings map[string]string `mapstructure:"mappings"`
 
 	// ValueMappings is keyed by the post-rename target attribute name and
 	// folds source string values onto preferred target string values.
-	// Lookups are case-insensitive on the source value. Only valid when
-	// Name == SourceCustom; each key must appear as a target in Mappings.
+	// Source-value lookups are exact-match. Only valid on user-defined
+	// sources; each key must appear as a target in Mappings.
 	ValueMappings map[string]map[string]string `mapstructure:"value_mappings"`
 }
 
 // Config holds the configuration for the genainormalizer processor.
 type Config struct {
-	_ struct{} // required by componenttest.CheckConfigStruct: forces keyed literals
+	_ struct{}
 
 	// Sources is an ordered list of sources to normalize. Each span is
 	// processed by every source in the order specified. At least one source
@@ -66,42 +69,54 @@ type Config struct {
 
 var _ xconfmap.Validator = (*Config)(nil)
 
+// builtInSourceNames returns a sorted comma-separated list of built-in
+// source names for use in error messages.
+func builtInSourceNames() string {
+	names := make([]string, 0, len(builtInSources))
+	for name := range builtInSources {
+		names = append(names, string(name))
+	}
+	sort.Strings(names)
+	return strings.Join(names, ", ")
+}
+
 // Validate checks that the configuration is valid.
 func (c *Config) Validate() error {
 	if len(c.Sources) == 0 {
 		return errors.New("at least one source must be specified")
 	}
-	// Duplicate-detection applies to built-in sources only; multiple
-	// custom blocks are allowed.
 	seen := make(map[SourceName]struct{}, len(c.Sources))
 	for i, src := range c.Sources {
-		if _, ok := supportedSources[src.Name]; !ok {
-			return fmt.Errorf("sources[%d]: unknown source %q", i, src.Name)
+		if src.Name == "" {
+			return fmt.Errorf("sources[%d]: %q must be set", i, "name")
 		}
-		if src.Name == SourceCustom {
-			if len(src.Mappings) == 0 {
-				return fmt.Errorf("sources[%d]: custom source requires non-empty %q", i, "mappings")
-			}
-			targets := make(map[string]struct{}, len(src.Mappings))
-			for _, t := range src.Mappings {
-				targets[t] = struct{}{}
-			}
-			for k := range src.ValueMappings {
-				if _, ok := targets[k]; !ok {
-					return fmt.Errorf("sources[%d]: %q key %q is not a target in %q", i, "value_mappings", k, "mappings")
-				}
-			}
-		} else {
+		if _, dup := seen[src.Name]; dup {
+			return fmt.Errorf("sources[%d]: duplicate source %q", i, src.Name)
+		}
+		seen[src.Name] = struct{}{}
+
+		if _, builtIn := builtInSources[src.Name]; builtIn {
 			if len(src.Mappings) > 0 {
-				return fmt.Errorf("sources[%d]: %q is only valid for the %q source", i, "mappings", SourceCustom)
+				return fmt.Errorf("sources[%d]: %q is not valid on built-in source %q", i, "mappings", src.Name)
 			}
 			if len(src.ValueMappings) > 0 {
-				return fmt.Errorf("sources[%d]: %q is only valid for the %q source", i, "value_mappings", SourceCustom)
+				return fmt.Errorf("sources[%d]: %q is not valid on built-in source %q", i, "value_mappings", src.Name)
 			}
-			if _, dup := seen[src.Name]; dup {
-				return fmt.Errorf("sources[%d]: duplicate source %q", i, src.Name)
+			continue
+		}
+
+		// User-defined source.
+		if len(src.Mappings) == 0 {
+			return fmt.Errorf("sources[%d]: user-defined source %q requires non-empty %q (built-in sources, which do not require mappings: %s)", i, src.Name, "mappings", builtInSourceNames())
+		}
+		targets := make(map[string]struct{}, len(src.Mappings))
+		for _, t := range src.Mappings {
+			targets[t] = struct{}{}
+		}
+		for k := range src.ValueMappings {
+			if _, ok := targets[k]; !ok {
+				return fmt.Errorf("sources[%d]: %q key %q is not a target in %q", i, "value_mappings", k, "mappings")
 			}
-			seen[src.Name] = struct{}{}
 		}
 	}
 	return nil

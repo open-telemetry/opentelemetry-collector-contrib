@@ -49,14 +49,14 @@ func TestValidate(t *testing.T) {
 			wantErr: "at least one source",
 		},
 		{
-			name: "unknown source",
+			name: "empty name",
 			cfg: Config{
-				Sources: []Source{{Name: "bogus"}},
+				Sources: []Source{{Name: ""}},
 			},
-			wantErr: `sources[0]: unknown source "bogus"`,
+			wantErr: `sources[0]: "name" must be set`,
 		},
 		{
-			name: "duplicate source",
+			name: "duplicate built-in source",
 			cfg: Config{
 				Sources: []Source{
 					{Name: SourceOpenInference},
@@ -66,20 +66,37 @@ func TestValidate(t *testing.T) {
 			wantErr: `sources[1]: duplicate source "openinference"`,
 		},
 		{
-			name: "valid custom source",
+			name: "duplicate user-defined source",
+			cfg: Config{
+				Sources: []Source{
+					{Name: "my_vendor", Mappings: map[string]string{"a": "gen_ai.request.model"}},
+					{Name: "my_vendor", Mappings: map[string]string{"b": "gen_ai.request.model"}},
+				},
+			},
+			wantErr: `sources[1]: duplicate source "my_vendor"`,
+		},
+		{
+			name: "valid user-defined source",
 			cfg: Config{
 				Sources: []Source{{
-					Name:     SourceCustom,
+					Name:     "my_vendor",
 					Mappings: map[string]string{"my_vendor.model": "gen_ai.request.model"},
 				}},
 			},
 		},
 		{
-			name: "custom source with empty mappings",
+			name: "user-defined source with empty mappings",
 			cfg: Config{
-				Sources: []Source{{Name: SourceCustom}},
+				Sources: []Source{{Name: "my_vendor"}},
 			},
-			wantErr: `sources[0]: custom source requires non-empty "mappings"`,
+			wantErr: `sources[0]: user-defined source "my_vendor" requires non-empty "mappings" (built-in sources, which do not require mappings: openinference, openllmetry)`,
+		},
+		{
+			name: "typo on built-in source name surfaces built-in list",
+			cfg: Config{
+				Sources: []Source{{Name: "openllllmetry"}},
+			},
+			wantErr: `built-in sources, which do not require mappings: openinference, openllmetry`,
 		},
 		{
 			name: "built-in source with mappings set",
@@ -89,22 +106,22 @@ func TestValidate(t *testing.T) {
 					Mappings: map[string]string{"foo": "gen_ai.request.model"},
 				}},
 			},
-			wantErr: `sources[0]: "mappings" is only valid for the "custom" source`,
+			wantErr: `sources[0]: "mappings" is not valid on built-in source "openinference"`,
 		},
 		{
-			name: "two custom sources allowed",
+			name: "two distinct user-defined sources allowed",
 			cfg: Config{
 				Sources: []Source{
-					{Name: SourceCustom, Mappings: map[string]string{"vendor_a.model": "gen_ai.request.model"}},
-					{Name: SourceCustom, Mappings: map[string]string{"vendor_b.model": "gen_ai.request.model"}},
+					{Name: "vendor_a", Mappings: map[string]string{"vendor_a.model": "gen_ai.request.model"}},
+					{Name: "vendor_b", Mappings: map[string]string{"vendor_b.model": "gen_ai.request.model"}},
 				},
 			},
 		},
 		{
-			name: "valid custom source with value_mappings",
+			name: "valid user-defined source with value_mappings",
 			cfg: Config{
 				Sources: []Source{{
-					Name:     SourceCustom,
+					Name:     "my_vendor",
 					Mappings: map[string]string{"my_vendor.op": "gen_ai.operation.name"},
 					ValueMappings: map[string]map[string]string{
 						"gen_ai.operation.name": {"chat_completion": "chat"},
@@ -122,13 +139,13 @@ func TestValidate(t *testing.T) {
 					},
 				}},
 			},
-			wantErr: `sources[0]: "value_mappings" is only valid for the "custom" source`,
+			wantErr: `sources[0]: "value_mappings" is not valid on built-in source "openinference"`,
 		},
 		{
 			name: "value_mappings key not in mappings targets",
 			cfg: Config{
 				Sources: []Source{{
-					Name:     SourceCustom,
+					Name:     "my_vendor",
 					Mappings: map[string]string{"my_vendor.model": "gen_ai.request.model"},
 					ValueMappings: map[string]map[string]string{
 						"gen_ai.operation.name": {"chat_completion": "chat"},
@@ -209,18 +226,14 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "at least one source must be specified",
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "unknown_source"),
-			errorMessage: `unknown source "foobar"`,
-		},
-		{
 			id:           component.NewIDWithName(metadata.Type, "duplicate_source"),
 			errorMessage: `duplicate source "openinference"`,
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "custom_only"),
+			id: component.NewIDWithName(metadata.Type, "user_defined_only"),
 			expected: &Config{
 				Sources: []Source{{
-					Name:            SourceCustom,
+					Name:            "my_vendor",
 					RemoveOriginals: true,
 					Mappings: map[string]string{
 						"my_vendor.model":     "gen_ai.request.model",
@@ -230,12 +243,12 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "custom_with_builtin"),
+			id: component.NewIDWithName(metadata.Type, "user_defined_with_builtin"),
 			expected: &Config{
 				Sources: []Source{
 					{Name: SourceOpenInference, RemoveOriginals: true},
 					{
-						Name:            SourceCustom,
+						Name:            "my_vendor",
 						RemoveOriginals: true,
 						Mappings:        map[string]string{"my_vendor.model": "gen_ai.request.model"},
 					},
@@ -243,16 +256,16 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "multiple_custom"),
+			id: component.NewIDWithName(metadata.Type, "multiple_user_defined"),
 			expected: &Config{
 				Sources: []Source{
 					{
-						Name:            SourceCustom,
+						Name:            "vendor_a",
 						RemoveOriginals: true,
 						Mappings:        map[string]string{"vendor_a.model": "gen_ai.request.model"},
 					},
 					{
-						Name:            SourceCustom,
+						Name:            "vendor_b",
 						RemoveOriginals: true,
 						Overwrite:       true,
 						Mappings:        map[string]string{"vendor_b.model": "gen_ai.request.model"},
@@ -261,22 +274,22 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "custom_empty_mappings"),
-			errorMessage: `custom source requires non-empty "mappings"`,
+			id:           component.NewIDWithName(metadata.Type, "user_defined_empty_mappings"),
+			errorMessage: `user-defined source "my_vendor" requires non-empty "mappings" (built-in sources, which do not require mappings: openinference, openllmetry)`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "openinference_with_mappings"),
-			errorMessage: `"mappings" is only valid for the "custom" source`,
+			errorMessage: `"mappings" is not valid on built-in source "openinference"`,
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "custom_unreachable_value_mapping"),
+			id:           component.NewIDWithName(metadata.Type, "user_defined_unreachable_value_mapping"),
 			errorMessage: `"value_mappings" key "gen_ai.operation.name" is not a target in "mappings"`,
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "custom_with_value_mappings"),
+			id: component.NewIDWithName(metadata.Type, "user_defined_with_value_mappings"),
 			expected: &Config{
 				Sources: []Source{{
-					Name:            SourceCustom,
+					Name:            "my_vendor",
 					RemoveOriginals: true,
 					Mappings:        map[string]string{"my_vendor.op": "gen_ai.operation.name"},
 					ValueMappings: map[string]map[string]string{

@@ -574,7 +574,7 @@ func TestNormalize_OpenLLMetry_OperationNameFolding(t *testing.T) {
 func TestNormalize_Custom_RenamesUserDefinedAttribute(t *testing.T) {
 	cfg := &Config{
 		Sources: []Source{{
-			Name:            SourceCustom,
+			Name:            "my_vendor",
 			RemoveOriginals: true,
 			Mappings: map[string]string{
 				"my_vendor.model": "gen_ai.request.model",
@@ -605,7 +605,7 @@ func TestNormalize_Custom_RenamesUserDefinedAttribute(t *testing.T) {
 func TestNormalize_Custom_CoercesOntoTypedTarget(t *testing.T) {
 	cfg := &Config{
 		Sources: []Source{{
-			Name:            SourceCustom,
+			Name:            "my_vendor",
 			RemoveOriginals: true,
 			Mappings: map[string]string{
 				"my_vendor.tokens.in": "gen_ai.usage.input_tokens",
@@ -634,7 +634,7 @@ func TestNormalize_Custom_CoercesOntoTypedTarget(t *testing.T) {
 func TestNormalize_Custom_PassesThroughOnNonGenAITarget(t *testing.T) {
 	cfg := &Config{
 		Sources: []Source{{
-			Name:            SourceCustom,
+			Name:            "my_vendor",
 			RemoveOriginals: true,
 			Mappings: map[string]string{
 				"my_vendor.cost": "internal.cost",
@@ -664,7 +664,7 @@ func TestNormalize_Custom_ComposesWithBuiltIn(t *testing.T) {
 		Sources: []Source{
 			{Name: SourceOpenInference, RemoveOriginals: true},
 			{
-				Name:            SourceCustom,
+				Name:            "my_vendor",
 				RemoveOriginals: true,
 				Mappings: map[string]string{
 					"my_vendor.cost": "internal.cost",
@@ -704,12 +704,12 @@ func TestNormalize_Custom_TwoBlocksAppliedInOrder(t *testing.T) {
 	cfg := &Config{
 		Sources: []Source{
 			{
-				Name:            SourceCustom,
+				Name:            "vendor_a",
 				RemoveOriginals: true,
 				Mappings:        map[string]string{"vendor_a.model": "gen_ai.request.model"},
 			},
 			{
-				Name:            SourceCustom,
+				Name:            "vendor_b",
 				RemoveOriginals: true,
 				Overwrite:       true,
 				Mappings:        map[string]string{"vendor_b.model": "gen_ai.request.model"},
@@ -737,7 +737,7 @@ func TestNormalize_Custom_TwoBlocksAppliedInOrder(t *testing.T) {
 func TestNormalize_Custom_OverwriteFalseSkipsExistingTarget(t *testing.T) {
 	cfg := &Config{
 		Sources: []Source{{
-			Name:            SourceCustom,
+			Name:            "my_vendor",
 			RemoveOriginals: true,
 			Mappings:        map[string]string{"my_vendor.model": "gen_ai.request.model"},
 		}},
@@ -764,7 +764,7 @@ func TestNormalize_Custom_OverwriteFalseSkipsExistingTarget(t *testing.T) {
 func TestNormalize_Custom_ValueMappingFoldsEnum(t *testing.T) {
 	cfg := &Config{
 		Sources: []Source{{
-			Name:            SourceCustom,
+			Name:            "my_vendor",
 			RemoveOriginals: true,
 			Mappings:        map[string]string{"my_vendor.op": "gen_ai.operation.name"},
 			ValueMappings: map[string]map[string]string{
@@ -796,7 +796,7 @@ func TestNormalize_Custom_ValueMappingFoldsEnum(t *testing.T) {
 func TestNormalize_Custom_ValueMappingMissPassesThrough(t *testing.T) {
 	cfg := &Config{
 		Sources: []Source{{
-			Name:            SourceCustom,
+			Name:            "my_vendor",
 			RemoveOriginals: true,
 			Mappings:        map[string]string{"my_vendor.op": "gen_ai.operation.name"},
 			ValueMappings: map[string]map[string]string{
