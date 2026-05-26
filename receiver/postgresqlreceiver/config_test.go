@@ -6,7 +6,6 @@ package postgresqlreceiver
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -32,7 +31,7 @@ func TestValidate(t *testing.T) {
 			defaultConfigModifier: func(*Config) {},
 			expected: []error{
 				errors.New(ErrNoUsername),
-				errors.New(ErrNoPasswordOrFile),
+				errors.New(ErrNoPassword),
 			},
 		},
 		{
@@ -41,7 +40,7 @@ func TestValidate(t *testing.T) {
 				cfg.Username = "otel"
 			},
 			expected: []error{
-				errors.New(ErrNoPasswordOrFile),
+				errors.New(ErrNoPassword),
 			},
 		},
 		{
@@ -52,25 +51,6 @@ func TestValidate(t *testing.T) {
 			expected: []error{
 				errors.New(ErrNoUsername),
 			},
-		},
-		{
-			desc: "password and password_file both set",
-			defaultConfigModifier: func(cfg *Config) {
-				cfg.Username = "otel"
-				cfg.Password = "otel"
-				cfg.PasswordFile = "/tmp/pw"
-			},
-			expected: []error{
-				errors.New(ErrPasswordAndFile),
-			},
-		},
-		{
-			desc: "password_file only",
-			defaultConfigModifier: func(cfg *Config) {
-				cfg.Username = "otel"
-				cfg.PasswordFile = "/tmp/pw"
-			},
-			expected: nil,
 		},
 		{
 			desc: "bad endpoint",
@@ -211,39 +191,4 @@ func TestLoadConfig(t *testing.T) {
 
 func ptr[T any](value T) *T {
 	return &value
-}
-
-func TestConnectionStringPasswordFile(t *testing.T) {
-	t.Run("reads password from file", func(t *testing.T) {
-		f, err := os.CreateTemp(t.TempDir(), "pgpass")
-		require.NoError(t, err)
-		_, err = f.WriteString("secret\n")
-		require.NoError(t, err)
-		require.NoError(t, f.Close())
-
-		cfg := postgreSQLConfig{
-			username:     "user",
-			passwordFile: f.Name(),
-			address: confignet.AddrConfig{
-				Endpoint:  "localhost:5432",
-				Transport: confignet.TransportTypeTCP,
-			},
-		}
-		connStr, err := cfg.ConnectionString()
-		require.NoError(t, err)
-		require.Contains(t, connStr, "password=secret")
-	})
-
-	t.Run("error on missing file", func(t *testing.T) {
-		cfg := postgreSQLConfig{
-			username:     "user",
-			passwordFile: "/nonexistent/path/pw",
-			address: confignet.AddrConfig{
-				Endpoint:  "localhost:5432",
-				Transport: confignet.TransportTypeTCP,
-			},
-		}
-		_, err := cfg.ConnectionString()
-		require.ErrorContains(t, err, "reading password_file")
-	})
 }

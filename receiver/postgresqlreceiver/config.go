@@ -20,13 +20,11 @@ import (
 
 // Errors for missing required config parameters.
 const (
-	ErrNoUsername             = "invalid config: missing username"
-	ErrNoPassword             = "invalid config: missing password"                                    // #nosec G101 - not hardcoded credentials
-	ErrNoPasswordOrFile       = "invalid config: one of 'password' or 'password_file' must be set"   // #nosec G101
-	ErrPasswordAndFile        = "invalid config: 'password' and 'password_file' are mutually exclusive" // #nosec G101
-	ErrNotSupported           = "invalid config: field '%s' not supported"
-	ErrTransportsSupported    = "invalid config: 'transport' must be 'tcp' or 'unix'"
-	ErrHostPort               = "invalid config: 'endpoint' must be in the form <host>:<port> no matter what 'transport' is configured"
+	ErrNoUsername          = "invalid config: missing username"
+	ErrNoPassword          = "invalid config: missing password" // #nosec G101 - not hardcoded credentials
+	ErrNotSupported        = "invalid config: field '%s' not supported"
+	ErrTransportsSupported = "invalid config: 'transport' must be 'tcp' or 'unix'"
+	ErrHostPort            = "invalid config: 'endpoint' must be in the form <host>:<port> no matter what 'transport' is configured"
 )
 
 type TopQueryCollection struct {
@@ -50,7 +48,6 @@ type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	Username                       string                         `mapstructure:"username"`
 	Password                       configopaque.String            `mapstructure:"password"`
-	PasswordFile                   string                         `mapstructure:"password_file"`
 	Databases                      []string                       `mapstructure:"databases"`
 	ExcludeDatabases               []string                       `mapstructure:"exclude_databases"`
 	confignet.AddrConfig           `mapstructure:",squash"`       // provides Endpoint and Transport
@@ -74,10 +71,8 @@ func (cfg *Config) Validate() error {
 	if cfg.Username == "" {
 		err = multierr.Append(err, errors.New(ErrNoUsername))
 	}
-	if cfg.Password != "" && cfg.PasswordFile != "" {
-		err = multierr.Append(err, errors.New(ErrPasswordAndFile))
-	} else if cfg.Password == "" && cfg.PasswordFile == "" {
-		err = multierr.Append(err, errors.New(ErrNoPasswordOrFile))
+	if cfg.Password == "" {
+		err = multierr.Append(err, errors.New(ErrNoPassword))
 	}
 
 	// The lib/pq module does not support overriding ServerName or specifying supported TLS versions

@@ -24,11 +24,10 @@ type defaultClientFactory struct {
 func newDefaultClientFactory(cfg *Config) *defaultClientFactory {
 	return &defaultClientFactory{
 		baseConfig: postgreSQLConfig{
-			username:     cfg.Username,
-			password:     string(cfg.Password),
-			passwordFile: cfg.PasswordFile,
-			address:      cfg.AddrConfig,
-			tls:          cfg.ClientConfig,
+			username: cfg.Username,
+			password: string(cfg.Password),
+			address:  cfg.AddrConfig,
+			tls:      cfg.ClientConfig,
 		},
 	}
 }
@@ -58,11 +57,10 @@ func newPoolClientFactory(cfg *Config) *poolClientFactory {
 	poolCfg := cfg.ConnectionPool
 	return &poolClientFactory{
 		baseConfig: postgreSQLConfig{
-			username:     cfg.Username,
-			password:     string(cfg.Password),
-			passwordFile: cfg.PasswordFile,
-			address:      cfg.AddrConfig,
-			tls:          cfg.ClientConfig,
+			username: cfg.Username,
+			password: string(cfg.Password),
+			address:  cfg.AddrConfig,
+			tls:      cfg.ClientConfig,
 		},
 		poolConfig: &poolCfg,
 		pool:       make(map[string]*sql.DB),
@@ -73,19 +71,6 @@ func newPoolClientFactory(cfg *Config) *poolClientFactory {
 func (p *poolClientFactory) getClient(database string) (client, error) {
 	p.Lock()
 	defer p.Unlock()
-
-	// When a password_file is configured, skip the pool so ConnectionString()
-	// re-reads the file on every call and credential rotation takes effect
-	// without a restart.
-	if p.baseConfig.passwordFile != "" {
-		db, err := getDB(p.baseConfig, database)
-		if err != nil {
-			return nil, err
-		}
-		p.setPoolSettings(db)
-		return &postgreSQLClient{client: db, closeFn: db.Close}, nil
-	}
-
 	db, ok := p.pool[database]
 	if !ok {
 		var err error
