@@ -1,0 +1,15 @@
+change_type: enhancement
+
+component: receiver/host_metrics
+
+note: Warn and disable process.handles at startup on platforms where it is not supported, instead of logging an error every scrape cycle.
+
+issues: [47095]
+
+subtext: |
+  process.handles is only supported on Windows. Previously, enabling it on other
+  platforms would spam "only supported on Windows" errors on every scrape cycle
+  for every process. The factory now checks for this at construction, logs a
+  single warning, and disables the metric so the hot path is never exercised.
+
+change_logs: [user]
