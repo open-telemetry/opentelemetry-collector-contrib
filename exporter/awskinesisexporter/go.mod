@@ -11,7 +11,7 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.6.0
-	github.com/jaegertracing/jaeger-idl v0.7.1
+	github.com/jaegertracing/jaeger-idl v0.9.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.153.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.153.0
 	github.com/stretchr/testify v1.11.1
