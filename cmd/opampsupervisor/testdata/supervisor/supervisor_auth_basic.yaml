@@ -1,0 +1,15 @@
+server:
+  endpoint: ws://{{.url}}/v1/opamp
+  auth: basicauth
+
+storage:
+  directory: '{{.storage_dir}}'
+
+agent:
+  executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
+
+extensions:
+  basicauth:
+    client_auth:
+      username: {{.username}}
+      password: {{.password}}

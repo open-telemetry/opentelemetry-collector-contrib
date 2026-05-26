@@ -3,14 +3,19 @@ set -euo pipefail
 
 # ======================================================================================
 # Optimizes CI by calculating the minimum set of modules that need testing based
-# on the files changed in a Pull Request. It outputs a JSON matrix for GitHub Actions.
+# on the files changed in a Pull Request. It outputs two JSON matrices for
+# GitHub Actions:
+#   - matrix:        modules + transitive dependents (build/test/checks).
+#   - direct_matrix: modules whose files actually changed (lint-only -- a
+#                    downstream module's lint result doesn't depend on whether
+#                    an upstream module's source changed).
 # The logic goes like this:
-# 1. If 'ci:full' label is present OR event is not a PR -> Full Matrix.
-# 2. If core build files (Makefile, workflows) changed -> Full Matrix.
-# 3. Identifies Go modules directly modified by the git diff.
+# 1. If 'ci:full' label is present OR event is not a PR -> Full Matrix (both).
+# 2. If core build files (Makefile, workflows) changed -> Full Matrix (both).
+# 3. Identifies Go modules directly modified by the git diff (direct_matrix).
 # 4. Recursively finds modules that depend on the modified modules
 #    (e.g., if 'pkg/ottl' changes, we must test 'processor/filterprocessor').
-# 5. Groups the resulting modules into a fixed number of "buckets"
+# 5. Groups each resulting set of modules into a fixed number of "buckets"
 #    (TARGET_CONCURRENCY) to prevent spawning hundreds of concurrent CI jobs.
 #
 #
@@ -67,15 +72,20 @@ exit_full_mode() {
   echo "Reason: $1" >&2
   echo "Selecting FULL Matrix." >&2
   echo "matrix=${ALL_TEST_GROUPS}" >> "$GITHUB_OUTPUT"
+  echo "direct_matrix=${ALL_TEST_GROUPS}" >> "$GITHUB_OUTPUT"
   exit 0
 }
 
 exit_scoped_mode() {
   local matrix_json="$1"
   local count="$2"
-  echo "Reason: Scoped changes detected ($count modules affected)." >&2
-  echo "Computed Matrix: ${matrix_json}" >&2
+  local direct_matrix_json="${3:-$matrix_json}"
+  local direct_count="${4:-$count}"
+  echo "Reason: Scoped changes detected ($count modules affected, $direct_count direct)." >&2
+  echo "Computed Matrix:        ${matrix_json}" >&2
+  echo "Computed Direct Matrix: ${direct_matrix_json}" >&2
   echo "matrix=${matrix_json}" >> "$GITHUB_OUTPUT"
+  echo "direct_matrix=${direct_matrix_json}" >> "$GITHUB_OUTPUT"
   exit 0
 }
 
@@ -161,6 +171,15 @@ if [[ ${#affected_dirs[@]} -eq 0 ]]; then
   exit_scoped_mode "[]" 0
 fi
 
+# Snapshot directly-changed modules before transitive expansion. Lint runs
+# against this set only -- a downstream module's lint result doesn't depend
+# on whether an upstream module's source changed, so dragging transitive
+# dependents into the lint matrix wastes time.
+declare -A direct_dirs
+for dir in "${!affected_dirs[@]}"; do
+  direct_dirs["${dir}"]=1
+done
+
 # Resolve Transitive Dependencies
 all_go_mods="$(find . -type f -name "go.mod" -not -path "*/.git/*" -not -path "*/vendor/*")"
 
@@ -197,29 +216,40 @@ done
 # -----------------------------------------------------------------------------
 # Bucket results so we can launch multiple workers on CI
 # -----------------------------------------------------------------------------
-declare -a buckets
-for ((i=0; i<TARGET_CONCURRENCY; i++)); do buckets[$i]=""; done
+bucket_dirs_to_json() {
+  local -n _dirs=$1
+  local -a _buckets
+  for ((i=0; i<TARGET_CONCURRENCY; i++)); do _buckets[$i]=""; done
 
-idx=0
-for dir in "${!affected_dirs[@]}"; do
-  bucket_id=$((idx % TARGET_CONCURRENCY))
-  if [[ -z "${buckets[$bucket_id]}" ]]; then
-    buckets[$bucket_id]="${dir}"
-  else
-    buckets[$bucket_id]="${buckets[$bucket_id]} ${dir}"
-  fi
-  idx=$((idx + 1))
-done
+  local idx=0 bucket_id
+  for dir in "${!_dirs[@]}"; do
+    bucket_id=$((idx % TARGET_CONCURRENCY))
+    # The Makefile uses "/" in GROUP to tell module paths from named
+    # groups; single-segment paths (e.g. "testbed") need a "/" or they
+    # route to a nonexistent `for-<name>-target`.
+    if [[ "${dir}" != "." && "${dir}" != */* ]]; then
+      dir="./${dir}"
+    fi
+    if [[ -z "${_buckets[$bucket_id]}" ]]; then
+      _buckets[$bucket_id]="${dir}"
+    else
+      _buckets[$bucket_id]="${_buckets[$bucket_id]} ${dir}"
+    fi
+    idx=$((idx + 1))
+  done
 
-# Construct JSON Array
-json_array="["
-first=true
-for bucket in "${buckets[@]}"; do
-  if [[ -n "${bucket}" ]]; then
-    [[ "$first" == "true" ]] && first=false || json_array+=","
-    json_array+="\"${bucket}\""
-  fi
-done
-json_array+="]"
+  local out="[" first=true
+  for bucket in "${_buckets[@]}"; do
+    if [[ -n "${bucket}" ]]; then
+      [[ "$first" == "true" ]] && first=false || out+=","
+      out+="\"${bucket}\""
+    fi
+  done
+  out+="]"
+  echo "${out}"
+}
 
-exit_scoped_mode "${json_array}" "${#affected_dirs[@]}"
+json_array="$(bucket_dirs_to_json affected_dirs)"
+direct_json_array="$(bucket_dirs_to_json direct_dirs)"
+
+exit_scoped_mode "${json_array}" "${#affected_dirs[@]}" "${direct_json_array}" "${#direct_dirs[@]}"
