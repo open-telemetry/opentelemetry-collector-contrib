@@ -27,6 +27,9 @@ $defs:
       encoding:
         description: Encoding holds the encoding of messages for the signal type. Defaults to "otlp_proto".
         type: string
+      message_key_from_metadata_key:
+        description: MessageKeyFromMetadataKey holds the name of the metadata key whose value will be used as the Kafka record key for this signal type. If the metadata key is absent or empty the record key is left nil. Mutually exclusive with the partition_* flags for the same signal.
+        type: string
       topic:
         description: 'Topic holds the name of the Kafka topic to which messages of the signal type should be produced. The default depends on the signal type: - "otlp_spans" for traces - "otlp_metrics" for metrics - "otlp_logs" for logs - "otlp_profiles" for profiles'
         type: string

@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strings"
 	"sync"
@@ -229,7 +230,7 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	}
 
 	obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
-	err = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
+	err = prw.nextConsumer.ConsumeMetrics(obsrecvCtx, m)
 	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.DataPointCount(), err)
 	if err != nil {
 		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
@@ -714,7 +715,20 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 	dp.SetZeroThreshold(histogram.ZeroThreshold)
 
 	// Set count and sum using common helper
-	setCountAndSum(histogram, dp)
+	if value.IsStaleNaN(histogram.Sum) {
+		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+	} else {
+		setCountAndSum(histogram, dp)
+	}
+
+	// The maximum bucket index is derived from the formula (2^(2^-n))^i <= MaxFloat64.
+	// MaxFloat64 is approx 2^1024. So (2^-n) * i <= 1024 => i <= 1024 * 2^n.
+	// The bucket containing MaxFloat64 has index i_max = 1024 * 2^n.
+	// The next bucket (i_max + 1) is the +Inf overflow bucket, which is also allowed.
+	// Buckets with an index strictly greater than i_max + 1 must be dropped.
+	// See https://prometheus.io/docs/specs/native_histograms/#schema for more information.
+	overflowLimit := int32(math.Ldexp(1024, int(histogram.Schema))) + 1
+	var droppedCount uint64
 
 	// The difference between float and integer histograms is that float histograms are stored as absolute counts
 	// while integer histograms are stored as deltas.
@@ -725,11 +739,11 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 
 		if len(histogram.PositiveSpans) > 0 {
 			dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			convertAbsoluteBuckets(histogram.PositiveSpans, histogram.PositiveCounts, dp.Positive().BucketCounts())
+			droppedCount += convertAbsoluteBuckets(histogram.PositiveSpans, histogram.PositiveCounts, dp.Positive().BucketCounts(), overflowLimit)
 		}
 		if len(histogram.NegativeSpans) > 0 {
 			dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			convertAbsoluteBuckets(histogram.NegativeSpans, histogram.NegativeCounts, dp.Negative().BucketCounts())
+			droppedCount += convertAbsoluteBuckets(histogram.NegativeSpans, histogram.NegativeCounts, dp.Negative().BucketCounts(), overflowLimit)
 		}
 	} else {
 		// Integer histograms
@@ -738,11 +752,22 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 
 		if len(histogram.PositiveSpans) > 0 {
 			dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			convertDeltaBuckets(histogram.PositiveSpans, histogram.PositiveDeltas, dp.Positive().BucketCounts())
+			droppedCount += convertDeltaBuckets(histogram.PositiveSpans, histogram.PositiveDeltas, dp.Positive().BucketCounts(), overflowLimit)
 		}
 		if len(histogram.NegativeSpans) > 0 {
 			dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			convertDeltaBuckets(histogram.NegativeSpans, histogram.NegativeDeltas, dp.Negative().BucketCounts())
+			droppedCount += convertDeltaBuckets(histogram.NegativeSpans, histogram.NegativeDeltas, dp.Negative().BucketCounts(), overflowLimit)
+		}
+	}
+
+	if droppedCount > 0 && !value.IsStaleNaN(histogram.Sum) {
+		count := dp.Count()
+		if droppedCount > count {
+			prw.settings.Logger.Info("Clamping Native Histogram count to zero due to inconsistent dropped overflow bucket count",
+				zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
+			dp.SetCount(0)
+		} else {
+			dp.SetCount(count - droppedCount)
 		}
 	}
 
@@ -800,7 +825,7 @@ func hasNegativeCounts(histogram *writev2.Histogram) bool {
 
 // convertDeltaBuckets converts Prometheus native histogram spans and deltas to OpenTelemetry bucket counts
 // For integer buckets, the values are deltas between the buckets. i.e a bucket list of 1,2,-2 would correspond to a bucket count of 1,3,1
-func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pcommon.UInt64Slice) {
+func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pcommon.UInt64Slice, overflowLimit int32) uint64 {
 	// The total capacity is the sum of the deltas and the offsets of the spans.
 	totalCapacity := len(deltas)
 	for _, span := range spans {
@@ -810,23 +835,37 @@ func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pco
 
 	bucketIdx := 0
 	bucketCount := int64(0)
+	var droppedCount uint64
+	initialOffset := spans[0].Offset
+	k := initialOffset
+
 	for spanIdx, span := range spans {
 		if spanIdx > 0 {
 			for i := int32(0); i < span.Offset; i++ {
-				buckets.Append(uint64(0))
+				if k <= overflowLimit {
+					buckets.Append(uint64(0))
+				}
+				k++
 			}
 		}
 		for i := uint32(0); i < span.Length; i++ {
 			bucketCount += deltas[bucketIdx]
 			bucketIdx++
-			buckets.Append(uint64(bucketCount))
+
+			if k <= overflowLimit {
+				buckets.Append(uint64(bucketCount))
+			} else {
+				droppedCount += uint64(bucketCount)
+			}
+			k++
 		}
 	}
+	return droppedCount
 }
 
 // convertAbsoluteBuckets converts Prometheus native histogram spans and absolute counts to OpenTelemetry bucket counts
 // For float buckets, the values are absolute counts, and must be 0 or positive.
-func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, buckets pcommon.UInt64Slice) {
+func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, buckets pcommon.UInt64Slice, overflowLimit int32) uint64 {
 	// The total capacity is the sum of the counts and the offsets of the spans.
 	totalCapacity := len(counts)
 	for _, span := range spans {
@@ -835,17 +874,30 @@ func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, bucket
 	buckets.EnsureCapacity(totalCapacity)
 
 	bucketIdx := 0
+	var droppedCount uint64
+	initialOffset := spans[0].Offset
+	k := initialOffset
+
 	for spanIdx, span := range spans {
 		if spanIdx > 0 {
 			for i := int32(0); i < span.Offset; i++ {
-				buckets.Append(uint64(0))
+				if k <= overflowLimit {
+					buckets.Append(uint64(0))
+				}
+				k++
 			}
 		}
 		for i := uint32(0); i < span.Length; i++ {
-			buckets.Append(uint64(counts[bucketIdx]))
+			if k <= overflowLimit {
+				buckets.Append(uint64(counts[bucketIdx]))
+			} else {
+				droppedCount += uint64(counts[bucketIdx])
+			}
 			bucketIdx++
+			k++
 		}
 	}
+	return droppedCount
 }
 
 // extractAttributes returns metric data point attributes, excluding job, instance, metric name, and all otel_scope_* labels.
