@@ -261,6 +261,8 @@ jobs:
             echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.'
             exit 1
           fi
+      - name: Check mdatagen go:generate wiring
+        run: make check-mdatagen-generate
       - name: MultimodVerify
         run: make multimod-verify
       - name: Components dropdown in issue templates
