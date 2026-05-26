@@ -5,7 +5,9 @@ package kafkaclient
 
 import (
 	"context"
+	"errors"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,9 +17,139 @@ import (
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
+
+var (
+	_ component.Host           = (*statusRecorderHost)(nil)
+	_ componentstatus.Reporter = (*statusRecorderHost)(nil)
+)
+
+// statusRecorderHost implements component.Host and componentstatus.Reporter so
+// componentstatus.ReportStatus records events for tests.
+type statusRecorderHost struct {
+	mu     sync.Mutex
+	events []*componentstatus.Event
+}
+
+func (*statusRecorderHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (h *statusRecorderHost) Report(event *componentstatus.Event) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.events = append(h.events, event)
+}
+
+func (h *statusRecorderHost) snapshot() []*componentstatus.Event {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return append([]*componentstatus.Event(nil), h.events...)
+}
+
+type statusStepKind int
+
+const (
+	statusStepConnect statusStepKind = iota
+	statusStepDisconnect
+)
+
+// statusStep is one broker hook invocation used in table-driven tests.
+type statusStep struct {
+	kind statusStepKind
+	meta kgo.BrokerMetadata
+	err  error // connect outcome; ignored for disconnect
+}
+
+func (st statusStep) apply(r *StatusReporter) {
+	switch st.kind {
+	case statusStepConnect:
+		r.OnBrokerConnect(st.meta, 0, nil, st.err)
+	case statusStepDisconnect:
+		r.OnBrokerDisconnect(st.meta, nil)
+	}
+}
+
+type wantStatusEvent struct {
+	status componentstatus.Status
+	errIs  error // if nil, assert no error on the event (e.g. StatusOK)
+}
+
+func assertStatusEvents(t *testing.T, got []*componentstatus.Event, want []wantStatusEvent) {
+	t.Helper()
+	require.Len(t, got, len(want), "event count")
+	for i := range want {
+		assert.Equal(t, want[i].status, got[i].Status(), "event[%d] status", i)
+		if want[i].errIs != nil {
+			assert.ErrorIs(t, got[i].Err(), want[i].errIs, "event[%d] err", i)
+		} else {
+			assert.NoError(t, got[i].Err(), "event[%d] err", i)
+		}
+	}
+}
+
+// TestStatusReporter_ComponentStatus exercises broker hook → componentstatus
+func TestStatusReporter_ComponentStatus(t *testing.T) {
+	broker1 := kgo.BrokerMetadata{NodeID: 1, Host: "127.0.0.1", Port: 9092}
+	broker2 := kgo.BrokerMetadata{NodeID: 2, Host: "127.0.0.2", Port: 9092}
+	errRefused := errors.New("connection refused")
+	errBroker2 := errors.New("broker 2 down")
+	errUnreachable := errors.New("cluster unreachable")
+
+	tests := []struct {
+		name   string
+		steps  []statusStep
+		wantEv []wantStatusEvent
+	}{
+		{
+			name:   "successful_connect_reports_OK",
+			steps:  []statusStep{{kind: statusStepConnect, meta: broker1, err: nil}},
+			wantEv: []wantStatusEvent{{status: componentstatus.StatusOK}},
+		},
+		{
+			name:   "failed_connect_with_no_open_broker_reports_recoverable",
+			steps:  []statusStep{{kind: statusStepConnect, meta: broker1, err: errRefused}},
+			wantEv: []wantStatusEvent{{status: componentstatus.StatusRecoverableError, errIs: errRefused}},
+		},
+		{
+			name: "failed_connect_suppressed_when_another_broker_connected",
+			steps: []statusStep{
+				{kind: statusStepConnect, meta: broker1, err: nil},
+				{kind: statusStepConnect, meta: broker2, err: errBroker2},
+			},
+			wantEv: []wantStatusEvent{{status: componentstatus.StatusOK}},
+		},
+		{
+			name: "disconnect_then_failed_connect_reports_recoverable",
+			steps: []statusStep{
+				{kind: statusStepConnect, meta: broker1, err: nil},
+				{kind: statusStepDisconnect, meta: broker1},
+				{kind: statusStepConnect, meta: broker1, err: errUnreachable},
+			},
+			wantEv: []wantStatusEvent{
+				{status: componentstatus.StatusOK},
+				{status: componentstatus.StatusRecoverableError, errIs: errUnreachable},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			host := &statusRecorderHost{}
+			reporter := NewStatusReporter(host)
+
+			for _, step := range tt.steps {
+				step.apply(reporter)
+			}
+
+			assertStatusEvents(t, host.snapshot(), tt.wantEv)
+		})
+	}
+}
 
 func TestExportData_MessageTooLarge(t *testing.T) {
 	const (
@@ -80,7 +212,8 @@ func TestExportData_AttachesHeaders(t *testing.T) {
 			{Name: "static-key-ONLY", Value: configopaque.String("static-value")},
 			{Name: "shared-key", Value: configopaque.String("static-value-override")},
 		},
-		1024*1024, nil,
+		1024*1024,
+		nil,
 	)
 
 	records := []*kgo.Record{{Topic: topic, Value: []byte("test-payload")}}

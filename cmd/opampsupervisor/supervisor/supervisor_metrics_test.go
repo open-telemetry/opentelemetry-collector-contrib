@@ -30,21 +30,19 @@ func newTestAgentExecutable(t *testing.T) string {
 
 func newTestSupervisorConfig(t *testing.T) config.Supervisor {
 	execPath := newTestAgentExecutable(t)
-	return config.Supervisor{
-		Server: config.OpAMPServer{
-			Endpoint: "ws://localhost:1234",
-			TLS:      configtls.ClientConfig{Insecure: true},
-		},
-		Storage: config.Storage{
-			Directory: t.TempDir(),
-		},
-		Agent: config.Agent{
-			Executable:              execPath,
-			OrphanDetectionInterval: time.Second,
-			ConfigApplyTimeout:      time.Second,
-			BootstrapTimeout:        time.Second,
-		},
+	cfg := config.DefaultSupervisor()
+	cfg.Server = config.OpAMPServer{
+		Endpoint: "ws://localhost:1234",
+		TLS:      configtls.ClientConfig{Insecure: true},
 	}
+	cfg.Storage = config.Storage{Directory: t.TempDir()}
+	cfg.Agent = config.Agent{
+		Executable:              execPath,
+		OrphanDetectionInterval: time.Second,
+		ConfigApplyTimeout:      time.Second,
+		BootstrapTimeout:        time.Second,
+	}
+	return cfg
 }
 
 func TestSupervisorMetrics(t *testing.T) {
