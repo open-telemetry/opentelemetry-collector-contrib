@@ -5,6 +5,7 @@ package pmetricassert // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -17,7 +18,7 @@ import (
 // (by name+version) and metrics (by name) so that batch boundaries do not
 // influence the assertion. Datapoints are folded into a set keyed by their
 // attribute values; duplicate logical MTS entries collapse to one.
-func normalize(m pmetric.Metrics) *document {
+func normalize(m pmetric.Metrics, opts writeOptions) (*document, error) {
 	type dpKey struct {
 		attrs string
 	}
@@ -73,13 +74,20 @@ func normalize(m pmetric.Metrics) *document {
 					}
 					sAgg.metrics[metric.Name()] = mAgg
 				}
-				for _, dpAttrs := range extractDatapointAttributes(metric) {
-					raw := attrMapToRaw(dpAttrs)
+				for _, extDP := range extractDatapointAttributes(metric) {
+					raw := attrMapToRaw(extDP.attributes)
 					key := dpKey{attrs: canonKey(raw)}
 					if _, dup := mAgg.datapoints[key]; dup {
+						if opts.includeValues {
+							return nil, fmt.Errorf("duplicate datapoint for metric %q with attributes %s", metric.Name(), key.attrs)
+						}
 						continue
 					}
-					mAgg.datapoints[key] = datapointAssertion{Attributes: raw}
+					dp := datapointAssertion{Attributes: raw}
+					if opts.includeValues && extDP.value != nil {
+						dp.Value = extDP.value
+					}
+					mAgg.datapoints[key] = dp
 				}
 			}
 		}
@@ -127,7 +135,7 @@ func normalize(m pmetric.Metrics) *document {
 		}
 		doc.Resources = append(doc.Resources, res)
 	}
-	return doc
+	return doc, nil
 }
 
 func buildMetricAssertion(metric pmetric.Metric) metricAssertion {
@@ -178,36 +186,54 @@ func temporalityString(t pmetric.AggregationTemporality) string {
 	}
 }
 
-func extractDatapointAttributes(metric pmetric.Metric) []pcommon.Map {
-	var out []pcommon.Map
+type extractedDatapoint struct {
+	attributes pcommon.Map
+	value      any
+}
+
+func extractDatapointAttributes(metric pmetric.Metric) []extractedDatapoint {
+	var out []extractedDatapoint
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		dps := metric.Gauge().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			out = append(out, dps.At(i).Attributes())
+			dp := dps.At(i)
+			out = append(out, extractedDatapoint{attributes: dp.Attributes(), value: getDatapointValue(dp)})
 		}
 	case pmetric.MetricTypeSum:
 		dps := metric.Sum().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			out = append(out, dps.At(i).Attributes())
+			dp := dps.At(i)
+			out = append(out, extractedDatapoint{attributes: dp.Attributes(), value: getDatapointValue(dp)})
 		}
 	case pmetric.MetricTypeHistogram:
 		dps := metric.Histogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			out = append(out, dps.At(i).Attributes())
+			out = append(out, extractedDatapoint{attributes: dps.At(i).Attributes()})
 		}
 	case pmetric.MetricTypeExponentialHistogram:
 		dps := metric.ExponentialHistogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			out = append(out, dps.At(i).Attributes())
+			out = append(out, extractedDatapoint{attributes: dps.At(i).Attributes()})
 		}
 	case pmetric.MetricTypeSummary:
 		dps := metric.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			out = append(out, dps.At(i).Attributes())
+			out = append(out, extractedDatapoint{attributes: dps.At(i).Attributes()})
 		}
 	}
 	return out
+}
+
+func getDatapointValue(dp pmetric.NumberDataPoint) any {
+	switch dp.ValueType() {
+	case pmetric.NumberDataPointValueTypeInt:
+		return dp.IntValue()
+	case pmetric.NumberDataPointValueTypeDouble:
+		return dp.DoubleValue()
+	default:
+		return nil
+	}
 }
 
 func attrMapToRaw(m pcommon.Map) map[string]any {
