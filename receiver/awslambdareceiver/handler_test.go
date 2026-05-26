@@ -148,7 +148,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 						S3: events.S3Entity{
 							Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
 							Object: events.S3Object{
-								Key:  "test-file.txt",
+								Key:  "test-file.txt.gz",
 								Size: 10,
 							},
 						},
@@ -157,7 +157,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 			},
 			s3MockContent: s3Content{
 				bucketName: "test-bucket",
-				objectKey:  "test-file.txt",
+				objectKey:  "test-file.txt.gz",
 				data:       compressData(t, []byte("Logs in Gzip S3 object")),
 			},
 			extension:     internal.NewDefaultS3LogsDecoder(),
@@ -693,7 +693,7 @@ func TestMultiFormatS3LogsHandler(t *testing.T) {
 			s3MockContent: s3Content{
 				bucketName: "test-bucket",
 				objectKey:  "AWSLogs/123/vpcflowlogs/us-east-1/file.log.gz",
-				data:       []byte("vpc flow log data"),
+				data:       compressData(t, []byte("vpc flow log data")),
 			},
 			encodings: []S3Encoding{
 				{Name: "vpcflow", Encoding: "awslogs_encoding/vpc"},
@@ -722,7 +722,7 @@ func TestMultiFormatS3LogsHandler(t *testing.T) {
 			s3MockContent: s3Content{
 				bucketName: "test-bucket",
 				objectKey:  "AWSLogs/123/CloudTrail/us-east-1/file.json.gz",
-				data:       []byte("cloudtrail data"),
+				data:       compressData(t, []byte("cloudtrail data")),
 			},
 			encodings: []S3Encoding{
 				{Name: "vpcflow", Encoding: "awslogs_encoding/vpc"},
