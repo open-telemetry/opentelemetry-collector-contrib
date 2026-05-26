@@ -2,10 +2,6 @@ name: Setup Go & repo tooling
 description: Common setup for Go-based workflows (disk cleanup, setup-go cache, optional gomoddownload).
 
 inputs:
-  repo-path:
-    description: Path to the repository root.
-    required: false
-    default: "."
   go-version:
     description: Version passed to actions/setup-go.
     required: false
@@ -34,8 +30,8 @@ runs:
       # Force 'bash' to use Git Bash on Windows runners.
       # This allows us to share the same cleanup script across OSs.
       run: |
-        chmod +x "${{ inputs.repo-path }}/.github/workflows/scripts/free-disk-space.sh"
-        "${{ inputs.repo-path }}/.github/workflows/scripts/free-disk-space.sh"
+        chmod +x ./.github/workflows/scripts/free-disk-space.sh
+        ./.github/workflows/scripts/free-disk-space.sh
 
     - name: Setup Go
       uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
@@ -48,5 +44,4 @@ runs:
       # Only download if setup-go didn't restore a cache.
       if: inputs.gomoddownload == 'true' && steps.go-setup.outputs.cache-hit != 'true'
       shell: bash
-      working-directory: ${{ inputs.repo-path }}
       run: make -j8 gomoddownload
