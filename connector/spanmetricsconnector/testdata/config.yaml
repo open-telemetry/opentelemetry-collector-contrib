@@ -60,6 +60,12 @@ span_metrics/invalid_histogram_unit:
 span_metrics/invalid_metrics_expiration:
   metrics_expiration: -20s
 
+span_metrics/series_expiration:
+  series_expiration: 5m
+
+span_metrics/invalid_series_expiration:
+  series_expiration: -20s
+
 # exemplars enabled 
 span_metrics/exemplars_enabled:
   exemplars:

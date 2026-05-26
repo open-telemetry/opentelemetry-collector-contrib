@@ -7,13 +7,13 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// NtpOffsetMetricConfig provides config for the ntp.offset metric.
+type NtpOffsetMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NtpOffsetMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,12 +29,12 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for ntp metrics.
 type MetricsConfig struct {
-	NtpOffset MetricConfig `mapstructure:"ntp.offset"`
+	NtpOffset NtpOffsetMetricConfig `mapstructure:"ntp.offset"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		NtpOffset: MetricConfig{
+		NtpOffset: NtpOffsetMetricConfig{
 			Enabled: true,
 		},
 	}

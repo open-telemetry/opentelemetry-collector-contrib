@@ -118,6 +118,12 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 			logsExpectedFilename: "valid_tgw_flow_cw_expected.yaml",
 			featureGateEnabled:   false,
 		},
+		{
+			name:                 "Valid VPC flow log from S3 with ECS fields",
+			logInputReader:       readAndCompressLogFile(t, dir, "valid_vpc_flow_log_ecs.log"),
+			logsExpectedFilename: "valid_vpc_flow_log_ecs_expected.yaml",
+			featureGateEnabled:   false,
+		},
 	}
 
 	for _, test := range tests {

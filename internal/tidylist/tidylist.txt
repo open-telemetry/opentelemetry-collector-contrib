@@ -3,6 +3,11 @@ pkg/pdatautil
 pkg/golden
 pkg/pdatatest
 cmd/golden
+extension/internal/basicauth
+extension/internal/credentialsfile
+extension/basicauthextension
+extension/bearertokenauthextension
+extension/oauth2clientauthextension
 internal/coreinternal
 pkg/ottl
 connector/routingconnector
@@ -143,9 +148,6 @@ extension/asapauthextension
 internal/aws/proxy
 extension/awsproxy
 extension/azureauthextension
-extension/internal/credentialsfile
-extension/basicauthextension
-extension/bearertokenauthextension
 extension/cgroupruntimeextension
 extension/datadogextension
 extension/encoding/avrologencodingextension
@@ -170,7 +172,6 @@ extension/httpforwarderextension
 extension/jaegerremotesampling
 extension/k8sleaderelector
 extension/mcp
-extension/oauth2clientauthextension
 extension/observer
 extension/observer/cfgardenobserver
 internal/docker
@@ -221,6 +222,7 @@ processor/cumulativetodeltaprocessor
 processor/deltatorateprocessor
 processor/drainprocessor
 processor/filterprocessor
+processor/genainormalizerprocessor
 processor/geoipprocessor
 processor/groupbyattrsprocessor
 processor/groupbytraceprocessor
