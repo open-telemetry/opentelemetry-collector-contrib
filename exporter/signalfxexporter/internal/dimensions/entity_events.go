@@ -42,6 +42,7 @@ func (t *EntityEventTransformer) TransformEntityEvent(event metadata.EntityEvent
 		Value:      dimValue,
 		Properties: properties,
 		Tags:       tags,
+		Replace:    true,
 	}, nil
 }
 
