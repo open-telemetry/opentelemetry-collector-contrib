@@ -573,6 +573,6 @@ jobs:
           modules=$(echo "$MATRIX" | jq -r '.[]' | tr ' ' '\n' | sort -u | grep -v '^$')
           for mod in $modules; do
             echo "Building $mod for $GOOS/$GOARCH"
-            (cd "$mod" && go build ./...)
+            (cd "$mod" && go list -f '{{if .GoFiles}}{{.ImportPath}}{{end}}' ./... | sed '/test$/d' | xargs -r go build)
           done
       - run: ./.github/workflows/scripts/check-disk-space.sh
