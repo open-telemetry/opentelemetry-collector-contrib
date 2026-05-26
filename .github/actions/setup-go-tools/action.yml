@@ -6,17 +6,6 @@ inputs:
     description: Version passed to actions/setup-go.
     required: false
     default: "oldstable"
-  cache-dependency-path:
-    description: |
-      Pattern(s) for actions/setup-go cache-dependency-path. Defaults to high-stability
-      files (tooling and testbed) so per-component Renovate bumps don't invalidate the
-      shared Go module cache. `go test`/`go build` lazy-fetches any module versions not
-      present in the restored cache. Callers needing full-closure invalidation can
-      override with `**/*.sum`.
-    required: false
-    default: |
-      internal/tools/go.sum
-      testbed/go.sum
   gomoddownload:
     description: Whether to run `make -j2 gomoddownload` when Go cache is cold.
     required: false
@@ -38,7 +27,13 @@ runs:
       id: go-setup
       with:
         go-version: ${{ inputs.go-version }}
-        cache-dependency-path: ${{ inputs.cache-dependency-path }}
+        # Narrow the cache key to high-stability files (tooling and testbed) so
+        # per-component Renovate bumps don't invalidate the shared Go module
+        # cache. `go test`/`go build` lazy-fetches any module versions not
+        # present in the restored cache.
+        cache-dependency-path: |
+          internal/tools/go.sum
+          testbed/go.sum
 
     - name: Install dependencies (gomoddownload)
       # Only download if setup-go didn't restore a cache.
