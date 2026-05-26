@@ -291,11 +291,6 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-      - name: Cache Test Build
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
-        with:
-          path: ~/.cache/go-build
-          key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
       # Unit tests without JUnit output are much faster, so it's fine to run on every PR and every go version.
