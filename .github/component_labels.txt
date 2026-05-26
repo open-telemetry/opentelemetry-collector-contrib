@@ -224,6 +224,7 @@ processor/spanpruningprocessor processor/spanpruning
 processor/sumologicprocessor processor/sumologic
 processor/tailsamplingprocessor processor/tailsampling
 processor/transformprocessor processor/transform
+processor/transformprocessor/internal/logparsingfuncs processor/transform/internal/logparsingfuncs
 processor/unrollprocessor processor/unroll
 receiver/activedirectorydsreceiver receiver/activedirectoryds
 receiver/aerospikereceiver receiver/aerospike
