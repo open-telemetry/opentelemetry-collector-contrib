@@ -72,6 +72,7 @@ var (
 	errMappingModeInvalid           = errors.New("mapping.mode is invalid")
 	errLogsIndexTimeFormatInvalid   = errors.New("logs_index_time_format contains unsupported or invalid tokens")
 	errTracesIndexTimeFormatInvalid = errors.New("traces_index_time_format contains unsupported or invalid tokens")
+	errOTelV1DatasetNamespaceUnused = errors.New(`dataset and namespace are not used by mapping.mode "otel-v1"; remove them or pick a different mode`)
 )
 
 type MappingsSettings struct {
@@ -91,9 +92,15 @@ type MappingsSettings struct {
 	//
 	//   bodymap: supports only logs and uses the "body" of a log record as the exact content
 	//   of the OpenSearch document, without any transformation.
+	//   This mapping mode is intended for use cases where the client wishes to have complete control over the
+	//   OpenSearch document structure.
 	//
-	//   otel-v1: exports logs and traces using the Data Prepper OTel v1 schema.
-	//   Compatible with OpenSearch Observability dashboards that use Data Prepper indices.
+	//   otel-v1: exports logs and traces using the OTel v1 schema published by the
+	//   OpenSearch Data Prepper project (https://github.com/opensearch-project/data-prepper).
+	//   Documents are compatible with OpenSearch Observability dashboards that consume
+	//   Data Prepper indices. See the upstream index templates for the canonical field mappings:
+	//     https://github.com/opensearch-project/data-prepper/blob/main/data-prepper-plugins/opensearch/src/main/resources/index-template/otel-v1-apm-span-index-standard-template.json
+	//     https://github.com/opensearch-project/data-prepper/blob/main/data-prepper-plugins/opensearch/src/main/resources/index-template/logs-otel-v1-index-standard-template.json
 	Mode string `mapstructure:"mode"`
 
 	// Additional field mappings.
@@ -164,11 +171,24 @@ func (cfg *Config) Validate() error {
 		multiErr = append(multiErr, errConfigNoEndpoint)
 	}
 
-	if cfg.Dataset == "" && cfg.Mode != MappingOTelV1.String() {
-		multiErr = append(multiErr, errDatasetNoValue)
-	}
-	if cfg.Namespace == "" && cfg.Mode != MappingOTelV1.String() {
-		multiErr = append(multiErr, errNamespaceNoValue)
+	if cfg.Mode == MappingOTelV1.String() {
+		// otel-v1 emits Data Prepper-style index names (otel-v1-apm-span,
+		// otel-v1-logs); dataset/namespace would be silently dropped, so reject
+		// any user-supplied (i.e. non-default) values up front instead of
+		// surprising the user. Defaults from newDefaultConfig are tolerated so
+		// that switching mode does not require the user to also clear two
+		// otherwise-irrelevant fields.
+		if (cfg.Dataset != "" && cfg.Dataset != defaultDataset) ||
+			(cfg.Namespace != "" && cfg.Namespace != defaultNamespace) {
+			multiErr = append(multiErr, errOTelV1DatasetNamespaceUnused)
+		}
+	} else {
+		if cfg.Dataset == "" {
+			multiErr = append(multiErr, errDatasetNoValue)
+		}
+		if cfg.Namespace == "" {
+			multiErr = append(multiErr, errNamespaceNoValue)
+		}
 	}
 
 	// Validate LogsIndexTimeFormat if set
