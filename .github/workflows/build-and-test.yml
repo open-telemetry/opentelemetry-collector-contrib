@@ -291,11 +291,6 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-      - name: Cache Test Build
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
-        with:
-          path: ~/.cache/go-build
-          key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
       # Unit tests without JUnit output are much faster, so it's fine to run on every PR and every go version.
@@ -368,41 +363,44 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   integration-tests-matrix:
+    needs: [setup-environment, ci-scope]
+    if: ${{ needs.ci-scope.outputs.matrix != '[]' && needs.ci-scope.outputs.matrix != '' }}
     strategy:
       fail-fast: false
       matrix:
-        group:
-          - receiver-0
-          - receiver-1
-          - receiver-2
-          - receiver-3
-          - processor-0
-          - processor-1
-          - exporter-0
-          - exporter-1
-          - exporter-2
-          - exporter-3
-          - extension
-          - connector
-          - internal
-          - pkg
-          - cmd-0
+        group: ${{ fromJSON(needs.ci-scope.outputs.matrix) }}
     runs-on: ubuntu-24.04
-    needs: [setup-environment]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
+      - name: Compute Docker cache key
+        id: docker-cache-key
+        env:
+          GROUP: ${{ matrix.group }}
+        run: |
+          normalized_group="$(
+            printf '%s' "$GROUP" \
+              | tr '[:space:]' '\n' \
+              | sed '/^$/d' \
+              | sort \
+              | tr '\n' ' ' \
+              | sed 's/[[:space:]]\+$//'
+          )"
+          group_hash="$(printf '%s' "$normalized_group" | sha256sum | cut -d ' ' -f 1)"
+          echo "key=docker-${group_hash}" >> "$GITHUB_OUTPUT"
       - name: Cache Docker images.
         uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
         with:
-          key: docker-${{ matrix.group }}
+          key: ${{ steps.docker-cache-key.outputs.key }}
       - name: Run Integration Tests
-        run: make gointegration-test GROUP=${{ matrix.group }}
+        run: make gointegration-test GROUP="${{ matrix.group }}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   integration-sudo-tests-matrix:
+    needs: [setup-environment, ci-scope]
+    if: needs.ci-scope.outputs.mode != 'skip'
     strategy:
       fail-fast: false
       matrix:
@@ -412,7 +410,6 @@ jobs:
           - extension/cgroupruntimeextension
           - receiver/icmpcheckreceiver
     runs-on: ubuntu-24.04
-    needs: [setup-environment]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
@@ -436,7 +433,7 @@ jobs:
         run: echo ${{ needs.integration-tests-matrix.result }}
       - name: Interpret result
         run: |
-          if [[ success == ${{ needs.integration-tests-matrix.result }} ]]
+          if [[ success == ${{ needs.integration-tests-matrix.result }} || skipped == ${{ needs.integration-tests-matrix.result }} ]]
           then
             echo "All matrix jobs passed!"
           else
@@ -581,7 +578,7 @@ jobs:
           docker run otel/opentelemetry-collector-contrib-dev:"$GITHUB_SHA" --version
           docker run otel/opentelemetry-collector-contrib-dev:latest --version
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
