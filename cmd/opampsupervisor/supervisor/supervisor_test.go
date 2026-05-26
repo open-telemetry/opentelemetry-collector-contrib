@@ -2057,6 +2057,16 @@ func writeValidationExecutable(t *testing.T, exitCode int) string {
 	t.Helper()
 
 	executablePath := filepath.Join(t.TempDir(), "fake-collector")
+	if runtime.GOOS == "windows" {
+		executablePath += ".bat"
+		script := fmt.Sprintf(`@echo off
+if "%%1"=="validate" exit /b %d
+exit /b 0
+`, exitCode)
+		require.NoError(t, os.WriteFile(executablePath, []byte(script), 0o600))
+		return executablePath
+	}
+
 	script := fmt.Sprintf(`#!/bin/sh
 if [ "$1" = "validate" ]; then
   exit %d
