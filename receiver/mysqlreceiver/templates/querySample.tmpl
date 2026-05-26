@@ -1,4 +1,4 @@
-SELECT
+/* otel-collector-ignore */ SELECT
     thread.processlist_id AS session_id,
     thread.thread_id AS internal_thread_id,
     COALESCE(thread.processlist_user, '') AS session_user,
@@ -105,4 +105,5 @@ WHERE
           Where current_waits.thread_id = thread.thread_id
     ) OR wait.event_id is NULL)
     AND COALESCE(statement.sql_text, thread.PROCESSLIST_info) != ''
+    AND COALESCE(statement.sql_text, thread.PROCESSLIST_info) NOT LIKE '/* otel-collector-ignore */%'
 LIMIT {{ .limit }}
