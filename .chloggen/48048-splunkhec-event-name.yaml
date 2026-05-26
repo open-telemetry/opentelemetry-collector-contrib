@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: pkg/translator/splunk
-note: Propagate the OTLP log record `EventName` field into the Splunk HEC event under the configured `otel_to_hec_fields/name` key (default `otel.log.name`).
-issues: [48048]
-change_logs: [user]
