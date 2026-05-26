@@ -248,6 +248,7 @@ func handleStatus(s *status, attr pcommon.Map) {
 	if s == nil {
 		return
 	}
+	// TODO: Remove the old attribute in the future.
 	if s.Code != nil {
 		shared.PutInt(string(conventionsv138.RPCJSONRPCErrorCodeKey), s.Code, attr)
 		shared.PutStr(string(conventions.RPCResponseStatusCodeKey), strconv.FormatInt(*s.Code, 10), attr)
