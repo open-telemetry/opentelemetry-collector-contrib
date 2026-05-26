@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	metricnoop "go.opentelemetry.io/otel/metric/noop"
+	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -69,6 +71,19 @@ func buildExporterSettings(typ component.Type, params exporter.Settings, endpoin
 	return params
 }
 
+func buildTopLevelExporterSettings(params exporter.Settings) exporter.Settings {
+	noopMeterProvider := metricnoop.NewMeterProvider()
+	noopTracerProvider := tracenoop.NewTracerProvider()
+
+	telemetry := params.TelemetrySettings
+	telemetry.MeterProvider = noopMeterProvider
+	telemetry.TracerProvider = noopTracerProvider
+	params.TelemetrySettings = telemetry
+	params.MeterProvider = noopMeterProvider
+	params.TracerProvider = noopTracerProvider
+	return params
+}
+
 func buildExporterQueueSettings(cfg *Config) configoptional.Optional[exporterhelper.QueueBatchConfig] {
 	if !cfg.QueueSettings.HasValue() {
 		return configoptional.None[exporterhelper.QueueBatchConfig]()
@@ -108,10 +123,11 @@ func createTracesExporter(ctx context.Context, params exporter.Settings, cfg com
 		exporterhelper.WithShutdown(exp.Shutdown),
 		exporterhelper.WithCapabilities(exp.Capabilities()),
 	}
+	helperParams := buildTopLevelExporterSettings(params)
 
 	return exporterhelper.NewTraces(
 		ctx,
-		params,
+		helperParams,
 		cfg,
 		exp.ConsumeTraces,
 		buildExporterResilienceOptions(options, c)...,
@@ -130,10 +146,11 @@ func createLogsExporter(ctx context.Context, params exporter.Settings, cfg compo
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithCapabilities(exporter.Capabilities()),
 	}
+	helperParams := buildTopLevelExporterSettings(params)
 
 	return exporterhelper.NewLogs(
 		ctx,
-		params,
+		helperParams,
 		cfg,
 		exporter.ConsumeLogs,
 		buildExporterResilienceOptions(options, c)...,
@@ -152,10 +169,11 @@ func createMetricsExporter(ctx context.Context, params exporter.Settings, cfg co
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithCapabilities(exporter.Capabilities()),
 	}
+	helperParams := buildTopLevelExporterSettings(params)
 
 	return exporterhelper.NewMetrics(
 		ctx,
-		params,
+		helperParams,
 		cfg,
 		exporter.ConsumeMetrics,
 		buildExporterResilienceOptions(options, c)...,
