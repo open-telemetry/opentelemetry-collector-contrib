@@ -539,7 +539,7 @@ jobs:
 
   publish-check:
     runs-on: ubuntu-24.04
-    needs: [lint, unittest, integration-tests]
+    needs: [lint, unittest, integration-tests, cross-compile]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
