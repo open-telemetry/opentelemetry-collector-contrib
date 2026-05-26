@@ -53,11 +53,11 @@ jobs:
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+          permission-members: read
 
       - name: Gen CODEOWNERS
         run: |
-          cd pr
-          GITHUB_TOKEN=${{ steps.otelbot-token.outputs.token }} make codeowners
-          if ! git diff -s --exit-code; then echo 'Generated code is out of date, please run "make update-codeowners" and commit the changes in this PR.' && git diff && exit 1; fi
+          GITHUB_TOKEN=${{ steps.otelbot-token.outputs.token }} GITHUBGEN_ARGS="-folder=pr" make codeowners
+          if ! git -C pr diff -s --exit-code; then echo 'Generated code is out of date, please run "make update-codeowners" and commit the changes in this PR.' && git -C pr diff && exit 1; fi
 
       - run: ./.github/workflows/scripts/check-disk-space.sh
