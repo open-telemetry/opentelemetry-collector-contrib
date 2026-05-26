@@ -15,8 +15,8 @@ The `windows_eventlog_input` operator reads logs from the windows event log API.
 | `poll_interval` | 1s                       | The interval at which the channel is checked for new log entries. This check begins again after all new bodies have been read. |
 | `raw` | false | If false, the body of emitted log records will contain a structured representation of the event. Otherwise, the body will be the original XML string. |
 | `suppress_rendering_info` | false | If false, [additional syscalls](https://learn.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtformatmessage#remarks) may be made to retrieve detailed information about the event. Otherwise, some unresolved values may be present in the event. |
-| `attributes`    | {}                       | A map of `key: value` pairs to add to the entry's attributes. |
-| `resource`      | {}                       | A map of `key: value` pairs to add to the entry's resource. |
+| `attributes`    | {}                       | A map of `key: value` pairs to add to the entry's attributes. Keys must be strings, values must be strings or [expressions](../types/expression.md) that evaluate to a string. |
+| `resource`      | {}                       | A map of `key: value` pairs to add to the entry's resource. Keys must be strings, values must be strings or [expressions](../types/expression.md) that evaluate to a string. |
 
 ### Example Configurations
 
