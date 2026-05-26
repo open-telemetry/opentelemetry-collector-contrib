@@ -2,7 +2,10 @@ name: build-and-test-experimental
 on:
   pull_request:
     # `labeled`/`unlabeled` are required so that adding/removing `ci:full` on
-    # an open PR retriggers the workflow with the new scope.
+    # an open PR retriggers the workflow with the new scope. GitHub doesn't
+    # let us filter these events by label name at the trigger level, so root
+    # jobs below also gate on `github.event.label.name == 'ci:full'` to skip
+    # unrelated label churn (e.g. `waiting-for-code-owners`).
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions: read-all
@@ -19,7 +22,7 @@ jobs:
   exp-setup-environment:
     timeout-minutes: 30
     runs-on: ubuntu-24.04
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
@@ -53,7 +56,7 @@ jobs:
   # which doesn't fit the group-matrix shape.
   exp-ci-scope:
     runs-on: ubuntu-24.04
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     outputs:
       matrix: ${{ steps.post.outputs.matrix }}
       direct_matrix: ${{ steps.post.outputs.direct_matrix }}
@@ -161,7 +164,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   exp-lint:
-    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [exp-setup-environment, exp-lint-matrix]
     steps:
@@ -195,7 +198,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   exp-govulncheck:
-    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [exp-setup-environment, exp-govulncheck-matrix]
     steps:
@@ -298,7 +301,7 @@ jobs:
           fi
 
   exp-unittest:
-    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [exp-setup-environment, exp-unittest-matrix]
     steps:
@@ -340,10 +343,25 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
+      - name: Compute Docker cache key
+        id: docker-cache-key
+        env:
+          GROUP: ${{ matrix.group }}
+        run: |
+          normalized_group="$(
+            printf '%s' "$GROUP" \
+              | tr '[:space:]' '\n' \
+              | sed '/^$/d' \
+              | sort \
+              | tr '\n' ' ' \
+              | sed 's/[[:space:]]\+$//'
+          )"
+          group_hash="$(printf '%s' "$normalized_group" | sha256sum | cut -d ' ' -f 1)"
+          echo "key=docker-experimental-${group_hash}" >> "$GITHUB_OUTPUT"
       - name: Cache Docker images.
         uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
         with:
-          key: docker-experimental-${{ matrix.group }}
+          key: ${{ steps.docker-cache-key.outputs.key }}
       - name: Run Integration Tests
         run: make gointegration-test GROUP="${{ matrix.group }}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
@@ -372,7 +390,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   exp-integration-tests:
-    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [exp-setup-environment, exp-integration-tests-matrix, exp-integration-sudo-tests-matrix]
     steps:

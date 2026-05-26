@@ -96,11 +96,11 @@ The following configuration options can also be configured:
   [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md).
 - `sync_host_metadata`: Defines whether the exporter should scrape host metadata
   and send it as property updates to SignalFx backend. Disabled by default.
-  IMPORTANT: Host metadata synchronization relies on `resourcedetection`
-  processor. If this option is enabled make sure that `resourcedetection`
+  IMPORTANT: Host metadata synchronization relies on `resource_detection`
+  processor. If this option is enabled make sure that `resource_detection`
   processor is enabled in the pipeline with one of the cloud provider detectors
   or environment variable detector setting a unique value to `host.id` attribute
-  within your k8s cluster. And keep `override=true` in resourcedetection config.
+  within your k8s cluster. And keep `override=true` in resource_detection config.
 - `root_path`: Used by the host metadata to identify the root filesystem.
   This is needed when running in a containerized environment and the host root
   filesystem is not `/`. Example: if the root filesystem is mounted under `/hostfs`, set
