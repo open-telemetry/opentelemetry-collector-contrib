@@ -5,8 +5,8 @@ go 1.25.0
 require (
 	github.com/alexbrainman/sspi v0.0.0-20250919150558-7d374ff0d59e
 	github.com/go-ldap/ldap/v3 v3.4.13
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.152.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.152.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.153.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.153.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.59.0
 	go.opentelemetry.io/collector/confmap v1.59.0
@@ -34,7 +34,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/elastic/lunes v0.2.0 // indirect
+	github.com/elastic/lunes v0.2.2 // indirect
 	github.com/expr-lang/expr v1.17.8 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.8-0.20250403174932-29230038a667 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect

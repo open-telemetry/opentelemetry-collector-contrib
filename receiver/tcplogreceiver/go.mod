@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplog
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.152.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.153.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.59.0
 	go.opentelemetry.io/collector/confmap v1.59.0
@@ -15,7 +15,7 @@ require (
 )
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.152.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.153.0
 	go.opentelemetry.io/collector/component/componenttest v0.153.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.153.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.153.0
@@ -29,7 +29,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/elastic/lunes v0.2.0 // indirect
+	github.com/elastic/lunes v0.2.2 // indirect
 	github.com/expr-lang/expr v1.17.8 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250903184740-5d135037bd4d // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect

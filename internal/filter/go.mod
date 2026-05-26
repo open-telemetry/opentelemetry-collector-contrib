@@ -5,9 +5,9 @@ go 1.25.0
 require (
 	github.com/expr-lang/expr v1.17.8
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.152.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.152.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.152.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.153.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.153.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.153.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.59.0
 	go.opentelemetry.io/collector/component/componenttest v0.153.0
@@ -26,7 +26,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
-	github.com/elastic/lunes v0.2.0 // indirect
+	github.com/elastic/lunes v0.2.2 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
