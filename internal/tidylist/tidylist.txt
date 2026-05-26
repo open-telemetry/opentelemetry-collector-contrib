@@ -65,6 +65,7 @@ receiver/syslogreceiver
 testbed/mockdatasenders/mockdatadogagentexporter
 testbed
 cmd/opampsupervisor
+pkg/schemagen
 cmd/schemagen
 cmd/telemetrygen
 cmd/telemetrygen/internal/e2etest
