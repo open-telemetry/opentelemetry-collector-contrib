@@ -179,8 +179,6 @@ func TestBuildTopLevelExporterSettings(t *testing.T) {
 
 	assert.IsType(t, metricnoop.NewMeterProvider(), helperParams.MeterProvider)
 	assert.IsType(t, tracenoop.NewTracerProvider(), helperParams.TracerProvider)
-	assert.IsType(t, metricnoop.NewMeterProvider(), helperParams.TelemetrySettings.MeterProvider)
-	assert.IsType(t, tracenoop.NewTracerProvider(), helperParams.TelemetrySettings.TracerProvider)
 	assert.Equal(t, creationParams.ID, helperParams.ID)
 }
 
