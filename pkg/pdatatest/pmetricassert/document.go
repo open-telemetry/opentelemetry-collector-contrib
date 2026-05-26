@@ -19,8 +19,8 @@ const documentVersion = 1
 //
 // The schema implements the identity-only subset of the grammar proposed in
 // issue #48079: default-exact matching, order-insensitive collections,
-// identity fields only. Operator-suffix extensions (/include, /regex,
-// /count, ...) are tracked as follow-ups.
+// identity fields only. Operator-suffix extensions (/include, /count, ...)
+// are tracked as follow-ups.
 type document struct {
 	Version   int                 `yaml:"version"`
 	Signal    string              `yaml:"signal"`
