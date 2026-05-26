@@ -3177,6 +3177,41 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 			})
 		}
 	})
+	t.Run("default mode from allowed modes", func(t *testing.T) {
+		for _, tc := range []struct {
+			name         string
+			allowedModes []string
+			check        checkFunc
+		}{
+			{
+				name:         "first allowed mode if otel not included",
+				allowedModes: []string{"ecs", "raw"},
+				check:        checkECSResource,
+			},
+			{
+				name:         "otel if otel is included",
+				allowedModes: []string{"raw", "ecs", "otel"},
+				check:        checkOTelResource,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				traces := createTraces(defaultScope)
+				exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.AllowedModes = tc.allowedModes
+				})
+				mustSendTraces(t, exporter, traces)
+
+				docs := rec.WaitItems(1)
+				tc.check(t, docs[0].Document, "traces")
+			})
+		}
+	})
 }
 
 // TestExporterAuth verifies that the Elasticsearch exporter supports
