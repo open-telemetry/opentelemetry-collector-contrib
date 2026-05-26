@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/fluent/fluent-logger-golang v1.10.1
-	github.com/jaegertracing/jaeger-idl v0.7.1
+	github.com/jaegertracing/jaeger-idl v0.9.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.153.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.153.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.153.0
