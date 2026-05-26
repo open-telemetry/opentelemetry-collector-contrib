@@ -14,8 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetricassert"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
 )
 
@@ -49,12 +48,11 @@ func Test_scraper_readStats(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, m)
 
-	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
-	expectedMetrics, err := golden.ReadMetrics(expectedFile)
-	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, m, pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreResourceAttributeValue("haproxy.addr"),
-		pmetrictest.IgnoreResourceMetricsOrder()))
+	expectedFile := filepath.Join("testdata", "scraper", "metrics.assert.yaml")
+	// To regenerate: uncomment, run the test once, re-comment.
+	// require.NoError(t, pmetricassert.WriteAssertionFile(t, expectedFile, m))
+
+	require.NoError(t, pmetricassert.AssertMetrics(expectedFile, m))
 }
 
 func Test_scraper_readStatsWithIncompleteValues(t *testing.T) {
@@ -87,12 +85,11 @@ func Test_scraper_readStatsWithIncompleteValues(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, m)
 
-	expectedFile := filepath.Join("testdata", "scraper", "30252_expected.yaml")
-	expectedMetrics, err := golden.ReadMetrics(expectedFile)
-	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, m, pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreResourceAttributeValue("haproxy.addr"),
-		pmetrictest.IgnoreResourceMetricsOrder()))
+	expectedFile := filepath.Join("testdata", "scraper", "30252_metrics.assert.yaml")
+	// To regenerate: uncomment, run the test once, re-comment.
+	// require.NoError(t, pmetricassert.WriteAssertionFile(t, expectedFile, m))
+
+	require.NoError(t, pmetricassert.AssertMetrics(expectedFile, m))
 }
 
 func Test_scraper_readStatsWithNoValues(t *testing.T) {

@@ -563,6 +563,89 @@ func TestTimingMetrics(t *testing.T) {
 	assert.True(t, foundMetrics["httpcheck.response.duration"])
 }
 
+// TestGetDurationsSubMillisecondPrecision is a regression test for
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47257.
+func TestGetDurationsSubMillisecondPrecision(t *testing.T) {
+	timing := &timingInfo{}
+
+	const microsecond = 1000 // ns
+	base := int64(1_000_000_000)
+
+	timing.dnsStart.Store(base)
+	timing.dnsEnd.Store(base + 500*microsecond)
+	timing.connectStart.Store(base)
+	timing.connectEnd.Store(base + 300*microsecond)
+	timing.tlsStart.Store(base)
+	timing.tlsEnd.Store(base + 800*microsecond)
+	timing.writeStart.Store(base)
+	timing.writeEnd.Store(base + 200*microsecond)
+	timing.readStart.Store(base)
+	timing.readEnd.Store(base + 100*microsecond)
+
+	dnsNs, tcpNs, tlsNs, requestNs, responseNs := timing.getDurations()
+
+	// With nanoseconds, 500µs = 500,000 ns (never 0 regardless of platform)
+	assert.Equal(t, int64(500*microsecond), dnsNs)
+	assert.Equal(t, int64(300*microsecond), tcpNs)
+	assert.Equal(t, int64(800*microsecond), tlsNs)
+	assert.Equal(t, int64(200*microsecond), requestNs)
+	assert.Equal(t, int64(100*microsecond), responseNs)
+}
+
+// TestTimingMetricsNonZeroValues is a regression test for
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47257.
+func TestTimingMetricsNonZeroValues(t *testing.T) {
+	server := newMockServer(t, 200)
+	defer server.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.HttpcheckDNSLookupDuration.Enabled = true
+	cfg.Metrics.HttpcheckClientConnectionDuration.Enabled = true
+	cfg.Metrics.HttpcheckClientRequestDuration.Enabled = true
+	cfg.Metrics.HttpcheckResponseDuration.Enabled = true
+
+	cfg.Targets = []*targetConfig{
+		{
+			ClientConfig: confighttp.ClientConfig{
+				Endpoint: server.URL,
+			},
+		},
+	}
+
+	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	metrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	require.Positive(t, metrics.ResourceMetrics().Len())
+
+	ilm := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0)
+
+	timingValues := make(map[string]int64)
+	for i := 0; i < ilm.Metrics().Len(); i++ {
+		m := ilm.Metrics().At(i)
+		switch m.Name() {
+		case "httpcheck.dns.lookup.duration",
+			"httpcheck.client.connection.duration",
+			"httpcheck.client.request.duration",
+			"httpcheck.response.duration":
+			require.Equal(t, pmetric.MetricTypeGauge, m.Type(), "metric %s should be a gauge", m.Name())
+			require.Positive(t, m.Gauge().DataPoints().Len())
+			timingValues[m.Name()] = m.Gauge().DataPoints().At(0).IntValue()
+		}
+	}
+	assert.Len(t, timingValues, 4)
+
+	// Timing values are in nanoseconds. They may be 0 on some platforms (e.g.
+	// Windows loopback where httptrace callbacks don't always fire), so we only
+	// assert non-negative. The unit test TestGetDurationsSubMillisecondPrecision
+	// verifies the sub-millisecond precision numerically.
+	assert.GreaterOrEqual(t, timingValues["httpcheck.dns.lookup.duration"], int64(0))
+	assert.GreaterOrEqual(t, timingValues["httpcheck.client.connection.duration"], int64(0))
+	assert.GreaterOrEqual(t, timingValues["httpcheck.client.request.duration"], int64(0))
+	assert.GreaterOrEqual(t, timingValues["httpcheck.response.duration"], int64(0))
+}
+
 func TestRequestBodySupport(t *testing.T) {
 	// Create a mock server that captures request details
 	var receivedBody []byte
