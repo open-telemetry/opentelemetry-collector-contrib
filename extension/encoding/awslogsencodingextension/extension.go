@@ -14,6 +14,7 @@ import (
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -40,6 +41,7 @@ const (
 var (
 	_ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
 	_ encoding.LogsDecoderExtension     = (*encodingExtension)(nil)
+	_ extensioncapabilities.Dependent   = (*encodingExtension)(nil)
 )
 
 var (
@@ -66,19 +68,25 @@ type encodingExtension struct {
 	cfg *Config
 
 	unmarshaler             awsunmarshaler.AWSUnmarshaler
+	subscriptionFilter      *subscriptionfilter.SubscriptionFilterUnmarshaler
 	format                  string
 	gzipPool                sync.Pool
 	logger                  *zap.Logger
 	warnGzipDeprecationOnce sync.Once
+	selfID                  component.ID
 }
 
 func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension, error) {
 	switch cfg.Format {
 	case constants.FormatCloudWatchLogsSubscriptionFilter:
+		sub := subscriptionfilter.NewSubscriptionFilterUnmarshaler(settings.BuildInfo)
 		return &encodingExtension{
-			unmarshaler: subscriptionfilter.NewSubscriptionFilterUnmarshaler(settings.BuildInfo),
-			format:      constants.FormatCloudWatchLogsSubscriptionFilter,
-			logger:      settings.Logger,
+			cfg:                cfg,
+			unmarshaler:        sub,
+			subscriptionFilter: sub,
+			format:             constants.FormatCloudWatchLogsSubscriptionFilter,
+			logger:             settings.Logger,
+			selfID:             settings.ID,
 		}, nil
 	case constants.FormatVPCFlowLog:
 		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
@@ -140,8 +148,29 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	}
 }
 
-func (*encodingExtension) Start(_ context.Context, _ component.Host) error {
-	return nil
+// Dependencies declares the inner encoding extensions referenced by the
+// CloudWatch routing config so the framework starts them before this one.
+func (e *encodingExtension) Dependencies() []component.ID {
+	if e.format != constants.FormatCloudWatchLogsSubscriptionFilter || len(e.cfg.CloudWatch.Streams) == 0 {
+		return nil
+	}
+	seen := make(map[component.ID]bool, len(e.cfg.CloudWatch.Streams))
+	deps := make([]component.ID, 0, len(e.cfg.CloudWatch.Streams))
+	for _, s := range e.cfg.CloudWatch.Streams {
+		if seen[s.Encoding] {
+			continue
+		}
+		seen[s.Encoding] = true
+		deps = append(deps, s.Encoding)
+	}
+	return deps
+}
+
+func (e *encodingExtension) Start(_ context.Context, host component.Host) error {
+	if e.subscriptionFilter == nil || len(e.cfg.CloudWatch.Streams) == 0 {
+		return nil
+	}
+	return e.subscriptionFilter.ConfigureRoutes(e.cfg.CloudWatch.Streams, host, e.selfID)
 }
 
 func (*encodingExtension) Shutdown(_ context.Context) error {

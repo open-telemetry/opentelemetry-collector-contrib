@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -375,9 +375,11 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 		setResourceAttribute(attrs, containerImageTag, containerSpec.ImageTag)
 	}
 	if enableStable && len(containerSpec.ImageTags) > 0 {
-		sliceVal := attrs.PutEmptySlice(string(conventions.ContainerImageTagsKey))
-		for _, tag := range containerSpec.ImageTags {
-			sliceVal.AppendEmpty().SetStr(tag)
+		if _, found := attrs.Get(string(conventions.ContainerImageTagsKey)); !found {
+			sliceVal := attrs.PutEmptySlice(string(conventions.ContainerImageTagsKey))
+			for _, tag := range containerSpec.ImageTags {
+				sliceVal.AppendEmpty().SetStr(tag)
+			}
 		}
 	}
 	if containerSpec.ServiceInstanceID != "" {

@@ -58,18 +58,18 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["HttpcheckClientConnectionDuration"] = mb.metricHttpcheckClientConnectionDuration.config.AggregationStrategy
-			aggMap["HttpcheckClientRequestDuration"] = mb.metricHttpcheckClientRequestDuration.config.AggregationStrategy
-			aggMap["HttpcheckDNSLookupDuration"] = mb.metricHttpcheckDNSLookupDuration.config.AggregationStrategy
-			aggMap["HttpcheckDuration"] = mb.metricHttpcheckDuration.config.AggregationStrategy
-			aggMap["HttpcheckError"] = mb.metricHttpcheckError.config.AggregationStrategy
-			aggMap["HttpcheckResponseDuration"] = mb.metricHttpcheckResponseDuration.config.AggregationStrategy
-			aggMap["HttpcheckResponseSize"] = mb.metricHttpcheckResponseSize.config.AggregationStrategy
-			aggMap["HttpcheckStatus"] = mb.metricHttpcheckStatus.config.AggregationStrategy
-			aggMap["HttpcheckTLSCertRemaining"] = mb.metricHttpcheckTLSCertRemaining.config.AggregationStrategy
-			aggMap["HttpcheckTLSHandshakeDuration"] = mb.metricHttpcheckTLSHandshakeDuration.config.AggregationStrategy
-			aggMap["HttpcheckValidationFailed"] = mb.metricHttpcheckValidationFailed.config.AggregationStrategy
-			aggMap["HttpcheckValidationPassed"] = mb.metricHttpcheckValidationPassed.config.AggregationStrategy
+			aggMap["httpcheck.client.connection.duration"] = mb.metricHttpcheckClientConnectionDuration.config.AggregationStrategy
+			aggMap["httpcheck.client.request.duration"] = mb.metricHttpcheckClientRequestDuration.config.AggregationStrategy
+			aggMap["httpcheck.dns.lookup.duration"] = mb.metricHttpcheckDNSLookupDuration.config.AggregationStrategy
+			aggMap["httpcheck.duration"] = mb.metricHttpcheckDuration.config.AggregationStrategy
+			aggMap["httpcheck.error"] = mb.metricHttpcheckError.config.AggregationStrategy
+			aggMap["httpcheck.response.duration"] = mb.metricHttpcheckResponseDuration.config.AggregationStrategy
+			aggMap["httpcheck.response.size"] = mb.metricHttpcheckResponseSize.config.AggregationStrategy
+			aggMap["httpcheck.status"] = mb.metricHttpcheckStatus.config.AggregationStrategy
+			aggMap["httpcheck.tls.cert_remaining"] = mb.metricHttpcheckTLSCertRemaining.config.AggregationStrategy
+			aggMap["httpcheck.tls.handshake.duration"] = mb.metricHttpcheckTLSHandshakeDuration.config.AggregationStrategy
+			aggMap["httpcheck.validation.failed"] = mb.metricHttpcheckValidationFailed.config.AggregationStrategy
+			aggMap["httpcheck.validation.passed"] = mb.metricHttpcheckValidationPassed.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -203,7 +203,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Time spent establishing TCP connection to the endpoint.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
+						assert.Equal(t, "ns", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -221,7 +221,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Time spent establishing TCP connection to the endpoint.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
+						assert.Equal(t, "ns", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -248,7 +248,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Time spent sending the HTTP request to the endpoint.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
+						assert.Equal(t, "ns", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -263,7 +263,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Time spent sending the HTTP request to the endpoint.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
+						assert.Equal(t, "ns", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -288,7 +288,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Time spent performing DNS lookup for the endpoint.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
+						assert.Equal(t, "ns", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -303,7 +303,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Time spent performing DNS lookup for the endpoint.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
+						assert.Equal(t, "ns", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -417,7 +417,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Time spent receiving the HTTP response from the endpoint.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
+						assert.Equal(t, "ns", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -432,7 +432,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Time spent receiving the HTTP response from the endpoint.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
+						assert.Equal(t, "ns", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -611,7 +611,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Time spent performing TLS handshake with the endpoint.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
+						assert.Equal(t, "ns", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -626,7 +626,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Time spent performing TLS handshake with the endpoint.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
+						assert.Equal(t, "ns", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
