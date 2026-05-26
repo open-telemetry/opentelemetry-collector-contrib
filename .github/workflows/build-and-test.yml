@@ -6,6 +6,12 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+*"
   merge_group:
   pull_request:
+    # `labeled`/`unlabeled` are required so that adding/removing `ci:full` on
+    # an open PR retriggers the workflow with the new scope. GitHub doesn't
+    # let us filter these events by label name at the trigger level, so root
+    # jobs below also gate on `github.event.label.name == 'ci:full'` to skip
+    # unrelated label churn (e.g. `waiting-for-code-owners`).
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions: read-all
 
@@ -24,7 +30,7 @@ jobs:
   setup-environment:
     timeout-minutes: 30
     runs-on: ubuntu-24.04
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
@@ -56,7 +62,7 @@ jobs:
   # which doesn't fit the group-matrix shape.
   ci-scope:
     runs-on: ubuntu-24.04
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     outputs:
       matrix: ${{ steps.post.outputs.matrix }}
       direct_matrix: ${{ steps.post.outputs.direct_matrix }}
@@ -159,7 +165,7 @@ jobs:
         run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP="${{ matrix.group }}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
   lint:
-    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [setup-environment, lint-matrix]
     steps:
@@ -333,7 +339,7 @@ jobs:
           fi
 
   unittest:
-    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [setup-environment, unittest-matrix]
     steps:
@@ -425,7 +431,7 @@ jobs:
 
 
   integration-tests:
-    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [setup-environment, integration-tests-matrix, integration-sudo-tests-matrix]
     steps:
