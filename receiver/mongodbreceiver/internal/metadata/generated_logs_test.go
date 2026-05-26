@@ -190,7 +190,7 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("db.query.text")
 					assert.True(t, ok)
 					assert.Equal(t, "db.query.text-val", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("mongodb.query.text.truncated")
+					attrVal, ok = lr.Attributes().Get("mongodb.query.truncated")
 					assert.True(t, ok)
 					assert.True(t, attrVal.Bool())
 					attrVal, ok = lr.Attributes().Get("user.name")

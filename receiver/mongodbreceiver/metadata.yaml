@@ -178,7 +178,7 @@ attributes:
     description: |
       The MongoDB query execution engine that processed this operation. Only present for operations that flow through the query subsystem (reads, read-modify-writes, and getMore continuations); absent for pure inserts, index management, and administrative commands. Known values include `classic` and `sbe`.
     type: string
-  mongodb.query.text.truncated:
+  mongodb.query.truncated:
     description: Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output.
     type: bool
   operation:
@@ -225,7 +225,7 @@ events:
       - db.operation.id
       - db.operation.name
       - db.query.text
-      - mongodb.query.text.truncated
+      - mongodb.query.truncated
       - user.name
       - mongodb.client.app.name
       - mongodb.cursor.await_data

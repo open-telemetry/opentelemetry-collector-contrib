@@ -570,7 +570,7 @@ query sample
 | db.operation.id | Identifier of the MongoDB operation. | Any Str | - |
 | db.operation.name | The name of the MongoDB command being executed. | Any Str | - |
 | db.query.text | The obfuscated MongoDB command statement. | Any Str | - |
-| mongodb.query.text.truncated | Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output. | Any Bool | - |
+| mongodb.query.truncated | Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output. | Any Bool | - |
 | user.name | Name of the user associated with the operation. | Any Str | - |
 | mongodb.client.app.name | The identifier of the client application which ran the operation, as set by the driver's `appName` connection option. | Any Str | - |
 | mongodb.cursor.await_data | Whether the tailable cursor waits for new data instead of returning immediately. | Any Bool | - |
