@@ -65,6 +65,78 @@ func TestValidate(t *testing.T) {
 			},
 			wantErr: `sources[1]: duplicate source "openinference"`,
 		},
+		{
+			name: "valid custom source",
+			cfg: Config{
+				Sources: []Source{{
+					Name:     SourceCustom,
+					Mappings: map[string]string{"my_vendor.model": "gen_ai.request.model"},
+				}},
+			},
+		},
+		{
+			name: "custom source with empty mappings",
+			cfg: Config{
+				Sources: []Source{{Name: SourceCustom}},
+			},
+			wantErr: `sources[0]: custom source requires non-empty "mappings"`,
+		},
+		{
+			name: "built-in source with mappings set",
+			cfg: Config{
+				Sources: []Source{{
+					Name:     SourceOpenInference,
+					Mappings: map[string]string{"foo": "gen_ai.request.model"},
+				}},
+			},
+			wantErr: `sources[0]: "mappings" is only valid for the "custom" source`,
+		},
+		{
+			name: "two custom sources allowed",
+			cfg: Config{
+				Sources: []Source{
+					{Name: SourceCustom, Mappings: map[string]string{"vendor_a.model": "gen_ai.request.model"}},
+					{Name: SourceCustom, Mappings: map[string]string{"vendor_b.model": "gen_ai.request.model"}},
+				},
+			},
+		},
+		{
+			name: "valid custom source with value_mappings",
+			cfg: Config{
+				Sources: []Source{{
+					Name:     SourceCustom,
+					Mappings: map[string]string{"my_vendor.op": "gen_ai.operation.name"},
+					ValueMappings: map[string]map[string]string{
+						"gen_ai.operation.name": {"chat_completion": "chat"},
+					},
+				}},
+			},
+		},
+		{
+			name: "built-in source with value_mappings set",
+			cfg: Config{
+				Sources: []Source{{
+					Name: SourceOpenInference,
+					ValueMappings: map[string]map[string]string{
+						"gen_ai.operation.name": {"chat_completion": "chat"},
+					},
+				}},
+			},
+			wantErr: `sources[0]: "value_mappings" is only valid for the "custom" source`,
+		},
+		{
+			name: "value_mappings key not in mappings targets",
+			cfg: Config{
+				Sources: []Source{{
+					Name:     SourceCustom,
+					Mappings: map[string]string{"my_vendor.model": "gen_ai.request.model"},
+					ValueMappings: map[string]map[string]string{
+						"gen_ai.operation.name": {"chat_completion": "chat"},
+					},
+				}},
+			},
+			wantErr: `sources[0]: "value_mappings" key "gen_ai.operation.name" is not a target in "mappings"`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -143,6 +215,78 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(metadata.Type, "duplicate_source"),
 			errorMessage: `duplicate source "openinference"`,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "custom_only"),
+			expected: &Config{
+				Sources: []Source{{
+					Name:            SourceCustom,
+					RemoveOriginals: true,
+					Mappings: map[string]string{
+						"my_vendor.model":     "gen_ai.request.model",
+						"my_vendor.tokens.in": "gen_ai.usage.input_tokens",
+					},
+				}},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "custom_with_builtin"),
+			expected: &Config{
+				Sources: []Source{
+					{Name: SourceOpenInference, RemoveOriginals: true},
+					{
+						Name:            SourceCustom,
+						RemoveOriginals: true,
+						Mappings:        map[string]string{"my_vendor.model": "gen_ai.request.model"},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "multiple_custom"),
+			expected: &Config{
+				Sources: []Source{
+					{
+						Name:            SourceCustom,
+						RemoveOriginals: true,
+						Mappings:        map[string]string{"vendor_a.model": "gen_ai.request.model"},
+					},
+					{
+						Name:            SourceCustom,
+						RemoveOriginals: true,
+						Overwrite:       true,
+						Mappings:        map[string]string{"vendor_b.model": "gen_ai.request.model"},
+					},
+				},
+			},
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "custom_empty_mappings"),
+			errorMessage: `custom source requires non-empty "mappings"`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "openinference_with_mappings"),
+			errorMessage: `"mappings" is only valid for the "custom" source`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "custom_unreachable_value_mapping"),
+			errorMessage: `"value_mappings" key "gen_ai.operation.name" is not a target in "mappings"`,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "custom_with_value_mappings"),
+			expected: &Config{
+				Sources: []Source{{
+					Name:            SourceCustom,
+					RemoveOriginals: true,
+					Mappings:        map[string]string{"my_vendor.op": "gen_ai.operation.name"},
+					ValueMappings: map[string]map[string]string{
+						"gen_ai.operation.name": {
+							"chat_completion": "chat",
+							"tool_invoke":     "execute_tool",
+						},
+					},
+				}},
+			},
 		},
 	}
 	for _, tt := range tests {

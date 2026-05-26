@@ -19,6 +19,7 @@ The GenAI Normalizer Processor rewrites attributes on spans emitted by non-OTel 
 
 - `openinference` — [OpenInference](https://github.com/Arize-ai/openinference) instrumentation
 - `openllmetry` — [OpenLLMetry (Traceloop)](https://github.com/traceloop/openllmetry) instrumentation
+- `custom` — user-defined attribute renames and value foldings; see [Source: custom](#source-custom)
 
 ### Top-level fields
 
@@ -32,9 +33,11 @@ Each entry in `sources` accepts the following fields:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `name` | string | _required_ | Source convention name. One of `openinference`, `openllmetry`. |
+| `name` | string | _required_ | Source convention name. One of `openinference`, `openllmetry`, `custom`. |
 | `remove_originals` | bool | `false` | Delete source attributes after mapping. |
 | `overwrite` | bool | `false` | When `true`, overwrite the target attribute if it already exists. When `false`, skip the mapping. |
+| `mappings` | map\[string]string | _required for `custom`, rejected otherwise_ | Source-attribute → target-attribute rename table. See [Source: custom](#source-custom). |
+| `value_mappings` | map\[string]map\[string]string | _custom only_ | Per-target value-fold rules, keyed by post-rename target attribute. See [Source: custom](#source-custom). |
 
 ### Scope
 
@@ -110,6 +113,41 @@ processors:
       - name: openllmetry
         remove_originals: true
 ```
+
+User-defined renames and value foldings (see [Source: custom](#source-custom)):
+
+```yaml
+processors:
+  genainormalizer:
+    sources:
+      - name: custom
+        remove_originals: true
+        mappings:
+          my_vendor.model: gen_ai.request.model
+          my_vendor.tokens.in: gen_ai.usage.input_tokens
+        value_mappings:
+          gen_ai.operation.name:
+            chat_completion: chat
+            tool_invoke: execute_tool
+```
+
+## Source: custom
+
+The `custom` source applies user-defined rename and value-fold tables. It reuses the same `remove_originals`, `overwrite`, and type-coercion semantics as the built-in sources.
+
+| Field | Type | Description |
+|---|---|---|
+| `mappings` | map\[string]string | Required. Source-attribute → target-attribute rename table. Must be non-empty. |
+| `value_mappings` | map\[string]map\[string]string | Optional. Outer key is the post-rename target attribute name; inner map folds source string values onto preferred target string values. Source-value lookups are case-insensitive. Non-string sources, missing rules, and unmatched source values pass through verbatim. |
+
+Validation rules:
+
+- `mappings` must be non-empty when `name: custom`.
+- `mappings` and `value_mappings` are rejected on any non-custom source.
+- Each `value_mappings` outer key must appear as a target in `mappings` (catches unreachable rules at config time).
+- Multiple `custom` blocks are allowed in one config; built-in sources still reject duplicates.
+
+Custom mappings landing on typed `gen_ai.*` targets get the same int/float/string/bool/`[]string` coercion as built-in mappings (see [Type handling](#type-handling)). Custom mappings landing on non-`gen_ai.*` targets pass through verbatim.
 
 ## Built-in mappings
 
@@ -200,4 +238,4 @@ Target reference: [OTel GenAI operation names](https://opentelemetry.io/docs/spe
 
 The [`schemaprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/schemaprocessor) translates between OTel semantic convention versions using `schema_url` and the OTel schema file format. Source conventions normalized by this processor do not set `schema_url` and do not publish OTel schema files, so `schemaprocessor` cannot be used for this translation today.
 
-The [`transformprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) can rewrite attributes via OTTL but requires users to author and maintain the full mapping set themselves. This processor ships the mappings built-in.
+The [`transformprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) can rewrite attributes via OTTL but requires users to author and maintain the full mapping set themselves. This processor ships the mappings built-in. For pure value-mutation without renames, prefer `transformprocessor`.

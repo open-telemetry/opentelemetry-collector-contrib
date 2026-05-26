@@ -13,3 +13,9 @@ tests:
   config:
     sources:
       - name: openinference
+      - name: custom
+        mappings:
+          my_vendor.op: gen_ai.operation.name
+        value_mappings:
+          gen_ai.operation.name:
+            chat_completion: chat
