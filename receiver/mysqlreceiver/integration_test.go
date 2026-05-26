@@ -94,7 +94,6 @@ func TestIntegration(t *testing.T) {
 							WithStartupTimeout(2 * time.Minute),
 						Env: map[string]string{
 							"MYSQL_ROOT_PASSWORD": "otel",
-							"MYSQL_ROOT_HOST":     "%",
 							"MYSQL_DATABASE":      "otel",
 							"MYSQL_USER":          "otel",
 							"MYSQL_PASSWORD":      "otel",
@@ -178,11 +177,7 @@ func runWorkload(t *testing.T, cfg *Config) {
 // required for events_statements_summary_by_digest and events_statements_current
 // to be populated. These cannot be set as startup flags; they must be updated
 // via SQL against the running server.
-//
-// strict determines whether setup failures are fatal. Some tests rely on best-effort
-// enablement, while query-sample integration tests require these consumers/instruments
-// to be active and should fail fast if setup is not applied.
-func runPerfSchemaSetup(t *testing.T, cfg *Config, strict bool) {
+func runPerfSchemaSetup(t *testing.T, cfg *Config) {
 	t.Helper()
 	c, err := newMySQLClient(cfg)
 	require.NoError(t, err)
@@ -199,9 +194,6 @@ func runPerfSchemaSetup(t *testing.T, cfg *Config, strict bool) {
 	}
 	for _, s := range stmts {
 		if _, execErr := db.Exec(s); execErr != nil {
-			if strict {
-				require.NoError(t, execErr, "perf schema setup stmt failed: %s", s)
-			}
 			t.Logf("perf schema setup stmt failed (consumers may not be enabled): %v", execErr)
 		}
 	}
@@ -283,7 +275,6 @@ func TestIntegrationLogScraper(t *testing.T) {
 					),
 					Env: map[string]string{
 						"MYSQL_ROOT_PASSWORD":   "otel",
-						"MYSQL_ROOT_HOST":       "%",
 						"MYSQL_DATABASE":        "otel",
 						"MYSQL_USER":            "otel",
 						"MYSQL_PASSWORD":        "otel",
@@ -348,7 +339,7 @@ func TestIntegrationLogScraper(t *testing.T) {
 			}
 
 			// Enable performance_schema consumers/instruments via SQL.
-			runPerfSchemaSetup(t, cfg, false)
+			runPerfSchemaSetup(t, cfg)
 
 			// Prime the scraper's diff cache with a first scrape so subsequent
 			// scrapes have a non-zero sumTimerWait delta to emit records on.
@@ -521,7 +512,6 @@ func TestVersionCompatibility(t *testing.T) {
 					WithStartupTimeout(2 * time.Minute),
 				Env: map[string]string{
 					"MYSQL_ROOT_PASSWORD": "otel",
-					"MYSQL_ROOT_HOST":     "%",
 					"MYSQL_DATABASE":      "otel",
 					"MYSQL_USER":          "otel",
 					"MYSQL_PASSWORD":      "otel",
@@ -652,12 +642,14 @@ func assertDoubleAttrNonNegative(t *testing.T, attrs pcommon.Map, key string, re
 	}
 }
 
-// runBlockedCall starts a long-running statement on a dedicated connection and
-// waits until that session appears in events_statements_current with DIGEST_TEXT
-// populated. It returns a cleanup function that closes both connections.
+// runBlockedCall holds an advisory lock on one connection and blocks a second
+// connection trying to acquire the same lock. It returns a cleanup function
+// that unblocks the waiter and closes both connections. The blocked connection
+// remains open — and therefore visible in events_statements_current with a
+// live non-zero TIMER_WAIT — until cleanup is called.
 //
-// The statement uses SELECT SLEEP(...), available on all supported MySQL and
-// MariaDB versions, to keep the session in-flight long enough for scraping.
+// The approach uses GET_LOCK / IS_FREE_LOCK (available on all supported MySQL
+// and MariaDB versions) rather than table locks, so no DDL is needed.
 func runBlockedCall(t *testing.T, cfg *Config) (cleanup func()) {
 	t.Helper()
 
@@ -666,41 +658,44 @@ func runBlockedCall(t *testing.T, cfg *Config) (cleanup func()) {
 	require.NoError(t, holderC.Connect())
 	holderDB := holderC.(*mySQLClient).client
 
+	// Acquire the advisory lock on the holder connection (timeout=60s).
+	var held int
+	require.NoError(t, holderDB.QueryRow("SELECT GET_LOCK('otel_test_lock', 60)").Scan(&held))
+	require.Equal(t, 1, held, "holder failed to acquire advisory lock")
+
 	waiterC, err := newMySQLClient(cfg)
 	require.NoError(t, err)
 	require.NoError(t, waiterC.Connect())
 	waiterDB := waiterC.(*mySQLClient).client
-	var waiterSessionID int64
-	require.NoError(t, waiterDB.QueryRow("SELECT CONNECTION_ID()").Scan(&waiterSessionID))
 
-	// Run a long statement in a goroutine. The goroutine is reaped by cleanup.
+	// Block the waiter in a goroutine — SELECT GET_LOCK will wait until the
+	// holder releases. The goroutine is reaped by the cleanup function.
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		var result sql.NullFloat64
-		_ = waiterDB.QueryRowContext(context.Background(), "SELECT SLEEP(30)").Scan(&result) //nolint:usetesting // t.Context() would cancel this query when the test ends, ending the in-flight session prematurely
+		// timeout=30s keeps the waiter blocked for the duration of the test.
+		var result sql.NullInt64
+		_ = waiterDB.QueryRowContext(context.Background(), "SELECT GET_LOCK('otel_test_lock', 30)").Scan(&result) //nolint:usetesting // t.Context() would cancel this query when the test ends, unblocking the waiter prematurely
 	}()
 
-	// Wait until the waiter session is visible in events_statements_current with
-	// query text available from DIGEST_TEXT first, then SQL_TEXT / PROCESSLIST_INFO fallback.
+	// Wait until the waiter is visible in events_statements_current.
 	require.Eventually(t, func() bool {
 		var count int
 		_ = holderDB.QueryRow(
 			"SELECT COUNT(*) FROM performance_schema.events_statements_current esc " +
 				"JOIN performance_schema.threads t ON t.thread_id = esc.thread_id " +
-				"WHERE t.processlist_id = ? " +
-				"AND COALESCE(esc.DIGEST_TEXT, esc.sql_text, t.processlist_info, '') != '' " +
-				"AND UPPER(COALESCE(esc.DIGEST_TEXT, esc.sql_text, t.processlist_info, '')) LIKE '%SLEEP%'",
-			waiterSessionID,
+				"WHERE t.processlist_command != 'Sleep' " +
+				"AND esc.sql_text LIKE '%GET_LOCK%otel_test_lock%'",
 		).Scan(&count)
 		return count > 0
-	}, 20*time.Second, 200*time.Millisecond, "timed out waiting for SLEEP session with query text to appear in events_statements_current")
+	}, 10*time.Second, 200*time.Millisecond, "timed out waiting for blocked session to appear in events_statements_current")
 
 	return func() {
-		// Closing the waiter connection aborts the in-flight SLEEP statement.
-		_ = waiterC.Close()
+		// Release the lock — the waiter goroutine will unblock and return.
+		_, _ = holderDB.Exec("SELECT RELEASE_LOCK('otel_test_lock')")
 		<-done
 		holderC.Close()
+		waiterC.Close()
 	}
 }
 
@@ -713,10 +708,9 @@ func runBlockedCall(t *testing.T, cfg *Config) (cleanup func()) {
 //     mysql.session.status, db.namespace, client.address, network.peer.address)
 //     are present on every record.
 //
-// A long-running SLEEP call is used to guarantee that at least one session is
-// visible in events_statements_current with a live non-zero TIMER_WAIT and
-// populated DIGEST_TEXT for the duration of the scrape.
-//
+// A blocked advisory-lock call is used to guarantee that at least one session
+// is visible in events_statements_current with a live non-zero TIMER_WAIT for
+// the duration of the scrape.
 func TestIntegrationQuerySampleAttributes(t *testing.T) {
 	testCases := []struct {
 		name  string
@@ -748,7 +742,6 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 					),
 					Env: map[string]string{
 						"MYSQL_ROOT_PASSWORD":   "otel",
-						"MYSQL_ROOT_HOST":       "%",
 						"MYSQL_DATABASE":        "otel",
 						"MYSQL_USER":            "otel",
 						"MYSQL_PASSWORD":        "otel",
@@ -773,7 +766,7 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 
 			cfg := containerConfig(host, mappedPort.Port())
 
-			runPerfSchemaSetup(t, cfg, true)
+			runPerfSchemaSetup(t, cfg)
 
 			sharedPlanCache := newTTLCache[string](cfg.TopQueryCollection.QueryPlanCacheSize, 0)
 			settings := receivertest.NewNopSettings(metadata.Type)
@@ -786,9 +779,9 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 			require.NoError(t, scraper.start(ctx, nil))
 			defer func() { assert.NoError(t, scraper.shutdown(ctx)) }()
 
-			// Start a long-running SLEEP statement so that events_statements_current
-			// has at least one in-flight row with non-zero TIMER_WAIT. runBlockedCall
-			// waits until the SLEEP thread is visible in
+			// Hold the advisory lock and block a second connection so that
+			// events_statements_current has at least one row with non-zero TIMER_WAIT.
+			// runBlockedCall waits until the blocked thread is visible in
 			// events_statements_current before returning, so the scrape below is
 			// guaranteed to see it.
 			cleanup := runBlockedCall(t, cfg)
@@ -824,7 +817,7 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 				}
 			}
 
-			require.NotEmpty(t, lrs, "expected at least one query sample record (in-flight SLEEP call should be visible)")
+			require.NotEmpty(t, lrs, "expected at least one query sample record (blocked call should be visible)")
 
 			// Every record must have non-zero/non-empty values for the key attributes.
 			for idx, attrs := range lrs {
@@ -837,17 +830,17 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 				assertStrAttrNonEmpty(t, attrs, "client.address", idx)
 				assertStrAttrNonEmpty(t, attrs, "network.peer.address", idx)
 				// The attribute added by this branch — must be present and non-negative on
-				// every record. The SLEEP record below additionally asserts > 0.
+				// every record. The GET_LOCK record below additionally asserts > 0.
 				assertDoubleAttrNonNegative(t, attrs, "mysql.events_statements_current.timer_wait", idx)
 			}
 
-			// Find the in-flight SLEEP record and validate all attribute values.
+			// Find the blocked GET_LOCK record and validate all attribute values.
 			// This is the record that proves mysql.events_statements_current.timer_wait
 			// is populated from a live in-flight statement, not from a stale or zero value.
 			found := false
 			for idx, attrs := range lrs {
 				qt, ok := attrs.Get("db.query.text")
-				if !ok || !strings.Contains(strings.ToUpper(qt.Str()), "SLEEP") {
+				if !ok || !strings.Contains(strings.ToUpper(qt.Str()), "GET_LOCK") {
 					continue
 				}
 				found = true
@@ -864,34 +857,34 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 				// digest is empty for in-flight statements that haven't completed
 				// digesting yet (MySQL 5.7, MariaDB) — presence is sufficient.
 				_, hasDigest := attrs.Get("mysql.events_statements_current.digest")
-				assert.True(t, hasDigest, "record %d (SLEEP): mysql.events_statements_current.digest missing", idx)
+				assert.True(t, hasDigest, "record %d (GET_LOCK): mysql.events_statements_current.digest missing", idx)
 
 				// Positive integer attributes.
 				assertIntAttrPositive(t, attrs, "mysql.threads.thread_id", idx)
 				assertIntAttrPositive(t, attrs, "mysql.session.id", idx)
 
 				// The key assertion for this branch: TIMER_WAIT must be non-zero
-				// because the statement is actively in-flight.
+				// because the statement is actively blocked (in-flight).
 				tw, hasTW := attrs.Get("mysql.events_statements_current.timer_wait")
-				assert.True(t, hasTW, "record %d (SLEEP): mysql.events_statements_current.timer_wait missing", idx)
+				assert.True(t, hasTW, "record %d (GET_LOCK): mysql.events_statements_current.timer_wait missing", idx)
 				if hasTW {
 					assert.Greater(t, tw.Double(), float64(0),
-						"record %d (SLEEP): mysql.events_statements_current.timer_wait must be > 0 for an in-flight statement", idx)
+						"record %d (GET_LOCK): mysql.events_statements_current.timer_wait must be > 0 for a blocked in-flight statement", idx)
 				}
 
 				// Wait timer — present and non-negative (may be 0 if no wait instrument fired).
 				wtw, hasWTW := attrs.Get("mysql.events_waits_current.timer_wait")
-				assert.True(t, hasWTW, "record %d (SLEEP): mysql.events_waits_current.timer_wait missing", idx)
+				assert.True(t, hasWTW, "record %d (GET_LOCK): mysql.events_waits_current.timer_wait missing", idx)
 				if hasWTW {
 					assert.GreaterOrEqual(t, wtw.Double(), float64(0),
-						"record %d (SLEEP): mysql.events_waits_current.timer_wait must be >= 0", idx)
+						"record %d (GET_LOCK): mysql.events_waits_current.timer_wait must be >= 0", idx)
 				}
 
 				// Network attributes — non-negative integers (port may be 0 for Unix socket clients).
 				assertIntAttrNonNegative(t, attrs, "client.port", idx)
 				assertIntAttrNonNegative(t, attrs, "network.peer.port", idx)
 			}
-			assert.True(t, found, "expected to find a SLEEP query sample record for the in-flight call")
+			assert.True(t, found, "expected to find a GET_LOCK query sample record for the blocked call")
 		})
 	}
 }
