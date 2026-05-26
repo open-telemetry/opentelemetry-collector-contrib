@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -10,6 +11,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
+)
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
 )
 
 // AttributeNetworkIoDirection specifies the value network.io.direction attribute.
@@ -95,9 +103,10 @@ type metricInfo struct {
 }
 
 type metricSystemNetworkErrors struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                  // data buffer for generated metric.
+	config        SystemNetworkErrorsMetricConfig // metric config provided by user.
+	capacity      int                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.network.errors metric with initial data.
@@ -109,21 +118,60 @@ func (m *metricSystemNetworkErrors) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSystemNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkIoDirectionAttributeValue string, networkInterfaceDescriptionAttributeValue string, networkInterfaceMacAttributeValue string, networkInterfaceNameAttributeValue string, networkInterfaceSpeedAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkErrorsMetricAttributeKeyNetworkIoDirection) {
+		dp.Attributes().PutStr("network.io.direction", networkIoDirectionAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceDescription) {
+		dp.Attributes().PutStr("network.interface.description", networkInterfaceDescriptionAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceMac) {
+		dp.Attributes().PutStr("network.interface.mac", networkInterfaceMacAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceName) {
+		dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceSpeed) {
+		dp.Attributes().PutStr("network.interface.speed", networkInterfaceSpeedAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("network.io.direction", networkIoDirectionAttributeValue)
-	dp.Attributes().PutStr("network.interface.description", networkInterfaceDescriptionAttributeValue)
-	dp.Attributes().PutStr("network.interface.mac", networkInterfaceMacAttributeValue)
-	dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
-	dp.Attributes().PutStr("network.interface.speed", networkInterfaceSpeedAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -136,13 +184,18 @@ func (m *metricSystemNetworkErrors) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemNetworkErrors) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemNetworkErrors(cfg MetricConfig) metricSystemNetworkErrors {
+func newMetricSystemNetworkErrors(cfg SystemNetworkErrorsMetricConfig) metricSystemNetworkErrors {
 	m := metricSystemNetworkErrors{config: cfg}
 
 	if cfg.Enabled {
@@ -153,9 +206,10 @@ func newMetricSystemNetworkErrors(cfg MetricConfig) metricSystemNetworkErrors {
 }
 
 type metricSystemNetworkInterfaceStatus struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        SystemNetworkInterfaceStatusMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.network.interface.status metric with initial data.
@@ -165,20 +219,57 @@ func (m *metricSystemNetworkInterfaceStatus) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSystemNetworkInterfaceStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkInterfaceDescriptionAttributeValue string, networkInterfaceMacAttributeValue string, networkInterfaceNameAttributeValue string, networkInterfaceSpeedAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceDescription) {
+		dp.Attributes().PutStr("network.interface.description", networkInterfaceDescriptionAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceMac) {
+		dp.Attributes().PutStr("network.interface.mac", networkInterfaceMacAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceName) {
+		dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceSpeed) {
+		dp.Attributes().PutStr("network.interface.speed", networkInterfaceSpeedAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("network.interface.description", networkInterfaceDescriptionAttributeValue)
-	dp.Attributes().PutStr("network.interface.mac", networkInterfaceMacAttributeValue)
-	dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
-	dp.Attributes().PutStr("network.interface.speed", networkInterfaceSpeedAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -191,13 +282,18 @@ func (m *metricSystemNetworkInterfaceStatus) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemNetworkInterfaceStatus) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemNetworkInterfaceStatus(cfg MetricConfig) metricSystemNetworkInterfaceStatus {
+func newMetricSystemNetworkInterfaceStatus(cfg SystemNetworkInterfaceStatusMetricConfig) metricSystemNetworkInterfaceStatus {
 	m := metricSystemNetworkInterfaceStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -208,9 +304,10 @@ func newMetricSystemNetworkInterfaceStatus(cfg MetricConfig) metricSystemNetwork
 }
 
 type metricSystemNetworkIo struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric              // data buffer for generated metric.
+	config        SystemNetworkIoMetricConfig // metric config provided by user.
+	capacity      int                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.network.io metric with initial data.
@@ -222,21 +319,60 @@ func (m *metricSystemNetworkIo) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSystemNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkIoDirectionAttributeValue string, networkInterfaceDescriptionAttributeValue string, networkInterfaceMacAttributeValue string, networkInterfaceNameAttributeValue string, networkInterfaceSpeedAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkIoMetricAttributeKeyNetworkIoDirection) {
+		dp.Attributes().PutStr("network.io.direction", networkIoDirectionAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkIoMetricAttributeKeyNetworkInterfaceDescription) {
+		dp.Attributes().PutStr("network.interface.description", networkInterfaceDescriptionAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkIoMetricAttributeKeyNetworkInterfaceMac) {
+		dp.Attributes().PutStr("network.interface.mac", networkInterfaceMacAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkIoMetricAttributeKeyNetworkInterfaceName) {
+		dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkIoMetricAttributeKeyNetworkInterfaceSpeed) {
+		dp.Attributes().PutStr("network.interface.speed", networkInterfaceSpeedAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("network.io.direction", networkIoDirectionAttributeValue)
-	dp.Attributes().PutStr("network.interface.description", networkInterfaceDescriptionAttributeValue)
-	dp.Attributes().PutStr("network.interface.mac", networkInterfaceMacAttributeValue)
-	dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
-	dp.Attributes().PutStr("network.interface.speed", networkInterfaceSpeedAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -249,13 +385,18 @@ func (m *metricSystemNetworkIo) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemNetworkIo) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemNetworkIo(cfg MetricConfig) metricSystemNetworkIo {
+func newMetricSystemNetworkIo(cfg SystemNetworkIoMetricConfig) metricSystemNetworkIo {
 	m := metricSystemNetworkIo{config: cfg}
 
 	if cfg.Enabled {
@@ -266,9 +407,10 @@ func newMetricSystemNetworkIo(cfg MetricConfig) metricSystemNetworkIo {
 }
 
 type metricSystemNetworkPacketCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        SystemNetworkPacketCountMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.network.packet.count metric with initial data.
@@ -280,21 +422,60 @@ func (m *metricSystemNetworkPacketCount) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSystemNetworkPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkPacketTypeAttributeValue string, networkInterfaceDescriptionAttributeValue string, networkInterfaceMacAttributeValue string, networkInterfaceNameAttributeValue string, networkInterfaceSpeedAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkPacketCountMetricAttributeKeyNetworkPacketType) {
+		dp.Attributes().PutStr("network.packet.type", networkPacketTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceDescription) {
+		dp.Attributes().PutStr("network.interface.description", networkInterfaceDescriptionAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceMac) {
+		dp.Attributes().PutStr("network.interface.mac", networkInterfaceMacAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceName) {
+		dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceSpeed) {
+		dp.Attributes().PutStr("network.interface.speed", networkInterfaceSpeedAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("network.packet.type", networkPacketTypeAttributeValue)
-	dp.Attributes().PutStr("network.interface.description", networkInterfaceDescriptionAttributeValue)
-	dp.Attributes().PutStr("network.interface.mac", networkInterfaceMacAttributeValue)
-	dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
-	dp.Attributes().PutStr("network.interface.speed", networkInterfaceSpeedAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -307,13 +488,18 @@ func (m *metricSystemNetworkPacketCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemNetworkPacketCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemNetworkPacketCount(cfg MetricConfig) metricSystemNetworkPacketCount {
+func newMetricSystemNetworkPacketCount(cfg SystemNetworkPacketCountMetricConfig) metricSystemNetworkPacketCount {
 	m := metricSystemNetworkPacketCount{config: cfg}
 
 	if cfg.Enabled {
@@ -324,9 +510,10 @@ func newMetricSystemNetworkPacketCount(cfg MetricConfig) metricSystemNetworkPack
 }
 
 type metricSystemNetworkPacketDropped struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        SystemNetworkPacketDroppedMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.network.packet.dropped metric with initial data.
@@ -338,21 +525,60 @@ func (m *metricSystemNetworkPacketDropped) init() {
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSystemNetworkPacketDropped) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, networkIoDirectionAttributeValue string, networkInterfaceDescriptionAttributeValue string, networkInterfaceMacAttributeValue string, networkInterfaceNameAttributeValue string, networkInterfaceSpeedAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkPacketDroppedMetricAttributeKeyNetworkIoDirection) {
+		dp.Attributes().PutStr("network.io.direction", networkIoDirectionAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceDescription) {
+		dp.Attributes().PutStr("network.interface.description", networkInterfaceDescriptionAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceMac) {
+		dp.Attributes().PutStr("network.interface.mac", networkInterfaceMacAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceName) {
+		dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceSpeed) {
+		dp.Attributes().PutStr("network.interface.speed", networkInterfaceSpeedAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("network.io.direction", networkIoDirectionAttributeValue)
-	dp.Attributes().PutStr("network.interface.description", networkInterfaceDescriptionAttributeValue)
-	dp.Attributes().PutStr("network.interface.mac", networkInterfaceMacAttributeValue)
-	dp.Attributes().PutStr("network.interface.name", networkInterfaceNameAttributeValue)
-	dp.Attributes().PutStr("network.interface.speed", networkInterfaceSpeedAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -365,13 +591,18 @@ func (m *metricSystemNetworkPacketDropped) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemNetworkPacketDropped) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemNetworkPacketDropped(cfg MetricConfig) metricSystemNetworkPacketDropped {
+func newMetricSystemNetworkPacketDropped(cfg SystemNetworkPacketDroppedMetricConfig) metricSystemNetworkPacketDropped {
 	m := metricSystemNetworkPacketDropped{config: cfg}
 
 	if cfg.Enabled {
