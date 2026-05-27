@@ -108,7 +108,6 @@ func TestTelemetryEnabled(t *testing.T) {
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
 	client := &mockXRayClient{}
-	// Keep this test deterministic by returning a stable 4xx error instead of relying on a live AWS response.
 	traceExporter, err := newTracesExporterWithClient(t.Context(), cfg, set, registry, aws.Config{}, client)
 	assert.NoError(t, err)
 	ctx := t.Context()
