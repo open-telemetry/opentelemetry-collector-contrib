@@ -52,6 +52,9 @@ type EventHubConfig struct {
 type LogsConfig struct {
 	// Name of the blob container with the logs (default = "logs")
 	ContainerName string `mapstructure:"container_name"`
+	// Encoding of log blobs in this container (default = "otlp_json").
+	// Supported values: "otlp_json", "otlp_proto".
+	Encoding string `mapstructure:"encoding"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -59,6 +62,9 @@ type LogsConfig struct {
 type TracesConfig struct {
 	// Name of the blob container with the traces (default = "traces")
 	ContainerName string `mapstructure:"container_name"`
+	// Encoding of trace blobs in this container (default = "otlp_json").
+	// Supported values: "otlp_json", "otlp_proto".
+	Encoding string `mapstructure:"encoding"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -111,6 +117,22 @@ func (e *CloudType) UnmarshalText(text []byte) error {
 	}
 }
 
+const (
+	// EncodingOTLPJSON denotes OTLP/JSON-encoded blob payloads.
+	EncodingOTLPJSON = "otlp_json"
+	// EncodingOTLPProto denotes OTLP/Protobuf-encoded blob payloads.
+	EncodingOTLPProto = "otlp_proto"
+)
+
+// supportedEncodings is the set of encoding values supported by the
+// receiver. Keep this consistent with the encoding constants above and
+// the README. Issue #48238 will extend this to also accept encoding
+// extension IDs resolved at component construction.
+var supportedEncodings = map[string]struct{}{
+	EncodingOTLPJSON:  {},
+	EncodingOTLPProto: {},
+}
+
 // Validate validates the configuration by checking for missing or invalid fields
 func (c Config) Validate() (err error) {
 	switch c.Authentication {
@@ -134,6 +156,13 @@ func (c Config) Validate() (err error) {
 		if c.ConnectionString == "" {
 			err = multierr.Append(err, errMissingConnectionString)
 		}
+	}
+
+	if _, ok := supportedEncodings[c.Logs.Encoding]; !ok {
+		err = multierr.Append(err, fmt.Errorf("logs.encoding %q is not supported; supported values: [%v, %v]", c.Logs.Encoding, EncodingOTLPJSON, EncodingOTLPProto))
+	}
+	if _, ok := supportedEncodings[c.Traces.Encoding]; !ok {
+		err = multierr.Append(err, fmt.Errorf("traces.encoding %q is not supported; supported values: [%v, %v]", c.Traces.Encoding, EncodingOTLPJSON, EncodingOTLPProto))
 	}
 
 	return err

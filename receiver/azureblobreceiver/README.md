@@ -15,6 +15,8 @@
 
 This receiver reads logs and trace data from [Azure Blob Storage](https://azure.microsoft.com/en-us/products/storage/blobs/).
 
+Each blob is expected to contain a single OTLP payload, encoded as either OTLP/JSON or OTLP/Protobuf. The encoding is configured per signal via `logs.encoding` and `traces.encoding` (see below).
+
 ## Modes of Operation
 
 The receiver supports two modes of operation:
@@ -35,8 +37,10 @@ The following settings can be optionally configured:
 - `cloud` (default = "AzureCloud"): Defines which Azure Cloud to use when using the `service_principal` authentication method. Value is either `AzureCloud` or `AzureUSGovernment`.
 - `logs:`
   - `container_name:` (default = "logs"): Name of the blob container with the logs
+  - `encoding:` (default = "otlp_json"): Encoding of log blob payloads. Supported values: `otlp_json`, `otlp_proto`.
 - `traces:`
   - `container_name:` (default = "traces"): Name of the blob container with the traces
+  - `encoding:` (default = "otlp_json"): Encoding of trace blob payloads. Supported values: `otlp_json`, `otlp_proto`.
 
 Authenticating using a connection string requires configuration of the following additional setting:
 
