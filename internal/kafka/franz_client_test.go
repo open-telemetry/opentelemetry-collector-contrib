@@ -440,6 +440,19 @@ func TestBalancerOptFromStrategies(t *testing.T) {
 			},
 			host: componenttest.NewNopHost(),
 		},
+		"strategies_resolve_empty": {
+			strategies: []configkafka.GroupRebalanceStrategy{""},
+			host:       componenttest.NewNopHost(),
+			wantErr:    "group_rebalance_strategies has no valid group rebalance strategies",
+		},
+		"strategies_extension_not_found": {
+			strategies: []configkafka.GroupRebalanceStrategy{
+				configkafka.CooperativeStickyBalanceStrategy,
+				"my_balancer",
+			},
+			host:    componenttest.NewNopHost(),
+			wantErr: `group_rebalance_strategies[1] extension "my_balancer" not found`,
+		},
 		"extension_not_found": {
 			strategy: "my_balancer",
 			host:     componenttest.NewNopHost(),
@@ -450,7 +463,7 @@ func TestBalancerOptFromStrategies(t *testing.T) {
 			host: &mockHost{extensions: map[component.ID]component.Component{
 				balancerExtID: &nopComponent{},
 			}},
-			wantErr: `does not implement kgo.GroupBalancer`,
+			wantErr: `group_rebalance_strategy extension "my_balancer" does not implement kgo.GroupBalancer`,
 		},
 		"extension_ok": {
 			strategy: "my_balancer",
@@ -461,7 +474,7 @@ func TestBalancerOptFromStrategies(t *testing.T) {
 		"invalid_id": {
 			strategy: "!!!invalid!!!",
 			host:     componenttest.NewNopHost(),
-			wantErr:  "is not a built-in strategy or a valid extension ID",
+			wantErr:  `group_rebalance_strategy "!!!invalid!!!" is not a built-in strategy or a valid extension ID`,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {

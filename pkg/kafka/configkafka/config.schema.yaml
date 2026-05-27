@@ -86,7 +86,7 @@ $defs:
         description: GroupInstanceID specifies the ID of the consumer
         type: string
       group_rebalance_strategies:
-        description: GroupRebalanceStrategies specifies the ordered strategies to advertise for partition assignment. Kafka selects the first strategy supported by every member of the consumer group. Built-in values are "range", "roundrobin", "sticky", and "cooperative-sticky". Any other value is treated as the component ID of a registered extension that implements kgo.GroupBalancer.
+        description: GroupRebalanceStrategies specifies the ordered strategies to advertise for partition assignment. Kafka selects the first strategy supported by every member of the consumer group. Built-in values are "range", "roundrobin", "sticky", and "cooperative-sticky". Any other value is treated as the component ID of a registered extension that implements kgo.GroupBalancer. When omitted, the franz-go default applies, currently "cooperative-sticky". This field is mutually exclusive with GroupRebalanceStrategy.
         type: array
         items:
           $ref: group_rebalance_strategy

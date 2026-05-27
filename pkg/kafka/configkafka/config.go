@@ -150,8 +150,10 @@ type ConsumerConfig struct {
 	// every member of the consumer group. Built-in values are "range",
 	// "roundrobin", "sticky", and "cooperative-sticky". Any other value is
 	// treated as the component ID of a registered extension that implements
-	// kgo.GroupBalancer.
-	GroupRebalanceStrategies []GroupRebalanceStrategy `mapstructure:"group_rebalance_strategies,omitempty"`
+	// kgo.GroupBalancer. When omitted, the franz-go default applies, currently
+	// "cooperative-sticky". This field is mutually exclusive with
+	// GroupRebalanceStrategy.
+	GroupRebalanceStrategies []GroupRebalanceStrategy `mapstructure:"group_rebalance_strategies"`
 
 	// GroupRebalanceStrategy specifies the strategy to use for partition
 	// assignment. Accepts the same values as GroupRebalanceStrategies.
@@ -159,7 +161,7 @@ type ConsumerConfig struct {
 	// Defaults to "cooperative-sticky".
 	//
 	// Deprecated [v0.154.0]: use GroupRebalanceStrategies instead.
-	GroupRebalanceStrategy GroupRebalanceStrategy `mapstructure:"group_rebalance_strategy,omitempty"`
+	GroupRebalanceStrategy GroupRebalanceStrategy `mapstructure:"group_rebalance_strategy"`
 
 	// GroupInstanceID specifies the ID of the consumer
 	GroupInstanceID string `mapstructure:"group_instance_id,omitempty"`

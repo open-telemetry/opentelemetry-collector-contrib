@@ -5,6 +5,7 @@ package kafka // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"strings"
@@ -223,8 +224,13 @@ func balancerOptFromStrategies(
 		return nil, nil
 	}
 	if len(strategies) == 0 {
-		strategies = []configkafka.GroupRebalanceStrategy{strategy}
+		balancer, err := balancerFromStrategy(strategy, "group_rebalance_strategy", host)
+		if err != nil {
+			return nil, err
+		}
+		return kgo.Balancers(balancer), nil
 	}
+
 	balancers, err := balancersFromStrategies(strategies, host)
 	if err != nil {
 		return nil, err
@@ -234,8 +240,9 @@ func balancerOptFromStrategies(
 
 func balancersFromStrategies(strategies []configkafka.GroupRebalanceStrategy, host component.Host) ([]kgo.GroupBalancer, error) {
 	balancers := make([]kgo.GroupBalancer, 0, len(strategies))
-	for _, strategy := range strategies {
-		balancer, err := balancerFromStrategy(strategy, host)
+	for i, strategy := range strategies {
+		field := fmt.Sprintf("group_rebalance_strategies[%d]", i)
+		balancer, err := balancerFromStrategy(strategy, field, host)
 		if err != nil {
 			return nil, err
 		}
@@ -243,10 +250,13 @@ func balancersFromStrategies(strategies []configkafka.GroupRebalanceStrategy, ho
 			balancers = append(balancers, balancer)
 		}
 	}
+	if len(balancers) == 0 {
+		return nil, errors.New("group_rebalance_strategies has no valid group rebalance strategies")
+	}
 	return balancers, nil
 }
 
-func balancerFromStrategy(strategy configkafka.GroupRebalanceStrategy, host component.Host) (kgo.GroupBalancer, error) {
+func balancerFromStrategy(strategy configkafka.GroupRebalanceStrategy, field string, host component.Host) (kgo.GroupBalancer, error) {
 	switch strategy {
 	case "":
 		return nil, nil
@@ -262,17 +272,17 @@ func balancerFromStrategy(strategy configkafka.GroupRebalanceStrategy, host comp
 		var id component.ID
 		if err := id.UnmarshalText([]byte(strategy)); err != nil {
 			return nil, fmt.Errorf(
-				"group_rebalance_strategy %q is not a built-in strategy or a valid extension ID: %w",
-				strategy, err,
+				"%s %q is not a built-in strategy or a valid extension ID: %w",
+				field, strategy, err,
 			)
 		}
 		ext, ok := host.GetExtensions()[id]
 		if !ok {
-			return nil, fmt.Errorf("group_rebalance_strategy extension %q not found", id)
+			return nil, fmt.Errorf("%s extension %q not found", field, id)
 		}
 		balancer, ok := ext.(kgo.GroupBalancer)
 		if !ok {
-			return nil, fmt.Errorf("extension %q does not implement kgo.GroupBalancer", id)
+			return nil, fmt.Errorf("%s extension %q does not implement kgo.GroupBalancer", field, id)
 		}
 		return balancer, nil
 	}

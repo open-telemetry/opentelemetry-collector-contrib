@@ -81,7 +81,7 @@ The following settings can be optionally configured:
 - `initial_offset` (default = latest): The initial offset to use if no offset was previously committed. Must be `latest` or `earliest`.
 - `session_timeout` (default = `10s`): The request timeout for detecting client failures when using Kafka’s group management facilities.
 - `heartbeat_interval` (default = `3s`): The expected time between heartbeats to the consumer coordinator when using Kafka’s group management facilities.
-- `group_rebalance_strategies`: Ordered list of strategies to advertise to Kafka. Kafka selects the first advertised strategy supported by every member of the consumer group. This can be used for rolling migrations between assignment protocols. Built-in values are:
+- `group_rebalance_strategies`: Ordered list of strategies to advertise to Kafka. Kafka selects the first advertised strategy supported by every member of the consumer group. When omitted, the franz-go default applies, currently `cooperative-sticky`. This field is mutually exclusive with `group_rebalance_strategy`; setting both fails validation. This can be used for rolling migrations between assignment protocols. Built-in values are:
   - `range`: Assigns partitions per topic based on a contiguous range. See [RangeAssignor](https://kafka.apache.org/31/javadoc/org/apache/kafka/clients/consumer/RangeAssignor.html).
   - `roundrobin`: Assigns partitions across all topics in a round-robin fashion. See [RoundRobinAssignor](https://kafka.apache.org/31/javadoc/org/apache/kafka/clients/consumer/RoundRobinAssignor.html).
   - `sticky`: Minimises partition movement across rebalances. See [StickyAssignor](https://kafka.apache.org/31/javadoc/org/apache/kafka/clients/consumer/StickyAssignor.html).
