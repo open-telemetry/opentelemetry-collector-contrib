@@ -281,11 +281,6 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-      - name: Cache Test Build
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
-        with:
-          path: ~/.cache/go-build
-          key: go-test-build-experimental-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
       - name: Run Unit Tests
         id: tests

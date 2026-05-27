@@ -1594,8 +1594,6 @@ func TestSkipConditionsTraceResource(t *testing.T) {
 	span := ss.Spans().AppendEmpty()
 	span.Attributes().PutStr("span.secret", "top-secret")
 
-	settings := componenttest.NewNopTelemetrySettings()
-	settings.Logger = zaptest.NewLogger(t)
 	processor, err := newRedaction(t.Context(), &Config{
 		SkipConditions: []string{`resource.attributes["service.name"] == "payments"`},
 	}, newTestTelemetrySettings(t))
