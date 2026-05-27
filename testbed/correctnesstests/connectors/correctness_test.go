@@ -37,9 +37,9 @@ func TestGoldenData(t *testing.T) {
 		Connector: "routing",
 	}
 
-	sampleTest.DataSender = correctnesstests.ConstructTraceSender(t, sampleTest.Receiver)
-	sampleTest.DataReceiver = correctnesstests.ConstructReceiver(t, sampleTest.Exporter)
-	sampleTest.DataConnector = correctnesstests.ConstructConnector(t, sampleTest.Connector, "traces")
+	sampleTest.DataSender = constructTraceSender(t, sampleTest.Receiver)
+	sampleTest.DataReceiver = constructReceiver(t, sampleTest.Exporter)
+	sampleTest.DataConnector = constructConnector(t, sampleTest.Connector, "traces")
 	t.Run(sampleTest.TestName, func(t *testing.T) {
 		testWithGoldenDataset(t, sampleTest.DataSender, sampleTest.DataReceiver, sampleTest.ResourceSpec, sampleTest.DataConnector, processors)
 	})
@@ -57,9 +57,9 @@ func testWithGoldenDataset(
 		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
 		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
 		"")
-	factories, err := testbed.Components()
+	f, err := factories()
 	require.NoError(t, err, "default components resulted in: %v", err)
-	runner := testbed.NewInProcessCollector(factories)
+	runner := testbed.NewInProcessCollector(f)
 	validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
 	tc := testbed.NewTestCase(
 		t,
