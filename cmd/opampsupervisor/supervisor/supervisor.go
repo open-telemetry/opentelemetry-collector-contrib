@@ -54,6 +54,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/extensions"
 	supervisorTelemetry "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
 )
 
@@ -200,6 +201,9 @@ type Supervisor struct {
 	// OpAMP client achieved a successful connection to the OpAMP server
 	// at least once.
 	initialOpampConnSuccess atomic.Bool
+
+	// extensions hosts configured supervisor extensions. nil when none are configured.
+	extensions *extensions.Extensions
 }
 
 func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
@@ -330,6 +334,24 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	var err error
 
 	s.runCtx, s.runCtxCancel = context.WithCancel(ctx)
+
+	// Start extensions first for any subsequent actions that use them
+	if len(s.config.Extensions) > 0 {
+		var exts *extensions.Extensions
+		exts, err = extensions.New(
+			s.runCtx,
+			s.config.Extensions,
+			extensions.Factories(),
+			s.telemetrySettings.TelemetrySettings,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create extensions: %w", err)
+		}
+		if err = exts.Start(s.runCtx); err != nil {
+			return fmt.Errorf("failed to start extensions: %w", err)
+		}
+		s.extensions = exts
+	}
 
 	if err = s.startHealthCheckServer(); err != nil {
 		return fmt.Errorf("failed to start health check server: %w", err)
@@ -693,6 +715,20 @@ func (s *Supervisor) startOpAMPClient() error {
 			},
 		},
 	}
+
+	// Find and use auth extension if configured with non-empty reference
+	if s.config.Server.Auth != (component.ID{}) {
+		headerFunc, err := extensions.MakeHeadersFunc(
+			s.telemetrySettings.Logger,
+			s.config.Server.Auth,
+			s.extensions.GetExtensions(),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create auth header function: %w", err)
+		}
+		settings.HeaderFunc = headerFunc
+	}
+
 	ad := s.agentDescription.Load().(*protobufs.AgentDescription)
 	if err := s.opampClient.SetAgentDescription(ad); err != nil {
 		return err
@@ -1029,7 +1065,11 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		return nil
 	}
 
-	newServerConfig := config.OpAMPServer{}
+	// Preserve the configured auth extension reference across server-pushed
+	// connection settings; the server only updates endpoint/headers/TLS.
+	newServerConfig := config.OpAMPServer{
+		Auth: s.config.Server.Auth,
+	}
 
 	if settings.DestinationEndpoint != "" {
 		newServerConfig.Endpoint = settings.DestinationEndpoint
@@ -2011,6 +2051,16 @@ func (s *Supervisor) Shutdown() {
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not stop the OpAMP client", zap.Error(err))
 		}
+	}
+
+	// Stop extensions after the OpAMP client (which may use their HeaderFunc)
+	// and before self-telemetry shuts down (extensions may log on shutdown).
+	if s.extensions != nil {
+		ctx, cancel := context.WithTimeout(s.runCtx, 5*time.Second)
+		if err := s.extensions.Shutdown(ctx); err != nil {
+			s.telemetrySettings.Logger.Error("Failed to shutdown extensions", zap.Error(err))
+		}
+		cancel()
 	}
 
 	if err := s.shutdownTelemetry(); err != nil {
