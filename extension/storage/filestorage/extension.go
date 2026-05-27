@@ -169,9 +169,9 @@ func sanitize(name string) string {
 	var sanitized strings.Builder
 	for _, character := range name {
 		if isSafe(character) {
-			sanitized.WriteString(string(character))
+			fmt.Fprint(&sanitized, string(character))
 		} else {
-			sanitized.WriteString(fmt.Sprintf("~%04X", character))
+			fmt.Fprintf(&sanitized, "~%04X", character)
 		}
 	}
 	return sanitized.String()
