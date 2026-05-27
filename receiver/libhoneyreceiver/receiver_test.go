@@ -5,6 +5,7 @@ package libhoneyreceiver
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -1263,6 +1264,99 @@ func TestMsgpackTraceEvent(t *testing.T) {
 	attrs := span.Attributes()
 	signalType, _ := attrs.Get("meta.signal_type")
 	assert.Equal(t, "trace", signalType.AsString())
+}
+
+// TestLibhoneyReceiver_DecompressedBodyCap verifies that a compressed payload
+// whose decompressed size exceeds MaxRequestBodySize is rejected before the
+// receiver fully materializes the inflated bytes. This guards against
+// decompression amplification: confighttp normally bounds the post-decompression
+// stream via http.MaxBytesReader, but libhoneyreceiver disables that middleware
+// (CompressionAlgorithms: []string{}) and decompresses inline, so the cap must
+// be enforced here.
+func TestLibhoneyReceiver_DecompressedBodyCap(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	httpCfg := getOrInsertDefault(t, &cfg.HTTP)
+	// Use a small cap so the test stays fast; the production default is 20 MiB.
+	httpCfg.MaxRequestBodySize = 1 * 1024 * 1024 // 1 MiB
+
+	set := receivertest.NewNopSettings(metadata.Type)
+	recv, err := newLibhoneyReceiver(cfg, &set)
+	require.NoError(t, err)
+	recv.registerLogConsumer(consumertest.NewNop())
+	recv.registerTraceConsumer(consumertest.NewNop())
+
+	// Craft a gzip payload that inflates to 8 MiB (8x the cap) from
+	// well-compressing input so the compressed bytes stay tiny.
+	const decompressedSize = 8 * 1024 * 1024
+	var compressed bytes.Buffer
+	gz, err := gzip.NewWriterLevel(&compressed, gzip.BestCompression)
+	require.NoError(t, err)
+	chunk := bytes.Repeat([]byte{'0'}, 64*1024)
+	written := 0
+	for written < decompressedSize {
+		toWrite := len(chunk)
+		if written+toWrite > decompressedSize {
+			toWrite = decompressedSize - written
+		}
+		_, werr := gz.Write(chunk[:toWrite])
+		require.NoError(t, werr)
+		written += toWrite
+	}
+	require.NoError(t, gz.Close())
+	require.Less(t, compressed.Len(), 64*1024,
+		"compressed bomb should be far smaller than its inflated size; got %d bytes", compressed.Len())
+
+	req := httptest.NewRequest(http.MethodPost, "/events/test_dataset", bytes.NewReader(compressed.Bytes()))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
+
+	w := httptest.NewRecorder()
+	recv.handleEvent(w, req)
+
+	assert.Equal(t, http.StatusRequestEntityTooLarge, w.Code,
+		"decompressed payload past MaxRequestBodySize should be rejected with 413, got %d: %s",
+		w.Code, w.Body.String())
+	assert.Contains(t, w.Body.String(), "exceeds max size",
+		"413 response should explain the cap was exceeded")
+}
+
+// TestLibhoneyReceiver_DecompressedBodyUnderCap verifies that a compressed
+// payload whose decompressed size is within MaxRequestBodySize still succeeds
+// end-to-end after the cap is applied.
+func TestLibhoneyReceiver_DecompressedBodyUnderCap(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	httpCfg := getOrInsertDefault(t, &cfg.HTTP)
+	httpCfg.MaxRequestBodySize = 1 * 1024 * 1024 // 1 MiB cap
+
+	set := receivertest.NewNopSettings(metadata.Type)
+	recv, err := newLibhoneyReceiver(cfg, &set)
+	require.NoError(t, err)
+	sink := &consumertest.LogsSink{}
+	recv.registerLogConsumer(sink)
+
+	events := []libhoneyevent.LibhoneyEvent{{
+		Time:       time.Now().Format(time.RFC3339),
+		Data:       map[string]any{"message": "under cap"},
+		Samplerate: 1,
+	}}
+	jsonData, err := json.Marshal(events)
+	require.NoError(t, err)
+
+	var compressed bytes.Buffer
+	gz := gzip.NewWriter(&compressed)
+	_, err = gz.Write(jsonData)
+	require.NoError(t, err)
+	require.NoError(t, gz.Close())
+
+	req := httptest.NewRequest(http.MethodPost, "/events/test_dataset", bytes.NewReader(compressed.Bytes()))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
+
+	w := httptest.NewRecorder()
+	recv.handleEvent(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code,
+		"payload under cap should succeed, got %d: %s", w.Code, w.Body.String())
 }
 
 // TestMsgpackEmptyArray verifies that empty msgpack arrays are handled gracefully

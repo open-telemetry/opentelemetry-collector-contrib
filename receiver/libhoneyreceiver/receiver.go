@@ -32,6 +32,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/response"
 )
 
+// defaultMaxRequestBodySize matches confighttp's default body cap (20 MiB)
+// and is used as a fallback when the embedded ServerConfig does not set one.
+// See go.opentelemetry.io/collector/config/confighttp:server.go.
+const defaultMaxRequestBodySize = 20 * 1024 * 1024
+
 type libhoneyReceiver struct {
 	cfg        *Config
 	server     *http.Server
@@ -282,6 +287,18 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		}
 	}()
 
+	// Bound the decompressed read so a compressed payload cannot amplify into an
+	// unbounded in-memory buffer. confighttp applies the same MaxRequestBodySize
+	// cap to the decompressed stream when its own decompressor middleware is
+	// enabled; because this receiver disables that middleware (via
+	// CompressionAlgorithms: []string{} in factory.go) and decompresses inline,
+	// the cap has to be applied here.
+	maxDecompressedSize := httpCfg.MaxRequestBodySize
+	if maxDecompressedSize <= 0 {
+		maxDecompressedSize = defaultMaxRequestBodySize
+	}
+	limitedReader := http.MaxBytesReader(resp, io.NopCloser(bodyReader), maxDecompressedSize)
+
 	var body []byte
 	func() {
 		defer func() {
@@ -297,10 +314,25 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 				err = errors.New("failed to decompress: panic during decompression")
 			}
 		}()
-		body, err = io.ReadAll(bodyReader)
+		body, err = io.ReadAll(limitedReader)
 	}()
 
 	if err != nil {
+		// Distinguish the decompressed-size cap from generic decompression
+		// failure so callers see the expected 413 response.
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			r.settings.Logger.Warn("Decompressed body exceeded max size",
+				zap.Int64("limit", maxBytesErr.Limit),
+				zap.String("content-encoding", contentEncoding),
+				zap.String("content-type", req.Header.Get("Content-Type")),
+				zap.Int("compressed-size", len(compressedBody)),
+				zap.String("endpoint", req.RequestURI),
+				zap.String("api-key-masked", maskedKey))
+			writeResponse(resp, enc.ContentType(), http.StatusRequestEntityTooLarge,
+				fmt.Appendf(nil, `{"error":"decompressed body exceeds max size of %d bytes"}`, maxBytesErr.Limit))
+			return
+		}
 		r.settings.Logger.Error("Failed to decompress buffered body",
 			zap.Error(err),
 			zap.String("content-encoding", contentEncoding),
