@@ -128,6 +128,10 @@ properties:
     type: array
     items:
       $ref: pod_association_config
+  pod_delete_grace_period:
+    description: PodDeleteGracePeriod is the duration to wait before deleting a pod from the cache after receiving a delete event.
+    type: string
+    format: duration
   wait_for_metadata:
     description: WaitForMetadata is a flag that determines if the processor should wait k8s metadata to be synced when starting.
     type: boolean
