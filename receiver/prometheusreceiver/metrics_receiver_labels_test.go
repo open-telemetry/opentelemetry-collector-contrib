@@ -125,7 +125,8 @@ func TestLabelLimitConfig(t *testing.T) {
 			pages: []mockPrometheusResponse{
 				{code: 200, data: targetLabelLimit2},
 			},
-			validateFunc: verifyFailedScrape,
+			validateFunc:    verifyFailedScrape,
+			validateScrapes: true,
 		},
 	}
 
@@ -264,7 +265,8 @@ func TestLabelNameLimitConfig(t *testing.T) {
 			pages: []mockPrometheusResponse{
 				{code: 200, data: targetLabelNameLimit},
 			},
-			validateFunc: verifyFailedScrape,
+			validateFunc:    verifyFailedScrape,
+			validateScrapes: true,
 		},
 	}
 
@@ -300,7 +302,8 @@ func TestLabelValueLimitConfig(t *testing.T) {
 			pages: []mockPrometheusResponse{
 				{code: 200, data: targetLabelValueLimit},
 			},
-			validateFunc: verifyFailedScrape,
+			validateFunc:    verifyFailedScrape,
+			validateScrapes: true,
 		},
 	}
 
@@ -709,7 +712,8 @@ func TestRelabelJobInstance(t *testing.T) {
 			pages: []mockPrometheusResponse{
 				{code: 200, data: targetRelabelJobInstance},
 			},
-			validateFunc: verifyRelabelJobInstance,
+			validateFunc:    verifyRelabelJobInstance,
+			validateScrapes: true,
 		},
 	}
 

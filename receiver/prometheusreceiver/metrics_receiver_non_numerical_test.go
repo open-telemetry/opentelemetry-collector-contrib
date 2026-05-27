@@ -72,13 +72,24 @@ func TestStaleNaNs(t *testing.T) {
 
 func verifyStaleNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumTotalScrapeResults(t, td, resourceMetrics)
-	for i := range totalScrapes {
-		if i%2 == 0 {
-			verifyStaleNaNsSuccessfulScrape(t, td, resourceMetrics[i], i+1)
-		} else {
-			verifyStaleNaNsFailedScrape(t, td, resourceMetrics[i], i+1)
+	successfulScrapes := 0
+	failedScrapes := 0
+	for i, rm := range resourceMetrics {
+		allMetrics := getMetrics(rm)
+		upValue := getUpValue(allMetrics)
+		switch upValue {
+		case 1:
+			successfulScrapes++
+			verifyStaleNaNsSuccessfulScrape(t, td, rm, i+1)
+		case 0:
+			failedScrapes++
+			verifyStaleNaNsFailedScrape(t, td, rm, i+1)
+		default:
+			t.Errorf("Scrape %d has invalid up value: %v", i+1, upValue)
 		}
 	}
+	assert.Equal(t, totalScrapes/2, successfulScrapes, "Expected %d successful scrapes", totalScrapes/2)
+	assert.Equal(t, totalScrapes/2, failedScrapes, "Expected %d failed scrapes", totalScrapes/2)
 }
 
 func verifyStaleNaNsSuccessfulScrape(t *testing.T, td *testData, resourceMetric pmetric.ResourceMetrics, iteration int) {
