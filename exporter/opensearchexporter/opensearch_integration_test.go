@@ -91,7 +91,7 @@ func TestIntegration_OtelV1Mapping_Traces(t *testing.T) {
 			cfg.Endpoint = endpoint
 			cfg.TLS.Insecure = true
 			cfg.Mode = "otel-v1"
-			// Fix CI race condition by disabling queue soConsumeTraces blocks until complete
+			// Fix CI race condition by disabling queue so ConsumeTraces blocks until complete
 			cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 
 			require.NoError(t, cfg.Validate())
