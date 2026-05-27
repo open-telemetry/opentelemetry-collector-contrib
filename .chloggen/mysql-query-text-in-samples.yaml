@@ -10,7 +10,7 @@ component: receiver/mysql
 note: Aligned db.query.text extraction in MySQL sample query collection with top query collection for consistent query representation.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [48708]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
