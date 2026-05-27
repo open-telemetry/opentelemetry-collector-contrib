@@ -217,13 +217,13 @@ export OTEL_RESOURCE_ATTRIBUTES="service.name=<the name of your service>,service
 
 **Entity Events as logs are experimental** and might eventually be replaced by the result of [the OTEP](https://github.com/open-telemetry/oteps/blob/main/text/entities/0256-entities-data-model.md#entity-events). For now, the host_metrics receiver can send the host entity event as a log records. By default, the host_metrics receiver sends periodic EntityState events every 5 minutes. You can change that by setting `metadata_collection_interval`. Entity Events as logs are experimental. The result of the OTEP might eventually replace that.
 
-## Using a `CGO_ENABLED=0` Collector
+## Using a Collector not linked to glibc
 
-This is a living section for known adverse behaviours within the `host_metrics` receiver when using a Collector that is not built with `CGO_ENABLED=1` (more specifically, while not being linked to `glibc`).
+This is a living section for known adverse behaviours within the `host_metrics` receiver when using a Collector that is not linked while not being linked to `glibc` (which is always the case when using `CGO_ENABLED=0` and can be the case when using `CGO_ENABLED=1` under specific circumstances).
 
 ### Unable to fetch username for process when using systemd `DynamicUser` feature
 
-If a process is run as a systemd service, and the unit uses the `DynamicUser` feature, a Collector not linked to glibc will be incapable of resolving the username for the owner of that process. This is because the `DynamicUser` feature leverages NSS (Name Service Switch) to resolve the username dynamically at user lookup time, and a Go binary that uses the purely Go `netgo` implementation for DNS resolution will not use NSS.
+If a process is run as a systemd service, and the unit uses the `DynamicUser` feature, a Collector not linked to glibc will be incapable of resolving the username for the owner of that process. This is because the `DynamicUser` feature leverages NSS (Name Service Switch) to resolve the username dynamically at user lookup time, and a Go binary that uses the pure-Go `netgo` implementation for DNS resolution will not use NSS.
 
 See more in the [demo repo](https://github.com/braydonk/poc-systemd-dynamic-user-netgo) created by `host_metrics` codeowner [@braydonk](https://github.com/braydonk).
 
