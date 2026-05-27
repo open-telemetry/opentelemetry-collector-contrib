@@ -151,6 +151,15 @@ func newNopTelemetrySettings() telemetrySettings {
 	}
 }
 
+func stringKeyValue(key, value string) *protobufs.KeyValue {
+	return &protobufs.KeyValue{
+		Key: key,
+		Value: &protobufs.AnyValue{
+			Value: &protobufs.AnyValue_StringValue{StringValue: value},
+		},
+	}
+}
+
 func Test_NewSupervisor(t *testing.T) {
 	cfg := setupSupervisorConfig(t, configTemplate)
 	supervisor, err := NewSupervisor(t.Context(), zap.L(), cfg)
@@ -1144,6 +1153,120 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		})
 	})
 
+	t.Run("AgentDescription - Agent description from agent is forwarded to server", func(t *testing.T) {
+		incomingAgentDescription := &protobufs.AgentDescription{
+			IdentifyingAttributes: []*protobufs.KeyValue{
+				stringKeyValue("other.identifying", "original-value"),
+				stringKeyValue("service.name", "original-service"),
+			},
+			NonIdentifyingAttributes: []*protobufs.KeyValue{
+				stringKeyValue("resource.attr", "resource-value"),
+			},
+		}
+		expectedAgentDescription := &protobufs.AgentDescription{
+			IdentifyingAttributes: []*protobufs.KeyValue{
+				stringKeyValue("client.id", "client-1"),
+				stringKeyValue("other.identifying", "original-value"),
+				stringKeyValue("service.name", "override-service"),
+			},
+			NonIdentifyingAttributes: []*protobufs.KeyValue{
+				stringKeyValue("resource.attr", "resource-value"),
+				stringKeyValue("test.attribute", "test-value"),
+			},
+		}
+
+		agentDescriptionForwarded := false
+		mc := &mockOpAMPClient{
+			setAgentDescriptionFunc: func(descr *protobufs.AgentDescription) error {
+				agentDescriptionForwarded = true
+				require.Equal(t, expectedAgentDescription, descr)
+				return nil
+			},
+		}
+
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			pidProvider:       defaultPIDProvider{},
+			config: config.Supervisor{
+				Agent: config.Agent{
+					Description: config.AgentDescription{
+						IdentifyingAttributes: map[string]string{
+							"client.id":    "client-1",
+							"service.name": "override-service",
+						},
+						NonIdentifyingAttributes: map[string]string{
+							"test.attribute": "test-value",
+						},
+					},
+				},
+			},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentDescription:               &atomic.Value{},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			agentConn:                      &atomic.Value{},
+			opampClient:                    mc,
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
+		}
+
+		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
+			AgentDescription: incomingAgentDescription,
+		})
+
+		require.True(t, agentDescriptionForwarded)
+		require.Equal(t, expectedAgentDescription, s.agentDescription.Load())
+		require.Equal(t, expectedAgentDescription, mc.AgentDescription())
+	})
+
+	t.Run("AgentDescription - forwarding error does not reject agent message", func(t *testing.T) {
+		incomingAgentDescription := &protobufs.AgentDescription{
+			IdentifyingAttributes: []*protobufs.KeyValue{
+				stringKeyValue("test.attribute", "test-value"),
+			},
+		}
+
+		agentDescriptionForwarded := false
+		mc := &mockOpAMPClient{
+			setAgentDescriptionFunc: func(*protobufs.AgentDescription) error {
+				agentDescriptionForwarded = true
+				return errors.New("unexpected error")
+			},
+		}
+
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		runCtx, runCtxCancel := context.WithCancel(t.Context())
+		s := Supervisor{
+			telemetrySettings:              newNopTelemetrySettings(),
+			pidProvider:                    defaultPIDProvider{},
+			config:                         config.Supervisor{},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: testUUID},
+			agentDescription:               &atomic.Value{},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			agentConn:                      &atomic.Value{},
+			opampClient:                    mc,
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+			runCtx:                         runCtx,
+			runCtxCancel:                   runCtxCancel,
+		}
+
+		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
+			AgentDescription: incomingAgentDescription,
+		})
+
+		require.True(t, agentDescriptionForwarded)
+		require.Equal(t, incomingAgentDescription, s.agentDescription.Load())
+		require.Equal(t, incomingAgentDescription, mc.AgentDescription())
+	})
+
 	t.Run("EffectiveConfig - Effective config from agent is stored in OpAmpClient", func(t *testing.T) {
 		updatedClientEffectiveConfig := false
 		mc := &mockOpAMPClient{
@@ -1439,6 +1562,7 @@ func (s staticPIDProvider) PID() int {
 
 type mockOpAMPClient struct {
 	agentDesc                 *protobufs.AgentDescription
+	setAgentDescriptionFunc   func(descr *protobufs.AgentDescription) error
 	sendCustomMessageFunc     func(message *protobufs.CustomMessage) (messageSendingChannel chan struct{}, err error)
 	setCustomCapabilitiesFunc func(customCapabilities *protobufs.CustomCapabilities) error
 	updateEffectiveConfigFunc func(ctx context.Context) error
@@ -1460,6 +1584,9 @@ func (mockOpAMPClient) Stop(context.Context) error {
 
 func (m *mockOpAMPClient) SetAgentDescription(descr *protobufs.AgentDescription) error {
 	m.agentDesc = descr
+	if m.setAgentDescriptionFunc != nil {
+		return m.setAgentDescriptionFunc(descr)
+	}
 	return nil
 }
 
