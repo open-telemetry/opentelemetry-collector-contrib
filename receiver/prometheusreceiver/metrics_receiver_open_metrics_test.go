@@ -500,11 +500,9 @@ func verifyCreatedTimeMetric(o verifyOpts) func(t *testing.T, _ *testData, mds [
 			for _, m := range mds[1:] {
 				metrics = getMetrics(m)
 				upValue := getUpValue(metrics)
-				if upValue == 1 {
-					// If it is a successful scrape (due to repeat), it should be valid.
-					// We can just ignore it or verify it.
-					// Let's ignore it for now as long as it is 1.
-				} else {
+				// If it is a successful scrape (due to repeat), it should be valid.
+				// Let's ignore it for now as long as it is 1.
+				if upValue != 1 {
 					assert.Equal(t, 0.0, upValue)
 				}
 			}
