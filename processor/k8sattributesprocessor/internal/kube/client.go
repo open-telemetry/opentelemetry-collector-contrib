@@ -1588,11 +1588,15 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 
 func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	newPod := c.podFromAPI(pod)
+	identifiers := c.getIdentifiersFromAssoc(newPod)
+	var staleContainerIDRequests []deleteRequest
 
 	c.m.Lock()
-	defer c.m.Unlock()
-
-	identifiers := c.getIdentifiersFromAssoc(newPod)
+	if newPod.PodUID != "" {
+		if oldPod, ok := c.Pods[podUIDIdentifier(newPod.PodUID)]; ok && oldPod.PodUID == newPod.PodUID {
+			staleContainerIDRequests = c.staleContainerIDDeleteRequestsLocked(oldPod, newPod)
+		}
+	}
 	for i := range identifiers {
 		id := identifiers[i]
 		// compare initial scheduled timestamp for existing pod and new pod with same identifier
@@ -1606,18 +1610,110 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 		}
 		c.Pods[id] = newPod
 	}
+	c.m.Unlock()
+
+	c.appendDeleteRequests(staleContainerIDRequests)
 }
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 	podToRemove := c.podFromAPI(pod)
 	identifiers := c.getIdentifiersFromAssoc(podToRemove)
+	podUID := string(pod.UID)
+	var deleteRequests []deleteRequest
+
+	c.m.RLock()
+	seenInDeleteEvent := make(map[PodIdentifier]struct{}, len(identifiers))
 	for i := range identifiers {
 		id := identifiers[i]
-		p, ok := c.GetPod(id)
-
-		if ok && p.PodUID == string(pod.UID) {
-			c.appendDeleteQueue(id, p.PodUID)
+		seenInDeleteEvent[id] = struct{}{}
+		if p, ok := c.Pods[id]; ok && p.PodUID == podUID {
+			deleteRequests = append(deleteRequests, deleteRequest{id: id, podUID: p.PodUID})
 		}
+	}
+	if podUID != "" {
+		if cachedPod, ok := c.Pods[podUIDIdentifier(podUID)]; ok && cachedPod.PodUID == podUID {
+			// The delete event may not include historical container IDs. Include the
+			// latest cached pod state so container IDs known to the cache are deleted.
+			cachedIdentifiers := c.getIdentifiersFromAssoc(cachedPod)
+			for i := range cachedIdentifiers {
+				id := cachedIdentifiers[i]
+				if _, ok := seenInDeleteEvent[id]; ok {
+					continue
+				}
+				if p, ok := c.Pods[id]; ok && p.PodUID == podUID {
+					deleteRequests = append(deleteRequests, deleteRequest{id: id, podUID: p.PodUID})
+				}
+			}
+		}
+	}
+	c.m.RUnlock()
+
+	c.appendDeleteRequests(deleteRequests)
+}
+
+func (c *WatchClient) staleContainerIDDeleteRequestsLocked(oldPod, newPod *Pod) []deleteRequest {
+	staleContainerIDs := staleContainerIDs(oldPod, newPod)
+	if len(staleContainerIDs) == 0 {
+		return nil
+	}
+
+	identifiers := c.getIdentifiersFromAssoc(oldPod)
+	requests := make([]deleteRequest, 0, len(staleContainerIDs))
+	seen := make(map[PodIdentifier]struct{}, len(identifiers))
+	for i := range identifiers {
+		id := identifiers[i]
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		if !podIdentifierHasContainerID(id, staleContainerIDs) {
+			continue
+		}
+		if p, ok := c.Pods[id]; ok && p.PodUID == oldPod.PodUID {
+			requests = append(requests, deleteRequest{id: id, podUID: oldPod.PodUID})
+		}
+	}
+	return requests
+}
+
+func staleContainerIDs(oldPod, newPod *Pod) map[string]struct{} {
+	if oldPod == nil || newPod == nil || oldPod.PodUID == "" || oldPod.PodUID != newPod.PodUID {
+		return nil
+	}
+
+	staleContainerIDs := map[string]struct{}{}
+	for containerID := range oldPod.Containers.ByID {
+		if containerID == "" {
+			continue
+		}
+		if _, ok := newPod.Containers.ByID[containerID]; !ok {
+			staleContainerIDs[containerID] = struct{}{}
+		}
+	}
+	return staleContainerIDs
+}
+
+func podIdentifierHasContainerID(id PodIdentifier, containerIDs map[string]struct{}) bool {
+	for i := range id {
+		attr := id[i]
+		if attr.Source.From == ResourceSource && attr.Source.Name == string(conventions.ContainerIDKey) {
+			if _, ok := containerIDs[attr.Value]; ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func podUIDIdentifier(podUID string) PodIdentifier {
+	return PodIdentifier{
+		PodIdentifierAttributeFromResourceAttribute(string(conventions.K8SPodUIDKey), podUID),
+	}
+}
+
+func (c *WatchClient) appendDeleteRequests(requests []deleteRequest) {
+	for i := range requests {
+		c.appendDeleteQueue(requests[i].id, requests[i].podUID)
 	}
 }
 
