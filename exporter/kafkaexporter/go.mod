@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger-idl v0.7.1
+	github.com/jaegertracing/jaeger-idl v0.9.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.153.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.153.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.153.0
