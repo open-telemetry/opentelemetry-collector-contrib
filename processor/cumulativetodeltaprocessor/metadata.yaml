@@ -16,3 +16,49 @@ status:
     active: [TylerHelmuth]
 tests:
   config:
+
+attributes:
+  metric_type:
+    description: The pdata metric type of the datapoint.
+    type: string
+    enum:
+      - sum
+      - histogram
+      - exponential_histogram
+  reason:
+    description: The reason a datapoint was dropped instead of converted.
+    type: string
+    enum:
+      - reset
+      - initial
+      - bucket_mismatch
+
+telemetry:
+  metrics:
+    cumulativetodelta_datapoints:
+      enabled: false
+      description: Number of datapoints converted from cumulative to delta temporality.
+      stability: development
+      unit: "{datapoint}"
+      attributes: [metric_type]
+      sum:
+        value_type: int
+        monotonic: true
+    cumulativetodelta_datapoints_dropped:
+      enabled: false
+      description: Number of datapoints dropped instead of being converted.
+      stability: development
+      unit: "{datapoint}"
+      attributes: [metric_type, reason]
+      sum:
+        value_type: int
+        monotonic: true
+    cumulativetodelta_streams_tracked:
+      enabled: false
+      description: Number of metric streams currently tracked in memory for cumulative-to-delta conversion.
+      stability: development
+      unit: "{stream}"
+      sum:
+        value_type: int
+        monotonic: false
+        async: true

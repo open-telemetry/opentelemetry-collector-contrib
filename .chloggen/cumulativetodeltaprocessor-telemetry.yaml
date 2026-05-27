@@ -1,0 +1,33 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: processor/cumulativetodelta
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add internal telemetry for converted and dropped datapoints, and for tracked streams.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [48246]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Three new metrics are emitted by the processor, all disabled by default (opt-in via the collector's `service.telemetry.metrics` configuration):
+    - `otelcol_cumulativetodelta_datapoints`: number of datapoints converted from cumulative to delta temporality (with a `metric_type` attribute: `sum`, `histogram`, or `exponential_histogram`).
+    - `otelcol_cumulativetodelta_datapoints_dropped`: number of datapoints dropped instead of converted, with the same `metric_type` attribute and a `reason` attribute (`reset`, `initial`, `bucket_mismatch`).
+    - `otelcol_cumulativetodelta_streams_tracked`: number of metric streams currently tracked in memory.
+
+  Reset detections also emit a Debug-level log line including the metric name, type, and datapoint attributes — logs absorb the per-stream cardinality that would be prohibitive on a metric while still letting operators identify which stream is wrapping/restarting.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
