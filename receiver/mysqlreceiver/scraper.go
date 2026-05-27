@@ -865,7 +865,7 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 
 func (m *mySQLScraper) getQueryPlanCacheID(digest, digestText string) string {
 	if !m.detectedVersion.supportsQuerySampleText() {
-		// Use the digestTextHash as plan key for MySQL versions < 8 amd Mariadb since digest is not available consistently in those versions.
+		// Use the digestTextHash as plan key for MySQL versions < 8 and Mariadb since digest is not available consistently in those versions.
 		return getDigestTextHash(digestText)
 	}
 	return digest
