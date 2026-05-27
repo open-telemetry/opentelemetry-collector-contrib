@@ -28,8 +28,12 @@ WHERE
       TRIM(query), 
       ''
     ) != ''
+    {{/* Exclude our own connection -- prevents DEALLOCATE PREPARE otel_*, SET plan_cache_mode, and the sample query itself from appearing */}}
+    AND pid != pg_backend_pid()
+    {{/* Require query_start to be set -- rows without it have no meaningful timestamp */}}
+    AND query_start IS NOT NULL
     AND NOT (
-{{/* we only want query that is either still running that was started before our newestQueryTimestamp or idle but start after the newestQueryTimestamp */}}
+    {{/* we only want query that is either still running that was started before our newestQueryTimestamp or idle but start after the newestQueryTimestamp */}}
       query_start < TO_TIMESTAMP({{ .newestQueryTimestamp }})
       AND state = 'idle'
     )
