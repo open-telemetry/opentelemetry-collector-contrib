@@ -31,6 +31,8 @@ The default timeout is `1s`.
 When a write would need the file to grow past this limit, the write is rejected with a storage-full error.
 A value of `0` means unlimited size.
 Writes that fit into already-allocated free space are still allowed, even when the file is already at the configured limit.
+When rebound compaction is enabled, `max_size` must be greater than or equal to both
+`compaction.rebound_needed_threshold_mib * 1,048,576` and `compaction.rebound_trigger_threshold_mib * 1,048,576`.
 
 `fsync` when set, will force the database to perform an fsync after each write.  This helps to ensure database integrity if there is an interruption to the database process, but at the cost of performance.  See [DB.NoSync](https://pkg.go.dev/go.etcd.io/bbolt#DB) for more information.
 
@@ -62,7 +64,7 @@ It will remove all temporary files in the compaction directory (those which star
 temp files will be left if a previous run of the process is killed while compacting.
 
 If `max_size` is set, both `compaction.rebound_needed_threshold_mib` and `compaction.rebound_trigger_threshold_mib`
-must be less than or equal to that limit.
+must be less than or equal to that limit after converting MiB to bytes.
 
 ### Rebound (online) compaction
 
