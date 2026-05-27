@@ -76,20 +76,15 @@ func verifyStaleNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.Resou
 	failedScrapes := 0
 	for i, rm := range resourceMetrics {
 		allMetrics := getMetrics(rm)
-		upValue := -1.0
-		for _, m := range allMetrics {
-			if m.Name() == "up" {
-				upValue = m.Gauge().DataPoints().At(0).DoubleValue()
-				break
-			}
-		}
-		if upValue == 1 {
+		upValue := getUpValue(allMetrics)
+		switch upValue {
+		case 1:
 			successfulScrapes++
 			verifyStaleNaNsSuccessfulScrape(t, td, rm, i+1)
-		} else if upValue == 0 {
+		case 0:
 			failedScrapes++
 			verifyStaleNaNsFailedScrape(t, td, rm, i+1)
-		} else {
+		default:
 			t.Errorf("Scrape %d has invalid up value: %v", i+1, upValue)
 		}
 	}

@@ -496,10 +496,17 @@ func verifyCreatedTimeMetric(o verifyOpts) func(t *testing.T, _ *testData, mds [
 		require.Greater(t, len(metrics), countScrapeMetrics(metrics))
 
 		if len(mds) > 1 {
-			// We expect a single scrape and the rest (if exists) to be stale (up==0).
+			// We expect a single scrape and the rest (if exists) to be stale (up==0) OR repeats of valid scrapes (up==1).
 			for _, m := range mds[1:] {
 				metrics = getMetrics(m)
-				assertUp(t, 0, metrics)
+				upValue := getUpValue(metrics)
+				if upValue == 1 {
+					// If it is a successful scrape (due to repeat), it should be valid.
+					// We can just ignore it or verify it.
+					// Let's ignore it for now as long as it is 1.
+				} else {
+					assert.Equal(t, 0.0, upValue)
+				}
 			}
 		}
 

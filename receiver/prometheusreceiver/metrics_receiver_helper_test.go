@@ -429,6 +429,15 @@ func assertUp(t *testing.T, expected float64, metrics []pmetric.Metric) {
 	t.Error("No 'up' metric found")
 }
 
+func getUpValue(metrics []pmetric.Metric) float64 {
+	for _, m := range metrics {
+		if m.Name() == "up" {
+			return m.Gauge().DataPoints().At(0).DoubleValue()
+		}
+	}
+	return -1
+}
+
 func countScrapeMetricsRM(got pmetric.ResourceMetrics) int {
 	n := 0
 	ilms := got.ScopeMetrics()
