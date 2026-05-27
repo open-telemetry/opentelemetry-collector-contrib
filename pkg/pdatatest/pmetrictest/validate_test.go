@@ -304,4 +304,138 @@ func TestValidateMetrics(t *testing.T) {
 
 		assert.NoError(t, ValidateMetrics(md))
 	})
+
+	t.Run("duplicate-metric-name-same-type", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		sm := rm.ScopeMetrics().AppendEmpty()
+
+		m1 := sm.Metrics().AppendEmpty()
+		m1.SetName("http.requests")
+		m1.SetEmptyGauge()
+
+		m2 := sm.Metrics().AppendEmpty()
+		m2.SetName("http.requests")
+		m2.SetEmptyGauge()
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `metric "http.requests" at index 1 is a duplicate of metric at index 0`)
+	})
+
+	t.Run("duplicate-metric-name-different-type", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		sm := rm.ScopeMetrics().AppendEmpty()
+
+		m1 := sm.Metrics().AppendEmpty()
+		m1.SetName("http.requests")
+		m1.SetEmptyGauge()
+
+		m2 := sm.Metrics().AppendEmpty()
+		m2.SetName("http.requests")
+		m2.SetEmptySum()
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `metric "http.requests" at index 1 is a duplicate of metric at index 0`)
+	})
+
+	t.Run("no-duplicate-different-names", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		sm := rm.ScopeMetrics().AppendEmpty()
+
+		m1 := sm.Metrics().AppendEmpty()
+		m1.SetName("http.requests")
+		m1.SetEmptyGauge()
+
+		m2 := sm.Metrics().AppendEmpty()
+		m2.SetName("http.duration")
+		m2.SetEmptySum()
+
+		assert.NoError(t, ValidateMetrics(md))
+	})
+
+	t.Run("duplicate-metric-name-multiple-duplicates", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		sm := rm.ScopeMetrics().AppendEmpty()
+
+		// Three metrics with the same name.
+		for range 3 {
+			m := sm.Metrics().AppendEmpty()
+			m.SetName("http.requests")
+			m.SetEmptyGauge()
+		}
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `metric "http.requests" at index 1 is a duplicate of metric at index 0`)
+		assert.Contains(t, err.Error(), `metric "http.requests" at index 2 is a duplicate of metric at index 0`)
+	})
+
+	t.Run("duplicate-metric-names-multiple-names", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		sm := rm.ScopeMetrics().AppendEmpty()
+
+		// Two pairs of duplicate names.
+		m1 := sm.Metrics().AppendEmpty()
+		m1.SetName("metric.a")
+		m1.SetEmptyGauge()
+		m2 := sm.Metrics().AppendEmpty()
+		m2.SetName("metric.a")
+		m2.SetEmptyGauge()
+
+		m3 := sm.Metrics().AppendEmpty()
+		m3.SetName("metric.b")
+		m3.SetEmptySum()
+		m4 := sm.Metrics().AppendEmpty()
+		m4.SetName("metric.b")
+		m4.SetEmptySum()
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `metric "metric.a"`)
+		assert.Contains(t, err.Error(), `metric "metric.b"`)
+	})
+
+	t.Run("duplicate-metric-name-includes-resource-scope-context", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("host.name", "worker-42")
+		sm := rm.ScopeMetrics().AppendEmpty()
+		sm.Scope().SetName("my.receiver")
+
+		m1 := sm.Metrics().AppendEmpty()
+		m1.SetName("http.requests")
+		m1.SetEmptyGauge()
+
+		m2 := sm.Metrics().AppendEmpty()
+		m2.SetName("http.requests")
+		m2.SetEmptyGauge()
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `resource "map[host.name:worker-42]"`)
+		assert.Contains(t, err.Error(), `scope "my.receiver"`)
+		assert.Contains(t, err.Error(), `metric "http.requests"`)
+	})
+
+	t.Run("single-metric-no-duplicate", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		sm := rm.ScopeMetrics().AppendEmpty()
+
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("http.requests")
+		m.SetEmptyGauge()
+
+		assert.NoError(t, ValidateMetrics(md))
+	})
+
+	// TODO (PR 4): Add tests for multiple ScopeMetrics with equal scope under the same resource
+
+	// TODO (PR 3): Add tests for multiple ResourceMetrics with equal resource attributes
 }
