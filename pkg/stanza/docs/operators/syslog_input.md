@@ -11,8 +11,8 @@ The `syslog_input` operator listens for syslog format logs from UDP/TCP packages
 | `tcp`        | {}               | A [tcp_input config](./tcp_input.md#configuration-fields)  to defined syslog_parser operator.         |
 | `udp`        | {}               | A [udp_input config](./udp_input.md#configuration-fields)  to defined syslog_parser operator.         |
 | `syslog`     | required         | A [syslog parser config](./syslog_parser.md#configuration-fields)  to defined syslog_parser operator. |
-| `attributes` | {}               | A map of `key: value` pairs to add to the entry's attributes.                                         |
-| `resource`   | {}               | A map of `key: value` pairs to add to the entry's resource.                                           |
+| `attributes` | {}               | A map of `key: value` pairs to add to the entry's attributes. Keys must be strings, values must be strings or [expressions](../types/expression.md) that evaluate to a string. |
+| `resource`   | {}               | A map of `key: value` pairs to add to the entry's resource. Keys must be strings, values must be strings or [expressions](../types/expression.md) that evaluate to a string.   |
 | `on_error`   | `send`           | The behavior of the syslog parser if it encounters an error. See [on_error](../types/on_error.md).    |
 
 
