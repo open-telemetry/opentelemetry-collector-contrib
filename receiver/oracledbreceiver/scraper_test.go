@@ -204,6 +204,83 @@ func TestScraper_Scrape(t *testing.T) {
 	}
 }
 
+func TestScraper_ScrapeCDBRoot(t *testing.T) {
+	cdbPDBName := "PDB1"
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbExecutions.Enabled = true
+	cfg.Metrics.OracledbSessionsUsage.Enabled = true
+	cfg.Metrics.OracledbTablespaceSizeUsage.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			switch s {
+			case cdbStatsSQL:
+				return &fakeDbClient{Responses: [][]metricRow{{
+					{"NAME": executeCount, "VALUE": "7", "PDB_NAME": cdbPDBName},
+				}}}
+			case cdbSessionCountSQL:
+				return &fakeDbClient{Responses: [][]metricRow{{
+					{"VALUE": "4", "STATUS": "ACTIVE", "TYPE": "FOREGROUND", "PDB_NAME": cdbPDBName},
+				}}}
+			case cdbTablespaceUsageSQL:
+				return &fakeDbClient{Responses: [][]metricRow{{
+					{"TABLESPACE_NAME": "USERS", "USED_SPACE": "2", "TABLESPACE_SIZE": "4", "BLOCK_SIZE": "8", "PDB_NAME": cdbPDBName},
+				}}}
+			default:
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			}
+		},
+		instanceInfoProvider: func(*sql.DB) (instanceInfo, error) {
+			return instanceInfo{isCDB: true, connectedToPDB: false}, nil
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	}()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+
+	findMetric := func(name string) pmetric.Metric {
+		for i := 0; i < metrics.Len(); i++ {
+			metric := metrics.At(i)
+			if metric.Name() == name {
+				return metric
+			}
+		}
+		return pmetric.Metric{}
+	}
+
+	executionsMetric := findMetric("oracledb.executions")
+	require.NotZero(t, executionsMetric.Sum().DataPoints().Len())
+	attr, ok := executionsMetric.Sum().DataPoints().At(0).Attributes().Get("oracle.db.pdb")
+	require.True(t, ok)
+	assert.Equal(t, cdbPDBName, attr.Str())
+
+	sessionsMetric := findMetric("oracledb.sessions.usage")
+	require.NotZero(t, sessionsMetric.Gauge().DataPoints().Len())
+	attr, ok = sessionsMetric.Gauge().DataPoints().At(0).Attributes().Get("oracle.db.pdb")
+	require.True(t, ok)
+	assert.Equal(t, cdbPDBName, attr.Str())
+
+	tablespaceMetric := findMetric("oracledb.tablespace_size.usage")
+	require.NotZero(t, tablespaceMetric.Gauge().DataPoints().Len())
+	attr, ok = tablespaceMetric.Gauge().DataPoints().At(0).Attributes().Get("oracle.db.pdb")
+	require.True(t, ok)
+	assert.Equal(t, cdbPDBName, attr.Str())
+}
+
 func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 	const floatDelta = 0.01
 

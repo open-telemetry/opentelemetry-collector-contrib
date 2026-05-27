@@ -54,6 +54,9 @@ attributes:
   network.peer.port:
     description: TCP port used by the peer client.
     type: int
+  oracle.db.pdb:
+    description: The name of the Pluggable Database (PDB) in a multitenant CDB. Empty for non-CDB instances or when connected directly to a PDB.
+    type: string
   oracledb.application_wait_time:
     description: The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
     type: double
@@ -305,6 +308,8 @@ events:
       - oracledb.procedure_type
 metrics:
   oracledb.consistent_gets:
+    attributes:
+      - oracle.db.pdb
     description: Number of times a consistent read was requested for a block from the buffer cache.
     enabled: false
     stability: development
@@ -315,6 +320,8 @@ metrics:
       input_type: string
     unit: "{gets}"
   oracledb.cpu_time:
+    attributes:
+      - oracle.db.pdb
     description: Cumulative CPU time, in seconds
     enabled: true
     stability: development
@@ -331,6 +338,8 @@ metrics:
       value_type: double
     unit: "%"
   oracledb.db_block_gets:
+    attributes:
+      - oracle.db.pdb
     description: Number of times a current block was requested from the buffer cache.
     enabled: false
     stability: development
@@ -341,6 +350,8 @@ metrics:
       input_type: string
     unit: "{gets}"
   oracledb.ddl_statements_parallelized:
+    attributes:
+      - oracle.db.pdb
     description: Number of DDL statements that were executed in parallel
     enabled: false
     stability: development
@@ -367,6 +378,8 @@ metrics:
       input_type: string
     unit: "{locks}"
   oracledb.dml_statements_parallelized:
+    attributes:
+      - oracle.db.pdb
     description: Number of DML statements that were executed in parallel
     enabled: false
     stability: development
@@ -377,6 +390,8 @@ metrics:
       input_type: string
     unit: "{statements}"
   oracledb.enqueue_deadlocks:
+    attributes:
+      - oracle.db.pdb
     description: Total number of deadlocks between table or row locks in different sessions.
     enabled: true
     stability: development
@@ -419,6 +434,8 @@ metrics:
       input_type: string
     unit: "{resources}"
   oracledb.exchange_deadlocks:
+    attributes:
+      - oracle.db.pdb
     description: Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges.
     enabled: true
     stability: development
@@ -429,6 +446,8 @@ metrics:
       input_type: string
     unit: "{deadlocks}"
   oracledb.executions:
+    attributes:
+      - oracle.db.pdb
     description: Total number of calls (user and recursive) that executed SQL statements
     enabled: true
     stability: development
@@ -439,6 +458,8 @@ metrics:
       input_type: string
     unit: "{executions}"
   oracledb.hard_parses:
+    attributes:
+      - oracle.db.pdb
     description: Number of hard parses
     enabled: true
     stability: development
@@ -449,6 +470,8 @@ metrics:
       input_type: string
     unit: "{parses}"
   oracledb.logical_reads:
+    attributes:
+      - oracle.db.pdb
     description: Number of logical reads
     enabled: true
     stability: development
@@ -459,6 +482,8 @@ metrics:
       input_type: string
     unit: "{reads}"
   oracledb.logons:
+    attributes:
+      - oracle.db.pdb
     description: Number of logon operations
     enabled: false
     stability: development
@@ -471,6 +496,8 @@ metrics:
 
 
   oracledb.parallel_operations_downgraded_1_to_25_pct:
+    attributes:
+      - oracle.db.pdb
     description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers
     enabled: false
     stability: development
@@ -481,6 +508,8 @@ metrics:
       input_type: string
     unit: "{executions}"
   oracledb.parallel_operations_downgraded_25_to_50_pct:
+    attributes:
+      - oracle.db.pdb
     description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers
     enabled: false
     stability: development
@@ -491,6 +520,8 @@ metrics:
       input_type: string
     unit: "{executions}"
   oracledb.parallel_operations_downgraded_50_to_75_pct:
+    attributes:
+      - oracle.db.pdb
     description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 50-75% because of insufficient parallel execution servers
     enabled: false
     stability: development
@@ -501,6 +532,8 @@ metrics:
       input_type: string
     unit: "{executions}"
   oracledb.parallel_operations_downgraded_75_to_99_pct:
+    attributes:
+      - oracle.db.pdb
     description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers
     enabled: false
     stability: development
@@ -511,6 +544,8 @@ metrics:
       input_type: string
     unit: "{executions}"
   oracledb.parallel_operations_downgraded_to_serial:
+    attributes:
+      - oracle.db.pdb
     description: Number of times parallel execution was requested but execution was serial because of insufficient parallel execution servers
     enabled: false
     stability: development
@@ -521,6 +556,8 @@ metrics:
       input_type: string
     unit: "{executions}"
   oracledb.parallel_operations_not_downgraded:
+    attributes:
+      - oracle.db.pdb
     description: Number of times parallel execution was executed at the requested degree of parallelism
     enabled: false
     stability: development
@@ -531,6 +568,8 @@ metrics:
       input_type: string
     unit: "{executions}"
   oracledb.parse_calls:
+    attributes:
+      - oracle.db.pdb
     description: Total number of parse calls.
     enabled: true
     stability: development
@@ -541,6 +580,8 @@ metrics:
       input_type: string
     unit: "{parses}"
   oracledb.pga_memory:
+    attributes:
+      - oracle.db.pdb
     description: Session PGA (Program Global Area) memory
     enabled: true
     stability: development
@@ -551,6 +592,8 @@ metrics:
       input_type: string
     unit: By
   oracledb.physical_read_io_requests:
+    attributes:
+      - oracle.db.pdb
     description: Number of read requests for application activity
     enabled: false
     stability: development
@@ -561,6 +604,8 @@ metrics:
       input_type: string
     unit: "{requests}"
   oracledb.physical_reads:
+    attributes:
+      - oracle.db.pdb
     description: Number of physical reads
     enabled: true
     stability: development
@@ -571,6 +616,8 @@ metrics:
       input_type: string
     unit: "{reads}"
   oracledb.physical_reads_direct:
+    attributes:
+      - oracle.db.pdb
     description: Number of reads directly from disk, bypassing the buffer cache
     enabled: false
     stability: development
@@ -581,6 +628,8 @@ metrics:
       input_type: string
     unit: "{reads}"
   oracledb.physical_write_io_requests:
+    attributes:
+      - oracle.db.pdb
     description: Number of write requests for application activity
     enabled: false
     stability: development
@@ -591,6 +640,8 @@ metrics:
       input_type: string
     unit: "{requests}"
   oracledb.physical_writes:
+    attributes:
+      - oracle.db.pdb
     description: Number of physical writes
     enabled: false
     stability: development
@@ -601,6 +652,8 @@ metrics:
       input_type: string
     unit: "{writes}"
   oracledb.physical_writes_direct:
+    attributes:
+      - oracle.db.pdb
     description: Number of writes directly to disk, bypassing the buffer cache
     enabled: false
     stability: development
@@ -627,6 +680,8 @@ metrics:
       input_type: string
     unit: "{processes}"
   oracledb.queries_parallelized:
+    attributes:
+      - oracle.db.pdb
     description: Number of SELECT statements executed in parallel
     enabled: false
     stability: development
@@ -653,8 +708,9 @@ metrics:
     unit: "{sessions}"
   oracledb.sessions.usage:
     attributes:
-      - session_type
+      - oracle.db.pdb
       - session_status
+      - session_type
     description: Count of active sessions.
     enabled: true
     stability: development
@@ -678,6 +734,7 @@ metrics:
     unit: "1"
   oracledb.tablespace_size.limit:
     attributes:
+      - oracle.db.pdb
       - tablespace_name
     description: Maximum size of tablespace in bytes, -1 if unlimited.
     enabled: true
@@ -687,6 +744,7 @@ metrics:
     unit: By
   oracledb.tablespace_size.usage:
     attributes:
+      - oracle.db.pdb
       - tablespace_name
     description: Used tablespace in bytes.
     enabled: true
@@ -711,6 +769,8 @@ metrics:
       input_type: string
     unit: "{transactions}"
   oracledb.user_commits:
+    attributes:
+      - oracle.db.pdb
     description: Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.
     enabled: true
     stability: development
@@ -721,6 +781,8 @@ metrics:
       input_type: string
     unit: "{commits}"
   oracledb.user_rollbacks:
+    attributes:
+      - oracle.db.pdb
     description: Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions
     enabled: true
     stability: development
