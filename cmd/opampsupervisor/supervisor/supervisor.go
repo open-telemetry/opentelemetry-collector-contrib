@@ -997,8 +997,9 @@ func (*Supervisor) getHeadersFromSettings(protoHeaders *protobufs.Headers) http.
 	return headers
 }
 
-func (s *Supervisor) onConnect(_ context.Context) {
+func (s *Supervisor) onConnect(ctx context.Context) {
 	s.telemetrySettings.Logger.Info("Connected to the OpAMP server.")
+	s.metrics.SetCollectorFallbackStatus(ctx, false)
 
 	if s.initialOpampConnSuccess.Load() {
 		return
