@@ -1756,51 +1756,163 @@ func TestURLSanitizationWithBlockedValues(t *testing.T) {
 	assert.Equal(t, int64(2), maskedCount.Int())
 }
 
-func TestURLSanitizationInLogBody(t *testing.T) {
-	sanitizeLogBody := true
-	bodyWithURL := pcommon.NewValueStr("/users/2")
-	tc := testConfig{
-		config: &Config{
-			AllowAllKeys: true,
-			URLSanitization: url.URLSanitizationConfig{
-				Enabled:         true,
-				SanitizeLogBody: &sanitizeLogBody,
-			},
-		},
-		logBody: &bodyWithURL,
+// proseLogBody is rejected by clusterurl when run on the whole log body (early '_' in the token).
+const proseLogBody = "test_event_name [correlation_id=00000000-0000-4000-8000-000000000001]"
+
+// pathLikeLogBody is a slash-separated path clusterurl can normalize when log-body sanitization is on.
+const pathLikeLogBody = "/api/orders/12345/details"
+
+func urlSanitizerAttributesOnly() url.URLSanitizationConfig {
+	return url.URLSanitizationConfig{
+		Enabled:    true,
+		Attributes: []string{"http.url"},
 	}
-
-	outLogs := runLogsTest(t, tc)
-	outLogBody := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
-
-	assert.Equal(t, "/users/*", outLogBody.Str())
 }
 
-func TestURLSanitizationComplexLogBody(t *testing.T) {
-	sanitizeLogBody := true
-	complexBody := pcommon.NewValueMap()
-	complexBody.Map().PutStr("message", "/users/2")
-	complexBody.Map().PutStr("url", "/products/1/org/3")
+func processStringLogBody(t *testing.T, cfg *Config, body string) string {
+	t.Helper()
 
-	tc := testConfig{
-		config: &Config{
+	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	require.NoError(t, err)
+
+	inLogs := plog.NewLogs()
+	logRecord := inLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	logRecord.Body().SetStr(body)
+
+	outLogs, err := processor.processLogs(t.Context(), inLogs)
+	require.NoError(t, err)
+
+	return outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str()
+}
+
+// TestURLSanitizationLogBody documents the fix for url_sanitizer applying to every string log body
+// even when only attribute keys are listed. Before sanitize_log_body, enabled: true sanitized all
+// bodies; the flag defaults off so bodies are untouched unless operators opt in.
+func TestURLSanitizationLogBody(t *testing.T) {
+	sanitizeLogBodyTrue := true
+	sanitizeLogBodyFalse := false
+	attrsOnly := urlSanitizerAttributesOnly()
+
+	t.Run("fix/url_sanitizer_does_not_touch_log_bodies_by_default", func(t *testing.T) {
+		tests := []struct {
+			name            string
+			sanitizeLogBody *bool
+			input           string
+		}{
+			{
+				name:  "omit_sanitize_log_body_preserves_prose",
+				input: proseLogBody,
+			},
+			{
+				name:            "explicit_false_preserves_prose",
+				sanitizeLogBody: &sanitizeLogBodyFalse,
+				input:           proseLogBody,
+			},
+			{
+				name:  "omit_sanitize_log_body_preserves_path_like_body",
+				input: pathLikeLogBody,
+			},
+			{
+				name:            "explicit_false_preserves_path_like_body",
+				sanitizeLogBody: &sanitizeLogBodyFalse,
+				input:           pathLikeLogBody,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				cfg := url.URLSanitizationConfig{
+					Enabled:         attrsOnly.Enabled,
+					Attributes:      attrsOnly.Attributes,
+					SanitizeLogBody: tt.sanitizeLogBody,
+				}
+				got := processStringLogBody(t, &Config{
+					AllowAllKeys:    true,
+					URLSanitization: cfg,
+				}, tt.input)
+				assert.Equal(t, tt.input, got, "log body must not be URL-sanitized unless sanitize_log_body is true")
+			})
+		}
+	})
+
+	t.Run("fix/attributes_list_still_sanitizes_log_record_attributes", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys:    true,
+				URLSanitization: attrsOnly,
+			},
+			allowed: map[string]pcommon.Value{
+				"http.url":  pcommon.NewValueStr("/users/2"),
+				"other.url": pcommon.NewValueStr("/users/3"),
+			},
+			logBody: ptr(pcommon.NewValueStr(proseLogBody)),
+		}
+
+		outLogs := runLogsTest(t, tc)
+		logRecord := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+		assert.Equal(t, proseLogBody, logRecord.Body().Str())
+
+		httpURL, ok := logRecord.Attributes().Get("http.url")
+		require.True(t, ok)
+		assert.Equal(t, "/users/*", httpURL.Str())
+
+		otherURL, ok := logRecord.Attributes().Get("other.url")
+		require.True(t, ok)
+		assert.Equal(t, "/users/3", otherURL.Str())
+	})
+
+	t.Run("opt_in/sanitize_log_body_normalizes_path_like_body", func(t *testing.T) {
+		got := processStringLogBody(t, &Config{
 			AllowAllKeys: true,
 			URLSanitization: url.URLSanitizationConfig{
 				Enabled:         true,
-				SanitizeLogBody: &sanitizeLogBody,
+				SanitizeLogBody: &sanitizeLogBodyTrue,
 			},
-		},
-		logBody: &complexBody,
-	}
+		}, pathLikeLogBody)
+		assert.Equal(t, "/api/orders/*/details", got)
+	})
 
-	outLogs := runLogsTest(t, tc)
-	outLogBody := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
+	t.Run("opt_in/sanitize_log_body_masks_prose_to_star", func(t *testing.T) {
+		got := processStringLogBody(t, &Config{
+			AllowAllKeys: true,
+			URLSanitization: url.URLSanitizationConfig{
+				Enabled:         true,
+				SanitizeLogBody: &sanitizeLogBodyTrue,
+			},
+		}, proseLogBody)
+		assert.Equal(t, "*", got)
+	})
 
-	message, _ := outLogBody.Map().Get("message")
-	assert.Equal(t, "/users/*", message.Str())
+	t.Run("opt_in/sanitize_log_body_sanitizes_nested_map_strings", func(t *testing.T) {
+		complexBody := pcommon.NewValueMap()
+		complexBody.Map().PutStr("message", "/users/2")
+		complexBody.Map().PutStr("url", "/products/1/org/3")
 
-	url, _ := outLogBody.Map().Get("url")
-	assert.Equal(t, "/products/*/org/*", url.Str())
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				URLSanitization: url.URLSanitizationConfig{
+					Enabled:         true,
+					SanitizeLogBody: &sanitizeLogBodyTrue,
+				},
+			},
+			logBody: &complexBody,
+		}
+
+		outLogs := runLogsTest(t, tc)
+		outLogBody := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
+
+		message, _ := outLogBody.Map().Get("message")
+		assert.Equal(t, "/users/*", message.Str())
+
+		urlVal, _ := outLogBody.Map().Get("url")
+		assert.Equal(t, "/products/*/org/*", urlVal.Str())
+	})
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }
 
 func TestURLSanitizationAttributeFiltering(t *testing.T) {
@@ -2316,111 +2428,6 @@ func TestDBObfuscationOnLogBody(t *testing.T) {
 
 	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	assert.Equal(t, "SELECT password FROM users WHERE id = ?", outLog.Body().Str())
-}
-
-func TestURLSanitizationOnLogBody(t *testing.T) {
-	sanitizeLogBody := true
-	cfg := &Config{
-		AllowAllKeys: true,
-		URLSanitization: url.URLSanitizationConfig{
-			Enabled:         true,
-			SanitizeLogBody: &sanitizeLogBody,
-		},
-	}
-
-	inLogs := plog.NewLogs()
-	rl := inLogs.ResourceLogs().AppendEmpty()
-	ils := rl.ScopeLogs().AppendEmpty()
-	logRecord := ils.LogRecords().AppendEmpty()
-	logRecord.Body().SetStr("/api/orders/12345/details")
-
-	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
-	require.NoError(t, err)
-	outLogs, err := processor.processLogs(t.Context(), inLogs)
-	require.NoError(t, err)
-
-	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	assert.Equal(t, "/api/orders/*/details", outLog.Body().Str())
-}
-
-func TestURLSanitizationLogBodyDisabledByDefault(t *testing.T) {
-	const proseLogBody = "test_event_name [correlation_id=00000000-0000-4000-8000-000000000001]"
-
-	cfg := &Config{
-		AllowAllKeys: true,
-		URLSanitization: url.URLSanitizationConfig{
-			Enabled:    true,
-			Attributes: []string{"http.url"},
-		},
-	}
-
-	inLogs := plog.NewLogs()
-	rl := inLogs.ResourceLogs().AppendEmpty()
-	ils := rl.ScopeLogs().AppendEmpty()
-	logRecord := ils.LogRecords().AppendEmpty()
-	logRecord.Body().SetStr(proseLogBody)
-
-	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
-	require.NoError(t, err)
-	outLogs, err := processor.processLogs(t.Context(), inLogs)
-	require.NoError(t, err)
-
-	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	assert.Equal(t, proseLogBody, outLog.Body().Str())
-}
-
-func TestURLSanitizationLogBodyExplicitFalse(t *testing.T) {
-	sanitizeLogBody := false
-	const proseLogBody = "test_event_name [correlation_id=00000000-0000-4000-8000-000000000001]"
-
-	cfg := &Config{
-		AllowAllKeys: true,
-		URLSanitization: url.URLSanitizationConfig{
-			Enabled:         true,
-			SanitizeLogBody: &sanitizeLogBody,
-		},
-	}
-
-	inLogs := plog.NewLogs()
-	rl := inLogs.ResourceLogs().AppendEmpty()
-	ils := rl.ScopeLogs().AppendEmpty()
-	logRecord := ils.LogRecords().AppendEmpty()
-	logRecord.Body().SetStr(proseLogBody)
-
-	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
-	require.NoError(t, err)
-	outLogs, err := processor.processLogs(t.Context(), inLogs)
-	require.NoError(t, err)
-
-	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	assert.Equal(t, proseLogBody, outLog.Body().Str())
-}
-
-func TestURLSanitizationLogBodyEnabledMasksProse(t *testing.T) {
-	sanitizeLogBody := true
-	const proseLogBody = "test_event_name [correlation_id=00000000-0000-4000-8000-000000000001]"
-
-	cfg := &Config{
-		AllowAllKeys: true,
-		URLSanitization: url.URLSanitizationConfig{
-			Enabled:         true,
-			SanitizeLogBody: &sanitizeLogBody,
-		},
-	}
-
-	inLogs := plog.NewLogs()
-	rl := inLogs.ResourceLogs().AppendEmpty()
-	ils := rl.ScopeLogs().AppendEmpty()
-	logRecord := ils.LogRecords().AppendEmpty()
-	logRecord.Body().SetStr(proseLogBody)
-
-	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
-	require.NoError(t, err)
-	outLogs, err := processor.processLogs(t.Context(), inLogs)
-	require.NoError(t, err)
-
-	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	assert.Equal(t, "*", outLog.Body().Str())
 }
 
 func TestDBObfuscationErrorInAttribute(t *testing.T) {
