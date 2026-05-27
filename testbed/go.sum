@@ -30,8 +30,8 @@ github.com/AzureAD/microsoft-authentication-library-for-go v1.6.0 h1:XRzhVemXdgv
 github.com/AzureAD/microsoft-authentication-library-for-go v1.6.0/go.mod h1:HKpQxkWaGLJ+D/5H8QRpyQXA1eKjxkFlOMwck5+33Jk=
 github.com/Code-Hex/go-generics-cache v1.5.1 h1:6vhZGc5M7Y/YD8cIUcY8kcuQLB4cHR7U+0KMqAA0KcU=
 github.com/Code-Hex/go-generics-cache v1.5.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
-github.com/DataDog/agent-payload/v5 v5.0.197 h1:bSTMx1Bz3XMPoWKxDyEeGmVODIl19FWAyOIyyw2h3go=
-github.com/DataDog/agent-payload/v5 v5.0.197/go.mod h1:GyA1vuCeRywrNNCbYeR0cOYKE8QkOVNAFDqsH8VNF5M=
+github.com/DataDog/agent-payload/v5 v5.0.199 h1:FCgvAXEnuVzXOxg1vBgOPXY1mvyGx/PTv4oeykzpPHM=
+github.com/DataDog/agent-payload/v5 v5.0.199/go.mod h1:GyA1vuCeRywrNNCbYeR0cOYKE8QkOVNAFDqsH8VNF5M=
 github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.77.0-devel.0.20260213154712-e02b9359151a h1:CnOjFdrOPSjKmEymrkVGfkxI64P7cwLSnIauKspCoFw=
 github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.77.0-devel.0.20260213154712-e02b9359151a/go.mod h1:wk/u8IhnLPik36UA+NUrtuZqjN1yEzpTOXaR4pK/NlM=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.77.0-devel.0.20260213154712-e02b9359151a h1:/xtQjxLk5vwsBsiBAnoz8qTdntvp6DX41AteNrbns5Y=
@@ -244,8 +244,8 @@ github.com/edsrzf/mmap-go v1.2.1-0.20241212181136-fad1cd13edbd h1:I4PrRZuNMeDP3V
 github.com/edsrzf/mmap-go v1.2.1-0.20241212181136-fad1cd13edbd/go.mod h1:19H/e8pUPLicwkyNgOykDXkJ9F0MHE+Z52B8EIth78Q=
 github.com/elastic/go-grok v0.3.1 h1:WEhUxe2KrwycMnlvMimJXvzRa7DoByJB4PVUIE1ZD/U=
 github.com/elastic/go-grok v0.3.1/go.mod h1:n38ls8ZgOboZRgKcjMY8eFeZFMmcL9n2lP0iHhIDk64=
-github.com/elastic/lunes v0.2.0 h1:WI3bsdOTuaYXVe2DS1KbqA7u7FOHN4o8qJw80ZyZoQs=
-github.com/elastic/lunes v0.2.0/go.mod h1:u3W/BdONWTrh0JjNZ21C907dDc+cUZttZrGa625nf2k=
+github.com/elastic/lunes v0.2.2 h1:dZFEaebNg9l+mzvOQN6Nd/c9y6y8rUe3tBWsTgvM08U=
+github.com/elastic/lunes v0.2.2/go.mod h1:u3W/BdONWTrh0JjNZ21C907dDc+cUZttZrGa625nf2k=
 github.com/emicklei/go-restful/v3 v3.12.2 h1:DhwDP0vY3k8ZzE0RunuJy8GhNpPL6zqLkDf9B/a0/xU=
 github.com/emicklei/go-restful/v3 v3.12.2/go.mod h1:6n3XBCmQQb25CM2LCACGz8ukIrRry+4bhvbpWn3mrbc=
 github.com/envoyproxy/go-control-plane/envoy v1.37.0 h1:u3riX6BoYRfF4Dr7dwSOroNfdSbEPe9Yyl09/B6wBrQ=
@@ -495,8 +495,8 @@ github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/ionos-cloud/sdk-go/v6 v6.3.6 h1:l/TtKgdQ1wUH3DDe2SfFD78AW+TJWdEbDpQhHkWd6CM=
 github.com/ionos-cloud/sdk-go/v6 v6.3.6/go.mod h1:nUGHP4kZHAZngCVr4v6C8nuargFrtvt7GrzH/hqn7c4=
-github.com/jaegertracing/jaeger-idl v0.7.1 h1:hd5w6Fu7eaqnTexxi/ae8Cap6RSyreVlrEP7jtScmTI=
-github.com/jaegertracing/jaeger-idl v0.7.1/go.mod h1:W+9vbcr2cVZyS6z/cbr540EOzSkKYml3hmaWEavxkB0=
+github.com/jaegertracing/jaeger-idl v0.9.0 h1:dI4olA7ArW3cjXwVbic/aYKDbdlfe7V+9wPQqAdzu8Y=
+github.com/jaegertracing/jaeger-idl v0.9.0/go.mod h1:W+9vbcr2cVZyS6z/cbr540EOzSkKYml3hmaWEavxkB0=
 github.com/jarcoal/httpmock v1.4.1 h1:0Ju+VCFuARfFlhVXFc2HxlcQkfB+Xq12/EotHko+x2A=
 github.com/jarcoal/httpmock v1.4.1/go.mod h1:ftW1xULwo+j0R0JJkJIIi7UKigZUXCLLanykgjwBXL0=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=
