@@ -119,6 +119,9 @@ processors:
       # When enabled, span names containing "/" will be sanitized to reduce cardinality
       # Set to false to disable span name sanitization while keeping attribute sanitization active
       sanitize_span_name: true
+      # sanitize_log_body controls whether string log bodies are sanitized (default: false)
+      # The attributes list above applies only to attribute values, not log bodies
+      sanitize_log_body: false
 ```
 
 Refer to [config.yaml](./testdata/config.yaml) for how to fit the configuration
@@ -268,6 +271,8 @@ action occurred.
 ## URL Sanitization
 
 The `url_sanitizer` configuration enables sanitization of URLs in specified attributes by removing potentially sensitive information like UUIDs, timestamps, and other non-essential path segments. This is particularly useful for reducing cardinality in telemetry data while preserving the essential parts of URLs for troubleshooting.
+
+Only attribute keys listed under `attributes` are sanitized by default. String log bodies are **not** sanitized unless you set `sanitize_log_body: true`. This avoids collapsing non-URL log messages when URL sanitization is enabled for trace and metric attributes.
 
 ## Span Name Sanitization
 

@@ -470,7 +470,7 @@ func (s *redaction) processStringValueForLogBody(strVal string) string {
 		}
 	}
 
-	if s.urlSanitizer != nil {
+	if s.shouldSanitizeLogBody() {
 		strVal = s.urlSanitizer.SanitizeURL(strVal)
 	}
 
@@ -557,6 +557,17 @@ func applySpanName(span ptrace.Span, original, candidate string) {
 	if candidate != original {
 		span.SetName(candidate)
 	}
+}
+
+func (s *redaction) shouldSanitizeLogBody() bool {
+	if s.urlSanitizer == nil {
+		return false
+	}
+
+	if s.config.URLSanitization.SanitizeLogBody == nil {
+		return false
+	}
+	return *s.config.URLSanitization.SanitizeLogBody
 }
 
 func (s *redaction) shouldSanitizeSpanNameForURL() bool {

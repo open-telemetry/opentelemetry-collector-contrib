@@ -1757,12 +1757,14 @@ func TestURLSanitizationWithBlockedValues(t *testing.T) {
 }
 
 func TestURLSanitizationInLogBody(t *testing.T) {
+	sanitizeLogBody := true
 	bodyWithURL := pcommon.NewValueStr("/users/2")
 	tc := testConfig{
 		config: &Config{
 			AllowAllKeys: true,
 			URLSanitization: url.URLSanitizationConfig{
-				Enabled: true,
+				Enabled:         true,
+				SanitizeLogBody: &sanitizeLogBody,
 			},
 		},
 		logBody: &bodyWithURL,
@@ -1775,6 +1777,7 @@ func TestURLSanitizationInLogBody(t *testing.T) {
 }
 
 func TestURLSanitizationComplexLogBody(t *testing.T) {
+	sanitizeLogBody := true
 	complexBody := pcommon.NewValueMap()
 	complexBody.Map().PutStr("message", "/users/2")
 	complexBody.Map().PutStr("url", "/products/1/org/3")
@@ -1783,7 +1786,8 @@ func TestURLSanitizationComplexLogBody(t *testing.T) {
 		config: &Config{
 			AllowAllKeys: true,
 			URLSanitization: url.URLSanitizationConfig{
-				Enabled: true,
+				Enabled:         true,
+				SanitizeLogBody: &sanitizeLogBody,
 			},
 		},
 		logBody: &complexBody,
@@ -2315,10 +2319,12 @@ func TestDBObfuscationOnLogBody(t *testing.T) {
 }
 
 func TestURLSanitizationOnLogBody(t *testing.T) {
+	sanitizeLogBody := true
 	cfg := &Config{
 		AllowAllKeys: true,
 		URLSanitization: url.URLSanitizationConfig{
-			Enabled: true,
+			Enabled:         true,
+			SanitizeLogBody: &sanitizeLogBody,
 		},
 	}
 
@@ -2335,6 +2341,86 @@ func TestURLSanitizationOnLogBody(t *testing.T) {
 
 	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	assert.Equal(t, "/api/orders/*/details", outLog.Body().Str())
+}
+
+func TestURLSanitizationLogBodyDisabledByDefault(t *testing.T) {
+	const proseLogBody = "test_event_name [correlation_id=00000000-0000-4000-8000-000000000001]"
+
+	cfg := &Config{
+		AllowAllKeys: true,
+		URLSanitization: url.URLSanitizationConfig{
+			Enabled:    true,
+			Attributes: []string{"http.url"},
+		},
+	}
+
+	inLogs := plog.NewLogs()
+	rl := inLogs.ResourceLogs().AppendEmpty()
+	ils := rl.ScopeLogs().AppendEmpty()
+	logRecord := ils.LogRecords().AppendEmpty()
+	logRecord.Body().SetStr(proseLogBody)
+
+	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	outLogs, err := processor.processLogs(t.Context(), inLogs)
+	require.NoError(t, err)
+
+	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, proseLogBody, outLog.Body().Str())
+}
+
+func TestURLSanitizationLogBodyExplicitFalse(t *testing.T) {
+	sanitizeLogBody := false
+	const proseLogBody = "test_event_name [correlation_id=00000000-0000-4000-8000-000000000001]"
+
+	cfg := &Config{
+		AllowAllKeys: true,
+		URLSanitization: url.URLSanitizationConfig{
+			Enabled:         true,
+			SanitizeLogBody: &sanitizeLogBody,
+		},
+	}
+
+	inLogs := plog.NewLogs()
+	rl := inLogs.ResourceLogs().AppendEmpty()
+	ils := rl.ScopeLogs().AppendEmpty()
+	logRecord := ils.LogRecords().AppendEmpty()
+	logRecord.Body().SetStr(proseLogBody)
+
+	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	outLogs, err := processor.processLogs(t.Context(), inLogs)
+	require.NoError(t, err)
+
+	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, proseLogBody, outLog.Body().Str())
+}
+
+func TestURLSanitizationLogBodyEnabledMasksProse(t *testing.T) {
+	sanitizeLogBody := true
+	const proseLogBody = "test_event_name [correlation_id=00000000-0000-4000-8000-000000000001]"
+
+	cfg := &Config{
+		AllowAllKeys: true,
+		URLSanitization: url.URLSanitizationConfig{
+			Enabled:         true,
+			SanitizeLogBody: &sanitizeLogBody,
+		},
+	}
+
+	inLogs := plog.NewLogs()
+	rl := inLogs.ResourceLogs().AppendEmpty()
+	ils := rl.ScopeLogs().AppendEmpty()
+	logRecord := ils.LogRecords().AppendEmpty()
+	logRecord.Body().SetStr(proseLogBody)
+
+	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	outLogs, err := processor.processLogs(t.Context(), inLogs)
+	require.NoError(t, err)
+
+	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, "*", outLog.Body().Str())
 }
 
 func TestDBObfuscationErrorInAttribute(t *testing.T) {
