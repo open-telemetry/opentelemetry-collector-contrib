@@ -523,24 +523,9 @@ jobs:
           go-version: oldstable
       - name: Generate collector files
         run: make genotelcontribcol
-      # On PRs we only need to know that the code compiles for the target;
-      # on main/tag/merge_group we produce the binary that publish-check
-      # validates. `go vet ./...` type-checks every transitively-imported
-      # package with the target GOOS/GOARCH, which catches the same class of
-      # errors as a full build for pure-Go (CGO_ENABLED=0) code, ~3x faster.
-      - name: Vet Collector ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.arm }}
-        if: github.event_name == 'pull_request'
-        env:
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
-          GOARM: ${{ matrix.arm }}
-          CGO_ENABLED: "0"
-        run: cd cmd/otelcontribcol && go vet ./...
       - name: Build Collector ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.arm }}
-        if: github.event_name != 'pull_request'
         run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcollite
       - name: Upload Collector Binaries
-        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: collector-binaries-${{ matrix.os }}-${{ matrix.arch }}
@@ -550,9 +535,6 @@ jobs:
   publish-check:
     runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests, cross-compile]
-    # cross-compile produces artifacts only on main/tag/merge_group; on PRs it
-    # runs `go vet` instead, so there are no binaries to verify here.
-    if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
