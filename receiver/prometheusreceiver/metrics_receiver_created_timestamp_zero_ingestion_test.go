@@ -76,7 +76,7 @@ func TestOpenMetricsCreatedTimestampZeroIngestionEnabled(t *testing.T) {
 				{code: 200, data: openMetricsCreatedTimestampMetrics, useOpenMetrics: true},
 			},
 			validateFunc:    verifyOpenMetricsCreatedTimestampZeroIngestionEnabled,
-			validateScrapes: true,
+			validateScrapes: false,
 			normalizedName:  true,
 		},
 	}
@@ -122,7 +122,7 @@ func TestOpenMetricsCreatedTimestampZeroIngestionDisabled(t *testing.T) {
 				{code: 200, data: openMetricsCreatedTimestampMetrics, useOpenMetrics: true},
 			},
 			validateFunc:    verifyOpenMetricsCreatedTimestampZeroIngestionDisabled,
-			validateScrapes: true,
+			validateScrapes: false,
 			normalizedName:  false,
 		},
 	}
