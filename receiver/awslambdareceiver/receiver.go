@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
@@ -46,9 +47,10 @@ var (
 )
 
 type awsLambdaReceiver struct {
-	cfg       *Config
-	logger    *zap.Logger
-	buildInfo component.BuildInfo
+	cfg            *Config
+	logger         *zap.Logger
+	buildInfo      component.BuildInfo
+	tracerProvider trace.TracerProvider
 	// Note: handlerProvider deriving is deferred to Start method.
 	// This is because internal extension loading depends on component.Host.
 	handlerProvider func(context.Context, component.Host, internal.S3Provider) (handlerProvider, error)
@@ -63,9 +65,10 @@ type awsLambdaReceiver struct {
 
 func newLogsReceiver(cfg *Config, set receiver.Settings, next consumer.Logs) (receiver.Logs, error) {
 	return &awsLambdaReceiver{
-		cfg:       cfg,
-		logger:    set.Logger,
-		buildInfo: set.BuildInfo,
+		cfg:            cfg,
+		logger:         set.Logger,
+		buildInfo:      set.BuildInfo,
+		tracerProvider: set.TracerProvider,
 		handlerProvider: func(
 			ctx context.Context,
 			host component.Host,
@@ -78,9 +81,10 @@ func newLogsReceiver(cfg *Config, set receiver.Settings, next consumer.Logs) (re
 
 func newMetricsReceiver(cfg *Config, set receiver.Settings, next consumer.Metrics) (receiver.Metrics, error) {
 	return &awsLambdaReceiver{
-		cfg:       cfg,
-		logger:    set.Logger,
-		buildInfo: set.BuildInfo,
+		cfg:            cfg,
+		logger:         set.Logger,
+		buildInfo:      set.BuildInfo,
+		tracerProvider: set.TracerProvider,
 		handlerProvider: func(
 			ctx context.Context,
 			host component.Host,
@@ -99,7 +103,7 @@ func (a *awsLambdaReceiver) Start(ctx context.Context, host component.Host) erro
 	}
 
 	// Initialize S3 provider to be used by implementations
-	a.s3Provider = &internal.S3ServiceProvider{}
+	a.s3Provider = &internal.S3ServiceProvider{TracerProvider: a.tracerProvider}
 
 	var err error
 	a.hp, err = a.handlerProvider(ctx, host, a.s3Provider)

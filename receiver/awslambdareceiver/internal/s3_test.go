@@ -17,11 +17,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/mock/gomock"
 )
 
 func TestS3ServiceProvider(t *testing.T) {
 	provider := S3ServiceProvider{}
+
+	service, err := provider.GetService(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, service)
+}
+
+func TestS3ServiceProviderWithTracerProvider(t *testing.T) {
+	tp := nooptrace.NewTracerProvider()
+	provider := S3ServiceProvider{TracerProvider: tp}
 
 	service, err := provider.GetService(t.Context())
 	require.NoError(t, err)
