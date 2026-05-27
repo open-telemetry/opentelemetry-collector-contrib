@@ -1,0 +1,13 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: deprecation
+
+component: receiver/apache_spark
+
+note: Rename `apachespark` receiver to `apache_spark` with deprecated alias `apachespark`
+
+issues: [45339]
+
+subtext:
+
+change_logs: [user]
