@@ -26,6 +26,9 @@ details). The Redis receiver extracts values from the result and converts them t
 telemetry metrics. Details about the metrics produced by the Redis receiver
 can be found by browsing [metric_functions.go](metric_functions.go).
 
+For a complete list of all emitted metrics with descriptions, types, and units,
+see the [automatically generated documentation](./documentation.md).
+
 For example, one of the fields returned by the Redis INFO command is
 `used_cpu_sys` which indicates the system CPU consumed by the Redis server,
 expressed in seconds, since the start of the Redis instance.
