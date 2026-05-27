@@ -279,15 +279,15 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.30.0 // indirect
 	go.opentelemetry.io/build-tools/issuegenerator v0.30.0 // indirect
 	go.opentelemetry.io/build-tools/multimod v0.30.0 // indirect
-	go.opentelemetry.io/collector/cmd/builder v0.152.1-0.20260514231715-e7f22744c28c // indirect
-	go.opentelemetry.io/collector/cmd/mdatagen v0.152.1-0.20260514231715-e7f22744c28c // indirect
-	go.opentelemetry.io/collector/component v1.58.1-0.20260514231715-e7f22744c28c // indirect
-	go.opentelemetry.io/collector/confmap v1.58.1-0.20260514231715-e7f22744c28c // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.58.1-0.20260514231715-e7f22744c28c // indirect
-	go.opentelemetry.io/collector/featuregate v1.58.1-0.20260514231715-e7f22744c28c // indirect
-	go.opentelemetry.io/collector/filter v0.152.1-0.20260514231715-e7f22744c28c // indirect
-	go.opentelemetry.io/collector/internal/schemagen v0.152.1-0.20260514231715-e7f22744c28c // indirect
-	go.opentelemetry.io/collector/pdata v1.58.1-0.20260514231715-e7f22744c28c // indirect
+	go.opentelemetry.io/collector/cmd/builder v0.153.0 // indirect
+	go.opentelemetry.io/collector/cmd/mdatagen v0.153.0 // indirect
+	go.opentelemetry.io/collector/component v1.59.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.59.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.59.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.59.0 // indirect
+	go.opentelemetry.io/collector/filter v0.153.0 // indirect
+	go.opentelemetry.io/collector/internal/schemagen v0.153.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.59.0 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
@@ -299,7 +299,7 @@ require (
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20251023183803-a4bb9ffd2546 // indirect
 	golang.org/x/mod v0.36.0 // indirect
-	golang.org/x/net v0.54.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
