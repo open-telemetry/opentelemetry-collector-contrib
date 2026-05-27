@@ -294,9 +294,6 @@ func Test_receiveBytes_traces(t *testing.T) {
 			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
 				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			// Without this assertion the wantTrace=true cases silently pass
-			// when nothing was consumed (the consumer callback never fires).
-			// That gap masked the .zst-suffix bug fixed by this PR (#47802).
 			if tt.wantTrace && !traceConsumed {
 				t.Errorf("receiveBytes() expected trace to be consumed, none received")
 			}
