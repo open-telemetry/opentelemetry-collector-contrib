@@ -285,9 +285,13 @@ k8s_attributes/bad_metadata_field:
 
 k8s_attributes/custom_intervals:
   watch_sync_period: 20s
+  pod_delete_grace_period: 30s
 
 k8s_attributes/bad_watch_sync_period:
   watch_sync_period: -20s
 
 k8s_attributes/disable_watch_sync:
   watch_sync_period: 0s
+
+k8s_attributes/bad_pod_delete_grace_period:
+  pod_delete_grace_period: -30s

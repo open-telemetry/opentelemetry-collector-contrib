@@ -35,6 +35,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -109,6 +110,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -134,6 +136,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -147,6 +150,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -160,6 +164,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -201,6 +206,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -215,6 +221,7 @@ func TestLoadConfig(t *testing.T) {
 				WaitForMetadata:        true,
 				WaitForMetadataTimeout: 30 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -229,6 +236,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -247,6 +255,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -265,6 +274,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -284,6 +294,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -300,6 +311,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -316,6 +328,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -332,6 +345,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -348,6 +362,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -364,6 +379,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -386,6 +402,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -401,6 +418,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -417,6 +435,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        20 * time.Second,
+				PodDeleteGracePeriod:   30 * time.Second,
 			},
 		},
 		{
@@ -433,7 +452,11 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        0,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_pod_delete_grace_period"),
 		},
 	}
 
