@@ -492,7 +492,6 @@ jobs:
             arch: arm
             arm: 7
             runner: ubuntu-24.04
-          # Build linux/arm64 natively to avoid the cross-compile penalty.
           - os: linux
             arch: arm64
             runner: ubuntu-24.04-arm
@@ -525,12 +524,7 @@ jobs:
       - name: Generate collector files
         run: make genotelcontribcol
       - name: Build Collector ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.arm }}
-        env:
-          # -s -w drops the symbol table and DWARF debug info to speed up
-          # linking and shrink the binary; -buildvcs=false skips embedding
-          # VCS metadata. The Makefile recipe already passes -trimpath.
-          GOFLAGS: "-buildvcs=false -ldflags='-s -w'"
-        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
+        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcollite
       - name: Upload Collector Binaries
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
