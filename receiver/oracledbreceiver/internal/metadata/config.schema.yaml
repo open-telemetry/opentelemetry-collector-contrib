@@ -186,31 +186,13 @@ $defs:
           enabled:
             type: boolean
             default: true
-      oracledb.physical_io.bytes:
-        description: "OracledbPhysicalIoBytesMetricConfig provides config for the oracledb.physical_io.bytes metric."
+      oracledb.physical_io.cache_writes:
+        description: "OracledbPhysicalIoCacheWritesMetricConfig provides config for the oracledb.physical_io.cache_writes metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "direction"
-                - "io_type"
-            default:
-              - "direction"
-              - "io_type"
       oracledb.physical_io.requests:
         description: "OracledbPhysicalIoRequestsMetricConfig provides config for the oracledb.physical_io.requests metric."
         type: object
@@ -231,11 +213,36 @@ $defs:
             items:
               type: string
               enum:
-                - "direction"
-                - "block_size"
+                - "disk.io.direction"
+                - "disk.io.block_size"
             default:
-              - "direction"
-              - "block_size"
+              - "disk.io.direction"
+              - "disk.io.block_size"
+      oracledb.physical_io.transferred:
+        description: "OracledbPhysicalIoTransferredMetricConfig provides config for the oracledb.physical_io.transferred metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk.io.direction"
+                - "disk.io.type"
+            default:
+              - "disk.io.direction"
+              - "disk.io.type"
       oracledb.physical_read_io_requests:
         description: "OracledbPhysicalReadIoRequestsMetricConfig provides config for the oracledb.physical_read_io_requests metric."
         type: object
@@ -273,13 +280,6 @@ $defs:
             default: false
       oracledb.physical_writes_direct:
         description: "OracledbPhysicalWritesDirectMetricConfig provides config for the oracledb.physical_writes_direct metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-      oracledb.physical_writes_from_cache:
-        description: "OracledbPhysicalWritesFromCacheMetricConfig provides config for the oracledb.physical_writes_from_cache metric."
         type: object
         properties:
           enabled:
@@ -345,8 +345,8 @@ $defs:
             default:
               - "session_type"
               - "session_status"
-      oracledb.sqlnet.bytes:
-        description: "OracledbSqlnetBytesMetricConfig provides config for the oracledb.sqlnet.bytes metric."
+      oracledb.sqlnet.io.transferred:
+        description: "OracledbSqlnetIoTransferredMetricConfig provides config for the oracledb.sqlnet.io.transferred metric."
         type: object
         properties:
           enabled:
@@ -365,11 +365,11 @@ $defs:
             items:
               type: string
               enum:
-                - "direction"
-                - "peer"
+                - "network.io.direction"
+                - "destination.type"
             default:
-              - "direction"
-              - "peer"
+              - "network.io.direction"
+              - "destination.type"
       oracledb.storage.usage:
         description: "OracledbStorageUsageMetricConfig provides config for the oracledb.storage.usage metric."
         type: object
