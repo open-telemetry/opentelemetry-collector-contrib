@@ -30,6 +30,11 @@ The authenticator type has to be set to `bearertokenauth`.
 
 - `filename`: Name of file that contains authorization tokens. The file is parsed line by line. On each line, the first whitespace-delimited string is treated as the token. Any text following the first whitespace is ignored and can be used for comments (e.g., `my-token # comment` or `my-token // comment`).
 
+- `file_retry`: Optional. Controls retry behaviour during startup when the file referenced by `filename` is not yet available (e.g., the secret is mounted shortly after the collector starts).
+  - `enabled`: When true, startup waits for the file to appear instead of failing immediately. Defaults to `false`.
+  - `max_retries`: Maximum number of retry attempts before giving up. Required when `enabled` is `true`.
+  - `retry_interval`: Interval between retry attempts (e.g., `1s`, `500ms`). Required when `enabled` is `true`.
+
 Either one of `token` or `filename` field is required. If both are specified, then the `token` field value is **ignored**. In any case, the value of the token will be prepended by `${scheme}` before being sent as a value of "authorization" key in the request header in case of HTTP and metadata in case of gRPC.
 
 **Note**: bearertokenauth requires transport layer security enabled on the exporter.
