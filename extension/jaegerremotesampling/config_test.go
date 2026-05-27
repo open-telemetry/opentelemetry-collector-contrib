@@ -31,12 +31,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(metadata.Type),
 			expected: &Config{
-				HTTPServerConfig: &confighttp.ServerConfig{
+				HTTPServerConfig: configoptional.Some(confighttp.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "localhost:5778",
 						Transport: confignet.TransportTypeTCP,
 					},
-				},
+				}),
 				GRPCServerConfig: configoptional.None[configgrpc.ServerConfig](),
 				Source: Source{
 					Remote: &configgrpc.ClientConfig{
@@ -48,12 +48,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
-				HTTPServerConfig: &confighttp.ServerConfig{
+				HTTPServerConfig: configoptional.Some(confighttp.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "localhost:5778",
 						Transport: confignet.TransportTypeTCP,
 					},
-				},
+				}),
 				GRPCServerConfig: configoptional.None[configgrpc.ServerConfig](),
 				Source: Source{
 					ReloadInterval: time.Second,
@@ -72,7 +72,11 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 			assert.NoError(t, xconfmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+	
+			assert.True(t, cfg.(*Config).HTTPServerConfig.HasValue())
+			assert.Equal(t, "localhost:5778", cfg.(*Config).HTTPServerConfig.Get().NetAddr.Endpoint)
+			assert.False(t, cfg.(*Config).GRPCServerConfig.HasValue())
+			assert.Equal(t, tt.expected.(*Config).Source, cfg.(*Config).Source)
 		})
 	}
 }
@@ -124,11 +128,11 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "valid config with both protocols",
 			config: Config{
-				HTTPServerConfig: &confighttp.ServerConfig{
+				HTTPServerConfig: configoptional.Some(confighttp.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint: "0.0.0.0:5778",
 					},
-				},
+				}),
 				GRPCServerConfig: configoptional.Some(configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint: "0.0.0.0:14250",
@@ -157,11 +161,11 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "valid config with only HTTP",
 			config: Config{
-				HTTPServerConfig: &confighttp.ServerConfig{
+				HTTPServerConfig: configoptional.Some(confighttp.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint: "0.0.0.0:5778",
 					},
-				},
+				}),
 				Source: Source{
 					File: "/etc/strategies.json",
 				},

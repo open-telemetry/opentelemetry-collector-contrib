@@ -75,27 +75,25 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 		jrse.samplingStore = remoteStore
 	}
 
-	if jrse.cfg.HTTPServerConfig != nil {
-		httpServer, err := http.NewHTTP(jrse.telemetry, *jrse.cfg.HTTPServerConfig, jrse.samplingStore)
+	if jrse.cfg.HTTPServerConfig.HasValue() {
+		httpCfg := *jrse.cfg.HTTPServerConfig.Get()
+		httpServer, err := http.NewHTTP(jrse.telemetry, httpCfg, jrse.samplingStore)
 		if err != nil {
 			return fmt.Errorf("error while creating the HTTP server: %w", err)
 		}
 		jrse.httpServer = httpServer
-		// then we start our own server interfaces, starting with the HTTP one
 		if err := jrse.httpServer.Start(ctx, host); err != nil {
 			return fmt.Errorf("error while starting the HTTP server: %w", err)
 		}
 	}
 
 	if jrse.cfg.GRPCServerConfig.HasValue() {
-		grpcCfg := jrse.cfg.GRPCServerConfig.Get()
-		grpcServer, err := grpc.NewGRPC(jrse.telemetry, *grpcCfg, jrse.samplingStore)
+		grpcCfg := *jrse.cfg.GRPCServerConfig.Get()
+		grpcServer, err := grpc.NewGRPC(jrse.telemetry, grpcCfg, jrse.samplingStore)
 		if err != nil {
 			return fmt.Errorf("error while creating the gRPC server: %w", err)
 		}
-
 		jrse.grpcServer = grpcServer
-		// start our gRPC server interface
 		if err := jrse.grpcServer.Start(ctx, host); err != nil {
 			return fmt.Errorf("error while starting the gRPC server: %w", err)
 		}

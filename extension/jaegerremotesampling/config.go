@@ -22,7 +22,7 @@ var (
 // Config has the configuration for the extension enabling the health check
 // extension, used to report the health status of the service.
 type Config struct {
-	HTTPServerConfig *confighttp.ServerConfig                         `mapstructure:"http"`
+	HTTPServerConfig configoptional.Optional[confighttp.ServerConfig] `mapstructure:"http"`
 	GRPCServerConfig configoptional.Optional[configgrpc.ServerConfig] `mapstructure:"grpc"`
 
 	// Source configures the source for the strategies file. One of `remote` or `file` has to be specified.
@@ -45,7 +45,7 @@ var _ component.Config = (*Config)(nil)
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
 	// Validate the protocol configuration. At least one protocol should be configured to serve the strategies.
-	if cfg.HTTPServerConfig == nil && !cfg.GRPCServerConfig.HasValue() {
+	if !cfg.HTTPServerConfig.HasValue() && !cfg.GRPCServerConfig.HasValue() {
 		return errAtLeastOneProtocol
 	}
 

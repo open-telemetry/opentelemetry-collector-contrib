@@ -31,12 +31,12 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerConfig: &confighttp.ServerConfig{
+		HTTPServerConfig: configoptional.Some(confighttp.ServerConfig{
 			NetAddr: confignet.AddrConfig{
 				Endpoint:  testutil.EndpointForPort(5778),
 				Transport: confignet.TransportTypeTCP,
 			},
-		},
+		}),
 		GRPCServerConfig: configoptional.None[configgrpc.ServerConfig](),
 		Source:           Source{},
 	}
