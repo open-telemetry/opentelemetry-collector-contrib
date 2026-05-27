@@ -255,7 +255,7 @@ service:
 
 This configures the `spanmetrics` connector to generate metrics from received spans and export the
 metrics to the Prometheus Remote Write exporter. The `target_info` metric will be generated for each
-resource scope, while OpenTelemetry metric names and attributes will be [normalized](../../exporter/prometheus_remote_writeexporter/README.md)
+resource scope, while OpenTelemetry metric names and attributes will be [normalized](../../exporter/prometheusremotewriteexporter/README.md)
 to be compliant with Prometheus naming rules. For example, the generated `calls` OTel sum metric can
 result in multiple Prometheus `calls_total` (counter type) time series and the `target_info` time series.
 For example:
