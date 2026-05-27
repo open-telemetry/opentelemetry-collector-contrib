@@ -53,6 +53,10 @@ func (r *textLogCodec) NewLogsDecoder(reader io.Reader, options ...encoding.Deco
 	}
 
 	s := bufio.NewScanner(reader)
+
+	const maxScanTokenSize = 10 * 1024 * 1024
+	s.Buffer(make([]byte, 0, 64*1024), maxScanTokenSize)
+
 	if r.unmarshalingSeparator != nil {
 		s.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 			if atEOF && len(data) == 0 {
