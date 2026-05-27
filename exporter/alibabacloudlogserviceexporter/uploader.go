@@ -58,6 +58,12 @@ func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, 
 		producerConfig.CredentialsProvider = provider
 
 		producerConfig.StsTokenShutDown = make(chan struct{})
+	} else if config.SecurityToken != "" {
+		producerConfig.CredentialsProvider = sls.NewStaticCredentialsProvider(
+			config.AccessKeyID,
+			string(config.AccessKeySecret),
+			config.SecurityToken,
+		)
 	}
 
 	producer, err := producer.NewProducer(producerConfig)

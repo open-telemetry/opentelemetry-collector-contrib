@@ -18,6 +18,8 @@ type Config struct {
 	AccessKeyID string `mapstructure:"access_key_id"`
 	// AlibabaCloud access key secret
 	AccessKeySecret configopaque.String `mapstructure:"access_key_secret"`
+	// AlibabaCloud security token for STS credentials
+	SecurityToken string `mapstructure:"security_token"`
 	// Set AlibabaCLoud ECS ram role if you are using ACK
 	ECSRamRole string `mapstructure:"ecs_ram_role"`
 	// Set Token File Path if you are using ACK

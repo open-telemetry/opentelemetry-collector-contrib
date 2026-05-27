@@ -42,6 +42,7 @@ func TestLoadConfig(t *testing.T) {
 				Logstore:        "demo-logstore",
 				AccessKeyID:     "test-id",
 				AccessKeySecret: "test-secret",
+				SecurityToken:   "test-token",
 			},
 		},
 	}
