@@ -25,7 +25,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for resourcedetectionprocessor/k8s resource attributes.
+// ResourceAttributesConfig provides config for resourcedetectionprocessor/k8s_api resource attributes.
 type ResourceAttributesConfig struct {
 	K8sClusterUID ResourceAttributeConfig `mapstructure:"k8s.cluster.uid"`
 	K8sNodeName   ResourceAttributeConfig `mapstructure:"k8s.node.name"`

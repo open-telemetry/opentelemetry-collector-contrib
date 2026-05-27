@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package k8s
+package k8sapi
 
 import (
 	"context"
@@ -94,29 +94,6 @@ func TestDetectClusterUIDSkipsOnError(t *testing.T) {
 	assert.False(t, hasClusterUID, "k8s.cluster.uid should not be set when API call fails")
 	require.Equal(t, 1, logs.Len(), "expected exactly one warning log")
 	assert.Equal(t, "failed to get k8s cluster UID, skipping", logs.All()[0].Message)
-}
-
-func TestDetectClusterUIDOnlyNoNodeNameRequired(t *testing.T) {
-	md := &mockMetadata{}
-	md.On("ClusterUID").Return("a7b3c1d2-e4f5-6789-abcd-ef0123456789", nil)
-	cfg := CreateDefaultConfig()
-	cfg.ResourceAttributes.K8sNodeName.Enabled = false
-	cfg.ResourceAttributes.K8sNodeUID.Enabled = false
-	cfg.AuthType = k8sconfig.AuthTypeNone
-	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
-	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
-	// K8S_NODE_NAME intentionally not set — should not be required for cluster UID only
-
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
-	require.NoError(t, err)
-	k8sDetector.(*detector).provider = md
-	res, _, err := k8sDetector.Detect(t.Context())
-	require.NoError(t, err)
-	md.AssertExpectations(t)
-
-	assert.Equal(t, map[string]any{
-		"k8s.cluster.uid": "a7b3c1d2-e4f5-6789-abcd-ef0123456789",
-	}, res.Attributes().AsRaw())
 }
 
 func TestDetectDisabledResourceAttributes(t *testing.T) {

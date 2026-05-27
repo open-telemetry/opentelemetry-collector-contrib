@@ -1,13 +1,13 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: deprecation
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
 component: processor/resource_detection
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `k8s.cluster.uid` detection to the `k8s_api` detector (formerly `k8snode`), derived from the `kube-system` namespace UID.
+note: The `k8snode` detector is deprecated; use `k8s_api` instead.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48597]
@@ -16,8 +16,7 @@ issues: [48597]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The `k8s.cluster.uid` attribute is enabled by default. To disable it, set `resource_attributes.k8s.cluster.uid.enabled: false`.
-  The detector requires `get` permission on the `kube-system` namespace. If the permission is missing, a warning is logged and the attribute is omitted; other attributes are unaffected.
+  Both names work and produce identical output. When switching to `k8s_api`, also rename your config section from `k8snode:` to `k8s_api:`; keeping the old key under the new detector name will silently apply defaults instead.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

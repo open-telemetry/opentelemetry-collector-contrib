@@ -1,4 +1,4 @@
-type: resourcedetectionprocessor/k8s
+type: resourcedetectionprocessor/k8s_api
 
 parent: resourcedetection
 

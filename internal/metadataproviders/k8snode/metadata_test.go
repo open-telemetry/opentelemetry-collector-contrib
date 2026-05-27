@@ -27,7 +27,7 @@ func TestNewProvider(t *testing.T) {
 	_, err := NewProvider("nodeName", k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone})
 	assert.NoError(t, err)
 	_, err = NewProvider("", k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone})
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "nodeName can't be empty")
 }
 
 func TestNodeUID(t *testing.T) {
