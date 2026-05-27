@@ -105,6 +105,10 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		return nil, err
 	}
 
+	if cfg.NumShards > 1 {
+		return newShardedTracesProcessor(ctx, set, nextConsumer, cfg)
+	}
+
 	telemetrySettings := set.TelemetrySettings
 	telemetry, err := metadata.NewTelemetryBuilder(telemetrySettings)
 	if err != nil {
