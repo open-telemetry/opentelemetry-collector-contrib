@@ -72,11 +72,16 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 			assert.NoError(t, xconfmap.Validate(cfg))
-	
-			assert.True(t, cfg.(*Config).HTTPServerConfig.HasValue())
-			assert.Equal(t, "localhost:5778", cfg.(*Config).HTTPServerConfig.Get().NetAddr.Endpoint)
-			assert.False(t, cfg.(*Config).GRPCServerConfig.HasValue())
-			assert.Equal(t, tt.expected.(*Config).Source, cfg.(*Config).Source)
+
+			actualCfg := cfg.(*Config)
+			expectedCfg := tt.expected.(*Config)
+
+			assert.Equal(t, expectedCfg.HTTPServerConfig.HasValue(), actualCfg.HTTPServerConfig.HasValue())
+			require.True(t, actualCfg.HTTPServerConfig.HasValue())
+			assert.Equal(t, expectedCfg.HTTPServerConfig.Get().NetAddr, actualCfg.HTTPServerConfig.Get().NetAddr)
+
+			assert.False(t, actualCfg.GRPCServerConfig.HasValue())
+			assert.Equal(t, expectedCfg.Source, actualCfg.Source)
 		})
 	}
 }
