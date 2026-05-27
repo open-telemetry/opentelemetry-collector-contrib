@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptrace"
@@ -447,24 +448,19 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			// We also want a metric without status_code for each class:
 			// httpcheck.status{http.status_class:2xx, ...} = 1
 
-			// Was there a ever a successful scrape?
-			if h.lastStatusCode[targetIndex] != 0 {
-				// did the status change since last successful scrape? (even in the same class, e.g 200 -> 201)
-				// then export the old status_code once with value 0 to avoid stale value 1
-				if h.lastStatusCode[targetIndex] != statusCode {
-					for class, intVal := range httpResponseClasses {
-						if h.lastStatusCode[targetIndex]/100 == intVal {
-							h.mb.RecordHttpcheckStatusDataPoint(
-								now,
-								int64(0),
-								endpoint,
-								int64(h.lastStatusCode[targetIndex]),
-								req.Method,
-								class,
-							)
-						}
-					}
-				}
+			// did the status change since last successful scrape? (even in the same class, e.g 200 -> 201)
+			// then export the old status_code once with value 0 to avoid stale value 1
+			// and was there a ever a successful scrape?
+			if h.lastStatusCode[targetIndex] != statusCode && h.lastStatusCode[targetIndex] != 0 {
+				class := fmt.Sprintf("%dxx", h.lastStatusCode[targetIndex]/100)
+				h.mb.RecordHttpcheckStatusDataPoint(
+					now,
+					int64(0),
+					endpoint,
+					int64(h.lastStatusCode[targetIndex]),
+					req.Method,
+					class,
+				)
 			}
 
 			for class, intVal := range httpResponseClasses {
