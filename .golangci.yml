@@ -272,7 +272,24 @@ linters:
           files:
             - "!**/*_test.go"
 
-
+        # Block AWS SDK v1, with exceptions for components still migrating to v2.
+        # See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
+        aws-sdk-v1:
+          list-mode: lax
+          deny:
+            - pkg: github.com/aws/aws-sdk-go
+              desc: "Use github.com/aws/aws-sdk-go-v2 instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699"
+          allow:
+            # TODO: Remove these exceptions as migration to v2 completes.
+            # Temporary allowances for modules still using SDK v1:
+            - exporter/prometheusexporter
+            - extension/asapauthextension
+            - internal/datadog/e2e
+            - receiver/prometheusreceiver
+            - receiver/simpleprometheusreceiver
+            - receiver/purefbreceiver
+            - receiver/purefareceiver
+            - testbed
 
     forbidigo:
       analyze-types: true
