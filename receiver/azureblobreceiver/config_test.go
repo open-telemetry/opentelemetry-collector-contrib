@@ -89,3 +89,19 @@ func TestUnsupportedEncoding(t *testing.T) {
 	assert.Contains(t, err.Error(), `logs.encoding "totally_made_up" is not supported`)
 	assert.Contains(t, err.Error(), `traces.encoding "also_made_up" is not supported`)
 }
+
+func TestAzureResourceLogsEncoding(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ConnectionString = goodConnectionString
+
+	cfg.Logs.Encoding = EncodingAzureResourceLogs
+	cfg.Traces.Encoding = EncodingOTLPJSON
+	require.NoError(t, xconfmap.Validate(cfg))
+
+	cfg.Logs.Encoding = EncodingOTLPJSON
+	cfg.Traces.Encoding = EncodingAzureResourceLogs
+	err := xconfmap.Validate(cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `traces.encoding "azure_resource_logs" is not supported`)
+}

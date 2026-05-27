@@ -15,7 +15,7 @@
 
 This receiver reads logs and trace data from [Azure Blob Storage](https://azure.microsoft.com/en-us/products/storage/blobs/).
 
-Each blob is expected to contain a single OTLP payload, encoded as either OTLP/JSON or OTLP/Protobuf. The encoding is configured per signal via `logs.encoding` and `traces.encoding` (see below).
+Each blob is expected to contain a single payload. The payload encoding is configured per signal via `logs.encoding` and `traces.encoding` (see below). Supported encodings include OTLP/JSON, OTLP/Protobuf, and (for logs) [Azure resource logs](https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-schema).
 
 ## Modes of Operation
 
@@ -37,7 +37,7 @@ The following settings can be optionally configured:
 - `cloud` (default = "AzureCloud"): Defines which Azure Cloud to use when using the `service_principal` authentication method. Value is either `AzureCloud` or `AzureUSGovernment`.
 - `logs:`
   - `container_name:` (default = "logs"): Name of the blob container with the logs
-  - `encoding:` (default = "otlp_json"): Encoding of log blob payloads. Supported values: `otlp_json`, `otlp_proto`.
+  - `encoding:` (default = "otlp_json"): Encoding of log blob payloads. Supported values: `otlp_json`, `otlp_proto`, `azure_resource_logs`. The `azure_resource_logs` value parses blobs containing [Azure resource logs](https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-schema) (e.g. exported by an Azure diagnostic setting to a storage account).
 - `traces:`
   - `container_name:` (default = "traces"): Name of the blob container with the traces
   - `encoding:` (default = "otlp_json"): Encoding of trace blob payloads. Supported values: `otlp_json`, `otlp_proto`.

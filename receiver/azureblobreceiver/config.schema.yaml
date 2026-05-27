@@ -16,7 +16,7 @@ $defs:
         description: Name of the blob container with the logs (default = "logs")
         type: string
       encoding:
-        description: 'Encoding of log blobs in this container (default = "otlp_json"). Supported values: "otlp_json", "otlp_proto".'
+        description: 'Encoding of log blobs in this container (default = "otlp_json"). Supported values: "otlp_json", "otlp_proto", "azure_resource_logs".'
         type: string
   service_principal_config:
     type: object

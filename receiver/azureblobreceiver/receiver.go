@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
 )
 
@@ -113,8 +114,13 @@ func newReceiver(set receiver.Settings, eventHandler eventHandler, logsEncoding,
 		logsUnmarshaler = &plog.JSONUnmarshaler{}
 	case EncodingOTLPProto:
 		logsUnmarshaler = &plog.ProtoUnmarshaler{}
+	case EncodingAzureResourceLogs:
+		logsUnmarshaler = &azurelogs.ResourceLogsUnmarshaler{
+			Version: set.BuildInfo.Version,
+			Logger:  set.Logger,
+		}
 	default:
-		return nil, fmt.Errorf("logs.encoding %q is not supported; supported values: [%v, %v]", logsEncoding, EncodingOTLPJSON, EncodingOTLPProto)
+		return nil, fmt.Errorf("logs.encoding %q is not supported; supported values: [%v, %v, %v]", logsEncoding, EncodingOTLPJSON, EncodingOTLPProto, EncodingAzureResourceLogs)
 	}
 
 	var tracesUnmarshaler ptrace.Unmarshaler

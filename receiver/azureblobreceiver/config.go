@@ -53,7 +53,7 @@ type LogsConfig struct {
 	// Name of the blob container with the logs (default = "logs")
 	ContainerName string `mapstructure:"container_name"`
 	// Encoding of log blobs in this container (default = "otlp_json").
-	// Supported values: "otlp_json", "otlp_proto".
+	// Supported values: "otlp_json", "otlp_proto", "azure_resource_logs".
 	Encoding string `mapstructure:"encoding"`
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -122,13 +122,24 @@ const (
 	EncodingOTLPJSON = "otlp_json"
 	// EncodingOTLPProto denotes OTLP/Protobuf-encoded blob payloads.
 	EncodingOTLPProto = "otlp_proto"
+	// EncodingAzureResourceLogs denotes Azure resource log payloads,
+	// translated via pkg/translator/azurelogs. Logs only.
+	EncodingAzureResourceLogs = "azure_resource_logs"
 )
 
-// supportedEncodings is the set of encoding values supported by the
-// receiver. Keep this consistent with the encoding constants above and
-// the README. Issue #48238 will extend this to also accept encoding
-// extension IDs resolved at component construction.
-var supportedEncodings = map[string]struct{}{
+// supportedLogsEncodings is the set of encoding values supported by the
+// receiver for log blobs. Keep this consistent with the encoding constants
+// above and the README. Issue #48238 will extend this to also accept
+// encoding extension IDs resolved at component construction.
+var supportedLogsEncodings = map[string]struct{}{
+	EncodingOTLPJSON:          {},
+	EncodingOTLPProto:         {},
+	EncodingAzureResourceLogs: {},
+}
+
+// supportedTracesEncodings is the set of encoding values supported by the
+// receiver for trace blobs.
+var supportedTracesEncodings = map[string]struct{}{
 	EncodingOTLPJSON:  {},
 	EncodingOTLPProto: {},
 }
@@ -158,10 +169,10 @@ func (c Config) Validate() (err error) {
 		}
 	}
 
-	if _, ok := supportedEncodings[c.Logs.Encoding]; !ok {
-		err = multierr.Append(err, fmt.Errorf("logs.encoding %q is not supported; supported values: [%v, %v]", c.Logs.Encoding, EncodingOTLPJSON, EncodingOTLPProto))
+	if _, ok := supportedLogsEncodings[c.Logs.Encoding]; !ok {
+		err = multierr.Append(err, fmt.Errorf("logs.encoding %q is not supported; supported values: [%v, %v, %v]", c.Logs.Encoding, EncodingOTLPJSON, EncodingOTLPProto, EncodingAzureResourceLogs))
 	}
-	if _, ok := supportedEncodings[c.Traces.Encoding]; !ok {
+	if _, ok := supportedTracesEncodings[c.Traces.Encoding]; !ok {
 		err = multierr.Append(err, fmt.Errorf("traces.encoding %q is not supported; supported values: [%v, %v]", c.Traces.Encoding, EncodingOTLPJSON, EncodingOTLPProto))
 	}
 
