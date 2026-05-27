@@ -46,7 +46,7 @@ SELECT TOP(@top)
   ISNULL(r.context_info, CONVERT(VARBINARY, '')) AS context_info,
   s.login_name AS username,
   ISNULL(s.program_name, '') AS client_app_name,
-  CONVERT(NVARCHAR, TODATETIMEOFFSET(s.login_time, DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126) AS session_started,
+  CONVERT(NVARCHAR, TODATETIMEOFFSET(s.login_time, DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126) AS session_start_time,
   s.total_elapsed_time AS session_duration,
   ISNULL(CASE WHEN o.objectid > 0 THEN o.objectid END, '') AS procedure_id,
   ISNULL(CASE WHEN o.objectid > 0

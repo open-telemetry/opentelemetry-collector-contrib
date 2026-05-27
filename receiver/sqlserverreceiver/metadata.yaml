@@ -222,7 +222,7 @@ attributes:
     description: Total elapsed time in seconds the session has been actively executing requests.
     type: double
     requirement_level: recommended
-  sqlserver.session.started:
+  sqlserver.session.start_time:
     description: Timestamp when the session was established (ISO 8601 format).
     type: string
     requirement_level: recommended
@@ -359,7 +359,7 @@ events:
       - sqlserver.row_count
       - sqlserver.session.duration
 
-      - sqlserver.session.started
+      - sqlserver.session.start_time
       - sqlserver.session_id
       - sqlserver.session_status
       - sqlserver.total_elapsed_time

@@ -109,7 +109,7 @@ resourceLogs:
               - key: sqlserver.session_id
                 value:
                   intValue: "60"
-              - key: sqlserver.session.started
+              - key: sqlserver.session.start_time
                 value:
                   stringValue: "2025-02-12T15:00:00.000+08:00"
               - key: sqlserver.session_status

@@ -1095,7 +1095,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const rowCount = "row_count"
 	const sessionDurationMillisecond = "session_duration"
 	const sessionID = "session_id"
-	const sessionStarted = "session_started"
+	const sessionStartTime = "session_start_time"
 	const sessionStatus = "session_status"
 	const statementText = "statement_text"
 	const totalElapsedTimeMillisecond = "total_elapsed_time"
@@ -1237,7 +1237,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		resourceTypeVal, resourceIDVal := parseWaitResource(waitResourceVal)
 		blockingStartTimeVal := row[blockingStartTime]
 		clientAppNameVal := row[clientAppName]
-		sessionStartedVal := row[sessionStarted]
+		sessionStartTimeVal := row[sessionStartTime]
 		waitTypeVal := row[waitType]
 		writesVal := s.retrieveValue(row, writes, &errs, retrieveInt).(int64)
 
@@ -1277,7 +1277,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			openTransactionCountVal, percentCompleteVal, queryHashVal, queryPlanHashVal,
 			queryStartVal, readsVal,
 			requestStatusVal, resourceIDVal, resourceTypeVal, rowCountVal,
-			sessionDurationSecondVal, sessionStartedVal, sessionIDVal, sessionStatusVal,
+			sessionDurationSecondVal, sessionStartTimeVal, sessionIDVal, sessionStatusVal,
 			totalElapsedTimeSecondVal, transactionIDVal, transactionIsolationLevelVal,
 			waitResourceVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
 			row[storedProcedureID], row[storedProcedureName],

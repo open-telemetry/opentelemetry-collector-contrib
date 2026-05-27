@@ -819,7 +819,7 @@ func buildQuerySampleRow(sessionID, blockingSessionID, command, statement string
 		"context_info":                "",
 		"username":                    "sa",
 		"client_app_name":             "SSMS",
-		"session_started":             "2025-02-12T15:00:00.000+08:00",
+		"session_start_time":          "2025-02-12T15:00:00.000+08:00",
 		"session_duration":            "720456",
 		"procedure_id":                "0",
 		"procedure_name":              "",

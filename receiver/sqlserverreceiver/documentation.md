@@ -601,7 +601,7 @@ query sample
 | sqlserver.wait.resource.type | SQL Server type of the locked or waited-on resource, if available. | Any Str | - |
 | sqlserver.row_count | Number of rows affected or returned by the query. | Any Int | - |
 | sqlserver.session.duration | Total elapsed time in seconds the session has been actively executing requests. | Any Double | - |
-| sqlserver.session.started | Timestamp when the session was established (ISO 8601 format). | Any Str | - |
+| sqlserver.session.start_time | Timestamp when the session was established (ISO 8601 format). | Any Str | - |
 | sqlserver.session_id | ID of the SQL Server session. | Any Int | - |
 | sqlserver.session_status | Status of the session (e.g., running, sleeping). | Any Str | - |
 | sqlserver.total_elapsed_time | Total elapsed time for completed executions of this plan, reported in delta seconds. | Any Double | - |
