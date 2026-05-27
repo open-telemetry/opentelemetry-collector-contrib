@@ -159,7 +159,7 @@ func (g *HistogramGenerator) GenerateAndPublishHistograms(input HistogramInput, 
 }
 
 // calculatePercentileRangesFromValues calculates percentile ranges for sorted values
-func (g *HistogramGenerator) calculatePercentileRangesFromValues(sortedValues []float64, boundaries []float64) map[float64]PercentileRange {
+func (g *HistogramGenerator) calculatePercentileRangesFromValues(sortedValues, boundaries []float64) map[float64]PercentileRange {
 	percentiles := []float64{0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99}
 	ranges := make(map[float64]PercentileRange)
 

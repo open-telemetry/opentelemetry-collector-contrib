@@ -49,7 +49,7 @@ var attributeEntityToFieldMap = map[string]string{
 }
 
 // GetEntityField returns entity field for provided attribute
-func GetEntityField(attribute string, platform string) string {
+func GetEntityField(attribute, platform string) string {
 	if attribute == AttributeEntityK8sClusterName {
 		switch platform {
 		case AttributeEntityEKSPlatform:

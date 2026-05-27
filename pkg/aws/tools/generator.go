@@ -125,7 +125,7 @@ func gammaRandom(shape float64, rng *rand.Rand) float64 {
 	}
 }
 
-func calculatePercentiles(data []float64, percentiles []float64) map[float64]float64 {
+func calculatePercentiles(data, percentiles []float64) map[float64]float64 {
 	sorted := make([]float64, len(data))
 	copy(sorted, data)
 	sort.Float64s(sorted)
@@ -204,7 +204,7 @@ func createExponentialBoundaries(minimum, maximum float64, buckets int) []float6
 	return boundaries
 }
 
-func createPercentileBoundaries(data []float64, percentiles []float64) []float64 {
+func createPercentileBoundaries(data, percentiles []float64) []float64 {
 	sorted := make([]float64, len(data))
 	copy(sorted, data)
 	sort.Float64s(sorted)
@@ -217,7 +217,7 @@ func createPercentileBoundaries(data []float64, percentiles []float64) []float64
 	return boundaries
 }
 
-func calculateCounts(data []float64, boundaries []float64) []uint64 {
+func calculateCounts(data, boundaries []float64) []uint64 {
 	counts := make([]uint64, len(boundaries)+1)
 
 	for _, value := range data {

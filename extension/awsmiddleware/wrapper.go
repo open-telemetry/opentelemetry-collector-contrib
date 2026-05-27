@@ -67,7 +67,7 @@ func (r responseMiddleware) HandleDeserialize(ctx context.Context, in middleware
 	if ok {
 		r.HandleResponse(ctx, res.Response)
 	}
-	return
+	return out, metadata, err
 }
 
 func withDeserializeOption(rmw *responseMiddleware, position middleware.RelativePosition) func(stack *middleware.Stack) error {

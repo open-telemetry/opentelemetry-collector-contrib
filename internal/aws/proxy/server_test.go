@@ -18,7 +18,7 @@ import (
 	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws"
 	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
-	"github.com/aws/aws-sdk-go/aws/session"
+
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

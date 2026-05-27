@@ -101,7 +101,7 @@ var attrEntryPool = sync.Pool{
 // removeExcessByTier collects droppable attributes from datapoint, scope, and resource,
 // sorts by tier then alphabetically, and removes them until the excess count is satisfied.
 // Returns the number of attributes dropped and the min/max tier used.
-func removeExcessByTier(resourceAttrs pcommon.Map, scopeAttrs pcommon.Map, datapointAttrs pcommon.Map, excess int) (droppedCount int, minTier int, maxTier int) {
+func removeExcessByTier(resourceAttrs, scopeAttrs, datapointAttrs pcommon.Map, excess int) (droppedCount, minTier, maxTier int) {
 	droppablePtr := attrEntryPool.Get().(*[]attrEntry)
 	droppable := (*droppablePtr)[:0]
 	defer func() {
@@ -171,7 +171,7 @@ func removeExcessByTier(resourceAttrs pcommon.Map, scopeAttrs pcommon.Map, datap
 
 // logDropWarning emits a rate-limited warning when tier-based dropping occurs.
 // Logs at most once per metric name per minute.
-func (p *attributeLimitProcessor) logDropWarning(metricName string, droppedCount int, minTier int, maxTier int) {
+func (p *attributeLimitProcessor) logDropWarning(metricName string, droppedCount, minTier, maxTier int) {
 	if !p.shouldLog(metricName) {
 		return
 	}
@@ -186,7 +186,7 @@ func (p *attributeLimitProcessor) logDropWarning(metricName string, droppedCount
 
 // logExhaustedError logs a rate-limited error when all tiers are exhausted
 // and force-pruning was required to meet the limit.
-func (p *attributeLimitProcessor) logExhaustedError(metricName string, remaining int, forcePruned int) {
+func (p *attributeLimitProcessor) logExhaustedError(metricName string, remaining, forcePruned int) {
 	errorKey := metricName + ":exhausted"
 	if !p.shouldLog(errorKey) {
 		return
@@ -223,7 +223,7 @@ func (p *attributeLimitProcessor) shouldLog(key string) bool {
 
 // enforceLimit checks if the total attribute count exceeds the limit and runs
 // Phase 2 tier-based dropping if needed.
-func (p *attributeLimitProcessor) enforceLimit(resourceAttrs pcommon.Map, scopeAttrs pcommon.Map, datapointAttrs pcommon.Map, metricName string) {
+func (p *attributeLimitProcessor) enforceLimit(resourceAttrs, scopeAttrs, datapointAttrs pcommon.Map, metricName string) {
 	total := resourceAttrs.Len() + scopeAttrs.Len() + datapointAttrs.Len()
 	if total <= p.config.MaxTotalAttributes {
 		return
@@ -261,7 +261,7 @@ func (p *attributeLimitProcessor) enforceLimit(resourceAttrs pcommon.Map, scopeA
 //
 // Within each map, keys are sorted alphabetically and removed from the end.
 // Returns the number of attributes force-pruned.
-func (p *attributeLimitProcessor) forcePrune(resourceAttrs pcommon.Map, scopeAttrs pcommon.Map, datapointAttrs pcommon.Map) int {
+func (p *attributeLimitProcessor) forcePrune(resourceAttrs, scopeAttrs, datapointAttrs pcommon.Map) int {
 	excess := resourceAttrs.Len() + scopeAttrs.Len() + datapointAttrs.Len() - p.config.MaxTotalAttributes
 	if excess <= 0 {
 		return 0

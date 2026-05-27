@@ -2,7 +2,7 @@ name: build-and-test
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, aws-cwa-dev]
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+*"
   merge_group:

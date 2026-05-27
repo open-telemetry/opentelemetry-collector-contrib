@@ -78,13 +78,13 @@ type sysFsReader interface {
 	EfaDataExists() (bool, error)
 	ListDevices() ([]efaDeviceName, error)
 	ListPorts(deviceName efaDeviceName) ([]string, error)
-	ReadCounter(deviceName efaDeviceName, port string, counter string) (uint64, error)
+	ReadCounter(deviceName efaDeviceName, port, counter string) (uint64, error)
 	GetMACAddressFromDeviceName(deviceName efaDeviceName) (string, error)
 }
 
 type podResourcesStore interface {
 	AddResourceName(resourceName string)
-	GetContainerInfo(deviceID string, resourceName string) *stores.ContainerInfo
+	GetContainerInfo(deviceID, resourceName string) *stores.ContainerInfo
 }
 
 type efaStore struct {
@@ -450,7 +450,7 @@ func (r *sysfsReaderImpl) ListPorts(deviceName efaDeviceName) ([]string, error) 
 	return result, nil
 }
 
-func (r *sysfsReaderImpl) ReadCounter(deviceName efaDeviceName, port string, counter string) (uint64, error) {
+func (r *sysfsReaderImpl) ReadCounter(deviceName efaDeviceName, port, counter string) (uint64, error) {
 	path := filepath.Join(efaPath, string(deviceName), "ports", port, "hw_counters", counter)
 	return readUint64ValueFromFile(path)
 }

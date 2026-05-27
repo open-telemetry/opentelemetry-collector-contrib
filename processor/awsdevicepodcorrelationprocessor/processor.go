@@ -22,7 +22,7 @@ const (
 
 // deviceLookup is the interface used to look up device-to-pod mappings.
 type deviceLookup interface {
-	GetContainerInfo(deviceID string, resourceName string) *kubelet.ContainerInfo
+	GetContainerInfo(deviceID, resourceName string) *kubelet.ContainerInfo
 }
 
 type devicePodCorrelationProcessor struct {

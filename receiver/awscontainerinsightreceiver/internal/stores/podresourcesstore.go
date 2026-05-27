@@ -143,7 +143,7 @@ func (p *PodResourcesStore) updateMaps() {
 	}
 }
 
-func (p *PodResourcesStore) GetContainerInfo(deviceID string, resourceName string) *ContainerInfo {
+func (p *PodResourcesStore) GetContainerInfo(deviceID, resourceName string) *ContainerInfo {
 	key := ResourceInfo{DeviceID: deviceID, ResourceName: resourceName}
 	if containerInfo, ok := p.resourceToPodContainerMap[key]; ok {
 		return &containerInfo
@@ -151,7 +151,7 @@ func (p *PodResourcesStore) GetContainerInfo(deviceID string, resourceName strin
 	return nil
 }
 
-func (p *PodResourcesStore) GetResourcesInfo(podName string, containerName string, namespace string) *[]ResourceInfo {
+func (p *PodResourcesStore) GetResourcesInfo(podName, containerName, namespace string) *[]ResourceInfo {
 	key := ContainerInfo{PodName: podName, ContainerName: containerName, Namespace: namespace}
 	if resourceInfo, ok := p.containerInfoToResourcesMap[key]; ok {
 		return &resourceInfo

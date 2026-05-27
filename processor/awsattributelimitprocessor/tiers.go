@@ -171,7 +171,7 @@ const (
 // For resource attributes, only K8s label attributes (k8s.node.label.*, k8s.pod.label.*)
 // are subject to tier-based dropping (tiers 1-8). Other resource attrs (e.g. service.name,
 // telemetry.sdk.*) are treated as non-droppable and handled only by force-prune.
-func classifyAttribute(key string, attrSource string) int {
+func classifyAttribute(key, attrSource string) int {
 	if attrSource == attrSourceDatapoint {
 		if isProtectedDatapoint(key) {
 			return tierNotDroppable

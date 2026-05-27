@@ -27,7 +27,7 @@ func (p *OTLPPublisher) SendHistogramMetric(metricName string, _ HistogramResult
 }
 
 // SendMetric sends a metric using telemetrygen with the specified type and value
-func (p *OTLPPublisher) SendMetric(metricName string, metricType string, _ float64) error {
+func (p *OTLPPublisher) SendMetric(metricName, metricType string, _ float64) error {
 	// Create telemetrygen config
 	cfg := metrics.NewConfig()
 	cfg.CustomEndpoint = p.endpoint

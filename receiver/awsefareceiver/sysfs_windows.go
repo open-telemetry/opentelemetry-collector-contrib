@@ -27,7 +27,7 @@ type sysFsReader interface {
 	EfaDataExists() (bool, error)
 	ListDevices() ([]string, error)
 	ListPorts(deviceName string) ([]string, error)
-	ReadCounter(deviceName string, port string, counter string) (uint64, error)
+	ReadCounter(deviceName, port, counter string) (uint64, error)
 	ReadGID(deviceName string) (string, error)
 }
 
@@ -40,7 +40,7 @@ type windowsSysFsReader struct{}
 func (r *windowsSysFsReader) EfaDataExists() (bool, error)         { return false, nil }
 func (r *windowsSysFsReader) ListDevices() ([]string, error)       { return nil, nil }
 func (r *windowsSysFsReader) ListPorts(_ string) ([]string, error) { return nil, nil }
-func (r *windowsSysFsReader) ReadCounter(_ string, _ string, _ string) (uint64, error) {
+func (r *windowsSysFsReader) ReadCounter(_, _, _ string) (uint64, error) {
 	return 0, errCounterNotAvailable
 }
 

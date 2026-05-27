@@ -117,7 +117,7 @@ func (c *Client) AddResourceName(resourceName string) {
 }
 
 // GetContainerInfo looks up the pod/container that owns the given device.
-func (c *Client) GetContainerInfo(deviceID string, resourceName string) *ContainerInfo {
+func (c *Client) GetContainerInfo(deviceID, resourceName string) *ContainerInfo {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	key := deviceKey{DeviceID: deviceID, ResourceName: resourceName}

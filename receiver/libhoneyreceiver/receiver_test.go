@@ -5,6 +5,7 @@ package libhoneyreceiver
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"

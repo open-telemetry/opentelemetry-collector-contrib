@@ -81,7 +81,7 @@ var mockCounterValues = map[string]uint64{
 	counterImpairedRemoteConnEvents: 11,
 }
 
-func (r mockSysfsReader) ReadCounter(deviceName efaDeviceName, port string, counter string) (uint64, error) {
+func (r mockSysfsReader) ReadCounter(deviceName efaDeviceName, port, counter string) (uint64, error) {
 	key := fmt.Sprintf("%s/%s/%s", deviceName, port, counter)
 	value := mockCounterValues[counter] * (r.scrapeCounts[key] + 1)
 	r.scrapeCounts[key]++
@@ -107,7 +107,7 @@ var _ podResourcesStore = (*mockPodResourcesStore)(nil)
 
 func (p mockPodResourcesStore) AddResourceName(_ string) {}
 
-func (p mockPodResourcesStore) GetContainerInfo(deviceID string, _ string) *stores.ContainerInfo {
+func (p mockPodResourcesStore) GetContainerInfo(deviceID, _ string) *stores.ContainerInfo {
 	switch deviceID {
 	case "efa0":
 		return &stores.ContainerInfo{
@@ -319,7 +319,7 @@ var _ podResourcesStore = (*mockPodResourcesStoreMissingOneDevice)(nil)
 
 func (p mockPodResourcesStoreMissingOneDevice) AddResourceName(_ string) {}
 
-func (p mockPodResourcesStoreMissingOneDevice) GetContainerInfo(deviceID string, _ string) *stores.ContainerInfo {
+func (p mockPodResourcesStoreMissingOneDevice) GetContainerInfo(deviceID, _ string) *stores.ContainerInfo {
 	if deviceID == "efa0" {
 		return &stores.ContainerInfo{
 			PodName:       "pod0",
@@ -479,7 +479,7 @@ func (r mockSysfsReaderError1) ListPorts(_ efaDeviceName) ([]string, error) {
 	return []string{}, nil
 }
 
-func (r mockSysfsReaderError1) ReadCounter(_ efaDeviceName, _ string, _ string) (uint64, error) {
+func (r mockSysfsReaderError1) ReadCounter(_ efaDeviceName, _, _ string) (uint64, error) {
 	return 0, nil
 }
 
@@ -501,7 +501,7 @@ func (r mockSysfsReaderError2) ListPorts(_ efaDeviceName) ([]string, error) {
 	return []string{}, nil
 }
 
-func (r mockSysfsReaderError2) ReadCounter(_ efaDeviceName, _ string, _ string) (uint64, error) {
+func (r mockSysfsReaderError2) ReadCounter(_ efaDeviceName, _, _ string) (uint64, error) {
 	return 0, nil
 }
 
@@ -523,7 +523,7 @@ func (r mockSysfsReaderError3) ListPorts(_ efaDeviceName) ([]string, error) {
 	return nil, errors.New("mocked error")
 }
 
-func (r mockSysfsReaderError3) ReadCounter(_ efaDeviceName, _ string, _ string) (uint64, error) {
+func (r mockSysfsReaderError3) ReadCounter(_ efaDeviceName, _, _ string) (uint64, error) {
 	return 0, nil
 }
 
@@ -545,7 +545,7 @@ func (r mockSysfsReaderError4) ListPorts(_ efaDeviceName) ([]string, error) {
 	return []string{"1"}, nil
 }
 
-func (r mockSysfsReaderError4) ReadCounter(_ efaDeviceName, _ string, _ string) (uint64, error) {
+func (r mockSysfsReaderError4) ReadCounter(_ efaDeviceName, _, _ string) (uint64, error) {
 	return 1, errors.New("mocked error")
 }
 
@@ -578,7 +578,7 @@ func (r mockSysfsReaderNoEfaData) ListPorts(_ efaDeviceName) ([]string, error) {
 	return nil, errors.New("mocked error")
 }
 
-func (r mockSysfsReaderNoEfaData) ReadCounter(_ efaDeviceName, _ string, _ string) (uint64, error) {
+func (r mockSysfsReaderNoEfaData) ReadCounter(_ efaDeviceName, _, _ string) (uint64, error) {
 	return 0, errors.New("mocked error")
 }
 

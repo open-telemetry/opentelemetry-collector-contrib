@@ -83,7 +83,7 @@ type clusterNameProvider interface {
 type Option func(*K8sAPIServer)
 
 // NewK8sAPIServer creates a k8sApiServer which can generate cluster-level metrics
-func NewK8sAPIServer(cnp clusterNameProvider, logger *zap.Logger, leaderElection *LeaderElection, addFullPodNameMetricLabel bool, includeEnhancedMetrics bool, options ...Option) (*K8sAPIServer, error) {
+func NewK8sAPIServer(cnp clusterNameProvider, logger *zap.Logger, leaderElection *LeaderElection, addFullPodNameMetricLabel, includeEnhancedMetrics bool, options ...Option) (*K8sAPIServer, error) {
 	k := &K8sAPIServer{
 		logger:                    logger,
 		clusterNameProvider:       cnp,

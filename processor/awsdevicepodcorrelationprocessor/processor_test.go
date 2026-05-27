@@ -23,7 +23,7 @@ func newMockLookup(data map[string]map[string]*kubelet.ContainerInfo) *mockLooku
 	return &mockLookup{data: data}
 }
 
-func (m *mockLookup) GetContainerInfo(deviceID string, resourceName string) *kubelet.ContainerInfo {
+func (m *mockLookup) GetContainerInfo(deviceID, resourceName string) *kubelet.ContainerInfo {
 	if rn, ok := m.data[deviceID]; ok {
 		return rn[resourceName]
 	}
@@ -35,7 +35,7 @@ func newTestProcessor(cfg *Config, lookup deviceLookup) *devicePodCorrelationPro
 	return &devicePodCorrelationProcessor{config: cfg, logger: zap.NewNop(), lookup: lookup}
 }
 
-func newTestMetrics(deviceIDKey string, deviceIDVal string) pmetric.Metrics {
+func newTestMetrics(deviceIDKey, deviceIDVal string) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
@@ -45,7 +45,7 @@ func newTestMetrics(deviceIDKey string, deviceIDVal string) pmetric.Metrics {
 	return md
 }
 
-func newTestMetricsWithResourceAttr(resourceKey string, resourceVal string) pmetric.Metrics {
+func newTestMetricsWithResourceAttr(resourceKey, resourceVal string) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().PutStr(resourceKey, resourceVal)

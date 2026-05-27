@@ -119,7 +119,7 @@ func (d *LocalNodeDecorator) Decorate(m CIMetric) CIMetric {
 	return result
 }
 
-func (d *LocalNodeDecorator) addEbsVolumeInfo(tags map[string]string, ebsVolumeIDsUsedAsPV map[string]string) {
+func (d *LocalNodeDecorator) addEbsVolumeInfo(tags, ebsVolumeIDsUsedAsPV map[string]string) {
 	deviceName, ok := tags[ci.DiskDev]
 	if !ok {
 		return

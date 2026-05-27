@@ -34,7 +34,7 @@ func isFileExist(filePath string) bool {
 	return err == nil
 }
 
-func NewKubeletClient(kubeIP string, port string, clientConfig *kubelet.ClientConfig, logger *zap.Logger) (*KubeletClient, error) {
+func NewKubeletClient(kubeIP, port string, clientConfig *kubelet.ClientConfig, logger *zap.Logger) (*KubeletClient, error) {
 	kubeClient := &KubeletClient{
 		Port:   port,
 		KubeIP: kubeIP,

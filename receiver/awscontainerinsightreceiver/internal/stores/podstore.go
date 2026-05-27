@@ -127,7 +127,7 @@ type PodStore struct {
 	enableAcceleratedComputeMetrics bool
 }
 
-func NewPodStore(client podClient, prefFullPodName bool, addFullPodNameMetricLabel bool, includeEnhancedMetrics bool,
+func NewPodStore(client podClient, prefFullPodName, addFullPodNameMetricLabel, includeEnhancedMetrics bool,
 	enableAcceleratedComputeMetrics bool, hostName string, isSystemdEnabled bool, logger *zap.Logger,
 ) (*PodStore, error) {
 	if hostName == "" {

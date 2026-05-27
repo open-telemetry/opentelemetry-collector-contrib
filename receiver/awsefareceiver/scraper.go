@@ -221,7 +221,7 @@ func (s *efaScraper) resolveENI(deviceName string) string {
 // readCounters reads all known EFA counters for a device-port combination.
 // Counters that are missing or unavailable (e.g., on older EFA driver versions)
 // are silently skipped. Only unexpected I/O errors are accumulated.
-func (s *efaScraper) readCounters(deviceName string, port string) (map[string]uint64, error) {
+func (s *efaScraper) readCounters(deviceName, port string) (map[string]uint64, error) {
 	var errs error
 	counters := make(map[string]uint64, len(efaCounters))
 

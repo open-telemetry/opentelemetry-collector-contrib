@@ -4,6 +4,7 @@
 package filterprocessor
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 	"testing"

@@ -56,7 +56,7 @@ func RunDecoratorTestScenarios(ctx context.Context, t *testing.T, dc consumer.Me
 	}
 }
 
-func checkAssertions(t *testing.T, want pmetric.Metric, actual pmetric.Metric) {
+func checkAssertions(t *testing.T, want, actual pmetric.Metric) {
 	var wantDps, actualDps pmetric.NumberDataPointSlice
 
 	// Get datapoints based on metric type
