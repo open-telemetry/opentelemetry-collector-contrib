@@ -8,6 +8,7 @@ package credentialsfile // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -21,6 +22,9 @@ type ValueResolver interface {
 	Value() string
 	// Start begins any background operations (e.g., file watching).
 	Start(ctx context.Context) error
+	// StartWithRetry begins any background operations (e.g., file watching)
+	// and continuously retries startup until all prerequisites are available.
+	StartWithRetry(ctx context.Context, maxRetries int, retryInterval time.Duration) error
 	// Shutdown stops any background operations.
 	Shutdown() error
 }
@@ -59,6 +63,7 @@ func NewValueResolver(inlineValue, filePath string, logger *zap.Logger, opts ...
 // staticValue is a ValueResolver that returns a fixed string.
 type staticValue string
 
-func (s staticValue) Value() string             { return string(s) }
-func (staticValue) Start(context.Context) error { return nil }
-func (staticValue) Shutdown() error             { return nil }
+func (s staticValue) Value() string                                          { return string(s) }
+func (staticValue) Start(context.Context) error                              { return nil }
+func (staticValue) StartWithRetry(context.Context, int, time.Duration) error { return nil }
+func (staticValue) Shutdown() error                                          { return nil }
