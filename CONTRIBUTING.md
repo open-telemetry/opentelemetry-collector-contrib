@@ -126,6 +126,15 @@ following keywords: `Resolves`, `Fixes`, or `Closes`. More information on this f
 [here](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
 This will automatically close the issue once your PR has been merged.
 
+### AI-assisted contributions
+
+If you use an AI tool to help author a pull request, you (the human) are still responsible for
+writing the PR description and any comments posted on the issue or PR. AI agents must prompt you
+for the content of each section in the PR template and use your answers verbatim rather than
+generating description content on their own. The PR template includes an authorship checkbox that
+you must check yourself before the PR is ready for review. See [AGENTS.md](./AGENTS.md) for the
+full set of rules that apply to AI-assisted contributions.
+
 ## Issue Triaging
 
 See [issue-triaging.md](./issue-triaging.md) for more information on the issue triaging process.
