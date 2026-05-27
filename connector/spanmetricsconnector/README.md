@@ -224,7 +224,7 @@ For some functionality of the exporters, e.g. like generation of the `target_inf
 incoming spans resource scope attributes must contain `service.name` and `service.instance.id`
 attributes.
 
-Let's look at the example of using the `spanmetrics` connector with the `prometheusremotewrite` exporter:
+Let's look at the example of using the `spanmetrics` connector with the `prometheus_remote_write` exporter:
 
 ```yaml
 receivers:
@@ -234,7 +234,7 @@ receivers:
       grpc:
 
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: http://localhost:9090/api/v1/write
     target_info:
       enabled: true
@@ -250,12 +250,12 @@ service:
       exporters: [span_metrics]
     metrics:
       receivers: [span_metrics]
-      exporters: [prometheusremotewrite]
+      exporters: [prometheus_remote_write]
 ```
 
 This configures the `spanmetrics` connector to generate metrics from received spans and export the
 metrics to the Prometheus Remote Write exporter. The `target_info` metric will be generated for each
-resource scope, while OpenTelemetry metric names and attributes will be [normalized](../../exporter/prometheusremotewriteexporter/README.md)
+resource scope, while OpenTelemetry metric names and attributes will be [normalized](../../exporter/prometheus_remote_writeexporter/README.md)
 to be compliant with Prometheus naming rules. For example, the generated `calls` OTel sum metric can
 result in multiple Prometheus `calls_total` (counter type) time series and the `target_info` time series.
 For example:
