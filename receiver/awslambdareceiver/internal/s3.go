@@ -13,6 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -55,12 +57,19 @@ type S3Provider interface {
 }
 
 // S3ServiceProvider provides S3Service instances.
-type S3ServiceProvider struct{}
+type S3ServiceProvider struct {
+	// TracerProvider, if non-nil, enables otelaws tracing on every S3 API call.
+	TracerProvider trace.TracerProvider
+}
 
-func (*S3ServiceProvider) GetService(ctx context.Context) (S3Service, error) {
+func (s *S3ServiceProvider) GetService(ctx context.Context) (S3Service, error) {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to load AWS SDK config: %w", err)
+	}
+
+	if s.TracerProvider != nil {
+		otelaws.AppendMiddlewares(&cfg.APIOptions, otelaws.WithTracerProvider(s.TracerProvider))
 	}
 
 	return &s3ServiceClient{api: s3.NewFromConfig(cfg)}, nil
