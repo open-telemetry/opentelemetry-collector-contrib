@@ -25,7 +25,7 @@ resource_attributes:
     enabled: true
     type: string
   oracle.db.open_mode:
-    description: The open mode of the Oracle database as reported by v$database.open_mode (e.g. "READ WRITE", "READ ONLY", "MOUNTED").
+    description: The open mode of the Oracle database (e.g. "READ WRITE", "READ ONLY", "MOUNTED").
     enabled: true
     type: string
   oracle.db.pdb:
@@ -33,11 +33,11 @@ resource_attributes:
     enabled: true
     type: string
   oracle.db.role:
-    description: The database role of the Oracle instance as reported by v$database.database_role (e.g. "PRIMARY", "PHYSICAL STANDBY").
+    description: The database role of the Oracle instance (e.g. "PRIMARY", "PHYSICAL STANDBY").
     enabled: true
     type: string
   oracle.db.version:
-    description: The Oracle Database version string as reported by v$instance.version.
+    description: The Oracle Database version string.
     enabled: true
     type: string
   oracledb.instance.name:

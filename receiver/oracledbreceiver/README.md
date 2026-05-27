@@ -65,11 +65,12 @@ receivers:
 ## Permissions
 
 The following grants are required for the receiver to function correctly.
+Detection is best-effort; failures are logged at warn level and the receiver continues.
 
-### Instance detection (always required)
+### Instance detection
 
-These views are queried once at startup to detect Oracle version, role,
-open mode, and multitenant status.
+These grants are required to populate the `oracle.db.version`, `oracle.db.role`,
+`oracle.db.open_mode`, and `oracle.db.pdb` resource attributes.
 
 ```sql
 GRANT SELECT ON V_$INSTANCE TO <username>;
@@ -81,9 +82,8 @@ GRANT SELECT ON V_$DATABASE TO <username>;
 
 ### Hosting type detection (Oracle >=19c only)
 
-Required to detect whether the instance is running on RDS or OCI.
-The `oracle.db.hosting_type` resource attribute is only populated on
-Oracle 19c and later.
+These grants are required to populate the `oracle.db.hosting_type` resource attribute.
+Only applies to Oracle 19c and later.
 
 ```sql
 GRANT SELECT ON V_$DATAFILE TO <username>;
