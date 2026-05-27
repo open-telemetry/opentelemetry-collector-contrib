@@ -20,13 +20,13 @@ components:
     - connector/exceptions
     - connector/failover
     - connector/grafanacloud
-    - connector/metricsaslogs
-    - connector/otlpjson
+    - connector/metrics_as_logs
+    - connector/otlp_json
     - connector/round_robin
     - connector/routing
     - connector/service_graph
     - connector/signal_to_metrics
-    - connector/slowsql
+    - connector/slow_sql
     - connector/span_metrics
     - connector/sum
     - exporter/alertmanager
@@ -57,7 +57,7 @@ components:
     - exporter/honeycomb_marker
     - exporter/influxdb
     - exporter/kafka
-    - exporter/loadbalancing
+    - exporter/load_balancing
     - exporter/logicmonitor
     - exporter/logzio
     - exporter/mezmo
@@ -196,6 +196,7 @@ components:
     - processor/drain
     - processor/dynatracedetector
     - processor/filter
+    - processor/gen_ai_normalizer
     - processor/geoip
     - processor/groupbyattrs
     - processor/groupbytrace
@@ -217,7 +218,7 @@ components:
     - processor/redaction
     - processor/remotetap
     - processor/resource
-    - processor/resourcedetection
+    - processor/resource_detection
     - processor/scalewaydetector
     - processor/schema
     - processor/span
@@ -226,6 +227,7 @@ components:
     - processor/tail_sampling
     - processor/tencentcvmdetector
     - processor/transform
+    - processor/transformprocessor/internal/logparsingfuncs
     - processor/unroll
     - processor/upclouddetector
     - processor/vultrdetector
@@ -236,12 +238,12 @@ components:
     - receiver/active_directory_ds
     - receiver/aerospike
     - receiver/apache
-    - receiver/apachespark
+    - receiver/apache_spark
+    - receiver/aws_lambda
     - receiver/awscloudwatch
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
-    - receiver/awslambda
     - receiver/awss3
     - receiver/awsxray
     - receiver/azure_blob
@@ -267,10 +269,10 @@ components:
     - receiver/fluent_forward
     - receiver/github
     - receiver/gitlab
+    - receiver/google_cloud_spanner
     - receiver/googlecloudmonitoring
     - receiver/googlecloudpubsub
     - receiver/googlecloudpubsubpush
-    - receiver/googlecloudspanner
     - receiver/haproxy
     - receiver/host_metrics
     - receiver/http_check
@@ -285,7 +287,7 @@ components:
     - receiver/k8s_events
     - receiver/k8s_objects
     - receiver/kafka
-    - receiver/kafkametrics
+    - receiver/kafka_metrics
     - receiver/kubelet_stats
     - receiver/libhoney
     - receiver/loki
@@ -332,8 +334,8 @@ components:
     - receiver/stef
     - receiver/syslog
     - receiver/systemd
+    - receiver/tcp_check
     - receiver/tcp_log
-    - receiver/tcpcheck
     - receiver/tls_check
     - receiver/udp_log
     - receiver/vcenter

@@ -204,6 +204,7 @@ body:
       - processor/deltatorate
       - processor/drain
       - processor/filter
+      - processor/genainormalizer
       - processor/geoip
       - processor/groupbyattrs
       - processor/groupbytrace
@@ -241,6 +242,7 @@ body:
       - processor/sumologic
       - processor/tailsampling
       - processor/transform
+      - processor/transform/internal/logparsingfuncs
       - processor/unroll
       - receiver/activedirectoryds
       - receiver/aerospike

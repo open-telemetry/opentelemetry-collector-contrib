@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.151.0
+    version: v0.153.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -85,6 +85,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/azureauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension
@@ -203,6 +204,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/drainprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor

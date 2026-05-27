@@ -1,0 +1,13 @@
+server:
+  endpoint: ws://{{.url}}/v1/opamp
+  auth: bearertokenauth
+
+storage:
+  directory: '{{.storage_dir}}'
+
+agent:
+  executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
+
+extensions:
+  bearertokenauth:
+    filename: {{.token_file}}
