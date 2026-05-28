@@ -20,7 +20,7 @@ properties:
     type: string
   security_token:
     description: AlibabaCloud security token for STS credentials
-    type: string
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
   token_file_path:
     description: Set Token File Path if you are using ACK
     type: string
