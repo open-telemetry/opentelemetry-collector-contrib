@@ -49,6 +49,10 @@ func parseLEEF(target ottl.StringGetter[*ottllog.TransformContext]) ottl.ExprFun
 }
 
 func parseLEEFMessage(message string) (pcommon.Map, error) {
+	// Locate the LEEF header by the first occurrence of "LEEF:" so that an
+	// optional syslog prefix is tolerated. A literal "LEEF:" appearing inside a
+	// syslog header (e.g. structured data) before the real header would be
+	// misinterpreted; this matches the convention used by other LEEF parsers.
 	leefStart := strings.Index(message, "LEEF:")
 	if leefStart == -1 {
 		return pcommon.Map{}, errors.New("invalid LEEF message: 'LEEF:' not found")
@@ -56,18 +60,15 @@ func parseLEEFMessage(message string) (pcommon.Map, error) {
 
 	leefMessage := message[leefStart:]
 
-	firstPipe := strings.Index(leefMessage, "|")
-	if firstPipe == -1 {
+	versionField, remainder, ok := strings.Cut(leefMessage, "|")
+	if !ok {
 		return pcommon.Map{}, errors.New("invalid LEEF message: missing pipe delimiter in header")
 	}
 
-	versionField := leefMessage[:firstPipe]
 	version, err := parseLEEFVersion(versionField)
 	if err != nil {
 		return pcommon.Map{}, err
 	}
-
-	remainder := leefMessage[firstPipe+1:]
 
 	var header leefHeader
 	var attributes string
@@ -87,12 +88,9 @@ func parseLEEFMessage(message string) (pcommon.Map, error) {
 
 	header.version = version
 
-	var parsedAttrs map[string]any
-	if attributes != "" {
-		parsedAttrs = parseLEEFAttributes(attributes, header.delimiter)
-	}
+	parsedAttrs := parseLEEFAttributes(attributes, header.delimiter)
 
-	return buildLEEFResult(header, parsedAttrs)
+	return buildLEEFResult(header, parsedAttrs), nil
 }
 
 type leefHeader struct {
@@ -142,13 +140,7 @@ func parseLEEF1Header(remainder string) (leefHeader, string, error) {
 func parseLEEF2Header(remainder string) (leefHeader, string, error) {
 	parts := strings.SplitN(remainder, "|", 6)
 	if len(parts) < 5 {
-		return leefHeader{}, "", fmt.Errorf("invalid LEEF 2.0 header: expected at least 5 fields (vendor, product, version, eventID, delimiter), got %d", len(parts))
-	}
-
-	delimiterSpec := parts[4]
-	delimiter, err := parseDelimiter(delimiterSpec)
-	if err != nil {
-		return leefHeader{}, "", fmt.Errorf("invalid LEEF 2.0 delimiter: %w", err)
+		return leefHeader{}, "", fmt.Errorf("invalid LEEF 2.0 header: expected at least 5 fields (vendor, product, version, eventID), got %d", len(parts))
 	}
 
 	header := leefHeader{
@@ -156,8 +148,28 @@ func parseLEEF2Header(remainder string) (leefHeader, string, error) {
 		productName:    parts[1],
 		productVersion: parts[2],
 		eventID:        parts[3],
-		delimiter:      delimiter,
 	}
+
+	// The LEEF 2.0 delimiter field is optional in practice. If the 5th field contains '='
+	// it is the first attribute, not a delimiter — re-split with one fewer
+	// segment so any '|' characters inside the attributes section are
+	// preserved.
+	delimiterSpec := parts[4]
+	if strings.Contains(delimiterSpec, "=") {
+		header.delimiter = "\t"
+		attrParts := strings.SplitN(remainder, "|", 5)
+		var attributes string
+		if len(attrParts) == 5 {
+			attributes = attrParts[4]
+		}
+		return header, attributes, nil
+	}
+
+	delimiter, err := parseDelimiter(delimiterSpec)
+	if err != nil {
+		return leefHeader{}, "", fmt.Errorf("invalid LEEF 2.0 delimiter: %w", err)
+	}
+	header.delimiter = delimiter
 
 	var attributes string
 	if len(parts) == 6 {
@@ -187,19 +199,21 @@ func parseDelimiter(spec string) (string, error) {
 		return string(decoded), nil
 	}
 
-	if len(spec) == 1 {
-		return spec, nil
+	if len(spec) != 1 {
+		return "", fmt.Errorf("delimiter must be a single character or 0x-prefixed hex value, got %q", spec)
 	}
-
 	return spec, nil
 }
 
-func parseLEEFAttributes(attributes, delimiter string) map[string]any {
+// parseLEEFAttributes splits the LEEF attribute section into key/value pairs.
+// Pairs missing an '=' or with an empty key are silently skipped; on duplicate
+// keys the last occurrence wins. This matches the lenient behavior described
+// in the LEEF spec where producers may emit malformed pairs.
+func parseLEEFAttributes(attributes, delimiter string) map[string]string {
+	result := make(map[string]string)
 	if attributes == "" {
-		return make(map[string]any)
+		return result
 	}
-
-	result := make(map[string]any)
 
 	for pair := range strings.SplitSeq(attributes, delimiter) {
 		pair = strings.TrimSpace(pair)
@@ -207,15 +221,8 @@ func parseLEEFAttributes(attributes, delimiter string) map[string]any {
 			continue
 		}
 
-		eqIndex := strings.Index(pair, "=")
-		if eqIndex == -1 {
-			continue
-		}
-
-		key := pair[:eqIndex]
-		value := pair[eqIndex+1:]
-
-		if key == "" {
+		key, value, ok := strings.Cut(pair, "=")
+		if !ok || key == "" {
 			continue
 		}
 
@@ -225,7 +232,7 @@ func parseLEEFAttributes(attributes, delimiter string) map[string]any {
 	return result
 }
 
-func buildLEEFResult(header leefHeader, attributes map[string]any) (pcommon.Map, error) {
+func buildLEEFResult(header leefHeader, attributes map[string]string) pcommon.Map {
 	result := pcommon.NewMap()
 
 	result.PutStr("version", header.version)
@@ -235,9 +242,10 @@ func buildLEEFResult(header leefHeader, attributes map[string]any) (pcommon.Map,
 	result.PutStr("event_id", header.eventID)
 
 	attrsMap := result.PutEmptyMap("attributes")
-	if err := attrsMap.FromRaw(attributes); err != nil {
-		return pcommon.Map{}, fmt.Errorf("failed to convert attributes: %w", err)
+	attrsMap.EnsureCapacity(len(attributes))
+	for k, v := range attributes {
+		attrsMap.PutStr(k, v)
 	}
 
-	return result, nil
+	return result
 }

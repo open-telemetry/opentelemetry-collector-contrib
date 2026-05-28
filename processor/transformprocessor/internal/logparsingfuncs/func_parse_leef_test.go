@@ -528,6 +528,45 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "LEEF 2.0 omitted delimiter defaults to tab",
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+					return "May 11 11:27:23 SERVER-1 LEEF:2.0|Microsoft|MSExchange|2016|15345|src=10.50.1.1\tdst=2.10.20.20\tspt=1200", nil
+				},
+			},
+			expected: map[string]any{
+				"version":         "2.0",
+				"vendor":          "Microsoft",
+				"product_name":    "MSExchange",
+				"product_version": "2016",
+				"event_id":        "15345",
+				"attributes": map[string]any{
+					"src": "10.50.1.1",
+					"dst": "2.10.20.20",
+					"spt": "1200",
+				},
+			},
+		},
+		{
+			name: "LEEF 2.0 omitted delimiter preserves pipes in attribute values",
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+					return "LEEF:2.0|Vendor|Product|1.0|EventID|key1=a|b\tkey2=val2", nil
+				},
+			},
+			expected: map[string]any{
+				"version":         "2.0",
+				"vendor":          "Vendor",
+				"product_name":    "Product",
+				"product_version": "1.0",
+				"event_id":        "EventID",
+				"attributes": map[string]any{
+					"key1": "a|b",
+					"key2": "val2",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -784,9 +823,9 @@ func Test_parseDelimiter(t *testing.T) {
 			expected: " ",
 		},
 		{
-			name:     "multi-character delimiter",
-			input:    "||",
-			expected: "||",
+			name:     "multi-character delimiter rejected",
+			input:    "ab",
+			hasError: true,
 		},
 		{
 			name:     "invalid hex - odd length",
@@ -828,13 +867,13 @@ func Test_parseLEEFAttributes(t *testing.T) {
 		name      string
 		input     string
 		delimiter string
-		expected  map[string]any
+		expected  map[string]string
 	}{
 		{
 			name:      "simple tab delimited",
 			input:     "key1=val1\tkey2=val2",
 			delimiter: "\t",
-			expected: map[string]any{
+			expected: map[string]string{
 				"key1": "val1",
 				"key2": "val2",
 			},
@@ -843,7 +882,7 @@ func Test_parseLEEFAttributes(t *testing.T) {
 			name:      "caret delimited",
 			input:     "key1=val1^key2=val2^key3=val3",
 			delimiter: "^",
-			expected: map[string]any{
+			expected: map[string]string{
 				"key1": "val1",
 				"key2": "val2",
 				"key3": "val3",
@@ -853,13 +892,13 @@ func Test_parseLEEFAttributes(t *testing.T) {
 			name:      "empty attributes",
 			input:     "",
 			delimiter: "\t",
-			expected:  map[string]any{},
+			expected:  map[string]string{},
 		},
 		{
 			name:      "value with equals",
 			input:     "url=http://example.com?a=b",
 			delimiter: "\t",
-			expected: map[string]any{
+			expected: map[string]string{
 				"url": "http://example.com?a=b",
 			},
 		},
@@ -867,7 +906,7 @@ func Test_parseLEEFAttributes(t *testing.T) {
 			name:      "key without value skipped",
 			input:     "key1=val1\tkeyonly\tkey2=val2",
 			delimiter: "\t",
-			expected: map[string]any{
+			expected: map[string]string{
 				"key1": "val1",
 				"key2": "val2",
 			},
@@ -876,7 +915,7 @@ func Test_parseLEEFAttributes(t *testing.T) {
 			name:      "empty value",
 			input:     "key1=\tkey2=val2",
 			delimiter: "\t",
-			expected: map[string]any{
+			expected: map[string]string{
 				"key1": "",
 				"key2": "val2",
 			},
@@ -885,7 +924,7 @@ func Test_parseLEEFAttributes(t *testing.T) {
 			name:      "whitespace handling",
 			input:     "  key1=val1  \t  key2=val2  ",
 			delimiter: "\t",
-			expected: map[string]any{
+			expected: map[string]string{
 				"key1": "val1",
 				"key2": "val2",
 			},
@@ -894,9 +933,17 @@ func Test_parseLEEFAttributes(t *testing.T) {
 			name:      "duplicate delimiters",
 			input:     "key1=val1^^key2=val2",
 			delimiter: "^",
-			expected: map[string]any{
+			expected: map[string]string{
 				"key1": "val1",
 				"key2": "val2",
+			},
+		},
+		{
+			name:      "duplicate keys last wins",
+			input:     "key1=first\tkey1=second",
+			delimiter: "\t",
+			expected: map[string]string{
+				"key1": "second",
 			},
 		},
 	}
