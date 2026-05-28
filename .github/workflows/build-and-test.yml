@@ -470,7 +470,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   cross-compile-pr:
-    if: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+    if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'ci:full') }}
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     strategy:
@@ -502,7 +502,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   cross-compile:
-    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+    if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci:full')) }}
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     strategy:
@@ -566,7 +566,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   publish-check:
-    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+    if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci:full')) }}
     runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests, cross-compile]
     steps:
