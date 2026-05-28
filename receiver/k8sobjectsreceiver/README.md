@@ -61,7 +61,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `field_selector`: select objects by field(s)
 - `objects[*].interval`: per-resource pull interval override. When set, takes precedence over the top-level `interval`. Only applies to `pull` mode objects.
 - `exclude_watch_type`: allows excluding specific watch types. Valid values are `ADDED`, `MODIFIED`, `DELETED`, `BOOKMARK`, and `ERROR`. Only usable in `watch` mode.
-- `resource_version`: **Deprecated.** This field is no longer used. The informer manages watch resumption internally, including recovery from 410 Gone responses. Any value configured here will be ignored.
+- `resource_version`: **Deprecated.** Pinning a starting `resourceVersion` is no longer supported; any value configured here will be ignored.
 - `namespaces`: An array of `namespaces` to collect events from. (default = `all`)
 - `exclude_namespaces`: allows excluding namespaces from being watched/pulled, (NOTE: if a new namespace that matches the regex is added, the collector will need to be restarted)
 - `group`: API group name. It is an optional config. When given resource object is present in multiple groups,

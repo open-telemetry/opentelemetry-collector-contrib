@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	defaultPullInterval time.Duration     = time.Hour
-	defaultMode         k8sinventory.Mode = k8sinventory.PullMode
+	defaultPullInterval time.Duration = time.Hour
+	defaultMode                       = k8sinventory.DefaultMode
 )
 
 var modeMap = map[k8sinventory.Mode]bool{
