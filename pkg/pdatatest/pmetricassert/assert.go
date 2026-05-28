@@ -154,10 +154,21 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 		}
 		matched[idx] = true
 
+		var dpValErrs []error
 		if edp.Value != nil {
 			if err := compareValue(edp.Value, actual[idx].Value); err != nil {
-				valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
+				dpValErrs = append(dpValErrs, err)
 			}
+		}
+		for k, v := range edp.Rest {
+			if op, ok := strings.CutPrefix(k, "value/"); ok {
+				if err := compareNumericOp("value", op, v, actual[idx].Value); err != nil {
+					dpValErrs = append(dpValErrs, err)
+				}
+			}
+		}
+		if len(dpValErrs) > 0 {
+			valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), errors.Join(dpValErrs...)))
 		}
 	}
 	for i, adp := range actual {
@@ -236,6 +247,81 @@ func toInt64(v any) (int64, bool) {
 	return 0, false
 }
 
+func compareNumericOp(keyStr, op string, expectedValue, actualValue any) error {
+	expInt, expIsInt := toInt64(expectedValue)
+	actInt, actIsInt := toInt64(actualValue)
+
+	if expIsInt && actIsInt {
+		switch op {
+		case "gt":
+			if actInt > expInt {
+				return nil
+			}
+		case "gte":
+			if actInt >= expInt {
+				return nil
+			}
+		case "lt":
+			if actInt < expInt {
+				return nil
+			}
+		case "lte":
+			if actInt <= expInt {
+				return nil
+			}
+		default:
+			return fmt.Errorf("unsupported operator /%s for %s", op, keyStr)
+		}
+		return fmt.Errorf("%s %v is not %s %v", keyStr, actualValue, opToSymbol(op), expectedValue)
+	}
+
+	expFloat, expIsFloat := toFloat64(expectedValue)
+	actFloat, actIsFloat := toFloat64(actualValue)
+
+	if !expIsFloat {
+		return fmt.Errorf("%s/%s must be a numeric value", keyStr, op)
+	}
+	if !actIsFloat {
+		return fmt.Errorf("%s must be a numeric value to match /%s (got %T)", keyStr, op, actualValue)
+	}
+
+	switch op {
+	case "gt":
+		if actFloat > expFloat {
+			return nil
+		}
+	case "gte":
+		if actFloat >= expFloat {
+			return nil
+		}
+	case "lt":
+		if actFloat < expFloat {
+			return nil
+		}
+	case "lte":
+		if actFloat <= expFloat {
+			return nil
+		}
+	default:
+		return fmt.Errorf("unsupported operator /%s for %s", op, keyStr)
+	}
+	return fmt.Errorf("%s %v is not %s %v", keyStr, actualValue, opToSymbol(op), expectedValue)
+}
+
+func opToSymbol(op string) string {
+	switch op {
+	case "gt":
+		return ">"
+	case "gte":
+		return ">="
+	case "lt":
+		return "<"
+	case "lte":
+		return "<="
+	}
+	return op
+}
+
 // findMatchingAttributes returns the first unmatched index whose attributes
 // satisfy the expected attribute map, or -1 if none do.
 func findMatchingAttributes(expected map[string]any, matched []bool, n int, attrsAt func(int) map[string]any) int {
@@ -277,6 +363,27 @@ func compareAttributes(expected, actual map[string]any) error {
 			}
 			continue
 		}
+
+		handledNumeric := false
+		for _, op := range []string{"gt", "gte", "lt", "lte"} {
+			key, ok := strings.CutSuffix(rawKey, "/"+op)
+			if !ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			actualValue, exists := actual[key]
+			if !exists {
+				errs = append(errs, fmt.Errorf("missing attribute %q required by /%s", key, op))
+			} else if err := compareNumericOp(fmt.Sprintf("attribute %q", key), op, expectedValue, actualValue); err != nil {
+				errs = append(errs, err)
+			}
+			handledNumeric = true
+			break
+		}
+		if handledNumeric {
+			continue
+		}
+
 		seen[rawKey] = struct{}{}
 		actualValue, ok := actual[rawKey]
 		if !ok {
