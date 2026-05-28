@@ -483,16 +483,18 @@ jobs:
           - os: linux
             arch: arm64
             runner: cncf-ubuntu-8-32-arm
+    # CNCF self-hosted runners on fork PRs cannot fall back to base-branch
+    # caches, so this job skips actions/setup-go's cache (which would only
+    # write a parallel PR-scoped entry and pressure the 10 GB pool) and
+    # builds cold on the larger CNCF hardware.
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      # cross-compile-pr runs on CNCF self-hosted runners, which on fork PRs
-      # cannot read setup-environment's cache (no base-branch fallback). Saving
-      # a parallel PR-scoped cache would pressure the 10 GB pool, so this job
-      # skips caching entirely and builds cold on the larger CNCF hardware.
-      - uses: ./.github/actions/setup-go-tools
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version: oldstable
-          cache: "false"
+          cache: false
+      - name: Download Go modules
+        run: make -j8 gomoddownload
       - name: Generate collector files
         run: make genotelcontribcol
       - name: Build Collector ${{ matrix.os }} ${{ matrix.arch }}

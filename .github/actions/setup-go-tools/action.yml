@@ -10,10 +10,6 @@ inputs:
     description: Whether to run `make -j2 gomoddownload` when Go cache is cold.
     required: false
     default: "true"
-  cache:
-    description: Whether setup-go should restore and save its module/build cache.
-    required: false
-    default: "true"
 
 runs:
   using: composite
@@ -26,8 +22,7 @@ runs:
         chmod +x ./.github/workflows/scripts/free-disk-space.sh
         ./.github/workflows/scripts/free-disk-space.sh
 
-    - name: Setup Go (with cache)
-      if: inputs.cache == 'true'
+    - name: Setup Go
       uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
       id: go-setup
       with:
@@ -40,15 +35,8 @@ runs:
           internal/tools/go.sum
           testbed/go.sum
 
-    - name: Setup Go (no cache)
-      if: inputs.cache != 'true'
-      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
-      with:
-        go-version: ${{ inputs.go-version }}
-        cache: false
-
     - name: Install dependencies (gomoddownload)
-      # Run when caching is disabled, or when caching is on but setup-go missed.
-      if: inputs.gomoddownload == 'true' && (inputs.cache != 'true' || steps.go-setup.outputs.cache-hit != 'true')
+      # Only download if setup-go didn't restore a cache.
+      if: inputs.gomoddownload == 'true' && steps.go-setup.outputs.cache-hit != 'true'
       shell: bash
       run: make -j8 gomoddownload
