@@ -36,7 +36,8 @@ func newTracesExporter(ctx context.Context, cfg *Config, set exporter.Settings, 
 		return nil, err
 	}
 
-	return newTracesExporterWithClient(ctx, cfg, set, registry, awsConfig, awsxray.NewXRayClient(set.Logger, awsConfig, set.BuildInfo))
+	client := awsxray.NewXRayClient(set.Logger, awsConfig, set.BuildInfo)
+	return newTracesExporterWithClient(ctx, cfg, set, registry, awsConfig, client)
 }
 
 func newTracesExporterWithClient(ctx context.Context, cfg *Config, set exporter.Settings, registry telemetry.Registry, awsConfig aws.Config, xrayClient awsxray.XRayClient) (exporter.Traces, error) {
