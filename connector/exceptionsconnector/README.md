@@ -92,7 +92,7 @@ receivers:
       http:
 
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: http://prometheus:9090/api/v1/write
   loki:
     endpoint: http://loki:3100/loki/api/v1/push
@@ -107,7 +107,7 @@ service:
       exporters: [exceptions]
     metrics:
       receivers: [exceptions]
-      exporters: [prometheusremotewrite]
+      exporters: [prometheus_remote_write]
     logs:
       receivers: [exceptions]
       exporters: [loki]
