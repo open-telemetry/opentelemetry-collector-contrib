@@ -71,14 +71,14 @@ func (cfg *targetConfig) Validate() error {
 	// Validate the single endpoint in ClientConfig.
 	if cfg.Endpoint != "" {
 		if _, parseErr := url.ParseRequestURI(cfg.Endpoint); parseErr != nil {
-			err = multierr.Append(err, fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr))
+			err = multierr.Append(err, fmt.Errorf("%w: %s", errInvalidEndpoint, parseErr))
 		}
 	}
 
 	// Validate each endpoint in the Endpoints list.
 	for _, endpoint := range cfg.Endpoints {
 		if _, parseErr := url.ParseRequestURI(endpoint); parseErr != nil {
-			err = multierr.Append(err, fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr))
+			err = multierr.Append(err, fmt.Errorf("%w: %s", errInvalidEndpoint, parseErr))
 		}
 	}
 
