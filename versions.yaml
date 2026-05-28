@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.152.0
+    version: v0.153.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -85,6 +85,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/azureauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension

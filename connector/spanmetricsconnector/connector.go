@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	utilattri "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
@@ -282,7 +283,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 
 	p.resourceMetrics.ForEach(func(_ resourceKey, rawMetrics *resourceMetrics) {
 		rm := m.ResourceMetrics().AppendEmpty()
-		if !excludeResourceMetrics.IsEnabled() || p.config.AddResourceAttributes {
+		if !metadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.IsEnabled() || p.config.AddResourceAttributes {
 			rawMetrics.attributes.CopyTo(rm.Resource().Attributes())
 		}
 
@@ -307,7 +308,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		}
 
 		metricsNamespace := p.config.Namespace
-		if legacyMetricNamesFeatureGate.IsEnabled() && metricsNamespace == DefaultNamespace {
+		if metadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.IsEnabled() && metricsNamespace == DefaultNamespace {
 			metricsNamespace = ""
 		}
 
@@ -559,7 +560,7 @@ func (p *connectorImp) buildAttributes(
 	if !slices.Contains(p.config.ExcludeDimensions, spanKindKey) {
 		attr.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
 	}
-	if useOtelStatusCodeAttribute.IsEnabled() {
+	if metadata.SpanmetricsStatusCodeConventionUseOtelPrefixFeatureGate.IsEnabled() {
 		if !slices.Contains(p.config.ExcludeDimensions, otelStatusCodeKey) {
 			if span.Status().Code() == ptrace.StatusCodeError {
 				attr.PutStr(otelStatusCodeKey, "ERROR")
@@ -572,7 +573,7 @@ func (p *connectorImp) buildAttributes(
 			attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 		}
 	}
-	if includeCollectorInstanceID.IsEnabled() {
+	if metadata.ConnectorSpanmetricsIncludeCollectorInstanceIDFeatureGate.IsEnabled() {
 		if !slices.Contains(p.config.ExcludeDimensions, collectorInstanceKey) {
 			attr.PutStr(collectorInstanceKey, p.instanceID)
 		}
@@ -633,7 +634,7 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 	if !slices.Contains(p.config.ExcludeDimensions, spanKindKey) {
 		concatDimensionValue(p.keyBuf, traceutil.SpanKindStr(span.Kind()), true)
 	}
-	if useOtelStatusCodeAttribute.IsEnabled() {
+	if metadata.SpanmetricsStatusCodeConventionUseOtelPrefixFeatureGate.IsEnabled() {
 		if !slices.Contains(p.config.ExcludeDimensions, otelStatusCodeKey) {
 			concatDimensionValue(p.keyBuf, traceutil.StatusCodeStr(span.Status().Code()), true)
 		}
