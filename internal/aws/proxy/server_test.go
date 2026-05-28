@@ -23,7 +23,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
@@ -443,7 +445,7 @@ func TestSignedRequestHasAuthorizationHeader(t *testing.T) {
 
 	// Override the transport to use mock backend
 	httpSrv := srv.(*http.Server)
-	proxy := httpSrv.Handler.(*httputil.ReverseProxy)
+	proxy := httpSrv.Handler.(*proxyHandler).proxy
 
 	// Save original rewrite and wrap it
 	originalRewrite := proxy.Rewrite
@@ -505,7 +507,7 @@ func TestSignedRequestHasRequiredHeaders(t *testing.T) {
 
 	// Override the transport to use mock backend
 	httpSrv := srv.(*http.Server)
-	proxy := httpSrv.Handler.(*httputil.ReverseProxy)
+	proxy := httpSrv.Handler.(*proxyHandler).proxy
 
 	originalRewrite := proxy.Rewrite
 	proxy.Rewrite = func(r *httputil.ProxyRequest) {
@@ -560,7 +562,7 @@ func TestConnectionHeaderRemovedBeforeSigning(t *testing.T) {
 	defer backend.Close()
 
 	httpSrv := srv.(*http.Server)
-	proxy := httpSrv.Handler.(*httputil.ReverseProxy)
+	proxy := httpSrv.Handler.(*proxyHandler).proxy
 
 	originalRewrite := proxy.Rewrite
 	proxy.Rewrite = func(r *httputil.ProxyRequest) {
@@ -591,4 +593,600 @@ func TestConnectionHeaderRemovedBeforeSigning(t *testing.T) {
 	// Connection header should NOT be in SignedHeaders
 	assert.NotContains(t, strings.ToLower(authHeader), "connection",
 		"Connection header should not be signed")
+}
+
+func setupTestEnv(t *testing.T) (*zap.Logger, *observer.ObservedLogs) {
+	t.Helper()
+	t.Setenv(regionEnvVarName, regionEnvVar)
+	t.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
+	return logSetup()
+}
+
+type mockTransport struct {
+	capturedRequests []*http.Request
+}
+
+func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	m.capturedRequests = append(m.capturedRequests, req)
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       http.NoBody,
+		Header:     make(http.Header),
+	}, nil
+}
+
+func TestBuildRoutingMapsEmpty(t *testing.T) {
+	apiMap, credsByRole := buildRoutingMaps(context.Background(), nil, "", nil, "", &awsutil.AWSSessionSettings{}, zap.NewNop())
+	assert.Empty(t, apiMap)
+	assert.Empty(t, credsByRole)
+}
+
+func TestBuildRoutingMapsValid(t *testing.T) {
+	logger, _ := logSetup()
+
+	routes := []RoutingRule{
+		{
+			Paths:       []string{"PutLogEvents", "CreateLogGroup"},
+			ServiceName: "logs",
+			AWSEndpoint: "https://logs.us-east-1.amazonaws.com",
+		},
+		{
+			Paths:       []string{"PutTraceSegments"},
+			ServiceName: "xray",
+			AWSEndpoint: "https://xray.us-west-2.amazonaws.com",
+		},
+	}
+
+	apiMap, credsByRole := buildRoutingMaps(context.Background(), routes, "", nil, "us-west-2", &awsutil.AWSSessionSettings{}, logger)
+	assert.Len(t, apiMap, 3)
+	assert.Equal(t, "logs", apiMap["PutLogEvents"].ServiceName)
+	assert.Equal(t, "logs", apiMap["CreateLogGroup"].ServiceName)
+	assert.Equal(t, "xray", apiMap["PutTraceSegments"].ServiceName)
+	assert.Empty(t, credsByRole)
+}
+
+func TestBuildRoutingMapsInvalidRules(t *testing.T) {
+	logger, _ := setupTestEnv(t)
+
+	routes := []RoutingRule{
+		// Missing service_name
+		{
+			Paths:       []string{"MissingServiceName"},
+			AWSEndpoint: "https://logs.us-east-1.amazonaws.com",
+		},
+		// Valid rule
+		{
+			Paths:       []string{"ValidRule"},
+			ServiceName: "xray",
+			AWSEndpoint: "https://xray.us-west-2.amazonaws.com",
+		},
+	}
+
+	apiMap, _ := buildRoutingMaps(context.Background(), routes, "", nil, "us-west-2", &awsutil.AWSSessionSettings{}, logger)
+
+	// Invalid rule (missing service_name) is mapped to nil
+	assert.Nil(t, apiMap["MissingServiceName"], "missing service_name should map to nil")
+
+	// Valid rule is mapped correctly
+	assert.NotNil(t, apiMap["ValidRule"])
+	assert.Equal(t, "xray", apiMap["ValidRule"].ServiceName)
+}
+
+func TestInvalidRoutingRuleSkipsSigning(t *testing.T) {
+	logger, _ := setupTestEnv(t)
+
+	cfg := DefaultConfig()
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = tcpAddr
+	cfg.AdditionalRoutingRules = []RoutingRule{
+		{
+			Paths: []string{"InvalidPath"},
+			// Missing service_name - invalid rule
+		},
+	}
+
+	srv, err := NewServer(cfg, logger)
+	assert.NoError(t, err)
+
+	mockTrans := &mockTransport{}
+	httpSrv := srv.(*http.Server)
+	handler := httpSrv.Handler.(*proxyHandler)
+	handler.proxy.Transport = mockTrans
+
+	req := httptest.NewRequest(http.MethodPost, "http://localhost:2000/InvalidPath", strings.NewReader(`{}`))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	// proxyHandler should reject the request with 400 before it reaches the reverse proxy
+	assert.Equal(t, http.StatusBadRequest, rec.Code, "invalid route should be rejected")
+	assert.Empty(t, mockTrans.capturedRequests, "request should not reach the reverse proxy")
+}
+
+func TestBuildRoutingMapsMissingEndpoint(t *testing.T) {
+	routes := []RoutingRule{
+		{
+			Paths:       []string{"PutLogEvents"},
+			ServiceName: "logs",
+			Region:      "us-east-1",
+			// AWSEndpoint will be resolved from service name and region
+		},
+	}
+
+	apiMap, _ := buildRoutingMaps(context.Background(), routes, "", nil, "", &awsutil.AWSSessionSettings{}, zap.NewNop())
+	assert.Equal(t, "logs", apiMap["PutLogEvents"].ServiceName)
+}
+
+func TestBuildRoutingMapsResolvesEndpointAtStartup(t *testing.T) {
+	routes := []RoutingRule{
+		{
+			Paths:       []string{"PutLogEvents"},
+			ServiceName: "logs",
+			Region:      "us-east-1",
+		},
+	}
+
+	apiMap, _ := buildRoutingMaps(context.Background(), routes, "", nil, "", &awsutil.AWSSessionSettings{}, zap.NewNop())
+	assert.Equal(t, "https://logs.us-east-1.amazonaws.com", apiMap["PutLogEvents"].AWSEndpoint, "endpoint should be resolved at startup")
+}
+
+func TestBuildRoutingMapsFallsBackToDefaultRegion(t *testing.T) {
+	routes := []RoutingRule{
+		{
+			Paths:       []string{"PutLogEvents"},
+			ServiceName: "logs",
+			// No Region - should fall back to defaultRegion
+		},
+	}
+
+	apiMap, _ := buildRoutingMaps(context.Background(), routes, "", nil, "us-west-2", &awsutil.AWSSessionSettings{}, zap.NewNop())
+	assert.NotNil(t, apiMap["PutLogEvents"])
+	assert.Equal(t, "us-west-2", apiMap["PutLogEvents"].Region, "should fall back to default region")
+}
+
+func TestBuildRoutingMapsAutoResolvesEndpoint(t *testing.T) {
+	routes := []RoutingRule{
+		{
+			Paths:       []string{"PutLogEvents"},
+			ServiceName: "logs",
+			Region:      "us-east-1",
+		},
+	}
+
+	apiMap, _ := buildRoutingMaps(context.Background(), routes, "", nil, "", &awsutil.AWSSessionSettings{}, zap.NewNop())
+	assert.Equal(t, "https://logs.us-east-1.amazonaws.com", apiMap["PutLogEvents"].AWSEndpoint, "should auto-resolve endpoint from service_name and region")
+}
+
+func TestNewServerWithRoutingRules(t *testing.T) {
+	logger, _ := logSetup()
+
+	t.Setenv(regionEnvVarName, regionEnvVar)
+
+	cfg := DefaultConfig()
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = tcpAddr
+	cfg.AdditionalRoutingRules = []RoutingRule{
+		{
+			Paths:       []string{"PutLogEvents"},
+			ServiceName: "logs",
+			AWSEndpoint: "https://logs.us-east-1.amazonaws.com",
+		},
+	}
+
+	srv, err := NewServer(cfg, logger)
+	assert.NoError(t, err, "NewServer should succeed with routing rules")
+	assert.NotNil(t, srv)
+}
+
+func TestBuildRoutingMapsWithLeadingSlash(t *testing.T) {
+	logger, _ := logSetup()
+
+	routes := []RoutingRule{
+		{
+			Paths:       []string{"/PutLogEvents", "CreateLogGroup"},
+			ServiceName: "logs",
+			AWSEndpoint: "https://logs.us-east-1.amazonaws.com",
+		},
+	}
+
+	apiMap, _ := buildRoutingMaps(context.Background(), routes, "", nil, "us-west-2", &awsutil.AWSSessionSettings{}, logger)
+	assert.Len(t, apiMap, 2)
+	assert.Equal(t, "logs", apiMap["PutLogEvents"].ServiceName)
+	assert.Equal(t, "logs", apiMap["CreateLogGroup"].ServiceName)
+}
+
+func TestBuildRoutingMapsDuplicateAPIs(t *testing.T) {
+	logger, _ := logSetup()
+
+	routes := []RoutingRule{
+		{
+			Paths:       []string{"PutLogEvents"},
+			ServiceName: "logs",
+			AWSEndpoint: "https://logs.us-east-1.amazonaws.com",
+		},
+		{
+			Paths:       []string{"PutLogEvents"},
+			ServiceName: "xray",
+			AWSEndpoint: "https://xray.us-west-2.amazonaws.com",
+		},
+	}
+
+	apiMap, _ := buildRoutingMaps(context.Background(), routes, "", nil, "us-west-2", &awsutil.AWSSessionSettings{}, logger)
+	assert.Equal(t, "logs", apiMap["PutLogEvents"].ServiceName, "first route should win")
+}
+
+func TestHandlerRoutingWithMultipleServices(t *testing.T) {
+	logger, _ := setupTestEnv(t)
+
+	cfg := DefaultConfig()
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = tcpAddr
+	cfg.AdditionalRoutingRules = []RoutingRule{
+		{
+			Paths:       []string{"PutLogEvents", "CreateLogGroup"},
+			ServiceName: "logs",
+			AWSEndpoint: "https://logs.us-east-1.amazonaws.com",
+			Region:      "us-east-1",
+		},
+		{
+			Paths:       []string{"PutTraceSegments"},
+			ServiceName: "xray",
+			AWSEndpoint: "https://xray.us-west-2.amazonaws.com",
+			Region:      "us-west-2",
+		},
+	}
+
+	srv, err := NewServer(cfg, logger)
+	assert.NoError(t, err, "NewServer should succeed")
+
+	// Replace transport with mock
+	mockTrans := &mockTransport{}
+	httpSrv := srv.(*http.Server)
+	proxy := httpSrv.Handler.(*proxyHandler).proxy
+	proxy.Transport = mockTrans
+
+	testCases := []struct {
+		apiPath      string
+		expectedHost string
+	}{
+		{"/PutLogEvents", "logs.us-east-1.amazonaws.com"},
+		{"/CreateLogGroup", "logs.us-east-1.amazonaws.com"},
+		{"/PutTraceSegments", "xray.us-west-2.amazonaws.com"},
+		{"/UnmatchedAPI", "xray.us-west-2.amazonaws.com"}, // fallback to default
+	}
+
+	for _, tc := range testCases {
+		mockTrans.capturedRequests = nil
+		req := httptest.NewRequest(http.MethodPost, "https://example.com"+tc.apiPath, strings.NewReader(`{}`))
+		rec := httptest.NewRecorder()
+		proxy.ServeHTTP(rec, req)
+
+		assert.Len(t, mockTrans.capturedRequests, 1, "should have captured one request for %s", tc.apiPath)
+		capturedReq := mockTrans.capturedRequests[0]
+		assert.Equal(t, tc.expectedHost, capturedReq.Host, "API %s should route to %s", tc.apiPath, tc.expectedHost)
+	}
+}
+
+func TestHandlerRoutingWithAutoResolvedEndpoint(t *testing.T) {
+	logger, _ := setupTestEnv(t)
+
+	cfg := DefaultConfig()
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = tcpAddr
+	cfg.AdditionalRoutingRules = []RoutingRule{
+		{
+			Paths:       []string{"PutLogEvents", "CreateLogGroup"},
+			ServiceName: "logs",
+			Region:      "us-east-1",
+		},
+		{
+			Paths:       []string{"PutMetricData"},
+			ServiceName: "monitoring",
+			Region:      "eu-west-1",
+		},
+		{
+			Paths:       []string{"PutServiceLevelObjective"},
+			ServiceName: "applicationsignals",
+			Region:      "ap-south-1",
+		},
+		{
+			Paths:       []string{"SendMessage"},
+			ServiceName: "sqs",
+			Region:      "us-west-2",
+		},
+	}
+
+	srv, err := NewServer(cfg, logger)
+	assert.NoError(t, err, "NewServer should succeed")
+
+	mockTrans := &mockTransport{}
+	httpSrv := srv.(*http.Server)
+	proxy := httpSrv.Handler.(*proxyHandler).proxy
+	proxy.Transport = mockTrans
+
+	testCases := []struct {
+		apiPath      string
+		expectedHost string
+	}{
+		{"/PutLogEvents", "logs.us-east-1.amazonaws.com"},
+		{"/CreateLogGroup", "logs.us-east-1.amazonaws.com"},
+		{"/PutMetricData", "monitoring.eu-west-1.amazonaws.com"},
+		{"/PutServiceLevelObjective", "applicationsignals.ap-south-1.amazonaws.com"},
+		{"/SendMessage", "sqs.us-west-2.amazonaws.com"},
+	}
+
+	for _, tc := range testCases {
+		mockTrans.capturedRequests = nil
+		req := httptest.NewRequest(http.MethodPost, "http://localhost:2000"+tc.apiPath, strings.NewReader(`{}`))
+		rec := httptest.NewRecorder()
+		proxy.ServeHTTP(rec, req)
+
+		assert.Len(t, mockTrans.capturedRequests, 1, "should have captured one request for %s", tc.apiPath)
+		capturedReq := mockTrans.capturedRequests[0]
+		assert.Equal(t, tc.expectedHost, capturedReq.Host, "API %s should auto-resolve to %s", tc.apiPath, tc.expectedHost)
+	}
+}
+
+func TestHandlerPreservesURLPath(t *testing.T) {
+	logger, _ := setupTestEnv(t)
+
+	cfg := DefaultConfig()
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = tcpAddr
+	cfg.AdditionalRoutingRules = []RoutingRule{
+		{
+			Paths:       []string{"slos"},
+			ServiceName: "application-signals",
+			Region:      "us-east-1",
+			AWSEndpoint: "https://application-signals.us-east-1.api.aws",
+		},
+	}
+
+	srv, err := NewServer(cfg, logger)
+	assert.NoError(t, err, "NewServer should succeed")
+
+	mockTrans := &mockTransport{}
+	httpSrv := srv.(*http.Server)
+	proxy := httpSrv.Handler.(*proxyHandler).proxy
+	proxy.Transport = mockTrans
+
+	req := httptest.NewRequest(http.MethodPost, "http://localhost:2000/slos?MaxResults=1", strings.NewReader(`{}`))
+	rec := httptest.NewRecorder()
+	proxy.ServeHTTP(rec, req)
+
+	assert.Len(t, mockTrans.capturedRequests, 1)
+	capturedReq := mockTrans.capturedRequests[0]
+	assert.Equal(t, "application-signals.us-east-1.api.aws", capturedReq.Host)
+	assert.Equal(t, "/slos", capturedReq.URL.Path, "URL path should be preserved")
+	assert.Equal(t, "MaxResults=1", capturedReq.URL.RawQuery, "query string should be preserved")
+}
+
+func TestNewServerWithMultipleRoles(t *testing.T) {
+	logger, _ := setupTestEnv(t)
+
+	cfg := DefaultConfig()
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = tcpAddr
+	cfg.RoleARN = "arn:aws:iam::123456789012:role/DefaultRole"
+	cfg.AdditionalRoutingRules = []RoutingRule{
+		{
+			Paths:       []string{"PutLogEvents"},
+			ServiceName: "logs",
+			Region:      "us-east-1",
+			RoleARN:     "arn:aws:iam::123456789012:role/LogsRole",
+		},
+		{
+			Paths:       []string{"PutMetricData"},
+			ServiceName: "monitoring",
+			Region:      "us-west-2",
+			RoleARN:     "arn:aws:iam::123456789012:role/MetricsRole",
+		},
+	}
+
+	srv, err := NewServer(cfg, logger)
+	assert.NoError(t, err, "NewServer should succeed with multiple roles")
+	assert.NotNil(t, srv)
+}
+
+func TestNewServerWithDuplicateRoles(t *testing.T) {
+	logger, _ := setupTestEnv(t)
+
+	cfg := DefaultConfig()
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = tcpAddr
+	cfg.RoleARN = "arn:aws:iam::123456789012:role/SharedRole"
+	cfg.AdditionalRoutingRules = []RoutingRule{
+		{
+			Paths:       []string{"PutLogEvents"},
+			ServiceName: "logs",
+			RoleARN:     "arn:aws:iam::123456789012:role/SharedRole",
+		},
+		{
+			Paths:       []string{"CreateLogGroup"},
+			ServiceName: "logs",
+			RoleARN:     "arn:aws:iam::123456789012:role/SharedRole",
+		},
+	}
+
+	srv, err := NewServer(cfg, logger)
+	assert.NoError(t, err, "NewServer should succeed with duplicate roles")
+	assert.NotNil(t, srv)
+}
+
+func TestNewServerWithDefaultRoleInRoutingRules(t *testing.T) {
+	logger, _ := setupTestEnv(t)
+
+	cfg := DefaultConfig()
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = tcpAddr
+	cfg.RoleARN = "arn:aws:iam::123456789012:role/DefaultRole"
+	cfg.AdditionalRoutingRules = []RoutingRule{
+		{
+			Paths:       []string{"PutLogEvents"},
+			ServiceName: "logs",
+			RoleARN:     "arn:aws:iam::123456789012:role/DefaultRole",
+		},
+		{
+			Paths:       []string{"PutMetricData"},
+			ServiceName: "monitoring",
+			RoleARN:     "arn:aws:iam::123456789012:role/OtherRole",
+		},
+	}
+
+	srv, err := NewServer(cfg, logger)
+	assert.NoError(t, err, "NewServer should succeed when routing rule references default role")
+	assert.NotNil(t, srv)
+}
+
+func TestNewServerWithEmptyRoleARN(t *testing.T) {
+	logger, _ := setupTestEnv(t)
+
+	cfg := DefaultConfig()
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = tcpAddr
+	cfg.AdditionalRoutingRules = []RoutingRule{
+		{
+			Paths:       []string{"PutLogEvents"},
+			ServiceName: "logs",
+			RoleARN:     "",
+		},
+	}
+
+	srv, err := NewServer(cfg, logger)
+	assert.NoError(t, err, "NewServer should succeed with empty role ARN in routing rule")
+	assert.NotNil(t, srv)
+}
+
+func TestNewServerWithMixedRoleConfiguration(t *testing.T) {
+	logger, _ := setupTestEnv(t)
+
+	cfg := DefaultConfig()
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = tcpAddr
+	cfg.RoleARN = "arn:aws:iam::123456789012:role/DefaultRole"
+	cfg.AdditionalRoutingRules = []RoutingRule{
+		{
+			Paths:       []string{"PutLogEvents"},
+			ServiceName: "logs",
+			RoleARN:     "arn:aws:iam::123456789012:role/LogsRole",
+		},
+		{
+			Paths:       []string{"PutMetricData"},
+			ServiceName: "monitoring",
+			// No RoleARN - should use default
+		},
+		{
+			Paths:       []string{"PutTraceSegments"},
+			ServiceName: "xray",
+			RoleARN:     "",
+		},
+	}
+
+	srv, err := NewServer(cfg, logger)
+	assert.NoError(t, err, "NewServer should succeed with mixed role configuration")
+	assert.NotNil(t, srv)
+}
+
+func TestHandlerRoutingFallsBackToTopLevelRegion(t *testing.T) {
+	logger, _ := setupTestEnv(t)
+
+	cfg := DefaultConfig()
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = tcpAddr
+	cfg.ServiceName = "xray"
+	cfg.Region = "eu-west-1" // Top-level region
+	cfg.AdditionalRoutingRules = []RoutingRule{
+		{
+			Paths:       []string{"PutLogEvents"},
+			ServiceName: "logs",
+			// No Region - should fall back to top-level eu-west-1
+			// No AWSEndpoint - should auto-resolve using logs + eu-west-1
+		},
+		{
+			Paths:       []string{"PutMetricData"},
+			ServiceName: "monitoring",
+			Region:      "ap-south-1", // Explicit region
+		},
+	}
+
+	srv, err := NewServer(cfg, logger)
+	assert.NoError(t, err, "NewServer should succeed")
+
+	mockTrans := &mockTransport{}
+	httpSrv := srv.(*http.Server)
+	proxy := httpSrv.Handler.(*proxyHandler).proxy
+	proxy.Transport = mockTrans
+
+	testCases := []struct {
+		apiPath      string
+		expectedHost string
+		description  string
+	}{
+		{"/PutLogEvents", "logs.eu-west-1.amazonaws.com", "rule without region falls back to top-level region"},
+		{"/PutMetricData", "monitoring.ap-south-1.amazonaws.com", "rule with explicit region uses its own region"},
+	}
+
+	for _, tc := range testCases {
+		mockTrans.capturedRequests = nil
+		req := httptest.NewRequest(http.MethodPost, "http://localhost:2000"+tc.apiPath, strings.NewReader(`{}`))
+		rec := httptest.NewRecorder()
+		proxy.ServeHTTP(rec, req)
+
+		assert.Len(t, mockTrans.capturedRequests, 1, "should have captured one request for %s", tc.apiPath)
+		capturedReq := mockTrans.capturedRequests[0]
+		assert.Equal(t, tc.expectedHost, capturedReq.Host, "%s: %s", tc.apiPath, tc.description)
+	}
+}
+
+func TestHandlerRoutingAutoResolvesEndpointWhenRuleHasNoEndpoint(t *testing.T) {
+	logger, _ := setupTestEnv(t)
+
+	cfg := DefaultConfig()
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = tcpAddr
+	cfg.ServiceName = "application-signals"
+	cfg.Region = "us-west-2"
+	cfg.AWSEndpoint = "https://application-signals-gamma.us-west-2.api.aws"
+	cfg.AdditionalRoutingRules = []RoutingRule{
+		{
+			Paths:       []string{"slos"},
+			ServiceName: "application-signals",
+			Region:      "us-west-2",
+			AWSEndpoint: "https://application-signals-gamma.us-west-2.api.aws",
+		},
+		{
+			Paths:       []string{"GetSamplingRules", "SamplingTargets"},
+			ServiceName: "xray",
+			Region:      "us-west-2",
+		},
+	}
+
+	srv, err := NewServer(cfg, logger)
+	assert.NoError(t, err, "NewServer should succeed")
+
+	mockTrans := &mockTransport{}
+	httpSrv := srv.(*http.Server)
+	proxy := httpSrv.Handler.(*proxyHandler).proxy
+	proxy.Transport = mockTrans
+
+	testCases := []struct {
+		apiPath      string
+		expectedHost string
+		description  string
+	}{
+		{"/slos", "application-signals-gamma.us-west-2.api.aws", "rule with explicit endpoint"},
+		{"/GetSamplingRules", "xray.us-west-2.amazonaws.com", "rule without endpoint auto-resolves from service_name and region"},
+		{"/SamplingTargets", "xray.us-west-2.amazonaws.com", "rule without endpoint auto-resolves from service_name and region"},
+	}
+
+	for _, tc := range testCases {
+		mockTrans.capturedRequests = nil
+		req := httptest.NewRequest(http.MethodPost, "http://localhost:2000"+tc.apiPath, strings.NewReader(`{}`))
+		rec := httptest.NewRecorder()
+		proxy.ServeHTTP(rec, req)
+
+		assert.Len(t, mockTrans.capturedRequests, 1, "should have captured one request for %s", tc.apiPath)
+		capturedReq := mockTrans.capturedRequests[0]
+		assert.Equal(t, tc.expectedHost, capturedReq.Host, "%s: %s", tc.apiPath, tc.description)
+	}
 }
