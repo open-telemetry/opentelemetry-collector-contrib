@@ -4,6 +4,7 @@
 package informer
 
 import (
+	"context"
 	"slices"
 	"sync"
 	"testing"
@@ -19,6 +20,7 @@ import (
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/dynamic/fake"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 )
@@ -29,6 +31,7 @@ var (
 )
 
 // newFakeFactory creates a fake factory pre-seeded with objects. For pods only.
+// Returns the factory, an addObj function, and a deleteObj function.
 func newFakeFactory(t *testing.T, objects ...*unstructured.Unstructured) (dynamicinformer.DynamicSharedInformerFactory, func(*unstructured.Unstructured)) {
 	t.Helper()
 	scheme := runtime.NewScheme()
@@ -48,6 +51,45 @@ func newFakeFactory(t *testing.T, objects ...*unstructured.Unstructured) (dynami
 		require.NoError(t, err)
 	}
 	return factory, addObj
+}
+
+// newFakeFactoryWithMutations is like newFakeFactory but also returns update and delete helpers.
+func newFakeFactoryWithMutations(t *testing.T, objects ...*unstructured.Unstructured) (
+	dynamicinformer.DynamicSharedInformerFactory,
+	func(*unstructured.Unstructured),
+	func(*unstructured.Unstructured),
+	func(name, namespace string),
+) {
+	t.Helper()
+	scheme := runtime.NewScheme()
+	gvrToListKind := map[schema.GroupVersionResource]string{podsGVR: "PodList"}
+	fakeClient := fake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind)
+	for _, obj := range objects {
+		_, err := fakeClient.Resource(podsGVR).Namespace(obj.GetNamespace()).Create(
+			t.Context(), obj, metav1.CreateOptions{},
+		)
+		require.NoError(t, err)
+	}
+	factory := dynamicinformer.NewDynamicSharedInformerFactory(fakeClient, 0)
+	addObj := func(obj *unstructured.Unstructured) {
+		_, err := fakeClient.Resource(podsGVR).Namespace(obj.GetNamespace()).Create(
+			t.Context(), obj, metav1.CreateOptions{},
+		)
+		require.NoError(t, err)
+	}
+	updateObj := func(obj *unstructured.Unstructured) {
+		_, err := fakeClient.Resource(podsGVR).Namespace(obj.GetNamespace()).Update(
+			t.Context(), obj, metav1.UpdateOptions{},
+		)
+		require.NoError(t, err)
+	}
+	deleteObj := func(name, namespace string) {
+		err := fakeClient.Resource(podsGVR).Namespace(namespace).Delete(
+			t.Context(), name, metav1.DeleteOptions{},
+		)
+		require.NoError(t, err)
+	}
+	return factory, addObj, updateObj, deleteObj
 }
 
 func makePod(name string) *unstructured.Unstructured {
@@ -75,9 +117,10 @@ func TestPullModeEmitsSnapshotOnStart(t *testing.T) {
 	obs, err := New(
 		[]dynamicinformer.DynamicSharedInformerFactory{factory},
 		Config{
-			Config:   k8sinventory.Config{Gvr: podsGVR},
-			Mode:     k8sinventory.PullMode,
-			Interval: 100 * time.Millisecond,
+			Config:           k8sinventory.Config{Gvr: podsGVR},
+			Mode:             k8sinventory.PullMode,
+			CacheSyncTimeout: 5 * time.Second,
+			Interval:         100 * time.Millisecond,
 		},
 		zap.NewNop(),
 		func(list *unstructured.UnstructuredList) {
@@ -90,7 +133,8 @@ func TestPullModeEmitsSnapshotOnStart(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	stopCh := obs.Start(t.Context(), &wg)
+	stopCh, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	t.Cleanup(func() { close(stopCh); wg.Wait() })
 
 	require.Eventually(t, func() bool {
@@ -115,9 +159,10 @@ func TestPullModeEmitsOnInterval(t *testing.T) {
 	obs, err := New(
 		[]dynamicinformer.DynamicSharedInformerFactory{factory},
 		Config{
-			Config:   k8sinventory.Config{Gvr: podsGVR},
-			Mode:     k8sinventory.PullMode,
-			Interval: 50 * time.Millisecond,
+			Config:           k8sinventory.Config{Gvr: podsGVR},
+			Mode:             k8sinventory.PullMode,
+			CacheSyncTimeout: 5 * time.Second,
+			Interval:         50 * time.Millisecond,
 		},
 		zap.NewNop(),
 		func(_ *unstructured.UnstructuredList) {
@@ -130,7 +175,8 @@ func TestPullModeEmitsOnInterval(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	stopCh := obs.Start(t.Context(), &wg)
+	stopCh, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	t.Cleanup(func() { close(stopCh); wg.Wait() })
 
 	require.Eventually(t, func() bool {
@@ -153,6 +199,7 @@ func TestWatchModeIncludeInitialStateTrue(t *testing.T) {
 		Config{
 			Config:              k8sinventory.Config{Gvr: podsGVR},
 			Mode:                k8sinventory.WatchMode,
+			CacheSyncTimeout:    5 * time.Second,
 			IncludeInitialState: true,
 		},
 		zap.NewNop(),
@@ -166,7 +213,8 @@ func TestWatchModeIncludeInitialStateTrue(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	stopCh := obs.Start(t.Context(), &wg)
+	stopCh, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	t.Cleanup(func() { close(stopCh); wg.Wait() })
 
 	require.Eventually(t, func() bool {
@@ -193,6 +241,7 @@ func TestWatchModeIncludeInitialStateFalse(t *testing.T) {
 		Config{
 			Config:              k8sinventory.Config{Gvr: podsGVR},
 			Mode:                k8sinventory.WatchMode,
+			CacheSyncTimeout:    5 * time.Second,
 			IncludeInitialState: false,
 		},
 		zap.NewNop(),
@@ -206,7 +255,8 @@ func TestWatchModeIncludeInitialStateFalse(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	stopCh := obs.Start(t.Context(), &wg)
+	stopCh, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	t.Cleanup(func() { close(stopCh); wg.Wait() })
 
 	// Add a new pod AFTER start (after cache sync) — this one SHOULD appear.
@@ -261,7 +311,7 @@ func TestTwoObserversSharingFactory(t *testing.T) {
 
 	obs1, err := New(
 		[]dynamicinformer.DynamicSharedInformerFactory{factory},
-		Config{Config: k8sinventory.Config{Gvr: podsGVR}, Mode: k8sinventory.PullMode, Interval: 50 * time.Millisecond},
+		Config{Config: k8sinventory.Config{Gvr: podsGVR}, Mode: k8sinventory.PullMode, CacheSyncTimeout: 5 * time.Second, Interval: 50 * time.Millisecond},
 		zap.NewNop(),
 		func(list *unstructured.UnstructuredList) {
 			mu.Lock()
@@ -274,7 +324,7 @@ func TestTwoObserversSharingFactory(t *testing.T) {
 
 	obs2, err := New(
 		[]dynamicinformer.DynamicSharedInformerFactory{factory},
-		Config{Config: k8sinventory.Config{Gvr: configmapsGVR}, Mode: k8sinventory.PullMode, Interval: 50 * time.Millisecond},
+		Config{Config: k8sinventory.Config{Gvr: configmapsGVR}, Mode: k8sinventory.PullMode, CacheSyncTimeout: 5 * time.Second, Interval: 50 * time.Millisecond},
 		zap.NewNop(),
 		func(list *unstructured.UnstructuredList) {
 			mu.Lock()
@@ -286,8 +336,10 @@ func TestTwoObserversSharingFactory(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	stopCh1 := obs1.Start(t.Context(), &wg)
-	stopCh2 := obs2.Start(t.Context(), &wg)
+	stopCh1, err := obs1.Start(t.Context(), &wg)
+	require.NoError(t, err)
+	stopCh2, err := obs2.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	t.Cleanup(func() { close(stopCh1); close(stopCh2); wg.Wait() })
 
 	require.Eventually(t, func() bool {
@@ -316,6 +368,7 @@ func TestWatchModeExcludeWatchType(t *testing.T) {
 		Config{
 			Config:              k8sinventory.Config{Gvr: podsGVR},
 			Mode:                k8sinventory.WatchMode,
+			CacheSyncTimeout:    5 * time.Second,
 			IncludeInitialState: true,
 			Exclude:             map[apiWatch.EventType]bool{apiWatch.Deleted: true},
 		},
@@ -330,7 +383,8 @@ func TestWatchModeExcludeWatchType(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	stopCh := obs.Start(t.Context(), &wg)
+	stopCh, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	t.Cleanup(func() { close(stopCh); wg.Wait() })
 
 	require.Eventually(t, func() bool {
@@ -344,4 +398,156 @@ func TestWatchModeExcludeWatchType(t *testing.T) {
 	for _, et := range eventTypes {
 		assert.NotEqual(t, apiWatch.Deleted, et, "Deleted events must be filtered by Exclude map")
 	}
+}
+
+func TestStartCacheSyncTimeout(t *testing.T) {
+	t.Parallel()
+	factory, _ := newFakeFactory(t, makePod("pod1"))
+
+	obs, err := New(
+		[]dynamicinformer.DynamicSharedInformerFactory{factory},
+		Config{
+			Config:           k8sinventory.Config{Gvr: podsGVR},
+			Mode:             k8sinventory.PullMode,
+			CacheSyncTimeout: 1 * time.Nanosecond, // effectively immediate timeout
+			Interval:         time.Hour,
+		},
+		zap.NewNop(),
+		func(_ *unstructured.UnstructuredList) {},
+		nil,
+	)
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	_, err = obs.Start(context.Background(), &wg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "timed out waiting for informer cache to sync")
+}
+
+func TestWatchModeModifiedEvent(t *testing.T) {
+	t.Parallel()
+	pod := makePod("pod1")
+	factory, _, updateObj, _ := newFakeFactoryWithMutations(t, pod)
+
+	var mu sync.Mutex
+	var events []apiWatch.Event
+
+	obs, err := New(
+		[]dynamicinformer.DynamicSharedInformerFactory{factory},
+		Config{
+			Config:              k8sinventory.Config{Gvr: podsGVR},
+			Mode:                k8sinventory.WatchMode,
+			CacheSyncTimeout:    5 * time.Second,
+			IncludeInitialState: false,
+		},
+		zap.NewNop(),
+		nil,
+		func(ev *apiWatch.Event) {
+			mu.Lock()
+			events = append(events, *ev)
+			mu.Unlock()
+		},
+	)
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	stopCh, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+	t.Cleanup(func() { close(stopCh); wg.Wait() })
+
+	updated := pod.DeepCopy()
+	updated.SetResourceVersion("2")
+	updated.SetLabels(map[string]string{"updated": "true"})
+	updateObj(updated)
+
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		for _, ev := range events {
+			if ev.Type == apiWatch.Modified {
+				return true
+			}
+		}
+		return false
+	}, 5*time.Second, 10*time.Millisecond, "expected Modified event")
+}
+
+func TestWatchModeDeletedEvent(t *testing.T) {
+	t.Parallel()
+	pod := makePod("pod1")
+	factory, _, _, deleteObj := newFakeFactoryWithMutations(t, pod)
+
+	var mu sync.Mutex
+	var events []apiWatch.Event
+
+	obs, err := New(
+		[]dynamicinformer.DynamicSharedInformerFactory{factory},
+		Config{
+			Config:              k8sinventory.Config{Gvr: podsGVR},
+			Mode:                k8sinventory.WatchMode,
+			CacheSyncTimeout:    5 * time.Second,
+			IncludeInitialState: false,
+		},
+		zap.NewNop(),
+		nil,
+		func(ev *apiWatch.Event) {
+			mu.Lock()
+			events = append(events, *ev)
+			mu.Unlock()
+		},
+	)
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	stopCh, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+	t.Cleanup(func() { close(stopCh); wg.Wait() })
+
+	deleteObj("pod1", "default")
+
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		for _, ev := range events {
+			if ev.Type == apiWatch.Deleted {
+				return true
+			}
+		}
+		return false
+	}, 5*time.Second, 10*time.Millisecond, "expected Deleted event")
+}
+
+func TestHandleWatchEventTombstone(t *testing.T) {
+	t.Parallel()
+	factory, _ := newFakeFactory(t)
+
+	var mu sync.Mutex
+	var events []apiWatch.Event
+
+	obs, err := New(
+		[]dynamicinformer.DynamicSharedInformerFactory{factory},
+		Config{
+			Config:           k8sinventory.Config{Gvr: podsGVR},
+			Mode:             k8sinventory.WatchMode,
+			CacheSyncTimeout: 5 * time.Second,
+		},
+		zap.NewNop(),
+		nil,
+		func(ev *apiWatch.Event) {
+			mu.Lock()
+			events = append(events, *ev)
+			mu.Unlock()
+		},
+	)
+	require.NoError(t, err)
+
+	pod := makePod("tombstone-pod")
+	tombstone := cache.DeletedFinalStateUnknown{Key: "default/tombstone-pod", Obj: pod}
+	obs.handleWatchEvent(apiWatch.Deleted, tombstone)
+
+	mu.Lock()
+	defer mu.Unlock()
+	require.Len(t, events, 1)
+	assert.Equal(t, apiWatch.Deleted, events[0].Type)
+	assert.Equal(t, "tombstone-pod", events[0].Object.(*unstructured.Unstructured).GetName())
 }

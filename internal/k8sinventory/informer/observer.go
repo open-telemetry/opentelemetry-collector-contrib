@@ -25,6 +25,7 @@ type Config struct {
 	Interval            time.Duration               // pull mode only
 	IncludeInitialState bool                        // watch mode only
 	Exclude             map[apiWatch.EventType]bool // watch mode only
+	CacheSyncTimeout    time.Duration
 }
 
 // Observer uses a SharedInformerFactory; one factory per namespace.
@@ -77,9 +78,9 @@ func New(
 	return o, nil
 }
 
-// Start starts all informers and blocks until their caches are warm.
+// Start starts all informers, waits for their caches to sync, and launches pull-mode tickers.
 // ctx is shared across all observers in the receiver, so all factories stop together.
-func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) chan struct{} {
+func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) (chan struct{}, error) {
 	o.logger.Info("starting informer and waiting for cache sync",
 		zap.String("gvr", o.config.Gvr.String()),
 		zap.String("mode", string(o.config.Mode)))
@@ -88,13 +89,8 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) chan struct{} 
 		factory.Start(ctx.Done())
 	}
 
-	for _, factory := range o.factories {
-		syncResult := factory.WaitForCacheSync(ctx.Done())
-		for gvr, synced := range syncResult {
-			if !synced {
-				o.logger.Error("informer cache failed to sync", zap.String("gvr", gvr.String()))
-			}
-		}
+	if err := o.waitForCacheSync(ctx); err != nil {
+		return nil, err
 	}
 
 	o.logger.Info("informer cache synced, observer ready",
@@ -108,8 +104,37 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) chan struct{} 
 			go o.runPullTicker(ctx, inf.GetStore(), stopCh, wg)
 		}
 	}
+	return stopCh, nil
+}
 
-	return stopCh
+// waitForCacheSync starts all factories in parallel and waits for every informer to sync.
+// All factories are started before any WaitForCacheSync call so list goroutines run in parallel.
+func (o *Observer) waitForCacheSync(ctx context.Context) error {
+	syncCtx, syncCancel := context.WithTimeout(ctx, o.config.CacheSyncTimeout)
+	defer syncCancel()
+
+	errCh := make(chan error, len(o.factories))
+	for _, factory := range o.factories {
+		go func() {
+			for gvr, synced := range factory.WaitForCacheSync(syncCtx.Done()) {
+				if !synced {
+					if ctx.Err() != nil {
+						errCh <- fmt.Errorf("informer cache sync aborted for %s: %w", gvr, ctx.Err())
+					} else {
+						errCh <- fmt.Errorf("timed out waiting for informer cache to sync for %s", gvr)
+					}
+					return
+				}
+			}
+			errCh <- nil
+		}()
+	}
+	for range o.factories {
+		if err := <-errCh; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (o *Observer) buildEventHandler(skipInitialList bool) cache.ResourceEventHandler {

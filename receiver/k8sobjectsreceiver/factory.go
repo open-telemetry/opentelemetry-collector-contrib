@@ -34,7 +34,8 @@ func createDefaultConfig() component.Config {
 			KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
 			KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 		},
-		ErrorMode: PropagateError,
+		ErrorMode:                PropagateError,
+		InformerCacheSyncTimeout: defaultCacheSyncTimeout,
 	}
 }
 

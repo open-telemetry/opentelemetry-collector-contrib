@@ -71,6 +71,7 @@ this case, it will select `v1` by default.
 - `kube_api_qps` (default = `5`): Maximum number of queries per second to the Kubernetes API. Increase this if you see `client-side throttling` warnings in the collector logs when watching or polling many resources simultaneously.
 - `kube_api_burst` (default = `10`): Maximum burst size for requests to the Kubernetes API. Increase this alongside `kube_api_qps` if you see `client-side throttling` warnings.
 - `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
+- `informer_cache_sync_timeout` (default = `10s`): Maximum time to wait for the informer cache to complete its initial sync on startup. If the cache does not sync within this duration, the receiver fails to start.
 - `storage` (default: none): **Deprecated.** The storage extension is no longer used. The informer now handles within-process watch resumption automatically (reconnecting after 410 Gone responses or network blips) without an external storage extension. Note: watch state is in-process only — a pod restart still begins with a fresh list. Any storage extension configured here will be ignored at runtime.
 
 

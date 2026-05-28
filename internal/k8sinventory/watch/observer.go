@@ -63,7 +63,7 @@ func New(client dynamic.Interface, config Config, logger *zap.Logger, storageCli
 	return o, nil
 }
 
-func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) chan struct{} {
+func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) (chan struct{}, error) {
 	resource := o.client.Resource(o.config.Gvr)
 	o.logger.Info("Started collecting",
 		zap.Any("gvr", o.config.Gvr),
@@ -82,7 +82,7 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) chan struct{} 
 		}
 	}
 
-	return stopperChan
+	return stopperChan, nil
 }
 
 // startCheckpointFlusher starts a goroutine that flushes all buffered

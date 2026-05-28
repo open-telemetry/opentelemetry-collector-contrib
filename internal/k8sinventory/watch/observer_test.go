@@ -56,8 +56,8 @@ func TestObserver(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	mockClient.createPods(
@@ -107,8 +107,8 @@ func TestObserverWithInitialState(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	verifyReceivedEvents(t, 1, receivedEventsChan, stopChan)
 
 	wg.Wait()
@@ -142,8 +142,8 @@ func TestObserverExcludeDelete(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	<-time.After(time.Millisecond * 100)
 
 	pod := generatePod("pod1", "default", map[string]any{
@@ -183,8 +183,8 @@ func TestObserverEmptyNamespaces(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	mockClient.createPods(
@@ -221,8 +221,8 @@ func TestObserverMultipleNamespaces(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	mockClient.createPods(
@@ -263,8 +263,8 @@ func TestObserverWithSelectors(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Since fake client doesn't filter, it will return all, but the code path is covered
@@ -308,8 +308,8 @@ func TestObserverInitialStateError(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// No events should be received due to error
@@ -350,8 +350,8 @@ func TestObserverInitialStateNoObjects(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// No events since no objects
@@ -423,8 +423,8 @@ func TestInitialStateListRVPersistedAsCheckpoint(t *testing.T) {
 	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(200 * time.Millisecond)
 
 	close(stopChan)
@@ -664,8 +664,8 @@ func TestObserverWithPersistence(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Create a pod
@@ -719,8 +719,8 @@ func TestObserverWithoutStorage(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	mockClient.createPods(
@@ -764,8 +764,8 @@ func TestObserverPersistenceNilStorage(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Create a pod
@@ -810,8 +810,8 @@ func TestObserverPersistenceClusterWideWatch(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Create pods in different namespaces
@@ -871,8 +871,8 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Create pods in different namespaces

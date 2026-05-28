@@ -22,8 +22,9 @@ import (
 )
 
 const (
-	defaultPullInterval time.Duration = time.Hour
-	defaultMode                       = k8sinventory.DefaultMode
+	defaultPullInterval     time.Duration = time.Hour
+	defaultCacheSyncTimeout time.Duration = 10 * time.Second
+	defaultMode                           = k8sinventory.DefaultMode
 )
 
 var modeMap = map[k8sinventory.Mode]bool{
@@ -57,11 +58,12 @@ type K8sObjectsConfig struct {
 type Config struct {
 	k8sconfig.APIConfig `mapstructure:",squash"`
 
-	Interval            time.Duration       `mapstructure:"interval"`
-	Objects             []*K8sObjectsConfig `mapstructure:"objects"`
-	Storage             *component.ID       `mapstructure:"storage"`
-	ErrorMode           ErrorMode           `mapstructure:"error_mode"`
-	IncludeInitialState bool                `mapstructure:"include_initial_state"`
+	Interval                 time.Duration       `mapstructure:"interval"`
+	Objects                  []*K8sObjectsConfig `mapstructure:"objects"`
+	Storage                  *component.ID       `mapstructure:"storage"`
+	ErrorMode                ErrorMode           `mapstructure:"error_mode"`
+	IncludeInitialState      bool                `mapstructure:"include_initial_state"`
+	InformerCacheSyncTimeout time.Duration       `mapstructure:"informer_cache_sync_timeout"`
 
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 
@@ -83,6 +85,13 @@ func (c *Config) Validate() error {
 
 	if c.Interval < 0 {
 		return errors.New("interval must not be negative")
+	}
+
+	if c.InformerCacheSyncTimeout < 0 {
+		return errors.New("informer_cache_sync_timeout must not be negative")
+	}
+	if c.InformerCacheSyncTimeout == 0 {
+		c.InformerCacheSyncTimeout = defaultCacheSyncTimeout
 	}
 
 	for _, object := range c.Objects {

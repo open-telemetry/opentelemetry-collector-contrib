@@ -136,6 +136,7 @@ func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K
 				Interval:            object.Interval,
 				IncludeInitialState: kr.config.IncludeInitialState,
 				Exclude:             object.exclude,
+				CacheSyncTimeout:    kr.config.InformerCacheSyncTimeout,
 			},
 			kr.setting.Logger,
 			func(objects *unstructured.UnstructuredList) {
@@ -238,17 +239,28 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 			func(ctx context.Context) {
 				cctx, cancel := context.WithCancel(ctx)
 				kr.cancel = cancel
-				var startWg sync.WaitGroup
+				var (
+					startWg sync.WaitGroup
+					hasErr  bool
+					errMu   sync.Mutex
+				)
 				for _, object := range validConfigs {
 					startWg.Add(1)
 					go func(obj *K8sObjectsConfig) {
 						defer startWg.Done()
 						if startErr := kr.start(cctx, obj); startErr != nil {
 							kr.setting.Logger.Error("Could not start receiver for object type", zap.String("object", obj.Name), zap.Error(startErr))
+							errMu.Lock()
+							hasErr = true
+							errMu.Unlock()
 						}
 					}(object)
 				}
 				startWg.Wait()
+				if hasErr {
+					cancel()
+					return
+				}
 				kr.setting.Logger.Info("Object Receiver started as leader")
 			},
 			func() {
@@ -283,6 +295,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		}
 		startWg.Wait()
 		if firstErr != nil {
+			cancel()
 			return firstErr
 		}
 	}
@@ -303,6 +316,7 @@ func (kr *k8sobjectsreceiver) Shutdown(_ context.Context) error {
 		factories = append(factories, f)
 	}
 	kr.factoriesMu.Unlock()
+
 	for _, f := range factories {
 		f.Shutdown()
 	}
@@ -368,7 +382,10 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		return err
 	}
 
-	stopChan := obs.Start(ctx, &kr.wg)
+	stopChan, err := obs.Start(ctx, &kr.wg)
+	if err != nil {
+		return err
+	}
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopChan)
 	kr.mu.Unlock()

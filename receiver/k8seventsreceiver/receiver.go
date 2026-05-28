@@ -205,7 +205,11 @@ func (kr *k8seventsReceiver) startWatchers() {
 		return
 	}
 
-	stopperChan := observer.Start(kr.ctx, &kr.wg)
+	stopperChan, err := observer.Start(kr.ctx, &kr.wg)
+	if err != nil {
+		kr.settings.Logger.Error("Failed to start watch observer", zap.Error(err))
+		return
+	}
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
