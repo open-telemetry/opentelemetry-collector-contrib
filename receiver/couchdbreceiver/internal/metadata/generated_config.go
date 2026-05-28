@@ -3,17 +3,19 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// CouchdbAverageRequestTimeMetricConfig provides config for the couchdb.average_request_time metric.
+type CouchdbAverageRequestTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *CouchdbAverageRequestTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -27,43 +29,303 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// CouchdbDatabaseOpenMetricConfig provides config for the couchdb.database.open metric.
+type CouchdbDatabaseOpenMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *CouchdbDatabaseOpenMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// CouchdbDatabaseOperationsMetricAttributeKey specifies the key of an attribute for the couchdb.database.operations metric.
+type CouchdbDatabaseOperationsMetricAttributeKey string
+
+const (
+	CouchdbDatabaseOperationsMetricAttributeKeyOperation CouchdbDatabaseOperationsMetricAttributeKey = "operation"
+)
+
+// CouchdbDatabaseOperationsMetricConfig provides config for the couchdb.database.operations metric.
+type CouchdbDatabaseOperationsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []CouchdbDatabaseOperationsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *CouchdbDatabaseOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *CouchdbDatabaseOperationsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case CouchdbDatabaseOperationsMetricAttributeKeyOperation:
+		default:
+			return fmt.Errorf("metric couchdb.database.operations doesn't have an attribute %v, valid attributes: [operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// CouchdbFileDescriptorOpenMetricConfig provides config for the couchdb.file_descriptor.open metric.
+type CouchdbFileDescriptorOpenMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *CouchdbFileDescriptorOpenMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// CouchdbHttpdBulkRequestsMetricConfig provides config for the couchdb.httpd.bulk_requests metric.
+type CouchdbHttpdBulkRequestsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *CouchdbHttpdBulkRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// CouchdbHttpdRequestsMetricAttributeKey specifies the key of an attribute for the couchdb.httpd.requests metric.
+type CouchdbHttpdRequestsMetricAttributeKey string
+
+const (
+	CouchdbHttpdRequestsMetricAttributeKeyHTTPMethod CouchdbHttpdRequestsMetricAttributeKey = "http.method"
+)
+
+// CouchdbHttpdRequestsMetricConfig provides config for the couchdb.httpd.requests metric.
+type CouchdbHttpdRequestsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []CouchdbHttpdRequestsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *CouchdbHttpdRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *CouchdbHttpdRequestsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case CouchdbHttpdRequestsMetricAttributeKeyHTTPMethod:
+		default:
+			return fmt.Errorf("metric couchdb.httpd.requests doesn't have an attribute %v, valid attributes: [http.method]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// CouchdbHttpdResponsesMetricAttributeKey specifies the key of an attribute for the couchdb.httpd.responses metric.
+type CouchdbHttpdResponsesMetricAttributeKey string
+
+const (
+	CouchdbHttpdResponsesMetricAttributeKeyHTTPStatusCode CouchdbHttpdResponsesMetricAttributeKey = "http.status_code"
+)
+
+// CouchdbHttpdResponsesMetricConfig provides config for the couchdb.httpd.responses metric.
+type CouchdbHttpdResponsesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []CouchdbHttpdResponsesMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *CouchdbHttpdResponsesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *CouchdbHttpdResponsesMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case CouchdbHttpdResponsesMetricAttributeKeyHTTPStatusCode:
+		default:
+			return fmt.Errorf("metric couchdb.httpd.responses doesn't have an attribute %v, valid attributes: [http.status_code]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// CouchdbHttpdViewsMetricAttributeKey specifies the key of an attribute for the couchdb.httpd.views metric.
+type CouchdbHttpdViewsMetricAttributeKey string
+
+const (
+	CouchdbHttpdViewsMetricAttributeKeyView CouchdbHttpdViewsMetricAttributeKey = "view"
+)
+
+// CouchdbHttpdViewsMetricConfig provides config for the couchdb.httpd.views metric.
+type CouchdbHttpdViewsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []CouchdbHttpdViewsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *CouchdbHttpdViewsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *CouchdbHttpdViewsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case CouchdbHttpdViewsMetricAttributeKeyView:
+		default:
+			return fmt.Errorf("metric couchdb.httpd.views doesn't have an attribute %v, valid attributes: [view]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for couchdb metrics.
 type MetricsConfig struct {
-	CouchdbAverageRequestTime MetricConfig `mapstructure:"couchdb.average_request_time"`
-	CouchdbDatabaseOpen       MetricConfig `mapstructure:"couchdb.database.open"`
-	CouchdbDatabaseOperations MetricConfig `mapstructure:"couchdb.database.operations"`
-	CouchdbFileDescriptorOpen MetricConfig `mapstructure:"couchdb.file_descriptor.open"`
-	CouchdbHttpdBulkRequests  MetricConfig `mapstructure:"couchdb.httpd.bulk_requests"`
-	CouchdbHttpdRequests      MetricConfig `mapstructure:"couchdb.httpd.requests"`
-	CouchdbHttpdResponses     MetricConfig `mapstructure:"couchdb.httpd.responses"`
-	CouchdbHttpdViews         MetricConfig `mapstructure:"couchdb.httpd.views"`
+	CouchdbAverageRequestTime CouchdbAverageRequestTimeMetricConfig `mapstructure:"couchdb.average_request_time"`
+	CouchdbDatabaseOpen       CouchdbDatabaseOpenMetricConfig       `mapstructure:"couchdb.database.open"`
+	CouchdbDatabaseOperations CouchdbDatabaseOperationsMetricConfig `mapstructure:"couchdb.database.operations"`
+	CouchdbFileDescriptorOpen CouchdbFileDescriptorOpenMetricConfig `mapstructure:"couchdb.file_descriptor.open"`
+	CouchdbHttpdBulkRequests  CouchdbHttpdBulkRequestsMetricConfig  `mapstructure:"couchdb.httpd.bulk_requests"`
+	CouchdbHttpdRequests      CouchdbHttpdRequestsMetricConfig      `mapstructure:"couchdb.httpd.requests"`
+	CouchdbHttpdResponses     CouchdbHttpdResponsesMetricConfig     `mapstructure:"couchdb.httpd.responses"`
+	CouchdbHttpdViews         CouchdbHttpdViewsMetricConfig         `mapstructure:"couchdb.httpd.views"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		CouchdbAverageRequestTime: MetricConfig{
+		CouchdbAverageRequestTime: CouchdbAverageRequestTimeMetricConfig{
 			Enabled: true,
 		},
-		CouchdbDatabaseOpen: MetricConfig{
+		CouchdbDatabaseOpen: CouchdbDatabaseOpenMetricConfig{
 			Enabled: true,
 		},
-		CouchdbDatabaseOperations: MetricConfig{
+		CouchdbDatabaseOperations: CouchdbDatabaseOperationsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []CouchdbDatabaseOperationsMetricAttributeKey{CouchdbDatabaseOperationsMetricAttributeKeyOperation},
+		},
+		CouchdbFileDescriptorOpen: CouchdbFileDescriptorOpenMetricConfig{
 			Enabled: true,
 		},
-		CouchdbFileDescriptorOpen: MetricConfig{
+		CouchdbHttpdBulkRequests: CouchdbHttpdBulkRequestsMetricConfig{
 			Enabled: true,
 		},
-		CouchdbHttpdBulkRequests: MetricConfig{
-			Enabled: true,
+		CouchdbHttpdRequests: CouchdbHttpdRequestsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []CouchdbHttpdRequestsMetricAttributeKey{CouchdbHttpdRequestsMetricAttributeKeyHTTPMethod},
 		},
-		CouchdbHttpdRequests: MetricConfig{
-			Enabled: true,
+		CouchdbHttpdResponses: CouchdbHttpdResponsesMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []CouchdbHttpdResponsesMetricAttributeKey{CouchdbHttpdResponsesMetricAttributeKeyHTTPStatusCode},
 		},
-		CouchdbHttpdResponses: MetricConfig{
-			Enabled: true,
-		},
-		CouchdbHttpdViews: MetricConfig{
-			Enabled: true,
+		CouchdbHttpdViews: CouchdbHttpdViewsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []CouchdbHttpdViewsMetricAttributeKey{CouchdbHttpdViewsMetricAttributeKeyView},
 		},
 	}
 }
@@ -113,9 +375,14 @@ type MetricsBuilderConfig struct {
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }

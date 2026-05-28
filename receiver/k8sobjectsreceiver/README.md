@@ -24,10 +24,11 @@ See [example](#example) for more information.
 The following is example configuration
 
 ```yaml
-  k8sobjects:
+  k8s_objects:
     auth_type: serviceAccount
     storage: file_storage
     k8s_leader_elector: k8s_leader_elector
+    interval: 30m
     objects:
       - name: pods
         mode: pull
@@ -51,6 +52,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
   - `propagate` will propagate the error to the collector as an Error.
   - `ignore` will log and ignore the error and continue.
   - `silent` will ignore the error and continue without logging.
+- `interval`: Top level pull interval applied to all pull-mode objects that do not set their own `interval`. Falls back to `1h` when neither this field nor the per-resource `objects[*].interval` is set. Has no effect on watch-mode objects.
 - `name`: Name of the resource object to collect
 - `mode`: define in which way it collects this type of object, either "pull" or "watch".
   - `pull` mode will read all objects of this type use the list API at an interval.
@@ -58,7 +60,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `include_initial_state` (default = `false`): When set to `true` (watch-mode only) the receiver sends a one-time snapshot of the current objects before it starts processing watch events.
 - `label_selector`: select objects by label(s)
 - `field_selector`: select objects by field(s)
-- `interval`: the interval at which object is pulled, default 60 minutes. Only useful for `pull` mode.
+- `objects[*].interval`: per-resource pull interval override. When set, takes precedence over the top-level `interval`. Only applies to `pull` mode objects.
 - `exclude_watch_type`: allows excluding specific watch types. Valid values are `ADDED`, `MODIFIED`, `DELETED`, `BOOKMARK`, and `ERROR`. Only usable in `watch` mode.
 - `resource_version`: allows watching resources starting from a specific version (default = `1`). Only available for `watch` mode. If not specified, the receiver will do an initial list to get the resourceVersion before starting the watch. See [Efficient Detection of Change](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes) for details on why this is necessary.
 - `namespaces`: An array of `namespaces` to collect events from. (default = `all`)
@@ -123,7 +125,7 @@ data:
         directory: /var/lib/otelcol/storage
 
     receivers:
-      k8sobjects:
+      k8s_objects:
         auth_type: serviceAccount
         storage: file_storage
         objects:
@@ -142,7 +144,7 @@ data:
       extensions: [file_storage]
       pipelines:
         logs:
-          receivers: [k8sobjects]
+          receivers: [k8s_objects]
           exporters: [otlp_grpc]
 EOF
 ```
@@ -288,5 +290,5 @@ workflow. These tested versions represent the officially supported Kubernetes ve
 
 If receiver returns error similar to below, make sure that resource is added to `ClusterRole`.
 ```
-{"kind": "receiver", "name": "k8sobjects", "pipeline": "logs", "resource": "events.k8s.io/v1, Resource=events", "error": "unknown"}
+{"kind": "receiver", "name": "k8s_objects", "pipeline": "logs", "resource": "events.k8s.io/v1, Resource=events", "error": "unknown"}
 ```

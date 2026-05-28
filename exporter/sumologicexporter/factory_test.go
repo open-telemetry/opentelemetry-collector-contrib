@@ -29,8 +29,14 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	qConfig := exporterhelper.NewDefaultQueueConfig()
-	qConfig.Batch.GetOrInsertDefault()
-	qs := configoptional.Some(qConfig)
+	qConfig.QueueSize = 1024000
+	qConfig.Batch = configoptional.Default(exporterhelper.BatchConfig{
+		FlushTimeout: 1 * time.Second,
+		Sizer:        exporterhelper.RequestSizerTypeItems,
+		MinSize:      1024,
+		MaxSize:      2048,
+	})
+	qs := configoptional.Default(qConfig)
 	retryConfig := configretry.NewDefaultBackOffConfig()
 	retryConfig.Enabled = true
 	retryConfig.InitialInterval = 5 * time.Second

@@ -8,7 +8,7 @@ import (
 
 var PkgTranslatorZipkinDontEmitV0NetworkConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.translator.zipkin.DontEmitV0NetworkConventions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the Zipkin translator no longer emits the deprecated net.host.ip, net.peer.ip, and peer.service (semconv v1.12.0) attributes. Requires pkg.translator.zipkin.EmitV1NetworkConventions to also be enabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45041"),
 	featuregate.WithRegisterFromVersion("v0.147.0"),
@@ -16,7 +16,7 @@ var PkgTranslatorZipkinDontEmitV0NetworkConventionsFeatureGate = featuregate.Glo
 
 var PkgTranslatorZipkinEmitV1NetworkConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.translator.zipkin.EmitV1NetworkConventions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the Zipkin translator emits network.local.address and network.peer.address and service.peer.name (semconv v1.40.0) instead of the deprecated net.host.ip, net.peer.ip, and peer.service (semconv v1.12.0)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45041"),
 	featuregate.WithRegisterFromVersion("v0.147.0"),

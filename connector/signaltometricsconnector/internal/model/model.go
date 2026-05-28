@@ -10,7 +10,6 @@ import (
 	"slices"
 	"sort"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -33,7 +32,8 @@ type ExplicitHistogram[K any] struct {
 
 func (h *ExplicitHistogram[K]) fromConfig(
 	mi *config.Histogram,
-	parser ottl.Parser[K],
+	pc *ottl.ParserCollection[*ottl.ValueExpression[K]],
+	contextName string,
 ) error {
 	if mi == nil {
 		return nil
@@ -42,12 +42,12 @@ func (h *ExplicitHistogram[K]) fromConfig(
 	var err error
 	h.Buckets = mi.Buckets
 	if mi.Count != "" {
-		h.Count, err = parser.ParseValueExpression(mi.Count)
+		h.Count, err = pc.ParseValueExpressionsWithContext(contextName, ottl.NewValueExpressionsGetter([]string{mi.Count}), true)
 		if err != nil {
 			return fmt.Errorf("failed to parse count OTTL expression for explicit histogram: %w", err)
 		}
 	}
-	h.Value, err = parser.ParseValueExpression(mi.Value)
+	h.Value, err = pc.ParseValueExpressionsWithContext(contextName, ottl.NewValueExpressionsGetter([]string{mi.Value}), true)
 	if err != nil {
 		return fmt.Errorf("failed to parse value statement for explicit histogram: %w", err)
 	}
@@ -62,7 +62,8 @@ type ExponentialHistogram[K any] struct {
 
 func (h *ExponentialHistogram[K]) fromConfig(
 	mi *config.ExponentialHistogram,
-	parser ottl.Parser[K],
+	pc *ottl.ParserCollection[*ottl.ValueExpression[K]],
+	contextName string,
 ) error {
 	if mi == nil {
 		return nil
@@ -71,12 +72,12 @@ func (h *ExponentialHistogram[K]) fromConfig(
 	var err error
 	h.MaxSize = mi.MaxSize
 	if mi.Count != "" {
-		h.Count, err = parser.ParseValueExpression(mi.Count)
+		h.Count, err = pc.ParseValueExpressionsWithContext(contextName, ottl.NewValueExpressionsGetter([]string{mi.Count}), true)
 		if err != nil {
 			return fmt.Errorf("failed to parse count OTTL expression for exponential histogram: %w", err)
 		}
 	}
-	h.Value, err = parser.ParseValueExpression(mi.Value)
+	h.Value, err = pc.ParseValueExpressionsWithContext(contextName, ottl.NewValueExpressionsGetter([]string{mi.Value}), true)
 	if err != nil {
 		return fmt.Errorf("failed to parse value OTTL expression for exponential histogram: %w", err)
 	}
@@ -90,14 +91,15 @@ type Sum[K any] struct {
 
 func (s *Sum[K]) fromConfig(
 	mi *config.Sum,
-	parser ottl.Parser[K],
+	pc *ottl.ParserCollection[*ottl.ValueExpression[K]],
+	contextName string,
 ) error {
 	if mi == nil {
 		return nil
 	}
 
 	var err error
-	s.Value, err = parser.ParseValueExpression(mi.Value)
+	s.Value, err = pc.ParseValueExpressionsWithContext(contextName, ottl.NewValueExpressionsGetter([]string{mi.Value}), true)
 	if err != nil {
 		return fmt.Errorf("failed to parse value OTTL expression for sum: %w", err)
 	}
@@ -111,14 +113,15 @@ type Gauge[K any] struct {
 
 func (s *Gauge[K]) fromConfig(
 	mi *config.Gauge,
-	parser ottl.Parser[K],
+	pc *ottl.ParserCollection[*ottl.ValueExpression[K]],
+	contextName string,
 ) error {
 	if mi == nil {
 		return nil
 	}
 
 	var err error
-	s.Value, err = parser.ParseValueExpression(mi.Value)
+	s.Value, err = pc.ParseValueExpressionsWithContext(contextName, ottl.NewValueExpressionsGetter([]string{mi.Value}), true)
 	if err != nil {
 		return fmt.Errorf("failed to parse value OTTL expression for gauge: %w", err)
 	}
@@ -176,19 +179,20 @@ type MetricDef[K any] struct {
 
 func (md *MetricDef[K]) FromMetricInfo(
 	mi config.MetricInfo,
-	parser ottl.Parser[K],
-	telemetrySettings component.TelemetrySettings,
+	pc *ottl.ParserCollection[*ottl.ValueExpression[K]],
+	contextName string,
+	conditions *ottl.ConditionSequence[K],
 ) error {
 	md.Key.Name = mi.Name
 	md.Key.Unit = mi.Unit
 	md.Key.Description = mi.Description
 
 	var err error
-	md.includeResourceAttributes, err = parseAttributeEntries(mi.IncludeResourceAttributes, parser)
+	md.includeResourceAttributes, err = parseAttributeEntries(mi.IncludeResourceAttributes, pc, contextName)
 	if err != nil {
 		return fmt.Errorf("failed to parse include resource attribute config: %w", err)
 	}
-	md.attributes, err = parseAttributeEntries(mi.Attributes, parser)
+	md.attributes, err = parseAttributeEntries(mi.Attributes, pc, contextName)
 	if err != nil {
 		return fmt.Errorf("failed to parse attribute config: %w", err)
 	}
@@ -196,43 +200,32 @@ func (md *MetricDef[K]) FromMetricInfo(
 	// sorted static attribute lists for the fast path.
 	md.hasExprResAttrs, md.sortedStaticResAttrs = buildStaticAttrs(md.includeResourceAttributes)
 	md.hasExprAttrs, md.sortedStaticAttrs = buildStaticAttrs(md.attributes)
-	if len(mi.Conditions) > 0 {
-		conditions, err := parser.ParseConditions(mi.Conditions)
-		if err != nil {
-			return fmt.Errorf("failed to parse OTTL conditions: %w", err)
-		}
-		condSeq := ottl.NewConditionSequence(
-			conditions,
-			telemetrySettings,
-			ottl.WithLogicOperation[K](ottl.Or),
-		)
-		md.Conditions = &condSeq
-	}
+	md.Conditions = conditions
 	if mi.Histogram.HasValue() {
 		md.Key.Type = pmetric.MetricTypeHistogram
 		md.ExplicitHistogram = new(ExplicitHistogram[K])
-		if err := md.ExplicitHistogram.fromConfig(mi.Histogram.Get(), parser); err != nil {
+		if err := md.ExplicitHistogram.fromConfig(mi.Histogram.Get(), pc, contextName); err != nil {
 			return fmt.Errorf("failed to parse histogram config: %w", err)
 		}
 	}
 	if mi.ExponentialHistogram.HasValue() {
 		md.Key.Type = pmetric.MetricTypeExponentialHistogram
 		md.ExponentialHistogram = new(ExponentialHistogram[K])
-		if err := md.ExponentialHistogram.fromConfig(mi.ExponentialHistogram.Get(), parser); err != nil {
+		if err := md.ExponentialHistogram.fromConfig(mi.ExponentialHistogram.Get(), pc, contextName); err != nil {
 			return fmt.Errorf("failed to parse histogram config: %w", err)
 		}
 	}
 	if mi.Sum.HasValue() {
 		md.Key.Type = pmetric.MetricTypeSum
 		md.Sum = new(Sum[K])
-		if err := md.Sum.fromConfig(mi.Sum.Get(), parser); err != nil {
+		if err := md.Sum.fromConfig(mi.Sum.Get(), pc, contextName); err != nil {
 			return fmt.Errorf("failed to parse sum config: %w", err)
 		}
 	}
 	if mi.Gauge.HasValue() {
 		md.Key.Type = pmetric.MetricTypeGauge
 		md.Gauge = new(Gauge[K])
-		if err := md.Gauge.fromConfig(mi.Gauge.Get(), parser); err != nil {
+		if err := md.Gauge.fromConfig(mi.Gauge.Get(), pc, contextName); err != nil {
 			return fmt.Errorf("failed to parse gauge config: %w", err)
 		}
 	}
@@ -417,7 +410,8 @@ func buildStaticAttrs[K any](entries []attributeEntry[K]) (bool, []AttributeKeyV
 
 func parseAttributeEntries[K any](
 	cfgs []config.Attribute,
-	parser ottl.Parser[K],
+	pc *ottl.ParserCollection[*ottl.ValueExpression[K]],
+	contextName string,
 ) ([]attributeEntry[K], error) {
 	var errs []error
 	entries := make([]attributeEntry[K], 0, len(cfgs))
@@ -432,7 +426,7 @@ func parseAttributeEntries[K any](
 			DefaultValue: val,
 		}
 		if attr.KeysExpression != "" {
-			expr, err := parser.ParseValueExpression(attr.KeysExpression)
+			expr, err := pc.ParseValueExpressionsWithContext(contextName, ottl.NewValueExpressionsGetter([]string{attr.KeysExpression}), true)
 			if err != nil {
 				errs = append(errs, fmt.Errorf(
 					"failed to parse keys_expression %q: %w", attr.KeysExpression, err,

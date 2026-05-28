@@ -68,7 +68,7 @@ func (c *Config) Validate() error {
 		if name == "" {
 			return errors.New("spans: metric name missing")
 		}
-		if _, err := filterottl.NewBoolExprForSpan(info.Conditions, filterottl.StandardSpanFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
+		if _, err := filterottl.NewBoolExprForSpanWithPathContextNames(info.Conditions, filterottl.StandardSpanFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
 			return fmt.Errorf("spans condition: metric %q: %w", name, err)
 		}
 		if err := info.validateAttributes(); err != nil {
@@ -79,7 +79,7 @@ func (c *Config) Validate() error {
 		if name == "" {
 			return errors.New("spanevents: metric name missing")
 		}
-		if _, err := filterottl.NewBoolExprForSpanEvent(info.Conditions, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
+		if _, err := filterottl.NewBoolExprForSpanEventWithPathContextNames(info.Conditions, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
 			return fmt.Errorf("spanevents condition: metric %q: %w", name, err)
 		}
 		if err := info.validateAttributes(); err != nil {
@@ -90,7 +90,7 @@ func (c *Config) Validate() error {
 		if name == "" {
 			return errors.New("metrics: metric name missing")
 		}
-		if _, err := filterottl.NewBoolExprForMetric(info.Conditions, filterottl.StandardMetricFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
+		if _, err := filterottl.NewBoolExprForMetricWithPathContextNames(info.Conditions, filterottl.StandardMetricFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
 			return fmt.Errorf("metrics condition: metric %q: %w", name, err)
 		}
 		if len(info.Attributes) > 0 {
@@ -102,7 +102,7 @@ func (c *Config) Validate() error {
 		if name == "" {
 			return errors.New("datapoints: metric name missing")
 		}
-		if _, err := filterottl.NewBoolExprForDataPoint(info.Conditions, filterottl.StandardDataPointFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
+		if _, err := filterottl.NewBoolExprForDataPointWithPathContextNames(info.Conditions, filterottl.StandardDataPointFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
 			return fmt.Errorf("datapoints condition: metric %q: %w", name, err)
 		}
 		if err := info.validateAttributes(); err != nil {
@@ -113,7 +113,7 @@ func (c *Config) Validate() error {
 		if name == "" {
 			return errors.New("logs: metric name missing")
 		}
-		if _, err := filterottl.NewBoolExprForLog(info.Conditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
+		if _, err := filterottl.NewBoolExprForLogWithPathContextNames(info.Conditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
 			return fmt.Errorf("logs condition: metric %q: %w", name, err)
 		}
 		if err := info.validateAttributes(); err != nil {
@@ -124,7 +124,7 @@ func (c *Config) Validate() error {
 		if name == "" {
 			return errors.New("profiles: metric name missing")
 		}
-		if _, err := filterottl.NewBoolExprForProfile(info.Conditions, filterottl.StandardProfileFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
+		if _, err := filterottl.NewBoolExprForProfileWithPathContextNames(info.Conditions, filterottl.StandardProfileFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
 			return fmt.Errorf("profiles condition: metric %q: %w", name, err)
 		}
 		if err := info.validateAttributes(); err != nil {
