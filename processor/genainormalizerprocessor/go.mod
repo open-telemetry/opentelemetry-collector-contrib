@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/genai
 go 1.25.0
 
 require (
-	github.com/Arize-ai/openinference/go/openinference-semantic-conventions v0.1.0
+	github.com/Arize-ai/openinference/go/openinference-semantic-conventions v0.1.1
 	github.com/stretchr/testify v1.11.1
 	github.com/traceloop/go-openllmetry/semconv-ai v0.0.0-20260117121325-ee5a5c89c1f5
 	go.opentelemetry.io/collector/component v1.59.0
