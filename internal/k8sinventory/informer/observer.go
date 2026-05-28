@@ -78,22 +78,18 @@ func New(
 }
 
 // Start starts all informers and blocks until their caches are warm.
-// All factories are started before any WaitForCacheSync call so list goroutines
-// run in parallel. factory.Start is safe across shared factories; HasSynced is
-// sticky so a sibling observer's stopCh closing does not affect sync state.
+// ctx is shared across all observers in the receiver, so all factories stop together.
 func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) chan struct{} {
-	stopCh := make(chan struct{})
-
 	o.logger.Info("starting informer and waiting for cache sync",
 		zap.String("gvr", o.config.Gvr.String()),
 		zap.String("mode", string(o.config.Mode)))
 
 	for _, factory := range o.factories {
-		factory.Start(stopCh)
+		factory.Start(ctx.Done())
 	}
 
 	for _, factory := range o.factories {
-		syncResult := factory.WaitForCacheSync(stopCh)
+		syncResult := factory.WaitForCacheSync(ctx.Done())
 		for gvr, synced := range syncResult {
 			if !synced {
 				o.logger.Error("informer cache failed to sync", zap.String("gvr", gvr.String()))
@@ -105,6 +101,7 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) chan struct{} 
 		zap.String("gvr", o.config.Gvr.String()),
 		zap.String("mode", string(o.config.Mode)))
 
+	stopCh := make(chan struct{})
 	if o.config.Mode == k8sinventory.PullMode {
 		for _, inf := range o.infs {
 			wg.Add(1)
