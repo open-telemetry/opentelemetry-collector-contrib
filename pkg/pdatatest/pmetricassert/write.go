@@ -13,13 +13,20 @@ type writeOptions struct {
 	includeValues bool
 }
 
-type WriteOption func(*writeOptions)
+// WriteOption configures the snapshot generation.
+type WriteOption interface {
+	apply(*writeOptions)
+}
 
-// IncludeValues is a WriteOption that includes numeric values like count, sum, min, max, explicit bounds, and bucket counts in the assertion file.
+type includeValuesOption struct{}
+
+func (includeValuesOption) apply(o *writeOptions) { o.includeValues = true }
+
+// IncludeValues opts into asserting the exact values of number datapoints
+// (gauge and sum metrics). When enabled, generated snapshots will include
+// the 'value' field.
 func IncludeValues() WriteOption {
-	return func(o *writeOptions) {
-		o.includeValues = true
-	}
+	return includeValuesOption{}
 }
 
 // WriteAssertionFile regenerates the default-strict assertion snapshot at path
@@ -32,13 +39,15 @@ func IncludeValues() WriteOption {
 // omitted.
 func WriteAssertionFile(tb testing.TB, path string, actual pmetric.Metrics, opts ...WriteOption) error {
 	tb.Helper()
-	var cfg writeOptions
+	var o writeOptions
 	for _, opt := range opts {
-		opt(&cfg)
+		opt.apply(&o)
 	}
-
-	doc := normalize(actual)
-	if !cfg.includeValues {
+	doc, err := normalize(actual, o)
+	if err != nil {
+		return err
+	}
+	if !o.includeValues {
 		maskValues(doc)
 	}
 	return writeDocument(path, doc)
@@ -51,6 +60,7 @@ func maskValues(doc *document) {
 				m := &doc.Resources[i].Scopes[j].Metrics[k]
 				for l := range m.Datapoints {
 					dp := &m.Datapoints[l]
+					dp.Value = nil
 					dp.Count = nil
 					dp.Sum = nil
 					dp.ExplicitBounds = nil

@@ -42,7 +42,7 @@ components:
         - honeycomb_marker
         - influxdb
         - kafka
-        - loadbalancing
+        - load_balancing
         - logicmonitor
         - logzio
         - mezmo
@@ -137,7 +137,7 @@ components:
         - active_directory_ds
         - aerospike
         - apache
-        - apachespark
+        - apache_spark
         - aws_lambda
         - awscloudwatch
         - awscontainerinsightreceiver

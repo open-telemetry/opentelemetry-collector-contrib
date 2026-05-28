@@ -5,6 +5,7 @@ package pmetricassert // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -17,7 +18,7 @@ import (
 // (by name+version) and metrics (by name) so that batch boundaries do not
 // influence the assertion. Datapoints are folded into a set keyed by their
 // attribute values; duplicate logical MTS entries collapse to one.
-func normalize(m pmetric.Metrics) *document {
+func normalize(m pmetric.Metrics, opts writeOptions) (*document, error) {
 	type dpKey struct {
 		attrs string
 	}
@@ -73,12 +74,38 @@ func normalize(m pmetric.Metrics) *document {
 					}
 					sAgg.metrics[metric.Name()] = mAgg
 				}
-				for _, da := range extractDatapoints(metric) {
-					key := dpKey{attrs: canonKey(da.Attributes)}
+				for _, extDP := range extractDatapoints(metric) {
+					raw := attrMapToRaw(extDP.attributes)
+					key := dpKey{attrs: canonKey(raw)}
 					if _, dup := mAgg.datapoints[key]; dup {
+						if opts.includeValues {
+							return nil, fmt.Errorf("duplicate datapoint for metric %q with attributes %s", metric.Name(), key.attrs)
+						}
 						continue
 					}
-					mAgg.datapoints[key] = da
+					dp := datapointAssertion{Attributes: raw}
+					if opts.includeValues && extDP.value != nil {
+						dp.Value = extDP.value
+					}
+					if extDP.count != nil {
+						dp.Count = extDP.count
+					}
+					if extDP.sum != nil {
+						dp.Sum = extDP.sum
+					}
+					if extDP.minVal != nil {
+						dp.Min = extDP.minVal
+					}
+					if extDP.maxVal != nil {
+						dp.Max = extDP.maxVal
+					}
+					if extDP.explicitBounds != nil {
+						dp.ExplicitBounds = extDP.explicitBounds
+					}
+					if extDP.bucketCounts != nil {
+						dp.BucketCounts = extDP.bucketCounts
+					}
+					mAgg.datapoints[key] = dp
 				}
 			}
 		}
@@ -126,7 +153,7 @@ func normalize(m pmetric.Metrics) *document {
 		}
 		doc.Resources = append(doc.Resources, res)
 	}
-	return doc
+	return doc, nil
 }
 
 func buildMetricAssertion(metric pmetric.Metric) metricAssertion {
@@ -177,60 +204,84 @@ func temporalityString(t pmetric.AggregationTemporality) string {
 	}
 }
 
-func extractDatapoints(metric pmetric.Metric) []datapointAssertion {
-	var out []datapointAssertion
+type extractedDatapoint struct {
+	attributes     pcommon.Map
+	value          any
+	count          *uint64
+	sum            *float64
+	minVal         *float64
+	maxVal         *float64
+	explicitBounds []float64
+	bucketCounts   []uint64
+}
+
+func extractDatapoints(metric pmetric.Metric) []extractedDatapoint {
+	var out []extractedDatapoint
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		dps := metric.Gauge().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			out = append(out, datapointAssertion{Attributes: attrMapToRaw(dps.At(i).Attributes())})
+			dp := dps.At(i)
+			out = append(out, extractedDatapoint{attributes: dp.Attributes(), value: getDatapointValue(dp)})
 		}
 	case pmetric.MetricTypeSum:
 		dps := metric.Sum().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			out = append(out, datapointAssertion{Attributes: attrMapToRaw(dps.At(i).Attributes())})
+			dp := dps.At(i)
+			out = append(out, extractedDatapoint{attributes: dp.Attributes(), value: getDatapointValue(dp)})
 		}
 	case pmetric.MetricTypeHistogram:
 		dps := metric.Histogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			dp := dps.At(i)
-			da := datapointAssertion{
-				Attributes: attrMapToRaw(dp.Attributes()),
+			edp := extractedDatapoint{
+				attributes: dp.Attributes(),
 			}
 			count := dp.Count()
-			da.Count = &count
+			edp.count = &count
 			if dp.HasSum() {
-				sum := dp.Sum()
-				da.Sum = &sum
+				sumVal := dp.Sum()
+				edp.sum = &sumVal
 			}
 			if dp.HasMin() {
 				minVal := dp.Min()
-				da.Min = &minVal
+				edp.minVal = &minVal
 			}
 			if dp.HasMax() {
 				maxVal := dp.Max()
-				da.Max = &maxVal
+				edp.maxVal = &maxVal
 			}
 			if dp.ExplicitBounds().Len() > 0 {
-				da.ExplicitBounds = dp.ExplicitBounds().AsRaw()
+				edp.explicitBounds = dp.ExplicitBounds().AsRaw()
 			}
 			if dp.BucketCounts().Len() > 0 {
-				da.BucketCounts = dp.BucketCounts().AsRaw()
+				edp.bucketCounts = dp.BucketCounts().AsRaw()
 			}
-			out = append(out, da)
+			out = append(out, edp)
 		}
 	case pmetric.MetricTypeExponentialHistogram:
 		dps := metric.ExponentialHistogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			out = append(out, datapointAssertion{Attributes: attrMapToRaw(dps.At(i).Attributes())})
+			out = append(out, extractedDatapoint{attributes: dps.At(i).Attributes()})
 		}
 	case pmetric.MetricTypeSummary:
 		dps := metric.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			out = append(out, datapointAssertion{Attributes: attrMapToRaw(dps.At(i).Attributes())})
+			out = append(out, extractedDatapoint{attributes: dps.At(i).Attributes()})
 		}
 	}
 	return out
+}
+
+func getDatapointValue(dp pmetric.NumberDataPoint) any {
+	switch dp.ValueType() {
+	case pmetric.NumberDataPointValueTypeInt:
+		return dp.IntValue()
+	case pmetric.NumberDataPointValueTypeDouble:
+		return dp.DoubleValue()
+	default:
+		return nil
+	}
 }
 
 func attrMapToRaw(m pcommon.Map) map[string]any {
