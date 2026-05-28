@@ -37,12 +37,15 @@ Example:
 
 ```yaml
 receivers:
-  otlpjsonfile:
+  otlp_json_file:
     include:
       - "/var/log/*.log"
     exclude:
       - "/var/log/example.log"
 ```
+
+> [!NOTE]
+> The deprecated component type `otlpjsonfile` (without the underscores) can still be used as an alias and will log a deprecation warning.
 
 ## Configuration
 
@@ -123,7 +126,7 @@ When log files are rotated using the `copytruncate` strategy (where the file is 
 
 ```yaml
 receivers:
-  otlpjsonfile:
+  otlp_json_file:
     include:
       - /var/log/otlp/*.json
     on_truncate: read_whole_file  # Read entire file after copytruncate rotation
