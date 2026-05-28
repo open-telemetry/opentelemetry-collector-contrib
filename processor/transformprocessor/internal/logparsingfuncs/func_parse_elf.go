@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -21,7 +22,7 @@ type parseELFArguments struct {
 
 // NewParseELFFactory returns an OTTL factory for the parse_elf function.
 func NewParseELFFactory() ottl.Factory[*ottllog.TransformContext] {
-	return ottl.NewFactory("parse_elf", &parseELFArguments{}, createParseELFFunction)
+	return ottl.NewFactory("ParseELF", &parseELFArguments{}, createParseELFFunction)
 }
 
 func createParseELFFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottllog.TransformContext], error) {
@@ -152,32 +153,45 @@ func parseELFDirective(line string) (string, string, error) {
 
 // parseELFDataLine splits a single ELF data line into tokens, honouring double-quoted
 // strings as used by real-world ELF producers (e.g. Microsoft IIS).
+// Whitespace (space or tab) separates tokens; embedded double-quotes inside a quoted
+// string are represented by "" per the W3C ELF spec §2.
 func parseELFDataLine(line string) []string {
+	runes := []rune(line)
 	var values []string
-	i, n := 0, len(line)
+	i, n := 0, len(runes)
 	for i < n {
-		for i < n && line[i] == ' ' {
+		// skip leading whitespace
+		for i < n && unicode.IsSpace(runes[i]) {
 			i++
 		}
 		if i >= n {
 			break
 		}
-		if line[i] == '"' {
-			i++
-			start := i
-			for i < n && line[i] != '"' {
-				i++
+		if runes[i] == '"' {
+			i++ // skip opening '"'
+			var sb strings.Builder
+			for i < n {
+				if runes[i] == '"' {
+					if i+1 < n && runes[i+1] == '"' {
+						// escaped double-quote: "" → "
+						sb.WriteRune('"')
+						i += 2
+					} else {
+						i++ // skip closing '"'
+						break
+					}
+				} else {
+					sb.WriteRune(runes[i])
+					i++
+				}
 			}
-			values = append(values, line[start:i])
-			if i < n {
-				i++ // skip closing '"'
-			}
+			values = append(values, sb.String())
 		} else {
 			start := i
-			for i < n && line[i] != ' ' {
+			for i < n && !unicode.IsSpace(runes[i]) {
 				i++
 			}
-			values = append(values, line[start:i])
+			values = append(values, string(runes[start:i]))
 		}
 	}
 	return values

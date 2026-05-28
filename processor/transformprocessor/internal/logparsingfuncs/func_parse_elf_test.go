@@ -276,6 +276,21 @@ func Test_parseELFDataLine(t *testing.T) {
 			input:    "",
 			expected: nil,
 		},
+		{
+			name:     "doubled double-quote escape inside quoted value",
+			input:    `GET /page.html "He said ""hi"" today"`,
+			expected: []string{"GET", "/page.html", `He said "hi" today`},
+		},
+		{
+			name:     "tab-separated tokens",
+			input:    "GET\t/foo.html\t200",
+			expected: []string{"GET", "/foo.html", "200"},
+		},
+		{
+			name:     "mixed tab and space separation",
+			input:    "GET /foo.html\t200",
+			expected: []string{"GET", "/foo.html", "200"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -334,5 +349,5 @@ func Test_parseELFDirective(t *testing.T) {
 
 func Test_NewParseELFFactory(t *testing.T) {
 	factory := NewParseELFFactory()
-	assert.Equal(t, "parse_elf", string(factory.Name()))
+	assert.Equal(t, "ParseELF", string(factory.Name()))
 }
