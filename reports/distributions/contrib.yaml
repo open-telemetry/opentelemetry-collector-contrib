@@ -42,14 +42,14 @@ components:
         - honeycomb_marker
         - influxdb
         - kafka
-        - loadbalancing
+        - load_balancing
         - logicmonitor
         - logzio
         - mezmo
         - opensearch
         - otelarrow
         - prometheus
-        - prometheusremotewrite
+        - prometheus_remote_write
         - pulsar
         - rabbitmq
         - sentry
@@ -120,7 +120,7 @@ components:
         - redaction
         - remotetap
         - resource
-        - resourcedetection
+        - resource_detection
         - schema
         - span
         - spanpruning
@@ -137,7 +137,7 @@ components:
         - active_directory_ds
         - aerospike
         - apache
-        - apachespark
+        - apache_spark
         - aws_lambda
         - awscloudwatch
         - awscontainerinsightreceiver
@@ -198,7 +198,7 @@ components:
         - ntp
         - oracledb
         - otelarrow
-        - otlpjsonfile
+        - otlp_json_file
         - podman_stats
         - postgresql
         - pprof
