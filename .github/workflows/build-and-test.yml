@@ -486,10 +486,10 @@ jobs:
         include:
           - os: linux
             arch: amd64
-            runner: cncf-ubuntu-4-16-x86
+            runner: cncf-ubuntu-8-32-x86
           - os: linux
             arch: arm64
-            runner: cncf-ubuntu-4-16-arm
+            runner: cncf-ubuntu-8-32-arm
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
