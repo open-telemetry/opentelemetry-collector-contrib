@@ -50,6 +50,7 @@ components:
     - exporter/faro
     - exporter/file
     - exporter/google_cloud_storage
+    - exporter/google_secops
     - exporter/googlecloud
     - exporter/googlecloudpubsub
     - exporter/googlemanagedprometheus
