@@ -469,7 +469,33 @@ jobs:
         run: make build-examples
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
+  cross-compile-pr:
+    if: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+    runs-on: ${{ matrix.runner }}
+    needs: [setup-environment]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+            runner: cncf-ubuntu-4-16-x86
+          - os: linux
+            arch: arm64
+            runner: cncf-ubuntu-4-16-arm
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - name: Generate collector files
+        run: make genotelcontribcol
+      - name: Build Collector ${{ matrix.os }} ${{ matrix.arch }}
+        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} otelcontribcollite
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
   cross-compile:
+    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci:full') }}
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     strategy:
@@ -478,44 +504,44 @@ jobs:
         include:
           - os: darwin
             arch: amd64
-            runner: ubuntu-24.04
+            runner: cncf-ubuntu-4-16-x86
           - os: darwin
             arch: arm64
-            runner: ubuntu-24.04
+            runner: cncf-ubuntu-4-16-x86
           - os: linux
             arch: "386"
-            runner: ubuntu-24.04
+            runner: cncf-ubuntu-4-16-x86
           - os: linux
             arch: amd64
-            runner: ubuntu-24.04
+            runner: cncf-ubuntu-4-16-x86
           - os: linux
             arch: arm
             arm: 7
-            runner: ubuntu-24.04
+            runner: cncf-ubuntu-4-16-x86
           - os: linux
             arch: arm64
-            runner: ubuntu-24.04-arm
+            runner: cncf-ubuntu-4-16-arm
           - os: linux
             arch: ppc64le
-            runner: ubuntu-24.04
+            runner: cncf-ubuntu-4-16-x86
           - os: linux
             arch: riscv64
-            runner: ubuntu-24.04
+            runner: cncf-ubuntu-4-16-x86
           - os: linux
             arch: s390x
-            runner: ubuntu-24.04
+            runner: cncf-ubuntu-4-16-x86
           - os: windows
             arch: "386"
-            runner: ubuntu-24.04
+            runner: cncf-ubuntu-4-16-x86
           - os: windows
             arch: amd64
-            runner: ubuntu-24.04
+            runner: cncf-ubuntu-4-16-x86
           - os: windows
             arch: arm64
-            runner: ubuntu-24.04
+            runner: cncf-ubuntu-4-16-x86
           - os: aix
             arch: ppc64
-            runner: ubuntu-24.04
+            runner: cncf-ubuntu-4-16-x86
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
@@ -533,6 +559,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   publish-check:
+    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci:full') }}
     runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests, cross-compile]
     steps:
