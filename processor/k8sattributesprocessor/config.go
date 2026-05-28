@@ -52,6 +52,9 @@ type Config struct {
 	// Reprocessing the informer cache periodically can cause significant memory churn and CPU spikes.
 	// Setting this to 0 disables resync.
 	WatchSyncPeriod time.Duration `mapstructure:"watch_sync_period"`
+
+	// PodDeleteGracePeriod is the duration to wait before deleting a pod from the cache after receiving a delete event.
+	PodDeleteGracePeriod time.Duration `mapstructure:"pod_delete_grace_period"`
 }
 
 func (cfg *Config) Validate() error {
@@ -61,6 +64,9 @@ func (cfg *Config) Validate() error {
 
 	if cfg.WatchSyncPeriod < 0 {
 		return errors.New("watch_sync_period must be greater than or equal to 0")
+	}
+	if cfg.PodDeleteGracePeriod < 0 {
+		return errors.New("pod_delete_grace_period must be greater than or equal to 0")
 	}
 
 	for _, assoc := range cfg.Association {
@@ -156,7 +162,8 @@ type ExtractConfig struct {
 	//  - k8s.deployment.name (if the pod is controlled by a deployment)
 	//  - k8s.container.name (requires an additional attribute to be set: container.id)
 	//  - container.image.name (requires one of the following additional attributes to be set: container.id or k8s.container.name)
-	//  - container.image.tag (requires one of the following additional attributes to be set: container.id or k8s.container.name)
+	//  - container.image.tag (requires one of the following additional attributes to be set: container.id or k8s.container.name) — deprecated, use container.image.tags
+	//  - container.image.tags (requires one of the following additional attributes to be set: container.id or k8s.container.name)
 	Metadata []string `mapstructure:"metadata"`
 
 	// Annotations allows extracting data from pod annotations and record it

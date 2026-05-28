@@ -137,7 +137,7 @@ components:
         - active_directory_ds
         - aerospike
         - apache
-        - apachespark
+        - apache_spark
         - aws_lambda
         - awscloudwatch
         - awscontainerinsightreceiver
