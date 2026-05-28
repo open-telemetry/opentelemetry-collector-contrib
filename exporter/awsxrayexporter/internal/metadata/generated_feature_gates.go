@@ -10,6 +10,6 @@ var ExporterAwsxraySkiptimestampvalidationFeatureGate = featuregate.GlobalRegist
 	"exporter.awsxray.skiptimestampvalidation",
 	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Remove XRay's timestamp validation on first 32 bits of trace ID"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/26041"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48737"),
 	featuregate.WithRegisterFromVersion("v0.84.0"),
 )

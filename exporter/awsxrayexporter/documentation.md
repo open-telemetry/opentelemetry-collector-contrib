@@ -8,6 +8,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `exporter.awsxray.skiptimestampvalidation` | beta | Remove XRay's timestamp validation on first 32 bits of trace ID | v0.84.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/26041) |
+| `exporter.awsxray.skiptimestampvalidation` | beta | Remove XRay's timestamp validation on first 32 bits of trace ID | v0.84.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48737) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

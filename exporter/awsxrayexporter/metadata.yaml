@@ -14,7 +14,7 @@ feature_gates:
     description: "Remove XRay's timestamp validation on first 32 bits of trace ID"
     stage: beta
     from_version: v0.84.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/26041
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48737
 
 tests:
   config:
