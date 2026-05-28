@@ -509,23 +509,20 @@ func addTargetAttributes(metrics pmetric.Metrics, targets []*targetConfig) {
 		return
 	}
 
-	annotate := func(dps pmetric.NumberDataPointSlice) {
-		for i := 0; i < dps.Len(); i++ {
-			dp := dps.At(i)
-			url, ok := dp.Attributes().Get("http.url")
-			if !ok {
+	annotate := func(attrs pcommon.Map) {
+		url, ok := attrs.Get("http.url")
+		if !ok {
+			return
+		}
+		attributes, ok := endpointAttributes[url.Str()]
+		if !ok {
+			return
+		}
+		for key, value := range attributes {
+			if _, exists := attrs.Get(key); exists {
 				continue
 			}
-			attributes, ok := endpointAttributes[url.Str()]
-			if !ok {
-				continue
-			}
-			for key, value := range attributes {
-				if _, exists := dp.Attributes().Get(key); exists {
-					continue
-				}
-				dp.Attributes().PutStr(key, value)
-			}
+			attrs.PutStr(key, value)
 		}
 	}
 
@@ -538,9 +535,30 @@ func addTargetAttributes(metrics pmetric.Metrics, targets []*targetConfig) {
 				m := ms.At(k)
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
-					annotate(m.Gauge().DataPoints())
+					dps := m.Gauge().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						annotate(dps.At(l).Attributes())
+					}
 				case pmetric.MetricTypeSum:
-					annotate(m.Sum().DataPoints())
+					dps := m.Sum().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						annotate(dps.At(l).Attributes())
+					}
+				case pmetric.MetricTypeHistogram:
+					dps := m.Histogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						annotate(dps.At(l).Attributes())
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					dps := m.ExponentialHistogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						annotate(dps.At(l).Attributes())
+					}
+				case pmetric.MetricTypeSummary:
+					dps := m.Summary().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						annotate(dps.At(l).Attributes())
+					}
 				}
 			}
 		}

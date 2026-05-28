@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -1100,6 +1101,68 @@ func TestScraperTargetAttributes(t *testing.T) {
 		}
 	}
 	assert.Positive(t, dataPointsChecked)
+}
+
+// TestAddTargetAttributesAllMetricTypes verifies that addTargetAttributes
+// annotates data points of every metric type, not just the gauge and sum
+// metrics the receiver emits today.
+func TestAddTargetAttributesAllMetricTypes(t *testing.T) {
+	const endpoint = "https://example.com/health"
+
+	targets := []*targetConfig{
+		{
+			ClientConfig: confighttp.ClientConfig{Endpoint: endpoint},
+			Attributes:   map[string]string{"environment": "production"},
+		},
+	}
+
+	metrics := pmetric.NewMetrics()
+	sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+
+	gauge := sm.Metrics().AppendEmpty()
+	gauge.SetName("gauge")
+	gauge.SetEmptyGauge().DataPoints().AppendEmpty().Attributes().PutStr("http.url", endpoint)
+
+	sum := sm.Metrics().AppendEmpty()
+	sum.SetName("sum")
+	sum.SetEmptySum().DataPoints().AppendEmpty().Attributes().PutStr("http.url", endpoint)
+
+	histogram := sm.Metrics().AppendEmpty()
+	histogram.SetName("histogram")
+	histogram.SetEmptyHistogram().DataPoints().AppendEmpty().Attributes().PutStr("http.url", endpoint)
+
+	expHistogram := sm.Metrics().AppendEmpty()
+	expHistogram.SetName("exponential_histogram")
+	expHistogram.SetEmptyExponentialHistogram().DataPoints().AppendEmpty().Attributes().PutStr("http.url", endpoint)
+
+	summary := sm.Metrics().AppendEmpty()
+	summary.SetName("summary")
+	summary.SetEmptySummary().DataPoints().AppendEmpty().Attributes().PutStr("http.url", endpoint)
+
+	addTargetAttributes(metrics, targets)
+
+	assertAnnotated := func(name string, attrs pcommon.Map) {
+		env, ok := attrs.Get("environment")
+		require.True(t, ok, "metric %s data point missing annotated attribute", name)
+		assert.Equal(t, "production", env.Str())
+	}
+
+	ms := sm.Metrics()
+	for k := 0; k < ms.Len(); k++ {
+		m := ms.At(k)
+		switch m.Type() {
+		case pmetric.MetricTypeGauge:
+			assertAnnotated(m.Name(), m.Gauge().DataPoints().At(0).Attributes())
+		case pmetric.MetricTypeSum:
+			assertAnnotated(m.Name(), m.Sum().DataPoints().At(0).Attributes())
+		case pmetric.MetricTypeHistogram:
+			assertAnnotated(m.Name(), m.Histogram().DataPoints().At(0).Attributes())
+		case pmetric.MetricTypeExponentialHistogram:
+			assertAnnotated(m.Name(), m.ExponentialHistogram().DataPoints().At(0).Attributes())
+		case pmetric.MetricTypeSummary:
+			assertAnnotated(m.Name(), m.Summary().DataPoints().At(0).Attributes())
+		}
+	}
 }
 
 func TestScraperTargetAttributesDoNotOverrideReceiverAttributes(t *testing.T) {
