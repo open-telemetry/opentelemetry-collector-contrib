@@ -150,6 +150,8 @@ Validation rules:
 
 User-defined mappings landing on typed `gen_ai.*` targets get the same int/float/string/bool/`[]string` coercion as built-in mappings (see [Type handling](#type-handling)). User-defined mappings landing on non-`gen_ai.*` targets pass through verbatim.
 
+**Future built-in sources.** New built-in source names may be added in future releases. This is not treated as a breaking change. To avoid collisions, namespace user-defined names with a vendor or company prefix (e.g. `custom.anthropic`, `acme.internal`).
+
 ## Built-in mappings
 
 ### `openinference`
