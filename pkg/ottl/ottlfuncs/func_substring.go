@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"unicode/utf8"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -57,14 +58,6 @@ func substring[K any](
 		if err != nil {
 			return nil, err
 		}
-
-		if useUTF8Safe {
-			out, err := substringRunes(val, start, length)
-			if err != nil {
-				return nil, err
-			}
-			return out, nil
-		}
 		if start > int64(len(val)) || length > int64(len(val))-start {
 			return nil, fmt.Errorf(
 				"invalid range for substring function, start(%d)+length(%d) cannot be greater than the length of target string(%d)",
@@ -73,53 +66,19 @@ func substring[K any](
 				len(val),
 			)
 		}
-		return val[start : start+length], nil
-	}
-}
-
-func substringRunes(val string, start, length int64) (string, error) {
-	end := start + length
-	// runes ≤ bytes in UTF-8; short-circuit when end exceeds byte length.
-	if end > int64(len(val)) {
-		return "", fmt.Errorf(
-			"invalid range for substring function, start(%d)+length(%d) exceeds byte length(%d) of target string",
-			start,
-			length,
-			len(val),
-		)
-	}
-	// ASCII fast path; on miss the fallback re-reads bytes still in L1.
-	if isASCII(val[:end]) {
-		return val[start:end], nil
-	}
-
-	var byteStart int
-	var runes int64
-	for i := range val {
-		if runes == start {
-			byteStart = i
+		byteStart := int(start)
+		byteEnd := int(start + length)
+		if useUTF8Safe {
+			for byteStart < len(val) && !utf8.RuneStart(val[byteStart]) {
+				byteStart++
+			}
+			for byteEnd < len(val) && !utf8.RuneStart(val[byteEnd]) {
+				byteEnd--
+			}
+			if byteEnd < byteStart {
+				byteEnd = byteStart
+			}
 		}
-		if runes == end {
-			return val[byteStart:i], nil
-		}
-		runes++
+		return val[byteStart:byteEnd], nil
 	}
-	if runes == end {
-		return val[byteStart:], nil
-	}
-	return "", fmt.Errorf(
-		"invalid range for substring function, start(%d)+length(%d) cannot be greater than the rune length of target string(%d)",
-		start,
-		length,
-		runes,
-	)
-}
-
-func isASCII(s string) bool {
-	for i := range len(s) {
-		if s[i] >= 0x80 {
-			return false
-		}
-	}
-	return true
 }

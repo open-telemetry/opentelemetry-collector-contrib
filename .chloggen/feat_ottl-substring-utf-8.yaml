@@ -7,7 +7,7 @@ change_type: "enhancement"
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `utf8_safe` optional parameter to `Substring` function for UTF-8 aware slicing on rune boundaries.
+note: "`Substring` function now supports UTF-8 safe slicing"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48436]
@@ -15,7 +15,11 @@ issues: [48436]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Default is `false` to preserve backward compatibility.
+subtext: |
+  New optional parameter `utf8_safe` (default: `false`). Set to `true` to adjust slice
+  boundaries so multi-byte UTF-8 characters are never cut in the middle; the result
+  may then be shorter than `length` bytes. Default preserves the existing byte-level
+  slicing behavior.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

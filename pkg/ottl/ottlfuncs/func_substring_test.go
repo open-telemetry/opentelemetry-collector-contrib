@@ -60,33 +60,21 @@ func Test_substring(t *testing.T) {
 			},
 			expected: "123456789",
 		},
-		{
-			name: "default byte mode splits multibyte rune",
-			target: &ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
-					return "一二三", nil
-				},
-			},
-			start: &ottl.StandardIntGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
-					return int64(0), nil
-				},
-			},
-			length: &ottl.StandardIntGetter[any]{
-				Getter: func(context.Context, any) (any, error) {
-					return int64(1), nil
-				},
-			},
-			expected: "\xe4",
-		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := substring(tt.target, tt.start, tt.length, ottl.Optional[bool]{})
-			result, err := exprFunc(nil, nil)
-			require.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
-		})
+		t.Run(
+			tt.name, func(t *testing.T) {
+				exprFunc := substring(
+					tt.target,
+					tt.start,
+					tt.length,
+					ottl.Optional[bool]{},
+				)
+				result, err := exprFunc(nil, nil)
+				require.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			},
+		)
 	}
 }
 
@@ -135,12 +123,19 @@ func Test_substring_validation(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := substring(tt.target, tt.start, tt.length, ottl.Optional[bool]{})
-			result, err := exprFunc(nil, nil)
-			assert.Error(t, err)
-			assert.Nil(t, result)
-		})
+		t.Run(
+			tt.name, func(t *testing.T) {
+				exprFunc := substring(
+					tt.target,
+					tt.start,
+					tt.length,
+					ottl.Optional[bool]{},
+				)
+				result, err := exprFunc(nil, nil)
+				assert.Error(t, err)
+				assert.Nil(t, result)
+			},
+		)
 	}
 }
 
@@ -261,12 +256,19 @@ func Test_substring_error(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := substring(tt.target, tt.start, tt.length, ottl.Optional[bool]{})
-			result, err := exprFunc(nil, nil)
-			assert.Error(t, err)
-			assert.Nil(t, result)
-		})
+		t.Run(
+			tt.name, func(t *testing.T) {
+				exprFunc := substring(
+					tt.target,
+					tt.start,
+					tt.length,
+					ottl.Optional[bool]{},
+				)
+				result, err := exprFunc(nil, nil)
+				assert.Error(t, err)
+				assert.Nil(t, result)
+			},
+		)
 	}
 }
 
@@ -287,46 +289,58 @@ func Test_substring_utf8Safe(t *testing.T) {
 		input    string
 		start    int64
 		length   int64
+		utf8Safe ottl.Optional[bool]
 		expected any
 	}{
 		{
-			name:     "CJK single rune at start",
+			name:     "end backs up to rune boundary",
 			input:    "一二三",
 			start:    0,
-			length:   1,
+			length:   4,
+			utf8Safe: ottl.NewTestingOptional(true),
 			expected: "一",
 		},
 		{
-			name:     "CJK full string by rune count",
+			name:     "start advances to rune boundary",
+			input:    "一二三",
+			start:    1,
+			length:   5,
+			utf8Safe: ottl.NewTestingOptional(true),
+			expected: "二",
+		},
+		{
+			name:     "start advances past end yields empty",
+			input:    "一二三",
+			start:    1,
+			length:   2,
+			utf8Safe: ottl.NewTestingOptional(true),
+			expected: "",
+		},
+		{
+			name:     "ascii unaffected",
+			input:    "abcdef",
+			start:    1,
+			length:   3,
+			utf8Safe: ottl.NewTestingOptional(true),
+			expected: "bcd",
+		},
+		{
+			name:     "default (utf8_safe omitted) splits multibyte rune",
 			input:    "一二三",
 			start:    0,
-			length:   3,
-			expected: "一二三",
-		},
-		{name: "CJK mid", input: "一二三", start: 1, length: 1, expected: "二"},
-		{
-			name:     "emoji multiple runes",
-			input:    "🎉🎊🎈",
-			start:    1,
-			length:   2,
-			expected: "🎊🎈",
+			length:   4,
+			utf8Safe: ottl.Optional[bool]{},
+			expected: "一\xe4",
 		},
 		{
-			name:     "ascii unchanged",
-			input:    "12345",
-			start:    1,
-			length:   3,
-			expected: "234",
-		},
-		{
-			name:     "mixed ascii and CJK",
-			input:    "ab一c",
-			start:    1,
-			length:   2,
-			expected: "b一",
+			name:     "utf8_safe=false splits multibyte rune",
+			input:    "一二三",
+			start:    0,
+			length:   1,
+			utf8Safe: ottl.NewTestingOptional(false),
+			expected: "\xe4",
 		},
 	}
-	utf8SafeOpt := ottl.NewTestingOptional(true)
 	for _, tt := range tests {
 		t.Run(
 			tt.name, func(t *testing.T) {
@@ -334,7 +348,7 @@ func Test_substring_utf8Safe(t *testing.T) {
 					target(tt.input),
 					intGetter(tt.start),
 					intGetter(tt.length),
-					utf8SafeOpt,
+					tt.utf8Safe,
 				)
 				result, err := exprFunc(nil, nil)
 				require.NoError(t, err)
@@ -346,10 +360,7 @@ func Test_substring_utf8Safe(t *testing.T) {
 
 func Test_substring_utf8Safe_error(t *testing.T) {
 	target := &ottl.StandardStringGetter[any]{
-		Getter: func(context.Context, any) (
-			any,
-			error,
-		) {
+		Getter: func(context.Context, any) (any, error) {
 			return "一二三", nil
 		},
 	}
@@ -365,9 +376,9 @@ func Test_substring_utf8Safe_error(t *testing.T) {
 		start  int64
 		length int64
 	}{
-		{name: "start past rune length", start: 4, length: 1},
-		{name: "length past rune length", start: 0, length: 4},
-		{name: "start+length past rune length", start: 2, length: 2},
+		{name: "start past byte length", start: 10, length: 1},
+		{name: "start+length past byte length", start: 0, length: 10},
+		{name: "length past remaining byte length", start: 6, length: 5},
 	}
 	for _, tt := range tests {
 		t.Run(
