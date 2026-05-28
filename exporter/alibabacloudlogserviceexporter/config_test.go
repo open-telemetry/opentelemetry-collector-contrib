@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
@@ -42,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 				Logstore:        "demo-logstore",
 				AccessKeyID:     "test-id",
 				AccessKeySecret: "test-secret",
-				SecurityToken:   "test-token",
+				SecurityToken:   configopaque.String("test-token"),
 			},
 		},
 	}

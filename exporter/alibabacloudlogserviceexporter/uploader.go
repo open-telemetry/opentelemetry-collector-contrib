@@ -62,7 +62,7 @@ func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, 
 		producerConfig.CredentialsProvider = sls.NewStaticCredentialsProvider(
 			config.AccessKeyID,
 			string(config.AccessKeySecret),
-			config.SecurityToken,
+			string(config.SecurityToken),
 		)
 	}
 
