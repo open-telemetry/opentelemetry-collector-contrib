@@ -178,7 +178,7 @@ receivers:
         include_metadata: true
 
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: https://prometheus.example.com/api/v1/write
     auth:
       # Use headers_setter as the authenticator
@@ -190,7 +190,7 @@ service:
   pipelines:
     metrics:
       receivers: [otlp]
-      exporters: [prometheusremotewrite]
+      exporters: [prometheus_remote_write]
 ```
 
 In this configuration:

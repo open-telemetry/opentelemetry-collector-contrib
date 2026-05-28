@@ -41,14 +41,14 @@ The `roundrobin` connector does not have any configuration settings.
 receivers:
   otlp:
 exporters:
-  prometheusremotewrite/1:
-  prometheusremotewrite/2:
+  prometheus_remote_write/1:
+  prometheus_remote_write/2:
 connectors:
   round_robin:
 ```
 
 Preprocess data, then export using multiple exporter instances to scale the throughput if the exporter 
-does not support scale well (e.g. prometheusremotewrite).
+does not support scale well (e.g. prometheus_remote_write).
 
 ```yaml
 receivers:
@@ -56,8 +56,8 @@ receivers:
 processors:
   resource_detection:
 exporters:
-  prometheusremotewrite/1:
-  prometheusremotewrite/2:
+  prometheus_remote_write/1:
+  prometheus_remote_write/2:
 connectors:
   round_robin:
 service:
@@ -68,10 +68,10 @@ service:
       exporters: [round_robin]
     metrics/1:
       receivers: [round_robin]
-      exporters: [prometheusremotewrite/1]
+      exporters: [prometheus_remote_write/1]
     metrics/2:
       receivers: [round_robin]
-      exporters: [prometheusremotewrite/2]
+      exporters: [prometheus_remote_write/2]
 ```
 
 [Connectors README]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md

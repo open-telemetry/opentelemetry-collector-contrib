@@ -49,7 +49,7 @@ components:
         - opensearch
         - otelarrow
         - prometheus
-        - prometheusremotewrite
+        - prometheus_remote_write
         - pulsar
         - rabbitmq
         - sentry

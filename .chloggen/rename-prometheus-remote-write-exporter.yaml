@@ -1,0 +1,6 @@
+change_type: deprecation
+component: exporter/prometheus_remote_write
+note: Rename to `prometheus_remote_write` with deprecated alias `prometheusremotewrite`
+issues: [45339]
+subtext:
+change_logs: [user]
