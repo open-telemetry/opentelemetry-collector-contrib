@@ -74,6 +74,15 @@ GRANT SELECT ON DBA_DATA_FILES TO <username>;
 GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO <username>;
 ```
 
+When connected to a CDB root and collecting per-PDB metrics, grant access to CDB multitenant views as well:
+
+```
+GRANT SELECT ON V_$CON_SYSSTAT TO <username>;
+GRANT SELECT ON V_$CONTAINERS TO <username>;
+GRANT SELECT ON CDB_TABLESPACE_USAGE_METRICS TO <username>;
+GRANT SELECT ON CDB_TABLESPACES TO <username>;
+```
+
 ## Enabling metrics.
 
 See [documentation](./documentation.md).

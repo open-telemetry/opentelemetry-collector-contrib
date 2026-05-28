@@ -4,6 +4,7 @@
 package oracledbreceiver
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -279,6 +280,42 @@ func TestScraper_ScrapeCDBRoot(t *testing.T) {
 	attr, ok = tablespaceMetric.Gauge().DataPoints().At(0).Attributes().Get("oracle.db.pdb")
 	require.True(t, ok)
 	assert.Equal(t, cdbPDBName, attr.Str())
+}
+
+func TestScraper_ScrapeCDBRootFallbackToLegacyQueries(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbExecutions.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		instanceInfoProvider: func(*sql.DB) (instanceInfo, error) {
+			return instanceInfo{isCDB: true, connectedToPDB: false}, nil
+		},
+		cdbQueryAccessChecker: func(context.Context, *sql.DB) error {
+			return errors.New("ORA-00942: table or view does not exist")
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	}()
+
+	assert.Equal(t, statsSQL, scrpr.statsQuery)
+	assert.Equal(t, sessionCountSQL, scrpr.sessionCountQuery)
+	assert.Equal(t, tablespaceUsageSQL, scrpr.tablespaceUsageQuery)
+
+	_, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
 }
 
 func TestScraper_ScrapeOperationalMetrics(t *testing.T) {

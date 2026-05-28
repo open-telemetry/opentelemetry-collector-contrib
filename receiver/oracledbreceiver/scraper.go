@@ -77,6 +77,13 @@ const (
 		from CDB_TABLESPACE_USAGE_METRICS um
 		inner join CDB_TABLESPACES ts on um.TABLESPACE_NAME = ts.TABLESPACE_NAME and um.CON_ID = ts.CON_ID
 		inner join v$containers c on um.CON_ID = c.CON_ID`
+	cdbStatsAccessProbeSQL      = "select 1 from v$con_sysstat s inner join v$containers c on s.con_id = c.con_id where rownum = 1"
+	cdbTablespaceAccessProbeSQL = `
+		select 1
+		from CDB_TABLESPACE_USAGE_METRICS um
+		inner join CDB_TABLESPACES ts on um.TABLESPACE_NAME = ts.TABLESPACE_NAME and um.CON_ID = ts.CON_ID
+		inner join v$containers c on um.CON_ID = c.CON_ID
+		where rownum = 1`
 	dataDictHitRatioSQL = "SELECT (1-(SUM(getmisses)/SUM(gets))) * 100 as DATA_DICTIONARY_HIT_RATIO FROM v$rowcache WHERE getmisses + gets <> 0"
 	recycleBinSizeSQL   = "SELECT nvl(SUM(SPACE*(SELECT value FROM v$parameter WHERE name = 'db_block_size')),0) as RECYCLE_BIN_SIZE_BYTES FROM dba_recyclebin"
 	storageUsageSQL     = "WITH total_bytes AS (SELECT SUM(bytes) AS total FROM dba_data_files) SELECT (total - (SELECT SUM(bytes) FROM dba_free_space)) AS USED_DB_SIZE, total AS ALLOCATED_DB_SIZE FROM total_bytes"
@@ -130,6 +137,8 @@ type dbProviderFunc func() (*sql.DB, error)
 
 type clientProviderFunc func(*sql.DB, string, *zap.Logger) dbClient
 
+type cdbQueryAccessChecker func(context.Context, *sql.DB) error
+
 type instanceInfo struct {
 	isCDB          bool
 	connectedToPDB bool
@@ -165,6 +174,24 @@ func queryInstanceInfo(db *sql.DB) (instanceInfo, error) {
 	}, nil
 }
 
+func verifyCDBQueryAccess(ctx context.Context, db *sql.DB) error {
+	if db == nil {
+		return nil
+	}
+
+	for _, query := range []string{cdbStatsAccessProbeSQL, cdbTablespaceAccessProbeSQL} {
+		rows, err := db.QueryContext(ctx, query)
+		if err != nil {
+			return err
+		}
+		if err := rows.Close(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 type oracleScraper struct {
 	statsClient                dbClient
 	tablespaceUsageClient      dbClient
@@ -179,6 +206,7 @@ type oracleScraper struct {
 	db                         *sql.DB
 	clientProviderFunc         clientProviderFunc
 	instanceInfoProvider       func(*sql.DB) (instanceInfo, error)
+	cdbQueryAccessChecker      cdbQueryAccessChecker
 	instanceInfo               instanceInfo
 	statsQuery                 string
 	sessionCountQuery          string
@@ -204,16 +232,17 @@ type oracleScraper struct {
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
 	s := &oracleScraper{
-		mb:                   metricsBuilder,
-		metricsBuilderConfig: metricsBuilderConfig,
-		scrapeCfg:            scrapeCfg,
-		logger:               logger,
-		dbProviderFunc:       providerFunc,
-		clientProviderFunc:   clientProviderFunc,
-		instanceInfoProvider: queryInstanceInfo,
-		instanceName:         instanceName,
-		hostName:             hostName,
-		serviceInstanceID:    getInstanceID(instanceName, logger),
+		mb:                    metricsBuilder,
+		metricsBuilderConfig:  metricsBuilderConfig,
+		scrapeCfg:             scrapeCfg,
+		logger:                logger,
+		dbProviderFunc:        providerFunc,
+		clientProviderFunc:    clientProviderFunc,
+		instanceInfoProvider:  queryInstanceInfo,
+		cdbQueryAccessChecker: verifyCDBQueryAccess,
+		instanceName:          instanceName,
+		hostName:              hostName,
+		serviceInstanceID:     getInstanceID(instanceName, logger),
 	}
 	return scraper.NewMetrics(s.scrape, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -223,20 +252,21 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 	topQueryCollectCfg TopQueryCollection, querySampleCfg QuerySample, hostName string,
 ) (scraper.Logs, error) {
 	s := &oracleScraper{
-		lb:                   logsBuilder,
-		logsBuilderConfig:    logsBuilderConfig,
-		scrapeCfg:            scrapeCfg,
-		logger:               logger,
-		dbProviderFunc:       providerFunc,
-		clientProviderFunc:   clientProviderFunc,
-		instanceInfoProvider: queryInstanceInfo,
-		instanceName:         instanceName,
-		metricCache:          metricCache,
-		topQueryCollectCfg:   topQueryCollectCfg,
-		querySampleCfg:       querySampleCfg,
-		hostName:             hostName,
-		obfuscator:           newObfuscator(),
-		serviceInstanceID:    getInstanceID(instanceName, logger),
+		lb:                    logsBuilder,
+		logsBuilderConfig:     logsBuilderConfig,
+		scrapeCfg:             scrapeCfg,
+		logger:                logger,
+		dbProviderFunc:        providerFunc,
+		clientProviderFunc:    clientProviderFunc,
+		instanceInfoProvider:  queryInstanceInfo,
+		cdbQueryAccessChecker: verifyCDBQueryAccess,
+		instanceName:          instanceName,
+		metricCache:           metricCache,
+		topQueryCollectCfg:    topQueryCollectCfg,
+		querySampleCfg:        querySampleCfg,
+		hostName:              hostName,
+		obfuscator:            newObfuscator(),
+		serviceInstanceID:     getInstanceID(instanceName, logger),
 	}
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -261,9 +291,21 @@ func (s *oracleScraper) start(context.Context, component.Host) error {
 	s.sessionCountQuery = sessionCountSQL
 	s.tablespaceUsageQuery = tablespaceUsageSQL
 	if s.instanceInfo.isCDBRoot() {
-		s.statsQuery = cdbStatsSQL
-		s.sessionCountQuery = cdbSessionCountSQL
-		s.tablespaceUsageQuery = cdbTablespaceUsageSQL
+		checkCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		checker := s.cdbQueryAccessChecker
+		if checker == nil {
+			checker = verifyCDBQueryAccess
+		}
+
+		if err := checker(checkCtx, s.db); err != nil {
+			s.logger.Warn("CDB root detected but CDB-specific views are not accessible; falling back to legacy queries", zap.Error(err))
+		} else {
+			s.statsQuery = cdbStatsSQL
+			s.sessionCountQuery = cdbSessionCountSQL
+			s.tablespaceUsageQuery = cdbTablespaceUsageSQL
+		}
 	}
 
 	s.statsClient = s.clientProviderFunc(s.db, s.statsQuery, s.logger)
