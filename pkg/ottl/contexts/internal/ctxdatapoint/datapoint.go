@@ -10,29 +10,11 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
-
-// AddDataPoint adds a supported pdata metric datapoint to the zap object encoder.
-func AddDataPoint(encoder zapcore.ObjectEncoder, key string, dataPoint any) error {
-	switch dp := dataPoint.(type) {
-	case pmetric.NumberDataPoint:
-		return encoder.AddObject(key, logging.NumberDataPoint(dp))
-	case pmetric.HistogramDataPoint:
-		return encoder.AddObject(key, logging.HistogramDataPoint(dp))
-	case pmetric.ExponentialHistogramDataPoint:
-		return encoder.AddObject(key, logging.ExponentialHistogramDataPoint(dp))
-	case pmetric.SummaryDataPoint:
-		return encoder.AddObject(key, logging.SummaryDataPoint(dp))
-	default:
-		return nil
-	}
-}
 
 func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
