@@ -121,8 +121,8 @@ transform:
     - set(profile.original_payload_format, "json")
 ```
 
-In some situations a combination of Paths, functions, or enums is not allowed, and the solution
-might require multiple [Advanced Config](#advanced-config) configuration groups.
+In some situations a combination of Paths, functions, or enums is not allowed, and the solution 
+might require multiple [Advanced Config](#advanced-config) configuration groups. 
 See [Context Inference](#context-inference) for more details.
 
 ### Advanced Config
@@ -141,7 +141,7 @@ transform:
   <trace|metric|log|profile>_statements:
     - context: string
       error_mode: propagate
-      conditions:
+      conditions: 
         - string
         - string
       statements:
@@ -182,7 +182,7 @@ transform:
 ```
 
 The Transform Processor will enforce that all the Paths, functions, and enums used in a group's `statements` are parsable.
-In some situations a combination of Paths, functions, or enums is not allowed, and it might require multiple configuration groups.
+In some situations a combination of Paths, functions, or enums is not allowed, and it might require multiple configuration groups. 
 See [Context Inference](#context-inference) for more details.
 
 ### Context inference
@@ -299,7 +299,7 @@ Examples:
 
 Converts incoming metrics of type "Gauge" to type "Sum", retaining the metric's datapoints and setting its aggregation temporality and monotonicity accordingly. Noop for metrics that are not of type "Gauge".
 
-`aggregation_temporality` is a string (`"cumulative"` or `"delta"`) that specifies the resultant metric's aggregation temporality. `is_monotonic` is a boolean that specifies the resultant metric's monotonicity.
+`aggregation_temporality` is a string (`"cumulative"` or `"delta"`) that specifies the resultant metric's aggregation temporality. `is_monotonic` is a boolean that specifies the resultant metric's monotonicity. 
 
 **NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
 
@@ -312,7 +312,7 @@ Examples:
 
 ### extract_count_metric
 
-> [!NOTE]
+> [!NOTE]  
 > This function supports Histograms, ExponentialHistograms and Summaries.
 
 `extract_count_metric(is_monotonic, Optional[suffix])`
@@ -327,7 +327,7 @@ The name for the new metric will be `<original metric name><suffix>`. The fields
 
 The new metric that is created will be passed to all subsequent statements in the metrics statements list.
 
-> [!WARNING]
+> [!WARNING]  
 > This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use only if you're confident you know what the resulting monotonicity should be.
 
 Examples:
@@ -338,7 +338,7 @@ Examples:
 
 ### extract_percentile_metric
 
-> [!NOTE]
+> [!NOTE]  
 > This function supports Histograms and ExponentialHistograms.
 
 `extract_percentile_metric(percentile, Optional[suffix])`
@@ -367,7 +367,7 @@ Examples:
 
 ### extract_sum_metric
 
-> [!NOTE]
+> [!NOTE]  
 > This function supports Histograms, ExponentialHistograms and Summaries.
 
 `extract_sum_metric(is_monotonic, Optional[suffix])`
@@ -382,7 +382,7 @@ The name for the new metric will be `<original metric name><suffix>`. The fields
 
 The new metric that is created will be passed to all subsequent statements in the metrics statements list.
 
-> [!WARNING]
+> [!WARNING]  
 > This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use only if you're confident you know what the resulting monotonicity should be.
 
 Examples:
@@ -502,12 +502,12 @@ This function requires 2 arguments:
 
 
     >The __uniform__ and __random__ distribution algorithms both utilise the concept of intersecting boundaries.
-    Intersecting boundaries are any boundary in the `boundaries array` that falls between or on the lower and upper values of the Exponential Histogram boundaries.
+    Intersecting boundaries are any boundary in the `boundaries array` that falls between or on the lower and upper values of the Exponential Histogram boundaries. 
     _For Example:_ if you have an Exponential Histogram bucket with a lower bound of 10 and upper of 20, and your boundaries array is [5, 10, 15, 20, 25], the intersecting boundaries are 10, 15, and 20 because they lie within the range [10, 20].
 
   - __uniform__ - This approach distributes the datapoints for each bucket uniformly across the intersecting __ExplicitBounds__. The algorithm works as follows:
 
-     - If there are valid intersecting boundaries, the function evenly distributes the count across these boundaries.
+     - If there are valid intersecting boundaries, the function evenly distributes the count across these boundaries. 
 	  - Calculate the count to be allocated to each boundary.
 	  - If there is a remainder after dividing the count equally, it distributes the remainder by incrementing the count for some of the boundaries until the remainder is exhausted.
 
@@ -515,12 +515,12 @@ This function requires 2 arguments:
       1. count = 10
       2. Exponential Histogram Bounds: [10, 20]
       3. Boundaries:                [5, 10, 15, 20, 25]
-      4. Intersecting Boundaries:       [10, 15, 20]
+      4. Intersecting Boundaries:       [10, 15, 20]                          
       5. Number of Intersecting Boundaries: 3
       6. Using the formula: $count/numOfIntersections=10/3=3r1$
-
+      
       _Uniform Allocation:_
-
+      
       7. Start with zeros:          [0, 0, 0, 0, 0]
       8. Allocate 3 to each:        [0, 3, 3, 3, 0]
       9. Distribute remainder $r$ 1:    [0, 4, 3, 3, 0]
@@ -536,7 +536,7 @@ This function requires 2 arguments:
 
 __WARNINGS:__
 
-- The process of converting an ExponentialHistogram to an Explicit Histogram is not perfect and may result in a loss of precision. It is important to define an appropriate set of bucket boundaries and identify the best distribution approach for your data in order to minimize this loss.
+- The process of converting an ExponentialHistogram to an Explicit Histogram is not perfect and may result in a loss of precision. It is important to define an appropriate set of bucket boundaries and identify the best distribution approach for your data in order to minimize this loss. 
 
   For example, selecting Boundaries that are too high or too low may result histogram buckets that are too wide or too narrow, respectively.
 
@@ -605,7 +605,7 @@ Examples:
 - `aggregate_on_attributes("max") where metric.name == "system.memory.usage"`
 - `aggregate_on_attributes("max", []) where metric.name == "system.memory.usage"`
 
-The `aggregate_on_attributes` function can also be used in conjunction with
+The `aggregate_on_attributes` function can also be used in conjunction with 
 [keep_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#keep_matching_keys) or
 [delete_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#delete_matching_keys).
 
@@ -649,7 +649,7 @@ Examples:
 
 - `aggregate_on_attribute_value("sum", "attr1", ["val1", "val2"], "new_val") where metric.name == "system.memory.usage"`
 
-The `aggregate_on_attribute_value` function can also be used in conjunction with
+The `aggregate_on_attribute_value` function can also be used in conjunction with 
 [keep_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#keep_matching_keys) or
 [delete_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#delete_matching_keys).
 
@@ -672,12 +672,12 @@ The `merge_histogram_buckets` function merges a specific bucket of a histogram w
 `bound` is a float64 value that specifies which bucket boundary to remove. The function will merge the bucket that ends at this boundary with the next bucket.
 
 The function:
-- Preserves the total count and sum of the histogram.
-- Only works on histogram metrics (no-op for other metric types).
-- Uses floating-point tolerance (epsilon = 1e-12) when matching the bound.
-- Makes no changes if:
-  - The bound is not found.
-  - The histogram is empty.
+- Preserves the total count and sum of the histogram.  
+- Only works on histogram metrics (no-op for other metric types).  
+- Uses floating-point tolerance (epsilon = 1e-12) when matching the bound.  
+- Makes no changes if:  
+  - The bound is not found.  
+  - The histogram is empty.  
   - The histogram structure is invalid (mismatched bounds and counts).
 
 Examples:
@@ -801,9 +801,9 @@ Set attribute `test` to `"pass"` if the attribute `test` does not exist:
 transform:
   error_mode: ignore
   trace_statements:
-    # accessing a map with a key that does not exist will return nil.
+    # accessing a map with a key that does not exist will return nil. 
     - set(span.attributes["test"], "pass") where span.attributes["test"] == nil
-```
+``` 
 
 ### Rename attribute
 There are 2 ways to rename an attribute key:
@@ -815,8 +815,8 @@ transform:
   error_mode: ignore
   trace_statements:
     - set(resource.attributes["namespace"], resource.attributes["k8s.namespace.name"])
-    - delete_key(resource.attributes, "k8s.namespace.name")
-```
+    - delete_key(resource.attributes, "k8s.namespace.name") 
+``` 
 
 Or you can update the key using regex:
 
@@ -825,7 +825,7 @@ transform:
   error_mode: ignore
   trace_statements:
     - replace_all_patterns(resource.attributes, "key", "k8s\\.namespace\\.name", "namespace")
-```
+``` 
 
 ### Move field to attribute
 Set attribute `body` to the value of the log body:
@@ -835,10 +835,10 @@ transform:
   error_mode: ignore
   log_statements:
     - set(log.attributes["body"], log.body)
-```
+``` 
 
 ### Combine two attributes
-Set attribute `test` to the value of attributes `"foo"` and `"bar"` combined.
+Set attribute `test` to the value of attributes `"foo"` and `"bar"` combined. 
 ```yaml
 transform:
   error_mode: ignore
@@ -870,13 +870,13 @@ transform:
     - statements:
         # Parse body as JSON and merge the resulting map with the cache map, ignoring non-json bodies.
         # cache is a field exposed by OTTL that is a temporary storage place for complex operations.
-        - merge_maps(log.cache, ParseJSON(log.body), "upsert") where IsMatch(log.body, "^\\{")
-
+        - merge_maps(log.cache, ParseJSON(log.body), "upsert") where IsMatch(log.body, "^\\{") 
+          
         # Set attributes using the values merged into cache.
         # If the attribute doesn't exist in cache then nothing happens.
         - set(log.attributes["attr1"], log.cache["attr1"])
         - set(log.attributes["attr2"], log.cache["attr2"])
-
+        
         # To access nested maps you can chain index ([]) operations.
         # If nested or attr3 do not exist in cache then nothing happens.
         - set(log.attributes["nested.attr3"], log.cache["nested"]["attr3"])
@@ -956,7 +956,7 @@ processors:
       - set(resource.attributes["test"], "pass")
       - set(scope.attributes["test"], ["pass"])
       - set(log.attributes["test"], true)
-
+          
 
 exporters:
   debug:
@@ -992,7 +992,7 @@ See [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-
 
 ## Warnings
 
-The Transform Processor uses the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) (OTTL) which allows users to modify all aspects of their telemetry. Some specific risks are listed below, but this is not an exhaustive list. In general, understand your data before using the Transform Processor.
+The Transform Processor uses the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) (OTTL) which allows users to modify all aspects of their telemetry. Some specific risks are listed below, but this is not an exhaustive list. In general, understand your data before using the Transform Processor.  
 
 - [Unsound Transformations](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#unsound-transformations): Several Metric-only functions allow you to transform one metric data type to another or create new metrics from an existing metrics.  Transformations between metric data types are not defined in the [metrics data model](https://github.com/open-telemetry/opentelemetry-specification/blob/main//specification/metrics/data-model.md).  These functions have the expectation that you understand the incoming data and know that it can be meaningfully converted to a new metric data type or can meaningfully be used to create new metrics.
   - Although the OTTL allows the `set` function to be used with `metric.data_type`, its implementation in the Transform Processor is NOOP.  To modify a data type you must use a function specific to that purpose.
@@ -1014,14 +1014,14 @@ This option is useful when applying transformations which alter the resource or 
 The feature is currently only available for log processing.
 
 #### Example Usage
-
+  
 `config.yaml`:
-
+  
   ```yaml
   transform:
     flatten_data: true
     log_statements:
       - set(resource.attributes["to"], log.attributes["from"])
   ```
-
+  
   Run collector: `./otelcol --config config.yaml --feature-gates=transform.flatten.logs`
