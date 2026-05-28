@@ -64,7 +64,7 @@ components:
     - exporter/opensearch
     - exporter/otelarrow
     - exporter/prometheus
-    - exporter/prometheusremotewrite
+    - exporter/prometheus_remote_write
     - exporter/pulsar
     - exporter/rabbitmq
     - exporter/sematext
@@ -238,7 +238,7 @@ components:
     - receiver/active_directory_ds
     - receiver/aerospike
     - receiver/apache
-    - receiver/apachespark
+    - receiver/apache_spark
     - receiver/aws_lambda
     - receiver/awscloudwatch
     - receiver/awscontainerinsightreceiver
