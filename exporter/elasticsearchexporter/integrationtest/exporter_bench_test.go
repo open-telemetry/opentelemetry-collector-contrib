@@ -66,14 +66,11 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	require.NoError(b, err)
 	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
 
-	logs, _ := runnerCfg.provider.GenerateLogs()
-	logs.MarkReadOnly()
 	b.ReportAllocs()
 
 	for b.Loop() {
-		b.StartTimer()
+		logs, _ := runnerCfg.provider.GenerateLogs()
 		require.NoError(b, exporter.ConsumeLogs(ctx, logs))
-		b.StopTimer()
 	}
 	b.ReportMetric(
 		float64(runnerCfg.generatedCount.Load())/b.Elapsed().Seconds(),
@@ -95,14 +92,11 @@ func benchmarkMetrics(b *testing.B, batchSize int, mappingMode string) {
 	require.NoError(b, err)
 	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
 
-	metrics, _ := runnerCfg.provider.GenerateMetrics()
-	metrics.MarkReadOnly()
 	b.ReportAllocs()
 
 	for b.Loop() {
-		b.StartTimer()
+		metrics, _ := runnerCfg.provider.GenerateMetrics()
 		require.NoError(b, exporter.ConsumeMetrics(ctx, metrics))
-		b.StopTimer()
 	}
 	b.ReportMetric(
 		float64(runnerCfg.generatedCount.Load())/b.Elapsed().Seconds(),
@@ -124,14 +118,11 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	require.NoError(b, err)
 	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
 
-	traces, _ := runnerCfg.provider.GenerateTraces()
-	traces.MarkReadOnly()
 	b.ReportAllocs()
 
 	for b.Loop() {
-		b.StartTimer()
+		traces, _ := runnerCfg.provider.GenerateTraces()
 		require.NoError(b, exporter.ConsumeTraces(ctx, traces))
-		b.StopTimer()
 	}
 	b.ReportMetric(
 		float64(runnerCfg.generatedCount.Load())/b.Elapsed().Seconds(),
