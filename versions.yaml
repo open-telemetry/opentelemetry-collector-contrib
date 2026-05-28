@@ -237,6 +237,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/integrationtest
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver

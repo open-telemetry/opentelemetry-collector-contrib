@@ -386,7 +386,7 @@ func TestS3ObjectReader_ContextCancellation(t *testing.T) {
 	api := NewMocks3API(ctrl)
 	data := []byte("cancel test data")
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel() // pre-cancel so every GetObject sees a done context
 
 	reader := &s3ObjectReader{

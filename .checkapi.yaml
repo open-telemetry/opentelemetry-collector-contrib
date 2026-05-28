@@ -40,6 +40,7 @@ ignored_paths:
   - receiver/pulsarreceiver # 38930
   - exporter/pulsarexporter # 38929
   - exporter/elasticsearchexporter/integrationtest
+  - receiver/awslambdareceiver/integrationtest
   - testbed/mockdatasenders/mockdatadogagentexporter
   - extension/sumologicextension # 40655
   - extension/k8sleaderelector # 43992
