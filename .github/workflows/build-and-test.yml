@@ -473,13 +473,6 @@ jobs:
     if: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'ci:full') }}
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
-    # actions/setup-go reads process.env.ImageOS into its cache key.
-    # GitHub-hosted runners set it automatically; CNCF runners don't, which
-    # produces a divergent cache key and a parallel cache. Pinning it here
-    # makes the key match setup-environment's so cross-compile-pr restores
-    # from that cache (hit -> no save).
-    env:
-      ImageOS: ubuntu24
     strategy:
       fail-fast: false
       matrix:
@@ -492,9 +485,14 @@ jobs:
             runner: cncf-ubuntu-8-32-arm
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      # cross-compile-pr runs on CNCF self-hosted runners, which on fork PRs
+      # cannot read setup-environment's cache (no base-branch fallback). Saving
+      # a parallel PR-scoped cache would pressure the 10 GB pool, so this job
+      # skips caching entirely and builds cold on the larger CNCF hardware.
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
+          cache: "false"
       - name: Generate collector files
         run: make genotelcontribcol
       - name: Build Collector ${{ matrix.os }} ${{ matrix.arch }}
