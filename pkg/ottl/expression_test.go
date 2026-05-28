@@ -729,7 +729,7 @@ func Test_newGetter(t *testing.T) {
 			wantLiteral: true,
 			deepEqual:   true,
 			want: &LambdaExpression[any]{
-				paramNames: []string{"$value"},
+				paramNames: makeLocalIdentifiers("$value"),
 				body: &localBindingGetter[any]{
 					identifierPath: &localIdentifier{
 						Name: "$value",

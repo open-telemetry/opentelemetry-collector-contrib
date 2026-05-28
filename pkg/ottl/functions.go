@@ -740,15 +740,17 @@ func (p *parseContext[K]) newLambdaExpression(l *lambdaExpr) (*LambdaExpression[
 		return nil, errLambdaExpressionDisable
 	}
 
-	paramNames := make([]string, len(l.Params))
+	paramNames := make([]LocalIdentifier, len(l.Params))
 	validParams := make(localScopeFrame, len(l.Params))
 	for i, param := range l.Params {
-		name := param.name()
-		if _, exists := validParams[name]; exists {
-			return nil, fmt.Errorf("duplicate local identifier %s", name)
+		name := param.Name()
+		if !param.IsBlank() {
+			if _, exists := validParams[name]; exists {
+				return nil, fmt.Errorf("duplicate local identifier %s", name)
+			}
+			validParams[name] = struct{}{}
 		}
-		validParams[name] = struct{}{}
-		paramNames[i] = name
+		paramNames[i] = &param
 	}
 
 	var result *LambdaExpression[K]

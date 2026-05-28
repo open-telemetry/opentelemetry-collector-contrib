@@ -10,6 +10,18 @@ import (
 	"slices"
 )
 
+// LocalIdentifier represents a named or blank parameter in a local scope.
+// Name returns the identifier's name as a string.
+// IsBlank indicates whether the identifier is a blank ("_") placeholder.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
+type LocalIdentifier interface {
+	// Name returns the identifier's name as a string.
+	Name() string
+	// IsBlank indicates whether the identifier is a blank ("_") placeholder.
+	IsBlank() bool
+}
+
 // localBindingsKey is a context key used for storing local identifier bindings at evaluation time.
 type localBindingsKey struct{}
 

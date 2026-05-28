@@ -158,3 +158,12 @@ func TestLocalBindingGetter_Get(t *testing.T) {
 		})
 	}
 }
+
+func makeLocalIdentifiers(args ...string) []LocalIdentifier {
+	res := make([]LocalIdentifier, len(args))
+	for i, v := range args {
+		lid := localIdentifierDecl(v)
+		res[i] = &lid
+	}
+	return res
+}

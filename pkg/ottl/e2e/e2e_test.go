@@ -2243,22 +2243,17 @@ func Test_e2e_lambda_expression(t *testing.T) {
 		{
 			name:       "not enough arguments (0 args)",
 			expression: `Eval(($a, $b) => $a, [])`,
-			wantErr:    "lambda expected at least 2 argument(s), got 0",
+			wantErr:    "lambda expects exactly 0 argument(s), got 2",
 		},
 		{
 			name:       "not enough arguments (1 arg)",
 			expression: `Eval(($a, $b) => $a, [1])`,
-			wantErr:    "lambda expected at least 2 argument(s), got 1",
+			wantErr:    "lambda expects exactly 1 argument(s), got 2",
 		},
 		{
 			name:       "not enough arguments in nested lambda",
-			expression: `Eval(($a) => Eval(($b, $c, $d) => $a + $b + $c + $d, [2]), [1])`,
-			wantErr:    "lambda expected at least 3 argument(s), got 1",
-		},
-		{
-			name:       "extra trailing arguments are dropped",
-			expression: `Eval(($a) => $a, [1, 2, 3])`,
-			want:       wantValue(int64(1)),
+			expression: `Eval(($a) => Eval(($b, $c, $d) => $a + $b + $c + $d, [2, 3]), [1])`,
+			wantErr:    "lambda expects exactly 2 argument(s), got 3",
 		},
 		{
 			name:         "lambdas can't return another lambda",
@@ -2295,6 +2290,31 @@ func Test_e2e_lambda_expression(t *testing.T) {
 				tCtx.GetResource().Attributes().PutStr("test", "pass")
 				return tCtx
 			},
+		},
+		{
+			name:       "lambda with left blank identifier",
+			expression: `Eval((_, $value) => $value, ["skip", "pass"])`,
+			want:       wantValue("pass"),
+		},
+		{
+			name:       "lambda with multiple blank identifiers",
+			expression: `Eval((_, _, $value) => $value, ["skip", "skip too", "pass"])`,
+			want:       wantValue("pass"),
+		},
+		{
+			name:       "lambda with all blank identifiers",
+			expression: `Eval((_,_,_) => "pass", ["skip", "ignore", "next"])`,
+			want:       wantValue("pass"),
+		},
+		{
+			name:       "lambda with right blank identifiers",
+			expression: `Eval((_,_,$v) => $v, ["skip", "ignore", "next"])`,
+			want:       wantValue("next"),
+		},
+		{
+			name:         "lambda can't use blank identifiers in the body",
+			expression:   `Eval((_) => _, ["blank"])`,
+			wantParseErr: "blank identifier '_' cannot be used in expressions",
 		},
 	}
 

@@ -245,22 +245,32 @@ func (lb *lambdaBody) accept(vis grammarVisitor) {
 
 type localIdentifierDecl string
 
+var _ LocalIdentifier = (*localIdentifierDecl)(nil)
+
 func (n *localIdentifierDecl) Capture(values []string) error {
 	s := values[0]
-	if len(s) < 2 || !strings.HasPrefix(s, "$") {
-		return fmt.Errorf("invalid local identifier %q: must start with '$' and include at least one character after it", s)
+	if s != "_" && (len(s) < 2 || s[0] != '$') {
+		return fmt.Errorf("invalid local identifier %q: must be '_' or start with '$' and include at least one character after it", s)
 	}
 	*n = localIdentifierDecl(s)
 	return nil
 }
 
-func (n *localIdentifierDecl) name() string {
+func (n *localIdentifierDecl) Name() string {
 	return string(*n)
+}
+
+func (n *localIdentifierDecl) IsBlank() bool {
+	return n.Name() == "_"
 }
 
 type localIdentifier struct {
 	Name localIdentifierDecl `parser:"@LocalIdentifier"`
 	Keys []key               `parser:"( @@ )*"`
+}
+
+func (lb *localIdentifier) isBlank() bool {
+	return lb.Name.IsBlank()
 }
 
 func (lb *localIdentifier) accept(vis grammarVisitor) {
@@ -569,7 +579,7 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `OpAnd`, Pattern: `\b(and)\b`},
 		{Name: `OpComparison`, Pattern: `==|!=|>=|<=|>|<`},
 		{Name: `LambdaArrow`, Pattern: `=>`},
-		{Name: `LocalIdentifier`, Pattern: `\$[a-z][a-z0-9_]*`},
+		{Name: `LocalIdentifier`, Pattern: `\$[a-z][a-z0-9_]*|\b(_)\b`},
 		{Name: `OpAddSub`, Pattern: `\+|\-`},
 		{Name: `OpMultDiv`, Pattern: `\/|\*`},
 		{Name: `Boolean`, Pattern: `\b(true|false)\b`},
@@ -655,6 +665,9 @@ func (g *grammarCustomErrorsVisitor) visitEditor(v *editor) {
 func (g *grammarCustomErrorsVisitor) visitMathExprLiteral(v *mathExprLiteral) {
 	if v.Editor != nil {
 		g.add(fmt.Errorf("converter names must start with an uppercase letter but got '%v'", v.Editor.Function))
+	}
+	if v.LocalIdentifier != nil && v.LocalIdentifier.isBlank() {
+		g.add(errors.New("blank identifier '_' cannot be used in expressions"))
 	}
 }
 

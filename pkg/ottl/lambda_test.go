@@ -24,9 +24,35 @@ func (s stubBoolExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 
 func (stubBoolExpr[K]) unexported() {}
 
-func TestLambdaExpression_NumParams(t *testing.T) {
-	expr := &LambdaExpression[any]{paramNames: []string{"$a", "$b"}}
-	assert.Equal(t, 2, expr.NumParams())
+func TestLambdaExpression_Formals(t *testing.T) {
+	tests := []struct {
+		name       string
+		paramNames []LocalIdentifier
+		want       []LocalIdentifier
+	}{
+		{
+			name:       "named params",
+			paramNames: makeLocalIdentifiers("$a", "$b"),
+			want:       makeLocalIdentifiers("$a", "$b"),
+		},
+		{
+			name:       "blank and named params",
+			paramNames: makeLocalIdentifiers("_", "$a"),
+			want:       makeLocalIdentifiers("_", "$a"),
+		},
+		{
+			name:       "all blank params",
+			paramNames: makeLocalIdentifiers("_", "_", "_"),
+			want:       makeLocalIdentifiers("_", "_", "_"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expr := &LambdaExpression[any]{paramNames: tt.paramNames}
+			assert.Equal(t, tt.want, expr.Formals())
+		})
+	}
 }
 
 func TestLambdaExpression_Eval(t *testing.T) {
@@ -40,16 +66,16 @@ func TestLambdaExpression_Eval(t *testing.T) {
 	}{
 		{
 			name: "not enough args",
-			expr: &LambdaExpression[any]{paramNames: []string{"$a", "$b"}},
+			expr: &LambdaExpression[any]{paramNames: makeLocalIdentifiers("$a", "$b")},
 			params: []any{
 				1,
 			},
-			wantErr: "lambda expected at least 2 argument(s), got 1",
+			wantErr: "lambda expects exactly 1 argument(s), got 2",
 		},
 		{
 			name: "literal body evaluate as-is",
 			expr: &LambdaExpression[any]{
-				paramNames: []string{"$a"},
+				paramNames: makeLocalIdentifiers("$a"),
 				body:       newLiteral[any, any]("literal"),
 			},
 			params: []any{"a value"},
@@ -58,7 +84,7 @@ func TestLambdaExpression_Eval(t *testing.T) {
 		{
 			name: "body expression",
 			expr: &LambdaExpression[any]{
-				paramNames: []string{"$a"},
+				paramNames: makeLocalIdentifiers("$a"),
 				bodyExpr: stubBoolExpr[any]{
 					eval: func(ctx context.Context, _ any) (bool, error) {
 						bindings, ok := ctx.Value(localBindingsKey{}).(map[string]any)
@@ -75,7 +101,7 @@ func TestLambdaExpression_Eval(t *testing.T) {
 		{
 			name: "body expression error",
 			expr: &LambdaExpression[any]{
-				paramNames: []string{"$a"},
+				paramNames: makeLocalIdentifiers("$a"),
 				bodyExpr: stubBoolExpr[any]{
 					eval: func(context.Context, any) (bool, error) {
 						return false, errors.New("failed to evaluate")
@@ -88,12 +114,12 @@ func TestLambdaExpression_Eval(t *testing.T) {
 		{
 			name: "body getter reads parameter",
 			expr: &LambdaExpression[any]{
-				paramNames: []string{"$a"},
+				paramNames: makeLocalIdentifiers("$a"),
 				body: &localBindingGetter[any]{
 					identifierPath: &localIdentifier{Name: localIdentifierDecl("$a")},
 				},
 			},
-			params: []any{42, "ignored"},
+			params: []any{42},
 			want:   42,
 		},
 		{
@@ -110,7 +136,7 @@ func TestLambdaExpression_Eval(t *testing.T) {
 		{
 			name: "formal overrides parent binding",
 			expr: &LambdaExpression[any]{
-				paramNames: []string{"$a"},
+				paramNames: makeLocalIdentifiers("$a"),
 				body: &localBindingGetter[any]{
 					identifierPath: &localIdentifier{Name: localIdentifierDecl("$a")},
 				},
@@ -122,7 +148,7 @@ func TestLambdaExpression_Eval(t *testing.T) {
 		{
 			name: "parameter indexing",
 			expr: &LambdaExpression[any]{
-				paramNames: []string{"$a"},
+				paramNames: makeLocalIdentifiers("$a"),
 				body: &localBindingGetter[any]{
 					identifierPath: &localIdentifier{
 						Name: localIdentifierDecl("$a"),
@@ -139,12 +165,39 @@ func TestLambdaExpression_Eval(t *testing.T) {
 			want: "one",
 		},
 		{
-			name: "invalid lambda without body",
-			expr: &LambdaExpression[any]{},
-			params: []any{
-				1,
-			},
+			name:    "invalid lambda without body",
+			expr:    &LambdaExpression[any]{},
+			params:  []any{},
 			wantErr: "invalid lambda: no body",
+		},
+		{
+			name: "blank parameter is not bound",
+			expr: &LambdaExpression[any]{
+				paramNames: makeLocalIdentifiers("_", "$a"),
+				body: &localBindingGetter[any]{
+					identifierPath: &localIdentifier{Name: localIdentifierDecl("$a")},
+				},
+			},
+			params: []any{"skip", "bound"},
+			want:   "bound",
+		},
+		{
+			name: "blank parameter is omitted from bindings",
+			expr: &LambdaExpression[any]{
+				paramNames: makeLocalIdentifiers("_"),
+				bodyExpr: stubBoolExpr[any]{
+					eval: func(ctx context.Context, _ any) (bool, error) {
+						bindings, ok := ctx.Value(localBindingsKey{}).(map[string]any)
+						if !ok {
+							return false, errors.New("missing bindings")
+						}
+						_, hasBlank := bindings["_"]
+						return !hasBlank && len(bindings) == 0, nil
+					},
+				},
+			},
+			params: []any{"skip"},
+			want:   true,
 		},
 	}
 

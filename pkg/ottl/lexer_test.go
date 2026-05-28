@@ -230,6 +230,48 @@ func Test_lexer(t *testing.T) {
 			{"OpAddSub", "-"},
 			{"Int", "4"},
 		}},
+		{"blank local identifier", "_", false, []result{
+			{"LocalIdentifier", "_"},
+		}},
+		{"named local identifier", "$value", false, []result{
+			{"LocalIdentifier", "$value"},
+		}},
+		{"local identifier with underscores", "$foo_bar", false, []result{
+			{"LocalIdentifier", "$foo_bar"},
+		}},
+		{"local identifier in math expression", "$a + $b", false, []result{
+			{"LocalIdentifier", "$a"},
+			{"OpAddSub", "+"},
+			{"LocalIdentifier", "$b"},
+		}},
+		{"local identifier with indexing", "$value[0]", false, []result{
+			{"LocalIdentifier", "$value"},
+			{"Punct", "["},
+			{"Int", "0"},
+			{"Punct", "]"},
+		}},
+		{"local identifier in comparison", "$a == $b", false, []result{
+			{"LocalIdentifier", "$a"},
+			{"OpComparison", "=="},
+			{"LocalIdentifier", "$b"},
+		}},
+		{"lambda arrow", "=>", false, []result{
+			{"LambdaArrow", "=>"},
+		}},
+		{"lambda params with blank and named", "(_, $v)", false, []result{
+			{"LParen", "("},
+			{"LocalIdentifier", "_"},
+			{"Punct", ","},
+			{"LocalIdentifier", "$v"},
+			{"RParen", ")"},
+		}},
+		{"lambda expression", "($value) => $value", false, []result{
+			{"LParen", "("},
+			{"LocalIdentifier", "$value"},
+			{"RParen", ")"},
+			{"LambdaArrow", "=>"},
+			{"LocalIdentifier", "$value"},
+		}},
 	}
 
 	for _, tt := range tests {

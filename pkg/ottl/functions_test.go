@@ -2087,6 +2087,41 @@ func Test_NewFunctionCall(t *testing.T) {
 			wantError: "duplicate local identifier $value",
 		},
 		{
+			name: "lambda arg with duplicate blank formals",
+			inv: editor{
+				Function: "eval_lambda",
+				Arguments: []argument{
+					{
+						Value: value{
+							Lambda: &lambdaExpr{
+								Params: []localIdentifierDecl{"_", "_"},
+								Body: lambdaBody{
+									Value: &value{
+										String: ottltest.Strp("ok"),
+									},
+								},
+							},
+						},
+					},
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										String: ottltest.Strp("skip"),
+									},
+									{
+										String: ottltest.Strp("ignore"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "ok",
+		},
+		{
 			name: "lambda arg with expression body",
 			inv: editor{
 				Function: "eval_lambda",
