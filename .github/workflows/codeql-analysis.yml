@@ -29,7 +29,9 @@ jobs:
         id: go-setup
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
+          cache-dependency-path: |
+            internal/tools/go.sum
+            testbed/go.sum
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL

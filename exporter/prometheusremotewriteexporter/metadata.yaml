@@ -1,4 +1,5 @@
-type: prometheusremotewrite
+type: prometheus_remote_write
+deprecated_type: prometheusremotewrite
 display_name: Prometheus Remote Write Exporter
 
 status:

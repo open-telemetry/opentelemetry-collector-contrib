@@ -93,6 +93,21 @@ assertion, so omitting a key is the way to assert that it must not appear.
 `/exists: true` is the only supported value; any other value is a schema
 error.
 
+### Attribute regex matcher
+
+Attribute keys can use the `/regex` suffix when the attribute value is a
+volatile string that must match a regular expression. The regular expression
+must match the full attribute value:
+
+```yaml
+attributes:
+  http.url/regex: 'http://127\.0\.0\.1:[0-9]+'
+```
+
+Regex matchers are supported for resource attributes and datapoint attributes.
+The attribute map remains exact: unexpected attributes still fail the
+assertion.
+
 ### Shorthand: single empty-attribute datapoint
 
 A metric with exactly one datapoint that has no attributes can omit
@@ -121,7 +136,7 @@ must contain at least one datapoint; see
 ## Roadmap
 
 This is the identity-only subset of the grammar in #48079. Operator-suffix
-extensions beyond attribute `/exists` (`/include`, `/exclude`, `/all`,
-`/count`, `/regex`, `/approx`, `/gt|gte|lt|lte`) and opt-in fields
+extensions beyond attribute `/exists` and `/regex` (`/include`, `/exclude`,
+`/all`, `/count`, `/approx`, `/gt|gte|lt|lte`) and opt-in fields
 (`IncludeValues()`, `IncludeTimestamps()`, `IncludeExemplars()`, type-specific
 histogram fields) are tracked as follow-ups under that issue.

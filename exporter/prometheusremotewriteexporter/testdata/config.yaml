@@ -1,6 +1,6 @@
-prometheusremotewrite:
+prometheus_remote_write:
 
-prometheusremotewrite/2:
+prometheus_remote_write/2:
   namespace: "test-space"
   max_batch_request_parallelism: 10
   retry_on_failure:
@@ -25,55 +25,55 @@ prometheusremotewrite/2:
     queue_size: 2000
     num_consumers: 10
 
-prometheusremotewrite/negative_queue_size:
+prometheus_remote_write/negative_queue_size:
   endpoint: "localhost:8888"
   remote_write_queue:
     queue_size: -1
     num_consumers: 10
 
-prometheusremotewrite/negative_num_consumers:
+prometheus_remote_write/negative_num_consumers:
   endpoint: "localhost:8888"
   remote_write_queue:
     queue_size: 5
     num_consumers: -1
 
-prometheusremotewrite/less_than_1_max_batch_request_parallelism:
+prometheus_remote_write/less_than_1_max_batch_request_parallelism:
   endpoint: "localhost:8888"
   max_batch_request_parallelism: 0
 
-prometheusremotewrite/disabled_target_info:
+prometheus_remote_write/disabled_target_info:
   endpoint: "localhost:8888"
   target_info:
     enabled: false
 
-prometheusremotewrite/disabled_queue:
+prometheus_remote_write/disabled_queue:
   endpoint: "localhost:8888"
   remote_write_queue:
     enabled: false
     num_consumers: 10
 
-prometheusremotewrite/non_snappy_compression_type:
+prometheus_remote_write/non_snappy_compression_type:
   endpoint: "localhost:8888"
   compression: "gzip"
 
-prometheusremotewrite/unknown_protobuf_message:
+prometheus_remote_write/unknown_protobuf_message:
   protobuf_message: "io.prometheus.write.v4.Request"
 
-prometheusremotewrite/translation_strategy:
+prometheus_remote_write/translation_strategy:
   endpoint: "localhost:8888"
   protobuf_message: "io.prometheus.write.v2.Request"
   translation_strategy: "NoTranslation"
 
-prometheusremotewrite/invalid_translation_strategy:
+prometheus_remote_write/invalid_translation_strategy:
   endpoint: "localhost:8888"
   translation_strategy: "invalid_strategy"
 
-prometheusremotewrite/v1_no_utf8:
+prometheus_remote_write/v1_no_utf8:
   endpoint: "localhost:8888"
   protobuf_message: "prometheus.WriteRequest"
   translation_strategy: "NoUTF8EscapingWithSuffixes"
 
-prometheusremotewrite/v1_no_translation:
+prometheus_remote_write/v1_no_translation:
   endpoint: "localhost:8888"
   protobuf_message: "prometheus.WriteRequest"
   translation_strategy: "NoTranslation"

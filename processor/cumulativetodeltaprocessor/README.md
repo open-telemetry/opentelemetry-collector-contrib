@@ -135,6 +135,15 @@ processors:
         # convert all cumulative sum or histogram metrics to delta
 ```
 
+## Troubleshooting
+
+When [Telemetry is
+enabled](https://opentelemetry.io/docs/collector/configuration/#telemetry), this
+component can export [several metrics](./documentation.md). All metrics are
+disabled by default and must be opted-in via the collector's
+`service.telemetry.metrics.level`
+[configuration](https://opentelemetry.io/docs/collector/internal-telemetry/#metric-verbosity).
+
 ## Warnings
 
 - [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The cumulativetodelta processor's calculates delta by remembering the previous value of a metric.  For this reason, the calculation is only accurate if the metric is continuously sent to the same instance of the collector.  As a result, the cumulativetodelta processor may not work as expected if used in a deployment of multiple collectors.  When using this processor it is best for the data source to being sending data to a single collector.

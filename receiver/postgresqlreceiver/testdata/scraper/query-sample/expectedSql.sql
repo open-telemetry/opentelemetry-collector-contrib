@@ -15,12 +15,12 @@ SELECT
     query,
     CASE
     WHEN state = 'active' THEN
-        EXTRACT(EPOCH FROM (clock_timestamp() - query_start)) * 1e3
+      EXTRACT(EPOCH FROM (clock_timestamp() - query_start)) * 1e3
     WHEN state IN ('idle','idle in transaction','idle in transaction (aborted)')
-        AND state_change IS NOT NULL THEN
-        EXTRACT(EPOCH FROM (state_change - query_start)) * 1e3
+         AND state_change IS NOT NULL THEN
+      EXTRACT(EPOCH FROM (state_change - query_start)) * 1e3
     ELSE
-        NULL
+      NULL
     END AS duration_ms
 FROM pg_stat_activity
 WHERE     
@@ -28,10 +28,13 @@ WHERE
       TRIM(query), 
       ''
     ) != ''
+    
+    AND pid != pg_backend_pid()
+    
+    AND query_start IS NOT NULL
     AND NOT (
-
+    
       query_start < TO_TIMESTAMP(123440.111)
       AND state = 'idle'
-    )   
+    )
 LIMIT 30;
-

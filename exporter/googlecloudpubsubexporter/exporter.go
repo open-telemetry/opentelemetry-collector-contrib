@@ -93,6 +93,9 @@ func (ex *pubsubExporter) start(ctx context.Context, host component.Host) error 
 }
 
 func (ex *pubsubExporter) shutdown(_ context.Context) error {
+	if ex.cancel != nil {
+		ex.cancel()
+	}
 	if ex.client == nil {
 		return nil
 	}

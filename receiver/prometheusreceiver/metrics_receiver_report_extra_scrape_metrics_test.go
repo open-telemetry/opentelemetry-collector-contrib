@@ -125,7 +125,7 @@ func testScraperMetrics(t *testing.T, targets []*testData, globalExtra, scrapeEx
 			scrapes := pResults[name]
 			if !target.validateScrapes {
 				scrapes = getValidScrapes(t, pResults[name], target)
-				assert.GreaterOrEqual(t, 1, len(scrapes))
+				assert.GreaterOrEqual(t, len(scrapes), 1)
 				if expectExtraScrapeMetrics {
 					// scrapes has 2 prom metrics + 5 internal scraper metrics + 3 internal extra scraper metrics = 10
 					// scrape_sample_limit, scrape_timeout_seconds, scrape_body_size_bytes

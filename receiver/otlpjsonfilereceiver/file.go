@@ -35,7 +35,8 @@ func NewFactory() receiver.Factory {
 		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 		xreceiver.WithLogs(createLogsReceiver, metadata.LogsStability),
 		xreceiver.WithTraces(createTracesReceiver, metadata.TracesStability),
-		xreceiver.WithProfiles(createProfilesReceiver, metadata.ProfilesStability))
+		xreceiver.WithProfiles(createProfilesReceiver, metadata.ProfilesStability),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType))
 }
 
 type Config struct {

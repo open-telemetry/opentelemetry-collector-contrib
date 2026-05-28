@@ -1,5 +1,6 @@
 display_name: Apache Spark Receiver
-type: apachespark
+type: apache_spark
+deprecated_type: apachespark
 
 description: |
   The Apache Spark Receiver fetches metrics for an Apache Spark cluster through the Apache Spark REST API - specifically,

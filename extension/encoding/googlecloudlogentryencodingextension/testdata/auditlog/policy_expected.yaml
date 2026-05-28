@@ -37,6 +37,9 @@ resourceLogs:
               - key: rpc.jsonrpc.error_code
                 value:
                   intValue: "7"
+              - key: rpc.response.status_code
+                value:
+                  stringValue: "7"
               - key: rpc.jsonrpc.error_message
                 value:
                   stringValue: PERMISSION_DENIED
