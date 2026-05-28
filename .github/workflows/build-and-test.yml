@@ -473,6 +473,13 @@ jobs:
     if: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'ci:full') }}
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
+    # actions/setup-go reads process.env.ImageOS into its cache key.
+    # GitHub-hosted runners set it automatically; CNCF runners don't, which
+    # produces a divergent cache key and a parallel cache. Pinning it here
+    # makes the key match setup-environment's so cross-compile-pr restores
+    # from that cache (hit -> no save).
+    env:
+      ImageOS: ubuntu24
     strategy:
       fail-fast: false
       matrix:
@@ -504,44 +511,44 @@ jobs:
         include:
           - os: darwin
             arch: amd64
-            runner: cncf-ubuntu-4-16-x86
+            runner: ubuntu-24.04
           - os: darwin
             arch: arm64
-            runner: cncf-ubuntu-4-16-x86
+            runner: ubuntu-24.04
           - os: linux
             arch: "386"
-            runner: cncf-ubuntu-4-16-x86
+            runner: ubuntu-24.04
           - os: linux
             arch: amd64
-            runner: cncf-ubuntu-4-16-x86
+            runner: ubuntu-24.04
           - os: linux
             arch: arm
             arm: 7
-            runner: cncf-ubuntu-4-16-x86
+            runner: ubuntu-24.04
           - os: linux
             arch: arm64
-            runner: cncf-ubuntu-4-16-arm
+            runner: ubuntu-24.04-arm
           - os: linux
             arch: ppc64le
-            runner: cncf-ubuntu-4-16-x86
+            runner: ubuntu-24.04
           - os: linux
             arch: riscv64
-            runner: cncf-ubuntu-4-16-x86
+            runner: ubuntu-24.04
           - os: linux
             arch: s390x
-            runner: cncf-ubuntu-4-16-x86
+            runner: ubuntu-24.04
           - os: windows
             arch: "386"
-            runner: cncf-ubuntu-4-16-x86
+            runner: ubuntu-24.04
           - os: windows
             arch: amd64
-            runner: cncf-ubuntu-4-16-x86
+            runner: ubuntu-24.04
           - os: windows
             arch: arm64
-            runner: cncf-ubuntu-4-16-x86
+            runner: ubuntu-24.04
           - os: aix
             arch: ppc64
-            runner: cncf-ubuntu-4-16-x86
+            runner: ubuntu-24.04
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
