@@ -11,7 +11,6 @@ package internal
 
 import (
 	context "context"
-	io "io"
 	reflect "reflect"
 
 	s3 "github.com/aws/aws-sdk-go-v2/service/s3"
@@ -102,6 +101,74 @@ func (mr *Mocks3APIMockRecorder) ListObjectsV2(ctx, params any, optFns ...any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListObjectsV2", reflect.TypeOf((*Mocks3API)(nil).ListObjectsV2), varargs...)
 }
 
+// MockS3ObjectReader is a mock of S3ObjectReader interface.
+type MockS3ObjectReader struct {
+	ctrl     *gomock.Controller
+	recorder *MockS3ObjectReaderMockRecorder
+	isgomock struct{}
+}
+
+// MockS3ObjectReaderMockRecorder is the mock recorder for MockS3ObjectReader.
+type MockS3ObjectReaderMockRecorder struct {
+	mock *MockS3ObjectReader
+}
+
+// NewMockS3ObjectReader creates a new mock instance.
+func NewMockS3ObjectReader(ctrl *gomock.Controller) *MockS3ObjectReader {
+	mock := &MockS3ObjectReader{ctrl: ctrl}
+	mock.recorder = &MockS3ObjectReaderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockS3ObjectReader) EXPECT() *MockS3ObjectReaderMockRecorder {
+	return m.recorder
+}
+
+// Close mocks base method.
+func (m *MockS3ObjectReader) Close() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockS3ObjectReaderMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockS3ObjectReader)(nil).Close))
+}
+
+// Read mocks base method.
+func (m *MockS3ObjectReader) Read(p []byte) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Read", p)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Read indicates an expected call of Read.
+func (mr *MockS3ObjectReaderMockRecorder) Read(p any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockS3ObjectReader)(nil).Read), p)
+}
+
+// ReadAt mocks base method.
+func (m *MockS3ObjectReader) ReadAt(p []byte, off int64) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadAt", p, off)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReadAt indicates an expected call of ReadAt.
+func (mr *MockS3ObjectReaderMockRecorder) ReadAt(p, off any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadAt", reflect.TypeOf((*MockS3ObjectReader)(nil).ReadAt), p, off)
+}
+
 // MockS3Service is a mock of S3Service interface.
 type MockS3Service struct {
 	ctrl     *gomock.Controller
@@ -141,18 +208,18 @@ func (mr *MockS3ServiceMockRecorder) DeleteObject(ctx, bucketName, objectKey any
 }
 
 // GetReader mocks base method.
-func (m *MockS3Service) GetReader(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
+func (m *MockS3Service) GetReader(ctx context.Context, bucketName, objectKey string, objectSize int64) (S3ObjectReader, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetReader", ctx, bucketName, objectKey)
-	ret0, _ := ret[0].(io.ReadCloser)
+	ret := m.ctrl.Call(m, "GetReader", ctx, bucketName, objectKey, objectSize)
+	ret0, _ := ret[0].(S3ObjectReader)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetReader indicates an expected call of GetReader.
-func (mr *MockS3ServiceMockRecorder) GetReader(ctx, bucketName, objectKey any) *gomock.Call {
+func (mr *MockS3ServiceMockRecorder) GetReader(ctx, bucketName, objectKey, objectSize any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReader", reflect.TypeOf((*MockS3Service)(nil).GetReader), ctx, bucketName, objectKey)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReader", reflect.TypeOf((*MockS3Service)(nil).GetReader), ctx, bucketName, objectKey, objectSize)
 }
 
 // ListObjects mocks base method.
