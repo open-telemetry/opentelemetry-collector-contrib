@@ -64,7 +64,7 @@ components:
     - exporter/opensearch
     - exporter/otelarrow
     - exporter/prometheus
-    - exporter/prometheusremotewrite
+    - exporter/prometheus_remote_write
     - exporter/pulsar
     - exporter/rabbitmq
     - exporter/sematext
@@ -304,7 +304,7 @@ components:
     - receiver/oracledb
     - receiver/osquery
     - receiver/otelarrow
-    - receiver/otlpjsonfile
+    - receiver/otlp_json_file
     - receiver/podman_stats
     - receiver/postgresql
     - receiver/pprof

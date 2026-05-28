@@ -82,7 +82,7 @@ Example:
 
 ```yaml
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: "https://my-cortex:7900/api/v1/push"
     wal: # Enabling the Write-Ahead-Log for the exporter.
       directory: ./prom_rw # The directory to store the WAL in
@@ -96,12 +96,15 @@ Example:
 
 ```yaml
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: "https://my-cortex:7900/api/v1/push"
     external_labels:
       label_name1: label_value1
       label_name2: label_value2
 ```
+
+> [!NOTE]
+> The deprecated coponent type `prometheusremotewrite` (without the underscores) can still be used as an alias and will log a deprecation warning.
 
 ## Advanced Configuration
 
