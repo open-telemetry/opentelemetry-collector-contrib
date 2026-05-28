@@ -210,7 +210,7 @@ See [`internal/openllmetry/mappings.go`](./internal/openllmetry/mappings.go) for
 
 ### Value transformations
 
-When a mapped attribute lands on `gen_ai.operation.name`, the string value is normalized to the OTel GenAI enum. Lookup is case-insensitive.
+When a built-in mapping lands on `gen_ai.operation.name`, the string value is normalized to the OTel GenAI enum. Built-in lookups are case-insensitive; user-defined `value_mappings` are exact-match.
 
 | Source | Source attribute | Source value | Target value |
 |---|---|---|---|
