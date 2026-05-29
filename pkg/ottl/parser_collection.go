@@ -195,16 +195,7 @@ type (
 	}
 )
 
-// createConditionsParserWithConverter creates a parser wrapper that:
-// - Optionally normalizes condition paths by prepending the context name to any path missing one
-// - Parses the conditions via parser.ParseConditions
-// - Converts the parsed result to the collection's return type R
-//
-// When prependPathsContext is true, the context prepending only affects paths without an explicit context prefix.
-// For example, with context="resource":
-//   - `attributes["env"]` becomes `resource.attributes["env"]`
-//   - `resource.attributes["env"]` stays unchanged (already has context)
-//   - `span.attributes["method"]` stays unchanged (has different context)
+// createConditionsParserWithConverter is a method to create the necessary parser wrapper and shadowing the K type.
 func createConditionsParserWithConverter[K, R any](converter ParsedConditionsConverter[K, R], parser *Parser[K]) parserCollectionContextParserFunc[R, ConditionsGetter] {
 	return func(pc *ParserCollection[R], context string, conditions ConditionsGetter, prependPathsContext bool) (R, error) {
 		var err error
@@ -241,8 +232,7 @@ func createConditionsParserWithConverter[K, R any](converter ParsedConditionsCon
 	}
 }
 
-// createValueExpressionsParserWithConverter creates a parser wrapper for value expressions.
-// See createConditionsParserWithConverter for details on path normalization behavior.
+// createValueExpressionsParserWithConverter is a method to create the necessary parser wrapper and shadowing the K type.
 func createValueExpressionsParserWithConverter[K, R any](converter ParsedValueExpressionsConverter[K, R], parser *Parser[K]) parserCollectionContextParserFunc[R, ValueExpressionsGetter] {
 	return func(pc *ParserCollection[R], context string, expressions ValueExpressionsGetter, prependPathsContext bool) (R, error) {
 		var err error
@@ -279,8 +269,7 @@ func createValueExpressionsParserWithConverter[K, R any](converter ParsedValueEx
 	}
 }
 
-// createStatementsParserWithConverter creates a parser wrapper for statements.
-// See createConditionsParserWithConverter for details on path normalization behavior.
+// createStatementsParserWithConverter is a method to create the necessary parser wrapper and shadowing the K type.
 func createStatementsParserWithConverter[K, R any](converter ParsedStatementsConverter[K, R], parser *Parser[K]) parserCollectionContextParserFunc[R, StatementsGetter] {
 	return func(pc *ParserCollection[R], context string, statements StatementsGetter, prependPathsContext bool) (R, error) {
 		var err error
