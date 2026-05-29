@@ -56,8 +56,8 @@ func newTestClient(respCode int, respBody string) (*http.Client, *[]http.Header)
 	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody}, func(_ []byte) {})
 }
 
-func newTestClientWithBodyReader(respCode int, respBody string, bodyReader func([]byte)) (*http.Client, *[]http.Header) {
-	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody}, bodyReader)
+func newTestClientWithBodyReader(respBody string, bodyReader func([]byte)) (*http.Client, *[]http.Header) {
+	return newTestClientWithPresetResponses([]int{http.StatusOK}, []string{respBody}, bodyReader)
 }
 
 func newTestClientWithPresetResponses(codes []int, bodies []string, bodyReader func([]byte)) (*http.Client, *[]http.Header) {
@@ -1779,7 +1779,7 @@ func TestProfileData(t *testing.T) {
 
 	done := make(chan bool)
 
-	httpClient, headers := newTestClientWithBodyReader(200, "OK", func(bChan []byte) {
+	httpClient, headers := newTestClientWithBodyReader("OK", func(bChan []byte) {
 		var hecEvent translator.Event
 		err := json.Unmarshal(bChan, &hecEvent)
 		require.NoError(t, err)
@@ -1831,7 +1831,7 @@ func TestProfileDataMultipleResources(t *testing.T) {
 	var mu sync.Mutex
 	var observedHosts []string
 
-	httpClient, _ := newTestClientWithBodyReader(200, "OK", func(body []byte) {
+	httpClient, _ := newTestClientWithBodyReader("OK", func(body []byte) {
 		// Each HEC batch may contain multiple newline-delimited JSON events.
 		for line := range bytes.SplitSeq(bytes.TrimSpace(body), []byte("\n")) {
 			if len(line) == 0 {
@@ -1879,7 +1879,7 @@ func TestProfileDataTotalFrameCount(t *testing.T) {
 	var mu sync.Mutex
 	var observedFrameCounts []int64
 
-	httpClient, _ := newTestClientWithBodyReader(200, "OK", func(body []byte) {
+	httpClient, _ := newTestClientWithBodyReader("OK", func(body []byte) {
 		for line := range bytes.SplitSeq(bytes.TrimSpace(body), []byte("\n")) {
 			if len(line) == 0 {
 				continue
@@ -1953,7 +1953,7 @@ func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
 	var mu sync.Mutex
 	var observedHosts []string
 
-	httpClient, _ := newTestClientWithBodyReader(200, "OK", func(body []byte) {
+	httpClient, _ := newTestClientWithBodyReader("OK", func(body []byte) {
 		for line := range bytes.SplitSeq(bytes.TrimSpace(body), []byte("\n")) {
 			if len(line) == 0 {
 				continue
