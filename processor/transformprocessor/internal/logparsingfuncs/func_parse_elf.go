@@ -11,6 +11,7 @@ import (
 	"unicode"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
@@ -25,15 +26,15 @@ func NewParseELFFactory() ottl.Factory[*ottllog.TransformContext] {
 	return ottl.NewFactory("ParseELF", &parseELFArguments{}, createParseELFFunction)
 }
 
-func createParseELFFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottllog.TransformContext], error) {
+func createParseELFFunction(fCtx ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottllog.TransformContext], error) {
 	args, ok := oArgs.(*parseELFArguments)
 	if !ok {
 		return nil, errors.New("parseELFFactory args must be of type *parseELFArguments")
 	}
-	return parseELF(args.Target), nil
+	return parseELF(args.Target, fCtx.Set.Logger), nil
 }
 
-func parseELF(target ottl.StringGetter[*ottllog.TransformContext]) ottl.ExprFunc[*ottllog.TransformContext] {
+func parseELF(target ottl.StringGetter[*ottllog.TransformContext], logger *zap.Logger) ottl.ExprFunc[*ottllog.TransformContext] {
 	return func(ctx context.Context, tCtx *ottllog.TransformContext) (any, error) {
 		source, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -42,7 +43,7 @@ func parseELF(target ottl.StringGetter[*ottllog.TransformContext]) ottl.ExprFunc
 		if source == "" {
 			return nil, errors.New("cannot parse empty ELF message")
 		}
-		return parseELFMessage(source)
+		return parseELFMessage(source, logger)
 	}
 }
 
@@ -76,7 +77,7 @@ type elfDataEntry struct {
 //   - entries    – slice of maps, one per data line, keyed by field name
 //
 // Multiple #Fields directives are supported; each applies to subsequent data lines.
-func parseELFMessage(input string) (pcommon.Map, error) {
+func parseELFMessage(input string, logger *zap.Logger) (pcommon.Map, error) {
 	input = strings.ReplaceAll(input, "\r\n", "\n")
 	input = strings.ReplaceAll(input, "\r", "\n")
 	lines := strings.Split(input, "\n")
@@ -127,9 +128,13 @@ func parseELFMessage(input string) (pcommon.Map, error) {
 		if len(currentFields) == 0 {
 			return pcommon.Map{}, errors.New("invalid ELF: data entry found before #Fields directive")
 		}
+		values, err := parseELFDataLine(line)
+		if err != nil {
+			return pcommon.Map{}, fmt.Errorf("invalid ELF: %w", err)
+		}
 		entries = append(entries, elfDataEntry{
 			fields: currentFields,
-			values: parseELFDataLine(line),
+			values: values,
 		})
 	}
 
@@ -137,7 +142,7 @@ func parseELFMessage(input string) (pcommon.Map, error) {
 		return pcommon.Map{}, errors.New("invalid ELF: missing #Version directive")
 	}
 
-	return buildELFResult(meta, lastFields, entries), nil
+	return buildELFResult(meta, lastFields, entries, logger), nil
 }
 
 // parseELFDirective parses a directive line of the form "#Key: value" and returns
@@ -155,7 +160,8 @@ func parseELFDirective(line string) (string, string, error) {
 // strings as used by real-world ELF producers (e.g. Microsoft IIS).
 // Whitespace (space or tab) separates tokens; embedded double-quotes inside a quoted
 // string are represented by "" per the W3C ELF spec §2.
-func parseELFDataLine(line string) []string {
+// Returns an error for unterminated quoted values.
+func parseELFDataLine(line string) ([]string, error) {
 	runes := []rune(line)
 	var values []string
 	i, n := 0, len(runes)
@@ -170,6 +176,7 @@ func parseELFDataLine(line string) []string {
 		if runes[i] == '"' {
 			i++ // skip opening '"'
 			var sb strings.Builder
+			closed := false
 			for i < n {
 				if runes[i] == '"' {
 					if i+1 < n && runes[i+1] == '"' {
@@ -178,12 +185,16 @@ func parseELFDataLine(line string) []string {
 						i += 2
 					} else {
 						i++ // skip closing '"'
+						closed = true
 						break
 					}
 				} else {
 					sb.WriteRune(runes[i])
 					i++
 				}
+			}
+			if !closed {
+				return nil, fmt.Errorf("unterminated quoted value in data line: %q", line)
 			}
 			values = append(values, sb.String())
 		} else {
@@ -194,10 +205,10 @@ func parseELFDataLine(line string) []string {
 			values = append(values, string(runes[start:i]))
 		}
 	}
-	return values
+	return values, nil
 }
 
-func buildELFResult(meta elfMeta, lastFields []string, entries []elfDataEntry) pcommon.Map {
+func buildELFResult(meta elfMeta, lastFields []string, entries []elfDataEntry, logger *zap.Logger) pcommon.Map {
 	result := pcommon.NewMap()
 
 	result.PutStr("version", meta.version)
@@ -229,6 +240,11 @@ func buildELFResult(meta elfMeta, lastFields []string, entries []elfDataEntry) p
 			if i < len(e.values) {
 				m.PutStr(field, e.values[i])
 			} else {
+				logger.Warn("ELF data line has fewer values than fields; substituting '-'",
+					zap.String("field", field),
+					zap.Int("field_count", len(e.fields)),
+					zap.Int("value_count", len(e.values)),
+				)
 				m.PutStr(field, "-")
 			}
 		}
