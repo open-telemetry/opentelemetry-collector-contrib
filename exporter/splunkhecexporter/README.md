@@ -151,3 +151,44 @@ Several helper files are leveraged to provide additional capabilities automatica
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
 - [Queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 
+## Profile Support
+
+> **Stability: development** — Profile support is under active development and behavior may change.
+
+This exporter supports the OpenTelemetry [profiles signal](https://opentelemetry.io/docs/specs/otel/profiles/), targeting [Splunk AlwaysOn Profiling](https://docs.splunk.com/observability/en/apm/profiling/intro-profiling.html).
+
+### How it works
+
+Each OTel profile is translated to [pprof](https://github.com/google/pprof) format, gzip-compressed, base64-encoded, and sent as a HEC log event. The events carry the following attributes that the Splunk AlwaysOn Profiling backend uses to identify and ingest them:
+
+| Attribute | Value |
+|---|---|
+| `profiling.data.format` | `pprof-gzip-base64` |
+| `profiling.data.type` | sample type (e.g. `cpu`, `wall`) |
+| `profiling.instrumentation.source` | `continuous` |
+| `com.splunk.sourcetype` | `otel.profiling` |
+
+### Enabling profile export
+
+Add a `profiles` pipeline to your collector configuration:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+exporters:
+  splunk_hec:
+    token: "00000000-0000-0000-0000-0000000000000"
+    endpoint: "https://splunk:8088/services/collector"
+
+service:
+  pipelines:
+    profiles:
+      receivers: [otlp]
+      exporters: [splunk_hec]
+```
+
+The receiving Splunk instance must have [AlwaysOn Profiling](https://docs.splunk.com/observability/en/apm/profiling/intro-profiling.html) enabled. Refer to the [Splunk Observability Cloud documentation](https://docs.splunk.com/observability/en/apm/profiling/profiling-configuration-reference.html) for details on configuring the profiling backend.
+
