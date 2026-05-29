@@ -91,7 +91,7 @@ type eventDbServerTopQuery struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, sqlserverTotalWorkerTimeAttributeValue float64, dbQueryTextAttributeValue string, sqlserverExecutionCountAttributeValue int64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverQueryHashAttributeValue string, sqlserverQueryPlanAttributeValue string, sqlserverQueryPlanHashAttributeValue string, sqlserverTotalRowsAttributeValue int64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalGrantKbAttributeValue int64, serverAddressAttributeValue string, serverPortAttributeValue int64, dbSystemNameAttributeValue string, sqlserverProcedureExecutionCountAttributeValue int64, sqlserverProcedureIDAttributeValue string, sqlserverProcedureNameAttributeValue string) {
+func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, sqlserverTotalWorkerTimeAttributeValue float64, dbQueryTextAttributeValue string, dbNamespaceAttributeValue string, sqlserverExecutionCountAttributeValue int64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverQueryHashAttributeValue string, sqlserverQueryPlanAttributeValue string, sqlserverQueryPlanHashAttributeValue string, sqlserverTotalRowsAttributeValue int64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalGrantKbAttributeValue int64, serverAddressAttributeValue string, serverPortAttributeValue int64, dbSystemNameAttributeValue string, sqlserverProcedureExecutionCountAttributeValue int64, sqlserverProcedureIDAttributeValue string, sqlserverProcedureNameAttributeValue string, sqlserverQueryLastStartedAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -105,6 +105,7 @@ func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcomm
 	}
 	dp.Attributes().PutDouble("sqlserver.total_worker_time", sqlserverTotalWorkerTimeAttributeValue)
 	dp.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	dp.Attributes().PutInt("sqlserver.execution_count", sqlserverExecutionCountAttributeValue)
 	dp.Attributes().PutInt("sqlserver.total_logical_reads", sqlserverTotalLogicalReadsAttributeValue)
 	dp.Attributes().PutInt("sqlserver.total_logical_writes", sqlserverTotalLogicalWritesAttributeValue)
@@ -121,6 +122,7 @@ func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcomm
 	dp.Attributes().PutInt("sqlserver.procedure_execution_count", sqlserverProcedureExecutionCountAttributeValue)
 	dp.Attributes().PutStr("sqlserver.procedure_id", sqlserverProcedureIDAttributeValue)
 	dp.Attributes().PutStr("sqlserver.procedure_name", sqlserverProcedureNameAttributeValue)
+	dp.Attributes().PutStr("sqlserver.query.last_started", sqlserverQueryLastStartedAttributeValue)
 
 }
 
@@ -297,6 +299,6 @@ func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, times
 }
 
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.
-func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, sqlserverTotalWorkerTimeAttributeValue float64, dbQueryTextAttributeValue string, sqlserverExecutionCountAttributeValue int64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverQueryHashAttributeValue string, sqlserverQueryPlanAttributeValue string, sqlserverQueryPlanHashAttributeValue string, sqlserverTotalRowsAttributeValue int64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalGrantKbAttributeValue int64, serverAddressAttributeValue string, serverPortAttributeValue int64, dbSystemNameAttributeValue string, sqlserverProcedureExecutionCountAttributeValue int64, sqlserverProcedureIDAttributeValue string, sqlserverProcedureNameAttributeValue string) {
-	lb.eventDbServerTopQuery.recordEvent(ctx, timestamp, sqlserverTotalWorkerTimeAttributeValue, dbQueryTextAttributeValue, sqlserverExecutionCountAttributeValue, sqlserverTotalLogicalReadsAttributeValue, sqlserverTotalLogicalWritesAttributeValue, sqlserverTotalPhysicalReadsAttributeValue, sqlserverQueryHashAttributeValue, sqlserverQueryPlanAttributeValue, sqlserverQueryPlanHashAttributeValue, sqlserverTotalRowsAttributeValue, sqlserverTotalElapsedTimeAttributeValue, sqlserverTotalGrantKbAttributeValue, serverAddressAttributeValue, serverPortAttributeValue, dbSystemNameAttributeValue, sqlserverProcedureExecutionCountAttributeValue, sqlserverProcedureIDAttributeValue, sqlserverProcedureNameAttributeValue)
+func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, sqlserverTotalWorkerTimeAttributeValue float64, dbQueryTextAttributeValue string, dbNamespaceAttributeValue string, sqlserverExecutionCountAttributeValue int64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverQueryHashAttributeValue string, sqlserverQueryPlanAttributeValue string, sqlserverQueryPlanHashAttributeValue string, sqlserverTotalRowsAttributeValue int64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalGrantKbAttributeValue int64, serverAddressAttributeValue string, serverPortAttributeValue int64, dbSystemNameAttributeValue string, sqlserverProcedureExecutionCountAttributeValue int64, sqlserverProcedureIDAttributeValue string, sqlserverProcedureNameAttributeValue string, sqlserverQueryLastStartedAttributeValue string) {
+	lb.eventDbServerTopQuery.recordEvent(ctx, timestamp, sqlserverTotalWorkerTimeAttributeValue, dbQueryTextAttributeValue, dbNamespaceAttributeValue, sqlserverExecutionCountAttributeValue, sqlserverTotalLogicalReadsAttributeValue, sqlserverTotalLogicalWritesAttributeValue, sqlserverTotalPhysicalReadsAttributeValue, sqlserverQueryHashAttributeValue, sqlserverQueryPlanAttributeValue, sqlserverQueryPlanHashAttributeValue, sqlserverTotalRowsAttributeValue, sqlserverTotalElapsedTimeAttributeValue, sqlserverTotalGrantKbAttributeValue, serverAddressAttributeValue, serverPortAttributeValue, dbSystemNameAttributeValue, sqlserverProcedureExecutionCountAttributeValue, sqlserverProcedureIDAttributeValue, sqlserverProcedureNameAttributeValue, sqlserverQueryLastStartedAttributeValue)
 }
