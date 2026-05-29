@@ -44,7 +44,7 @@ func concat[K any](vals []ottl.StringLikeGetter[K], delimiter ottl.StringGetter[
 				return nil, err
 			}
 			if val == nil {
-				builder.WriteString(fmt.Sprint(val))
+				fmt.Fprint(&builder, val)
 			} else {
 				builder.WriteString(*val)
 			}
