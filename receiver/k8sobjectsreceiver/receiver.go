@@ -306,7 +306,10 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		return err
 	}
 
-	stopChan := obs.Start(ctx, &kr.wg)
+	stopChan, err := obs.Start(ctx, &kr.wg)
+	if err != nil {
+		return err
+	}
 	kr.stopperChanList = append(kr.stopperChanList, stopChan)
 
 	return nil

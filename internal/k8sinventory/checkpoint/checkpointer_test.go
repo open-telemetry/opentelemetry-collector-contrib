@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package watch
+package checkpoint
 
 import (
 	"testing"
@@ -16,7 +16,7 @@ import (
 
 func TestCheckpointerGetAndSet(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-	checkpointer := newCheckpointer(client, zap.NewNop())
+	checkpointer := New(client, zap.NewNop())
 
 	ctx := t.Context()
 
@@ -32,7 +32,7 @@ func TestCheckpointerGetAndSet(t *testing.T) {
 
 func TestCheckpointerKeyFormat(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-	checkpointer := newCheckpointer(client, zap.NewNop())
+	checkpointer := New(client, zap.NewNop())
 
 	ctx := t.Context()
 
@@ -91,7 +91,7 @@ func TestCheckpointerKeyFormat(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.resourceVersion, rv)
 
-			key := checkpointer.getCheckpointKey(tt.namespace, tt.objectType)
+			key := checkpointer.CheckpointKey(tt.namespace, tt.objectType)
 			assert.Equal(t, tt.expectedKey, key)
 		})
 	}
@@ -99,7 +99,7 @@ func TestCheckpointerKeyFormat(t *testing.T) {
 
 func TestCheckpointerGetNonExistent(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-	checkpointer := newCheckpointer(client, zap.NewNop())
+	checkpointer := New(client, zap.NewNop())
 
 	rv, err := checkpointer.GetCheckpoint(t.Context(), "default", "pods")
 	require.NoError(t, err)
@@ -108,7 +108,7 @@ func TestCheckpointerGetNonExistent(t *testing.T) {
 
 func TestCheckpointerUpdate(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-	checkpointer := newCheckpointer(client, zap.NewNop())
+	checkpointer := New(client, zap.NewNop())
 
 	ctx := t.Context()
 
@@ -124,7 +124,7 @@ func TestCheckpointerUpdate(t *testing.T) {
 
 func TestCheckpointerFlushBatches(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-	checkpointer := newCheckpointer(client, zap.NewNop())
+	checkpointer := New(client, zap.NewNop())
 
 	ctx := t.Context()
 
@@ -152,7 +152,7 @@ func TestCheckpointerFlushBatches(t *testing.T) {
 
 func TestCheckpointerFlushClearsPending(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-	checkpointer := newCheckpointer(client, zap.NewNop())
+	checkpointer := New(client, zap.NewNop())
 
 	ctx := t.Context()
 
@@ -169,7 +169,7 @@ func TestCheckpointerFlushClearsPending(t *testing.T) {
 
 func TestCheckpointerMultipleNamespaces(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-	checkpointer := newCheckpointer(client, zap.NewNop())
+	checkpointer := New(client, zap.NewNop())
 
 	ctx := t.Context()
 
@@ -187,7 +187,7 @@ func TestCheckpointerMultipleNamespaces(t *testing.T) {
 }
 
 func TestCheckpointerNilClient(t *testing.T) {
-	checkpointer := newCheckpointer(nil, zap.NewNop())
+	checkpointer := New(nil, zap.NewNop())
 
 	ctx := t.Context()
 
@@ -213,7 +213,7 @@ func TestCheckpointerNilClient(t *testing.T) {
 
 func TestCheckpointerDelete(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-	checkpointer := newCheckpointer(client, zap.NewNop())
+	checkpointer := New(client, zap.NewNop())
 
 	ctx := t.Context()
 
@@ -233,7 +233,7 @@ func TestCheckpointerDelete(t *testing.T) {
 
 func TestCheckpointerDeleteNonExistent(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-	checkpointer := newCheckpointer(client, zap.NewNop())
+	checkpointer := New(client, zap.NewNop())
 
 	err := checkpointer.DeleteCheckpoint(t.Context(), "default", "pods")
 	require.NoError(t, err)
@@ -241,7 +241,7 @@ func TestCheckpointerDeleteNonExistent(t *testing.T) {
 
 func TestCheckpointerDeleteMultipleNamespaces(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-	checkpointer := newCheckpointer(client, zap.NewNop())
+	checkpointer := New(client, zap.NewNop())
 
 	ctx := t.Context()
 
@@ -262,7 +262,7 @@ func TestCheckpointerDeleteMultipleNamespaces(t *testing.T) {
 
 func TestCheckpointerDeleteClusterWide(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-	checkpointer := newCheckpointer(client, zap.NewNop())
+	checkpointer := New(client, zap.NewNop())
 
 	ctx := t.Context()
 
@@ -282,7 +282,7 @@ func TestCheckpointerDeleteClusterWide(t *testing.T) {
 
 func TestCheckpointerHighWatermark(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-	checkpointer := newCheckpointer(client, zap.NewNop())
+	checkpointer := New(client, zap.NewNop())
 
 	ctx := t.Context()
 
@@ -299,7 +299,7 @@ func TestCheckpointerHighWatermark(t *testing.T) {
 
 func TestCheckpointerHighWatermarkFirstEntry(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-	checkpointer := newCheckpointer(client, zap.NewNop())
+	checkpointer := New(client, zap.NewNop())
 
 	ctx := t.Context()
 
@@ -314,7 +314,7 @@ func TestCheckpointerHighWatermarkFirstEntry(t *testing.T) {
 
 func TestCheckpointerInvalidResourceVersion(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-	checkpointer := newCheckpointer(client, zap.NewNop())
+	checkpointer := New(client, zap.NewNop())
 
 	err := checkpointer.SetCheckpoint(t.Context(), "default", "pods", "not-a-number")
 	assert.Error(t, err)
