@@ -76,6 +76,31 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.database.file.size:
+        description: "SqlserverDatabaseFileSizeMetricConfig provides config for the sqlserver.database.file.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "file_type"
+                - "db.namespace"
+            default:
+              - "file_type"
+              - "db.namespace"
       sqlserver.database.full_scan.rate:
         description: "SqlserverDatabaseFullScanRateMetricConfig provides config for the sqlserver.database.full_scan.rate metric."
         type: object
@@ -170,6 +195,54 @@ $defs:
               - "logical_filename"
               - "file_type"
               - "direction"
+      sqlserver.database.security.principal.count:
+        description: "SqlserverDatabaseSecurityPrincipalCountMetricConfig provides config for the sqlserver.database.security.principal.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
+      sqlserver.database.security.role_membership.count:
+        description: "SqlserverDatabaseSecurityRoleMembershipCountMetricConfig provides config for the sqlserver.database.security.role_membership.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "role"
+            default:
+              - "db.namespace"
+              - "role"
       sqlserver.database.tempdb.space:
         description: "SqlserverDatabaseTempdbSpaceMetricConfig provides config for the sqlserver.database.tempdb.space metric."
         type: object
@@ -200,6 +273,29 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.database.transactions.active:
+        description: "SqlserverDatabaseTransactionsActiveMetricConfig provides config for the sqlserver.database.transactions.active metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+            default:
+              - "db.namespace"
       sqlserver.deadlock.rate:
         description: "SqlserverDeadlockRateMetricConfig provides config for the sqlserver.deadlock.rate metric."
         type: object
@@ -258,6 +354,13 @@ $defs:
             default: false
       sqlserver.memory.grants.pending.count:
         description: "SqlserverMemoryGrantsPendingCountMetricConfig provides config for the sqlserver.memory.grants.pending.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.memory.target:
+        description: "SqlserverMemoryTargetMetricConfig provides config for the sqlserver.memory.target metric."
         type: object
         properties:
           enabled:
@@ -450,6 +553,36 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.server.security.principal.count:
+        description: "SqlserverServerSecurityPrincipalCountMetricConfig provides config for the sqlserver.server.security.principal.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.server.security.role_membership.count:
+        description: "SqlserverServerSecurityRoleMembershipCountMetricConfig provides config for the sqlserver.server.security.role_membership.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "role"
+            default:
+              - "role"
       sqlserver.table.count:
         description: "SqlserverTableCountMetricConfig provides config for the sqlserver.table.count metric."
         type: object

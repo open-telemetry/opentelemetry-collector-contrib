@@ -1,0 +1,298 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: AdventureWorks
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Size of database files.
+            gauge:
+              dataPoints:
+                - asInt: "419430400"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: AdventureWorks
+                    - key: file_type
+                      value:
+                        stringValue: data
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.file.size
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: AdventureWorks
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Size of database files.
+            gauge:
+              dataPoints:
+                - asInt: "104857600"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: AdventureWorks
+                    - key: file_type
+                      value:
+                        stringValue: log
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.file.size
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: AdventureWorks
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Number of currently active transactions.
+            gauge:
+              dataPoints:
+                - asInt: "3"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: AdventureWorks
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.transactions.active
+            unit: '{transactions}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: SalesDB
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Size of database files.
+            gauge:
+              dataPoints:
+                - asInt: "858993459"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: SalesDB
+                    - key: file_type
+                      value:
+                        stringValue: data
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.file.size
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: SalesDB
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Size of database files.
+            gauge:
+              dataPoints:
+                - asInt: "214748365"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: SalesDB
+                    - key: file_type
+                      value:
+                        stringValue: log
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.file.size
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: SalesDB
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Number of currently active transactions.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: SalesDB
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.transactions.active
+            unit: '{transactions}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: ReportsDB
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Size of database files.
+            gauge:
+              dataPoints:
+                - asInt: "214748365"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: ReportsDB
+                    - key: file_type
+                      value:
+                        stringValue: data
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.file.size
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: ReportsDB
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Size of database files.
+            gauge:
+              dataPoints:
+                - asInt: "53687091"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: ReportsDB
+                    - key: file_type
+                      value:
+                        stringValue: log
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.file.size
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: ReportsDB
+        - key: sqlserver.instance.name
+          value:
+            stringValue: SERVER1
+    scopeMetrics:
+      - metrics:
+          - description: Number of currently active transactions.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: ReportsDB
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.database.transactions.active
+            unit: '{transactions}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest

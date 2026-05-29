@@ -492,7 +492,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.execution.errors
-            unit: “{errors}”
+            unit: '{errors}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -717,7 +717,7 @@ resourceMetrics:
                 - asInt: "0"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: “{grants}”
+            unit: '{grants}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -742,7 +742,7 @@ resourceMetrics:
                 - asDouble: 24944
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: “KB”
+            unit: KB
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -975,7 +975,7 @@ resourceMetrics:
                 - asDouble: 234720
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: “KB”
+            unit: KB
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
@@ -1100,7 +1100,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.tempdb.version_store.size
-            unit: “KB”
+            unit: KB
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
