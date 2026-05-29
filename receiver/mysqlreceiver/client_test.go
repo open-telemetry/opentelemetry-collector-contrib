@@ -173,6 +173,22 @@ func TestExplainQueryEarlyExits(t *testing.T) {
 	})
 }
 
+// TestExplainQueryConnFailure verifies that explainQuery returns "" and does not
+// panic when the underlying *sql.DB cannot provide a connection (e.g. the DB is
+// already closed). This exercises the new Conn() error path introduced to ensure
+// USE and EXPLAIN execute on the same connection.
+func TestExplainQueryConnFailure(t *testing.T) {
+	db, err := sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/")
+	require.NoError(t, err)
+	require.NoError(t, db.Close()) // close immediately so Conn() will fail
+
+	c := &mySQLClient{client: db}
+	logger := zap.NewNop()
+
+	result := c.explainQuery("SELECT * FROM t", "SELECT * FROM t", "myschema", "digest1", logger)
+	assert.Empty(t, result)
+}
+
 // mustParseVersion is a test helper that parses a semver string and fails the test if parsing fails.
 func mustParseVersion(t *testing.T, v string) *version.Version {
 	t.Helper()
