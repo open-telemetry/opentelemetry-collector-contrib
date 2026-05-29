@@ -178,6 +178,7 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 	}
 
 	ld := plog.NewLogs()
+	var permanentErrors []error
 
 	for _, rp := range pp.ResourceProfiles().All() {
 		rl := ld.ResourceLogs().AppendEmpty()
@@ -191,13 +192,15 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 			for _, prof := range sp.Profiles().All() {
 				p, err := translator.ConvertPprofileToPprof(pp.Dictionary(), sp.Scope(), prof)
 				if err != nil {
-					return consumererror.NewPermanent(err)
+					permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("failed to convert profile: %w", err)))
+					continue
 				}
 				var buf bytes.Buffer
 
 				// The Write method encodes the profile to a gzipped protobuf
 				if err := p.Write(&buf); err != nil {
-					return consumererror.NewPermanent(err)
+					permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("failed to write profile: %w", err)))
+					continue
 				}
 				lr := sl.LogRecords().AppendEmpty()
 				lr.Body().SetStr(base64.StdEncoding.EncodeToString(buf.Bytes()))
@@ -217,7 +220,10 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 		}
 	}
 
-	return c.pushLogDataInBatches(ctx, ld, localHeaders)
+	if err := c.pushLogDataInBatches(ctx, ld, localHeaders); err != nil {
+		return err
+	}
+	return multierr.Combine(permanentErrors...)
 }
 
 // A guesstimated value > length of bytes of a single event.

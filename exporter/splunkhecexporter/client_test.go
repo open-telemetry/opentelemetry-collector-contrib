@@ -1942,6 +1942,66 @@ func TestProfileDataTotalFrameCount(t *testing.T) {
 		"profiling.data.total.frame.count must be the sum of stack depths (4), not the sample count (2)")
 }
 
+// TestProfileDataTranslationErrorIsPerProfile verifies that when one profile in a batch fails to
+// translate, the remaining valid profiles are still exported and the returned error is permanent.
+func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.MaxContentLengthLogs, config.DisableCompression = 0, true
+
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+
+	var mu sync.Mutex
+	var observedHosts []string
+
+	httpClient, _ := newTestClientWithBodyReader(200, "OK", func(body []byte) {
+		for line := range bytes.SplitSeq(bytes.TrimSpace(body), []byte("\n")) {
+			if len(line) == 0 {
+				continue
+			}
+			var hecEvent translator.Event
+			require.NoError(t, json.Unmarshal(line, &hecEvent))
+			mu.Lock()
+			observedHosts = append(observedHosts, hecEvent.Host)
+			mu.Unlock()
+		}
+	})
+
+	profiles := pprofile.NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("cpu")
+
+	// Resource 1: well-formed profile — should export successfully.
+	rp1 := profiles.ResourceProfiles().AppendEmpty()
+	rp1.Resource().Attributes().PutStr("host.name", "good-host")
+	rp1.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples().AppendEmpty().Values().Append(1)
+
+	// Resource 2: profile whose samples have inconsistent value counts (first sample has 2 values,
+	// second has 1), which causes checkValid inside ConvertPprofileToPprof to return an error that
+	// is local to this profile and does not affect the shared dictionary used by the good profile.
+	rp2 := profiles.ResourceProfiles().AppendEmpty()
+	rp2.Resource().Attributes().PutStr("host.name", "bad-host")
+	badProfile := rp2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	badSample1 := badProfile.Samples().AppendEmpty()
+	badSample1.Values().Append(1)
+	badSample1.Values().Append(2) // first sample has 2 values → nValues=2 → 2 SampleTypes added
+	badSample2 := badProfile.Samples().AppendEmpty()
+	badSample2.Values().Append(3) // second sample has 1 value → mismatch triggers checkValid error
+
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	err := c.pushProfilesData(t.Context(), profiles)
+
+	// The good profile must have been shipped.
+	assert.Contains(t, observedHosts, "good-host", "good profile must be exported despite sibling failure")
+	// The bad profile must not have been shipped.
+	assert.NotContains(t, observedHosts, "bad-host")
+	// The combined error must be non-nil and permanent.
+	require.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+}
+
 // 10 resources, 10 records, 1Kb max HEC batch: 17 HEC batches
 func Benchmark_pushLogData_10_10_1024(b *testing.B) {
 	benchPushLogData(b, 10, 10, 1024, false)
