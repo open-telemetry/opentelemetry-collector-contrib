@@ -472,7 +472,7 @@ func TestS3Enrichments(t *testing.T) {
 func TestCWLogsEnrichments(t *testing.T) {
 	t.Parallel()
 
-	cwMetadata := cwMetadataEnvelop{
+	cwMetadata := cwMetadataEnvelope{
 		Owner:     "123456789012",
 		LogGroup:  "/aws/lambda/my-function",
 		LogStream: "test-stream",

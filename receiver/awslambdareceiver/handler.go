@@ -289,7 +289,7 @@ func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMe
 	var buf bytes.Buffer
 	tReader := io.TeeReader(reader, &buf)
 
-	var mData cwMetadataEnvelop
+	var mData cwMetadataEnvelope
 	if err = gojson.NewDecoder(tReader).Decode(&mData); err != nil {
 		return fmt.Errorf("failed to decode cloudwatch logs envelope: %w", err)
 	}
@@ -351,8 +351,8 @@ func getEnrichedContext(ctx context.Context, event events.S3EventRecord) context
 	return client.NewContext(ctx, info)
 }
 
-// cwMetadataEnvelop defines the structure to unmarshal the CloudWatch logs event envelope for metadata extraction.
-type cwMetadataEnvelop struct {
+// cwMetadataEnvelope defines the structure to unmarshal the CloudWatch logs event envelope for metadata extraction.
+type cwMetadataEnvelope struct {
 	Owner     string `json:"owner"`
 	LogGroup  string `json:"logGroup"`
 	LogStream string `json:"logStream"`
@@ -360,7 +360,7 @@ type cwMetadataEnvelop struct {
 
 // getEnrichedCWLog add extra metadata to resource attributes iff metadata is not already present.
 // This makes sure overrides do not happen if configured extensions already populate these attributes.
-func getEnrichedCWLog(logs plog.Logs, cwM cwMetadataEnvelop) {
+func getEnrichedCWLog(logs plog.Logs, cwM cwMetadataEnvelope) {
 	for _, resourceLogs := range logs.ResourceLogs().All() {
 		resourceAttrs := resourceLogs.Resource().Attributes()
 
@@ -379,7 +379,7 @@ func getEnrichedCWLog(logs plog.Logs, cwM cwMetadataEnvelop) {
 	}
 }
 
-func getEnrichedCtxForCWLogs(ctx context.Context, cwM cwMetadataEnvelop) context.Context {
+func getEnrichedCtxForCWLogs(ctx context.Context, cwM cwMetadataEnvelope) context.Context {
 	metadata := map[string][]string{}
 	metadata[string(conventions.CloudAccountIDKey)] = []string{cwM.Owner}
 	metadata[string(conventions.AWSLogGroupNamesKey)] = []string{cwM.LogGroup}
