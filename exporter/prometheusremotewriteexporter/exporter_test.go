@@ -25,6 +25,7 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -1337,6 +1338,116 @@ func BenchmarkPushMetrics(b *testing.B) {
 			benchmarkPushMetrics(b, numMetrics, 1)
 		})
 	}
+}
+
+// TestIncludeMetadataKeys verifies that keys listed in
+// remote_write_queue.include_metadata_keys are read from the client metadata
+// context and forwarded as HTTP headers on every outbound remote write request.
+func TestIncludeMetadataKeys(t *testing.T) {
+	// Capture headers received by the mock remote write server.
+	var (
+		mu              sync.Mutex
+		receivedHeaders http.Header
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		receivedHeaders = r.Header.Clone()
+		mu.Unlock()
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg := &Config{
+		ClientConfig: clientConfig,
+		RemoteWriteQueue: RemoteWriteQueue{
+			NumConsumers: 1,
+			IncludeMetadataKeys: []string{
+				"target-id",
+				"target-type",
+			},
+		},
+		TargetInfo:          TargetInfo{Enabled: true},
+		BackOffConfig:       configretry.NewDefaultBackOffConfig(),
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+	}
+
+	set := exportertest.NewNopSettings(metadata.Type)
+	prwe, err := newPRWExporter(cfg, set)
+	require.NoError(t, err)
+	require.NoError(t, prwe.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, prwe.Shutdown(context.Background())) }) //nolint:usetesting
+
+	// Build a context carrying the metadata keys that should be forwarded.
+	ctx := client.NewContext(t.Context(), client.Info{
+		Metadata: client.NewMetadata(map[string][]string{
+			"target-id":   {"my-project-123"},
+			"target-type": {"server-type"},
+		}),
+	})
+
+	// execute() requires a snappy-encoded protobuf body. An empty WriteRequest
+	// is valid enough for the mock server to accept.
+	emptyBuf, err := (&buffer{}).MarshalAndEncode(&prompb.WriteRequest{})
+	require.NoError(t, err)
+
+	require.NoError(t, prwe.execute(ctx, emptyBuf))
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Equal(t, "my-project-123", receivedHeaders.Get("target-id"),
+		"target-id header should be forwarded from client metadata")
+	assert.Equal(t, "server-type", receivedHeaders.Get("target-type"),
+		"target-type header should be forwarded from client metadata")
+}
+
+// TestIncludeMetadataKeysAbsentWhenNotConfigured verifies that no extra headers
+// are added when include_metadata_keys is empty (the default).
+func TestIncludeMetadataKeysAbsentWhenNotConfigured(t *testing.T) {
+	var (
+		mu              sync.Mutex
+		receivedHeaders http.Header
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		receivedHeaders = r.Header.Clone()
+		mu.Unlock()
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg := &Config{
+		ClientConfig:        clientConfig,
+		RemoteWriteQueue:    RemoteWriteQueue{NumConsumers: 1},
+		TargetInfo:          TargetInfo{Enabled: true},
+		BackOffConfig:       configretry.NewDefaultBackOffConfig(),
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+	}
+
+	set := exportertest.NewNopSettings(metadata.Type)
+	prwe, err := newPRWExporter(cfg, set)
+	require.NoError(t, err)
+	require.NoError(t, prwe.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, prwe.Shutdown(context.Background())) }) //nolint:usetesting
+
+	ctx := client.NewContext(t.Context(), client.Info{
+		Metadata: client.NewMetadata(map[string][]string{
+			"target-id": {"my-project-123"},
+		}),
+	})
+
+	emptyBuf, err := (&buffer{}).MarshalAndEncode(&prompb.WriteRequest{})
+	require.NoError(t, err)
+
+	require.NoError(t, prwe.execute(ctx, emptyBuf))
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Empty(t, receivedHeaders.Get("target-id"),
+		"target-id should not be forwarded when not listed in include_metadata_keys")
 }
 
 func BenchmarkPushMetricsVaryingMetrics(b *testing.B) {
