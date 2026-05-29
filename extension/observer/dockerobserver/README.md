@@ -99,6 +99,18 @@ to an instance of the collector running outside of the docker network stack.
 
 default: `false`
 
+### `include_all_containers`
+
+If true, the observer emits a port-less endpoint for every running container,
+alongside any per-port endpoints. This makes every container, including those
+without exposed ports, discoverable by `receiver_creator` rules of
+`type == "container"`. The port-less endpoint has no port information
+(`port` and `alternate_port` are `0`, `transport` is `unknown`). To get exactly
+one logging receiver per container, scope with 
+`rule: type == "container" and port == 0`.
+
+default: `false`
+
 ### `cache_sync_interval`
 
 The time to wait before resyncing the list of containers the observer maintains

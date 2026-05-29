@@ -64,7 +64,7 @@ Within each `<signal_statements>` list, only certain OTTL Path prefixes can be u
 This means, for example, that you cannot use the Path `span.attributes` within the `log_statements` configuration section.
 
 `error_mode`: determines how the processor treats errors that occur while processing a statement.
-If the top-level `error_mode` is not specified, `propagate` will be used.
+If the top-level `error_mode` is not specified, `ignore` will be used.
 The top-level `error_mode` can be overridden at statement group level, offering more granular control over error handling. If the statement group `error_mode` is not specified, the top-level `error_mode` is applied.
 
 | error_mode | description                                                                                                                                 |
@@ -661,20 +661,24 @@ To aggregate only using a specified set of attributes, you can use `keep_matchin
 
 ### merge_histogram_buckets
 
-`merge_histogram_buckets(bound)`
+`merge_histogram_buckets(target_value, method)`
 
-The `merge_histogram_buckets` function merges a specific bucket of a histogram with the next bucket by removing the specified boundary. This effectively combines the counts of the bucket ending at the specified bound with the counts of the next bucket.
+The `merge_histogram_buckets` function merges explicit histogram buckets. The `method` argument is optional and defaults to `remove_explicit_bound`.
 
-`bound` is a float64 value that specifies which bucket boundary to remove. The function will merge the bucket that ends at this boundary with the next bucket.
+`target_value` is interpreted according to `method`:
+- `remove_explicit_bound`: `target_value` is the explicit boundary to remove. The function merges the bucket ending at this boundary with the next bucket. This method uses floating-point tolerance (epsilon = 1e-12) when matching the boundary.
+- `limit_buckets`: `target_value` is the maximum number of buckets to keep. It must be a positive integer. The function reduces resolution in uniform compaction passes until the histogram has no more than `target_value` buckets. In each pass, it merges adjacent bucket pairs from lower to higher bucket order, combines their counts, and keeps an unpaired final bucket unchanged. Bucket count values and boundary widths do not affect which buckets are merged. Because each pass roughly halves the number of buckets, the resulting histogram may have fewer than `target_value` buckets.
 
 The function:
-- Preserves the total count and sum of the histogram.  
-- Only works on histogram metrics (no-op for other metric types).  
-- Uses floating-point tolerance (epsilon = 1e-12) when matching the bound.  
-- Makes no changes if:  
-  - The bound is not found.  
-  - The histogram is empty.  
-  - The histogram structure is invalid (mismatched bounds and counts).
+- Preserves the total count and sum of the histogram.
+- Only works on histogram metrics (no-op for other metric types).
+- Makes no changes if:
+  - The explicit boundary is not found when using `remove_explicit_bound`.
+  - The histogram is already at or below the requested bucket limit when using `limit_buckets`.
+  - The histogram is empty.
+  - The histogram structure is invalid (mismatched bounds and counts, or unordered bounds when using `limit_buckets`).
+
+**NOTE:** The `limit_buckets` method reduces histogram resolution and may affect percentile or quantile accuracy. Use only when you are confident that reducing bucket detail is acceptable for downstream consumers.
 
 Examples:
 
@@ -689,6 +693,17 @@ Examples:
 # After merging at 0.5:
 # bounds: [0.1, 1.0]
 # counts: [5, 11, 1]
+
+# Limit histograms to at most 5 buckets
+- merge_histogram_buckets(5, method="limit_buckets") where metric.name == "http_request_duration"
+
+# Given a histogram with:
+# bounds: [0.1, 0.2, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0]
+# counts: [80, 4, 6, 120, 3, 2, 40, 10, 1]
+#
+# After limiting to 5 buckets, one compaction pass merges bucket pairs:
+# bounds: [0.2, 1.0, 5.0, 30.0]
+# counts: [84, 126, 5, 50, 1]
 ```
 
 ### set_semconv_span_name
@@ -968,6 +983,10 @@ The Transform Processor uses the [OpenTelemetry Transformation Language](https:/
 - [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry): The processor allows you to modify `span_id`, `trace_id`, and `parent_span_id` for traces and `span_id`, and `trace_id` logs.  Modifying these fields could lead to orphaned spans or logs.
 
 ## Feature Gate
+
+### `processor.transform.defaultErrorModeIgnore`
+
+The `processor.transform.defaultErrorModeIgnore` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) changes the default top-level `error_mode` of the transform processor from `propagate` to `ignore`. This gate is currently in `beta` (enabled by default), meaning the default `error_mode` is `ignore`. To revert to the previous default of `propagate`, disable the gate: `--feature-gates=-processor.transform.defaultErrorModeIgnore`.
 
 ### `transform.flatten.logs`
 

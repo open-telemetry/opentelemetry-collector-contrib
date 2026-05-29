@@ -23,98 +23,47 @@ func TestValidate(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name: "valid built-in sources",
+			name: "valid openinference source",
 			cfg: Config{
-				Sources: map[SourceName]Source{
-					SourceOpenInference: {RemoveOriginals: true},
-					SourceOpenLLMetry:   {},
-				},
+				Sources: []Source{{Name: SourceOpenInference, RemoveOriginals: true}},
 			},
 		},
 		{
-			name: "valid custom source",
+			name: "valid openllmetry source",
 			cfg: Config{
-				Sources: map[SourceName]Source{
-					SourceCustom: {
-						CustomMappings: map[string]string{"my_vendor.model": "gen_ai.request.model"},
-					},
-				},
+				Sources: []Source{{Name: SourceOpenLLMetry, RemoveOriginals: true}},
 			},
 		},
 		{
-			name: "valid mix of built-in and custom",
+			name: "both sources",
 			cfg: Config{
-				Sources: map[SourceName]Source{
-					SourceOpenInference: {},
-					SourceCustom: {
-						CustomMappings: map[string]string{"my_vendor.model": "gen_ai.request.model"},
-					},
+				Sources: []Source{
+					{Name: SourceOpenInference},
+					{Name: SourceOpenLLMetry},
 				},
 			},
 		},
 		{
 			name:    "no sources",
-			cfg:     Config{Sources: map[SourceName]Source{}},
+			cfg:     Config{Sources: []Source{}},
 			wantErr: "at least one source",
 		},
 		{
 			name: "unknown source",
 			cfg: Config{
-				Sources: map[SourceName]Source{"bogus": {}},
+				Sources: []Source{{Name: "bogus"}},
 			},
-			wantErr: `unknown source "bogus"`,
+			wantErr: `sources[0]: unknown source "bogus"`,
 		},
 		{
-			name: "custom source without mappings",
+			name: "duplicate source",
 			cfg: Config{
-				Sources: map[SourceName]Source{
-					SourceCustom: {},
+				Sources: []Source{
+					{Name: SourceOpenInference},
+					{Name: SourceOpenInference},
 				},
 			},
-			wantErr: "custom_mappings must be non-empty for the custom source",
-		},
-		{
-			name: "custom_mappings empty source attr",
-			cfg: Config{
-				Sources: map[SourceName]Source{
-					SourceOpenInference: {
-						CustomMappings: map[string]string{"": "gen_ai.request.model"},
-					},
-				},
-			},
-			wantErr: "source attribute name must be non-empty",
-		},
-		{
-			name: "custom_mappings empty target",
-			cfg: Config{
-				Sources: map[SourceName]Source{
-					SourceOpenInference: {
-						CustomMappings: map[string]string{"my_vendor.model": ""},
-					},
-				},
-			},
-			wantErr: `target for "my_vendor.model" must be non-empty`,
-		},
-		{
-			name: "custom_mappings identity",
-			cfg: Config{
-				Sources: map[SourceName]Source{
-					SourceOpenInference: {
-						CustomMappings: map[string]string{"gen_ai.request.model": "gen_ai.request.model"},
-					},
-				},
-			},
-			wantErr: "source and target are identical",
-		},
-		{
-			name: "valid custom_mappings on built-in source",
-			cfg: Config{
-				Sources: map[SourceName]Source{
-					SourceOpenInference: {
-						CustomMappings: map[string]string{"my_vendor.model": "gen_ai.request.model"},
-					},
-				},
-			},
+			wantErr: `sources[1]: duplicate source "openinference"`,
 		},
 	}
 	for _, tt := range tests {
@@ -149,15 +98,11 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				Sources: map[SourceName]Source{
-					SourceOpenInference: {
+				Sources: []Source{
+					{
+						Name:            SourceOpenInference,
 						RemoveOriginals: true,
 						Overwrite:       false,
-						CustomMappings:  map[string]string{"my_vendor.model": "gen_ai.request.model"},
-					},
-					SourceOpenLLMetry: {RemoveOriginals: true},
-					SourceCustom: {
-						CustomMappings: map[string]string{"other_vendor.tokens": "gen_ai.usage.input_tokens"},
 					},
 				},
 			},
@@ -169,26 +114,21 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "openinference_only"),
 			expected: &Config{
-				Sources: map[SourceName]Source{
-					SourceOpenInference: {},
-				},
+				Sources: []Source{{Name: SourceOpenInference}},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "openllmetry_only"),
 			expected: &Config{
-				Sources: map[SourceName]Source{
-					SourceOpenLLMetry: {RemoveOriginals: true},
-				},
+				Sources: []Source{{Name: SourceOpenLLMetry}},
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "custom_only"),
+			id: component.NewIDWithName(metadata.Type, "openinference_and_openllmetry"),
 			expected: &Config{
-				Sources: map[SourceName]Source{
-					SourceCustom: {
-						CustomMappings: map[string]string{"my_vendor.model": "gen_ai.request.model"},
-					},
+				Sources: []Source{
+					{Name: SourceOpenInference, RemoveOriginals: true},
+					{Name: SourceOpenLLMetry, RemoveOriginals: true},
 				},
 			},
 		},
@@ -197,12 +137,12 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "at least one source must be specified",
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "custom_missing_mappings"),
-			errorMessage: "custom_mappings must be non-empty for the custom source",
-		},
-		{
 			id:           component.NewIDWithName(metadata.Type, "unknown_source"),
 			errorMessage: `unknown source "foobar"`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "duplicate_source"),
+			errorMessage: `duplicate source "openinference"`,
 		},
 	}
 	for _, tt := range tests {

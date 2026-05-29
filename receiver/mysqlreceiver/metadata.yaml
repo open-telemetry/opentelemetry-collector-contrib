@@ -296,6 +296,7 @@ events:
       - mysql.threads.processlist_state
       - db.query.text
       - mysql.events_statements_current.digest
+      - mysql.query_plan
       - mysql.query_plan.hash
       - mysql.event_id
       - mysql.wait_type
@@ -833,6 +834,10 @@ tests:
   config:
     tls:
       insecure: true
+    # Finite query_plan_cache_ttl starts a non-terminating goroutine in hashicorp
+    # expirable LRU v2; use 0 for component lifecycle tests so goleak passes.
+    top_query_collection:
+      query_plan_cache_ttl: 0s
   goleak:
     ignore:
       any:

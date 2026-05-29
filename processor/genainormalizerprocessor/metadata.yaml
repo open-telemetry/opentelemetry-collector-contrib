@@ -1,5 +1,5 @@
 display_name: GenAI Normalizer Processor
-type: genainormalizer
+type: gen_ai_normalizer
 
 status:
   class: processor
@@ -12,8 +12,4 @@ status:
 tests:
   config:
     sources:
-      openinference: {}
-      openllmetry: {}
-      custom:
-        custom_mappings:
-          my_vendor.model: gen_ai.request.model
+      - name: openinference

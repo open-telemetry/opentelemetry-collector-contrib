@@ -52,6 +52,7 @@ type cloudMapResolver struct {
 	healthStatus  *types.HealthStatusFilter
 	resInterval   time.Duration
 	resTimeout    time.Duration
+	ownerAccount  *string
 
 	endpoints         []string
 	onChangeCallbacks []func([]string)
@@ -72,6 +73,7 @@ func newCloudMapResolver(
 	healthStatus *types.HealthStatusFilter,
 	interval time.Duration,
 	timeout time.Duration,
+	ownerAccount *string,
 	tb *metadata.TelemetryBuilder,
 ) (*cloudMapResolver, error) { // Using the SDK's default configuration, loading additional config
 	// and credentials values from the environment variables, shared
@@ -113,6 +115,7 @@ func newCloudMapResolver(
 		healthStatus:  healthStatus,
 		resInterval:   interval,
 		resTimeout:    timeout,
+		ownerAccount:  ownerAccount,
 		stopCh:        make(chan struct{}),
 		discoveryFn:   createDiscoveryFunction(svc),
 		telemetry:     tb,
@@ -124,7 +127,7 @@ func (r *cloudMapResolver) start(ctx context.Context) error {
 		r.logger.Warn("failed initial resolve", zap.Error(err))
 	}
 
-	go r.periodicallyResolve()
+	go r.periodicallyResolve(ctx)
 
 	r.logger.Info("AWS CloudMap resolver started",
 		zap.Stringp("service_name", r.serviceName),
@@ -145,14 +148,14 @@ func (r *cloudMapResolver) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (r *cloudMapResolver) periodicallyResolve() {
+func (r *cloudMapResolver) periodicallyResolve(ctx context.Context) {
 	ticker := time.NewTicker(r.resInterval)
 
 	for {
 		select {
 		case <-ticker.C:
-			ctx, cancel := context.WithTimeout(context.Background(), r.resTimeout)
-			if _, err := r.resolve(ctx); err != nil {
+			innerCtx, cancel := context.WithTimeout(ctx, r.resTimeout)
+			if _, err := r.resolve(innerCtx); err != nil {
 				r.logger.Warn("failed to resolve", zap.Error(err))
 			} else {
 				r.logger.Debug("resolved successfully")
@@ -172,6 +175,7 @@ func (r *cloudMapResolver) resolve(ctx context.Context) ([]string, error) {
 		NamespaceName:      r.namespaceName,
 		ServiceName:        r.serviceName,
 		HealthStatus:       *r.healthStatus,
+		OwnerAccount:       r.ownerAccount,
 		MaxResults:         nil,
 		OptionalParameters: nil,
 		QueryParameters:    nil,
