@@ -49,7 +49,7 @@ func appendTraceSpan(storage TailStorage, traceID pcommon.TraceID, spanID pcommo
 	if name != "" {
 		span.SetName(name)
 	}
-	storage.Append(traceID, rss)
+	storage.Append(traceID, td)
 }
 
 func TestAppendThenTake(t *testing.T) {

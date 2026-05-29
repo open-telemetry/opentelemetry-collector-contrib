@@ -52,11 +52,7 @@ func (s *storage) Close() error {
 	return s.db.Close()
 }
 
-func (s *storage) Append(traceID pcommon.TraceID, rss ptrace.ResourceSpans) {
-	td := ptrace.NewTraces()
-	rs := td.ResourceSpans().AppendEmpty()
-	rss.MoveTo(rs)
-
+func (s *storage) Append(traceID pcommon.TraceID, td ptrace.Traces) {
 	data, err := s.marshaler.MarshalTraces(td)
 	if err != nil {
 		s.logger.Warn("failed to marshal trace payload for tail storage", zap.Error(err))

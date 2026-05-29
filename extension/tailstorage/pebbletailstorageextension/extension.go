@@ -46,8 +46,8 @@ func (e *pebbleTailStorageExtension) Shutdown(_ context.Context) error {
 	return err
 }
 
-func (e *pebbleTailStorageExtension) Append(traceID pcommon.TraceID, rss ptrace.ResourceSpans) {
-	e.storage.Append(traceID, rss)
+func (e *pebbleTailStorageExtension) Append(traceID pcommon.TraceID, td ptrace.Traces) {
+	e.storage.Append(traceID, td)
 }
 
 func (e *pebbleTailStorageExtension) Take(traceID pcommon.TraceID) (ptrace.Traces, bool) {

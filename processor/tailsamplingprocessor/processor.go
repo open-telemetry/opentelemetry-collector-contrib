@@ -989,17 +989,16 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 				}
 			} else {
 				// Persist current batch for pending traces.
-				// Use the moved batch from spanIngestTraceData (rss has been moved).
-				for _, rs := range spanIngestTraceData.ReceivedBatches.ResourceSpans().All() {
-					tsp.tailStorage.Append(id, rs)
-				}
+				tsp.tailStorage.Append(id, spanIngestTraceData.ReceivedBatches)
 			}
 			return
 		}
 
 		// If the final decision hasn't been made, add the new spans to the
 		// existing trace.
-		tsp.tailStorage.Append(id, rss)
+		traceTd := ptrace.NewTraces()
+		appendToTraces(traceTd, rss)
+		tsp.tailStorage.Append(id, traceTd)
 		return
 	}
 

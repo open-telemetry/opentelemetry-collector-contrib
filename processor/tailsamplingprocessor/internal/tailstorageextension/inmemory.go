@@ -20,14 +20,15 @@ func NewInMemoryTailStorage() TailStorage {
 	}
 }
 
-func (s *inMemoryTailStorage) Append(traceID pcommon.TraceID, rss ptrace.ResourceSpans) {
+func (s *inMemoryTailStorage) Append(traceID pcommon.TraceID, traceTd ptrace.Traces) {
 	td, ok := s.idToSpans[traceID]
 	if !ok {
 		td = ptrace.NewTraces()
 		s.idToSpans[traceID] = td
 	}
-	rs := td.ResourceSpans().AppendEmpty()
-	rss.MoveTo(rs)
+	for _, rss := range traceTd.ResourceSpans().All() {
+		rss.MoveTo(td.ResourceSpans().AppendEmpty())
+	}
 }
 
 func (s *inMemoryTailStorage) Take(traceID pcommon.TraceID) (ptrace.Traces, bool) {

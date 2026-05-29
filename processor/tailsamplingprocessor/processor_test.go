@@ -1734,9 +1734,9 @@ func (e *extension) ensureStorage() {
 	}
 }
 
-func (e *extension) Append(traceID pcommon.TraceID, rss ptrace.ResourceSpans) {
+func (e *extension) Append(traceID pcommon.TraceID, td ptrace.Traces) {
 	e.ensureStorage()
-	e.storage.Append(traceID, rss)
+	e.storage.Append(traceID, td)
 	e.appendCount++
 }
 
