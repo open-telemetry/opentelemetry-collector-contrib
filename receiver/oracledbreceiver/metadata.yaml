@@ -57,6 +57,33 @@ attributes:
   oracledb.application_wait_time:
     description: The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
     type: double
+  oracledb.blocking.blocker.root_sid:
+    description: The session ID (SID) of the root/head blocker at the top of the blocking chain. Empty string when there is no blocking.
+    type: string
+  oracledb.blocking.blocker.sid:
+    description: The session ID (SID) of the immediate blocker of this session. Empty string when the session is not blocked.
+    type: string
+  oracledb.blocking.blocker.state:
+    description: The status of the blocking session relationship (e.g. VALID, NOT IN WAIT, GLOBAL, NO HOLDER, UNKNOWN).
+    type: string
+  oracledb.blocking.lock.mode:
+    description: The lock mode being requested by the blocked session (e.g., ROW SHARE, ROW EXCLUSIVE, SHARE, SHARE ROW EXCLUSIVE, EXCLUSIVE). Empty when not waiting on a lock.
+    type: string
+  oracledb.blocking.lock.type:
+    description: The type of enqueue lock the session is waiting on, extracted from the wait event (e.g., TX for row lock, TM for table lock). Empty when not waiting on a lock.
+    type: string
+  oracledb.blocking.object.name:
+    description: The name of the database object the session is waiting to lock. Empty when no object lock wait is active.
+    type: string
+  oracledb.blocking.object.owner:
+    description: The owner (schema) of the database object the session is waiting to lock. Empty when no object lock wait is active.
+    type: string
+  oracledb.blocking.start_time:
+    description: Estimated UTC timestamp of when the blocking wait began, derived from SYSDATE - SECONDS_IN_WAIT. RFC3339 format.
+    type: string
+  oracledb.blocking.wait_duration:
+    description: The number of seconds this session has been waiting for the current wait event.
+    type: int
   oracledb.buffer_gets:
     description: Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta).
     type: int
@@ -241,6 +268,15 @@ events:
       - oracledb.query.started
       - oracledb.session.started
       - oracledb.session.duration
+      - oracledb.blocking.blocker.sid
+      - oracledb.blocking.blocker.root_sid
+      - oracledb.blocking.blocker.state
+      - oracledb.blocking.start_time
+      - oracledb.blocking.wait_duration
+      - oracledb.blocking.lock.mode
+      - oracledb.blocking.lock.type
+      - oracledb.blocking.object.owner
+      - oracledb.blocking.object.name
   db.server.session.wait_sample:
     enabled: false
     description: Per-session wait event statistics from v$session_event.

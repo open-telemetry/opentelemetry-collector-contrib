@@ -848,6 +848,16 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	const sqlExecStart = "SQL_EXEC_START"
 	const logonTime = "LOGON_TIME"
 	const sessionDuration = "SESSION_DURATION_SEC"
+	// Blocking session columns
+	const blockingSession = "BLOCKING_SESSION"
+	const finalBlockingSession = "FINAL_BLOCKING_SESSION"
+	const blockingSessionStatus = "BLOCKING_SESSION_STATUS"
+	const secondsInWait = "SECONDS_IN_WAIT"
+	const blockingStartTime = "BLOCKING_START_TIME"
+	const lockType = "LOCK_TYPE"
+	const lockMode = "LOCK_MODE"
+	const blockedObjectOwner = "BLOCKED_OBJECT_OWNER"
+	const blockedObjectName = "BLOCKED_OBJECT_NAME"
 
 	var scrapeErrors []error
 
@@ -902,6 +912,14 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			waitTime = 0
 		}
 
+		var secondsInWaitVal int64
+		if row[secondsInWait] != "" {
+			secondsInWaitVal, err = strconv.ParseInt(row[secondsInWait], 10, 64)
+			if err != nil {
+				scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for SECONDS_IN_WAIT, value was %s: %w", row[secondsInWait], err))
+			}
+		}
+
 		queryContext := propagator.Extract(context.Background(), propagation.MapCarrier{
 			"traceparent": row[action],
 		})
@@ -909,7 +927,9 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 		s.lb.RecordDbServerQuerySampleEvent(queryContext, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[serviceName], row[hostName],
 			clientPort, row[hostName], clientPort, queryPlanHashVal, row[sqlID], row[sqlChildNumber], row[childAddress], row[sid], row[serialNumber], row[process],
 			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], waitTime, objID, row[objectName], row[objectType],
-			row[osUser], queryDuration, row[sqlExecStart], row[logonTime], sessionDurationSec)
+			row[osUser], queryDuration, row[sqlExecStart], row[logonTime], sessionDurationSec,
+			row[blockingSession], row[finalBlockingSession], row[blockingSessionStatus], row[blockingStartTime], secondsInWaitVal,
+			row[lockMode], row[lockType], row[blockedObjectOwner], row[blockedObjectName])
 	}
 
 	s.lb.Emit(metadata.WithLogsResource(rb.Emit())).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())

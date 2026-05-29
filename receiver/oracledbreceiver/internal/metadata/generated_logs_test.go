@@ -131,7 +131,7 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
-			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "db.query.text-val", "db.system.name-val", "user.name-val", "db.namespace-val", "client.address-val", 11, "network.peer.address-val", 17, "oracledb.plan_hash_value-val", "oracledb.sql_id-val", "oracledb.child_number-val", "oracledb.child_address-val", "oracledb.sid-val", "oracledb.serial-val", "oracledb.process-val", "oracledb.schemaname-val", "oracledb.program-val", "oracledb.module-val", "oracledb.status-val", "oracledb.state-val", "oracledb.wait_class-val", "oracledb.event-val", 24.100000, 21, "oracledb.procedure_name-val", "oracledb.procedure_type-val", "oracledb.osuser-val", 21.100000, "oracledb.query.started-val", "oracledb.session.started-val", 25.100000)
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "db.query.text-val", "db.system.name-val", "user.name-val", "db.namespace-val", "client.address-val", 11, "network.peer.address-val", 17, "oracledb.plan_hash_value-val", "oracledb.sql_id-val", "oracledb.child_number-val", "oracledb.child_address-val", "oracledb.sid-val", "oracledb.serial-val", "oracledb.process-val", "oracledb.schemaname-val", "oracledb.program-val", "oracledb.module-val", "oracledb.status-val", "oracledb.state-val", "oracledb.wait_class-val", "oracledb.event-val", 24.100000, 21, "oracledb.procedure_name-val", "oracledb.procedure_type-val", "oracledb.osuser-val", 21.100000, "oracledb.query.started-val", "oracledb.session.started-val", 25.100000, "oracledb.blocking.blocker.sid-val", "oracledb.blocking.blocker.root_sid-val", "oracledb.blocking.blocker.state-val", "oracledb.blocking.start_time-val", 31, "oracledb.blocking.lock.mode-val", "oracledb.blocking.lock.type-val", "oracledb.blocking.object.owner-val", "oracledb.blocking.object.name-val")
 
 			allEventsCount++
 			lb.RecordDbServerSessionWaitSampleEvent(ctx, timestamp, "oracledb.sid-val", "oracledb.serial-val", "oracledb.event-val", "oracledb.wait_class-val", 19, 22.100000)
@@ -265,6 +265,33 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("oracledb.session.duration")
 					assert.True(t, ok)
 					assert.Equal(t, 25.100000, attrVal.Double())
+					attrVal, ok = lr.Attributes().Get("oracledb.blocking.blocker.sid")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.blocking.blocker.sid-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.blocking.blocker.root_sid")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.blocking.blocker.root_sid-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.blocking.blocker.state")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.blocking.blocker.state-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.blocking.start_time")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.blocking.start_time-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.blocking.wait_duration")
+					assert.True(t, ok)
+					assert.EqualValues(t, 31, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("oracledb.blocking.lock.mode")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.blocking.lock.mode-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.blocking.lock.type")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.blocking.lock.type-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.blocking.object.owner")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.blocking.object.owner-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.blocking.object.name")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.blocking.object.name-val", attrVal.Str())
 				case "db.server.session.wait_sample":
 					assert.False(t, validatedEvents["db.server.session.wait_sample"], "Found a duplicate in the events slice: db.server.session.wait_sample")
 					validatedEvents["db.server.session.wait_sample"] = true
