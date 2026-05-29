@@ -320,3 +320,76 @@ func TestCheckpointerInvalidResourceVersion(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid resourceVersion")
 }
+
+func TestCheckpointerAlreadySeenBeforeLoad(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	cp := New(client, zap.NewNop())
+
+	// Without Load, no namespace is known — AlreadySeen must not panic or return true.
+	assert.False(t, cp.AlreadySeen("100", "default"))
+}
+
+func TestCheckpointerLoadAndAlreadySeen(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	cp := New(client, zap.NewNop())
+	ctx := t.Context()
+
+	require.NoError(t, cp.SetCheckpoint(ctx, "default", "pods", "200"))
+	require.NoError(t, cp.SetCheckpoint(ctx, "kube-system", "pods", "500"))
+	require.NoError(t, cp.Flush(ctx))
+
+	cp.Load(ctx, []string{"default", "kube-system"}, "pods")
+
+	assert.True(t, cp.AlreadySeen("199", "default"), "RV below persisted should be seen")
+	assert.True(t, cp.AlreadySeen("200", "default"), "RV equal to persisted should be seen (≤)")
+	assert.False(t, cp.AlreadySeen("201", "default"), "RV above persisted should not be seen")
+
+	assert.True(t, cp.AlreadySeen("500", "kube-system"))
+	assert.False(t, cp.AlreadySeen("501", "kube-system"))
+}
+
+func TestCheckpointerLoadSkipsMissingAndUnparseable(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	cp := New(client, zap.NewNop())
+	ctx := t.Context()
+
+	// Seed a parseable RV for "default" and a non-numeric RV for "weird" by
+	// going around SetCheckpoint's validation — write the raw bytes directly.
+	require.NoError(t, cp.SetCheckpoint(ctx, "default", "pods", "100"))
+	require.NoError(t, cp.Flush(ctx))
+	require.NoError(t, client.Set(ctx, cp.CheckpointKey("weird", "pods"), []byte("not-a-number")))
+
+	cp.Load(ctx, []string{"default", "missing", "weird"}, "pods")
+
+	assert.True(t, cp.AlreadySeen("50", "default"), "valid RV namespace loaded")
+	assert.False(t, cp.AlreadySeen("50", "missing"), "namespace with no checkpoint must not be marked seen")
+	assert.False(t, cp.AlreadySeen("50", "weird"), "namespace with unparseable RV must not be marked seen")
+}
+
+func TestCheckpointerLoadResetsState(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	cp := New(client, zap.NewNop())
+	ctx := t.Context()
+
+	require.NoError(t, cp.SetCheckpoint(ctx, "default", "pods", "100"))
+	require.NoError(t, cp.Flush(ctx))
+	cp.Load(ctx, []string{"default"}, "pods")
+	assert.True(t, cp.AlreadySeen("100", "default"))
+
+	// Delete the persisted entry; Load should discard the previously cached value.
+	require.NoError(t, cp.DeleteCheckpoint(ctx, "default", "pods"))
+	cp.Load(ctx, []string{"default"}, "pods")
+	assert.False(t, cp.AlreadySeen("100", "default"), "Load must reset previously loaded entries")
+}
+
+func TestCheckpointerAlreadySeenUnparseableRV(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	cp := New(client, zap.NewNop())
+	ctx := t.Context()
+
+	require.NoError(t, cp.SetCheckpoint(ctx, "default", "pods", "100"))
+	require.NoError(t, cp.Flush(ctx))
+	cp.Load(ctx, []string{"default"}, "pods")
+
+	assert.False(t, cp.AlreadySeen("not-a-number", "default"), "unparseable RV must not be marked seen")
+}

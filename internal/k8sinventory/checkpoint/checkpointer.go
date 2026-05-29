@@ -22,6 +22,11 @@ type Checkpointer struct {
 	// memory across all watch streams. Flush() drains it to persistent storage.
 	mu      sync.Mutex
 	pending map[string]string
+
+	// persistedRVs holds RVs loaded from storage at startup for dedup.
+	// Populated by Load(); read by AlreadySeen().
+	persistedMu  sync.RWMutex
+	persistedRVs map[string]int64
 }
 
 const checkpointKeyFormat = "latestResourceVersion/%s"
@@ -135,6 +140,36 @@ func (c *Checkpointer) Flush(ctx context.Context) error {
 		return errors.New("one or more checkpoints failed to be stored")
 	}
 	return nil
+}
+
+// Load reads the persisted RV for each namespace into memory.
+// Must be called before processing initial-list events so AlreadySeen() has data to compare against.
+func (c *Checkpointer) Load(ctx context.Context, namespaces []string, objectType string) {
+	c.persistedMu.Lock()
+	defer c.persistedMu.Unlock()
+	c.persistedRVs = make(map[string]int64)
+	for _, ns := range namespaces {
+		rv, err := c.GetCheckpoint(ctx, ns, objectType)
+		if err != nil || rv == "" {
+			continue
+		}
+		if parsed, err := strconv.ParseInt(rv, 10, 64); err == nil {
+			c.persistedRVs[ns] = parsed
+		}
+	}
+}
+
+// AlreadySeen reports whether the given resourceVersion is ≤ the persisted checkpoint
+// for the namespace, meaning the object was already processed before the last restart.
+func (c *Checkpointer) AlreadySeen(resourceVersion, namespace string) bool {
+	objRV, err := strconv.ParseInt(resourceVersion, 10, 64)
+	if err != nil {
+		return false
+	}
+	c.persistedMu.RLock()
+	persisted, exists := c.persistedRVs[namespace]
+	c.persistedMu.RUnlock()
+	return exists && objRV <= persisted
 }
 
 // DeleteCheckpoint deletes the persisted checkpoint for a given namespace and object type.
