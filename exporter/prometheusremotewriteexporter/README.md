@@ -57,6 +57,7 @@ The following settings can be optionally configured:
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false` (default: `10000`)
   - `num_consumers`: minimum number of workers to use to fan out the outgoing requests. (default: `5` or default: `1` if `EnableMultipleWorkersFeatureGate` is enabled).
   - `include_metadata_keys`: list of client metadata keys whose values are forwarded as HTTP headers on every outbound remote write request.
+    - **Note**: When WAL is enabled, then this setting has no effect. The WAL persists only the raw protobuf bytes of each write request; the originating `client.Info` context is not serialized to disk so initial metadata are lost.
 - `resource_to_telemetry_conversion`
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
   - `exclude_service_attributes` (default = false): If set to `true`, the `service.name`, `service.instance.id` and `service.namespace`  resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics.
