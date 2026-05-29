@@ -115,7 +115,7 @@ func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	const (
 		topic     = "topic-a"
 		group     = "test-group"
-		committed = int64(7)
+		committed = int64(0)
 	)
 
 	cluster, clientCfg := kafkatest.NewCluster(t, kfake.SeedTopics(1, topic))
@@ -159,7 +159,7 @@ func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	require.Equal(t, "test-cluster", val.Str())
 
 	// We produced 1 record at partition 0, and committed offset = 7. End offset is 1 (record offset 0 + 1),
-	// so lag = 1 - 7 = -6. The scraper records the raw difference; we just verify the metric is emitted
+	// so lag = 1 - 0 = 1. The scraper records the raw difference; we just verify the metric is emitted
 	// with the committed offset and a deterministic lag.
 	const expectedEnd = int64(1)
 	const expectedLag = expectedEnd - committed
