@@ -8,10 +8,10 @@ require (
 	github.com/shirou/gopsutil/v4 v4.26.4
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.59.1-0.20260528150546-fe2cf23ff222
-	go.opentelemetry.io/collector/component/componenttest v0.153.0
-	go.opentelemetry.io/collector/config/confighttp v0.153.0
+	go.opentelemetry.io/collector/component/componenttest v0.153.1-0.20260528150546-fe2cf23ff222
+	go.opentelemetry.io/collector/config/confighttp v0.153.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/config/configopaque v1.59.1-0.20260528150546-fe2cf23ff222
-	go.opentelemetry.io/collector/confmap/xconfmap v0.153.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.153.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/extension v1.59.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/extension/extensionauth v1.59.1-0.20260528150546-fe2cf23ff222
 	go.uber.org/goleak v1.3.0
@@ -61,9 +61,9 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/collector/confmap v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.153.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.153.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/collector/featuregate v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.153.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.153.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/collector/pdata v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
