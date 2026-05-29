@@ -212,6 +212,19 @@ Currently, the host_metrics receiver does not set any Resource attributes on the
 ```
 export OTEL_RESOURCE_ATTRIBUTES="service.name=<the name of your service>,service.namespace=<the namespace of your service>,service.instance.id=<uuid of the instance>"
 ```
+
 ## Entity Events
 
 **Entity Events as logs are experimental** and might eventually be replaced by the result of [the OTEP](https://github.com/open-telemetry/oteps/blob/main/text/entities/0256-entities-data-model.md#entity-events). For now, the host_metrics receiver can send the host entity event as a log records. By default, the host_metrics receiver sends periodic EntityState events every 5 minutes. You can change that by setting `metadata_collection_interval`. Entity Events as logs are experimental. The result of the OTEP might eventually replace that.
+
+## Using a Collector not linked to glibc (Linux-specific)
+
+This is a living section for known adverse behaviours within the `host_metrics` receiver when using a Collector on Linux that is not linked to `glibc` (which is always the case when using `CGO_ENABLED=0` and can be the case when using `CGO_ENABLED=1` under specific circumstances).
+
+### Unable to resolve usernames when the system relies on NSS for user and group lookups
+
+When a Collector is not linked to glibc, it can only resolve usernames and group names by directly parsing `/etc/passwd` and `/etc/group`. It has no awareness of the Name Service Switch (NSS) subsystem, which libc uses to delegate user and group lookups to pluggable backends including `nss-systemd`, `nss-ldap`, `sssd`, `winbind`, and more. As a result, any user or group whose record is provided exclusively by an NSS module rather than being present in `/etc/passwd` or `/etc/group` will fail to resolve, and the receiver will be unable to determine the username/owner of the given process.
+
+This manifests most often as a failure to set the `process.owner` resource attribute in the `process` scraper. One concrete example is if a process is run as a systemd service using the `DynamicUser` feature. A Collector not linked to glibc will be incapable of resolving the username for the owner of that process because the `DynamicUser` feature leverages NSS (Name Service Switch) to resolve the username dynamically at user lookup time; a Go binary that uses the pure-Go `netgo` implementation is not NSS-aware and subsequently fails the user lookup.  
+See more in the [demo repo](https://github.com/braydonk/poc-systemd-dynamic-user-netgo) created by `host_metrics` codeowner [@braydonk](https://github.com/braydonk).
+

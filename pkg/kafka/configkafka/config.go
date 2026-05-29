@@ -6,6 +6,7 @@ package configkafka // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kversion"
@@ -144,13 +145,23 @@ type ConsumerConfig struct {
 	// per partition (default "1048576")
 	MaxPartitionFetchSize int32 `mapstructure:"max_partition_fetch_size"`
 
-	// GroupRebalanceStrategy specifies the strategy to use for partition assignment.
-	// Built-in values are "range", "roundrobin", "sticky", and "cooperative-sticky".
-	// Any other value is treated as the component ID of a registered extension
-	// that implements kgo.GroupBalancer.
+	// GroupRebalanceStrategies specifies the ordered strategies to advertise
+	// for partition assignment. Kafka selects the first strategy supported by
+	// every member of the consumer group. Built-in values are "range",
+	// "roundrobin", "sticky", and "cooperative-sticky". Any other value is
+	// treated as the component ID of a registered extension that implements
+	// kgo.GroupBalancer. When omitted, the franz-go default applies, currently
+	// "cooperative-sticky". This field is mutually exclusive with
+	// GroupRebalanceStrategy.
+	GroupRebalanceStrategies []GroupRebalanceStrategy `mapstructure:"group_rebalance_strategies"`
+
+	// GroupRebalanceStrategy specifies the strategy to use for partition
+	// assignment. Accepts the same values as GroupRebalanceStrategies.
 	//
 	// Defaults to "cooperative-sticky".
-	GroupRebalanceStrategy GroupRebalanceStrategy `mapstructure:"group_rebalance_strategy,omitempty"`
+	//
+	// Deprecated [v0.154.0]: use GroupRebalanceStrategies instead.
+	GroupRebalanceStrategy GroupRebalanceStrategy `mapstructure:"group_rebalance_strategy"`
 
 	// GroupInstanceID specifies the ID of the consumer
 	GroupInstanceID string `mapstructure:"group_instance_id,omitempty"`
@@ -184,22 +195,19 @@ func (c ConsumerConfig) Validate() error {
 		)
 	}
 
-	if c.GroupRebalanceStrategy != "" {
-		switch c.GroupRebalanceStrategy {
-		case RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy:
-			// Built-in strategy, valid.
-		default:
-			// Accept any value that parses as a component ID; the extension
-			// will be resolved at runtime by the consumer client.
-			var id component.ID
-			if err := id.UnmarshalText([]byte(c.GroupRebalanceStrategy)); err != nil {
-				return fmt.Errorf(
-					"group_rebalance_strategy %q is not a built-in strategy (%s, %s, %s, %s) or a valid extension ID: %w",
-					c.GroupRebalanceStrategy,
-					RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy,
-					err,
-				)
-			}
+	if c.GroupRebalanceStrategy != "" && len(c.GroupRebalanceStrategies) > 0 {
+		return errors.New("group_rebalance_strategy and group_rebalance_strategies are mutually exclusive; group_rebalance_strategy is deprecated, prefer group_rebalance_strategies")
+	}
+
+	if err := validateGroupRebalanceStrategy(c.GroupRebalanceStrategy); err != nil {
+		return err
+	}
+	for _, strategy := range c.GroupRebalanceStrategies {
+		if strings.TrimSpace(string(strategy)) == "" {
+			return errors.New("group_rebalance_strategies entries cannot be empty")
+		}
+		if err := validateGroupRebalanceStrategy(strategy); err != nil {
+			return err
 		}
 	}
 
@@ -221,6 +229,32 @@ func (c ConsumerConfig) Validate() error {
 		)
 	}
 
+	return nil
+}
+
+func validateGroupRebalanceStrategy(strategy GroupRebalanceStrategy) error {
+	// An empty value means the deprecated group_rebalance_strategy field is
+	// unset. Treat it as valid so the default ConsumerConfig passes validation.
+	// Empty entries inside group_rebalance_strategies are rejected by the caller.
+	if strategy == "" {
+		return nil
+	}
+	switch strategy {
+	case RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy:
+		// Built-in strategy, valid.
+	default:
+		// Accept any value that parses as a component ID; the extension
+		// will be resolved at runtime by the consumer client.
+		var id component.ID
+		if err := id.UnmarshalText([]byte(strategy)); err != nil {
+			return fmt.Errorf(
+				"group rebalance strategy %q is not a built-in strategy (%s, %s, %s, %s) or a valid extension ID: %w",
+				strategy,
+				RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy,
+				err,
+			)
+		}
+	}
 	return nil
 }
 

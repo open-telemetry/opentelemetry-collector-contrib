@@ -748,7 +748,7 @@ func TestScrapeTopQueries(t *testing.T) {
 	var expectedValuesBuilder strings.Builder
 	for k, v := range expectedReturnedValue {
 		expectedRows = append(expectedRows, k)
-		expectedValuesBuilder.WriteString(fmt.Sprintf("%s,", v))
+		fmt.Fprintf(&expectedValuesBuilder, "%s,", v)
 	}
 	expectedValues := expectedValuesBuilder.String()
 
