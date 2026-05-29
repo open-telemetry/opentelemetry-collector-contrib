@@ -185,8 +185,8 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 		rp.Resource().Attributes().CopyTo(rl.Resource().Attributes())
 
 		sl := rl.ScopeLogs().AppendEmpty()
-		sl.Scope().SetName("otel.profiling")
-		sl.Scope().SetVersion("0.1.0")
+		sl.Scope().SetName(profilingLibraryName)
+		sl.Scope().SetVersion(profilingLibraryVersion)
 
 		for _, sp := range rp.ScopeProfiles().All() {
 			for _, prof := range sp.Profiles().All() {
@@ -205,7 +205,7 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 				lr := sl.LogRecords().AppendEmpty()
 				lr.Body().SetStr(base64.StdEncoding.EncodeToString(buf.Bytes()))
 				lr.SetTimestamp(prof.Time())
-				lr.Attributes().PutStr("com.splunk.sourcetype", "otel.profiling")
+				lr.Attributes().PutStr(splunk.DefaultSourceTypeLabel, profilingLibraryName)
 				sampleType := pp.Dictionary().StringTable().At(int(prof.SampleType().TypeStrindex()))
 				lr.Attributes().PutStr("profiling.data.type", sampleType)
 				lr.Attributes().PutStr("profiling.data.format", "pprof-gzip-base64")
@@ -229,9 +229,10 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 // A guesstimated value > length of bytes of a single event.
 // Added to buffer capacity so that buffer is likely to grow by reslicing when buf.Len() > bufCap.
 const (
-	bufCapPadding        = uint(4096)
-	libraryHeaderName    = "X-Splunk-Instrumentation-Library"
-	profilingLibraryName = "otel.profiling"
+	bufCapPadding           = uint(4096)
+	libraryHeaderName       = "X-Splunk-Instrumentation-Library"
+	profilingLibraryName    = "otel.profiling"
+	profilingLibraryVersion = "0.1.0"
 )
 
 func isProfilingData(sl plog.ScopeLogs) bool {
