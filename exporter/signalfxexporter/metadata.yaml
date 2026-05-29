@@ -4,7 +4,12 @@ display_name: SignalFx Exporter
 status:
   class: exporter
   stability:
-    beta: [traces, metrics, logs]
+    beta: [metrics, logs]
+    deprecated: [traces]
+  deprecation:
+    traces:
+      migration: "Traces pipeline is no longer necessary for trace correlation, trace correlation is supported via OTLP. Trace functionality will be removed from this exporter in December 2026."
+      date: "2026-05-29"
   distributions: [contrib]
   codeowners:
     active: [dmitryax, crobert-1]
