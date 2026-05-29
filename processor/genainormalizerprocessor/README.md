@@ -152,6 +152,14 @@ User-defined mappings landing on typed `gen_ai.*` targets get the same int/float
 
 **Future built-in sources.** New built-in source names may be added in future releases. This is not treated as a breaking change. To avoid collisions, namespace user-defined names with a vendor or company prefix (e.g. `custom.anthropic`, `acme.internal`).
 
+### Performance
+
+For user-defined sources, cost grows with the number of attributes on each span, not with the size of the `mappings` table. The processor walks every attribute on every span, and looking up a single attribute in `mappings` is constant time.
+
+Real-world spans carry tens to a few hundred attributes and process in microseconds. Spans with thousands of attributes still work, but know that per-span cost grows proportionally to the number of attributes in each span.
+
+See `processor_benchmark_test.go` for the benchmark suite. Run with `go test -bench=. -benchmem`.
+
 ## Built-in mappings
 
 ### `openinference`
