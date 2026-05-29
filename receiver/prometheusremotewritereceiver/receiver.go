@@ -33,6 +33,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
@@ -483,15 +484,22 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_COUNTER, writev2.Metadata_METRIC_TYPE_INFO, writev2.Metadata_METRIC_TYPE_STATESET:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
+			attrsHash := pdatautil.MapHash(extractAttributes(ls))
 			key := exemplarKey{
 				ScopeName:    si.Name,
 				ScopeVersion: si.Version,
 				MetricName:   metricName,
 				MetricType:   ts.Metadata.Type,
+				AttrsHash:    attrsHash,
 			}
-			// add exemplars to counter datapoints.
-			if ex, ok := exemplarMap[key.hash()]; ok && ex.Len() > 0 && metric.Sum().DataPoints().Len() > 0 {
-				ex.CopyTo(metric.Sum().DataPoints().At(0).Exemplars())
+			if ex, ok := exemplarMap[key.hash()]; ok && ex.Len() > 0 {
+				dataPoints := metric.Sum().DataPoints()
+				for i := 0; i < dataPoints.Len(); i++ {
+					if pdatautil.MapHash(dataPoints.At(i).Attributes()) == attrsHash {
+						ex.CopyTo(dataPoints.At(i).Exemplars())
+						break
+					}
+				}
 			}
 
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
