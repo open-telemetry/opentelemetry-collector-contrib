@@ -1890,7 +1890,7 @@ func TestProfileDataTotalFrameCount(t *testing.T) {
 			if !ok {
 				continue
 			}
-			if v, ok := fields["profiling.data.total.frame.count"]; ok {
+			if v, ok := fields[profilingDataTotalFrameCountKey]; ok {
 				mu.Lock()
 				observedFrameCounts = append(observedFrameCounts, int64(v.(float64)))
 				mu.Unlock()

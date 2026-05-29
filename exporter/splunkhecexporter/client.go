@@ -101,7 +101,7 @@ func (c *client) pushMetricsData(
 	if md.ResourceMetrics().Len() != 0 {
 		accessToken, found := md.ResourceMetrics().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
 		if found {
-			localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+			localHeaders["Authorization"] = splunk.BuildHECAuthHeader(accessToken.Str())
 		}
 	}
 
@@ -122,7 +122,7 @@ func (c *client) pushTraceData(
 	if td.ResourceSpans().Len() != 0 {
 		accessToken, found := td.ResourceSpans().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
 		if found {
-			localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+			localHeaders["Authorization"] = splunk.BuildHECAuthHeader(accessToken.Str())
 		}
 	}
 
@@ -142,7 +142,7 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 	// All logs in a batch have the same access token after batchperresourceattr, so we can just check the first one.
 	accessToken, found := ld.ResourceLogs().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
 	if found {
-		localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+		localHeaders["Authorization"] = splunk.BuildHECAuthHeader(accessToken.Str())
 	}
 
 	// All logs in a batch have only one type (regular or profiling logs) after perScopeBatcher,
@@ -174,7 +174,7 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 	// All profiles in a batch have the same access token after batchperresourceattr, so we can just check the first one.
 	accessToken, found := pp.ResourceProfiles().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
 	if found {
-		localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+		localHeaders["Authorization"] = splunk.BuildHECAuthHeader(accessToken.Str())
 	}
 
 	ld := plog.NewLogs()
@@ -207,15 +207,15 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 				lr.SetTimestamp(prof.Time())
 				lr.Attributes().PutStr(splunk.DefaultSourceTypeLabel, profilingLibraryName)
 				sampleType := pp.Dictionary().StringTable().At(int(prof.SampleType().TypeStrindex()))
-				lr.Attributes().PutStr("profiling.data.type", sampleType)
-				lr.Attributes().PutStr("profiling.data.format", "pprof-gzip-base64")
+				lr.Attributes().PutStr(profilingDataTypeKey, sampleType)
+				lr.Attributes().PutStr(profilingDataFormatKey, profilingDataFormatPprofGzipBase64)
 				var totalFrameCount int64
 				for _, s := range prof.Samples().All() {
 					totalFrameCount += int64(pp.Dictionary().StackTable().At(int(s.StackIndex())).LocationIndices().Len())
 				}
-				lr.Attributes().PutInt("profiling.data.total.frame.count", totalFrameCount)
+				lr.Attributes().PutInt(profilingDataTotalFrameCountKey, totalFrameCount)
 				// TODO find whether it is continuous or snapshot
-				lr.Attributes().PutStr("profiling.instrumentation.source", "continuous")
+				lr.Attributes().PutStr(profilingInstrumentationSourceKey, profilingInstrumentationSourceContinuous)
 			}
 		}
 	}
@@ -229,10 +229,16 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 // A guesstimated value > length of bytes of a single event.
 // Added to buffer capacity so that buffer is likely to grow by reslicing when buf.Len() > bufCap.
 const (
-	bufCapPadding           = uint(4096)
-	libraryHeaderName       = "X-Splunk-Instrumentation-Library"
-	profilingLibraryName    = "otel.profiling"
-	profilingLibraryVersion = "0.1.0"
+	bufCapPadding                            = uint(4096)
+	libraryHeaderName                        = "X-Splunk-Instrumentation-Library"
+	profilingLibraryName                     = "otel.profiling"
+	profilingLibraryVersion                  = "0.1.0"
+	profilingDataTypeKey                     = "profiling.data.type"
+	profilingDataFormatKey                   = "profiling.data.format"
+	profilingDataFormatPprofGzipBase64       = "pprof-gzip-base64"
+	profilingDataTotalFrameCountKey          = "profiling.data.total.frame.count"
+	profilingInstrumentationSourceKey        = "profiling.instrumentation.source"
+	profilingInstrumentationSourceContinuous = "continuous"
 )
 
 func isProfilingData(sl plog.ScopeLogs) bool {
@@ -740,7 +746,7 @@ func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]
 		"Connection":           "keep-alive",
 		"Content-Type":         "application/json",
 		"User-Agent":           config.SplunkAppName + "/" + appVersion,
-		"Authorization":        splunk.HECTokenHeader + " " + string(config.Token),
+		"Authorization":        splunk.BuildHECAuthHeader(string(config.Token)),
 		"__splunk_app_name":    config.SplunkAppName,
 		"__splunk_app_version": config.SplunkAppVersion,
 	}
