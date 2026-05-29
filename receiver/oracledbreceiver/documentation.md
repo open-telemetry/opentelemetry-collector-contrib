@@ -471,7 +471,7 @@ sample query
 
 ### db.server.session.wait_sample
 
-Per-session wait event statistics from v$session_event showing total time waited and total waits per event.
+Per-session wait event statistics from v$session_event.
 
 #### Attributes
 

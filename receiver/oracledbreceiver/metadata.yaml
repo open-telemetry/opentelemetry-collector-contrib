@@ -243,7 +243,7 @@ events:
       - oracledb.session.duration
   db.server.session.wait_sample:
     enabled: false
-    description: Per-session wait event statistics from v$session_event showing total time waited and total waits per event.
+    description: Per-session wait event statistics from v$session_event.
     attributes:
       - oracledb.sid
       - oracledb.serial
