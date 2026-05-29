@@ -25,12 +25,11 @@ This exporter supports sending OpenTelemetry data to [ClickHouse](https://clickh
 > If 10 bytes of columns are extracted, the speed is expected to be around 100-200 million rows per second.
 
 Note:
-Always
-add [batch-processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor) to
-collector pipeline,
-as [ClickHouse document says:](https://clickhouse.com/docs/en/introduction/performance/#performance-when-inserting-data)
-> We recommend inserting data in packets of at least 1000 rows, or no more than a single request per second. When
-> inserting to a MergeTree table from a tab-separated dump, the insertion speed can be from 50 to 200 MB/s.
+**Batching Recommendation**
+For optimal performance, [ClickHouse recommends](https://clickhouse.com/docs/en/introduction/performance/#performance-when-inserting-data) inserting data in large batches:
+> We recommend inserting data in packets of at least 1000 rows, or no more than a single request per second. When inserting to a MergeTree table from a tab-separated dump, the insertion speed can be from 50 to 200 MB/s.
+
+To achieve this natively, enable batching within the exporter's `sending_queue` configuration. **You do not need to add the external `batch` processor to your collector pipeline.** Relying on the exporter's internal batching is the recommended approach to avoid data-loss issues associated with the external processor.
 
 ## Visualization Tools
 
@@ -285,7 +284,7 @@ A single ClickHouse instance with 32 CPU cores and 128 GB RAM can handle around 
 the data compression ratio is 7 ~ 11, the compressed data store in disk is 1.8 TB ~ 2.85 TB,
 add more clickhouse node to cluster can increase linearly.
 
-The otel-collector with `otlp receiver/batch processor/clickhouse tcp exporter` can process
+The otel-collector with `otlp receiver/clickhouse tcp exporter` (with `sending_queue` batching enabled) can process
 around 40k/s logs entry per CPU cores, add more collector node can increase linearly.
 
 ## Configuration options
