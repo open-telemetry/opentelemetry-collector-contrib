@@ -79,8 +79,8 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 			}
 		case "otelcol":
 			otx := ottlotelcol.NewTransformContextPtr()
-			defer otx.Close()
 			_, isMatch, err := route.otelcolStatement.Execute(ctx, otx)
+			otx.Close()
 			if err != nil {
 				errs = errors.Join(errs, err)
 			} else if isMatch {
