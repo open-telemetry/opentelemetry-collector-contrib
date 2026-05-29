@@ -78,7 +78,7 @@ Default configuration:
 
 ```yaml
 processors:
-  genainormalizer:
+  gen_ai_normalizer:
     sources:
       - name: openinference
 ```
@@ -87,7 +87,7 @@ Delete source attributes after mapping:
 
 ```yaml
 processors:
-  genainormalizer:
+  gen_ai_normalizer:
     sources:
       - name: openinference
         remove_originals: true
@@ -97,7 +97,7 @@ Overwrite existing target attributes:
 
 ```yaml
 processors:
-  genainormalizer:
+  gen_ai_normalizer:
     sources:
       - name: openinference
         remove_originals: true
@@ -108,7 +108,7 @@ Normalize both OpenInference and OpenLLMetry:
 
 ```yaml
 processors:
-  genainormalizer:
+  gen_ai_normalizer:
     sources:
       - name: openinference
         remove_originals: true
@@ -120,7 +120,7 @@ User-defined renames and value foldings (see [User-defined sources](#user-define
 
 ```yaml
 processors:
-  genainormalizer:
+  gen_ai_normalizer:
     sources:
       - name: my_vendor
         remove_originals: true
