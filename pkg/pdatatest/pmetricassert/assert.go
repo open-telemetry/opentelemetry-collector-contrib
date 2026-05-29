@@ -24,10 +24,7 @@ func AssertMetrics(expectedPath string, actual pmetric.Metrics) error {
 	if err != nil {
 		return err
 	}
-	actualDoc, err := normalize(actual, writeOptions{includeValues: true})
-	if err != nil {
-		return err
-	}
+	actualDoc := normalize(actual, writeOptions{includeValues: true})
 	return compareDocuments(expected, actualDoc)
 }
 

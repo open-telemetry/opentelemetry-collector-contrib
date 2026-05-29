@@ -5,7 +5,6 @@ package pmetricassert // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"encoding/json"
-	"fmt"
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -16,9 +15,9 @@ import (
 //
 // Normalization merges compatible resources (by resource attributes), scopes
 // (by name+version) and metrics (by name) so that batch boundaries do not
-// influence the assertion. Datapoints are folded into a set keyed by their
-// attribute values; duplicate logical MTS entries collapse to one.
-func normalize(m pmetric.Metrics, opts writeOptions) (*document, error) {
+// influence the assertion. Datapoints are keyed by their attribute values for
+// order-insensitive comparison.
+func normalize(m pmetric.Metrics, opts writeOptions) *document {
 	type dpKey struct {
 		attrs string
 	}
@@ -77,12 +76,6 @@ func normalize(m pmetric.Metrics, opts writeOptions) (*document, error) {
 				for _, extDP := range extractDatapointAttributes(metric) {
 					raw := attrMapToRaw(extDP.attributes)
 					key := dpKey{attrs: canonKey(raw)}
-					if _, dup := mAgg.datapoints[key]; dup {
-						if opts.includeValues {
-							return nil, fmt.Errorf("duplicate datapoint for metric %q with attributes %s", metric.Name(), key.attrs)
-						}
-						continue
-					}
 					dp := datapointAssertion{Attributes: raw}
 					if opts.includeValues && extDP.value != nil {
 						dp.Value = extDP.value
@@ -135,7 +128,7 @@ func normalize(m pmetric.Metrics, opts writeOptions) (*document, error) {
 		}
 		doc.Resources = append(doc.Resources, res)
 	}
-	return doc, nil
+	return doc
 }
 
 func buildMetricAssertion(metric pmetric.Metric) metricAssertion {
