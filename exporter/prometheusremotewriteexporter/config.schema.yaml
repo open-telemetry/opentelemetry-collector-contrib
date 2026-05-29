@@ -6,6 +6,11 @@ $defs:
       enabled:
         description: Enabled if false the queue is not enabled, the export requests are executed synchronously.
         type: boolean
+      include_metadata_keys:
+        description: List of client metadata keys whose values are forwarded as HTTP headers on every remote write request, enabling per-request routing for multi-project batching.
+        type: array
+        items:
+          type: string
       num_consumers:
         description: NumWorkers configures the number of workers used by the collector to fan out remote write requests.
         type: integer

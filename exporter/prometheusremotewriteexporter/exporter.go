@@ -21,6 +21,7 @@ import (
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -139,6 +140,9 @@ type prwExporter struct {
 	exporterSettings    prometheusremotewrite.Settings
 	telemetry           prwTelemetry
 	RemoteWriteProtoMsg remoteapi.WriteMessageType
+	// includeMetadataKeys lists client metadata keys that are forwarded as
+	// HTTP headers on every outbound remote write request.
+	includeMetadataKeys []string
 
 	// When concurrency is enabled, concurrent goroutines would potentially
 	// fight over the same batchState object. To avoid this, we use a pool
@@ -211,6 +215,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		retrySettings:       cfg.BackOffConfig,
 		retryOnHTTP429:      metadata.ExporterPrometheusremotewritexporterRetryOn429FeatureGate.IsEnabled(),
 		RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
+		includeMetadataKeys: cfg.RemoteWriteQueue.IncludeMetadataKeys,
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
@@ -454,6 +459,18 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "2.0.0")
 		default:
 			return http.StatusBadRequest, fmt.Errorf("unsupported remote-write protobuf message: %v (should be validated earlier)", prwe.RemoteWriteProtoMsg)
+		}
+
+		// Forward configured client metadata keys as HTTP headers so that
+		// upstream routing (e.g. multi-project batching via a partitioning
+		// processor) can be propagated to the remote write endpoint.
+		if len(prwe.includeMetadataKeys) > 0 {
+			md := client.FromContext(ctx).Metadata
+			for _, key := range prwe.includeMetadataKeys {
+				for _, val := range md.Get(key) {
+					req.Header.Add(key, val)
+				}
+			}
 		}
 
 		resp, err := prwe.client.Do(req)
