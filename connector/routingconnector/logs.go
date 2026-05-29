@@ -79,8 +79,8 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			}
 		case "otelcol":
 			otx := ottlotelcol.NewTransformContextPtr()
-			defer otx.Close()
 			_, isMatch, err := route.otelcolStatement.Execute(ctx, otx)
+			otx.Close()
 			if err != nil {
 				errs = errors.Join(errs, err)
 			} else if isMatch {

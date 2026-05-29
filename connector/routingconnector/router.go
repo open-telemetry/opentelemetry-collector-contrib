@@ -249,9 +249,6 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 				// context-qualified paths (e.g. resource.attributes["x"]).
 				result, err = r.parserCollection.ParseStatements(statementsGetter)
 				if err != nil {
-					r.logger.Warn("Routing condition uses unqualified paths which default to 'resource' context for backward compatibility. "+
-						"Update the condition to use context-qualified paths (e.g. 'resource.attributes[\"x\"]') to silence this warning.",
-						zap.String("statement", item.Statement))
 					result, err = r.parserCollection.ParseStatementsWithContext(ottlresource.ContextName, statementsGetter, true)
 				}
 			} else {
