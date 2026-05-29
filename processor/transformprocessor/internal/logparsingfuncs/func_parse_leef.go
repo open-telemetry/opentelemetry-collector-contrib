@@ -139,8 +139,8 @@ func parseLEEF1Header(remainder string) (leefHeader, string, error) {
 
 func parseLEEF2Header(remainder string) (leefHeader, string, error) {
 	parts := strings.SplitN(remainder, "|", 6)
-	if len(parts) < 5 {
-		return leefHeader{}, "", fmt.Errorf("invalid LEEF 2.0 header: expected at least 5 fields (vendor, product, version, eventID), got %d", len(parts))
+	if len(parts) < 4 {
+		return leefHeader{}, "", fmt.Errorf("invalid LEEF 2.0 header: expected at least 4 fields (vendor, product, version, eventID), got %d", len(parts))
 	}
 
 	header := leefHeader{
@@ -150,10 +150,18 @@ func parseLEEF2Header(remainder string) (leefHeader, string, error) {
 		eventID:        parts[3],
 	}
 
-	// The LEEF 2.0 delimiter field is optional in practice. If the 5th field contains '='
-	// it is the first attribute, not a delimiter — re-split with one fewer
-	// segment so any '|' characters inside the attributes section are
-	// preserved.
+	// The LEEF 2.0 delimiter field is optional per the spec. If it is omitted
+	// entirely the header ends after the eventID; default the attribute
+	// delimiter to tab and leave attributes empty (mirrors LEEF 1.0).
+	if len(parts) == 4 {
+		header.delimiter = "\t"
+		return header, "", nil
+	}
+
+	// The delimiter field may also be omitted while attributes are present. If
+	// the 5th field contains '=' it is the first attribute, not a delimiter —
+	// re-split with one fewer segment so any '|' characters inside the
+	// attributes section are preserved.
 	delimiterSpec := parts[4]
 	if strings.Contains(delimiterSpec, "=") {
 		header.delimiter = "\t"
@@ -208,7 +216,9 @@ func parseDelimiter(spec string) (string, error) {
 // parseLEEFAttributes splits the LEEF attribute section into key/value pairs.
 // Pairs missing an '=' or with an empty key are silently skipped; on duplicate
 // keys the last occurrence wins. This matches the lenient behavior described
-// in the LEEF spec where producers may emit malformed pairs.
+// in the LEEF spec where producers may emit malformed pairs. Whitespace within
+// keys and values is preserved verbatim: the spec defines a value as everything
+// up to the delimiter, so trimming would discard data the source emitted.
 func parseLEEFAttributes(attributes, delimiter string) map[string]string {
 	result := make(map[string]string)
 	if attributes == "" {
@@ -216,7 +226,6 @@ func parseLEEFAttributes(attributes, delimiter string) map[string]string {
 	}
 
 	for pair := range strings.SplitSeq(attributes, delimiter) {
-		pair = strings.TrimSpace(pair)
 		if pair == "" {
 			continue
 		}

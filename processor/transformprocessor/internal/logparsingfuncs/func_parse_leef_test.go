@@ -207,6 +207,57 @@ func Test_parseLEEF(t *testing.T) {
 			},
 		},
 		{
+			name: "LEEF 2.0 minimal header no delimiter no attributes",
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+					return "LEEF:2.0|Vendor|Product|1.0|EventID", nil
+				},
+			},
+			expected: map[string]any{
+				"version":         "2.0",
+				"vendor":          "Vendor",
+				"product_name":    "Product",
+				"product_version": "1.0",
+				"event_id":        "EventID",
+				"attributes":      map[string]any{},
+			},
+		},
+		{
+			name: "LEEF 2.0 minimal header with syslog prefix",
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+					return "May 11 11:27:23 SERVER-1 LEEF:2.0|Vendor|Product|1.0|EventID", nil
+				},
+			},
+			expected: map[string]any{
+				"version":         "2.0",
+				"vendor":          "Vendor",
+				"product_name":    "Product",
+				"product_version": "1.0",
+				"event_id":        "EventID",
+				"attributes":      map[string]any{},
+			},
+		},
+		{
+			name: "attribute value trailing whitespace preserved",
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+					return "LEEF:1.0|Vendor|Product|1.0|Event|msg=hello world \tsrc=1.2.3.4", nil
+				},
+			},
+			expected: map[string]any{
+				"version":         "1.0",
+				"vendor":          "Vendor",
+				"product_name":    "Product",
+				"product_version": "1.0",
+				"event_id":        "Event",
+				"attributes": map[string]any{
+					"msg": "hello world ",
+					"src": "1.2.3.4",
+				},
+			},
+		},
+		{
 			name: "attribute value with spaces",
 			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
 				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
@@ -668,7 +719,7 @@ func Test_parseLEEF_error(t *testing.T) {
 					return "LEEF:2.0|Vendor|Product|1.0", nil
 				},
 			},
-			expectedError: "invalid LEEF 2.0 header: expected at least 5 fields",
+			expectedError: "invalid LEEF 2.0 header: expected at least 4 fields",
 		},
 		{
 			name: "no pipe delimiter at all",
@@ -921,12 +972,12 @@ func Test_parseLEEFAttributes(t *testing.T) {
 			},
 		},
 		{
-			name:      "whitespace handling",
-			input:     "  key1=val1  \t  key2=val2  ",
+			name:      "whitespace in keys and values is preserved",
+			input:     "msg=hello world \t src= 1.2.3.4 ",
 			delimiter: "\t",
 			expected: map[string]string{
-				"key1": "val1",
-				"key2": "val2",
+				"msg":  "hello world ",
+				" src": " 1.2.3.4 ",
 			},
 		},
 		{
