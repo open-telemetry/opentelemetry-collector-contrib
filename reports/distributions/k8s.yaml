@@ -12,7 +12,7 @@ components:
         - service_graph
     exporter:
         - file
-        - loadbalancing
+        - load_balancing
         - otelarrow
     extension:
         - ack
@@ -46,7 +46,7 @@ components:
         - redaction
         - remotetap
         - resource
-        - resourcedetection
+        - resource_detection
         - tail_sampling
         - transform
     receiver:

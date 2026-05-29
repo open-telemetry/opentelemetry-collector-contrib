@@ -20,7 +20,7 @@ components:
     - connector/exceptions
     - connector/failover
     - connector/grafanacloud
-    - connector/metricsaslogs
+    - connector/metrics_as_logs
     - connector/otlp_json
     - connector/round_robin
     - connector/routing
@@ -57,14 +57,14 @@ components:
     - exporter/honeycomb_marker
     - exporter/influxdb
     - exporter/kafka
-    - exporter/loadbalancing
+    - exporter/load_balancing
     - exporter/logicmonitor
     - exporter/logzio
     - exporter/mezmo
     - exporter/opensearch
     - exporter/otelarrow
     - exporter/prometheus
-    - exporter/prometheusremotewrite
+    - exporter/prometheus_remote_write
     - exporter/pulsar
     - exporter/rabbitmq
     - exporter/sematext
@@ -196,7 +196,7 @@ components:
     - processor/drain
     - processor/dynatracedetector
     - processor/filter
-    - processor/genainormalizer
+    - processor/gen_ai_normalizer
     - processor/geoip
     - processor/groupbyattrs
     - processor/groupbytrace
@@ -218,7 +218,7 @@ components:
     - processor/redaction
     - processor/remotetap
     - processor/resource
-    - processor/resourcedetection
+    - processor/resource_detection
     - processor/scalewaydetector
     - processor/schema
     - processor/span
@@ -227,6 +227,7 @@ components:
     - processor/tail_sampling
     - processor/tencentcvmdetector
     - processor/transform
+    - processor/transformprocessor/internal/logparsingfuncs
     - processor/unroll
     - processor/upclouddetector
     - processor/vultrdetector
@@ -237,7 +238,7 @@ components:
     - receiver/active_directory_ds
     - receiver/aerospike
     - receiver/apache
-    - receiver/apachespark
+    - receiver/apache_spark
     - receiver/aws_lambda
     - receiver/awscloudwatch
     - receiver/awscontainerinsightreceiver
@@ -303,7 +304,7 @@ components:
     - receiver/oracledb
     - receiver/osquery
     - receiver/otelarrow
-    - receiver/otlpjsonfile
+    - receiver/otlp_json_file
     - receiver/podman_stats
     - receiver/postgresql
     - receiver/pprof
@@ -333,8 +334,8 @@ components:
     - receiver/stef
     - receiver/syslog
     - receiver/systemd
+    - receiver/tcp_check
     - receiver/tcp_log
-    - receiver/tcpcheck
     - receiver/tls_check
     - receiver/udp_log
     - receiver/vcenter

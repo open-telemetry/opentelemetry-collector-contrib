@@ -40,8 +40,9 @@ import (
 //   - (no attributes)
 func TestTracesToMetrics(t *testing.T) {
 	testCases := []struct {
-		name string
-		cfg  *Config
+		name       string
+		goldenFile string
+		cfg        *Config
 	}{
 		{
 			name: "zero_conditions",
@@ -243,10 +244,38 @@ func TestTracesToMetrics(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:       "multiple_conditions_path_context",
+			goldenFile: "multiple_conditions",
+			cfg: &Config{
+				Spans: map[string]MetricInfo{
+					"span.count.if": {
+						Description: "Span count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`span.attributes["span.optional"] != nil`,
+						},
+					},
+				},
+				SpanEvents: map[string]MetricInfo{
+					"spanevent.count.if": {
+						Description: "Span event count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`spanevent.attributes["event.optional"] != nil`,
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			goldenFile := tc.goldenFile
+			if goldenFile == "" {
+				goldenFile = tc.name
+			}
 			require.NoError(t, tc.cfg.Validate())
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
@@ -268,8 +297,8 @@ func TestTracesToMetrics(t *testing.T) {
 			allMetrics := sink.AllMetrics()
 			assert.Len(t, allMetrics, 1)
 
-			// golden.WriteMetrics(t, filepath.Join("testdata", "traces", tc.name+".yaml"), allMetrics[0])
-			expected, err := golden.ReadMetrics(filepath.Join("testdata", "traces", tc.name+".yaml"))
+			// golden.WriteMetrics(t, filepath.Join("testdata", "traces", goldenFile+".yaml"), allMetrics[0])
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", "traces", goldenFile+".yaml"))
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
 				pmetrictest.IgnoreResourceMetricsOrder(),
@@ -297,8 +326,9 @@ func TestTracesToMetrics(t *testing.T) {
 //   - (no attributes)
 func TestMetricsToMetrics(t *testing.T) {
 	testCases := []struct {
-		name string
-		cfg  *Config
+		name       string
+		goldenFile string
+		cfg        *Config
 	}{
 		{
 			name: "zero_conditions",
@@ -484,10 +514,38 @@ func TestMetricsToMetrics(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:       "multiple_conditions_path_context",
+			goldenFile: "multiple_conditions",
+			cfg: &Config{
+				Metrics: map[string]MetricInfo{
+					"metric.count.if": {
+						Description: "Metric count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`metric.type == METRIC_DATA_TYPE_HISTOGRAM`,
+						},
+					},
+				},
+				DataPoints: map[string]MetricInfo{
+					"datapoint.count.if": {
+						Description: "Data point count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`datapoint.attributes["datapoint.optional"] != nil`,
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			goldenFile := tc.goldenFile
+			if goldenFile == "" {
+				goldenFile = tc.name
+			}
 			require.NoError(t, tc.cfg.Validate())
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
@@ -509,8 +567,8 @@ func TestMetricsToMetrics(t *testing.T) {
 			allMetrics := sink.AllMetrics()
 			assert.Len(t, allMetrics, 1)
 
-			// golden.WriteMetrics(t, filepath.Join("testdata", "metrics", tc.name+".yaml"), allMetrics[0])
-			expected, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", tc.name+".yaml"))
+			// golden.WriteMetrics(t, filepath.Join("testdata", "metrics", goldenFile+".yaml"), allMetrics[0])
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", goldenFile+".yaml"))
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
 				pmetrictest.IgnoreStartTimestamp(),
@@ -537,8 +595,9 @@ func TestMetricsToMetrics(t *testing.T) {
 //   - (no attributes)
 func TestLogsToMetrics(t *testing.T) {
 	testCases := []struct {
-		name string
-		cfg  *Config
+		name       string
+		goldenFile string
+		cfg        *Config
 	}{
 		{
 			name: "zero_conditions",
@@ -657,10 +716,29 @@ func TestLogsToMetrics(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:       "multiple_conditions_path_context",
+			goldenFile: "multiple_conditions",
+			cfg: &Config{
+				Logs: map[string]MetricInfo{
+					"count.if": {
+						Description: "Count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`log.attributes["log.optional"] != nil`,
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			goldenFile := tc.goldenFile
+			if goldenFile == "" {
+				goldenFile = tc.name
+			}
 			require.NoError(t, tc.cfg.Validate())
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
@@ -682,8 +760,8 @@ func TestLogsToMetrics(t *testing.T) {
 			allMetrics := sink.AllMetrics()
 			assert.Len(t, allMetrics, 1)
 
-			// golden.WriteMetrics(t, filepath.Join("testdata", "logs", tc.name+".yaml"), allMetrics[0])
-			expected, err := golden.ReadMetrics(filepath.Join("testdata", "logs", tc.name+".yaml"))
+			// golden.WriteMetrics(t, filepath.Join("testdata", "logs", goldenFile+".yaml"), allMetrics[0])
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", "logs", goldenFile+".yaml"))
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
 				pmetrictest.IgnoreTimestamp(),
@@ -710,8 +788,9 @@ func TestLogsToMetrics(t *testing.T) {
 //   - (no attributes)
 func TestProfilesToMetrics(t *testing.T) {
 	testCases := []struct {
-		name string
-		cfg  *Config
+		name       string
+		goldenFile string
+		cfg        *Config
 	}{
 		{
 			name: "zero_conditions",
@@ -830,10 +909,29 @@ func TestProfilesToMetrics(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:       "multiple_conditions_path_context",
+			goldenFile: "multiple_conditions",
+			cfg: &Config{
+				Profiles: map[string]MetricInfo{
+					"count.if": {
+						Description: "Count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`profile.duration_unix_nano > 1000`,
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			goldenFile := tc.goldenFile
+			if goldenFile == "" {
+				goldenFile = tc.name
+			}
 			require.NoError(t, tc.cfg.Validate())
 			factory := NewFactory().(xconnector.Factory)
 			sink := &consumertest.MetricsSink{}
@@ -855,8 +953,8 @@ func TestProfilesToMetrics(t *testing.T) {
 			allMetrics := sink.AllMetrics()
 			assert.Len(t, allMetrics, 1)
 
-			// golden.WriteMetrics(t, filepath.Join("testdata", "profiles", tc.name+".yaml"), allMetrics[0])
-			expected, err := golden.ReadMetrics(filepath.Join("testdata", "profiles", tc.name+".yaml"))
+			// golden.WriteMetrics(t, filepath.Join("testdata", "profiles", goldenFile+".yaml"), allMetrics[0])
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", "profiles", goldenFile+".yaml"))
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
 				pmetrictest.IgnoreStartTimestamp(),
