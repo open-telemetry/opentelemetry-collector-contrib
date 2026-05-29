@@ -77,3 +77,12 @@ prometheus_remote_write/v1_no_translation:
   endpoint: "localhost:8888"
   protobuf_message: "prometheus.WriteRequest"
   translation_strategy: "NoTranslation"
+
+prometheus_remote_write/include_metadata_keys:
+  endpoint: "localhost:8888"
+  remote_write_queue:
+    queue_size: 1000
+    num_consumers: 5
+    include_metadata_keys:
+      - "target-id"
+      - "x-org-id"

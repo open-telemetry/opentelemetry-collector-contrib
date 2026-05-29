@@ -16,6 +16,7 @@ require (
 	github.com/prometheus/prometheus v0.312.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/wal v1.2.1
+	go.opentelemetry.io/collector/client v1.59.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/component v1.59.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/component/componenttest v0.153.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/config/confighttp v0.153.1-0.20260528150546-fe2cf23ff222
@@ -29,7 +30,6 @@ require (
 	go.opentelemetry.io/collector/exporter v1.59.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.153.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/exporter/exportertest v0.153.1-0.20260528150546-fe2cf23ff222
-	go.opentelemetry.io/collector/client v1.59.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/exporter/xexporter v0.153.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/featuregate v1.59.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/pdata v1.59.1-0.20260528150546-fe2cf23ff222
@@ -115,7 +115,6 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/tinylru v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-
 	go.opentelemetry.io/collector/config/configauth v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
