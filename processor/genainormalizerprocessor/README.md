@@ -15,10 +15,12 @@ The GenAI Normalizer Processor rewrites attributes on spans emitted by non-OTel 
 
 ## Configuration
 
-### Supported sources:
+### Built-in sources:
 
 - `openinference` — [OpenInference](https://github.com/Arize-ai/openinference) instrumentation
 - `openllmetry` — [OpenLLMetry (Traceloop)](https://github.com/traceloop/openllmetry) instrumentation
+
+Any other `name` is a [user-defined source](#user-defined-sources): the entry's `mappings` and `value_mappings` drive the normalization.
 
 ### Top-level fields
 
@@ -32,9 +34,11 @@ Each entry in `sources` accepts the following fields:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `name` | string | _required_ | Source convention name. One of `openinference`, `openllmetry`. |
+| `name` | string | _required_ | Source identifier. Built-in names (`openinference`, `openllmetry`) use pre-defined mapping tables. Any other name is a user-defined source. Names must be unique across `sources`. |
 | `remove_originals` | bool | `false` | Delete source attributes after mapping. |
 | `overwrite` | bool | `false` | When `true`, overwrite the target attribute if it already exists. When `false`, skip the mapping. |
+| `mappings` | map\[string]string | _required for user-defined sources, rejected on built-ins_ | Source-attribute → target-attribute rename table. See [User-defined sources](#user-defined-sources). |
+| `value_mappings` | map\[string]map\[string]string | _user-defined sources only_ | Per-target value-fold rules, keyed by post-rename target attribute. See [User-defined sources](#user-defined-sources). |
 
 ### Scope
 
@@ -111,6 +115,43 @@ processors:
         remove_originals: true
 ```
 
+User-defined renames and value foldings (see [User-defined sources](#user-defined-sources)):
+
+```yaml
+processors:
+  genainormalizer:
+    sources:
+      - name: my_vendor
+        remove_originals: true
+        mappings:
+          my_vendor.model: gen_ai.request.model
+          my_vendor.tokens.in: gen_ai.usage.input_tokens
+        value_mappings:
+          gen_ai.operation.name:
+            chat_completion: chat
+            tool_invoke: execute_tool
+```
+
+## User-defined sources
+
+Any `name` that is not a built-in (`openinference`, `openllmetry`) is a user-defined source. The entry's `mappings` and `value_mappings` drive the normalization. User-defined sources reuse the same `remove_originals`, `overwrite`, and type-coercion semantics as the built-in sources.
+
+| Field | Type | Description |
+|---|---|---|
+| `mappings` | map\[string]string | Required. Source-attribute → target-attribute rename table. Must be non-empty. |
+| `value_mappings` | map\[string]map\[string]string | Optional. Outer key is the post-rename target attribute name; inner map folds source string values onto preferred target string values. Source-value lookups are exact-match. Non-string sources, missing rules, and unmatched source values pass through verbatim. |
+
+Validation rules:
+
+- `mappings` must be non-empty on any user-defined source.
+- `mappings` and `value_mappings` are rejected on built-in sources.
+- Each `value_mappings` outer key must appear as a target in `mappings` (catches unreachable rules at config time).
+- `name` must be unique across `sources`.
+
+User-defined mappings landing on typed `gen_ai.*` targets get the same int/float/string/bool/`[]string` coercion as built-in mappings (see [Type handling](#type-handling)). User-defined mappings landing on non-`gen_ai.*` targets pass through verbatim.
+
+**Future built-in sources.** New built-in source names may be added in future releases. This is not treated as a breaking change. To avoid collisions, namespace user-defined names with a vendor or company prefix (e.g. `custom.anthropic`, `acme.internal`).
+
 ## Built-in mappings
 
 ### `openinference`
@@ -171,7 +212,7 @@ See [`internal/openllmetry/mappings.go`](./internal/openllmetry/mappings.go) for
 
 ### Value transformations
 
-When a mapped attribute lands on `gen_ai.operation.name`, the string value is normalized to the OTel GenAI enum. Lookup is case-insensitive.
+When a built-in mapping lands on `gen_ai.operation.name`, the string value is normalized to the OTel GenAI enum. Built-in lookups are case-insensitive; user-defined `value_mappings` are exact-match.
 
 | Source | Source attribute | Source value | Target value |
 |---|---|---|---|
@@ -200,4 +241,4 @@ Target reference: [OTel GenAI operation names](https://opentelemetry.io/docs/spe
 
 The [`schemaprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/schemaprocessor) translates between OTel semantic convention versions using `schema_url` and the OTel schema file format. Source conventions normalized by this processor do not set `schema_url` and do not publish OTel schema files, so `schemaprocessor` cannot be used for this translation today.
 
-The [`transformprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) can rewrite attributes via OTTL but requires users to author and maintain the full mapping set themselves. This processor ships the mappings built-in.
+The [`transformprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) can rewrite attributes via OTTL but requires users to author and maintain the full mapping set themselves. This processor ships the mappings built-in. For pure value-mutation without renames, prefer `transformprocessor`.
