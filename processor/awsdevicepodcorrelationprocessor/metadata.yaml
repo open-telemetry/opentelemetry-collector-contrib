@@ -4,6 +4,9 @@ status:
   class: processor
   stability:
     beta: [metrics]
+  distributions: []
+  codeowners:
+    active: [sky333999, movence]
 
 tests:
   config:

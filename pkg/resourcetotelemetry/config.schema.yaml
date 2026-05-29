@@ -3,6 +3,9 @@ $defs:
     description: 'Settings defines configuration for converting resource attributes to telemetry attributes. When used, it must be embedded in the exporter configuration: type Config struct { // ... resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"` }'
     type: object
     properties:
+      clear_after_copy:
+        description: ClearAfterCopy indicates whether to clear the resource attributes after the conversion has completed. Default is `false`.
+        type: boolean
       enabled:
         description: Enabled indicates whether to convert resource attributes to telemetry attributes. Default is `false`.
         type: boolean

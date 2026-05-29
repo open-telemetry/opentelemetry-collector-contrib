@@ -198,7 +198,9 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/awsattributelimitprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/awscwotlpbatchsplitprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/awsdevicepodcorrelationprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor
@@ -237,6 +239,8 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightskueuereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsefareceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsekshyperpodreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // Package awsattributelimitprocessor implements an OTel metrics processor that
 // enforces the aws backend 150-attribute limit per metric using

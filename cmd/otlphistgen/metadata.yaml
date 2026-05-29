@@ -1,0 +1,6 @@
+type: otlphistgen
+
+status:
+  class: cmd
+  codeowners:
+    active: [dricross, jefchien, sky333999]

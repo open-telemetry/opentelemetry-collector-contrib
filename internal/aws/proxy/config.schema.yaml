@@ -3,12 +3,26 @@ $defs:
     description: Config is the configuration for the local TCP proxy server.
     type: object
     properties:
+      additional_routing_rules:
+        description: AdditionalRoutingRules defines optional routing rules for multi-service support. Each route can specify its own service name, region, role, and endpoint. If a field is not provided, defaults to the top level configuration.
+        type: array
+        items:
+          $ref: routing_rule
       aws_endpoint:
         description: AWSEndpoint is the X-Ray service endpoint which the local TCP server forwards requests to.
         type: string
+      certificate_file_path:
+        description: Add a custom certificates file
+        type: string
+      imds_retries:
+        description: How many times should we retry imds v2
+        type: integer
       local_mode:
         description: LocalMode determines whether the EC2 instance metadata endpoint will be called or not. Set to `true` to skip EC2 instance metadata check.
         type: boolean
+      profile:
+        description: Change the default profile for shared creds file
+        type: string
       proxy_address:
         description: ProxyAddress defines the proxy address that the local TCP server forwards HTTP requests to AWS X-Ray backend through.
         type: string
@@ -21,8 +35,34 @@ $defs:
       service_name:
         description: ServiceName determines which service the requests are sent to. will be default to `xray`. This is mandatory for SigV4
         type: string
+      shared_credentials_file:
+        description: Change the default shared creds file location
+        type: array
+        items:
+          type: string
       tls:
         description: TLS struct exposes TLS client configuration when forwarding calls to the AWS X-Ray backend.
         $ref: go.opentelemetry.io/collector/config/configtls.client_config
     allOf:
       - $ref: go.opentelemetry.io/collector/config/confignet.tcp_addr_config
+  routing_rule:
+    description: RoutingRule defines routing configuration for a specific service.
+    type: object
+    properties:
+      aws_endpoint:
+        description: AWSEndpoint is the AWS endpoint for this service. Falls back to top-level aws_endpoint if not set, or auto-resolves from service_name and region.
+        type: string
+      paths:
+        description: 'Paths is a list of URL paths to match against the request. Example: "slos", "GetSamplingRules", "DescribeLogStreams"'
+        type: array
+        items:
+          type: string
+      region:
+        description: Region is the AWS region for this service. Falls back to top-level region if not set.
+        type: string
+      role_arn:
+        description: RoleARN is the IAM role for this service. Falls back to top-level role_arn if not set.
+        type: string
+      service_name:
+        description: ServiceName is the AWS service name. Required.
+        type: string

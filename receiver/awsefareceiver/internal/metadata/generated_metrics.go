@@ -157,6 +157,7 @@ func (m *metricEfaImpairedRemoteConnEvents) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaImpairedRemoteConnEvents(cfg MetricConfig) metricEfaImpairedRemoteConnEvents {
 	m := metricEfaImpairedRemoteConnEvents{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -212,6 +213,7 @@ func (m *metricEfaRdmaReadBytes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRdmaReadBytes(cfg MetricConfig) metricEfaRdmaReadBytes {
 	m := metricEfaRdmaReadBytes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -267,6 +269,7 @@ func (m *metricEfaRdmaReadRespBytes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRdmaReadRespBytes(cfg MetricConfig) metricEfaRdmaReadRespBytes {
 	m := metricEfaRdmaReadRespBytes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -322,6 +325,7 @@ func (m *metricEfaRdmaReadWrErr) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRdmaReadWrErr(cfg MetricConfig) metricEfaRdmaReadWrErr {
 	m := metricEfaRdmaReadWrErr{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -377,6 +381,7 @@ func (m *metricEfaRdmaReadWrs) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRdmaReadWrs(cfg MetricConfig) metricEfaRdmaReadWrs {
 	m := metricEfaRdmaReadWrs{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -432,6 +437,7 @@ func (m *metricEfaRdmaWriteBytes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRdmaWriteBytes(cfg MetricConfig) metricEfaRdmaWriteBytes {
 	m := metricEfaRdmaWriteBytes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -487,6 +493,7 @@ func (m *metricEfaRdmaWriteRecvBytes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRdmaWriteRecvBytes(cfg MetricConfig) metricEfaRdmaWriteRecvBytes {
 	m := metricEfaRdmaWriteRecvBytes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -542,6 +549,7 @@ func (m *metricEfaRdmaWriteWrErr) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRdmaWriteWrErr(cfg MetricConfig) metricEfaRdmaWriteWrErr {
 	m := metricEfaRdmaWriteWrErr{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -597,6 +605,7 @@ func (m *metricEfaRdmaWriteWrs) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRdmaWriteWrs(cfg MetricConfig) metricEfaRdmaWriteWrs {
 	m := metricEfaRdmaWriteWrs{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -652,6 +661,7 @@ func (m *metricEfaRecvBytes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRecvBytes(cfg MetricConfig) metricEfaRecvBytes {
 	m := metricEfaRecvBytes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -707,6 +717,7 @@ func (m *metricEfaRecvWrs) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRecvWrs(cfg MetricConfig) metricEfaRecvWrs {
 	m := metricEfaRecvWrs{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -762,6 +773,7 @@ func (m *metricEfaRetransBytes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRetransBytes(cfg MetricConfig) metricEfaRetransBytes {
 	m := metricEfaRetransBytes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -817,6 +829,7 @@ func (m *metricEfaRetransPkts) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRetransPkts(cfg MetricConfig) metricEfaRetransPkts {
 	m := metricEfaRetransPkts{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -872,6 +885,7 @@ func (m *metricEfaRetransTimeoutEvents) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRetransTimeoutEvents(cfg MetricConfig) metricEfaRetransTimeoutEvents {
 	m := metricEfaRetransTimeoutEvents{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -927,6 +941,7 @@ func (m *metricEfaRxBytes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRxBytes(cfg MetricConfig) metricEfaRxBytes {
 	m := metricEfaRxBytes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -982,6 +997,7 @@ func (m *metricEfaRxDropped) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRxDropped(cfg MetricConfig) metricEfaRxDropped {
 	m := metricEfaRxDropped{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1037,6 +1053,7 @@ func (m *metricEfaRxPkts) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaRxPkts(cfg MetricConfig) metricEfaRxPkts {
 	m := metricEfaRxPkts{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1092,6 +1109,7 @@ func (m *metricEfaSendBytes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaSendBytes(cfg MetricConfig) metricEfaSendBytes {
 	m := metricEfaSendBytes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1147,6 +1165,7 @@ func (m *metricEfaSendWrs) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaSendWrs(cfg MetricConfig) metricEfaSendWrs {
 	m := metricEfaSendWrs{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1202,6 +1221,7 @@ func (m *metricEfaTxBytes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaTxBytes(cfg MetricConfig) metricEfaTxBytes {
 	m := metricEfaTxBytes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1257,6 +1277,7 @@ func (m *metricEfaTxPkts) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaTxPkts(cfg MetricConfig) metricEfaTxPkts {
 	m := metricEfaTxPkts{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1312,6 +1333,7 @@ func (m *metricEfaUnresponsiveRemoteEvents) emit(metrics pmetric.MetricSlice) {
 
 func newMetricEfaUnresponsiveRemoteEvents(cfg MetricConfig) metricEfaUnresponsiveRemoteEvents {
 	m := metricEfaUnresponsiveRemoteEvents{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

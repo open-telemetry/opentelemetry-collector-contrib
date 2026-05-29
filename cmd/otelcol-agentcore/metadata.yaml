@@ -3,4 +3,4 @@ type: otelcol-agentcore
 status:
   class: cmd
   codeowners:
-    active: []
+    active: [wangzlei, jefchien, sky333999]

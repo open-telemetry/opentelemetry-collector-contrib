@@ -138,9 +138,7 @@ components:
         - apachespark
         - awscloudwatch
         - awscontainerinsightreceiver
-        - awscontainerinsightskueuereceiver
         - awsecscontainermetrics
-        - awsekshyperpodreceiver
         - awsfirehose
         - awslambda
         - awss3

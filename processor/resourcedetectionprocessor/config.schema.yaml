@@ -92,6 +92,11 @@ properties:
     type: array
     items:
       type: string
+  middleware:
+    description: MiddlewareID is an ID for an extension that can be used to configure the AWS client.
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
   override:
     description: Override indicates whether any existing resource attributes should be overridden or preserved. Defaults to true.
     type: boolean

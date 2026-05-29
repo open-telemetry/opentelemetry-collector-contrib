@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -25,28 +26,72 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					EfaImpairedRemoteConnEvents: MetricConfig{Enabled: true},
-					EfaRdmaReadBytes:            MetricConfig{Enabled: true},
-					EfaRdmaReadRespBytes:        MetricConfig{Enabled: true},
-					EfaRdmaReadWrErr:            MetricConfig{Enabled: true},
-					EfaRdmaReadWrs:              MetricConfig{Enabled: true},
-					EfaRdmaWriteBytes:           MetricConfig{Enabled: true},
-					EfaRdmaWriteRecvBytes:       MetricConfig{Enabled: true},
-					EfaRdmaWriteWrErr:           MetricConfig{Enabled: true},
-					EfaRdmaWriteWrs:             MetricConfig{Enabled: true},
-					EfaRecvBytes:                MetricConfig{Enabled: true},
-					EfaRecvWrs:                  MetricConfig{Enabled: true},
-					EfaRetransBytes:             MetricConfig{Enabled: true},
-					EfaRetransPkts:              MetricConfig{Enabled: true},
-					EfaRetransTimeoutEvents:     MetricConfig{Enabled: true},
-					EfaRxBytes:                  MetricConfig{Enabled: true},
-					EfaRxDropped:                MetricConfig{Enabled: true},
-					EfaRxPkts:                   MetricConfig{Enabled: true},
-					EfaSendBytes:                MetricConfig{Enabled: true},
-					EfaSendWrs:                  MetricConfig{Enabled: true},
-					EfaTxBytes:                  MetricConfig{Enabled: true},
-					EfaTxPkts:                   MetricConfig{Enabled: true},
-					EfaUnresponsiveRemoteEvents: MetricConfig{Enabled: true},
+					EfaImpairedRemoteConnEvents: MetricConfig{
+						Enabled: true,
+					},
+					EfaRdmaReadBytes: MetricConfig{
+						Enabled: true,
+					},
+					EfaRdmaReadRespBytes: MetricConfig{
+						Enabled: true,
+					},
+					EfaRdmaReadWrErr: MetricConfig{
+						Enabled: true,
+					},
+					EfaRdmaReadWrs: MetricConfig{
+						Enabled: true,
+					},
+					EfaRdmaWriteBytes: MetricConfig{
+						Enabled: true,
+					},
+					EfaRdmaWriteRecvBytes: MetricConfig{
+						Enabled: true,
+					},
+					EfaRdmaWriteWrErr: MetricConfig{
+						Enabled: true,
+					},
+					EfaRdmaWriteWrs: MetricConfig{
+						Enabled: true,
+					},
+					EfaRecvBytes: MetricConfig{
+						Enabled: true,
+					},
+					EfaRecvWrs: MetricConfig{
+						Enabled: true,
+					},
+					EfaRetransBytes: MetricConfig{
+						Enabled: true,
+					},
+					EfaRetransPkts: MetricConfig{
+						Enabled: true,
+					},
+					EfaRetransTimeoutEvents: MetricConfig{
+						Enabled: true,
+					},
+					EfaRxBytes: MetricConfig{
+						Enabled: true,
+					},
+					EfaRxDropped: MetricConfig{
+						Enabled: true,
+					},
+					EfaRxPkts: MetricConfig{
+						Enabled: true,
+					},
+					EfaSendBytes: MetricConfig{
+						Enabled: true,
+					},
+					EfaSendWrs: MetricConfig{
+						Enabled: true,
+					},
+					EfaTxBytes: MetricConfig{
+						Enabled: true,
+					},
+					EfaTxPkts: MetricConfig{
+						Enabled: true,
+					},
+					EfaUnresponsiveRemoteEvents: MetricConfig{
+						Enabled: true,
+					},
 				},
 			},
 		},
@@ -54,28 +99,72 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					EfaImpairedRemoteConnEvents: MetricConfig{Enabled: false},
-					EfaRdmaReadBytes:            MetricConfig{Enabled: false},
-					EfaRdmaReadRespBytes:        MetricConfig{Enabled: false},
-					EfaRdmaReadWrErr:            MetricConfig{Enabled: false},
-					EfaRdmaReadWrs:              MetricConfig{Enabled: false},
-					EfaRdmaWriteBytes:           MetricConfig{Enabled: false},
-					EfaRdmaWriteRecvBytes:       MetricConfig{Enabled: false},
-					EfaRdmaWriteWrErr:           MetricConfig{Enabled: false},
-					EfaRdmaWriteWrs:             MetricConfig{Enabled: false},
-					EfaRecvBytes:                MetricConfig{Enabled: false},
-					EfaRecvWrs:                  MetricConfig{Enabled: false},
-					EfaRetransBytes:             MetricConfig{Enabled: false},
-					EfaRetransPkts:              MetricConfig{Enabled: false},
-					EfaRetransTimeoutEvents:     MetricConfig{Enabled: false},
-					EfaRxBytes:                  MetricConfig{Enabled: false},
-					EfaRxDropped:                MetricConfig{Enabled: false},
-					EfaRxPkts:                   MetricConfig{Enabled: false},
-					EfaSendBytes:                MetricConfig{Enabled: false},
-					EfaSendWrs:                  MetricConfig{Enabled: false},
-					EfaTxBytes:                  MetricConfig{Enabled: false},
-					EfaTxPkts:                   MetricConfig{Enabled: false},
-					EfaUnresponsiveRemoteEvents: MetricConfig{Enabled: false},
+					EfaImpairedRemoteConnEvents: MetricConfig{
+						Enabled: false,
+					},
+					EfaRdmaReadBytes: MetricConfig{
+						Enabled: false,
+					},
+					EfaRdmaReadRespBytes: MetricConfig{
+						Enabled: false,
+					},
+					EfaRdmaReadWrErr: MetricConfig{
+						Enabled: false,
+					},
+					EfaRdmaReadWrs: MetricConfig{
+						Enabled: false,
+					},
+					EfaRdmaWriteBytes: MetricConfig{
+						Enabled: false,
+					},
+					EfaRdmaWriteRecvBytes: MetricConfig{
+						Enabled: false,
+					},
+					EfaRdmaWriteWrErr: MetricConfig{
+						Enabled: false,
+					},
+					EfaRdmaWriteWrs: MetricConfig{
+						Enabled: false,
+					},
+					EfaRecvBytes: MetricConfig{
+						Enabled: false,
+					},
+					EfaRecvWrs: MetricConfig{
+						Enabled: false,
+					},
+					EfaRetransBytes: MetricConfig{
+						Enabled: false,
+					},
+					EfaRetransPkts: MetricConfig{
+						Enabled: false,
+					},
+					EfaRetransTimeoutEvents: MetricConfig{
+						Enabled: false,
+					},
+					EfaRxBytes: MetricConfig{
+						Enabled: false,
+					},
+					EfaRxDropped: MetricConfig{
+						Enabled: false,
+					},
+					EfaRxPkts: MetricConfig{
+						Enabled: false,
+					},
+					EfaSendBytes: MetricConfig{
+						Enabled: false,
+					},
+					EfaSendWrs: MetricConfig{
+						Enabled: false,
+					},
+					EfaTxBytes: MetricConfig{
+						Enabled: false,
+					},
+					EfaTxPkts: MetricConfig{
+						Enabled: false,
+					},
+					EfaUnresponsiveRemoteEvents: MetricConfig{
+						Enabled: false,
+					},
 				},
 			},
 		},
@@ -95,6 +184,6 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

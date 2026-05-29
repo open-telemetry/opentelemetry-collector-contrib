@@ -16,6 +16,9 @@ $defs:
         description: KubeAPIQPS is the maximum number of queries per second to the Kubernetes API. Uses client-go's default (5) if unset. Increase if you see client-side throttling warnings.
         type: number
         x-customType: float32
+      kube_config_path:
+        description: When using auth_type `kubeConfig`, override default kubeConfig with custom path
+        type: string
   auth_type:
     description: AuthType describes the type of authentication to use for the K8s API
     type: string

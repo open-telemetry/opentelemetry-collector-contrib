@@ -283,3 +283,5 @@ providers:
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
 replaces:
+  - github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws => ../../override/aws
+  - github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware => ../../extension/awsmiddleware

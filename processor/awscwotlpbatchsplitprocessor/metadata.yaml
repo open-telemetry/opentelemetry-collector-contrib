@@ -6,7 +6,7 @@ status:
     development: [logs]
   distributions: []
   codeowners:
-    active: [liustve]
+    active: [liustve, jefchien, sky333999]
 
 tests:
   config:

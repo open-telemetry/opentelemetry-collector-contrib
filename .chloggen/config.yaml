@@ -11,14 +11,18 @@ components:
     - cmd/codecovgen
     - cmd/golden
     - cmd/opampsupervisor
+    - cmd/otelcol-agentcore
     - cmd/otelcontribcol
     - cmd/oteltestbedcol
+    - cmd/otlphistgen
+    - cmd/promgen
     - cmd/schemagen
     - cmd/telemetrygen
     - connector/count
     - connector/datadog
     - connector/exceptions
     - connector/failover
+    - connector/genaiadapterconnector
     - connector/grafanacloud
     - connector/metricsaslogs
     - connector/otlpjson
@@ -82,6 +86,7 @@ components:
     - extension/avro_log_encoding
     - extension/aws_logs_encoding
     - extension/awscloudwatchmetricstreams_encoding
+    - extension/awsmiddleware
     - extension/awsproxy
     - extension/azure_auth
     - extension/azure_encoding
@@ -146,6 +151,8 @@ components:
     - internal/splunk
     - internal/sqlquery
     - internal/tools
+    - override/aws
+    - pkg/aws
     - pkg/azurelogs
     - pkg/batchperresourceattr
     - pkg/batchpersignal
@@ -184,6 +191,9 @@ components:
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
+    - processor/awsattributelimit
+    - processor/awscwotlpbatchsplit
+    - processor/awsdevicepodcorrelation
     - processor/azuredetector
     - processor/coralogix
     - processor/cumulativetodelta
@@ -236,7 +246,10 @@ components:
     - receiver/apachespark
     - receiver/awscloudwatch
     - receiver/awscontainerinsightreceiver
+    - receiver/awscontainerinsightskueuereceiver
     - receiver/awsecscontainermetrics
+    - receiver/awsefareceiver
+    - receiver/awsekshyperpodreceiver
     - receiver/awsfirehose
     - receiver/awslambda
     - receiver/awss3

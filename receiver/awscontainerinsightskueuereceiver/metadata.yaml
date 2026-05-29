@@ -4,10 +4,10 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
+  distributions: []
   warnings: [Other]
   codeowners:
-    active: [rvasahu-amazon]
+    active: [sky333999, chadpatel]
 
 tests:
   skip_lifecycle: true

@@ -406,7 +406,7 @@ gendistributions:
 
 .PHONY: gencodecov
 gencodecov:
-	cd $(SRC_ROOT)/cmd/codecovgen && go run . --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules '**/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**' --dir $(SRC_ROOT)
+	cd $(SRC_ROOT)/cmd/codecovgen && go run . --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules '**/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**,**/amazon-contributing/**' --dir $(SRC_ROOT)
 
 .PHONY: update-codeowners
 update-codeowners: generate gengithub

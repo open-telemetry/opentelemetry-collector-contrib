@@ -1,3 +1,0 @@
-extension/awsmiddleware
-extension/observer
-extension/opampcustommessages

@@ -57,13 +57,6 @@ type Config struct {
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
 
 	// MiddlewareID is an ID for an extension that can be used to configure the AWS client.
-	// Fork-only carry. Matches the same field on awsemfexporter, awscloudwatchlogsexporter,
-	// and awsxrayexporter Config structs. Currently a passive carry on this processor:
-	// CWA's resourcedetection translator unconditionally sets it to
-	// &agenthealth.StatusCodeID, but this processor's AWS-using detectors (ec2, eks)
-	// own their own aws.Config and don't yet accept middleware. When/if a detector is
-	// refactored to apply middleware, it should follow the exporter pattern internally:
-	// build its aws.Config → awsmiddleware.TryConfigure(...SDKv2(&cfg)) → NewFromConfig.
 	MiddlewareID *component.ID `mapstructure:"middleware,omitempty"`
 }
 

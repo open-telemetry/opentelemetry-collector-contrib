@@ -52,6 +52,9 @@ ignored_paths:
   - receiver/statsdreceiver
   - extension/awsmiddleware
   - override/aws
+  - connector/genaiadapterconnector
+  - processor/awscwotlpbatchsplitprocessor
+  - receiver/awscontainerinsightreceiver
 allowed_functions:
   - name: NewFactory
     classes:

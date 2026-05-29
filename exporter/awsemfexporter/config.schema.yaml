@@ -51,14 +51,23 @@ $defs:
 description: Config defines configuration for AWS EMF exporter.
 type: object
 properties:
+  add_entity:
+    description: AddEntity is an option to add entity to the EMF log to correlate related telemetry. Setting this to true adds fields such as Service, Environment, etc.
+    type: boolean
   detailed_metrics:
     description: DetailedMetrics is an option for retaining detailed datapoint values in exported metrics (e.g instead of exporting a quantile as a statistical value, preserve the quantile's population)
     type: boolean
   dimension_rollup_option:
     description: DimensionRollupOption is the option for metrics dimension rollup. Three options are available, default option is "ZeroAndSingleDimensionRollup". "ZeroAndSingleDimensionRollup" - Enable both zero dimension rollup and single dimension rollup "SingleDimensionRollupOnly" - Enable single dimension rollup "NoDimensionRollup" - No dimension rollup (only keep original metrics which contain all dimensions)
     type: string
+  disable_metric_extraction:
+    description: DisableMetricExtraction is an option to disable the extraction of metrics from the EMF logs. Setting this to true essentially skips generating and setting the _aws / CloudWatchMetrics section of the EMF log, thus effectively retaining all the fields / labels in the EMF log except for the section responsible for extraction of metrics.
+    type: boolean
   eks_fargate_container_insights_enabled:
-    description: EKSFargateContainerInsightsEnabled is an option to reformat certin metric labels so that they take the form of a high level object The end result will make the labels look like those coming out of ECS and be more easily injected into cloudwatch Note that at the moment in order to use this feature the value "kubernetes" must also be added to the ParseJSONEncodedAttributeValues array in order to be used
+    description: EKSFargateContainerInsightsEnabled is an option to reformat certain metric labels so that they take the form of a high level object The end result will make the labels look like those coming out of ECS and be more easily injected into cloudwatch Note that at the moment in order to use this feature the value "kubernetes" must also be added to the ParseJSONEncodedAttributeValues array in order to be used
+    type: boolean
+  enhanced_container_insights:
+    description: EnhancedContainerInsights indicates payloads will include enhanced container insights metrics.
     type: boolean
   log_group_name:
     description: LogGroupName is the name of CloudWatch log group which defines group of log streams that share the same retention, monitoring, and access control settings.
@@ -70,6 +79,11 @@ properties:
   log_stream_name:
     description: LogStreamName is the name of CloudWatch log stream which is a sequence of log events that share the same source.
     type: string
+  metric_as_distribution:
+    description: MetricAsDistribution is a list of Gauge metric names that should be compacted into a values+counts histogram representation.
+    type: array
+    items:
+      type: string
   metric_declarations:
     description: MetricDeclarations is the list of rules to be used to set dimensions for exported metrics.
     type: array
@@ -81,6 +95,11 @@ properties:
     type: array
     items:
       $ref: metric_descriptor
+  middleware:
+    description: MiddlewareID is an ID for an extension that can be used to configure the AWS client.
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
   namespace:
     description: Namespace is a container for CloudWatch metrics. Metrics in different namespaces are isolated from each other.
     type: string

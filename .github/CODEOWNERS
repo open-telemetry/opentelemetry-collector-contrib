@@ -21,8 +21,11 @@
 cmd/codecovgen/                                                  @open-telemetry/collector-contrib-approvers @mx-psi
 cmd/golden/                                                      @open-telemetry/collector-contrib-approvers @atoulme
 cmd/opampsupervisor/                                             @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan
+cmd/otelcol-agentcore/                                           @open-telemetry/collector-contrib-approvers @wangzlei @jefchien @sky333999
 cmd/otelcontribcol/                                              @open-telemetry/collector-contrib-approvers
 cmd/oteltestbedcol/                                              @open-telemetry/collector-contrib-approvers
+cmd/otlphistgen/                                                 @open-telemetry/collector-contrib-approvers @dricross @jefchien @sky333999
+cmd/promgen/                                                     @open-telemetry/collector-contrib-approvers @dricross @jefchien @sky333999
 cmd/schemagen/                                                   @open-telemetry/collector-contrib-approvers
 cmd/telemetrygen/                                                @open-telemetry/collector-contrib-approvers @mx-psi @codeboten @Erog38 @bogdan-st
 confmap/provider/aesprovider/                                    @open-telemetry/collector-contrib-approvers @kuiperda
@@ -33,6 +36,7 @@ connector/countconnector/                                        @open-telemetry
 connector/datadogconnector/                                      @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @jade-guiton-dd @IbraheemA
 connector/exceptionsconnector/                                   @open-telemetry/collector-contrib-approvers @marctc
 connector/failoverconnector/                                     @open-telemetry/collector-contrib-approvers @akats7 @fatsheep9146
+connector/genaiadapterconnector/                                 @open-telemetry/collector-contrib-approvers @liustve @jefchien @sky333999
 connector/grafanacloudconnector/                                 @open-telemetry/collector-contrib-approvers @rlankfo @jcreixell
 connector/metricsaslogsconnector/                                @open-telemetry/collector-contrib-approvers @atoulme
 connector/otlpjsonconnector/                                     @open-telemetry/collector-contrib-approvers @ChrsMark
@@ -92,7 +96,7 @@ exporter/tinybirdexporter/                                       @open-telemetry
 exporter/zipkinexporter/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
 extension/ackextension/                                          @open-telemetry/collector-contrib-approvers @splunkericl
 extension/asapauthextension/                                     @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
-extension/awsmiddleware/                                         @open-telemetry/collector-contrib-approvers @siprmp @jefchien @sky333999
+extension/awsmiddleware/                                         @open-telemetry/collector-contrib-approvers @jefchien @sky333999
 extension/awsproxy/                                              @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 extension/azureauthextension/                                    @open-telemetry/collector-contrib-approvers @constanca-m
 extension/basicauthextension/                                    @open-telemetry/collector-contrib-approvers @frzifus
@@ -163,6 +167,7 @@ internal/splunk/                                                 @open-telemetry
 internal/sqlquery/                                               @open-telemetry/collector-contrib-approvers @crobert-1 @dmitryax
 internal/tools/                                                  @open-telemetry/collector-contrib-approvers
 override/aws/                                                    @open-telemetry/collector-contrib-approvers @jefchien @sky333999
+pkg/aws/                                                         @open-telemetry/collector-contrib-approvers @dricross @jefchien @sky333999
 pkg/batchperresourceattr/                                        @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 pkg/batchpersignal/                                              @open-telemetry/collector-contrib-approvers
 pkg/core/xidutils/                                               @open-telemetry/collector-contrib-approvers @odubajDT
@@ -197,6 +202,9 @@ pkg/winperfcounters/                                             @open-telemetry
 pkg/xk8stest/                                                    @open-telemetry/collector-contrib-approvers @crobert-1
 pkg/xstreamencoding/                                             @open-telemetry/collector-contrib-approvers @Kavindu-Dodan @axw
 processor/attributesprocessor/                                   @open-telemetry/collector-contrib-approvers @boostchicken
+processor/awsattributelimitprocessor/                            @open-telemetry/collector-contrib-approvers @sky333999 @movence
+processor/awscwotlpbatchsplitprocessor/                          @open-telemetry/collector-contrib-approvers @liustve @jefchien @sky333999
+processor/awsdevicepodcorrelationprocessor/                      @open-telemetry/collector-contrib-approvers @sky333999 @movence
 processor/coralogixprocessor/                                    @open-telemetry/collector-contrib-approvers @crobert-1 @povilasv @iblancasa
 processor/cumulativetodeltaprocessor/                            @open-telemetry/collector-contrib-approvers @TylerHelmuth
 processor/deltatocumulativeprocessor/                            @open-telemetry/collector-contrib-approvers @RichieSams
@@ -249,6 +257,8 @@ receiver/awscloudwatchreceiver/                                  @open-telemetry
 receiver/awscontainerinsightreceiver/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
 receiver/awscontainerinsightskueuereceiver/                      @open-telemetry/collector-contrib-approvers @sky333999 @chadpatel
 receiver/awsecscontainermetricsreceiver/                         @open-telemetry/collector-contrib-approvers @Aneurysm9
+receiver/awsefareceiver/                                         @open-telemetry/collector-contrib-approvers @mitali-salvi @jefchien @sky333999
+receiver/awsekshyperpodreceiver/                                 @open-telemetry/collector-contrib-approvers @sky333999 @movence
 receiver/awsfirehosereceiver/                                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @axw
 receiver/awslambdareceiver/                                      @open-telemetry/collector-contrib-approvers @MichaelKatsoulis @Kavindu-Dodan @axw @pjanotti
 receiver/awss3receiver/                                          @open-telemetry/collector-contrib-approvers @atoulme @adcharre

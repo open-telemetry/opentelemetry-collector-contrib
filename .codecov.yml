@@ -61,6 +61,10 @@ component_management:
     name: connector_failover
     paths:
     - connector/failoverconnector/**
+  - component_id: connector_genaiadapter
+    name: connector_genaiadapter
+    paths:
+    - connector/genaiadapterconnector/**
   - component_id: connector_grafanacloud
     name: connector_grafanacloud
     paths:
@@ -441,6 +445,18 @@ component_management:
     name: processor_attributes
     paths:
     - processor/attributesprocessor/**
+  - component_id: processor_awsattributelimit
+    name: processor_awsattributelimit
+    paths:
+    - processor/awsattributelimitprocessor/**
+  - component_id: processor_awscwotlpbatchsplit
+    name: processor_awscwotlpbatchsplit
+    paths:
+    - processor/awscwotlpbatchsplitprocessor/**
+  - component_id: processor_awsdevicepodcorrelation
+    name: processor_awsdevicepodcorrelation
+    paths:
+    - processor/awsdevicepodcorrelationprocessor/**
   - component_id: processor_coralogix
     name: processor_coralogix
     paths:
@@ -585,10 +601,22 @@ component_management:
     name: receiver_awscontainerinsight
     paths:
     - receiver/awscontainerinsightreceiver/**
+  - component_id: receiver_awscontainerinsightskueue
+    name: receiver_awscontainerinsightskueue
+    paths:
+    - receiver/awscontainerinsightskueuereceiver/**
   - component_id: receiver_awsecscontainermetrics
     name: receiver_awsecscontainermetrics
     paths:
     - receiver/awsecscontainermetricsreceiver/**
+  - component_id: receiver_awsefa
+    name: receiver_awsefa
+    paths:
+    - receiver/awsefareceiver/**
+  - component_id: receiver_awsekshyperpod
+    name: receiver_awsekshyperpod
+    paths:
+    - receiver/awsekshyperpodreceiver/**
   - component_id: receiver_awsfirehose
     name: receiver_awsfirehose
     paths:

@@ -13,8 +13,16 @@ properties:
     type: array
     items:
       type: string
+  middleware:
+    description: MiddlewareID is an ID for an extension that can be used to configure the AWS client.
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
   telemetry:
     description: TelemetryConfig contains the options for telemetry collection.
     $ref: /internal/aws/xray/telemetry.config
+  transit_spans_in_otlp_format:
+    description: X-Ray Export sends spans in its original otlp format to X-Ray Service when this flag is on
+    type: boolean
 allOf:
   - $ref: /internal/aws/awsutil.aws_session_settings
