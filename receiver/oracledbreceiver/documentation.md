@@ -469,6 +469,15 @@ sample query
 | oracledb.query.started | The timestamp when the SQL statement started execution, in ISO 8601 format (UTC). | Any Str | - |
 | oracledb.session.started | The timestamp when the session logged on, in ISO 8601 format (UTC). | Any Str | - |
 | oracledb.session.duration | The total time in seconds that the session has been connected. | Any Double | - |
+| oracledb.blocking.blocker.sid | The session ID (SID) of the immediate blocker of this session. Empty string when the session is not blocked. | Any Str | - |
+| oracledb.blocking.blocker.root_sid | The session ID (SID) of the root/head blocker at the top of the blocking chain. Empty string when there is no blocking. | Any Str | - |
+| oracledb.blocking.blocker.state | The status of the blocking session relationship (e.g. VALID, NOT IN WAIT, GLOBAL, NO HOLDER, UNKNOWN). | Any Str | - |
+| oracledb.blocking.start_time | Estimated UTC timestamp of when the blocking wait began, derived from SYSDATE - SECONDS_IN_WAIT. RFC3339 format. | Any Str | - |
+| oracledb.blocking.wait_duration | The number of seconds this session has been waiting for the current wait event. | Any Int | - |
+| oracledb.blocking.lock.mode | The lock mode being requested by the blocked session (e.g., ROW SHARE, ROW EXCLUSIVE, SHARE, SHARE ROW EXCLUSIVE, EXCLUSIVE). Empty when not waiting on a lock. | Any Str | - |
+| oracledb.blocking.lock.type | The type of enqueue lock the session is waiting on, extracted from the wait event (e.g., TX for row lock, TM for table lock). Empty when not waiting on a lock. | Any Str | - |
+| oracledb.blocking.object.owner | The owner (schema) of the database object the session is waiting to lock. Empty when no object lock wait is active. | Any Str | - |
+| oracledb.blocking.object.name | The name of the database object the session is waiting to lock. Empty when no object lock wait is active. | Any Str | - |
 
 ### db.server.top_query
 

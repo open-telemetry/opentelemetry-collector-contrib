@@ -48,29 +48,29 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 }
 
 // Detect detects system metadata and returns a resource with the available ones.
-func (d *Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
+func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
 	// Quick check: if not running in Hetzner Cloud, return empty.
-	if !d.client.IsHcloudServer() {
+	if !d.client.IsHcloudServerWithContext(ctx) {
 		d.logger.Debug("Hetzner detector: not running on a Hetzner Cloud server")
 		return pcommon.NewResource(), "", nil
 	}
 
-	id, err := d.client.InstanceID()
+	id, err := d.client.InstanceIDWithContext(ctx)
 	if err != nil {
 		d.logger.Debug("Hetzner detector: instance ID retrieval failed", zap.Error(err))
 	}
 
-	hostname, err := d.client.Hostname()
+	hostname, err := d.client.HostnameWithContext(ctx)
 	if err != nil {
 		d.logger.Debug("Hetzner detector: hostname retrieval failed", zap.Error(err))
 	}
 
-	region, err := d.client.Region()
+	region, err := d.client.RegionWithContext(ctx)
 	if err != nil {
 		d.logger.Debug("Hetzner detector: region retrieval failed", zap.Error(err))
 	}
 
-	availabilityZone, err := d.client.AvailabilityZone()
+	availabilityZone, err := d.client.AvailabilityZoneWithContext(ctx)
 	if err != nil {
 		d.logger.Debug("Hetzner detector: availability zone retrieval failed", zap.Error(err))
 	}
