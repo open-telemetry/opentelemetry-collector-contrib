@@ -2,12 +2,12 @@ change_type: enhancement
 
 component: processor/transform
 
-note: Add `parse_elf` function to parse W3C Extended Log Format (ELF) log blocks into structured maps.
+note: Add `ParseELF` function to parse W3C Extended Log Format (ELF) log blocks into structured maps.
 
 issues: [48352]
 
 subtext: |
-  `parse_elf(target)` parses a complete ELF text block and returns a `pcommon.Map` with
+  `ParseELF(target)` parses a complete ELF text block and returns a `pcommon.Map` with
   directive metadata (version, software, date, start_date, end_date, remark), a fields
   slice, and an entries slice keyed by field name. Multiple #Fields directives and
   double-quoted values (IIS-style) are supported.

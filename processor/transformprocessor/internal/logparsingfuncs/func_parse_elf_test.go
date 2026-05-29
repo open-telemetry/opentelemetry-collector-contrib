@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
@@ -172,7 +173,7 @@ func Test_parseELF(t *testing.T) {
 			},
 		},
 		{
-			name:    "empty input",
+			name: "empty input",
 			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
 				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
 					return "", nil
@@ -198,11 +199,75 @@ func Test_parseELF(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "unterminated quoted value",
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+					return "#Version: 1.0\n#Fields: method uri\nGET \"/unterminated", nil
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "malformed #Fields directive",
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+					// #Fields with no colon is a hard error — it would poison subsequent data lines.
+					return "#Version: 1.0\n#Fields\n00:00:01", nil
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "tab-separated data line",
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+					return "#Version: 1.0\n#Fields: time cs-method cs-uri\n00:34:23\tGET\t/foo/bar.html", nil
+				},
+			},
+			expected: map[string]any{
+				"version": "1.0",
+				"fields":  []any{"time", "cs-method", "cs-uri"},
+				"entries": []any{
+					map[string]any{"time": "00:34:23", "cs-method": "GET", "cs-uri": "/foo/bar.html"},
+				},
+			},
+		},
+		{
+			name: "multiple #Version directives, last one wins",
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+					return "#Version: 1.0\n#Version: 1.1\n#Fields: time\n12:00:00", nil
+				},
+			},
+			expected: map[string]any{
+				"version": "1.1",
+				"fields":  []any{"time"},
+				"entries": []any{
+					map[string]any{"time": "12:00:00"},
+				},
+			},
+		},
+		{
+			name: "extra values beyond field count are dropped",
+			target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+				Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+					return "#Version: 1.0\n#Fields: a b\nval1 val2 val3 val4", nil
+				},
+			},
+			expected: map[string]any{
+				"version": "1.0",
+				"fields":  []any{"a", "b"},
+				"entries": []any{
+					map[string]any{"a": "val1", "b": "val2"},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := parseELF(tt.target)
+			exprFunc := parseELF(tt.target, zap.NewNop())
 			result, err := exprFunc(context.Background(), &ottllog.TransformContext{})
 			if tt.wantErr {
 				require.Error(t, err)
@@ -239,8 +304,12 @@ func assertELFMapEqual(t *testing.T, expected map[string]any, actual pcommon.Map
 					assert.Equal(t, e, sv.Str(), "key %q index %d", k, i)
 				case map[string]any:
 					assertELFMapEqual(t, e, sv.Map())
+				default:
+					t.Errorf("assertELFMapEqual: unsupported slice element type %T at key %q index %d", elem, k, i)
 				}
 			}
+		default:
+			t.Errorf("assertELFMapEqual: unsupported expected value type %T for key %q", wantRaw, k)
 		}
 	}
 }
@@ -250,6 +319,7 @@ func Test_parseELFDataLine(t *testing.T) {
 		name     string
 		input    string
 		expected []string
+		wantErr  bool
 	}{
 		{
 			name:     "simple tokens",
@@ -291,11 +361,22 @@ func Test_parseELFDataLine(t *testing.T) {
 			input:    "GET /foo.html\t200",
 			expected: []string{"GET", "/foo.html", "200"},
 		},
+		{
+			name:    "unterminated quoted value",
+			input:   `GET "/unterminated`,
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, parseELFDataLine(tt.input))
+			got, err := parseELFDataLine(tt.input)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, got)
 		})
 	}
 }
