@@ -31,6 +31,7 @@ feature_gates:
       semconv v1.12.0 attributes (net.host.ip, net.peer.ip, http.host, http.server_name).
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076
+    skip_strict_validation: true
   - id: internal.coreinternal.goldendataset.DontEmitV0RPCConventions
     stage: beta
     description: >-
@@ -38,6 +39,7 @@ feature_gates:
       semconv RPC attributes rpc.service and peer.service.
     from_version: v0.148.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548
+    skip_strict_validation: true
   - id: internal.coreinternal.goldendataset.EmitV1HTTPConventions
     stage: beta
     description: >-
@@ -65,6 +67,7 @@ feature_gates:
       translation in tests.
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076
+    skip_strict_validation: true
   - id: internal.coreinternal.goldendataset.EmitV1RPCConventions
     stage: beta
     description: >-
@@ -73,3 +76,4 @@ feature_gates:
       peer.service to support migration.
     from_version: v0.148.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548
+    skip_strict_validation: true
