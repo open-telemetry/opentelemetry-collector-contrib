@@ -428,12 +428,6 @@ routing:
   match_once: true
   default_pipelines: [ logs/default ]
   table:
-    - condition: attributes["env"] == "prod"
-       pipelines: [ logs/prod ]
-    - condition: attributes["env"] == "dev"
-       pipelines: [ logs/dev ]
-    - condition: attributes["region"] == "east"
-       pipelines: [ logs/east ]
     - condition: attributes["region"] == "west"
     - condition: resource.attributes["env"] == "prod"
       pipelines: [ logs/prod ]
