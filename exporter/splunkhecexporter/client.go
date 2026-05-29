@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -90,6 +91,17 @@ func newProfilesClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthLogs)
 }
 
+// accessTokenForResources returns the first HEC access token found by iterating through resources
+// using the provided accessor function. Returns empty string if none is found.
+func accessTokenForResources(count int, attrsFn func(i int) pcommon.Map) string {
+	for i := range count {
+		if token, found := attrsFn(i).Get(splunk.HecTokenLabel); found {
+			return token.Str()
+		}
+	}
+	return ""
+}
+
 func (c *client) pushMetricsData(
 	ctx context.Context,
 	md pmetric.Metrics,
@@ -98,11 +110,10 @@ func (c *client) pushMetricsData(
 	defer c.wg.Done()
 
 	localHeaders := map[string]string{}
-	if md.ResourceMetrics().Len() != 0 {
-		accessToken, found := md.ResourceMetrics().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
-		if found {
-			localHeaders["Authorization"] = splunk.BuildHECAuthHeader(accessToken.Str())
-		}
+	if token := accessTokenForResources(md.ResourceMetrics().Len(), func(i int) pcommon.Map {
+		return md.ResourceMetrics().At(i).Resource().Attributes()
+	}); token != "" {
+		localHeaders["Authorization"] = splunk.BuildHECAuthHeader(token)
 	}
 
 	if c.config.UseMultiMetricFormat {
@@ -119,11 +130,10 @@ func (c *client) pushTraceData(
 	defer c.wg.Done()
 
 	localHeaders := map[string]string{}
-	if td.ResourceSpans().Len() != 0 {
-		accessToken, found := td.ResourceSpans().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
-		if found {
-			localHeaders["Authorization"] = splunk.BuildHECAuthHeader(accessToken.Str())
-		}
+	if token := accessTokenForResources(td.ResourceSpans().Len(), func(i int) pcommon.Map {
+		return td.ResourceSpans().At(i).Resource().Attributes()
+	}); token != "" {
+		localHeaders["Authorization"] = splunk.BuildHECAuthHeader(token)
 	}
 
 	return c.pushTracesDataInBatches(ctx, td, localHeaders)
@@ -138,11 +148,10 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 	}
 
 	localHeaders := map[string]string{}
-
-	// All logs in a batch have the same access token after batchperresourceattr, so we can just check the first one.
-	accessToken, found := ld.ResourceLogs().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
-	if found {
-		localHeaders["Authorization"] = splunk.BuildHECAuthHeader(accessToken.Str())
+	if token := accessTokenForResources(ld.ResourceLogs().Len(), func(i int) pcommon.Map {
+		return ld.ResourceLogs().At(i).Resource().Attributes()
+	}); token != "" {
+		localHeaders["Authorization"] = splunk.BuildHECAuthHeader(token)
 	}
 
 	// All logs in a batch have only one type (regular or profiling logs) after perScopeBatcher,
@@ -170,13 +179,23 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 
 	localHeaders := map[string]string{}
 	localHeaders[libraryHeaderName] = profilingLibraryName
-
-	// All profiles in a batch have the same access token after batchperresourceattr, so we can just check the first one.
-	accessToken, found := pp.ResourceProfiles().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
-	if found {
-		localHeaders["Authorization"] = splunk.BuildHECAuthHeader(accessToken.Str())
+	if token := accessTokenForResources(pp.ResourceProfiles().Len(), func(i int) pcommon.Map {
+		return pp.ResourceProfiles().At(i).Resource().Attributes()
+	}); token != "" {
+		localHeaders["Authorization"] = splunk.BuildHECAuthHeader(token)
 	}
 
+	ld, permanentErrors := buildProfilesLogs(pp)
+
+	if err := c.pushLogDataInBatches(ctx, ld, localHeaders); err != nil {
+		return err
+	}
+	return multierr.Combine(permanentErrors...)
+}
+
+// buildProfilesLogs converts pprofile.Profiles into a plog.Logs payload for the Splunk HEC profiling endpoint.
+// It returns permanent errors for individual profiles that fail translation or encoding.
+func buildProfilesLogs(pp pprofile.Profiles) (plog.Logs, []error) {
 	ld := plog.NewLogs()
 	var permanentErrors []error
 
@@ -190,40 +209,45 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 
 		for _, sp := range rp.ScopeProfiles().All() {
 			for _, prof := range sp.Profiles().All() {
-				p, err := translator.ConvertPprofileToPprof(pp.Dictionary(), sp.Scope(), prof)
-				if err != nil {
-					permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("failed to convert profile: %w", err)))
-					continue
+				if err := profileToLogRecord(pp, sp, prof, sl); err != nil {
+					permanentErrors = append(permanentErrors, err)
 				}
-				var buf bytes.Buffer
-
-				// The Write method encodes the profile to a gzipped protobuf
-				if err := p.Write(&buf); err != nil {
-					permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("failed to write profile: %w", err)))
-					continue
-				}
-				lr := sl.LogRecords().AppendEmpty()
-				lr.Body().SetStr(base64.StdEncoding.EncodeToString(buf.Bytes()))
-				lr.SetTimestamp(prof.Time())
-				lr.Attributes().PutStr(splunk.DefaultSourceTypeLabel, profilingLibraryName)
-				sampleType := pp.Dictionary().StringTable().At(int(prof.SampleType().TypeStrindex()))
-				lr.Attributes().PutStr(profilingDataTypeKey, sampleType)
-				lr.Attributes().PutStr(profilingDataFormatKey, profilingDataFormatPprofGzipBase64)
-				var totalFrameCount int64
-				for _, s := range prof.Samples().All() {
-					totalFrameCount += int64(pp.Dictionary().StackTable().At(int(s.StackIndex())).LocationIndices().Len())
-				}
-				lr.Attributes().PutInt(profilingDataTotalFrameCountKey, totalFrameCount)
-				// TODO find whether it is continuous or snapshot
-				lr.Attributes().PutStr(profilingInstrumentationSourceKey, profilingInstrumentationSourceContinuous)
 			}
 		}
 	}
 
-	if err := c.pushLogDataInBatches(ctx, ld, localHeaders); err != nil {
-		return err
+	return ld, permanentErrors
+}
+
+// profileToLogRecord translates a single pprofile.Profile into a plog.LogRecord appended to sl.
+// Returns a permanent error if translation or encoding fails; on error no log record is appended.
+func profileToLogRecord(pp pprofile.Profiles, scope pprofile.ScopeProfiles, prof pprofile.Profile, sl plog.ScopeLogs) error {
+	p, err := translator.ConvertPprofileToPprof(pp.Dictionary(), scope.Scope(), prof)
+	if err != nil {
+		return consumererror.NewPermanent(fmt.Errorf("failed to convert profile: %w", err))
 	}
-	return multierr.Combine(permanentErrors...)
+
+	var buf bytes.Buffer
+	// The Write method encodes the profile to a gzipped protobuf
+	if err := p.Write(&buf); err != nil {
+		return consumererror.NewPermanent(fmt.Errorf("failed to write profile: %w", err))
+	}
+
+	lr := sl.LogRecords().AppendEmpty()
+	lr.Body().SetStr(base64.StdEncoding.EncodeToString(buf.Bytes()))
+	lr.SetTimestamp(prof.Time())
+	lr.Attributes().PutStr(splunk.DefaultSourceTypeLabel, profilingLibraryName)
+	sampleType := pp.Dictionary().StringTable().At(int(prof.SampleType().TypeStrindex()))
+	lr.Attributes().PutStr(profilingDataTypeKey, sampleType)
+	lr.Attributes().PutStr(profilingDataFormatKey, profilingDataFormatPprofGzipBase64)
+	var totalFrameCount int64
+	for _, s := range prof.Samples().All() {
+		totalFrameCount += int64(pp.Dictionary().StackTable().At(int(s.StackIndex())).LocationIndices().Len())
+	}
+	lr.Attributes().PutInt(profilingDataTotalFrameCountKey, totalFrameCount)
+	// TODO find whether it is continuous or snapshot
+	lr.Attributes().PutStr(profilingInstrumentationSourceKey, profilingInstrumentationSourceContinuous)
+	return nil
 }
 
 // A guesstimated value > length of bytes of a single event.
