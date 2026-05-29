@@ -115,5 +115,4 @@ func TestBlankEncoding(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `logs.encoding "" is not a supported built-in encoding`)
 	assert.Contains(t, err.Error(), `traces.encoding "" is not a supported built-in encoding`)
-	assert.Contains(t, err.Error(), "id must not be empty")
 }

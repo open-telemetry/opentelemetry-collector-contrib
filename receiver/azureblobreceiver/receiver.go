@@ -146,13 +146,13 @@ func newLogsUnmarshaler(encoding string, host component.Host) (plog.Unmarshaler,
 	case EncodingOTLPProto:
 		return &plog.ProtoUnmarshaler{}, nil
 	}
-	ext, id, err := encodingExtension(encoding, host)
+	ext, err := encodingExtension(encoding, host)
 	if err != nil {
 		return nil, fmt.Errorf("logs.%w", err)
 	}
 	unmarshaler, ok := ext.(plog.Unmarshaler)
 	if !ok {
-		return nil, fmt.Errorf("logs.encoding extension %q is not a logs unmarshaler", id)
+		return nil, fmt.Errorf("logs.encoding extension %q is not a logs unmarshaler", encoding)
 	}
 	return unmarshaler, nil
 }
@@ -167,27 +167,27 @@ func newTracesUnmarshaler(encoding string, host component.Host) (ptrace.Unmarsha
 	case EncodingOTLPProto:
 		return &ptrace.ProtoUnmarshaler{}, nil
 	}
-	ext, id, err := encodingExtension(encoding, host)
+	ext, err := encodingExtension(encoding, host)
 	if err != nil {
 		return nil, fmt.Errorf("traces.%w", err)
 	}
 	unmarshaler, ok := ext.(ptrace.Unmarshaler)
 	if !ok {
-		return nil, fmt.Errorf("traces.encoding extension %q is not a traces unmarshaler", id)
+		return nil, fmt.Errorf("traces.encoding extension %q is not a traces unmarshaler", encoding)
 	}
 	return unmarshaler, nil
 }
 
 // encodingExtension resolves the encoding extension referenced by encoding from
 // the host's extensions.
-func encodingExtension(encoding string, host component.Host) (component.Component, component.ID, error) {
+func encodingExtension(encoding string, host component.Host) (component.Component, error) {
 	var id component.ID
 	if err := id.UnmarshalText([]byte(encoding)); err != nil {
-		return nil, id, fmt.Errorf("encoding %q is not a valid encoding extension ID: %w", encoding, err)
+		return nil, fmt.Errorf("encoding %q is not a valid encoding extension ID: %w", encoding, err)
 	}
 	ext, ok := host.GetExtensions()[id]
 	if !ok {
-		return nil, id, fmt.Errorf("encoding extension %q not found", id)
+		return nil, fmt.Errorf("encoding extension %q not found", id)
 	}
-	return ext, id, nil
+	return ext, nil
 }
