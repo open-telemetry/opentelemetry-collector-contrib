@@ -7,7 +7,7 @@ $defs:
         description: Enabled if false the queue is not enabled, the export requests are executed synchronously.
         type: boolean
       include_metadata_keys:
-        description: List of client metadata keys whose values are forwarded as HTTP headers on every remote write request, enabling per-request routing for multi-project batching.
+        description: List of client metadata keys whose values are forwarded as HTTP headers on every remote write request.
         type: array
         items:
           type: string

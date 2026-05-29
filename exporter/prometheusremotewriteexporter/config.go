@@ -113,10 +113,7 @@ type RemoteWriteQueue struct {
 	NumConsumers int `mapstructure:"num_consumers"`
 
 	// IncludeMetadataKeys is a list of client metadata keys whose values are
-	// forwarded as HTTP request headers on every remote write call. This enables
-	// per-request routing to the correct target (e.g. multi-project batching)
-	// when an upstream component (such as a partitioning processor) stamps
-	// metadata keys like "x-elastic-target-id" onto the request context.
+	// forwarded as HTTP request headers on every remote write call.
 	IncludeMetadataKeys []string `mapstructure:"include_metadata_keys"`
 
 	// prevent unkeyed literal initialization

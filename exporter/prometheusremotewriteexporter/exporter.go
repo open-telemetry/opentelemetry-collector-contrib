@@ -461,9 +461,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 			return http.StatusBadRequest, fmt.Errorf("unsupported remote-write protobuf message: %v (should be validated earlier)", prwe.RemoteWriteProtoMsg)
 		}
 
-		// Forward configured client metadata keys as HTTP headers so that
-		// upstream routing (e.g. multi-project batching via a partitioning
-		// processor) can be propagated to the remote write endpoint.
+		// Forward configured client metadata keys as HTTP headers
 		if len(prwe.includeMetadataKeys) > 0 {
 			md := client.FromContext(ctx).Metadata
 			for _, key := range prwe.includeMetadataKeys {
