@@ -531,6 +531,21 @@ sample query
 | oracledb.blocking.object.owner | The owner (schema) of the database object the session is waiting to lock. Empty when no object lock wait is active. | Any Str | - |
 | oracledb.blocking.object.name | The name of the database object the session is waiting to lock. Empty when no object lock wait is active. | Any Str | - |
 
+### db.server.session.wait_sample
+
+Per-session wait event statistics from v$session_event.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| oracledb.sid | ID of the Oracle Server session. | Any Str | - |
+| oracledb.serial | Serial number associated with a session. | Any Str | - |
+| oracledb.event | The specific wait event that a query or session is currently experiencing. | Any Str | - |
+| oracledb.wait_class | The category of wait events a query or session is currently experiencing in Oracle Database. | Any Str | - |
+| oracledb.wait.count | Total number of waits for the wait event across all sessions. | Any Int | - |
+| oracledb.wait.duration | Total time waited in seconds for the wait event. | Any Double | - |
+
 ### db.server.top_query
 
 Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).

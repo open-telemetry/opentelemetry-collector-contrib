@@ -535,6 +535,31 @@ var samplesQueryResponses = map[string][]metricRow{
 	}},
 }
 
+var sessionEventQueryResponses = map[string][]metricRow{
+	sessionEventQuery: {
+		{
+			"SID": "100", "SERIAL#": "12345", "EVENT": "db file sequential read", "WAIT_CLASS": "User I/O",
+			"TOTAL_WAITS": "1500", "TOTAL_TIME_WAITED_SECS": "25.5",
+		},
+		{
+			"SID": "101", "SERIAL#": "12346", "EVENT": "log file sync", "WAIT_CLASS": "Commit",
+			"TOTAL_WAITS": "800", "TOTAL_TIME_WAITED_SECS": "12.3",
+		},
+	},
+	"invalidSessionEventQuery": {
+		{
+			"SID": "100", "SERIAL#": "12345", "EVENT": "db file sequential read", "WAIT_CLASS": "User I/O",
+			"TOTAL_WAITS": "invalid", "TOTAL_TIME_WAITED_SECS": "25.5",
+		},
+	},
+	"invalidTimeSessionEventQuery": {
+		{
+			"SID": "100", "SERIAL#": "12345", "EVENT": "db file sequential read", "WAIT_CLASS": "User I/O",
+			"TOTAL_WAITS": "1500", "TOTAL_TIME_WAITED_SECS": "invalid",
+		},
+	},
+}
+
 func TestSamplesQuery(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -641,6 +666,86 @@ func TestSamplesQuery(t *testing.T) {
 				expectedLogs, readErr := golden.ReadLogs(test.goldenFile)
 				require.NoError(t, readErr)
 				errs := plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreTimestamp())
+				assert.NoError(t, errs)
+			}
+		})
+	}
+}
+
+func TestSessionWaitEventsQuery(t *testing.T) {
+	tests := []struct {
+		name       string
+		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted  string
+	}{
+		{
+			name: "valid",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{
+					Responses: [][]metricRow{
+						sessionEventQueryResponses[s],
+					},
+				}
+			},
+		},
+		{
+			name: "bad wait.count data",
+			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{Responses: [][]metricRow{
+					sessionEventQueryResponses["invalidSessionEventQuery"],
+				}}
+			},
+			errWanted: `failed to parse int64 for oracledb.wait.count, value was invalid: strconv.ParseInt: parsing "invalid": invalid syntax`,
+		},
+		{
+			name: "bad wait.duration data",
+			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{Responses: [][]metricRow{
+					sessionEventQueryResponses["invalidTimeSessionEventQuery"],
+				}}
+			},
+			errWanted: `failed to parse float64 for oracledb.wait.duration, value was invalid: strconv.ParseFloat: parsing "invalid": invalid syntax`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			logsCfg := metadata.DefaultLogsBuilderConfig()
+			logsCfg.ResourceAttributes.OracledbInstanceName.Enabled = true
+			logsCfg.ResourceAttributes.HostName.Enabled = true
+			logsCfg.Events.DbServerTopQuery.Enabled = false
+			logsCfg.Events.DbServerQuerySample.Enabled = false
+			logsCfg.Events.DbServerSessionWaitSample.Enabled = true
+			scrpr := oracleScraper{
+				logger: zap.NewNop(),
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc:  test.dbclientFn,
+				id:                  component.ID{},
+				lb:                  metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
+				logsBuilderConfig:   logsCfg,
+				obfuscator:          newObfuscator(),
+				instanceName:        "oraclehost:1521/ORCL",
+				serviceInstanceID:   getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+				sessionWaitEventCfg: SessionWaitEvent{MaxRowsPerQuery: 200},
+			}
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(t.Context()))
+			}()
+			require.NoError(t, err)
+			logs, err := scrpr.scrapeLogs(t.Context())
+			expectedSessionEventsFile := filepath.Join("testdata", "expectedSessionEventsFile.yaml")
+
+			if test.errWanted != "" {
+				require.EqualError(t, err, test.errWanted)
+			} else {
+				// Uncomment line below to re-generate expected logs.
+				// golden.WriteLogs(t, expectedSessionEventsFile, logs)
+				require.NoError(t, err)
+				expectedLogs, _ := golden.ReadLogs(expectedSessionEventsFile)
+				errs := plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreTimestamp())
+				assert.Equal(t, "db.server.session.wait_sample", logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 				assert.NoError(t, errs)
 			}
 		})
