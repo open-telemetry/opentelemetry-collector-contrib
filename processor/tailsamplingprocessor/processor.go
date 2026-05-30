@@ -689,8 +689,12 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 			continue
 		}
 
-		allSpans, ok := tsp.tailStorage.Take(id)
-		if !ok {
+		allSpans, err := tsp.tailStorage.Take(id)
+		if err != nil {
+			tsp.logger.Error("Failed to retrieve trace from tail storage", zap.Error(err))
+			continue
+		}
+		if allSpans.ResourceSpans().Len() == 0 {
 			metrics.idNotFoundOnMapCount++
 			continue
 		}
@@ -974,9 +978,12 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 				// Release all accumulated spans (prior pending batches + current batch)
 				// without writing the current batch to storage first.
 				merged := ptrace.NewTraces()
-				if allSpans, ok := tsp.tailStorage.Take(id); ok {
-					appendAllTraces(merged, allSpans)
+				allSpans, err := tsp.tailStorage.Take(id)
+				if err != nil {
+					tsp.logger.Error("Failed to retrieve trace from tail storage", zap.Error(err))
+					return
 				}
+				appendAllTraces(merged, allSpans)
 				appendAllTraces(merged, spanIngestTraceData.ReceivedBatches)
 				actualData.ReceivedBatches = merged
 
@@ -989,7 +996,10 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 				}
 			} else {
 				// Persist current batch for pending traces.
-				tsp.tailStorage.Append(id, spanIngestTraceData.ReceivedBatches)
+				if err := tsp.tailStorage.Append(id, spanIngestTraceData.ReceivedBatches); err != nil {
+					tsp.logger.Error("Failed to append trace to tail storage", zap.Error(err))
+					return
+				}
 			}
 			return
 		}
@@ -998,7 +1008,10 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		// existing trace.
 		traceTd := ptrace.NewTraces()
 		appendToTraces(traceTd, rss)
-		tsp.tailStorage.Append(id, traceTd)
+		if err := tsp.tailStorage.Append(id, traceTd); err != nil {
+			tsp.logger.Error("Failed to append trace to tail storage", zap.Error(err))
+			return
+		}
 		return
 	}
 
@@ -1068,7 +1081,10 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 	}
 
 	delete(tsp.idToTrace, traceID)
-	tsp.tailStorage.Delete(traceID)
+	if err := tsp.tailStorage.Delete(traceID); err != nil {
+		tsp.logger.Error("Failed to delete trace from tail storage", zap.Error(err))
+		return false
+	}
 	if trace.deleteElement != nil {
 		tsp.deleteTraceQueue.Remove(trace.deleteElement)
 	}

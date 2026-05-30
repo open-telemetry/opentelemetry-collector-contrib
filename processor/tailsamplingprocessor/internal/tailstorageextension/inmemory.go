@@ -20,7 +20,7 @@ func NewInMemoryTailStorage() TailStorage {
 	}
 }
 
-func (s *inMemoryTailStorage) Append(traceID pcommon.TraceID, traceTd ptrace.Traces) {
+func (s *inMemoryTailStorage) Append(traceID pcommon.TraceID, traceTd ptrace.Traces) error {
 	td, ok := s.idToSpans[traceID]
 	if !ok {
 		td = ptrace.NewTraces()
@@ -29,16 +29,19 @@ func (s *inMemoryTailStorage) Append(traceID pcommon.TraceID, traceTd ptrace.Tra
 	for _, rss := range traceTd.ResourceSpans().All() {
 		rss.MoveTo(td.ResourceSpans().AppendEmpty())
 	}
+	return nil
 }
 
-func (s *inMemoryTailStorage) Take(traceID pcommon.TraceID) (ptrace.Traces, bool) {
+func (s *inMemoryTailStorage) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 	td, ok := s.idToSpans[traceID]
 	if ok {
 		delete(s.idToSpans, traceID)
+		return td, nil
 	}
-	return td, ok
+	return ptrace.NewTraces(), nil
 }
 
-func (s *inMemoryTailStorage) Delete(traceID pcommon.TraceID) {
+func (s *inMemoryTailStorage) Delete(traceID pcommon.TraceID) error {
 	delete(s.idToSpans, traceID)
+	return nil
 }

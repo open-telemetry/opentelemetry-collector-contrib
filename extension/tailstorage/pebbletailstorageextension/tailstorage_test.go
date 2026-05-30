@@ -12,7 +12,7 @@ import (
 //
 // TODO: Use tailsamplingprocessor TailStorage once it is public.
 type TailStorage interface {
-	Append(traceID pcommon.TraceID, td ptrace.Traces)
-	Take(traceID pcommon.TraceID) (ptrace.Traces, bool)
-	Delete(traceID pcommon.TraceID)
+	Append(traceID pcommon.TraceID, td ptrace.Traces) error
+	Take(traceID pcommon.TraceID) (ptrace.Traces, error)
+	Delete(traceID pcommon.TraceID) error
 }
