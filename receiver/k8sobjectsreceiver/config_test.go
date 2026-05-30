@@ -524,7 +524,6 @@ func TestCreateDefaultConfigAPIRateLimit(t *testing.T) {
 }
 
 func TestValidateAllowsStorageWithResourceVersion(t *testing.T) {
-	// Previously this was an error; now both fields are deprecated no-ops.
 	storageID := component.MustNewID("file_storage")
 	cfg := &Config{
 		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
@@ -538,7 +537,6 @@ func TestValidateAllowsStorageWithResourceVersion(t *testing.T) {
 }
 
 func TestValidateAllowsIncludeInitialStateWithPullMode(t *testing.T) {
-	// Previously this was an error; now include_initial_state is silently ignored for pull mode.
 	cfg := &Config{
 		APIConfig:           k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
 		ErrorMode:           PropagateError,

@@ -5,6 +5,7 @@ package k8sobjectsreceiver
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,7 +31,7 @@ func TestDefaultConfig(t *testing.T) {
 		},
 		ErrorMode:                PropagateError,
 		IncludeInitialState:      false,
-		InformerCacheSyncTimeout: defaultCacheSyncTimeout,
+		InformerCacheSyncTimeout: 10 * time.Second,
 	}, rCfg)
 }
 

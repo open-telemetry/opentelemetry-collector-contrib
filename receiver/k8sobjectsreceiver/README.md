@@ -54,8 +54,8 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `interval`: Top level pull interval applied to all pull-mode objects that do not set their own `interval`. Falls back to `1h` when neither this field nor the per-resource `objects[*].interval` is set. Has no effect on watch-mode objects.
 - `name`: Name of the resource object to collect
 - `mode`: define in which way it collects this type of object, either "pull" or "watch".
-  - `pull` mode reads all cached objects at an interval from the in-memory informer cache.
-  - `watch` mode uses an informer to maintain a persistent watch connection and stream object change events.
+  - `pull` mode reads all objects at an interval from the in-memory cache. The in-memory cache is always update with the latest K8s Objects.
+  - `watch` mode maintains a persistent watch connection to the K8s API and stream object change events.
 - `include_initial_state` (default = `false`): When set to `true` (watch-mode only) the receiver sends a one-time snapshot of the current objects before it starts processing watch events.
 - `label_selector`: select objects by label(s)
 - `field_selector`: select objects by field(s)
@@ -161,7 +161,8 @@ Use the below commands to create a `ClusterRole` with required permissions and a
 Following config will work for collecting pods and events only. You need to add
 appropriate rule for collecting other objects.
 
-When using watch mode you must also specify the `list` verb. The informer always performs an initial list on startup and re-lists automatically to recover from [410 Gone scenarios](https://kubernetes.io/docs/reference/using-api/api-concepts/#410-gone-responses).
+When using watch mode you must also specify `list` verb so that the receiver has permission to do its initial list
+and to recover from [410 Gone scenarios](https://kubernetes.io/docs/reference/using-api/api-concepts/#410-gone-responses).
 
 ```bash
 <<EOF | kubectl apply -f -
@@ -187,9 +188,8 @@ rules:
   resources:
   - events
   verbs:
-  - get
-  - list
   - watch
+  - list
 EOF
 ```
 

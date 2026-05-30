@@ -38,6 +38,9 @@ properties:
     $ref: error_mode
   include_initial_state:
     type: boolean
+  informer_cache_sync_timeout:
+    type: string
+    format: duration
   interval:
     type: string
     format: duration

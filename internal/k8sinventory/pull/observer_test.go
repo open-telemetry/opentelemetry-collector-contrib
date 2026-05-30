@@ -48,6 +48,7 @@ func TestObserver(t *testing.T) {
 
 	stopChan, err := obs.Start(t.Context(), &wg)
 	require.NoError(t, err)
+
 	mockClient.createPods(
 		generatePod("pod2", "default", map[string]any{
 			"environment": "test",
@@ -94,6 +95,7 @@ func TestObserverEmptyNamespaces(t *testing.T) {
 
 	stopChan, err := obs.Start(t.Context(), &wg)
 	require.NoError(t, err)
+
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]any{"env": "test"}, "1"),
 		generatePod("pod2", "other", map[string]any{"env": "prod"}, "2"),
@@ -132,6 +134,7 @@ func TestObserverMultipleNamespaces(t *testing.T) {
 
 	stopChan, err := obs.Start(t.Context(), &wg)
 	require.NoError(t, err)
+
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]any{"env": "test"}, "1"),
 		generatePod("pod2", "other", map[string]any{"env": "prod"}, "2"),
@@ -174,6 +177,7 @@ func TestObserverWithSelectors(t *testing.T) {
 
 	stopChan, err := obs.Start(t.Context(), &wg)
 	require.NoError(t, err)
+
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]any{"environment": "test"}, "1"),
 		generatePod("pod2", "default", map[string]any{"environment": "prod"}, "2"),
@@ -212,6 +216,7 @@ func TestObserverStop(t *testing.T) {
 
 	stopChan, err := obs.Start(t.Context(), &wg)
 	require.NoError(t, err)
+
 	// Stop immediately
 	close(stopChan)
 
@@ -248,6 +253,7 @@ func TestObserverContextCancel(t *testing.T) {
 
 	_, err = obs.Start(ctx, &wg)
 	require.NoError(t, err)
+
 	cancel()
 
 	wg.Wait()
@@ -280,6 +286,7 @@ func TestObserverNoObjects(t *testing.T) {
 
 	stopChan, err := obs.Start(t.Context(), &wg)
 	require.NoError(t, err)
+
 	// Wait for a tick
 	time.Sleep(100 * time.Millisecond)
 
@@ -321,6 +328,7 @@ func TestObserverListError(t *testing.T) {
 
 	stopChan, err := obs.Start(t.Context(), &wg)
 	require.NoError(t, err)
+
 	// Wait for a tick
 	time.Sleep(100 * time.Millisecond)
 
