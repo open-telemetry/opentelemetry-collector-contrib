@@ -10,7 +10,8 @@ description: |
 status:
   class: receiver
   stability:
-    beta: [metrics, logs]
+    development: [logs]
+    beta: [metrics]
   distributions: [contrib]
   codeowners:
     active: [justinianvoss22, dyl10s, ishleenk17]
