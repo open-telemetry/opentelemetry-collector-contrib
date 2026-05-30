@@ -2301,6 +2301,46 @@
   },
   {
     "computer_name": "abcde",
+    "counter": "Total Latch Wait Time (ms)",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Latches",
+    "sql_instance": "d26d40521426",
+    "value": "48250"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Number of SuperLatches",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Latches",
+    "sql_instance": "d26d40521426",
+    "value": "12"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "SuperLatch Promotions/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Latches",
+    "sql_instance": "d26d40521426",
+    "value": "5"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "SuperLatch Demotions/sec",
+    "counter_type": "272696576",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Latches",
+    "sql_instance": "d26d40521426",
+    "value": "3"
+  },
+  {
+    "computer_name": "abcde",
     "counter": "Lock Timeouts (timeout > 0)/sec",
     "counter_type": "272696576",
     "instance": "Total",
@@ -3038,5 +3078,135 @@
     "object": "SQLServer:Workload Group Stats",
     "sql_instance": "d26d40521426",
     "value": "0"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "SQL Cache Memory (KB)",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Memory Manager",
+    "sql_instance": "d26d40521426",
+    "value": "8192"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Optimizer Memory (KB)",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Memory Manager",
+    "sql_instance": "d26d40521426",
+    "value": "4096"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Connection Memory (KB)",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Memory Manager",
+    "sql_instance": "d26d40521426",
+    "value": "2048"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Granted Workspace Memory (KB)",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Memory Manager",
+    "sql_instance": "d26d40521426",
+    "value": "16384"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Maximum Workspace Memory (KB)",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Memory Manager",
+    "sql_instance": "d26d40521426",
+    "value": "32768"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Cache Pages",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Buffer Manager",
+    "sql_instance": "d26d40521426",
+    "value": "1024"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Total Pages",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Buffer Manager",
+    "sql_instance": "d26d40521426",
+    "value": "8192"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Target Pages",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Buffer Manager",
+    "sql_instance": "d26d40521426",
+    "value": "7168"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Stolen Pages",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Buffer Manager",
+    "sql_instance": "d26d40521426",
+    "value": "512"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Reserved Pages",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Buffer Manager",
+    "sql_instance": "d26d40521426",
+    "value": "256"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Free Pages",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Buffer Manager",
+    "sql_instance": "d26d40521426",
+    "value": "2048"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Cache Object Counts",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Plan Cache",
+    "sql_instance": "d26d40521426",
+    "value": "100"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Cache Objects in use",
+    "counter_type": "65792",
+    "instance": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Plan Cache",
+    "sql_instance": "d26d40521426",
+    "value": "50"
   }
 ]
