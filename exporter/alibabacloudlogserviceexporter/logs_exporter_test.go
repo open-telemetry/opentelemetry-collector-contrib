@@ -5,9 +5,12 @@ package alibabacloudlogserviceexporter
 
 import (
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
+	"unsafe"
 
+	"github.com/aliyun/aliyun-log-go-sdk/producer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -76,6 +79,19 @@ func TestNewLogServiceClient_STSCredentials(t *testing.T) {
 	}, exportertest.NewNopSettings(metadata.Type).Logger)
 	assert.NoError(t, err)
 	require.NotNil(t, client)
+
+	clientImpl, ok := client.(*logServiceClientImpl)
+	require.True(t, ok)
+	require.NotNil(t, clientImpl.clientInstance)
+	producerValue := reflect.ValueOf(clientImpl.clientInstance).Elem()
+	producerConfigField := producerValue.FieldByName("producerConfig")
+	require.True(t, producerConfigField.IsValid())
+	producerConfig := reflect.NewAt(producerConfigField.Type(), unsafe.Pointer(producerConfigField.UnsafeAddr())).Elem().Interface().(*producer.ProducerConfig)
+	provider := producerConfig.CredentialsProvider
+	require.NotNil(t, provider)
+	credentials, err := provider.GetCredentials()
+	assert.NoError(t, err)
+	assert.Equal(t, "test-token", credentials.SecurityToken)
 }
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {
