@@ -26,6 +26,7 @@ The following is example configuration
 ```yaml
   k8s_objects:
     auth_type: serviceAccount
+    storage: file_storage
     k8s_leader_elector: k8s_leader_elector
     interval: 30m
     objects:
@@ -71,8 +72,11 @@ this case, it will select `v1` by default.
 - `kube_api_qps` (default = `5`): Maximum number of queries per second to the Kubernetes API. Increase this if you see `client-side throttling` warnings in the collector logs when watching or polling many resources simultaneously.
 - `kube_api_burst` (default = `10`): Maximum burst size for requests to the Kubernetes API. Increase this alongside `kube_api_qps` if you see `client-side throttling` warnings.
 - `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
-- `informer_cache_sync_timeout` (default = `10s`): Maximum time to wait for the informer cache to complete its initial sync on startup. If the cache does not sync within this duration, the receiver fails to start.
-- `storage` (default: none): **Deprecated.** The storage extension is no longer used. The informer now handles within-process watch resumption automatically (reconnecting after 410 Gone responses or network blips) without an external storage extension. Note: watch state is in-process only — a pod restart still begins with a fresh list. Any storage extension configured here will be ignored at runtime.
+- `storage` (default: none): specifies the storage extension to use for persisting resourceVersions. When configured, the receiver automatically persists the resourceVersion after processing each event for all watch-mode objects. On restart, each watch-mode object resumes from its persisted resourceVersion, preventing duplicate events. Pull-mode objects are unaffected.
+  > **Important storage considerations:**
+  > - **Local or node-pinned volumes** (`hostPath`, local PV): the collector pod becomes tied to a specific node. If that node fails or the pod is rescheduled elsewhere, the persisted data will not be accessible and persistence will not work correctly.
+  > - **Network-attached volumes** (`ReadWriteMany`): the volume is accessible from any node, so the collector pod can be freely rescheduled or fail over to a different node while still resuming from the correct resourceVersion. This is the recommended approach, especially when used with `k8s_leader_elector`.
+  > - **Block volumes** (`ReadWriteOnce`): supported for single-replica deployments where restarts are graceful. Not recommended with leader election across multiple nodes, as Kubernetes may take 30–90 seconds to detach and reattach the volume after a node failure.
 
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
@@ -116,9 +120,14 @@ metadata:
     app: otelcontribcol
 data:
   config.yaml: |
+    extensions:
+      file_storage:
+        directory: /var/lib/otelcol/storage
+
     receivers:
       k8s_objects:
         auth_type: serviceAccount
+        storage: file_storage
         objects:
           - name: pods
             mode: pull
@@ -132,6 +141,7 @@ data:
           insecure: true
 
     service:
+      extensions: [file_storage]
       pipelines:
         logs:
           receivers: [k8s_objects]
@@ -219,6 +229,17 @@ Note: This receiver must be deployed as one replica, otherwise it'll be producin
 
 ```bash
 <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: otelcontribcol-storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -245,11 +266,16 @@ spec:
         volumeMounts:
         - name: config
           mountPath: /etc/config
+        - name: storage
+          mountPath: /var/lib/otelcol/storage
         imagePullPolicy: IfNotPresent
       volumes:
         - name: config
           configMap:
             name: otelcontribcol
+        - name: storage
+          persistentVolumeClaim:
+            claimName: otelcontribcol-storage
 EOF
 ```
 

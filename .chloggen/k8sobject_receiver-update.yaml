@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/k8s_objects
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Migrated to Kubernetes SharedInformerFactory.
+note: Migrated to Kubernetes Informer.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43602]
@@ -16,10 +16,8 @@ issues: [43602]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  - `storage`: deprecated and ignored. The informer handles within-process watch resumption (410 Gone, network blips) automatically. Note: watch state is in-process only — a pod restart still begins with a fresh list.
-  - `resource_version`: deprecated and ignored. The informer manages resourceVersion internally.
-  - A warning is logged at startup if either deprecated field is configured.
-  - `include_initial_state: true` with `pull` mode previously had no effect and no indication of this; now logs a warning at startup.
+  - Reduced Kubernetes API server load: pull mode now serves from an in-memory cache, and objects sharing the same `(namespace, labelSelector, fieldSelector)` scope share a single List+Watch connection.
+  - Added `informer_cache_sync_timeout` (default `10s`) to bound informer cache warm-up time.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/tools/watch"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/checkpoint"
 )
 
 const (
@@ -39,7 +40,7 @@ type Config struct {
 
 type Observer struct {
 	config       Config
-	checkpointer *checkpointer
+	checkpointer *checkpoint.Checkpointer
 
 	client dynamic.Interface
 	logger *zap.Logger
@@ -57,7 +58,7 @@ func New(client dynamic.Interface, config Config, logger *zap.Logger, storageCli
 
 	// Initialize checkpointer if a storage client is provided
 	if storageClient != nil {
-		o.checkpointer = newCheckpointer(storageClient, logger)
+		o.checkpointer = checkpoint.New(storageClient, logger)
 	}
 
 	return o, nil

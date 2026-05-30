@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -21,7 +22,9 @@ import (
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/checkpoint"
 )
 
 var (
@@ -483,11 +486,126 @@ func TestHandleWatchEventTombstone(t *testing.T) {
 
 	pod := makePod("tombstone-pod")
 	tombstone := cache.DeletedFinalStateUnknown{Key: "default/tombstone-pod", Obj: pod}
-	obs.handleWatchEvent(apiWatch.Deleted, tombstone)
+	obs.handleWatchEvent(apiWatch.Deleted, tombstone, "")
 
 	mu.Lock()
 	defer mu.Unlock()
 	require.Len(t, events, 1)
 	assert.Equal(t, apiWatch.Deleted, events[0].Type)
 	assert.Equal(t, "tombstone-pod", events[0].Object.(*unstructured.Unstructured).GetName())
+}
+
+func newTestStorageClient(t *testing.T) *storagetest.TestClient {
+	t.Helper()
+	return storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+}
+
+// TestCheckpointFirstRunEmitsAll verifies that on first startup (no persisted checkpoint),
+// all objects in the initial list are emitted as ADDED events.
+func TestCheckpointFirstRunEmitsAll(t *testing.T) {
+	t.Parallel()
+
+	client, _ := newFakeClient(t, makePodWithRV("pod1", "10"), makePodWithRV("pod2", "20"))
+	storageClient := newTestStorageClient(t)
+	reg := NewFactoryRegistry(client)
+	t.Cleanup(reg.Shutdown)
+
+	var mu sync.Mutex
+	var events []apiWatch.Event
+
+	obs, err := NewWatch(reg, WatchConfig{
+		Config:              k8sinventory.Config{Gvr: podsGVR},
+		CacheSyncTimeout:    5 * time.Second,
+		IncludeInitialState: true,
+		StorageClient:       storageClient,
+	}, zap.NewNop(), func(ev *apiWatch.Event) {
+		mu.Lock()
+		events = append(events, *ev)
+		mu.Unlock()
+	})
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	stopCh, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+	t.Cleanup(func() { close(stopCh); wg.Wait() })
+
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(events) >= 2
+	}, 5*time.Second, 10*time.Millisecond, "expected 2 ADDED events on first run")
+
+	mu.Lock()
+	defer mu.Unlock()
+	names := make([]string, 0, len(events))
+	for _, ev := range events {
+		assert.Equal(t, apiWatch.Added, ev.Type)
+		names = append(names, ev.Object.(*unstructured.Unstructured).GetName())
+	}
+	assert.ElementsMatch(t, []string{"pod1", "pod2"}, names)
+}
+
+// TestCheckpointRestartSkipsSeenObjects verifies that on restart with a persisted checkpoint,
+// objects whose resourceVersion is ≤ the checkpoint are skipped, while newer ones are emitted.
+func TestCheckpointRestartSkipsSeenObjects(t *testing.T) {
+	t.Parallel()
+
+	client, _ := newFakeClient(t,
+		makePodWithRV("pod1", "10"), // RV 10 — already seen
+		makePodWithRV("pod2", "30"), // RV 30 — new since checkpoint
+	)
+
+	// Pre-seed checkpoint at RV 20 (pod1 seen, pod2 not yet seen).
+	storageClient := newTestStorageClient(t)
+	chk := checkpoint.New(storageClient, zap.NewNop())
+	require.NoError(t, chk.SetCheckpoint(t.Context(), "", podsGVR.Resource, "20"))
+	require.NoError(t, chk.Flush(t.Context()))
+
+	reg := NewFactoryRegistry(client)
+	t.Cleanup(reg.Shutdown)
+
+	var mu sync.Mutex
+	var events []apiWatch.Event
+
+	obs, err := NewWatch(reg, WatchConfig{
+		Config:              k8sinventory.Config{Gvr: podsGVR},
+		CacheSyncTimeout:    5 * time.Second,
+		IncludeInitialState: true,
+		StorageClient:       storageClient,
+	}, zap.NewNop(), func(ev *apiWatch.Event) {
+		mu.Lock()
+		events = append(events, *ev)
+		mu.Unlock()
+	})
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	stopCh, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+	t.Cleanup(func() { close(stopCh); wg.Wait() })
+
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(events) >= 1
+	}, 5*time.Second, 10*time.Millisecond, "expected at least 1 ADDED event")
+
+	assert.Never(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(events) > 1
+	}, 200*time.Millisecond, 10*time.Millisecond, "only pod2 (RV 30) should be emitted")
+
+	mu.Lock()
+	defer mu.Unlock()
+	require.Len(t, events, 1)
+	assert.Equal(t, apiWatch.Added, events[0].Type)
+	assert.Equal(t, "pod2", events[0].Object.(*unstructured.Unstructured).GetName())
+}
+
+func makePodWithRV(name, rv string) *unstructured.Unstructured {
+	u := makePod(name)
+	u.SetResourceVersion(rv)
+	return u
 }

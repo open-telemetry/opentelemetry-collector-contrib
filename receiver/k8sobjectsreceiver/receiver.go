@@ -8,11 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
@@ -36,6 +38,7 @@ type k8sobjectsreceiver struct {
 	client          dynamic.Interface
 	consumer        consumer.Logs
 	obsrecv         *receiverhelper.ObsReport
+	storageClient   storage.Client
 	registry        *informerobserver.FactoryRegistry
 	mu              sync.Mutex
 	cancel          context.CancelFunc
@@ -113,6 +116,7 @@ func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K
 					IncludeInitialState: kr.config.IncludeInitialState,
 					Exclude:             object.exclude,
 					CacheSyncTimeout:    kr.config.InformerCacheSyncTimeout,
+					StorageClient:       kr.storageClient,
 				},
 				kr.setting.Logger,
 				func(data *apiWatch.Event) {
@@ -137,6 +141,15 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 	kr.client = client
+
+	// Initialize storage client for resource version persistence if storage is configured
+	if kr.config.Storage != nil {
+		storageClient, storageErr := getStorageClient(ctx, host, kr.config.Storage, kr.setting.ID)
+		if storageErr != nil {
+			return fmt.Errorf("failed to get storage client: %w", storageErr)
+		}
+		kr.storageClient = storageClient
+	}
 
 	// Validate objects against K8s API
 	validObjects, err := kr.config.getValidObjects()
@@ -288,6 +301,12 @@ func (kr *k8sobjectsreceiver) Shutdown(ctx context.Context) error {
 		kr.registry = nil
 	}
 
+	if kr.storageClient != nil {
+		if err := kr.storageClient.Close(ctx); err != nil {
+			kr.setting.Logger.Error("failed to close storage client", zap.Error(err))
+		}
+	}
+
 	return nil
 }
 
@@ -379,4 +398,26 @@ func (kr *k8sobjectsreceiver) handleError(err error, msg string) error {
 		// This shouldn't happen as we validate ErrorMode during config validation
 		return fmt.Errorf("invalid error_mode %q: %w", kr.config.ErrorMode, err)
 	}
+}
+
+func getStorageClient(ctx context.Context, host component.Host, storageID *component.ID, componentID component.ID) (storage.Client, error) {
+	if storageID == nil {
+		return storage.NewNopClient(), nil
+	}
+
+	extension, ok := host.GetExtensions()[*storageID]
+	if !ok {
+		return nil, fmt.Errorf("storage extension '%s' not found", storageID)
+	}
+
+	storageExtension, ok := extension.(storage.Extension)
+	if !ok {
+		return nil, fmt.Errorf("non-storage extension '%s' found", storageID)
+	}
+
+	// Make storage immune to component renames that add underscores to the component type.
+	// This is a workaround for https://github.com/open-telemetry/opentelemetry-collector/issues/14988.
+	normalizedComponentType := strings.ReplaceAll(componentID.Type().String(), "_", "")
+	normalizedComponentID := component.MustNewIDWithName(normalizedComponentType, componentID.Name())
+	return storageExtension.GetClient(ctx, component.KindReceiver, normalizedComponentID, "")
 }

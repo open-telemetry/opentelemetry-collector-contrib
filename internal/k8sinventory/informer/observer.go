@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
@@ -17,7 +18,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/checkpoint"
 )
+
+const checkpointFlushInterval = 5 * time.Second
 
 // PullConfig configures an informer-based pull observer.
 type PullConfig struct {
@@ -32,6 +36,7 @@ type WatchConfig struct {
 	IncludeInitialState bool
 	Exclude             map[apiWatch.EventType]bool
 	CacheSyncTimeout    time.Duration
+	StorageClient       storage.Client
 }
 
 // namespacedFactory pairs a factory with its namespace (empty = cluster-wide).
@@ -53,6 +58,7 @@ type Observer struct {
 	// watch-only
 	watchHandler func(*apiWatch.Event)
 	exclude      map[apiWatch.EventType]bool
+	cp           *checkpoint.Checkpointer
 	logger       *zap.Logger
 }
 
@@ -101,10 +107,13 @@ func watch(reg *FactoryRegistry, factories []namespacedFactory, config WatchConf
 		exclude:          config.Exclude,
 		logger:           logger,
 	}
+	if config.StorageClient != nil && config.IncludeInitialState {
+		o.cp = checkpoint.New(config.StorageClient, logger)
+	}
 	for _, nf := range factories {
 		inf := nf.factory.ForResource(config.Gvr).Informer()
 		o.infs[nf] = inf
-		if _, err := inf.AddEventHandler(o.buildEventHandler(!config.IncludeInitialState)); err != nil {
+		if _, err := inf.AddEventHandler(o.buildEventHandler(!config.IncludeInitialState, nf.namespace)); err != nil {
 			return nil, fmt.Errorf("failed to add event handler for %s: %w", config.Gvr.String(), err)
 		}
 	}
@@ -133,6 +142,14 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) (chan struct{}
 	o.logger.Info("starting informer and waiting for cache sync",
 		zap.String("gvr", o.base.Gvr.String()))
 
+	if o.cp != nil {
+		namespaces := make([]string, 0, len(o.infs))
+		for nf := range o.infs {
+			namespaces = append(namespaces, nf.namespace)
+		}
+		o.cp.Load(ctx, namespaces, o.base.Gvr.Resource)
+	}
+
 	for nf := range o.infs {
 		nf.factory.Start(o.stopCh)
 	}
@@ -144,7 +161,28 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) (chan struct{}
 	o.logger.Info("informer cache synced, observer ready",
 		zap.String("gvr", o.base.Gvr.String()))
 
+	if o.cp != nil {
+		for nf, inf := range o.infs {
+			if listRV := inf.LastSyncResourceVersion(); listRV != "" {
+				if err := o.cp.SetCheckpoint(ctx, nf.namespace, o.base.Gvr.Resource, listRV); err != nil {
+					o.logger.Warn("failed to persist post-sync checkpoint",
+						zap.String("namespace", nf.namespace), zap.Error(err))
+					continue
+				}
+				if err := o.cp.Flush(ctx); err != nil {
+					o.logger.Warn("failed to flush post-sync checkpoint",
+						zap.String("namespace", nf.namespace), zap.Error(err))
+				}
+			}
+		}
+	}
+
 	stopCh := make(chan struct{})
+
+	if o.cp != nil {
+		wg.Add(1)
+		go o.runCheckpointFlusher(ctx, stopCh, wg)
+	}
 
 	if o.pullHandler != nil {
 		for _, inf := range o.infs {
@@ -185,24 +223,38 @@ func (o *Observer) waitForCacheSync(ctx context.Context) error {
 	return nil
 }
 
-func (o *Observer) buildEventHandler(skipInitialList bool) cache.ResourceEventHandler {
+func (o *Observer) buildEventHandler(skipInitialList bool, namespace string) cache.ResourceEventHandler {
 	return cache.ResourceEventHandlerDetailedFuncs{
 		AddFunc: func(obj any, isInInitialList bool) {
-			if isInInitialList && skipInitialList {
+			if isInInitialList && o.suppressInitialListEvent(obj, skipInitialList, namespace) {
 				return
 			}
-			o.handleWatchEvent(apiWatch.Added, obj)
+			o.handleWatchEvent(apiWatch.Added, obj, namespace)
 		},
 		UpdateFunc: func(_, newObj any) {
-			o.handleWatchEvent(apiWatch.Modified, newObj)
+			o.handleWatchEvent(apiWatch.Modified, newObj, namespace)
 		},
 		DeleteFunc: func(obj any) {
-			o.handleWatchEvent(apiWatch.Deleted, obj)
+			o.handleWatchEvent(apiWatch.Deleted, obj, namespace)
 		},
 	}
 }
 
-func (o *Observer) handleWatchEvent(eventType apiWatch.EventType, obj any) {
+func (o *Observer) suppressInitialListEvent(obj any, skipInitialList bool, namespace string) bool {
+	if skipInitialList {
+		return true
+	}
+	if o.cp == nil {
+		return false
+	}
+	u, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return false
+	}
+	return o.cp.AlreadySeen(u.GetResourceVersion(), namespace)
+}
+
+func (o *Observer) handleWatchEvent(eventType apiWatch.EventType, obj any, namespace string) {
 	if o.exclude[eventType] {
 		return
 	}
@@ -215,7 +267,35 @@ func (o *Observer) handleWatchEvent(eventType apiWatch.EventType, obj any) {
 		o.logger.Error("unexpected object type in watch event", zap.String("type", string(eventType)))
 		return
 	}
+	if o.cp != nil {
+		if rv := u.GetResourceVersion(); rv != "" {
+			if err := o.cp.SetCheckpoint(context.Background(), namespace, o.base.Gvr.Resource, rv); err != nil {
+				o.logger.Warn("failed to buffer resourceVersion checkpoint", zap.Error(err))
+			}
+		}
+	}
 	o.watchHandler(&apiWatch.Event{Type: eventType, Object: u})
+}
+
+func (o *Observer) runCheckpointFlusher(ctx context.Context, stopCh <-chan struct{}, wg *sync.WaitGroup) {
+	defer wg.Done()
+	ticker := time.NewTicker(checkpointFlushInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			if err := o.cp.Flush(ctx); err != nil {
+				o.logger.Error("failed to flush checkpoints", zap.Error(err))
+			}
+		case <-stopCh:
+			if err := o.cp.Flush(context.Background()); err != nil {
+				o.logger.Error("failed to flush final checkpoints", zap.Error(err))
+			}
+			return
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 func (o *Observer) runPullTicker(ctx context.Context, store cache.Store, stopCh <-chan struct{}, wg *sync.WaitGroup) {
