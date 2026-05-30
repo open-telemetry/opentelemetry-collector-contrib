@@ -469,6 +469,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      db.server.session.wait_sample:
+        description: EventConfig provides common config for a  db.server.session.wait_sample event.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       db.server.top_query:
         description: EventConfig provides common config for a  db.server.top_query event.
         type: object
