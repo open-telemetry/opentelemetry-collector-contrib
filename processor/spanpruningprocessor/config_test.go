@@ -54,6 +54,9 @@ func TestLoadConfig(t *testing.T) {
 				MaxParentDepth:              1,
 				AggregationAttributePrefix:  "aggregation.",
 				AggregationHistogramBuckets: defaultHistogramBuckets,
+				EnableAttributeLossAnalysis: false,
+				// Default from createDefaultConfig should persist when omitted in YAML.
+				AttributeLossExemplarSampleRate: 0,
 			},
 		},
 		{
@@ -64,6 +67,9 @@ func TestLoadConfig(t *testing.T) {
 				MaxParentDepth:              1,
 				AggregationAttributePrefix:  "batch.",
 				AggregationHistogramBuckets: customHistogramBuckets,
+				EnableAttributeLossAnalysis: false,
+				// Default from createDefaultConfig should persist when omitted in YAML.
+				AttributeLossExemplarSampleRate: 0,
 			},
 		},
 	}
@@ -179,6 +185,46 @@ func TestConfig_Validate(t *testing.T) {
 				MaxParentDepth:             -1,
 			},
 			expectError: false,
+		},
+		{
+			name: "attribute_loss_exemplar_sample_rate lower bound",
+			config: &Config{
+				MinSpansToAggregate:             2,
+				AggregationAttributePrefix:      "aggregation.",
+				GroupByAttributes:               []string{"db.operation"},
+				AttributeLossExemplarSampleRate: 0,
+			},
+			expectError: false,
+		},
+		{
+			name: "attribute_loss_exemplar_sample_rate upper bound",
+			config: &Config{
+				MinSpansToAggregate:             2,
+				AggregationAttributePrefix:      "aggregation.",
+				GroupByAttributes:               []string{"db.operation"},
+				AttributeLossExemplarSampleRate: 1,
+			},
+			expectError: false,
+		},
+		{
+			name: "attribute_loss_exemplar_sample_rate below range",
+			config: &Config{
+				MinSpansToAggregate:             2,
+				AggregationAttributePrefix:      "aggregation.",
+				GroupByAttributes:               []string{"db.operation"},
+				AttributeLossExemplarSampleRate: -0.01,
+			},
+			expectError: true,
+		},
+		{
+			name: "attribute_loss_exemplar_sample_rate above range",
+			config: &Config{
+				MinSpansToAggregate:             2,
+				AggregationAttributePrefix:      "aggregation.",
+				GroupByAttributes:               []string{"db.operation"},
+				AttributeLossExemplarSampleRate: 1.01,
+			},
+			expectError: true,
 		},
 		{
 			name: "valid histogram buckets",
