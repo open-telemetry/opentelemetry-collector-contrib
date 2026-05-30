@@ -48,23 +48,7 @@ func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, 
 		return nil, errors.New("missing logservice params: Endpoint, Project, Logstore")
 	}
 
-	producerConfig := producer.GetDefaultProducerConfig()
-	producerConfig.Endpoint = config.Endpoint
-	producerConfig.AccessKeyID = config.AccessKeyID
-	producerConfig.AccessKeySecret = string(config.AccessKeySecret)
-	if config.ECSRamRole != "" || config.TokenFilePath != "" {
-		tokenUpdateFunc, _ := slsutil.NewTokenUpdateFunc(config.ECSRamRole, config.TokenFilePath)
-		provider := sls.NewUpdateFuncProviderAdapter(tokenUpdateFunc)
-		producerConfig.CredentialsProvider = provider
-
-		producerConfig.StsTokenShutDown = make(chan struct{})
-	} else if config.SecurityToken != "" {
-		producerConfig.CredentialsProvider = sls.NewStaticCredentialsProvider(
-			config.AccessKeyID,
-			string(config.AccessKeySecret),
-			string(config.SecurityToken),
-		)
-	}
+	producerConfig := newProducerConfig(config)
 
 	producer, err := producer.NewProducer(producerConfig)
 	if err != nil {
@@ -83,6 +67,28 @@ func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, 
 	c.source, _ = getIPAddress()
 	logger.Info("Create LogService client success", zap.String("project", config.Project), zap.String("logstore", config.Logstore))
 	return c, nil
+}
+
+func newProducerConfig(config *Config) *producer.ProducerConfig {
+	producerConfig := producer.GetDefaultProducerConfig()
+	producerConfig.Endpoint = config.Endpoint
+	producerConfig.AccessKeyID = config.AccessKeyID
+	producerConfig.AccessKeySecret = string(config.AccessKeySecret)
+	if config.ECSRamRole != "" || config.TokenFilePath != "" {
+		tokenUpdateFunc, _ := slsutil.NewTokenUpdateFunc(config.ECSRamRole, config.TokenFilePath)
+		provider := sls.NewUpdateFuncProviderAdapter(tokenUpdateFunc)
+		producerConfig.CredentialsProvider = provider
+
+		producerConfig.StsTokenShutDown = make(chan struct{})
+	} else if config.SecurityToken != "" {
+		producerConfig.CredentialsProvider = sls.NewStaticCredentialsProvider(
+			config.AccessKeyID,
+			string(config.AccessKeySecret),
+			string(config.SecurityToken),
+		)
+	}
+
+	return producerConfig
 }
 
 // sendLogs send message to LogService
