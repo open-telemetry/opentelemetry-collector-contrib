@@ -261,6 +261,28 @@ func (i *Input) read(ctx context.Context) {
 	}
 }
 
+// readWithRetry reads events from the subscription, handling RPC_S_INVALID_BOUND by closing and
+// reopening the subscription with a halved batch size until a read succeeds or a non-retryable
+// error occurs.
+func (i *Input) readWithRetry(maxReads int) ([]Event, error) {
+	events, err := i.subscription.Read(maxReads)
+	if !errors.Is(err, windows.RPC_S_INVALID_BOUND) {
+		return events, err
+	}
+
+	// Error is RPC_S_INVALID_BOUND. Close the subscription and reopen it with a halved batch size.
+	if closeErr := i.subscription.Close(); closeErr != nil {
+		return nil, fmt.Errorf("failed to close subscription during RPC_S_INVALID_BOUND recovery: %w", closeErr)
+	}
+	if openErr := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); openErr != nil {
+		return nil, fmt.Errorf("failed to reopen subscription during RPC_S_INVALID_BOUND recovery: %w", openErr)
+	}
+	newMaxReads := max(maxReads/2, 1)
+	i.currentMaxReads = newMaxReads
+	i.Logger().Debug("Encountered RPC_S_INVALID_BOUND, reduced batch size", zap.Int("current_batch_size", i.currentMaxReads), zap.Int("original_batch_size", i.maxReads))
+	return i.readWithRetry(newMaxReads)
+}
+
 // readBatch will read events from the subscription
 func (i *Input) readBatch(ctx context.Context) bool {
 	maxBatchSize := i.getCurrentBatchSize()
@@ -268,14 +290,7 @@ func (i *Input) readBatch(ctx context.Context) bool {
 		return false
 	}
 
-	events, actualMaxReads, err := i.subscription.Read(maxBatchSize)
-
-	// Update the current max reads if it changed
-	if err == nil && actualMaxReads < maxBatchSize {
-		i.currentMaxReads = actualMaxReads
-		i.Logger().Debug("Encountered RPC_S_INVALID_BOUND, reduced batch size", zap.Int("current_batch_size", i.currentMaxReads), zap.Int("original_batch_size", i.maxReads))
-	}
-
+	events, err := i.readWithRetry(maxBatchSize)
 	if err != nil {
 		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
 		if i.isRemote() && (errors.Is(err, windows.ERROR_INVALID_HANDLE) || errors.Is(err, errSubscriptionHandleNotOpen)) {
@@ -308,9 +323,6 @@ func (i *Input) readBatch(ctx context.Context) bool {
 		}
 		if len(events) == n+1 {
 			i.updateBookmarkOffset(ctx, event)
-			if err := i.subscription.bookmark.Update(event); err != nil {
-				i.Logger().Error("Failed to update bookmark from event", zap.Error(err))
-			}
 		}
 		event.Close()
 	}
