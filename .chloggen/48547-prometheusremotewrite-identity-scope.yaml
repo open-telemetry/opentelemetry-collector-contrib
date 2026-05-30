@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/prometheus_remote_write
+
+note: Replace manual scope hashing in `metricIdentity` and `exemplarKey` with `identity.Scope` and `identity.Resource` hash chaining, eliminating intermediate string allocations.
+
+issues: [48547]
+
+subtext:
+
+change_logs: []
