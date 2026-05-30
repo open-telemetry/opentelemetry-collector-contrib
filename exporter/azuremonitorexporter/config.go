@@ -4,7 +4,7 @@
 package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
 import (
-	"fmt"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -53,10 +53,10 @@ type TagMappingsConfig struct {
 // Validate enforces invariants on the configured tag mappings.
 func (m TagMappingsConfig) Validate() error {
 	if m.CloudRoleInstance != nil && len(m.CloudRoleInstance) == 0 {
-		return fmt.Errorf("tag_mappings.cloud_role_instance must contain at least one source when set")
+		return errors.New("tag_mappings.cloud_role_instance must contain at least one source when set")
 	}
 	if m.ApplicationVersion != nil && len(m.ApplicationVersion) == 0 {
-		return fmt.Errorf("tag_mappings.application_version must contain at least one source when set")
+		return errors.New("tag_mappings.application_version must contain at least one source when set")
 	}
 	return nil
 }
