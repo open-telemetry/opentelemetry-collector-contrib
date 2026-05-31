@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/rand"
 	"runtime"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -116,6 +117,44 @@ func TestConnectorConsume(t *testing.T) {
 				2,
 				1,
 			),
+		},
+		{
+			name: "messaging traces with consumer span and no links fallback to parent span",
+			cfg: &Config{
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			},
+			sampleTraces: buildSampleLegacyFallbackTrace(t),
+			verifyMetrics: verifyMessagingMetricsWithDuration(
+				"producer-service",
+				"consumer-service",
+				2,
+				1,
+			),
+		},
+		{
+			name: "messaging traces with fan-out producer first",
+			cfg: &Config{
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			},
+			sampleTraces:  buildSampleFanOutTrace(t, true),
+			verifyMetrics: verifyRequestTotalDataPoints(3),
+		},
+		{
+			name: "messaging traces with fan-out consumers first",
+			cfg: &Config{
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			},
+			sampleTraces:  buildSampleFanOutTrace(t, false),
+			verifyMetrics: verifyRequestTotalDataPoints(3),
 		},
 		{
 			name: "test fix failed label not work",
@@ -341,6 +380,22 @@ func verifyMessagingDuration(t *testing.T, m pmetric.Metric, durationSum float64
 	verifyAttr(t, attributes, "failed", "false")
 }
 
+func verifyRequestTotalDataPoints(expectedCount int) func(t *testing.T, md pmetric.Metrics) {
+	return func(t *testing.T, md pmetric.Metrics) {
+		assert.Equal(t, 3, md.MetricCount())
+
+		metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+		assert.Equal(t, 3, metrics.Len())
+
+		requestTotal := metrics.At(0)
+		assert.Equal(t, "traces_service_graph_request_total", requestTotal.Name())
+		assert.Equal(t, pmetric.MetricTypeSum, requestTotal.Type())
+		dps := requestTotal.Sum().DataPoints()
+		assert.Equal(t, 1, dps.Len())
+		assert.Equal(t, int64(expectedCount), dps.At(0).IntValue())
+	}
+}
+
 func verifyCount(t *testing.T, m pmetric.Metric) {
 	assert.Equal(t, "traces_service_graph_request_total", m.Name())
 
@@ -494,6 +549,120 @@ func buildSampleMessagingTrace(t *testing.T, producerFirst bool) ptrace.Traces {
 
 	addConsumerSpan()
 	addProducerSpan()
+
+	return traces
+}
+
+func buildSampleLegacyFallbackTrace(t *testing.T) ptrace.Traces {
+	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
+	producerEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
+	consumerEnd := time.Date(2022, 1, 2, 3, 4, 7, 6, time.UTC)
+
+	traces := ptrace.NewTraces()
+
+	var traceID pcommon.TraceID
+	_, err := rand.Read(traceID[:])
+	require.NoError(t, err)
+
+	var producerSpanID, consumerSpanID pcommon.SpanID
+	_, err = rand.Read(producerSpanID[:])
+	require.NoError(t, err)
+	_, err = rand.Read(consumerSpanID[:])
+	require.NoError(t, err)
+
+	producerResourceSpans := traces.ResourceSpans().AppendEmpty()
+	producerResourceSpans.Resource().Attributes().PutStr("service.name", "producer-service")
+	producerScopeSpans := producerResourceSpans.ScopeSpans().AppendEmpty()
+	producerSpan := producerScopeSpans.Spans().AppendEmpty()
+	producerSpan.SetName("producer span")
+	producerSpan.SetSpanID(producerSpanID)
+	producerSpan.SetTraceID(traceID)
+	producerSpan.SetKind(ptrace.SpanKindProducer)
+	producerSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
+	producerSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(producerEnd))
+
+	consumerResourceSpans := traces.ResourceSpans().AppendEmpty()
+	consumerResourceSpans.Resource().Attributes().PutStr("service.name", "consumer-service")
+	consumerScopeSpans := consumerResourceSpans.ScopeSpans().AppendEmpty()
+	consumerSpan := consumerScopeSpans.Spans().AppendEmpty()
+	consumerSpan.SetName("consumer span")
+	consumerSpan.SetSpanID(consumerSpanID)
+	consumerSpan.SetTraceID(traceID)
+	consumerSpan.SetParentSpanID(producerSpanID)
+	consumerSpan.SetKind(ptrace.SpanKindConsumer)
+	consumerSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
+	consumerSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(consumerEnd))
+
+	return traces
+}
+
+func buildSampleFanOutTrace(t *testing.T, producerFirst bool) ptrace.Traces {
+	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
+	producerEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
+	consumerEnd := time.Date(2022, 1, 2, 3, 4, 7, 6, time.UTC)
+
+	traces := ptrace.NewTraces()
+
+	var producerTraceID pcommon.TraceID
+	_, err := rand.Read(producerTraceID[:])
+	require.NoError(t, err)
+
+	var producerSpanID pcommon.SpanID
+	_, err = rand.Read(producerSpanID[:])
+	require.NoError(t, err)
+
+	appendProducerSpan := func() {
+		resourceSpans := traces.ResourceSpans().AppendEmpty()
+		resourceSpans.Resource().Attributes().PutStr("service.name", "producer-service")
+		scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+
+		producerSpan := scopeSpans.Spans().AppendEmpty()
+		producerSpan.SetName("producer span")
+		producerSpan.SetSpanID(producerSpanID)
+		producerSpan.SetTraceID(producerTraceID)
+		producerSpan.SetKind(ptrace.SpanKindProducer)
+		producerSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
+		producerSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(producerEnd))
+	}
+
+	appendConsumerSpan := func(idx int) {
+		resourceSpans := traces.ResourceSpans().AppendEmpty()
+		resourceSpans.Resource().Attributes().PutStr("service.name", "consumer-service")
+		scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+
+		var consumerTraceID pcommon.TraceID
+		_, err := rand.Read(consumerTraceID[:])
+		require.NoError(t, err)
+
+		var consumerSpanID pcommon.SpanID
+		_, err = rand.Read(consumerSpanID[:])
+		require.NoError(t, err)
+
+		consumerSpan := scopeSpans.Spans().AppendEmpty()
+		consumerSpan.SetName("consumer span " + strconv.Itoa(idx))
+		consumerSpan.SetSpanID(consumerSpanID)
+		consumerSpan.SetTraceID(consumerTraceID)
+		consumerSpan.SetKind(ptrace.SpanKindConsumer)
+		consumerSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
+		consumerSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(consumerEnd))
+
+		link := consumerSpan.Links().AppendEmpty()
+		link.SetTraceID(producerTraceID)
+		link.SetSpanID(producerSpanID)
+	}
+
+	if producerFirst {
+		appendProducerSpan()
+		appendConsumerSpan(1)
+		appendConsumerSpan(2)
+		appendConsumerSpan(3)
+		return traces
+	}
+
+	appendConsumerSpan(1)
+	appendConsumerSpan(2)
+	appendConsumerSpan(3)
+	appendProducerSpan()
 
 	return traces
 }

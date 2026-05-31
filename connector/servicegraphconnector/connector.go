@@ -303,14 +303,11 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 						}
 					})
 				case ptrace.SpanKindConsumer:
+					// If Links are empty, fall back to parent-based correlation
+					// to preserve backward compatibility.
 					if span.Links().Len() == 0 {
-						continue
-					}
-
-					for l := 0; l < span.Links().Len(); l++ {
-						link := span.Links().At(l)
-						traceID := link.TraceID()
-						key := store.NewKey(traceID, link.SpanID())
+						traceID := span.TraceID()
+						key := store.NewKey(traceID, span.ParentSpanID())
 						isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
 							e.TraceID = traceID
 							e.ConnectionType = store.MessagingSystem
@@ -326,7 +323,46 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 							continue
 						}
 
-						// UpsertEdge will only return ErrTooManyItems
+						if err != nil {
+							return err
+						}
+
+						if isNew {
+							p.telemetryBuilder.ConnectorServicegraphTotalEdges.Add(ctx, 1)
+						}
+
+						continue
+					}
+
+					// For Links-based correlation, create a consumer-keyed edge and
+					// set ProducerKey so the store can reconcile producer->many consumers.
+					for l := 0; l < span.Links().Len(); l++ {
+						link := span.Links().At(l)
+						producerTraceID := link.TraceID()
+						producerSpanID := link.SpanID()
+						producerKey := store.NewKey(producerTraceID, producerSpanID)
+
+						// Consumer edge should be keyed by the consumer span so multiple
+						// consumers do not collide on the same key.
+						consumerTraceID := span.TraceID()
+						consumerKey := store.NewKey(consumerTraceID, span.SpanID())
+
+						isNew, err = p.store.UpsertEdge(consumerKey, func(e *store.Edge) {
+							e.TraceID = consumerTraceID
+							e.ConnectionType = store.MessagingSystem
+							e.ServerService = serviceName
+							e.ServerLatencySec = spanDuration(span)
+							e.ProducerKey = producerKey
+							e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
+							p.upsertDimensions(serverKind, e.Dimensions, rAttributes, span.Attributes())
+						})
+
+						if errors.Is(err, store.ErrTooManyItems) {
+							totalDroppedSpans++
+							p.telemetryBuilder.ConnectorServicegraphDroppedSpans.Add(ctx, 1)
+							continue
+						}
+
 						if err != nil {
 							return err
 						}
@@ -410,6 +446,11 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 	)
 
 	p.telemetryBuilder.ConnectorServicegraphExpiredEdges.Add(context.Background(), 1)
+
+	// Do not convert messaging system edges into virtual nodes on expiry.
+	if e.ConnectionType == store.MessagingSystem {
+		return
+	}
 
 	if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
 		e.ConnectionType = store.VirtualNode
