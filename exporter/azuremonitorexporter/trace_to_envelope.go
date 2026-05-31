@@ -55,6 +55,7 @@ func spanToEnvelopes(
 	instrumentationScope pcommon.InstrumentationScope,
 	span ptrace.Span,
 	spanEventsEnabled bool,
+	tagMappings *TagMappingsConfig,
 	logger *zap.Logger,
 ) ([]*contracts.Envelope, error) {
 	spanKind := span.Kind()
@@ -122,8 +123,8 @@ func spanToEnvelopes(
 	resourceAttributes := resource.Attributes()
 	applyResourcesToDataProperties(dataProperties, resourceAttributes)
 	applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
-	applyCloudTagsToEnvelope(envelope, resourceAttributes)
-	applyApplicationTagsToEnvelope(envelope, resourceAttributes)
+	applyCloudTagsToEnvelope(envelope, resourceAttributes, tagMappings)
+	applyApplicationTagsToEnvelope(envelope, resourceAttributes, tagMappings)
 	applyDeviceTagsToEnvelope(envelope, resourceAttributes)
 	applyInternalSdkVersionTagToEnvelope(envelope)
 	applyLinksToDataProperties(dataProperties, span.Links(), logger)
@@ -171,8 +172,8 @@ func spanToEnvelopes(
 
 		applyResourcesToDataProperties(dataProperties, resourceAttributes)
 		applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
-		applyCloudTagsToEnvelope(spanEventEnvelope, resourceAttributes)
-		applyApplicationTagsToEnvelope(spanEventEnvelope, resourceAttributes)
+		applyCloudTagsToEnvelope(spanEventEnvelope, resourceAttributes, tagMappings)
+		applyApplicationTagsToEnvelope(spanEventEnvelope, resourceAttributes, tagMappings)
 		applyDeviceTagsToEnvelope(spanEventEnvelope, resourceAttributes)
 		applyInternalSdkVersionTagToEnvelope(spanEventEnvelope)
 
