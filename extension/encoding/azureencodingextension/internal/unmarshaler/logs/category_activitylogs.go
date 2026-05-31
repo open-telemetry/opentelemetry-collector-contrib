@@ -93,24 +93,139 @@ const (
 	attributeAzureAdministrativeHierarchy = "azure.administrative.hierarchy"
 )
 
-// azureAdministrativeLog represents an Administrative activity log
+// Generic Azure attributes carried by PIM events but not PIM-specific.
+// Defined here for now; can be promoted to a shared location if other categories adopt them.
+const (
+	attributeAzureResourceGroupName    = "azure.resource.group.name"
+	attributeAzureResourceProviderName = "azure.resource.provider.name"
+	attributeAzureResourceType         = "azure.resource.type"
+)
+
+// Non-SemConv attributes for PIM (Privileged Identity Management) events,
+// which arrive as Administrative category Activity Logs with ResourceProviderName=azurerbac.
+// Microsoft does not publish a formal schema for the properties payload; these fields
+// are derived from real PIM event samples.
+// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47566
+const (
+	attributeAzurePIMEventName               = "azure.pim.event.name"
+	attributeAzurePIMEventID                 = "azure.pim.event.id"
+	attributeAzurePIMRoleAssignmentRequestID = "azure.pim.role.assignment.request.id"
+	attributeAzurePIMRoleDefinitionName      = "azure.pim.role.definition.name"
+	attributeAzurePIMRoleDefinitionOriginID  = "azure.pim.role.definition.origin.id"
+	attributeAzurePIMCallerPrefix            = "azure.pim.caller."
+	attributeAzurePIMJustification           = "azure.pim.justification"
+	attributeAzurePIMSubjectID               = "azure.pim.subject.id"
+	attributeAzurePIMSubjectName             = "azure.pim.subject.name"
+	attributeAzurePIMActionType              = "azure.pim.action.type"
+	attributeAzurePIMRoleAssignmentOriginID  = "azure.pim.role.assignment.origin.id"
+)
+
+// pimCallerIdentity represents one entry in the CallerInfo JSON array
+type pimCallerIdentity struct {
+	IdentityType  string `json:"CallerIdentityType"`
+	IdentityValue string `json:"CallerIdentityValue"`
+}
+
+// azureAdministrativeLog represents an Administrative activity log.
+// It covers both standard Administrative events (entity/message/hierarchy)
+// and PIM events (azurerbac provider), which share the same category but
+// carry a completely different properties payload.
 // See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#administrative-category
 type azureAdministrativeLog struct {
 	activityLogRecordBase
 
 	Properties struct {
+		// Standard Administrative fields
 		Entity    string `json:"entity"`
 		Message   string `json:"message"`
 		Hierarchy string `json:"hierarchy"`
+
+		// PIM-specific fields (ResourceProviderName=azurerbac)
+		SubscriptionID          *string `json:"SubscriptionID"`
+		ResourceGroupName       string  `json:"ResourceGroupName"`
+		ResourceProviderName    string  `json:"ResourceProviderName"`
+		ResourceType            string  `json:"ResourceType"`
+		TenantID                string  `json:"TenantID"`
+		EventName               string  `json:"EventName"`
+		EventID                 string  `json:"EventID"`
+		RoleAssignmentRequestID string  `json:"RoleAssignmentRequestId"`
+		RoleDefinition          string  `json:"RoleDefinition"`
+		RoleDefinitionOriginID  string  `json:"RoleDefinitionOriginId"`
+		CallerInfo              string  `json:"CallerInfo"`
+		Justification           string  `json:"Justification"`
+		SubjectID               string  `json:"SubjectID"`
+		SubjectName             string  `json:"SubjectName"`
+		ActionType              string  `json:"ActionType"`
+		OriginRoleAssignmentID  string  `json:"OriginRoleAssignmentId"`
 	} `json:"properties"`
 }
 
 func (r *azureAdministrativeLog) PutProperties(attrs pcommon.Map, _ pcommon.Value) error {
+	// Standard Administrative fields
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureAdministrativeEntity, r.Properties.Entity)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureAdministrativeMessage, r.Properties.Message)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureAdministrativeHierarchy, r.Properties.Hierarchy)
 
+	// PIM fields
+	// SubscriptionID is also set as a resource attribute (cloud.account.id) by unmarshaler.go from
+	// the resource ID; setting it here at the log record level mirrors that for PIM events where the
+	// subscription appears in properties but not in the resource ID path (e.g. resource-scoped events).
+	unmarshaler.AttrPutStrPtrIf(attrs, string(conventions.CloudAccountIDKey), r.Properties.SubscriptionID)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzureResourceGroupName, r.Properties.ResourceGroupName)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzureResourceProviderName, r.Properties.ResourceProviderName)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzureResourceType, r.Properties.ResourceType)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzureTenantID, r.Properties.TenantID)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMEventName, r.Properties.EventName)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMEventID, r.Properties.EventID)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMRoleAssignmentRequestID, r.Properties.RoleAssignmentRequestID)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMRoleDefinitionName, r.Properties.RoleDefinition)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMRoleDefinitionOriginID, r.Properties.RoleDefinitionOriginID)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMJustification, r.Properties.Justification)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMSubjectID, r.Properties.SubjectID)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMSubjectName, r.Properties.SubjectName)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMActionType, r.Properties.ActionType)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMRoleAssignmentOriginID, r.Properties.OriginRoleAssignmentID)
+
+	// CallerInfo is a JSON-encoded array of identity facets describing the same caller
+	// (UPN, ObjectID, Username, Name, ObjectClass, ...). Project each entry to a flat
+	// attribute keyed by the lowercased snake_case identity type so new types added by
+	// Microsoft are captured automatically.
+	if r.Properties.CallerInfo != "" {
+		var callers []pimCallerIdentity
+		if err := gojson.Unmarshal([]byte(r.Properties.CallerInfo), &callers); err == nil && len(callers) > 0 {
+			for _, c := range callers {
+				if c.IdentityType == "" {
+					continue
+				}
+				unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMCallerPrefix+pimCallerKey(c.IdentityType), c.IdentityValue)
+			}
+		}
+	}
+
 	return nil
+}
+
+// pimCallerKey converts a CallerIdentityType (PascalCase, e.g. "ObjectID", "UPN",
+// "Username") into a lowercase snake_case suffix appended to azure.pim.caller.
+// Examples: "UPN" -> "upn", "ObjectID" -> "object_id", "ObjectClass" -> "object_class",
+// "Username" -> "username", "Name" -> "name".
+func pimCallerKey(identityType string) string {
+	var b strings.Builder
+	b.Grow(len(identityType) + 4)
+	runes := []rune(identityType)
+	for i, r := range runes {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			prev := runes[i-1]
+			isPrevLowerOrDigit := (prev >= 'a' && prev <= 'z') || (prev >= '0' && prev <= '9')
+			isPrevUpper := prev >= 'A' && prev <= 'Z'
+			isNextLower := i+1 < len(runes) && runes[i+1] >= 'a' && runes[i+1] <= 'z'
+			if isPrevLowerOrDigit || (isPrevUpper && isNextLower) {
+				b.WriteByte('_')
+			}
+		}
+		b.WriteRune(r)
+	}
+	return strings.ToLower(b.String())
 }
 
 // ------------------------------------------------------------
