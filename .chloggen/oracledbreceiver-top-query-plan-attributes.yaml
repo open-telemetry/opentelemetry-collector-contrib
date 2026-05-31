@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add plan.last_load and plan_hash_value attributes to db.server.top_query events
+note: Add `oracledb.plan.last_load` and `oracledb.plan_hash_value` attributes to db.server.top_query events
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48216]
