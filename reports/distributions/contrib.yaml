@@ -49,7 +49,7 @@ components:
         - opensearch
         - otelarrow
         - prometheus
-        - prometheusremotewrite
+        - prometheus_remote_write
         - pulsar
         - rabbitmq
         - sentry
@@ -158,7 +158,7 @@ components:
         - datadog
         - docker_stats
         - elasticsearch
-        - envoyals
+        - envoy_als
         - expvar
         - faro
         - file_log
@@ -198,7 +198,7 @@ components:
         - ntp
         - oracledb
         - otelarrow
-        - otlpjsonfile
+        - otlp_json_file
         - podman_stats
         - postgresql
         - pprof
@@ -233,7 +233,7 @@ components:
         - udp_log
         - vcenter
         - wavefront
-        - webhookevent
+        - webhook_event
         - windows_event_log
         - windowsperfcounters
         - windowsservice
