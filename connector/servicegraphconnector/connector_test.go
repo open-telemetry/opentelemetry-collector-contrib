@@ -86,6 +86,38 @@ func TestConnectorConsume(t *testing.T) {
 			verifyMetrics: verifyHappyCaseMetricsWithDuration(2, 1),
 		},
 		{
+			name: "messaging traces with producer span before consumer span",
+			cfg: &Config{
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			},
+			sampleTraces: buildSampleMessagingTrace(t, true),
+			verifyMetrics: verifyMessagingMetricsWithDuration(
+				"producer-service",
+				"consumer-service",
+				2,
+				1,
+			),
+		},
+		{
+			name: "messaging traces with consumer span before producer span",
+			cfg: &Config{
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			},
+			sampleTraces: buildSampleMessagingTrace(t, false),
+			verifyMetrics: verifyMessagingMetricsWithDuration(
+				"producer-service",
+				"consumer-service",
+				2,
+				1,
+			),
+		},
+		{
 			name: "test fix failed label not work",
 			cfg: &Config{
 				Store: StoreConfig{
@@ -244,6 +276,71 @@ func verifyHappyCaseLatencyMetrics() func(t *testing.T, md pmetric.Metrics) {
 	}
 }
 
+func verifyMessagingMetricsWithDuration(producerService, consumerService string, serverDurationSum, clientDurationSum float64) func(t *testing.T, md pmetric.Metrics) {
+	return func(t *testing.T, md pmetric.Metrics) {
+		assert.Equal(t, 3, md.MetricCount())
+
+		rms := md.ResourceMetrics()
+		assert.Equal(t, 1, rms.Len())
+
+		sms := rms.At(0).ScopeMetrics()
+		assert.Equal(t, 1, sms.Len())
+
+		ms := sms.At(0).Metrics()
+		assert.Equal(t, 3, ms.Len())
+
+		mCount := ms.At(0)
+		verifyMessagingCount(t, mCount, producerService, consumerService)
+
+		mServerDuration := ms.At(1)
+		assert.Equal(t, "traces_service_graph_request_server", mServerDuration.Name())
+		verifyMessagingDuration(t, mServerDuration, serverDurationSum, producerService, consumerService, []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0})
+
+		mClientDuration := ms.At(2)
+		assert.Equal(t, "traces_service_graph_request_client", mClientDuration.Name())
+		verifyMessagingDuration(t, mClientDuration, clientDurationSum, producerService, consumerService, []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0})
+	}
+}
+
+func verifyMessagingCount(t *testing.T, m pmetric.Metric, producerService, consumerService string) {
+	assert.Equal(t, "traces_service_graph_request_total", m.Name())
+
+	assert.Equal(t, pmetric.MetricTypeSum, m.Type())
+	dps := m.Sum().DataPoints()
+	assert.Equal(t, 1, dps.Len())
+
+	dp := dps.At(0)
+	assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+	assert.Equal(t, int64(1), dp.IntValue())
+
+	attributes := dp.Attributes()
+	assert.Equal(t, 4, attributes.Len())
+	verifyAttr(t, attributes, "client", producerService)
+	verifyAttr(t, attributes, "server", consumerService)
+	verifyAttr(t, attributes, "connection_type", "messaging_system")
+	verifyAttr(t, attributes, "failed", "false")
+}
+
+func verifyMessagingDuration(t *testing.T, m pmetric.Metric, durationSum float64, producerService, consumerService string, bs []uint64) {
+	assert.Equal(t, pmetric.MetricTypeHistogram, m.Type())
+	dps := m.Histogram().DataPoints()
+	assert.Equal(t, 1, dps.Len())
+
+	dp := dps.At(0)
+	assert.Equal(t, durationSum, dp.Sum())
+	assert.Equal(t, uint64(1), dp.Count())
+	buckets := pcommon.NewUInt64Slice()
+	buckets.FromRaw(bs)
+	assert.Equal(t, buckets, dp.BucketCounts())
+
+	attributes := dp.Attributes()
+	assert.Equal(t, 4, attributes.Len())
+	verifyAttr(t, attributes, "client", producerService)
+	verifyAttr(t, attributes, "server", consumerService)
+	verifyAttr(t, attributes, "connection_type", "messaging_system")
+	verifyAttr(t, attributes, "failed", "false")
+}
+
 func verifyCount(t *testing.T, m pmetric.Metric) {
 	assert.Equal(t, "traces_service_graph_request_total", m.Name())
 
@@ -334,6 +431,69 @@ func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	serverSpan.SetKind(ptrace.SpanKindServer)
 	serverSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
 	serverSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(sEnd))
+
+	return traces
+}
+
+func buildSampleMessagingTrace(t *testing.T, producerFirst bool) ptrace.Traces {
+	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
+	producerEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
+	consumerEnd := time.Date(2022, 1, 2, 3, 4, 7, 6, time.UTC)
+
+	traces := ptrace.NewTraces()
+
+	var producerTraceID, consumerTraceID pcommon.TraceID
+	_, err := rand.Read(producerTraceID[:])
+	require.NoError(t, err)
+	_, err = rand.Read(consumerTraceID[:])
+	require.NoError(t, err)
+
+	var producerSpanID, consumerSpanID pcommon.SpanID
+	_, err = rand.Read(producerSpanID[:])
+	require.NoError(t, err)
+	_, err = rand.Read(consumerSpanID[:])
+	require.NoError(t, err)
+
+	addProducerSpan := func() {
+		resourceSpans := traces.ResourceSpans().AppendEmpty()
+		resourceSpans.Resource().Attributes().PutStr("service.name", "producer-service")
+		scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+
+		producerSpan := scopeSpans.Spans().AppendEmpty()
+		producerSpan.SetName("producer span")
+		producerSpan.SetSpanID(producerSpanID)
+		producerSpan.SetTraceID(producerTraceID)
+		producerSpan.SetKind(ptrace.SpanKindProducer)
+		producerSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
+		producerSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(producerEnd))
+	}
+
+	addConsumerSpan := func() {
+		resourceSpans := traces.ResourceSpans().AppendEmpty()
+		resourceSpans.Resource().Attributes().PutStr("service.name", "consumer-service")
+		scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+
+		consumerSpan := scopeSpans.Spans().AppendEmpty()
+		consumerSpan.SetName("consumer span")
+		consumerSpan.SetSpanID(consumerSpanID)
+		consumerSpan.SetTraceID(consumerTraceID)
+		consumerSpan.SetKind(ptrace.SpanKindConsumer)
+		consumerSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
+		consumerSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(consumerEnd))
+
+		link := consumerSpan.Links().AppendEmpty()
+		link.SetTraceID(producerTraceID)
+		link.SetSpanID(producerSpanID)
+	}
+
+	if producerFirst {
+		addProducerSpan()
+		addConsumerSpan()
+		return traces
+	}
+
+	addConsumerSpan()
+	addProducerSpan()
 
 	return traces
 }
