@@ -78,13 +78,13 @@ func seedConsumerGroups(tb testing.TB, cl *kgo.Client, nGroups, partitions, topi
 	tb.Helper()
 	adm := kadm.NewClient(cl)
 	groups := make([]string, 0, nGroups)
-	for g := 0; g < nGroups; g++ {
+	for g := range nGroups {
 		group := fmt.Sprintf("bench-group-%d", g)
 		groups = append(groups, group)
 		var os kadm.Offsets
-		for i := 0; i < topicsPerGroup; i++ {
+		for i := range topicsPerGroup {
 			t := topics[(g+i)%len(topics)]
-			for p := 0; p < partitions; p++ {
+			for p := range partitions {
 				os.AddOffset(t, int32(p), int64(g+1), -1)
 			}
 		}
