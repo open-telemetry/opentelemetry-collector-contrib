@@ -259,7 +259,7 @@ components:
     - receiver/datadog
     - receiver/docker_stats
     - receiver/elasticsearch
-    - receiver/envoyals
+    - receiver/envoy_als
     - receiver/expvar
     - receiver/faro
     - receiver/file_log
