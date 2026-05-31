@@ -1,0 +1,13 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: deprecation
+
+component: receiver/webhook_event
+
+note: Rename `webhookevent` receiver to `webhook_event` with deprecated alias `webhookevent`
+
+issues: [45339]
+
+subtext:
+
+change_logs: [user]
