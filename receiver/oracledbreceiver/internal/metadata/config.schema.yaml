@@ -18,6 +18,13 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.data_dictionary.hit_ratio:
+        description: "OracledbDataDictionaryHitRatioMetricConfig provides config for the oracledb.data_dictionary.hit_ratio metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.db_block_gets:
         description: "OracledbDbBlockGetsMetricConfig provides config for the oracledb.db_block_gets metric."
         type: object
@@ -179,6 +186,63 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.physical_io.cache_writes:
+        description: "OracledbPhysicalIoCacheWritesMetricConfig provides config for the oracledb.physical_io.cache_writes metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.physical_io.requests:
+        description: "OracledbPhysicalIoRequestsMetricConfig provides config for the oracledb.physical_io.requests metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk.io.direction"
+                - "disk.io.block_size"
+            default:
+              - "disk.io.direction"
+              - "disk.io.block_size"
+      oracledb.physical_io.transferred:
+        description: "OracledbPhysicalIoTransferredMetricConfig provides config for the oracledb.physical_io.transferred metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk.io.direction"
+                - "disk.io.type"
+            default:
+              - "disk.io.direction"
+              - "disk.io.type"
       oracledb.physical_read_io_requests:
         description: "OracledbPhysicalReadIoRequestsMetricConfig provides config for the oracledb.physical_read_io_requests metric."
         type: object
@@ -242,6 +306,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.recycle_bin.limit:
+        description: "OracledbRecycleBinLimitMetricConfig provides config for the oracledb.recycle_bin.limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.sessions.limit:
         description: "OracledbSessionsLimitMetricConfig provides config for the oracledb.sessions.limit metric."
         type: object
@@ -274,6 +345,45 @@ $defs:
             default:
               - "session_type"
               - "session_status"
+      oracledb.sqlnet.io.transferred:
+        description: "OracledbSqlnetIoTransferredMetricConfig provides config for the oracledb.sqlnet.io.transferred metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "network.io.direction"
+                - "destination.type"
+            default:
+              - "network.io.direction"
+              - "destination.type"
+      oracledb.storage.usage:
+        description: "OracledbStorageUsageMetricConfig provides config for the oracledb.storage.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.storage.utilization:
+        description: "OracledbStorageUtilizationMetricConfig provides config for the oracledb.storage.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.tablespace_size.limit:
         description: "OracledbTablespaceSizeLimitMetricConfig provides config for the oracledb.tablespace_size.limit metric."
         type: object
@@ -354,6 +464,13 @@ $defs:
     properties:
       db.server.query_sample:
         description: EventConfig provides common config for a  db.server.query_sample event.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      db.server.session.wait_sample:
+        description: EventConfig provides common config for a  db.server.session.wait_sample event.
         type: object
         properties:
           enabled:

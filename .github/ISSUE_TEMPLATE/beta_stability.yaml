@@ -64,7 +64,6 @@ body:
       - exporter/googlecloudpubsub
       - exporter/googlecloudstorage
       - exporter/googlemanagedprometheus
-      - exporter/googlesecops
       - exporter/honeycombmarker
       - exporter/influxdb
       - exporter/kafka
@@ -202,6 +201,7 @@ body:
       - processor/deltatorate
       - processor/drain
       - processor/filter
+      - processor/genainormalizer
       - processor/geoip
       - processor/groupbyattrs
       - processor/groupbytrace
@@ -239,6 +239,7 @@ body:
       - processor/sumologic
       - processor/tailsampling
       - processor/transform
+      - processor/transform/internal/logparsingfuncs
       - processor/unroll
       - receiver/activedirectoryds
       - receiver/aerospike

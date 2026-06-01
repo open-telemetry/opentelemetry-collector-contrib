@@ -120,6 +120,8 @@ EOF
 
 Use the below commands to create a `ClusterRole` with required permissions and a
 `ClusterRoleBinding` to grant the role to the service account created above.
+Alternatively, a namespace-scoped `Role` and `RoleBinding` can be used when the receiver
+is configured to watch specific namespaces via the `namespaces` option.
 
 ```bash
 <<EOF | kubectl apply -f -
@@ -130,62 +132,9 @@ metadata:
   labels:
     app: otelcontribcol
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - events
-  - namespaces
-  - namespaces/status
-  - nodes
-  - nodes/spec
-  - pods
-  - pods/status
-  - replicationcontrollers
-  - replicationcontrollers/status
-  - resourcequotas
-  - services
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - daemonsets
-  - deployments
-  - replicasets
-  - statefulsets
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - extensions
-  resources:
-  - daemonsets
-  - deployments
-  - replicasets
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - batch
-  resources:
-  - jobs
-  - cronjobs
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-    - autoscaling
-  resources:
-    - horizontalpodautoscalers
-  verbs:
-    - get
-    - list
-    - watch
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch"]
 EOF
 ```
 

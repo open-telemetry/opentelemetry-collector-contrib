@@ -51,6 +51,11 @@ resource_attributes:
 
 attributes:
   # attributes for metrics
+  cache.state:
+    description: The state of the cache objects.
+    type: string
+    requirement_level: recommended
+    enum: [in_use, total]
   client.address:
     description: Hostname or address of the client.
     type: string
@@ -90,6 +95,11 @@ attributes:
     description: The logical filename of the file being monitored.
     type: string
     requirement_level: recommended
+  memory.pool:
+    description: The functional area of SQL Server memory.
+    type: string
+    requirement_level: recommended
+    enum: [target, total, sql_cache, optimizer, connection, granted_workspace, max_workspace]
   network.peer.address:
     description: IP address of the peer client.
     type: string
@@ -104,6 +114,11 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [read, write]
+  page.pool:
+    description: The type of page pool in the SQL Server buffer manager.
+    type: string
+    requirement_level: recommended
+    enum: [cache, total, target, database, stolen, reserved, free]
   performance_counter.object_name:
     description: Category to which this counter belongs
     type: string
@@ -184,6 +199,10 @@ attributes:
     requirement_level: recommended
   sqlserver.procedure_name:
     description: The name of the stored procedure, if any
+    type: string
+    requirement_level: recommended
+  sqlserver.query.last_started:
+    description: Timestamp of when the SQL query last started executing (ISO 8601 format).
     type: string
     requirement_level: recommended
   sqlserver.query_hash:
@@ -298,6 +317,11 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [free, used]
+  transition.direction:
+    description: The direction of a superlatch transition.
+    type: string
+    requirement_level: recommended
+    enum: [promotion, demotion]
   user.name:
     description: Login name associated with the SQL Server session.
     type: string
@@ -363,6 +387,7 @@ events:
     attributes:
       - sqlserver.total_worker_time
       - db.query.text
+      - db.namespace
       - sqlserver.execution_count
       - sqlserver.total_logical_reads
       - sqlserver.total_logical_writes
@@ -379,6 +404,7 @@ events:
       - sqlserver.procedure_execution_count
       - sqlserver.procedure_id
       - sqlserver.procedure_name
+      - sqlserver.query.last_started
 
 metrics:
   sqlserver.batch.request.rate:
@@ -521,6 +547,53 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.latch.superlatch.count:
+    enabled: false
+    description: Number of superlatches currently active.
+    stability: development
+    unit: "{superlatch}"
+    gauge:
+      value_type: int
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.latch.superlatch.transition.rate:
+    enabled: false
+    description: Rate of superlatch promotions or demotions.
+    stability: development
+    unit: "{transition}/s"
+    gauge:
+      value_type: double
+    attributes: [transition.direction]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.latch.wait.rate:
+    enabled: false
+    description: Number of latch waits per second.
+    stability: development
+    unit: "{wait}/s"
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.latch.wait_time.avg:
+    enabled: false
+    description: Average latch wait time.
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.latch.wait_time.total:
+    enabled: false
+    description: Total latch wait time.
+    stability: development
+    unit: s
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.timeout.rate:
     enabled: false
     description: Total number of lock timeouts.
@@ -570,21 +643,48 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.memory.area:
+    enabled: false
+    description: Amount of memory used by the SQL Server memory pool.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [memory.pool]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.memory.cache.object.count:
+    enabled: false
+    description: Number of cache objects in the SQL Server cache.
+    stability: development
+    unit: "{object}"
+    gauge:
+      value_type: int
+    attributes: [cache.state]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.memory.grants.pending.count:
     enabled: false
     description: Total number of memory grants pending.
     stability: development
-    unit: “{grants}”
+    unit: "{grants}"
     sum:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     attributes: []
+  sqlserver.memory.page.count:
+    enabled: false
+    description: Number of pages in the SQL Server buffer pool.
+    stability: development
+    unit: "{page}"
+    gauge:
+      value_type: int
+    attributes: [page.pool]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.memory.usage:
     enabled: false
     description: Total memory in use.
     stability: development
-    unit: “KB”
+    unit: "KB"
     sum:
       aggregation_temporality: cumulative
       monotonic: false
@@ -823,6 +923,7 @@ feature_gates:
       When enabled, the server.address and server.port resource attributes are removed from metrics.
     from_version: v0.129.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40141      
+    skip_strict_validation: true
 
 tests:
   config:
