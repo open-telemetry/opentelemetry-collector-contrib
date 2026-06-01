@@ -1,0 +1,20 @@
+change_type: enhancement
+
+component: pkg/fileconsumer
+
+note: "Add opt-in feature gate `filelog.skipUnchangedPathByMtime` that skips opening and fingerprinting a file when its path and mtime match a previously tracked reader."
+
+issues: [47861]
+
+subtext: |
+  When the gate is enabled, the matcher stats each candidate path up front and
+  consults the existing reader state (previousPollFiles and the `knownFiles`
+  generation window) for a match on path+mtime. On match the tracked metadata
+  is promoted into the current generation and the file is skipped entirely for
+  this poll: no open, no fingerprint, no read. This avoids wasted IO on files
+  that haven't been modified since the last poll. The retention of the new
+  `LastObservedPath` / `LastObservedMtime` fields follows the same lifecycle as
+  the reader itself, so the skip coherence cannot outlive the reader metadata
+  it relies on.
+
+change_logs: [user]
