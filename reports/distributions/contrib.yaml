@@ -106,6 +106,7 @@ components:
         - deltatorate
         - drain
         - filter
+        - gen_ai_normalizer
         - geoip
         - groupbyattrs
         - groupbytrace
