@@ -95,11 +95,11 @@ func (s *consumerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, err
 			scrapeErrs.AddPartial(1, fmt.Errorf("franz-go: returned error from describing the group. group=%s, error=%w", group, dgl.DescribeErr))
 			continue
 		}
+		s.mb.RecordKafkaConsumerGroupMembersDataPoint(now, int64(len(dgl.Members)), group)
 		if dgl.FetchErr != nil {
 			scrapeErrs.AddPartial(1, fmt.Errorf("franz-go: returned error from fetching offsets. group=%s, error=%w", group, dgl.FetchErr))
 			continue
 		}
-		s.mb.RecordKafkaConsumerGroupMembersDataPoint(now, int64(len(dgl.Members)), group)
 		for topic := range dgl.Lag {
 			if !s.topicFilter.MatchString(topic) {
 				continue

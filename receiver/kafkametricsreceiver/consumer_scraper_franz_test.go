@@ -159,7 +159,7 @@ func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	require.Equal(t, "test-cluster", val.Str())
 
 	// We produced 1 record at partition 0, and committed offset = 0. End offset is 1 (record offset 0 + 1),
-	// so lag = 1 - 0 = 1. The scraper records the raw difference; we just verify the metric is emitted
+	// so lag = 1 - 0 = 1. The scraper clamping to 0 the difference; we just verify the metric is emitted
 	// with the committed offset and a deterministic lag.
 	const expectedEnd = int64(1)
 	const expectedLag = expectedEnd - committed
@@ -257,6 +257,7 @@ func TestConsumerScraperFranz_ScrapeNoEmittedDataPointsForUncommitted(t *testing
 	md, err := s.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, 1, md.ResourceMetrics().Len())
+	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
 
 	rm := md.ResourceMetrics().At(0)
 	ms := rm.ScopeMetrics().At(0).Metrics()
