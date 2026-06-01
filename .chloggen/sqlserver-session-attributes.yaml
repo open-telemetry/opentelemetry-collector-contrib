@@ -19,7 +19,7 @@ subtext: |
   The `db.server.query_sample` log records now include:
 
     - `sqlserver.client.app.name`: Name of the client application that initiated the session.
-    - `sqlserver.session.started`: ISO 8601 timestamp of when the session was established.
+    - `sqlserver.session.start_time`: ISO 8601 timestamp of when the session was established.
     - `sqlserver.session.duration`: Total elapsed time in seconds the session has been actively executing requests.
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
