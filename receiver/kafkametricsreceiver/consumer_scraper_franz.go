@@ -101,6 +101,9 @@ func (s *consumerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, err
 		}
 		s.mb.RecordKafkaConsumerGroupMembersDataPoint(now, int64(len(dgl.Members)), group)
 		for topic := range dgl.Lag {
+			if !s.topicFilter.MatchString(topic) {
+				continue
+			}
 			gmls := dgl.Lag[topic]
 			var isConsumed bool
 			var offsetSum int64
