@@ -32,7 +32,7 @@ func TestGenerateParentSpan(t *testing.T) {
 	fillSpan(traceID, pcommon.SpanID([8]byte{}), "/gotest-parent", spanInputs, random, span)
 	assert.Equal(t, traceID, span.TraceID())
 	assert.True(t, span.ParentSpanID().IsEmpty())
-	assert.Equal(t, 12, span.Attributes().Len())
+	assert.Equal(t, 11, span.Attributes().Len())
 	assert.Equal(t, ptrace.StatusCodeOk, span.Status().Code())
 }
 
