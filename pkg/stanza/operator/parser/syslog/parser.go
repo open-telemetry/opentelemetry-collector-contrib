@@ -214,7 +214,7 @@ func (p *Parser) buildParseFunc() (parseFunc, error) {
 			// Strip the RFC 6587 octet counting frame prefix when enabled, leaving the
 			// raw message untouched.
 			if p.enableOctetCounting {
-				if loc := octetCountingPrefixRegex.FindIndex(input); loc != nil {
+				if loc := octetCountingPrefixRegex.FindIndex(input); len(loc) > 0 {
 					msg = input[loc[1]:]
 				}
 			}
@@ -287,7 +287,7 @@ func (p *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage, skipPriHeade
 func (p *Parser) parseRaw(syslogMessage *rawSyslogMessage) (map[string]any, error) {
 	msg := syslogMessage.GetMessage()
 
-	if loc := priRegex.FindStringIndex(msg); loc != nil && loc[0] == 0 {
+	if loc := priRegex.FindStringIndex(msg); len(loc) > 0 && loc[0] == 0 {
 		pri, convErr := strconv.Atoi(msg[1 : loc[1]-1])
 		if convErr == nil && pri <= 191 {
 			var base sl.Base
