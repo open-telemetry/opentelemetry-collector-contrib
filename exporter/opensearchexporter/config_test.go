@@ -235,6 +235,25 @@ func TestLoadConfig(t *testing.T) {
 			}),
 			configValidateAssert: assert.NoError,
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "otel_v1"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.Mode = "otel-v1"
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "otel_v1_with_dataset"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.Dataset = "ngnix"
+				config.Mode = "otel-v1"
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.ErrorContains(t, err, errOTelV1DatasetNamespaceUnused.Error())
+			},
+		},
 	}
 
 	for _, tt := range tests {
