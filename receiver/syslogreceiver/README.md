@@ -22,7 +22,7 @@ Parses Syslogs received over TCP or UDP.
 |-------------------------------------|--------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `tcp`                               | `nil`        | Defined tcp_input operator. (see the TCP configuration section)                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `udp`                               | `nil`        | Defined udp_input operator. (see the UDP configuration section)                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `protocol`                          | required     | The protocol to parse the syslog messages as. Options are `rfc3164`, `rfc5424`, and `none`. Use `none` for raw syslog data that doesn't conform to RFC3164 or RFC5424 formats; a leading PRI header (e.g. `<34>`) is still decoded when present.                                                                                                                                                                |
+| `protocol`                          | required     | The protocol to parse the syslog messages as. Options are `rfc3164`, `rfc5424`, and `none`. Use `none` for syslog data that doesn't conform to RFC3164 or RFC5424 but is still delivered over the syslog transport, so the receiver's framing (e.g. octet counting) still applies. The message contents are not parsed and are kept as-is in the `message` field; a leading PRI header (e.g. `<34>`) is still decoded when present.                                                                                                                                                                |
 | `location`                          | `UTC`        | The geographic location (timezone) to use when parsing the timestamp (Syslog RFC 3164 only). The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`.                                                                                                                                                                  |
 | `enable_octet_counting`             | `false`      | Whether or not to enable [RFC 6587](https://www.rfc-editor.org/rfc/rfc6587#section-3.4.1) Octet Counting on syslog parsing (Syslog RFC 5424 or `none`, and TCP only).                                                                                                                                                                                                                                                                                                        |
 | `max_octets`                        | `8192`      | The maximum octets for messages using [RFC 6587](https://www.rfc-editor.org/rfc/rfc6587#section-3.4.1) Octet Counting on syslog parsing (Syslog RFC 5424 and TCP only).                                                                                                                                                                                                                                                                                          |
@@ -156,7 +156,12 @@ receivers:
     location: UTC
 ```
 
-Raw/None Protocol Configuration (for non-standard syslog data):
+None Protocol Configuration (for non-conforming syslog data):
+
+Use `protocol: none` when messages are delivered over the syslog transport but do not
+conform to RFC3164 or RFC5424. The receiver still handles transport framing, but the
+message contents are passed through unparsed in the `message` field. Octet counting can
+be combined with `none` to frame messages on TCP:
 
 ```yaml
 receivers:
@@ -164,4 +169,5 @@ receivers:
     tcp:
       listen_address: "0.0.0.0:54526"
     protocol: none
+    enable_octet_counting: true
 ```

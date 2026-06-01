@@ -175,6 +175,52 @@ func CreateCases(basicConfig func() *syslog.Config) ([]Case, error) {
 			false,
 		},
 		{
+			// A leading token that looks like a PRI but is out of the valid 0-191
+			// range is not decoded; the message is passed through untouched.
+			"NoneProtocolInvalidPriHeader",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `<999>this is not a valid pri header`,
+			},
+			&entry.Entry{
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `<999>this is not a valid pri header`,
+				},
+				Body: `<999>this is not a valid pri header`,
+			},
+			true,
+			true,
+		},
+		{
+			// A PRI-like token that does not start the message is not decoded; only a
+			// leading PRI header is recognized, so the message is passed through untouched.
+			"NoneProtocolPriHeaderNotAtStart",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `prefix <34> rest of message`,
+			},
+			&entry.Entry{
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `prefix <34> rest of message`,
+				},
+				Body: `prefix <34> rest of message`,
+			},
+			true,
+			true,
+		},
+		{
 			"RFC3164SkipPriAbsent",
 			func() *syslog.Config {
 				cfg := basicConfig()
