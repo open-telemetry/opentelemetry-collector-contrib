@@ -159,7 +159,7 @@ components:
         - datadog
         - docker_stats
         - elasticsearch
-        - envoyals
+        - envoy_als
         - expvar
         - faro
         - file_log
@@ -234,7 +234,7 @@ components:
         - udp_log
         - vcenter
         - wavefront
-        - webhookevent
+        - webhook_event
         - windows_event_log
         - windowsperfcounters
         - windowsservice
