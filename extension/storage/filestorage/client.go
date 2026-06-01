@@ -23,6 +23,14 @@ var (
 
 	// Ensure fileStorageClient implements the Walker interface
 	_ storage.Walker = (*fileStorageClient)(nil)
+
+	createTempFile = func(dir, pattern string) (tempFile, error) {
+		return os.CreateTemp(dir, pattern)
+	}
+	statFile    = os.Stat
+	removeFile  = os.Remove
+	openBoltDB  = bbolt.Open
+	compactBolt = bbolt.Compact
 )
 
 const (
@@ -47,6 +55,11 @@ type fileStorageClient struct {
 	closed          bool
 }
 
+type tempFile interface {
+	Name() string
+	Close() error
+}
+
 func bboltOptions(timeout time.Duration, noSync bool) *bbolt.Options {
 	return &bbolt.Options{
 		Timeout:        timeout,
@@ -56,10 +69,16 @@ func bboltOptions(timeout time.Duration, noSync bool) *bbolt.Options {
 	}
 }
 
+func setMaxSizeOptions(options *bbolt.Options, maxSize int64) {
+	if maxSize > 0 {
+		options.MaxSize = int(maxSize)
+	}
+}
+
 func newClient(logger *zap.Logger, filePath string, cfg *Config) (*fileStorageClient, error) {
 	options := bboltOptions(cfg.Timeout, !cfg.FSync)
-	options.MaxSize = int(cfg.MaxSize)
-	db, err := bbolt.Open(filePath, 0o600, options)
+	setMaxSizeOptions(options, cfg.MaxSize)
+	db, err := openBoltDB(filePath, 0o600, options)
 	if err != nil {
 		return nil, err
 	}
@@ -216,11 +235,11 @@ func (c *fileStorageClient) Close(_ context.Context) error {
 // Compact database. Use temporary file as helper as we cannot replace database in-place
 func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Duration, maxTransactionSize int64) error {
 	var err error
-	var file *os.File
+	var file tempFile
 	var compactedDb *bbolt.DB
 
 	// create temporary file in compactionDirectory
-	file, err = os.CreateTemp(compactionDirectory, TempDbPrefix)
+	file, err = createTempFile(compactionDirectory, TempDbPrefix)
 	if err != nil {
 		return err
 	}
@@ -230,10 +249,10 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	}
 
 	defer func() {
-		_, statErr := os.Stat(file.Name())
+		_, statErr := statFile(file.Name())
 		if statErr == nil {
 			// File still exists and needs to be removed
-			if removeErr := os.Remove(file.Name()); removeErr != nil {
+			if removeErr := removeFile(file.Name()); removeErr != nil {
 				c.logger.Error("removing temporary compaction file failed", zap.Error(removeErr))
 			}
 		}
@@ -255,14 +274,14 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 		zap.String(tempDirectoryKey, file.Name()))
 
 	// cannot reuse newClient as db shouldn't contain any bucket
-	compactedDb, err = bbolt.Open(file.Name(), 0o600, options)
+	compactedDb, err = openBoltDB(file.Name(), 0o600, options)
 	if err != nil {
 		return err
 	}
 
 	compactionStart := time.Now()
 
-	err = bbolt.Compact(compactedDb, c.db, maxTransactionSize)
+	err = compactBolt(compactedDb, c.db, maxTransactionSize)
 	if err != nil {
 		return err
 	}

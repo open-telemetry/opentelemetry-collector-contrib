@@ -298,6 +298,30 @@ func TestMaxSizeLimit(t *testing.T) {
 	require.LessOrEqual(t, totalAfterAllow, client.maxSize)
 }
 
+func TestMaxSizeLimitAllowsDeleteAndSetInSameBatch(t *testing.T) {
+	dbFile := filepath.Join(t.TempDir(), "my_db")
+
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	ctx := t.Context()
+	require.NoError(t, client.Set(ctx, "seed", make([]byte, 4096)))
+
+	totalSize, _, err := client.getDbSize()
+	require.NoError(t, err)
+	client.maxSize = totalSize
+	client.db.MaxSize = int(totalSize)
+
+	err = client.Batch(ctx,
+		storage.DeleteOperation("seed"),
+		storage.SetOperation("replacement", make([]byte, 512)),
+	)
+	require.NoError(t, err)
+}
+
 func TestBatchInvalidOperationType(t *testing.T) {
 	dbFile := filepath.Join(t.TempDir(), "my_db")
 
@@ -324,7 +348,7 @@ func TestBatchPropagatesBucketPutError(t *testing.T) {
 	require.ErrorIs(t, err, berrors.ErrValueTooLarge)
 }
 
-func TestCheckMaxSizeAllowsWriteUsingFreeSpace(t *testing.T) {
+func TestWalkMapsMaxSizeReachedToStorageFull(t *testing.T) {
 	dbFile := filepath.Join(t.TempDir(), "my_db")
 
 	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
@@ -334,15 +358,18 @@ func TestCheckMaxSizeAllowsWriteUsingFreeSpace(t *testing.T) {
 	})
 
 	ctx := t.Context()
-	require.NoError(t, client.Set(ctx, "seed", make([]byte, 4096)))
-	require.NoError(t, client.Delete(ctx, "seed"))
+	require.NoError(t, client.Set(ctx, "seed", []byte("value")))
 	totalSize, _, err := client.getDbSize()
 	require.NoError(t, err)
 	client.maxSize = totalSize
 	client.db.MaxSize = int(totalSize)
 
-	err = client.Set(ctx, "replacement", make([]byte, 512))
-	require.NoError(t, err)
+	err = client.Walk(ctx, func(_ string, _ []byte) ([]*storage.Operation, error) {
+		return []*storage.Operation{
+			storage.SetOperation("overflow", make([]byte, client.db.Info().PageSize*2)),
+		}, storage.SkipAll
+	})
+	require.ErrorIs(t, err, storage.ErrStorageFull)
 }
 
 func TestClientReboundCompaction(t *testing.T) {
@@ -573,6 +600,129 @@ func TestCompactReopenFailureReturnsErrors(t *testing.T) {
 
 	// Close is safe — double-close on a bbolt.DB is a no-op.
 	assert.NoError(t, client.Close(ctx))
+}
+
+func TestCompactCreateTempFailure(t *testing.T) {
+	dbFile := filepath.Join(t.TempDir(), "my_db")
+
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	origCreateTempFile := createTempFile
+	createTempFile = func(string, string) (tempFile, error) {
+		return nil, assert.AnError
+	}
+	t.Cleanup(func() {
+		createTempFile = origCreateTempFile
+	})
+
+	err = client.Compact(t.TempDir(), time.Second, 1)
+	require.ErrorIs(t, err, assert.AnError)
+}
+
+func TestCompactTempFileCloseFailure(t *testing.T) {
+	dbFile := filepath.Join(t.TempDir(), "my_db")
+
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	tmpPath := filepath.Join(t.TempDir(), "tempdb-close-failure")
+	require.NoError(t, os.WriteFile(tmpPath, nil, 0o600))
+
+	origCreateTempFile := createTempFile
+	createTempFile = func(string, string) (tempFile, error) {
+		return failingTempFile{name: tmpPath, closeErr: assert.AnError}, nil
+	}
+	t.Cleanup(func() {
+		createTempFile = origCreateTempFile
+	})
+
+	err = client.Compact(t.TempDir(), time.Second, 1)
+	require.ErrorIs(t, err, assert.AnError)
+}
+
+func TestCompactClosedClientRemovesTempFileFailure(t *testing.T) {
+	dbFile := filepath.Join(t.TempDir(), "my_db")
+	core, logs := observer.New(zap.ErrorLevel)
+	client, err := newTestClient(zap.New(core), dbFile, time.Second, 0, &CompactionConfig{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	origRemoveFile := removeFile
+	removeFile = func(string) error {
+		return assert.AnError
+	}
+	t.Cleanup(func() {
+		removeFile = origRemoveFile
+	})
+
+	client.closed = true
+	err = client.Compact(t.TempDir(), time.Second, 1)
+	require.NoError(t, err)
+	require.Len(t, logs.FilterMessage("removing temporary compaction file failed").All(), 1)
+}
+
+func TestCompactOpenFailure(t *testing.T) {
+	dbFile := filepath.Join(t.TempDir(), "my_db")
+
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	origOpenBoltDB := openBoltDB
+	openBoltDB = func(string, os.FileMode, *bbolt.Options) (*bbolt.DB, error) {
+		return nil, assert.AnError
+	}
+	t.Cleanup(func() {
+		openBoltDB = origOpenBoltDB
+	})
+
+	err = client.Compact(t.TempDir(), time.Second, 1)
+	require.ErrorIs(t, err, assert.AnError)
+}
+
+func TestCompactCompactFailure(t *testing.T) {
+	dbFile := filepath.Join(t.TempDir(), "my_db")
+
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	origCompactBolt := compactBolt
+	compactBolt = func(*bbolt.DB, *bbolt.DB, int64) error {
+		return assert.AnError
+	}
+	t.Cleanup(func() {
+		compactBolt = origCompactBolt
+	})
+
+	err = client.Compact(t.TempDir(), time.Second, 1)
+	require.ErrorIs(t, err, assert.AnError)
+}
+
+type failingTempFile struct {
+	name     string
+	closeErr error
+}
+
+func (f failingTempFile) Name() string {
+	return f.name
+}
+
+func (f failingTempFile) Close() error {
+	return f.closeErr
 }
 
 func BenchmarkClientGet(b *testing.B) {

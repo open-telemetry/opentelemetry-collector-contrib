@@ -739,3 +739,38 @@ func TestHashing(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateClientWithPanicRecoveryRecreatesDatabase(t *testing.T) {
+	tempDir := t.TempDir()
+	dbFile := filepath.Join(tempDir, "corrupted.db")
+	require.NoError(t, os.WriteFile(dbFile, []byte("corrupted"), 0o600))
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Directory = tempDir
+	cfg.Recreate = true
+
+	lfs := &localFileStorage{
+		cfg:    cfg,
+		logger: zap.NewNop(),
+	}
+
+	callCount := 0
+	lfs.newClientFn = func(logger *zap.Logger, filePath string, cfg *Config) (*fileStorageClient, error) {
+		callCount++
+		if callCount == 1 {
+			panic("boom")
+		}
+		return newClient(logger, filePath, cfg)
+	}
+
+	client, err := lfs.createClientWithPanicRecovery(dbFile)
+	require.NoError(t, err)
+	require.NotNil(t, client)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	matches, err := filepath.Glob(dbFile + ".*.backup")
+	require.NoError(t, err)
+	require.Len(t, matches, 1)
+}
