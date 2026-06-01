@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/extensions"
@@ -576,6 +577,18 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestResourceConfigValidateExperimentalAttributeFilters(t *testing.T) {
+	err := (&ResourceConfig{
+		DetectionDevelopment: &xotelconf.ExperimentalResourceDetection{
+			Attributes: &xotelconf.IncludeExclude{
+				Included: []string{"["},
+			},
+		},
+	}).Validate()
+
+	require.ErrorContains(t, err, `resource::detection/development::attributes::included contains invalid glob "["`)
 }
 
 func TestSupervisor_UnmarshalExtensions(t *testing.T) {

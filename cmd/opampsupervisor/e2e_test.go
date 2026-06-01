@@ -1358,10 +1358,32 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 	require.Eventually(t, func() bool {
 		cfg, ok := agentConfig.Load().(string)
 		if ok {
-			// The effective config may be structurally different compared to what was sent,
-			// and currently has most values redacted,
-			// so just check that it includes some strings we know to be unique to the remote config.
-			return strings.Contains(cfg, "test_key:")
+			// The effective config may be structurally different compared to what was sent.
+			// Recent Collector versions may normalize telemetry resource keys into the
+			// declarative `attributes` list, so accept both shapes.
+			k := koanf.New("::")
+			if err := k.Load(rawbytes.Provider([]byte(cfg)), yaml.Parser()); err != nil {
+				return false
+			}
+
+			if k.Exists("service::telemetry::resource::test_key") {
+				return true
+			}
+
+			attrs, ok := k.Get("service::telemetry::resource::attributes").([]any)
+			if !ok {
+				return false
+			}
+
+			for _, attr := range attrs {
+				attrMap, ok := attr.(map[string]any)
+				if !ok {
+					continue
+				}
+				if name, ok := attrMap["name"].(string); ok && name == "test_key" {
+					return true
+				}
+			}
 		}
 
 		return false

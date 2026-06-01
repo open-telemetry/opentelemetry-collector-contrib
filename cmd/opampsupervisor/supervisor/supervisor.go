@@ -43,6 +43,7 @@ import (
 	collectorconfmap "go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/log"
@@ -51,6 +52,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
+	gyaml "gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
@@ -269,7 +271,7 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		readers = []telemetryconfig.MetricReader{}
 	}
 
-	resourceCfg, err := buildSupervisorResourceConfig(&cfg.Resource)
+	resourceCfg, err := buildSupervisorResourceConfig(ctx, &cfg.Resource)
 	if err != nil {
 		return telemetrySettings{}, err
 	}
@@ -278,20 +280,37 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		return telemetrySettings{}, err
 	}
 
-	sdk, err := telemetryconfig.NewSDK(
-		telemetryconfig.WithContext(ctx),
-		telemetryconfig.WithOpenTelemetryConfiguration(
-			telemetryconfig.OpenTelemetryConfiguration{
-				MeterProvider: &telemetryconfig.MeterProvider{
-					Readers: readers,
+	xReaders, err := convertConfigValueWithOTLPRewrite[[]telemetryconfig.MetricReader, []xotelconf.MetricReader](readers)
+	if err != nil {
+		return telemetrySettings{}, err
+	}
+	xSpanProcessors, err := convertConfigValueWithOTLPRewrite[[]telemetryconfig.SpanProcessor, []xotelconf.SpanProcessor](cfg.Traces.Processors)
+	if err != nil {
+		return telemetrySettings{}, err
+	}
+	xLogProcessors, err := convertConfigValueWithOTLPRewrite[[]telemetryconfig.LogRecordProcessor, []xotelconf.LogRecordProcessor](cfg.Logs.Processors)
+	if err != nil {
+		return telemetrySettings{}, err
+	}
+	xResourceCfg, err := convertConfigValue[telemetryconfig.Resource, xotelconf.Resource](*resourceCfg)
+	if err != nil {
+		return telemetrySettings{}, err
+	}
+
+	sdk, err := xotelconf.NewSDK(
+		xotelconf.WithContext(ctx),
+		xotelconf.WithOpenTelemetryConfiguration(
+			xotelconf.OpenTelemetryConfiguration{
+				MeterProvider: &xotelconf.MeterProvider{
+					Readers: xReaders,
 				},
-				TracerProvider: &telemetryconfig.TracerProvider{
-					Processors: cfg.Traces.Processors,
+				TracerProvider: &xotelconf.TracerProvider{
+					Processors: xSpanProcessors,
 				},
-				LoggerProvider: &telemetryconfig.LoggerProvider{
-					Processors: cfg.Logs.Processors,
+				LoggerProvider: &xotelconf.LoggerProvider{
+					Processors: xLogProcessors,
 				},
-				Resource: resourceCfg,
+				Resource: &xResourceCfg,
 			},
 		),
 	)
@@ -325,6 +344,87 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		},
 		lp,
 	}, nil
+}
+
+func convertConfigValue[S any, D any](src S) (D, error) {
+	var zero D
+
+	b, err := gyaml.Marshal(src)
+	if err != nil {
+		return zero, err
+	}
+
+	var out D
+	if err := gyaml.Unmarshal(b, &out); err != nil {
+		return zero, err
+	}
+
+	return out, nil
+}
+
+func convertConfigValueWithOTLPRewrite[S any, D any](src S) (D, error) {
+	var zero D
+
+	b, err := gyaml.Marshal(src)
+	if err != nil {
+		return zero, err
+	}
+
+	var raw any
+	if err := gyaml.Unmarshal(b, &raw); err != nil {
+		return zero, err
+	}
+
+	rewritten, err := gyaml.Marshal(rewriteLegacyOTLPKeys(raw))
+	if err != nil {
+		return zero, err
+	}
+
+	var out D
+	if err := gyaml.Unmarshal(rewritten, &out); err != nil {
+		return zero, err
+	}
+
+	return out, nil
+}
+
+func rewriteLegacyOTLPKeys(v any) any {
+	switch value := v.(type) {
+	case map[string]any:
+		for key, child := range value {
+			value[key] = rewriteLegacyOTLPKeys(child)
+		}
+
+		otlpValue, ok := value["otlp"]
+		if !ok {
+			return value
+		}
+
+		otlpMap, ok := otlpValue.(map[string]any)
+		if !ok {
+			return value
+		}
+
+		protocol, _ := otlpMap["protocol"].(string)
+		delete(otlpMap, "protocol")
+		switch {
+		case strings.HasPrefix(protocol, "http/"):
+			value["otlp_http"] = otlpMap
+			delete(value, "otlp")
+		case protocol == "", strings.HasPrefix(protocol, "grpc/"):
+			value["otlp_grpc"] = otlpMap
+			delete(value, "otlp")
+		}
+
+		return value
+	case []any:
+		for i, child := range value {
+			value[i] = rewriteLegacyOTLPKeys(child)
+		}
+		return value
+	default:
+		return value
+	}
 }
 
 func (s *Supervisor) Start(ctx context.Context) error {
@@ -478,24 +578,6 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	_, span := s.getTracer().Start(s.runCtx, "GetBootstrapInfo")
 	defer span.End()
 
-	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
-	if err != nil {
-		span.SetStatus(codes.Error, fmt.Sprintf("Could not get supervisor opamp service port: %v", err))
-		return err
-	}
-
-	bootstrapConfig, err := s.composeNoopConfig()
-	if err != nil {
-		span.SetStatus(codes.Error, fmt.Sprintf("Could not compose noop config config: %v", err))
-		return err
-	}
-
-	err = os.WriteFile(s.agentConfigFilePath(), bootstrapConfig, 0o600)
-	if err != nil {
-		span.SetStatus(codes.Error, fmt.Sprintf("Failed to write agent config: %v", err))
-		return fmt.Errorf("failed to write agent config: %w", err)
-	}
-
 	srv := server.New(newLoggerFromZap(s.telemetrySettings.Logger, "opamp-server"))
 
 	done := make(chan error, 1)
@@ -505,7 +587,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	// Start a one-shot server to get the Collector's agent description
 	// and available components using the Collector's OpAMP extension.
 	err = srv.Start(flattenedSettings{
-		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
+		endpoint: s.getSupervisorOpAMPListenEndpoint(),
 		onConnecting: func(*http.Request) (bool, int) {
 			connected.Store(true)
 			return true, http.StatusOK
@@ -566,6 +648,23 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not start OpAMP server: %v", err))
 		return err
 	}
+	s.opampServerPort, err = portFromAddr(srv.Addr())
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not get supervisor opamp service port: %v", err))
+		return err
+	}
+
+	bootstrapConfig, err := s.composeNoopConfig()
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not compose noop config config: %v", err))
+		return err
+	}
+
+	err = os.WriteFile(s.agentConfigFilePath(), bootstrapConfig, 0o600)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Failed to write agent config: %v", err))
+		return fmt.Errorf("failed to write agent config: %w", err)
+	}
 
 	defer func() {
 		if stopErr := srv.Stop(s.runCtx); stopErr != nil {
@@ -603,7 +702,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}()
 
 	select {
-	case <-time.After(s.config.Agent.BootstrapTimeout):
+	case <-time.After(bootstrapInfoTimeout(s.config.Agent.BootstrapTimeout)):
 		if connected.Load() {
 			msg := "collector connected but never responded with an AgentDescription message"
 			span.SetStatus(codes.Error, msg)
@@ -833,18 +932,12 @@ func (nopHost) GetExtensions() map[component.ID]component.Component {
 func (s *Supervisor) startOpAMPServer() error {
 	s.opampServer = server.New(newLoggerFromZap(s.telemetrySettings.Logger, "opamp-server"))
 
-	var err error
-	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
-	if err != nil {
-		return err
-	}
-
 	s.telemetrySettings.Logger.Debug("Starting OpAMP server...")
 
 	connected := &atomic.Bool{}
 
-	err = s.opampServer.Start(flattenedSettings{
-		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
+	err := s.opampServer.Start(flattenedSettings{
+		endpoint: s.getSupervisorOpAMPListenEndpoint(),
 		onConnecting: func(*http.Request) (bool, int) {
 			// Only allow one agent to be connected the this server at a time.
 			alreadyConnected := connected.Swap(true)
@@ -855,6 +948,10 @@ func (s *Supervisor) startOpAMPServer() error {
 			connected.Store(false)
 		},
 	}.toServerSettings())
+	if err != nil {
+		return err
+	}
+	s.opampServerPort, err = portFromAddr(s.opampServer.Addr())
 	if err != nil {
 		return err
 	}
@@ -2297,11 +2394,11 @@ func (s *Supervisor) agentConfigFilePath() string {
 	return filepath.Join(s.config.Storage.Directory, agentConfigFileName)
 }
 
-func (s *Supervisor) getSupervisorOpAMPServerPort() (int, error) {
+func (s *Supervisor) getSupervisorOpAMPListenEndpoint() string {
 	if s.config.Agent.OpAMPServerPort != 0 {
-		return s.config.Agent.OpAMPServerPort, nil
+		return fmt.Sprintf("127.0.0.1:%d", s.config.Agent.OpAMPServerPort)
 	}
-	return s.findRandomPort()
+	return "127.0.0.1:0"
 }
 
 func (s *Supervisor) getFeatureGateFlag() []string {
@@ -2336,6 +2433,26 @@ func (*Supervisor) findRandomPort() (int, error) {
 	}
 
 	return port, nil
+}
+
+func bootstrapInfoTimeout(configured time.Duration) time.Duration {
+	if configured < 8*time.Second {
+		return 8 * time.Second
+	}
+	return configured
+}
+
+func portFromAddr(addr net.Addr) (int, error) {
+	if addr == nil {
+		return 0, errors.New("opamp server address is not available")
+	}
+
+	tcpAddr, ok := addr.(*net.TCPAddr)
+	if !ok {
+		return 0, fmt.Errorf("unexpected opamp server address type %T", addr)
+	}
+
+	return tcpAddr.Port, nil
 }
 
 func (s *Supervisor) getTracer() trace.Tracer {
