@@ -277,7 +277,7 @@ func TestConsumerScraperFranz_ScrapeNoEmittedDataPointsForUncommitted(t *testing
 			// Ensure the sum block was bypassed since isConsumed should be false
 			require.Zero(t, m.Gauge().DataPoints().Len(), "expected no lag_sum datapoints for an uncommitted partition")
 		case "kafka.consumer_group.members":
-			// Group structural tracking still exists, so members gauge is safely recorded as 0
+			// Group structural tracking still exists, so members is safely recorded as 0
 			require.Equal(t, int64(0), m.Sum().DataPoints().At(0).IntValue())
 		}
 	}

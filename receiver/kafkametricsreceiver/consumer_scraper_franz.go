@@ -77,7 +77,7 @@ func (s *consumerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, err
 
 	var matchedGrpIDs []string
 	for _, g := range lgs {
-		if g.ProtocolType == "consumer" && s.groupFilter.MatchString(g.Group) {
+		if s.groupFilter.MatchString(g.Group) {
 			matchedGrpIDs = append(matchedGrpIDs, g.Group)
 		}
 	}
@@ -117,9 +117,13 @@ func (s *consumerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, err
 				if gml.Commit.At != -1 {
 					isConsumed = true
 					offsetSum += gml.Commit.At
-					lagSum += gml.Lag
 					s.mb.RecordKafkaConsumerGroupOffsetDataPoint(now, gml.Commit.At, group, topic, int64(partition))
-					s.mb.RecordKafkaConsumerGroupLagDataPoint(now, gml.Lag, group, topic, int64(partition))
+					if gml.Lag <= 0 {
+						s.mb.RecordKafkaConsumerGroupLagDataPoint(now, 0, group, topic, int64(partition))
+					} else {
+						lagSum += gml.Lag
+						s.mb.RecordKafkaConsumerGroupLagDataPoint(now, gml.Lag, group, topic, int64(partition))
+					}
 				}
 			}
 			if isConsumed {
