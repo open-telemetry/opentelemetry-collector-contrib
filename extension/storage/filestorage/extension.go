@@ -110,7 +110,7 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 	// First attempt: try to create client normally
 	if !lfs.cfg.Recreate {
 		// If recreate is disabled, just try once
-		return newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.MaxSize, lfs.cfg.Compaction, !lfs.cfg.FSync)
+		return newClient(lfs.logger, absoluteName, lfs.cfg)
 	}
 
 	// If recreate is enabled, handle potential panics during database opening
@@ -133,12 +133,12 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 				zap.String("backup", backupName))
 
 			// Try to create client again with fresh database
-			client, err = newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.MaxSize, lfs.cfg.Compaction, !lfs.cfg.FSync)
+			client, err = newClient(lfs.logger, absoluteName, lfs.cfg)
 		}
 	}()
 
 	// Try to create the client normally first
-	client, err = newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.MaxSize, lfs.cfg.Compaction, !lfs.cfg.FSync)
+	client, err = newClient(lfs.logger, absoluteName, lfs.cfg)
 	return client, err
 }
 

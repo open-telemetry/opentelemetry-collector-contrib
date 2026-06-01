@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"math"
 	"os"
 	"strconv"
 	"time"
@@ -93,6 +94,9 @@ func (cfg *Config) Validate() error {
 
 	if cfg.MaxSize < 0 {
 		return errors.New("max size cannot be less than 0")
+	}
+	if cfg.MaxSize > int64(math.MaxInt) {
+		return errors.New("max size is too large")
 	}
 
 	if cfg.MaxSize > 0 && cfg.Compaction.OnRebound {

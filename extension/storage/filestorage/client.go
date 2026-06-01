@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.etcd.io/bbolt"
+	berrors "go.etcd.io/bbolt/errors"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 )
@@ -55,20 +56,13 @@ func bboltOptions(timeout time.Duration, noSync bool) *bbolt.Options {
 	}
 }
 
-func setAllocSizeForMaxSize(db *bbolt.DB, maxSize int64) {
-	if maxSize > 0 {
-		db.AllocSize = db.Info().PageSize
-	}
-}
-
-func newClient(logger *zap.Logger, filePath string, timeout time.Duration, maxSize int64, compactionCfg *CompactionConfig, noSync bool) (*fileStorageClient, error) {
-	options := bboltOptions(timeout, noSync)
+func newClient(logger *zap.Logger, filePath string, cfg *Config) (*fileStorageClient, error) {
+	options := bboltOptions(cfg.Timeout, !cfg.FSync)
+	options.MaxSize = int(cfg.MaxSize)
 	db, err := bbolt.Open(filePath, 0o600, options)
 	if err != nil {
 		return nil, err
 	}
-
-	setAllocSizeForMaxSize(db, maxSize)
 
 	initBucket := func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists(defaultBucket)
@@ -82,13 +76,13 @@ func newClient(logger *zap.Logger, filePath string, timeout time.Duration, maxSi
 	client := &fileStorageClient{
 		logger:        logger,
 		db:            db,
-		compactionCfg: compactionCfg,
-		maxSize:       maxSize,
-		openTimeout:   timeout,
+		compactionCfg: cfg.Compaction,
+		maxSize:       cfg.MaxSize,
+		openTimeout:   cfg.Timeout,
 		stopCh:        make(chan struct{}),
 		wg:            sync.WaitGroup{},
 	}
-	if compactionCfg.OnRebound {
+	if cfg.Compaction.OnRebound {
 		client.startCompactionLoop()
 	}
 
@@ -124,43 +118,12 @@ func (c *fileStorageClient) Batch(_ context.Context, ops ...*storage.Operation) 
 			return errors.New("storage not initialized")
 		}
 
-		if err := c.checkMaxSize(tx, bucket, ops); err != nil {
-			return err
-		}
 		return updateBucket(bucket, ops...)
 	}
 
 	c.compactionMutex.RLock()
 	defer c.compactionMutex.RUnlock()
-	return c.db.Update(batch)
-}
-
-func (c *fileStorageClient) checkMaxSize(tx *bbolt.Tx, bucket *bbolt.Bucket, ops []*storage.Operation) error {
-	if c.maxSize <= 0 {
-		return nil
-	}
-
-	addedBytes := estimateAddedBytes(bucket, ops)
-	if addedBytes == 0 {
-		return nil
-	}
-
-	freeAlloc := int64(c.db.Stats().FreeAlloc)
-	if addedBytes <= freeAlloc {
-		return nil
-	}
-
-	requiredGrowth := addedBytes - freeAlloc
-	pageSize := int64(c.db.Info().PageSize)
-	if remainder := requiredGrowth % pageSize; remainder != 0 {
-		requiredGrowth += pageSize - remainder
-	}
-
-	if tx.Size()+requiredGrowth > c.maxSize {
-		return storage.ErrStorageFull
-	}
-
-	return nil
+	return normalizeStorageError(c.db.Update(batch))
 }
 
 // updateBucket executes the specified operations in order for a given bucket. Get operation results are updated in place
@@ -195,52 +158,6 @@ func updateBucket(bucket *bbolt.Bucket, ops ...*storage.Operation) error {
 	return nil
 }
 
-type operationEntryState struct {
-	exists   bool
-	valueLen int
-	loaded   bool
-}
-
-func estimateAddedBytes(bucket *bbolt.Bucket, ops []*storage.Operation) int64 {
-	states := make(map[string]operationEntryState, len(ops))
-	var addedBytes int64
-
-	for _, op := range ops {
-		if op.Type == storage.Get {
-			continue
-		}
-
-		state := states[op.Key]
-		if !state.loaded {
-			existingValue := bucket.Get([]byte(op.Key))
-			state.exists = existingValue != nil
-			state.valueLen = len(existingValue)
-			state.loaded = true
-		}
-
-		switch op.Type {
-		case storage.Set:
-			if state.exists {
-				delta := len(op.Value) - state.valueLen
-				if delta > 0 {
-					addedBytes += int64(delta)
-				}
-			} else {
-				addedBytes += int64(len(op.Key) + len(op.Value))
-			}
-			state.exists = true
-			state.valueLen = len(op.Value)
-		case storage.Delete:
-			state.exists = false
-			state.valueLen = 0
-		}
-
-		states[op.Key] = state
-	}
-
-	return addedBytes
-}
-
 // Walk implements storage.Walker.
 func (c *fileStorageClient) Walk(ctx context.Context, fn storage.WalkFunc) error {
 	if err := ctx.Err(); err != nil {
@@ -254,7 +171,7 @@ func (c *fileStorageClient) Walk(ctx context.Context, fn storage.WalkFunc) error
 		return errors.New("storage is closed")
 	}
 
-	return c.db.Update(func(tx *bbolt.Tx) error {
+	return normalizeStorageError(c.db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(defaultBucket)
 		if bucket == nil {
 			return errors.New("storage not initialized")
@@ -270,9 +187,6 @@ func (c *fileStorageClient) Walk(ctx context.Context, fn storage.WalkFunc) error
 			if err != nil {
 				if errors.Is(err, storage.SkipAll) {
 					opBatch = append(opBatch, ops...)
-					if checkErr := c.checkMaxSize(tx, bucket, opBatch); checkErr != nil {
-						return checkErr
-					}
 					return updateBucket(bucket, opBatch...)
 				}
 				return err
@@ -280,11 +194,8 @@ func (c *fileStorageClient) Walk(ctx context.Context, fn storage.WalkFunc) error
 			opBatch = append(opBatch, ops...)
 		}
 
-		if err := c.checkMaxSize(tx, bucket, opBatch); err != nil {
-			return err
-		}
 		return updateBucket(bucket, opBatch...)
-	})
+	}))
 }
 
 // Close will close the database
@@ -330,6 +241,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 
 	// use temporary file as compaction target
 	options := bboltOptions(timeout, c.db.NoSync)
+	options.MaxSize = int(c.maxSize)
 
 	c.compactionMutex.Lock()
 	defer c.compactionMutex.Unlock()
@@ -370,7 +282,6 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 		// errors from the closed DB instead of panicking on a nil pointer.
 		return fmt.Errorf("failed to open db after compaction: %w", openErr)
 	}
-	setAllocSizeForMaxSize(newDb, c.maxSize)
 	c.db = newDb
 
 	if moveErr != nil {
@@ -422,6 +333,13 @@ func (c *fileStorageClient) startCompactionLoop() {
 			}
 		}
 	})
+}
+
+func normalizeStorageError(err error) error {
+	if errors.Is(err, berrors.ErrMaxSizeReached) {
+		return storage.ErrStorageFull
+	}
+	return err
 }
 
 // shouldCompact checks whether the conditions for online compaction are met

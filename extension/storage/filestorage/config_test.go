@@ -4,8 +4,10 @@
 package filestorage
 
 import (
+	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -221,6 +223,19 @@ func TestDirectoryCreateConfig(t *testing.T) {
 				return cfg
 			},
 			errMsg: "max size cannot be less than 0",
+		},
+		{
+			name: "max size above int max - error",
+			config: func(t *testing.T, f extension.Factory) *Config {
+				if strconv.IntSize == 64 {
+					t.Skip("int64 max matches native int max on this platform")
+				}
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Directory = t.TempDir()
+				cfg.MaxSize = int64(math.MaxInt32) + 1
+				return cfg
+			},
+			errMsg: "max size is too large",
 		},
 		{
 			name: "rebound needed threshold above max size - error",
