@@ -88,6 +88,47 @@ func newEventDbServerQuerySample(cfg EventConfig) eventDbServerQuerySample {
 	return e
 }
 
+type eventDbServerSessionWaitSample struct {
+	data   plog.LogRecordSlice // data buffer for generated log records.
+	config EventConfig         // event config provided by user.
+}
+
+func (e *eventDbServerSessionWaitSample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbEventAttributeValue string, oracledbWaitClassAttributeValue string, oracledbWaitCountAttributeValue int64, oracledbWaitDurationAttributeValue float64) {
+	if !e.config.Enabled {
+		return
+	}
+	dp := e.data.AppendEmpty()
+	dp.SetEventName("db.server.session.wait_sample")
+	dp.SetTimestamp(timestamp)
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
+		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+	dp.Attributes().PutStr("oracledb.sid", oracledbSidAttributeValue)
+	dp.Attributes().PutStr("oracledb.serial", oracledbSerialAttributeValue)
+	dp.Attributes().PutStr("oracledb.event", oracledbEventAttributeValue)
+	dp.Attributes().PutStr("oracledb.wait_class", oracledbWaitClassAttributeValue)
+	dp.Attributes().PutInt("oracledb.wait.count", oracledbWaitCountAttributeValue)
+	dp.Attributes().PutDouble("oracledb.wait.duration", oracledbWaitDurationAttributeValue)
+
+}
+
+// emit appends recorded event data to a events slice and prepares it for recording another set of log records.
+func (e *eventDbServerSessionWaitSample) emit(lrs plog.LogRecordSlice) {
+	if e.config.Enabled && e.data.Len() > 0 {
+		e.data.MoveAndAppendTo(lrs)
+	}
+}
+
+func newEventDbServerSessionWaitSample(cfg EventConfig) eventDbServerSessionWaitSample {
+	e := eventDbServerSessionWaitSample{config: cfg}
+	if cfg.Enabled {
+		e.data = plog.NewLogRecordSlice()
+	}
+	return e
+}
+
 type eventDbServerTopQuery struct {
 	data   plog.LogRecordSlice // data buffer for generated log records.
 	config EventConfig         // event config provided by user.
@@ -161,6 +202,7 @@ type LogsBuilder struct {
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
 	eventDbServerQuerySample       eventDbServerQuerySample
+	eventDbServerSessionWaitSample eventDbServerSessionWaitSample
 	eventDbServerTopQuery          eventDbServerTopQuery
 }
 
@@ -176,6 +218,7 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 		logRecordsBuffer:               plog.NewLogRecordSlice(),
 		buildInfo:                      settings.BuildInfo,
 		eventDbServerQuerySample:       newEventDbServerQuerySample(lbc.Events.DbServerQuerySample),
+		eventDbServerSessionWaitSample: newEventDbServerSessionWaitSample(lbc.Events.DbServerSessionWaitSample),
 		eventDbServerTopQuery:          newEventDbServerTopQuery(lbc.Events.DbServerTopQuery),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
@@ -272,6 +315,7 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(lb.buildInfo.Version)
 	lb.eventDbServerQuerySample.emit(ils.LogRecords())
+	lb.eventDbServerSessionWaitSample.emit(ils.LogRecords())
 	lb.eventDbServerTopQuery.emit(ils.LogRecords())
 
 	for _, op := range options {
@@ -312,6 +356,11 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 // RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.
 func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, dbQueryTextAttributeValue string, dbSystemNameAttributeValue string, userNameAttributeValue string, dbNamespaceAttributeValue string, clientAddressAttributeValue string, clientPortAttributeValue int64, networkPeerAddressAttributeValue string, networkPeerPortAttributeValue int64, oracledbPlanHashValueAttributeValue string, oracledbSQLIDAttributeValue string, oracledbChildNumberAttributeValue string, oracledbChildAddressAttributeValue string, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbProcessAttributeValue string, oracledbSchemanameAttributeValue string, oracledbProgramAttributeValue string, oracledbModuleAttributeValue string, oracledbStatusAttributeValue string, oracledbStateAttributeValue string, oracledbWaitClassAttributeValue string, oracledbEventAttributeValue string, oracledbQueryWaitTimeAttributeValue float64, oracledbProcedureIDAttributeValue int64, oracledbProcedureNameAttributeValue string, oracledbProcedureTypeAttributeValue string, oracledbOsuserAttributeValue string, oracledbDurationSecAttributeValue float64, oracledbQueryStartedAttributeValue string, oracledbSessionStartedAttributeValue string, oracledbSessionDurationAttributeValue float64, oracledbBlockingBlockerSidAttributeValue string, oracledbBlockingBlockerRootSidAttributeValue string, oracledbBlockingBlockerStateAttributeValue string, oracledbBlockingStartTimeAttributeValue string, oracledbBlockingWaitDurationAttributeValue int64, oracledbBlockingLockModeAttributeValue string, oracledbBlockingLockTypeAttributeValue string, oracledbBlockingObjectOwnerAttributeValue string, oracledbBlockingObjectNameAttributeValue string) {
 	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, dbQueryTextAttributeValue, dbSystemNameAttributeValue, userNameAttributeValue, dbNamespaceAttributeValue, clientAddressAttributeValue, clientPortAttributeValue, networkPeerAddressAttributeValue, networkPeerPortAttributeValue, oracledbPlanHashValueAttributeValue, oracledbSQLIDAttributeValue, oracledbChildNumberAttributeValue, oracledbChildAddressAttributeValue, oracledbSidAttributeValue, oracledbSerialAttributeValue, oracledbProcessAttributeValue, oracledbSchemanameAttributeValue, oracledbProgramAttributeValue, oracledbModuleAttributeValue, oracledbStatusAttributeValue, oracledbStateAttributeValue, oracledbWaitClassAttributeValue, oracledbEventAttributeValue, oracledbQueryWaitTimeAttributeValue, oracledbProcedureIDAttributeValue, oracledbProcedureNameAttributeValue, oracledbProcedureTypeAttributeValue, oracledbOsuserAttributeValue, oracledbDurationSecAttributeValue, oracledbQueryStartedAttributeValue, oracledbSessionStartedAttributeValue, oracledbSessionDurationAttributeValue, oracledbBlockingBlockerSidAttributeValue, oracledbBlockingBlockerRootSidAttributeValue, oracledbBlockingBlockerStateAttributeValue, oracledbBlockingStartTimeAttributeValue, oracledbBlockingWaitDurationAttributeValue, oracledbBlockingLockModeAttributeValue, oracledbBlockingLockTypeAttributeValue, oracledbBlockingObjectOwnerAttributeValue, oracledbBlockingObjectNameAttributeValue)
+}
+
+// RecordDbServerSessionWaitSampleEvent adds a log record of db.server.session.wait_sample event.
+func (lb *LogsBuilder) RecordDbServerSessionWaitSampleEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbEventAttributeValue string, oracledbWaitClassAttributeValue string, oracledbWaitCountAttributeValue int64, oracledbWaitDurationAttributeValue float64) {
+	lb.eventDbServerSessionWaitSample.recordEvent(ctx, timestamp, oracledbSidAttributeValue, oracledbSerialAttributeValue, oracledbEventAttributeValue, oracledbWaitClassAttributeValue, oracledbWaitCountAttributeValue, oracledbWaitDurationAttributeValue)
 }
 
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.

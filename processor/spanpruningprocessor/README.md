@@ -69,6 +69,17 @@ processors:
     # Default: [5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
     # Set to empty list to disable histogram attributes
     aggregation_histogram_buckets: [10ms, 50ms, 100ms, 500ms, 1s]
+
+    # Enable attribute loss analysis during aggregation
+    # Default: false
+    # When enabled, records attribute-loss metrics and adds summary span attributes
+    enable_attribute_loss_analysis: false
+
+    # Attribute loss exemplar sampling rate
+    # Fraction of attribute-loss metric recordings that include trace exemplars
+    # Range: 0.0 (disabled) to 1.0 (always)
+    # Default: 0 (disabled)
+    attribute_loss_exemplar_sample_rate: 0.01
 ```
 
 ## Configuration Options
@@ -80,6 +91,8 @@ processors:
 | `max_parent_depth` | int | 1 | Max depth of parent aggregation (0=none, -1=unlimited) |
 | `aggregation_attribute_prefix` | string | "aggregation." | Prefix for aggregation statistics attributes |
 | `aggregation_histogram_buckets` | []time.Duration | `[5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]` | Upper bounds for latency histogram buckets |
+| `enable_attribute_loss_analysis` | bool | false | Enable attribute loss analysis (records attribute-loss metrics and adds summary span loss attributes) |
+| `attribute_loss_exemplar_sample_rate` | float64 | 0 (disabled) | Fraction of attribute-loss metric recordings with exemplars (0.0-1.0). Only applies when `enable_attribute_loss_analysis` is true. |
 
 ### Glob Pattern Support
 
@@ -137,6 +150,29 @@ The following attributes are added to the summary span (shown with default `aggr
 | `<prefix>duration_total_ns` | int64 | Total duration in nanoseconds |
 | `<prefix>histogram_bucket_bounds_s` | []float64 | Bucket upper bounds in seconds (excludes +Inf) |
 | `<prefix>histogram_bucket_counts` | []int64 | Cumulative count per bucket (includes +Inf bucket) |
+
+### Optional Attribute Loss Analysis
+
+When `enable_attribute_loss_analysis: true`, the processor analyzes how attributes vary across aggregated spans and records two loss types:
+
+- **Diversity loss**: Attribute exists on all spans in the group, but values differ across spans.
+- **Missing loss**: Attribute is absent from some spans in the group.
+
+These are added to the summary span as string attributes (with your configured `aggregation_attribute_prefix`):
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `<prefix>diverse_attributes` | string | Attributes with value diversity loss. Format: `key(lost_values),...` |
+| `<prefix>missing_attributes` | string | Attributes missing on some spans. Format: `key(lost_values),...` |
+
+The processor also records leaf and parent histogram metrics for both loss types:
+
+- `processor_spanpruning_leaf_attribute_diversity_loss`
+- `processor_spanpruning_leaf_attribute_loss`
+- `processor_spanpruning_parent_attribute_diversity_loss`
+- `processor_spanpruning_parent_attribute_loss`
+
+Use `attribute_loss_exemplar_sample_rate` to control how often those metric points include exemplars for trace correlation.
 
 ### Histogram Buckets
 
