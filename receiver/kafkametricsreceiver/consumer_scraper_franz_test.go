@@ -159,8 +159,7 @@ func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	require.Equal(t, "test-cluster", val.Str())
 
 	// We produced 1 record at partition 0, and committed offset = 0. End offset is 1 (record offset 0 + 1),
-	// so lag = 1 - 0 = 1. The scraper clamping to 0 the difference; we just verify the metric is emitted
-	// with the committed offset and a deterministic lag.
+	// so lag = 1 - 0 = 1.
 	const expectedEnd = int64(1)
 	const expectedLag = expectedEnd - committed
 
@@ -262,8 +261,10 @@ func TestConsumerScraperFranz_ScrapeNoEmittedDataPointsForUncommitted(t *testing
 	rm := md.ResourceMetrics().At(0)
 	ms := rm.ScopeMetrics().At(0).Metrics()
 
+	seen := map[string]bool{}
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
+		seen[m.Name()] = true
 		switch m.Name() {
 		case "kafka.consumer_group.offset":
 			// Ensure no individual partition offset metrics were generated
@@ -281,6 +282,19 @@ func TestConsumerScraperFranz_ScrapeNoEmittedDataPointsForUncommitted(t *testing
 			// Group structural tracking still exists, so members is safely recorded as 0
 			require.Equal(t, int64(0), m.Sum().DataPoints().At(0).IntValue())
 		}
+	}
+	for _, name := range []string{
+		"kafka.consumer_group.offset",
+		"kafka.consumer_group.lag",
+		"kafka.consumer_group.offset_sum",
+		"kafka.consumer_group.lag_sum",
+	} {
+		require.False(t, seen[name], "metric %s emitted", name)
+	}
+	for _, name := range []string{
+		"kafka.consumer_group.members",
+	} {
+		require.True(t, seen[name], "metric %s not emitted", name)
 	}
 
 	// Clean up the group so the kfake goroutine exits smoothly.
