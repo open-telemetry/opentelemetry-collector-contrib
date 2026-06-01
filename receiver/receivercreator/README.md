@@ -330,8 +330,9 @@ receivers:
     watch_observers: [k8s_observer]
     receivers:
       prometheus_simple:
-        # Configure prometheus scraping if standard prometheus annotations are set on the pod.
-        rule: type == "pod" && annotations["prometheus.io/scrape"] == "true"
+        # Configure prometheus scraping if standard prometheus annotations are set on the pod
+        # while preventing self-scraping by excluding pods labeled "app.kubernetes.io/component: opentelemetry-collector".
+        rule: type == "pod" && annotations["prometheus.io/scrape"] == "true"  && labels["app.kubernetes.io/component"] != "opentelemetry-collector
         config:
           metrics_path: '`"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/metrics"`'
           endpoint: '`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090`'

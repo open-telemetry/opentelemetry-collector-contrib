@@ -38,6 +38,17 @@ all_set:
       enabled: true
     sqlserver.index.search.rate:
       enabled: true
+    sqlserver.latch.superlatch.count:
+      enabled: true
+    sqlserver.latch.superlatch.transition.rate:
+      enabled: true
+      attributes: ["transition.direction"]
+    sqlserver.latch.wait.rate:
+      enabled: true
+    sqlserver.latch.wait_time.avg:
+      enabled: true
+    sqlserver.latch.wait_time.total:
+      enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
     sqlserver.lock.wait.count:
@@ -50,8 +61,17 @@ all_set:
       enabled: true
     sqlserver.logout.rate:
       enabled: true
+    sqlserver.memory.area:
+      enabled: true
+      attributes: ["memory.pool"]
+    sqlserver.memory.cache.object.count:
+      enabled: true
+      attributes: ["cache.state"]
     sqlserver.memory.grants.pending.count:
       enabled: true
+    sqlserver.memory.page.count:
+      enabled: true
+      attributes: ["page.pool"]
     sqlserver.memory.usage:
       enabled: true
     sqlserver.os.wait.duration:
@@ -171,6 +191,17 @@ reaggregate_set:
       enabled: true
     sqlserver.index.search.rate:
       enabled: true
+    sqlserver.latch.superlatch.count:
+      enabled: true
+    sqlserver.latch.superlatch.transition.rate:
+      enabled: true
+      attributes: []
+    sqlserver.latch.wait.rate:
+      enabled: true
+    sqlserver.latch.wait_time.avg:
+      enabled: true
+    sqlserver.latch.wait_time.total:
+      enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
     sqlserver.lock.wait.count:
@@ -183,8 +214,17 @@ reaggregate_set:
       enabled: true
     sqlserver.logout.rate:
       enabled: true
+    sqlserver.memory.area:
+      enabled: true
+      attributes: []
+    sqlserver.memory.cache.object.count:
+      enabled: true
+      attributes: []
     sqlserver.memory.grants.pending.count:
       enabled: true
+    sqlserver.memory.page.count:
+      enabled: true
+      attributes: []
     sqlserver.memory.usage:
       enabled: true
     sqlserver.os.wait.duration:
@@ -304,6 +344,17 @@ none_set:
       enabled: false
     sqlserver.index.search.rate:
       enabled: false
+    sqlserver.latch.superlatch.count:
+      enabled: false
+    sqlserver.latch.superlatch.transition.rate:
+      enabled: false
+      attributes: ["transition.direction"]
+    sqlserver.latch.wait.rate:
+      enabled: false
+    sqlserver.latch.wait_time.avg:
+      enabled: false
+    sqlserver.latch.wait_time.total:
+      enabled: false
     sqlserver.lock.timeout.rate:
       enabled: false
     sqlserver.lock.wait.count:
@@ -316,8 +367,17 @@ none_set:
       enabled: false
     sqlserver.logout.rate:
       enabled: false
+    sqlserver.memory.area:
+      enabled: false
+      attributes: ["memory.pool"]
+    sqlserver.memory.cache.object.count:
+      enabled: false
+      attributes: ["cache.state"]
     sqlserver.memory.grants.pending.count:
       enabled: false
+    sqlserver.memory.page.count:
+      enabled: false
+      attributes: ["page.pool"]
     sqlserver.memory.usage:
       enabled: false
     sqlserver.os.wait.duration:

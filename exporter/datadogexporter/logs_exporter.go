@@ -47,6 +47,7 @@ func newLogsAgentExporter(
 		agentcomponents.WithLogsConfig(cfg),
 		agentcomponents.WithLogsDefaults(),
 		agentcomponents.WithProxy(cfg),
+		agentcomponents.WithTLSSetting(cfg),
 	)
 	hostnameComponent := logs.NewHostnameService(sourceProvider)
 	logsAgentConfig := &logsagentexporter.Config{
