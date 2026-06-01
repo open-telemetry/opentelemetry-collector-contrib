@@ -381,8 +381,8 @@ func convertConfigValueWithOTLPRewrite[S, D any](src S) (D, error) {
 	}
 
 	var raw any
-	if err := gyaml.Unmarshal(b, &raw); err != nil {
-		return zero, err
+	if unmarshalErr := gyaml.Unmarshal(b, &raw); unmarshalErr != nil {
+		return zero, unmarshalErr
 	}
 
 	rewritten, err := gyaml.Marshal(rewriteLegacyOTLPKeys(raw))

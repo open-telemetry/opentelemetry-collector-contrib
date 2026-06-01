@@ -5,6 +5,7 @@ package supervisor
 
 import (
 	"context"
+	"maps"
 	"os"
 	"path"
 	"strings"
@@ -38,13 +39,9 @@ func buildSupervisorResourceConfig(ctx context.Context, cfg *config.ResourceConf
 	if err != nil {
 		return nil, err
 	}
-	for key, value := range detectedAttributes {
-		mergedAttributes[key] = value
-	}
+	maps.Copy(mergedAttributes, detectedAttributes)
 
-	for key, value := range envResourceAttributes() {
-		mergedAttributes[key] = value
-	}
+	maps.Copy(mergedAttributes, envResourceAttributes())
 
 	for key, value := range cfg.LegacyAttributes {
 		if value == nil {
@@ -152,7 +149,7 @@ func envResourceAttributes() map[string]any {
 		return attrs
 	}
 
-	for _, pair := range strings.Split(raw, ",") {
+	for pair := range strings.SplitSeq(raw, ",") {
 		key, value, found := strings.Cut(pair, "=")
 		if !found {
 			continue
