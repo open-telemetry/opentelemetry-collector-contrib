@@ -158,7 +158,7 @@ func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "test-cluster", val.Str())
 
-	// We produced 1 record at partition 0, and committed offset = 7. End offset is 1 (record offset 0 + 1),
+	// We produced 1 record at partition 0, and committed offset = 0. End offset is 1 (record offset 0 + 1),
 	// so lag = 1 - 0 = 1. The scraper records the raw difference; we just verify the metric is emitted
 	// with the committed offset and a deterministic lag.
 	const expectedEnd = int64(1)
@@ -212,6 +212,77 @@ func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	}
 
 	// Clean up the group so the kfake goroutine exits.
+	_, err = adm.DeleteGroups(t.Context(), group)
+	require.NoError(t, err)
+}
+
+func TestConsumerScraperFranz_ScrapeNoEmittedDataPointsForUncommitted(t *testing.T) {
+	const (
+		topic = "topic-a"
+		group = "test-group-uncommitted"
+	)
+
+	cluster, clientCfg := kafkatest.NewCluster(t, kfake.SeedTopics(1, topic))
+	cl, err := kgo.NewClient(kgo.SeedBrokers(cluster.ListenAddrs()...))
+	require.NoError(t, err)
+	t.Cleanup(cl.Close)
+
+	adm := kadm.NewClient(cl)
+
+	// Produce a record so the partition has a valid log end offset (1).
+	produceResults := cl.ProduceSync(t.Context(), &kgo.Record{Topic: topic, Value: []byte("payload")})
+	require.NoError(t, produceResults.FirstErr())
+
+	// Commit an explicit offset of -1 for the group at partition 0.
+	// This maps directly to the gml.Commit.At == -1 check in the scraper logic.
+	var os kadm.Offsets
+	os.AddOffset(topic, 0, -1, -1)
+	_, err = adm.CommitOffsets(t.Context(), group, os)
+	require.NoError(t, err)
+
+	cfg := Config{
+		ClientConfig:         clientCfg,
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		ClusterAlias:         "test-cluster",
+		TopicMatch:           ".*",
+		GroupMatch:           ".*",
+	}
+	cfg.ResourceAttributes.KafkaClusterAlias.Enabled = true
+
+	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
+
+	md, err := s.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+
+	rm := md.ResourceMetrics().At(0)
+	ms := rm.ScopeMetrics().At(0).Metrics()
+
+	for i := 0; i < ms.Len(); i++ {
+		m := ms.At(i)
+		switch m.Name() {
+		case "kafka.consumer_group.offset":
+			// Ensure no individual partition offset metrics were generated
+			require.Zero(t, m.Gauge().DataPoints().Len(), "expected no offset datapoints for an uncommitted partition")
+		case "kafka.consumer_group.lag":
+			// Ensure no individual partition lag metrics were generated
+			require.Zero(t, m.Gauge().DataPoints().Len(), "expected no lag datapoints for an uncommitted partition")
+		case "kafka.consumer_group.offset_sum":
+			// Ensure the sum block was bypassed since isConsumed should be false
+			require.Zero(t, m.Gauge().DataPoints().Len(), "expected no offset_sum datapoints for an uncommitted partition")
+		case "kafka.consumer_group.lag_sum":
+			// Ensure the sum block was bypassed since isConsumed should be false
+			require.Zero(t, m.Gauge().DataPoints().Len(), "expected no lag_sum datapoints for an uncommitted partition")
+		case "kafka.consumer_group.members":
+			// Group structural tracking still exists, so members gauge is safely recorded as 0
+			require.Equal(t, int64(0), m.Sum().DataPoints().At(0).IntValue())
+		}
+	}
+
+	// Clean up the group so the kfake goroutine exits smoothly.
 	_, err = adm.DeleteGroups(t.Context(), group)
 	require.NoError(t, err)
 }
