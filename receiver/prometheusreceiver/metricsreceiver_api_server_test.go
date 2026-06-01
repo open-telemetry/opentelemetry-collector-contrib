@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/apiserver"
 )
 
@@ -49,9 +48,11 @@ func TestPrometheusAPIServer(t *testing.T) {
 		},
 	}
 
-	endpoints := []string{testutil.GetAvailableLocalAddress(t), testutil.GetAvailableLocalAddress(t)}
-	endpointsToReceivers := make(map[string]*pReceiver, len(endpoints))
-	for _, endpoint := range endpoints {
+	endpointsToReceivers := map[string]*pReceiver{
+		"localhost:9090": nil,
+		"localhost:9091": nil,
+	}
+	for endpoint := range endpointsToReceivers {
 		mp, cfg, err := setupMockPrometheus(targets...)
 		require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 		defer mp.Close()
