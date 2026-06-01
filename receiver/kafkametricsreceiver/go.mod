@@ -24,7 +24,6 @@ require (
 	go.opentelemetry.io/collector/scraper v0.153.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.153.1-0.20260528150546-fe2cf23ff222
 	go.uber.org/goleak v1.3.0
-	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.28.0
 )
 
@@ -90,6 +89,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
