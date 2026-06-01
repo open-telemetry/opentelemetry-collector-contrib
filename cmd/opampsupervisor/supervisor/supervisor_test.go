@@ -151,15 +151,6 @@ func newNopTelemetrySettings() telemetrySettings {
 	}
 }
 
-func stringKeyValue(key, value string) *protobufs.KeyValue {
-	return &protobufs.KeyValue{
-		Key: key,
-		Value: &protobufs.AnyValue{
-			Value: &protobufs.AnyValue_StringValue{StringValue: value},
-		},
-	}
-}
-
 func Test_NewSupervisor(t *testing.T) {
 	cfg := setupSupervisorConfig(t, configTemplate)
 	supervisor, err := NewSupervisor(t.Context(), zap.L(), cfg)
@@ -1156,22 +1147,78 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("AgentDescription - Agent description from agent is forwarded to server", func(t *testing.T) {
 		incomingAgentDescription := &protobufs.AgentDescription{
 			IdentifyingAttributes: []*protobufs.KeyValue{
-				stringKeyValue("other.identifying", "original-value"),
-				stringKeyValue("service.name", "original-service"),
+				{
+					Key: "other.identifying",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "original-value",
+						},
+					},
+				},
+				{
+					Key: "service.name",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "original-service",
+						},
+					},
+				},
 			},
 			NonIdentifyingAttributes: []*protobufs.KeyValue{
-				stringKeyValue("resource.attr", "resource-value"),
+				{
+					Key: "resource.attr",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "resource-value",
+						},
+					},
+				},
 			},
 		}
 		expectedAgentDescription := &protobufs.AgentDescription{
 			IdentifyingAttributes: []*protobufs.KeyValue{
-				stringKeyValue("client.id", "client-1"),
-				stringKeyValue("other.identifying", "original-value"),
-				stringKeyValue("service.name", "override-service"),
+				{
+					Key: "client.id",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "client-1",
+						},
+					},
+				},
+				{
+					Key: "other.identifying",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "original-value",
+						},
+					},
+				},
+				{
+					Key: "service.name",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "override-service",
+						},
+					},
+				},
 			},
 			NonIdentifyingAttributes: []*protobufs.KeyValue{
-				stringKeyValue("resource.attr", "resource-value"),
-				stringKeyValue("test.attribute", "test-value"),
+				{
+					Key: "resource.attr",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "resource-value",
+						},
+					},
+				},
+				{
+					Key: "test.attribute",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "test-value",
+						},
+					},
+				},
 			},
 		}
 
@@ -1227,7 +1274,14 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 	t.Run("AgentDescription - forwarding error does not reject agent message", func(t *testing.T) {
 		incomingAgentDescription := &protobufs.AgentDescription{
 			IdentifyingAttributes: []*protobufs.KeyValue{
-				stringKeyValue("test.attribute", "test-value"),
+				{
+					Key: "test.attribute",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "test-value",
+						},
+					},
+				},
 			},
 		}
 
