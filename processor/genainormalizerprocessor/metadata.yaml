@@ -4,8 +4,8 @@ type: gen_ai_normalizer
 status:
   class: processor
   stability:
-    development: [traces]
-  distributions: []
+    alpha: [traces]
+  distributions: [contrib]
   codeowners:
     active: [TylerHelmuth]
 
