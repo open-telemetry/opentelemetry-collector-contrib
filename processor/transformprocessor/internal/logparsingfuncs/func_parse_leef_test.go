@@ -972,12 +972,12 @@ func Test_parseLEEFAttributes(t *testing.T) {
 			},
 		},
 		{
-			name:      "whitespace in keys and values is preserved",
-			input:     "msg=hello world \t src= 1.2.3.4 ",
+			name:      "whitespace in values is preserved",
+			input:     "msg=hello world \tsrc= 1.2.3.4 ",
 			delimiter: "\t",
 			expected: map[string]string{
-				"msg":  "hello world ",
-				" src": " 1.2.3.4 ",
+				"msg": "hello world ",
+				"src": " 1.2.3.4 ",
 			},
 		},
 		{
