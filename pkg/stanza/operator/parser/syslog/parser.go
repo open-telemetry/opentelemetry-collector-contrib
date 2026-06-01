@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"time"
 
 	sl "github.com/leodido/go-syslog/v4"
@@ -22,6 +23,11 @@ import (
 )
 
 var priRegex = regexp.MustCompile(`<\d{1,3}>`)
+
+// octetCountingPrefixRegex matches the RFC 6587 octet counting frame prefix
+// (a non-zero message length followed by a space). It mirrors the framing regex
+// used by the syslog input operator's split function.
+var octetCountingPrefixRegex = regexp.MustCompile(`^[1-9]\d*\s`)
 
 // rawSyslogMessage is a simple container for raw syslog data that doesn't conform
 // to RFC3164 or RFC5424 formats. It implements sl.Message interface.
@@ -168,7 +174,7 @@ func (p *Parser) parse(value any) (any, error) {
 	case *rfc5424.SyslogMessage:
 		return p.parseRFC5424(message, skipPriHeaderValues)
 	case *rawSyslogMessage:
-		return p.parseRaw(message), nil
+		return p.parseRaw(message)
 	default:
 		return nil, errors.New("parsed value was not rfc3164 or rfc5424 compliant")
 	}
@@ -204,7 +210,15 @@ func (p *Parser) buildParseFunc() (parseFunc, error) {
 		}
 	case None:
 		return func(input []byte) (sl.Message, error) {
-			return &rawSyslogMessage{message: string(input)}, nil
+			msg := input
+			// Strip the RFC 6587 octet counting frame prefix when enabled, leaving the
+			// raw message untouched.
+			if p.enableOctetCounting {
+				if loc := octetCountingPrefixRegex.FindIndex(input); loc != nil {
+					msg = input[loc[1]:]
+				}
+			}
+			return &rawSyslogMessage{message: string(msg)}, nil
 		}, nil
 
 	default:
@@ -268,10 +282,31 @@ func (p *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage, skipPriHeade
 }
 
 // parseRaw will parse a raw syslog message that doesn't conform to RFC3164 or RFC5424.
-func (*Parser) parseRaw(syslogMessage *rawSyslogMessage) map[string]any {
-	return map[string]any{
-		"message": syslogMessage.GetMessage(),
+// A leading PRI header (e.g. "<34>") is the only structured field derivable from a raw
+// message without parsing its content, so it is decoded when present and valid.
+func (p *Parser) parseRaw(syslogMessage *rawSyslogMessage) (map[string]any, error) {
+	msg := syslogMessage.GetMessage()
+
+	if loc := priRegex.FindStringIndex(msg); loc != nil && loc[0] == 0 {
+		pri, convErr := strconv.Atoi(msg[1 : loc[1]-1])
+		if convErr == nil && pri <= 191 {
+			var base sl.Base
+			base.ComputeFromPriority(uint8(pri))
+			value, err := p.toSafeMap(map[string]any{
+				"priority":      base.Priority,
+				"severity":      base.Severity,
+				"facility":      base.Facility,
+				"facility_text": base.FacilityLevel(),
+			})
+			if err != nil {
+				return nil, err
+			}
+			value["message"] = msg[loc[1]:]
+			return value, nil
+		}
 	}
+
+	return map[string]any{"message": msg}, nil
 }
 
 // toSafeMap will dereference any pointers on the supplied map.
@@ -374,8 +409,27 @@ func postprocessWithoutPriHeader(e *entry.Entry) error {
 	return cleanupTimestamp(e)
 }
 
-// postprocessRaw is a no-op for raw syslog messages since they have no structured fields to process.
-func postprocessRaw(_ *entry.Entry) error {
+// postprocessRaw applies the severity decoded from a leading PRI header, if one was
+// present. Unlike postprocess, it does not clean up a timestamp since raw messages have
+// none, and it is a no-op when no PRI header was found.
+func postprocessRaw(e *entry.Entry) error {
+	sev, ok := severityField.Delete(e)
+	if !ok {
+		return nil
+	}
+
+	sevInt, ok := sev.(int)
+	if !ok {
+		return errors.New("severity field is not an int")
+	}
+
+	if sevInt < 0 || sevInt > 7 {
+		return fmt.Errorf("invalid severity '%d'", sevInt)
+	}
+
+	e.Severity = severityMapping[sevInt]
+	e.SeverityText = severityText[sevInt]
+
 	return nil
 }
 

@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add support for parsing raw syslog data"
+note: "Add a `none` protocol to the syslog parser for raw syslog data. It decodes a leading PRI header when present and supports RFC 6587 octet counting."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44795]

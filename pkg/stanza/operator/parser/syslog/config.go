@@ -83,7 +83,9 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, errors.New("missing field 'protocol'")
 	case proto != RFC5424 && proto != RFC3164 && proto != None:
 		return nil, fmt.Errorf("unsupported protocol version: %s", proto)
-	case proto != RFC5424 && (c.NonTransparentFramingTrailer != nil || c.EnableOctetCounting):
+	case proto == None && c.NonTransparentFramingTrailer != nil:
+		return nil, errors.New("non_transparent_framing is not compatible with protocol none")
+	case proto != RFC5424 && proto != None && (c.NonTransparentFramingTrailer != nil || c.EnableOctetCounting):
 		return nil, errors.New("octet_counting and non_transparent_framing are only compatible with protocol rfc5424")
 	case proto == RFC5424 && (c.NonTransparentFramingTrailer != nil && c.EnableOctetCounting):
 		return nil, errors.New("only one of octet_counting or non_transparent_framing can be enabled")

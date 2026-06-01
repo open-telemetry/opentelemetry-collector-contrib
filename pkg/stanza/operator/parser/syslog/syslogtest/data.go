@@ -82,6 +82,99 @@ func CreateCases(basicConfig func() *syslog.Config) ([]Case, error) {
 			true,
 		},
 		{
+			"NoneProtocolOctetCounting",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				cfg.EnableOctetCounting = true
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `46 my custom syslog message without any timestamp`,
+			},
+			&entry.Entry{
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `my custom syslog message without any timestamp`,
+				},
+				Body: `46 my custom syslog message without any timestamp`,
+			},
+			true,
+			false,
+		},
+		{
+			"NoneProtocolOctetCountingNoSpace",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				cfg.EnableOctetCounting = true
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `46<13>raw message left intact`,
+			},
+			&entry.Entry{
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `46<13>raw message left intact`,
+				},
+				Body: `46<13>raw message left intact`,
+			},
+			false,
+			false,
+		},
+		{
+			"NoneProtocolPriHeader",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `<34>my raw message with a pri header`,
+			},
+			&entry.Entry{
+				Severity:     entry.Error2,
+				SeverityText: "crit",
+				Attributes: map[string]any{
+					"message":       `my raw message with a pri header`,
+					"priority":      34,
+					"facility":      4,
+					"facility_text": "auth",
+				},
+				Body: `<34>my raw message with a pri header`,
+			},
+			true,
+			true,
+		},
+		{
+			"NoneProtocolOctetCountingPriHeader",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				cfg.EnableOctetCounting = true
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `33 <34>raw message with a pri header`,
+			},
+			&entry.Entry{
+				Severity:     entry.Error2,
+				SeverityText: "crit",
+				Attributes: map[string]any{
+					"message":       `raw message with a pri header`,
+					"priority":      34,
+					"facility":      4,
+					"facility_text": "auth",
+				},
+				Body: `33 <34>raw message with a pri header`,
+			},
+			true,
+			false,
+		},
+		{
 			"RFC3164SkipPriAbsent",
 			func() *syslog.Config {
 				cfg := basicConfig()

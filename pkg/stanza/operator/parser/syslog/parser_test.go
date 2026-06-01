@@ -157,6 +157,25 @@ func TestSyslogProtocolConfig(t *testing.T) {
 	}
 }
 
+func TestSyslogNoneProtocolFramingConfig(t *testing.T) {
+	set := componenttest.NewNopTelemetrySettings()
+
+	// Octet counting is compatible with the none protocol.
+	cfg := basicConfig()
+	cfg.Protocol = syslog.None
+	cfg.EnableOctetCounting = true
+	_, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	// Non-transparent framing is not compatible with the none protocol.
+	trailer := syslog.NULTrailer
+	cfg = basicConfig()
+	cfg.Protocol = syslog.None
+	cfg.NonTransparentFramingTrailer = &trailer
+	_, err = cfg.Build(set)
+	require.ErrorContains(t, err, "non_transparent_framing is not compatible with protocol none")
+}
+
 // TestSyslogParserDoesNotSplitBatches verifies that the syslog parser processes
 // batches of entries without splitting them
 func TestSyslogParserDoesNotSplitBatches(t *testing.T) {
