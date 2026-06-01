@@ -356,7 +356,7 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 	}, nil
 }
 
-func convertConfigValue[S any, D any](src S) (D, error) {
+func convertConfigValue[S, D any](src S) (D, error) {
 	var zero D
 
 	b, err := gyaml.Marshal(src)
@@ -372,7 +372,7 @@ func convertConfigValue[S any, D any](src S) (D, error) {
 	return out, nil
 }
 
-func convertConfigValueWithOTLPRewrite[S any, D any](src S) (D, error) {
+func convertConfigValueWithOTLPRewrite[S, D any](src S) (D, error) {
 	var zero D
 
 	b, err := gyaml.Marshal(src)
