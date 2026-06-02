@@ -7,7 +7,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.153.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.153.0
-	github.com/prometheus/common v0.67.5
+	github.com/prometheus/common v0.68.0
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.312.0
 	github.com/stretchr/testify v1.11.1
