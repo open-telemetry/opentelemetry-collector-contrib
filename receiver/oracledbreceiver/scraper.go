@@ -96,6 +96,35 @@ const (
 	sqlnetBytesRecvFromDBLink        = "bytes received via SQL*Net from dblink"
 	sqlnetBytesSentToDBLink          = "bytes sent via SQL*Net to dblink"
 
+	// Workload analysis v$sysstat names (PR3)
+	tableScansDirectReadStat     = "table scans (direct read)"
+	tableScansLongTablesStat     = "table scans (long tables)"
+	tableScansRowidRangesStat    = "table scans (rowid ranges)"
+	tableScanRowsGottenStat      = "table scan rows gotten"
+	indexFastFullScansDirectStat = "index fast full scans (direct read)"
+	indexFastFullScansFullStat   = "index fast full scans (full)"
+	indexFastFullScansRowidStat  = "index fast full scans (rowid ranges)"
+	enqueueConversionsStat       = "enqueue conversions"
+	enqueueReleasesStat          = "enqueue releases"
+	enqueueRequestsStat          = "enqueue requests"
+	enqueueTimeoutsStat          = "enqueue timeouts"
+	enqueueWaitsStat             = "enqueue waits"
+	lobReadsStat                 = "lob reads"
+	lobWritesStat                = "lob writes"
+	parseTimeCPUStat             = "parse time cpu"
+	parseTimeElapsedStat         = "parse time elapsed"
+	sortsDiskStat                = "sorts (disk)"
+	sortsMemoryStat              = "sorts (memory)"
+	sortsRowsStat                = "sorts (rows)"
+	sessionCursorCacheHitsStat   = "session cursor cache hits"
+	sessionCursorCacheCountStat  = "session cursor cache count"
+	openedCursorsCurrentStat     = "opened cursors current"
+	userCallsStat                = "user calls"
+	recursiveCallsStat           = "recursive calls"
+	recursiveCPUUsageStat        = "recursive cpu usage"
+	dbTimeStat                   = "DB time"
+	logonsCurrentStat            = "logons current"
+
 	sessionCountSQL         = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
 	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
 	tablespaceUsageSQL      = `
@@ -308,7 +337,23 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoCacheWrites.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoRequests.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalIoTransferred.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled
+		s.metricsBuilderConfig.Metrics.OracledbSqlnetIoTransferred.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCallRecursive.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCallRecursiveCPUTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCallUser.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCursorCacheHits.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCursorCacheSize.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbCursorOpen.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbDbTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbEnqueueOperations.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbLobOperations.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParseTime.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbScanIndexFastFull.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbScanTable.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbScanTableRows.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSessionLogon.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSortOperations.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbSortRows.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
 		rows, execError := s.statsClient.metricRows(ctx)
@@ -512,6 +557,134 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			case sqlnetBytesSentToDBLink:
 				if err := s.mb.RecordOracledbSqlnetIoTransferredDataPoint(now, row["VALUE"], metadata.AttributeNetworkIoDirectionTransmit, metadata.AttributeDestinationTypeDblink); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case tableScansDirectReadStat:
+				if err := s.mb.RecordOracledbScanTableDataPoint(now, row["VALUE"], metadata.AttributeOracledbScanTypeDirectRead); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case tableScansLongTablesStat:
+				if err := s.mb.RecordOracledbScanTableDataPoint(now, row["VALUE"], metadata.AttributeOracledbScanTypeLongTables); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case tableScansRowidRangesStat:
+				if err := s.mb.RecordOracledbScanTableDataPoint(now, row["VALUE"], metadata.AttributeOracledbScanTypeRowidRanges); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case tableScanRowsGottenStat:
+				if err := s.mb.RecordOracledbScanTableRowsDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case indexFastFullScansDirectStat:
+				if err := s.mb.RecordOracledbScanIndexFastFullDataPoint(now, row["VALUE"], metadata.AttributeOracledbScanTypeDirectRead); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case indexFastFullScansFullStat:
+				if err := s.mb.RecordOracledbScanIndexFastFullDataPoint(now, row["VALUE"], metadata.AttributeOracledbScanTypeFull); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case indexFastFullScansRowidStat:
+				if err := s.mb.RecordOracledbScanIndexFastFullDataPoint(now, row["VALUE"], metadata.AttributeOracledbScanTypeRowidRanges); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case enqueueConversionsStat:
+				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row["VALUE"], metadata.AttributeOracledbEnqueueKindConversions); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case enqueueReleasesStat:
+				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row["VALUE"], metadata.AttributeOracledbEnqueueKindReleases); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case enqueueRequestsStat:
+				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row["VALUE"], metadata.AttributeOracledbEnqueueKindRequests); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case enqueueTimeoutsStat:
+				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row["VALUE"], metadata.AttributeOracledbEnqueueKindTimeouts); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case enqueueWaitsStat:
+				if err := s.mb.RecordOracledbEnqueueOperationsDataPoint(now, row["VALUE"], metadata.AttributeOracledbEnqueueKindWaits); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case lobReadsStat:
+				if err := s.mb.RecordOracledbLobOperationsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionRead); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case lobWritesStat:
+				if err := s.mb.RecordOracledbLobOperationsDataPoint(now, row["VALUE"], metadata.AttributeDiskIoDirectionWrite); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case parseTimeCPUStat:
+				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", parseTimeCPUStat, row["VALUE"], err))
+				} else {
+					// raw v$sysstat parse time cpu is in centiseconds; convert to seconds for OTel
+					value /= 100
+					s.mb.RecordOracledbParseTimeDataPoint(now, value, metadata.AttributeOracledbParseKindCpu)
+				}
+			case parseTimeElapsedStat:
+				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", parseTimeElapsedStat, row["VALUE"], err))
+				} else {
+					// raw v$sysstat parse time elapsed is in centiseconds; convert to seconds for OTel
+					value /= 100
+					s.mb.RecordOracledbParseTimeDataPoint(now, value, metadata.AttributeOracledbParseKindElapsed)
+				}
+			case sortsDiskStat:
+				if err := s.mb.RecordOracledbSortOperationsDataPoint(now, row["VALUE"], metadata.AttributeOracledbSortTypeDisk); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case sortsMemoryStat:
+				if err := s.mb.RecordOracledbSortOperationsDataPoint(now, row["VALUE"], metadata.AttributeOracledbSortTypeMemory); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case sortsRowsStat:
+				if err := s.mb.RecordOracledbSortRowsDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case sessionCursorCacheHitsStat:
+				if err := s.mb.RecordOracledbCursorCacheHitsDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case sessionCursorCacheCountStat:
+				if err := s.mb.RecordOracledbCursorCacheSizeDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case openedCursorsCurrentStat:
+				if err := s.mb.RecordOracledbCursorOpenDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case userCallsStat:
+				if err := s.mb.RecordOracledbCallUserDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case recursiveCallsStat:
+				if err := s.mb.RecordOracledbCallRecursiveDataPoint(now, row["VALUE"]); err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case recursiveCPUUsageStat:
+				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", recursiveCPUUsageStat, row["VALUE"], err))
+				} else {
+					// raw v$sysstat recursive cpu usage is in centiseconds; convert to seconds for OTel
+					value /= 100
+					s.mb.RecordOracledbCallRecursiveCPUTimeDataPoint(now, value)
+				}
+			case dbTimeStat:
+				value, err := strconv.ParseFloat(row["VALUE"], 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", dbTimeStat, row["VALUE"], err))
+				} else {
+					// raw v$sysstat DB time is in centiseconds; convert to seconds for OTel
+					value /= 100
+					s.mb.RecordOracledbDbTimeDataPoint(now, value)
+				}
+			case logonsCurrentStat:
+				if err := s.mb.RecordOracledbSessionLogonDataPoint(now, row["VALUE"]); err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
 			}

@@ -161,6 +161,10 @@ attributes:
   oracledb.elapsed_time:
     description: The total time (in seconds) taken by a query from start to finish, including CPU time and all types of waits (reporting delta).
     type: double
+  oracledb.enqueue.kind:
+    description: Kind of enqueue (lock) operation reported by Oracle.
+    type: string
+    enum: [conversions, releases, requests, timeouts, waits]
   oracledb.event:
     description: The specific wait event that a query or session is currently experiencing.
     type: string
@@ -173,6 +177,10 @@ attributes:
   oracledb.osuser:
     description: Name of the operating system user that initiated or is running the Oracle database session.
     type: string
+  oracledb.parse.kind:
+    description: Kind of SQL parse-time measurement (CPU time spent parsing vs. total elapsed parse time).
+    type: string
+    enum: [cpu, elapsed]
   oracledb.parse.result:
     description: Result of a parse operation (e.g., failure).
     type: string
@@ -232,6 +240,10 @@ attributes:
   oracledb.rows_processed:
     description: The total number of rows that a query has read, returned, or affected during its execution (reporting delta).
     type: int
+  oracledb.scan.type:
+    description: Kind of table or index scan reported by Oracle.
+    type: string
+    enum: [direct_read, full, long_tables, rowid_ranges]
   oracledb.schemaname:
     description: Oracle schema under which SQL statements are being executed
     type: string
@@ -250,7 +262,7 @@ attributes:
   oracledb.sort.type:
     description: Type of sort operation (e.g., memory, disk).
     type: string
-    enum: [memory]
+    enum: [disk, memory]
   oracledb.sql_id:
     description: The SQL ID of the query.
     type: string
@@ -388,6 +400,35 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.call.recursive:
+    description: Total number of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures. Sourced from v$sysstat name recursive calls.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{calls}"
+  oracledb.call.recursive_cpu_time:
+    description: Total CPU time, in seconds, spent on recursive (internal) calls. Sourced from v$sysstat name recursive cpu usage; the raw centisecond value is divided by 100 in the scraper.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
+  oracledb.call.user:
+    description: Total number of user calls (logins, parses, fetches, executes) issued to the database. Sourced from v$sysstat name user calls.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{calls}"
   oracledb.consistent_gets:
     description: Number of times a consistent read was requested for a block from the buffer cache.
     enabled: false
@@ -407,6 +448,34 @@ metrics:
       monotonic: true
       value_type: double
     unit: s
+  oracledb.cursor.cache.hits:
+    description: Number of times an existing cursor in the session cursor cache was reused, avoiding a soft parse. Sourced from v$sysstat name session cursor cache hits.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{hits}"
+  oracledb.cursor.cache.size:
+    description: Total number of cursors currently held in the session cursor cache. Sourced from v$sysstat name session cursor cache count.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{cursors}"
+  oracledb.cursor.open:
+    description: Number of currently open cursors in the Oracle instance. Sourced from v$sysstat name opened cursors current.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{cursors}"
   oracledb.data_dictionary.hit_ratio:
     description: Data dictionary cache hit ratio from v$rowcache.
     enabled: false
@@ -438,6 +507,15 @@ metrics:
       value_type: int
       input_type: string
     unit: "{gets}"
+  oracledb.db_time:
+    description: Total wall-clock time, in seconds, spent in database calls by foreground sessions. Sourced from v$sysstat name DB time; the raw centisecond value is divided by 100 in the scraper.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
   oracledb.ddl_statements_parallelized:
     description: Number of DDL statements that were executed in parallel
     enabled: false
@@ -474,6 +552,17 @@ metrics:
       value_type: int
       input_type: string
     unit: "{statements}"
+  oracledb.enqueue.operations:
+    description: Cumulative count of enqueue (lock) operations by kind. Sourced from v$sysstat names enqueue conversions, enqueue releases, enqueue requests, enqueue timeouts, and enqueue waits.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{operations}"
+    attributes: [oracledb.enqueue.kind]
   oracledb.enqueue_deadlocks:
     description: Total number of deadlocks between table or row locks in different sessions.
     enabled: true
@@ -569,6 +658,17 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.lob.operations:
+    description: Cumulative count of LOB (large object) I/O operations by direction. Sourced from v$sysstat names lob reads (disk.io.direction=read) and lob writes (disk.io.direction=write). Reuses the disk.io.direction attribute introduced in PR #48335.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{operations}"
+    attributes: [disk.io.direction]
   oracledb.logical_reads:
     description: Number of logical reads
     enabled: true
@@ -658,6 +758,16 @@ metrics:
     gauge:
       value_type: double
     unit: "{parses}/s"
+  oracledb.parse.time:
+    description: Total parse time, in seconds, by kind. Sourced from v$sysstat names parse time cpu (oracledb.parse.kind=cpu) and parse time elapsed (oracledb.parse.kind=elapsed); the raw centisecond value is divided by 100 in the scraper.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s
+    attributes: [oracledb.parse.kind]
   oracledb.parse.utilization:
     description: Fraction of parse calls that were soft parses, as computed by Oracle V$SYSMETRIC (% SoftParses/TotalParses). High values indicate good cursor reuse.
     enabled: false
@@ -817,6 +927,46 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.scan.index_fast_full:
+    description: Cumulative count of index fast full scans by kind. Sourced from v$sysstat names index fast full scans (direct read), index fast full scans (full), and index fast full scans (rowid ranges).
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{operations}"
+    attributes: [oracledb.scan.type]
+  oracledb.scan.table:
+    description: Cumulative count of full-table scans by kind. Sourced from v$sysstat names table scans (direct read), table scans (long tables), and table scans (rowid ranges).
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{operations}"
+    attributes: [oracledb.scan.type]
+  oracledb.scan.table.rows:
+    description: Total number of rows returned by full-table scans. Sourced from v$sysstat name table scan rows gotten.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{rows}"
+  oracledb.session.logon:
+    description: Current number of active session logons. Sourced from v$sysstat name logons current.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{sessions}"
   oracledb.sessions.limit:
     description: Maximum limit of active sessions, -1 if unlimited.
     enabled: true
@@ -843,6 +993,17 @@ metrics:
     gauge:
       value_type: double
     unit: "%"
+  oracledb.sort.operations:
+    description: Cumulative count of sort operations by type. Sourced from v$sysstat names sorts (disk) (oracledb.sort.type=disk) and sorts (memory) (oracledb.sort.type=memory).
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{operations}"
+    attributes: [oracledb.sort.type]
   oracledb.sort.ratio:
     attributes:
       - oracledb.sort.type
@@ -852,6 +1013,16 @@ metrics:
     gauge:
       value_type: double
     unit: "1"
+  oracledb.sort.rows:
+    description: Total number of rows sorted across all sort operations. Sourced from v$sysstat name sorts (rows).
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{rows}"
   oracledb.sql_service.response.duration:
     description: Average SQL service response time in seconds, converted from centiseconds as reported by Oracle V$SYSMETRIC (CentiSeconds Per Call).
     enabled: false

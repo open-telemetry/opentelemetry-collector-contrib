@@ -73,6 +73,34 @@ var queryResponses = map[string][]metricRow{
 		{"NAME": sqlnetBytesSentToClient, "VALUE": "600000"},
 		{"NAME": sqlnetBytesRecvFromDBLink, "VALUE": "150000"},
 		{"NAME": sqlnetBytesSentToDBLink, "VALUE": "75000"},
+		// PR3: workload analysis v$sysstat rows
+		{"NAME": tableScansDirectReadStat, "VALUE": "100"},
+		{"NAME": tableScansLongTablesStat, "VALUE": "200"},
+		{"NAME": tableScansRowidRangesStat, "VALUE": "50"},
+		{"NAME": tableScanRowsGottenStat, "VALUE": "999999"},
+		{"NAME": indexFastFullScansDirectStat, "VALUE": "10"},
+		{"NAME": indexFastFullScansFullStat, "VALUE": "20"},
+		{"NAME": indexFastFullScansRowidStat, "VALUE": "5"},
+		{"NAME": enqueueConversionsStat, "VALUE": "11"},
+		{"NAME": enqueueReleasesStat, "VALUE": "22"},
+		{"NAME": enqueueRequestsStat, "VALUE": "33"},
+		{"NAME": enqueueTimeoutsStat, "VALUE": "44"},
+		{"NAME": enqueueWaitsStat, "VALUE": "55"},
+		{"NAME": lobReadsStat, "VALUE": "120"},
+		{"NAME": lobWritesStat, "VALUE": "240"},
+		{"NAME": parseTimeCPUStat, "VALUE": "1500"},
+		{"NAME": parseTimeElapsedStat, "VALUE": "3000"},
+		{"NAME": sortsDiskStat, "VALUE": "7"},
+		{"NAME": sortsMemoryStat, "VALUE": "777"},
+		{"NAME": sortsRowsStat, "VALUE": "888888"},
+		{"NAME": sessionCursorCacheHitsStat, "VALUE": "65535"},
+		{"NAME": sessionCursorCacheCountStat, "VALUE": "1024"},
+		{"NAME": openedCursorsCurrentStat, "VALUE": "128"},
+		{"NAME": userCallsStat, "VALUE": "987654"},
+		{"NAME": recursiveCallsStat, "VALUE": "123456"},
+		{"NAME": recursiveCPUUsageStat, "VALUE": "5000"},
+		{"NAME": dbTimeStat, "VALUE": "60000"},
+		{"NAME": logonsCurrentStat, "VALUE": "42"},
 	},
 	sessionCountSQL: {{"VALUE": "1"}},
 	systemResourceLimitsSQL: {
@@ -395,6 +423,136 @@ func TestScraper_ScrapeIOPerformanceMetrics(t *testing.T) {
 	assert.Equal(t, int64(600000), got["oracledb.sqlnet.io.transferred"]["destination.type=client,network.io.direction=transmit"])
 	assert.Equal(t, int64(150000), got["oracledb.sqlnet.io.transferred"]["destination.type=dblink,network.io.direction=receive"])
 	assert.Equal(t, int64(75000), got["oracledb.sqlnet.io.transferred"]["destination.type=dblink,network.io.direction=transmit"])
+}
+
+func TestScraper_ScrapeWorkloadAnalysisMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbCallRecursive.Enabled = true
+	cfg.Metrics.OracledbCallRecursiveCPUTime.Enabled = true
+	cfg.Metrics.OracledbCallUser.Enabled = true
+	cfg.Metrics.OracledbCursorCacheHits.Enabled = true
+	cfg.Metrics.OracledbCursorCacheSize.Enabled = true
+	cfg.Metrics.OracledbCursorOpen.Enabled = true
+	cfg.Metrics.OracledbDbTime.Enabled = true
+	cfg.Metrics.OracledbEnqueueOperations.Enabled = true
+	cfg.Metrics.OracledbLobOperations.Enabled = true
+	cfg.Metrics.OracledbParseTime.Enabled = true
+	cfg.Metrics.OracledbScanIndexFastFull.Enabled = true
+	cfg.Metrics.OracledbScanTable.Enabled = true
+	cfg.Metrics.OracledbScanTableRows.Enabled = true
+	cfg.Metrics.OracledbSessionLogon.Enabled = true
+	cfg.Metrics.OracledbSortOperations.Enabled = true
+	cfg.Metrics.OracledbSortRows.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	gotInt := map[string]map[string]int64{}
+	gotFloat := map[string]map[string]float64{}
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		me := metrics.At(i)
+		switch me.Type() {
+		case pmetric.MetricTypeSum:
+			dps := me.Sum().DataPoints()
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				var keys []string
+				dp.Attributes().Range(func(k string, v pcommon.Value) bool {
+					keys = append(keys, k+"="+v.AsString())
+					return true
+				})
+				sort.Strings(keys)
+				sig := strings.Join(keys, ",")
+				switch dp.ValueType() {
+				case pmetric.NumberDataPointValueTypeInt:
+					if _, ok := gotInt[me.Name()]; !ok {
+						gotInt[me.Name()] = map[string]int64{}
+					}
+					gotInt[me.Name()][sig] = dp.IntValue()
+				case pmetric.NumberDataPointValueTypeDouble:
+					if _, ok := gotFloat[me.Name()]; !ok {
+						gotFloat[me.Name()] = map[string]float64{}
+					}
+					gotFloat[me.Name()][sig] = dp.DoubleValue()
+				}
+			}
+		case pmetric.MetricTypeGauge:
+			dps := me.Gauge().DataPoints()
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				if _, ok := gotInt[me.Name()]; !ok {
+					gotInt[me.Name()] = map[string]int64{}
+				}
+				gotInt[me.Name()][""] = dp.IntValue()
+			}
+		}
+	}
+
+	// Table-scan family (oracledb.scan.type attribute)
+	assert.Equal(t, int64(100), gotInt["oracledb.scan.table"]["oracledb.scan.type=direct_read"])
+	assert.Equal(t, int64(200), gotInt["oracledb.scan.table"]["oracledb.scan.type=long_tables"])
+	assert.Equal(t, int64(50), gotInt["oracledb.scan.table"]["oracledb.scan.type=rowid_ranges"])
+	assert.Equal(t, int64(999999), gotInt["oracledb.scan.table.rows"][""])
+
+	// Index fast full scans (oracledb.scan.type attribute)
+	assert.Equal(t, int64(10), gotInt["oracledb.scan.index_fast_full"]["oracledb.scan.type=direct_read"])
+	assert.Equal(t, int64(20), gotInt["oracledb.scan.index_fast_full"]["oracledb.scan.type=full"])
+	assert.Equal(t, int64(5), gotInt["oracledb.scan.index_fast_full"]["oracledb.scan.type=rowid_ranges"])
+
+	// Enqueue operations (oracledb.enqueue.kind attribute)
+	assert.Equal(t, int64(11), gotInt["oracledb.enqueue.operations"]["oracledb.enqueue.kind=conversions"])
+	assert.Equal(t, int64(22), gotInt["oracledb.enqueue.operations"]["oracledb.enqueue.kind=releases"])
+	assert.Equal(t, int64(33), gotInt["oracledb.enqueue.operations"]["oracledb.enqueue.kind=requests"])
+	assert.Equal(t, int64(44), gotInt["oracledb.enqueue.operations"]["oracledb.enqueue.kind=timeouts"])
+	assert.Equal(t, int64(55), gotInt["oracledb.enqueue.operations"]["oracledb.enqueue.kind=waits"])
+
+	// LOB operations (reused disk.io.direction attribute from PR #48335)
+	assert.Equal(t, int64(120), gotInt["oracledb.lob.operations"]["disk.io.direction=read"])
+	assert.Equal(t, int64(240), gotInt["oracledb.lob.operations"]["disk.io.direction=write"])
+
+	// Sort operations (oracledb.sort.type attribute)
+	assert.Equal(t, int64(7), gotInt["oracledb.sort.operations"]["oracledb.sort.type=disk"])
+	assert.Equal(t, int64(777), gotInt["oracledb.sort.operations"]["oracledb.sort.type=memory"])
+	assert.Equal(t, int64(888888), gotInt["oracledb.sort.rows"][""])
+
+	// Cursor family
+	assert.Equal(t, int64(65535), gotInt["oracledb.cursor.cache.hits"][""])
+	assert.Equal(t, int64(1024), gotInt["oracledb.cursor.cache.size"][""])
+	assert.Equal(t, int64(128), gotInt["oracledb.cursor.open"][""])
+
+	// Call family
+	assert.Equal(t, int64(987654), gotInt["oracledb.call.user"][""])
+	assert.Equal(t, int64(123456), gotInt["oracledb.call.recursive"][""])
+
+	// Session logon (gauge)
+	assert.Equal(t, int64(42), gotInt["oracledb.session.logon"][""])
+
+	// Time metrics: raw v$sysstat values are centiseconds; scraper converts to seconds (/100).
+	// parse time cpu     raw 1500 cs  -> 15 s
+	// parse time elapsed raw 3000 cs  -> 30 s
+	// recursive cpu      raw 5000 cs  -> 50 s
+	// DB time            raw 60000 cs -> 600 s
+	const delta = 0.01
+	assert.InDelta(t, 15.0, gotFloat["oracledb.parse.time"]["oracledb.parse.kind=cpu"], delta)
+	assert.InDelta(t, 30.0, gotFloat["oracledb.parse.time"]["oracledb.parse.kind=elapsed"], delta)
+	assert.InDelta(t, 50.0, gotFloat["oracledb.call.recursive_cpu_time"][""], delta)
+	assert.InDelta(t, 600.0, gotFloat["oracledb.db_time"][""], delta)
 }
 
 func TestScraper_ScrapeTopNLogs(t *testing.T) {

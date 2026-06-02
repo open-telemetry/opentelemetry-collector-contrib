@@ -249,6 +249,30 @@ Fraction of logical reads served from the buffer cache without physical I/O, as 
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+### oracledb.call.recursive
+
+Total number of recursive calls generated at both the user and system level. Recursive calls are executed by Oracle to manage data dictionary, cache, and other internal structures. Sourced from v$sysstat name recursive calls.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {calls} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.call.recursive_cpu_time
+
+Total CPU time, in seconds, spent on recursive (internal) calls. Sourced from v$sysstat name recursive cpu usage; the raw centisecond value is divided by 100 in the scraper.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+### oracledb.call.user
+
+Total number of user calls (logins, parses, fetches, executes) issued to the database. Sourced from v$sysstat name user calls.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {calls} | Sum | Int | Cumulative | true | Development |
+
 ### oracledb.consistent_gets
 
 Number of times a consistent read was requested for a block from the buffer cache.
@@ -256,6 +280,30 @@ Number of times a consistent read was requested for a block from the buffer cach
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {gets} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.cursor.cache.hits
+
+Number of times an existing cursor in the session cursor cache was reused, avoiding a soft parse. Sourced from v$sysstat name session cursor cache hits.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {hits} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.cursor.cache.size
+
+Total number of cursors currently held in the session cursor cache. Sourced from v$sysstat name session cursor cache count.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {cursors} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.cursor.open
+
+Number of currently open cursors in the Oracle instance. Sourced from v$sysstat name opened cursors current.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cursors} | Gauge | Int | Development |
 
 ### oracledb.data_dictionary.hit_ratio
 
@@ -289,6 +337,14 @@ Number of times a current block was requested from the buffer cache.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {gets} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.db_time
+
+Total wall-clock time, in seconds, spent in database calls by foreground sessions. Sourced from v$sysstat name DB time; the raw centisecond value is divided by 100 in the scraper.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
 ### oracledb.ddl_statements_parallelized
 
 Number of DDL statements that were executed in parallel
@@ -304,6 +360,20 @@ Number of DML statements that were executed in parallel
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {statements} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.enqueue.operations
+
+Cumulative count of enqueue (lock) operations by kind. Sourced from v$sysstat names enqueue conversions, enqueue releases, enqueue requests, enqueue timeouts, and enqueue waits.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operations} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.enqueue.kind | Kind of enqueue (lock) operation reported by Oracle. | Str: ``conversions``, ``releases``, ``requests``, ``timeouts``, ``waits`` | Recommended | - |
 
 ### oracledb.execution.utilization
 
@@ -334,6 +404,20 @@ Fraction of library cache pin requests that found the object already cached, as 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+### oracledb.lob.operations
+
+Cumulative count of LOB (large object) I/O operations by direction. Sourced from v$sysstat names lob reads (disk.io.direction=read) and lob writes (disk.io.direction=write). Reuses the disk.io.direction attribute introduced in PR
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operations} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 
 ### oracledb.logons
 
@@ -404,6 +488,20 @@ Rate of parse operations per second broken down by result, as computed by Oracle
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.parse.result | Result of a parse operation (e.g., failure). | Str: ``failure`` | Recommended | - |
+
+### oracledb.parse.time
+
+Total parse time, in seconds, by kind. Sourced from v$sysstat names parse time cpu (oracledb.parse.kind=cpu) and parse time elapsed (oracledb.parse.kind=elapsed); the raw centisecond value is divided by 100 in the scraper.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.parse.kind | Kind of SQL parse-time measurement (CPU time spent parsing vs. total elapsed parse time). | Str: ``cpu``, ``elapsed`` | Recommended | - |
 
 ### oracledb.parse.utilization
 
@@ -515,6 +613,50 @@ Fraction of redo allocations that succeeded without space contention, as compute
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+### oracledb.scan.index_fast_full
+
+Cumulative count of index fast full scans by kind. Sourced from v$sysstat names index fast full scans (direct read), index fast full scans (full), and index fast full scans (rowid ranges).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operations} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.scan.type | Kind of table or index scan reported by Oracle. | Str: ``direct_read``, ``full``, ``long_tables``, ``rowid_ranges`` | Recommended | - |
+
+### oracledb.scan.table
+
+Cumulative count of full-table scans by kind. Sourced from v$sysstat names table scans (direct read), table scans (long tables), and table scans (rowid ranges).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operations} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.scan.type | Kind of table or index scan reported by Oracle. | Str: ``direct_read``, ``full``, ``long_tables``, ``rowid_ranges`` | Recommended | - |
+
+### oracledb.scan.table.rows
+
+Total number of rows returned by full-table scans. Sourced from v$sysstat name table scan rows gotten.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {rows} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.session.logon
+
+Current number of active session logons. Sourced from v$sysstat name logons current.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {sessions} | Gauge | Int | Development |
+
 ### oracledb.shared_pool.utilization
 
 Fraction of the shared pool that is currently free, as computed by Oracle V$SYSMETRIC (% Free/Total). Low values indicate shared pool pressure.
@@ -522,6 +664,20 @@ Fraction of the shared pool that is currently free, as computed by Oracle V$SYSM
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+### oracledb.sort.operations
+
+Cumulative count of sort operations by type. Sourced from v$sysstat names sorts (disk) (oracledb.sort.type=disk) and sorts (memory) (oracledb.sort.type=memory).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operations} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.sort.type | Type of sort operation (e.g., memory, disk). | Str: ``disk``, ``memory`` | Recommended | - |
 
 ### oracledb.sort.ratio
 
@@ -535,7 +691,15 @@ Fraction of sorts performed in memory vs disk, as computed by Oracle V$SYSMETRIC
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.sort.type | Type of sort operation (e.g., memory, disk). | Str: ``memory`` | Recommended | - |
+| oracledb.sort.type | Type of sort operation (e.g., memory, disk). | Str: ``disk``, ``memory`` | Recommended | - |
+
+### oracledb.sort.rows
+
+Total number of rows sorted across all sort operations. Sourced from v$sysstat name sorts (rows).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {rows} | Sum | Int | Cumulative | true | Development |
 
 ### oracledb.sql_service.response.duration
 
