@@ -68,6 +68,7 @@ type Config struct {
 	ExcludeProviders         []string        `mapstructure:"exclude_providers,omitempty"`
 	Remote                   RemoteConfig    `mapstructure:"remote,omitempty"`
 	Query                    *string         `mapstructure:"query,omitempty"`
+	Path                     *string         `mapstructure:"path,omitempty"`
 }
 
 // RemoteConfig is the configuration for a remote server.
