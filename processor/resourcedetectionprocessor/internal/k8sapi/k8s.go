@@ -50,6 +50,13 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 	}, nil
 }
 
+// NewDeprecatedDetector logs a deprecation warning and then delegates to NewDetector.
+// Use this for the k8snode alias so users are notified to migrate to k8s_api.
+func NewDeprecatedDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	set.Logger.Warn("the k8snode detector name is deprecated, use k8s_api instead")
+	return NewDetector(set, dcfg)
+}
+
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	if d.ra.K8sNodeUID.Enabled {
 		nodeUID, err := d.provider.NodeUID(ctx)

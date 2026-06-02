@@ -89,7 +89,7 @@ func NewFactory() processor.Factory {
 		nova.TypeStr:             nova.NewDetector,
 		oraclecloud.TypeStr:      oraclecloud.NewDetector,
 		k8sapi.TypeStr:           k8sapi.NewDetector,
-		k8sapi.TypeStrAlias:      k8sapi.NewDetector,
+		k8sapi.TypeStrAlias:      k8sapi.NewDeprecatedDetector,
 		kubeadm.TypeStr:          kubeadm.NewDetector,
 		dynatrace.TypeStr:        dynatrace.NewDetector,
 		tencentcvm.TypeStr:       tencentcvm.NewDetector,
