@@ -283,7 +283,9 @@ func (p *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage, skipPriHeade
 
 // parseRaw will parse a raw syslog message that doesn't conform to RFC3164 or RFC5424.
 // A leading PRI header (e.g. "<34>") is the only structured field derivable from a raw
-// message without parsing its content, so it is decoded when present and valid.
+// message without parsing its content, so it is decoded when present and valid. The PRI
+// header is left in place in the message field rather than stripped, since it is part of
+// the message contents.
 func (p *Parser) parseRaw(syslogMessage *rawSyslogMessage) (map[string]any, error) {
 	msg := syslogMessage.GetMessage()
 
@@ -301,7 +303,7 @@ func (p *Parser) parseRaw(syslogMessage *rawSyslogMessage) (map[string]any, erro
 			if err != nil {
 				return nil, err
 			}
-			value["message"] = msg[loc[1]:]
+			value["message"] = msg
 			return value, nil
 		}
 	}

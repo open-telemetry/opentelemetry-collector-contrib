@@ -139,7 +139,7 @@ func CreateCases(basicConfig func() *syslog.Config) ([]Case, error) {
 				Severity:     entry.Error2,
 				SeverityText: "crit",
 				Attributes: map[string]any{
-					"message":       `my raw message with a pri header`,
+					"message":       `<34>my raw message with a pri header`,
 					"priority":      34,
 					"facility":      4,
 					"facility_text": "auth",
@@ -164,7 +164,7 @@ func CreateCases(basicConfig func() *syslog.Config) ([]Case, error) {
 				Severity:     entry.Error2,
 				SeverityText: "crit",
 				Attributes: map[string]any{
-					"message":       `raw message with a pri header`,
+					"message":       `<34>raw message with a pri header`,
 					"priority":      34,
 					"facility":      4,
 					"facility_text": "auth",
