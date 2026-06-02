@@ -181,7 +181,7 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
-	dst.TimeNanos = int64(p.Time().AsTime().Nanosecond())
+	dst.TimeNanos = int64(p.Time())
 	dst.DurationNanos = int64(p.DurationNano())
 	dst.Period = p.Period()
 
