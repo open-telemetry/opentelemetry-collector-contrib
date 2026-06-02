@@ -29,10 +29,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheConnectionActive: ApacheConnectionActiveMetricConfig{
 						Enabled: true,
 					},
-					ApacheConnectionStatus: ApacheConnectionStatusMetricConfig{
+					ApacheConnections: ApacheConnectionsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ApacheConnectionStatusMetricAttributeKey{ApacheConnectionStatusMetricAttributeKeyApacheConnectionState},
+						EnabledAttributes:   []ApacheConnectionsMetricAttributeKey{ApacheConnectionsMetricAttributeKeyApacheConnectionState},
 					},
 					ApacheCPULoad: ApacheCPULoadMetricConfig{
 						Enabled: true,
@@ -54,10 +54,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheRequestCount: ApacheRequestCountMetricConfig{
 						Enabled: true,
 					},
-					ApacheRequestIoTransmitted: ApacheRequestIoTransmittedMetricConfig{
+					ApacheRequestTime: ApacheRequestTimeMetricConfig{
 						Enabled: true,
 					},
-					ApacheRequestTime: ApacheRequestTimeMetricConfig{
+					ApacheTraffic: ApacheTrafficMetricConfig{
 						Enabled: true,
 					},
 					ApacheUptime: ApacheUptimeMetricConfig{
@@ -69,10 +69,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheWorkerIdle: ApacheWorkerIdleMetricConfig{
 						Enabled: true,
 					},
-					ApacheWorkerStatus: ApacheWorkerStatusMetricConfig{
+					ApacheWorkers: ApacheWorkersMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ApacheWorkerStatusMetricAttributeKey{ApacheWorkerStatusMetricAttributeKeyApacheWorkerState},
+						EnabledAttributes:   []ApacheWorkersMetricAttributeKey{ApacheWorkersMetricAttributeKeyApacheWorkerState},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -88,10 +88,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheConnectionActive: ApacheConnectionActiveMetricConfig{
 						Enabled: false,
 					},
-					ApacheConnectionStatus: ApacheConnectionStatusMetricConfig{
+					ApacheConnections: ApacheConnectionsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []ApacheConnectionStatusMetricAttributeKey{ApacheConnectionStatusMetricAttributeKeyApacheConnectionState},
+						EnabledAttributes:   []ApacheConnectionsMetricAttributeKey{ApacheConnectionsMetricAttributeKeyApacheConnectionState},
 					},
 					ApacheCPULoad: ApacheCPULoadMetricConfig{
 						Enabled: false,
@@ -113,10 +113,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheRequestCount: ApacheRequestCountMetricConfig{
 						Enabled: false,
 					},
-					ApacheRequestIoTransmitted: ApacheRequestIoTransmittedMetricConfig{
+					ApacheRequestTime: ApacheRequestTimeMetricConfig{
 						Enabled: false,
 					},
-					ApacheRequestTime: ApacheRequestTimeMetricConfig{
+					ApacheTraffic: ApacheTrafficMetricConfig{
 						Enabled: false,
 					},
 					ApacheUptime: ApacheUptimeMetricConfig{
@@ -128,10 +128,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ApacheWorkerIdle: ApacheWorkerIdleMetricConfig{
 						Enabled: false,
 					},
-					ApacheWorkerStatus: ApacheWorkerStatusMetricConfig{
+					ApacheWorkers: ApacheWorkersMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ApacheWorkerStatusMetricAttributeKey{ApacheWorkerStatusMetricAttributeKeyApacheWorkerState},
+						EnabledAttributes:   []ApacheWorkersMetricAttributeKey{ApacheWorkersMetricAttributeKeyApacheWorkerState},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -144,7 +144,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ApacheConnectionActiveMetricConfig{}, ApacheConnectionStatusMetricConfig{}, ApacheCPULoadMetricConfig{}, ApacheCPUTimeMetricConfig{}, ApacheLoad1MetricConfig{}, ApacheLoad15MetricConfig{}, ApacheLoad5MetricConfig{}, ApacheRequestCountMetricConfig{}, ApacheRequestIoTransmittedMetricConfig{}, ApacheRequestTimeMetricConfig{}, ApacheUptimeMetricConfig{}, ApacheWorkerActiveMetricConfig{}, ApacheWorkerIdleMetricConfig{}, ApacheWorkerStatusMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ApacheConnectionActiveMetricConfig{}, ApacheConnectionsMetricConfig{}, ApacheCPULoadMetricConfig{}, ApacheCPUTimeMetricConfig{}, ApacheLoad1MetricConfig{}, ApacheLoad15MetricConfig{}, ApacheLoad5MetricConfig{}, ApacheRequestCountMetricConfig{}, ApacheRequestTimeMetricConfig{}, ApacheTrafficMetricConfig{}, ApacheUptimeMetricConfig{}, ApacheWorkerActiveMetricConfig{}, ApacheWorkerIdleMetricConfig{}, ApacheWorkersMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

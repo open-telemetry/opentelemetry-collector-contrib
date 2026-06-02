@@ -17,7 +17,12 @@ import (
 	"go.uber.org/zap"
 )
 
-var defaultBucket = []byte(`default`)
+var (
+	defaultBucket = []byte(`default`)
+
+	// Ensure fileStorageClient implements the Walker interface
+	_ storage.Walker = (*fileStorageClient)(nil)
+)
 
 const (
 	TempDbPrefix = "tempdb"
@@ -109,38 +114,83 @@ func (c *fileStorageClient) Batch(_ context.Context, ops ...*storage.Operation) 
 			return errors.New("storage not initialized")
 		}
 
-		var err error
-		for _, op := range ops {
-			switch op.Type {
-			case storage.Get:
-				value := bucket.Get([]byte(op.Key))
-				if value != nil {
-					// the output of Bucket.Get is only valid within a transaction, so we need to make a copy
-					// to be able to return the value
-					op.Value = make([]byte, len(value))
-					copy(op.Value, value)
-				} else {
-					op.Value = nil
-				}
-			case storage.Set:
-				err = bucket.Put([]byte(op.Key), op.Value)
-			case storage.Delete:
-				err = bucket.Delete([]byte(op.Key))
-			default:
-				return errors.New("wrong operation type")
-			}
-
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
+		return updateBucket(bucket, ops...)
 	}
 
 	c.compactionMutex.RLock()
 	defer c.compactionMutex.RUnlock()
 	return c.db.Update(batch)
+}
+
+// Walk implements storage.Walker.
+func (c *fileStorageClient) Walk(ctx context.Context, fn storage.WalkFunc) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	c.compactionMutex.RLock()
+	defer c.compactionMutex.RUnlock()
+
+	if c.closed {
+		return errors.New("storage is closed")
+	}
+
+	return c.db.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket(defaultBucket)
+		if bucket == nil {
+			return errors.New("storage not initialized")
+		}
+
+		var opBatch []*storage.Operation
+		cur := bucket.Cursor()
+		for k, v := cur.First(); k != nil; k, v = cur.Next() {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			ops, err := fn(string(k), v)
+			if err != nil {
+				if errors.Is(err, storage.SkipAll) {
+					opBatch = append(opBatch, ops...)
+					return updateBucket(bucket, opBatch...)
+				}
+				return err
+			}
+			opBatch = append(opBatch, ops...)
+		}
+		return updateBucket(bucket, opBatch...)
+	})
+}
+
+// updateBucket executes the specified operations in order for a given bucket. Get operation results are updated in place
+// The function caller must hold a read lock on compactionMutex.
+func updateBucket(bucket *bbolt.Bucket, ops ...*storage.Operation) error {
+	var err error
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Get:
+			value := bucket.Get([]byte(op.Key))
+			if value != nil {
+				// the output of Bucket.Get is only valid within a transaction, so we need to make a copy
+				// to be able to return the value
+				op.Value = make([]byte, len(value))
+				copy(op.Value, value)
+			} else {
+				op.Value = nil
+			}
+		case storage.Set:
+			err = bucket.Put([]byte(op.Key), op.Value)
+		case storage.Delete:
+			err = bucket.Delete([]byte(op.Key))
+		default:
+			return errors.New("wrong operation type")
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Close will close the database

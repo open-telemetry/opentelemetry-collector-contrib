@@ -77,11 +77,11 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		case "ConnsTotal":
 			addPartialIfError(errs, r.mb.RecordApacheConnectionActiveDataPoint(now, metricValue))
 		case "ConnsAsyncWriting":
-			addPartialIfError(errs, r.mb.RecordApacheConnectionStatusDataPoint(now, metricValue, metadata.AttributeApacheConnectionStateWriting))
+			addPartialIfError(errs, r.mb.RecordApacheConnectionsDataPoint(now, metricValue, metadata.AttributeApacheConnectionStateWriting))
 		case "ConnsAsyncKeepAlive":
-			addPartialIfError(errs, r.mb.RecordApacheConnectionStatusDataPoint(now, metricValue, metadata.AttributeApacheConnectionStateKeepalive))
+			addPartialIfError(errs, r.mb.RecordApacheConnectionsDataPoint(now, metricValue, metadata.AttributeApacheConnectionStateKeepalive))
 		case "ConnsAsyncClosing":
-			addPartialIfError(errs, r.mb.RecordApacheConnectionStatusDataPoint(now, metricValue, metadata.AttributeApacheConnectionStateClosing))
+			addPartialIfError(errs, r.mb.RecordApacheConnectionsDataPoint(now, metricValue, metadata.AttributeApacheConnectionStateClosing))
 		case "BusyWorkers":
 			addPartialIfError(errs, r.mb.RecordApacheWorkerActiveDataPoint(now, metricValue))
 		case "IdleWorkers":
@@ -93,7 +93,7 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			if err != nil {
 				errs.AddPartial(1, err)
 			} else {
-				r.mb.RecordApacheRequestIoTransmittedDataPoint(now, kbytesToBytes(i))
+				r.mb.RecordApacheTrafficDataPoint(now, kbytesToBytes(i))
 			}
 		case "CPUChildrenSystem":
 			addPartialIfError(
@@ -128,7 +128,7 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		case "Scoreboard":
 			scoreboardMap := parseScoreboard(metricValue)
 			for state, score := range scoreboardMap {
-				r.mb.RecordApacheWorkerStatusDataPoint(now, score, state)
+				r.mb.RecordApacheWorkersDataPoint(now, score, state)
 			}
 		}
 	}

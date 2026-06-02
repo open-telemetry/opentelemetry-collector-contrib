@@ -8,10 +8,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gobwas/glob"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 )
 
@@ -26,10 +28,12 @@ var defaultHistogramBucketsMs = []float64{
 
 var defaultDeltaTimestampCacheSize = 1000
 
-// Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
+// Dimension defines a single dimension entry. Exactly one of Name (with optional Default) or Glob must be set.
+// If Name is set, Default value will be used if dimension is missing form a span attribute.
 type Dimension struct {
 	Name    string  `mapstructure:"name"`
 	Default *string `mapstructure:"default"`
+	Glob    string  `mapstructure:"glob"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -78,6 +82,10 @@ type Config struct {
 	// MetricsExpiration is the time period after which, if no new spans are received, metrics are considered stale and will no longer be exported.
 	// Default value (0) means that the metrics will never expire.
 	MetricsExpiration time.Duration `mapstructure:"metrics_expiration"`
+
+	// SeriesExpiration is the time period after which individual metric series are considered stale and will no longer be exported.
+	// Default value (0) means that individual metric series will never expire.
+	SeriesExpiration time.Duration `mapstructure:"series_expiration"`
 
 	// TimestampCacheSize controls the size of the cache used to keep track of delta metrics' TimestampUnixNano the last time it was flushed
 	TimestampCacheSize *int `mapstructure:"metric_timestamp_cache_size"`
@@ -151,6 +159,12 @@ func (c Config) Validate() error {
 	if err := validateDimensions(c.Dimensions); err != nil {
 		return fmt.Errorf("failed validating dimensions: %w", err)
 	}
+	if err := validateDimensions(c.CallsDimensions); err != nil {
+		return fmt.Errorf("failed validating calls dimensions: %w", err)
+	}
+	if err := validateDimensions(c.Histogram.Dimensions); err != nil {
+		return fmt.Errorf("failed validating histogram dimensions: %w", err)
+	}
 	if err := validateEventDimensions(c.Events.Enabled, c.Events.Dimensions); err != nil {
 		return fmt.Errorf("failed validating event dimensions: %w", err)
 	}
@@ -165,6 +179,10 @@ func (c Config) Validate() error {
 
 	if c.MetricsExpiration < 0 {
 		return fmt.Errorf("invalid metrics_expiration: %v, the duration should be positive", c.MetricsExpiration)
+	}
+
+	if c.SeriesExpiration < 0 {
+		return fmt.Errorf("invalid series_expiration: %v, the duration should be positive", c.SeriesExpiration)
 	}
 
 	if c.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta && c.GetDeltaTimestampCacheSize() <= 0 {
@@ -201,11 +219,12 @@ func (c Config) GetDeltaTimestampCacheSize() int {
 	return defaultDeltaTimestampCacheSize
 }
 
-// validateDimensions checks duplicates for reserved dimensions and additional dimensions.
+// validateDimensions checks duplicates for reserved dimensions and additional dimensions, and
+// enforces that each entry sets exactly one of Name or Glob.
 func validateDimensions(dimensions []Dimension) error {
 	labelNames := make(map[string]struct{})
 	intervalLabels := []string{serviceNameKey, spanKindKey, statusCodeKey, spanNameKey}
-	if includeCollectorInstanceID.IsEnabled() {
+	if metadata.ConnectorSpanmetricsIncludeCollectorInstanceIDFeatureGate.IsEnabled() {
 		intervalLabels = append(intervalLabels, collectorInstanceKey)
 	}
 
@@ -213,11 +232,36 @@ func validateDimensions(dimensions []Dimension) error {
 		labelNames[key] = struct{}{}
 	}
 
-	for _, key := range dimensions {
-		if _, ok := labelNames[key.Name]; ok {
-			return fmt.Errorf("duplicate dimension name %s", key.Name)
+	globs := make(map[string]glob.Glob)
+	for _, d := range dimensions {
+		switch {
+		case d.Name != "" && d.Glob != "":
+			return fmt.Errorf("dimension entry must set only one of `name` or `glob`, got both: name=%q glob=%q", d.Name, d.Glob)
+		case d.Name == "" && d.Glob == "":
+			return errors.New("dimension entry must set one of `name` or `glob`")
+		case d.Name != "":
+			if _, ok := labelNames[d.Name]; ok {
+				return fmt.Errorf("duplicate dimension name %q", d.Name)
+			}
+			labelNames[d.Name] = struct{}{}
+		default: // Glob != ""
+			if d.Default != nil {
+				return fmt.Errorf("`default` is not supported on `glob` dimension %q", d.Glob)
+			}
+			compiledGlob, err := glob.Compile(d.Glob, '.')
+			if err != nil {
+				return fmt.Errorf("invalid dimension glob %q: %w", d.Glob, err)
+			}
+			globs[d.Glob] = compiledGlob
 		}
-		labelNames[key.Name] = struct{}{}
+	}
+
+	for name := range labelNames {
+		for stringGlob, compiledGlob := range globs {
+			if compiledGlob.Match(name) {
+				return fmt.Errorf("duplicate dimension name %q conflicting with glob %q", name, stringGlob)
+			}
+		}
 	}
 
 	return nil

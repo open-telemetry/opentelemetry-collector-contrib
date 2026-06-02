@@ -5,6 +5,7 @@ package kube // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"time"
 
 	api_v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,6 +49,7 @@ func newSharedInformer(
 	namespace string,
 	ls labels.Selector,
 	fs fields.Selector,
+	watchSyncPeriod time.Duration,
 ) cache.SharedInformer {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
@@ -79,6 +81,7 @@ func informerWatchFuncWithSelectors(client kubernetes.Interface, namespace strin
 // newKubeSystemSharedInformer watches only kube-system namespace
 func newKubeSystemSharedInformer(
 	client metadata.Interface,
+	watchSyncPeriod time.Duration,
 ) cache.SharedInformer {
 	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
 	return cache.NewSharedInformer(
@@ -99,6 +102,7 @@ func newKubeSystemSharedInformer(
 
 func newNamespaceSharedInformer(
 	client metadata.Interface,
+	watchSyncPeriod time.Duration,
 ) cache.SharedInformer {
 	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
 	return cache.NewSharedInformer(
@@ -111,7 +115,7 @@ func newNamespaceSharedInformer(
 	)
 }
 
-func newReplicaSetSharedInformer(client metadata.Interface, namespace string) cache.SharedInformer {
+func newReplicaSetSharedInformer(client metadata.Interface, namespace string, watchSyncPeriod time.Duration) cache.SharedInformer {
 	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}
 	return cache.NewSharedInformer(
 		&cache.ListWatch{
@@ -123,7 +127,7 @@ func newReplicaSetSharedInformer(client metadata.Interface, namespace string) ca
 	)
 }
 
-func newDeploymentSharedInformer(client metadata.Interface, namespace string) cache.SharedInformer {
+func newDeploymentSharedInformer(client metadata.Interface, namespace string, watchSyncPeriod time.Duration) cache.SharedInformer {
 	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
 	return cache.NewSharedInformer(
 		&cache.ListWatch{
@@ -135,7 +139,7 @@ func newDeploymentSharedInformer(client metadata.Interface, namespace string) ca
 	)
 }
 
-func newStatefulSetSharedInformer(client metadata.Interface, namespace string) cache.SharedInformer {
+func newStatefulSetSharedInformer(client metadata.Interface, namespace string, watchSyncPeriod time.Duration) cache.SharedInformer {
 	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "statefulsets"}
 	return cache.NewSharedInformer(
 		&cache.ListWatch{
@@ -147,7 +151,7 @@ func newStatefulSetSharedInformer(client metadata.Interface, namespace string) c
 	)
 }
 
-func newDaemonSetSharedInformer(client metadata.Interface, namespace string) cache.SharedInformer {
+func newDaemonSetSharedInformer(client metadata.Interface, namespace string, watchSyncPeriod time.Duration) cache.SharedInformer {
 	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}
 	return cache.NewSharedInformer(
 		&cache.ListWatch{
@@ -159,7 +163,7 @@ func newDaemonSetSharedInformer(client metadata.Interface, namespace string) cac
 	)
 }
 
-func newJobSharedInformer(client metadata.Interface, namespace string) cache.SharedInformer {
+func newJobSharedInformer(client metadata.Interface, namespace string, watchSyncPeriod time.Duration) cache.SharedInformer {
 	gvr := schema.GroupVersionResource{Group: "batch", Version: "v1", Resource: "jobs"}
 	return cache.NewSharedInformer(
 		&cache.ListWatch{
@@ -171,7 +175,7 @@ func newJobSharedInformer(client metadata.Interface, namespace string) cache.Sha
 	)
 }
 
-func newNodeSharedInformer(client metadata.Interface, nodeName string) cache.SharedInformer {
+func newNodeSharedInformer(client metadata.Interface, nodeName string, watchSyncPeriod time.Duration) cache.SharedInformer {
 	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "nodes"}
 	return cache.NewSharedInformer(
 		&cache.ListWatch{

@@ -3,7 +3,7 @@ all_set:
   metrics:
     apache.connection.active:
       enabled: true
-    apache.connection.status:
+    apache.connections:
       enabled: true
       attributes: ["apache.connection.state"]
     apache.cpu.load:
@@ -19,9 +19,9 @@ all_set:
       enabled: true
     apache.request.count:
       enabled: true
-    apache.request.io.transmitted:
-      enabled: true
     apache.request.time:
+      enabled: true
+    apache.traffic:
       enabled: true
     apache.uptime:
       enabled: true
@@ -29,7 +29,7 @@ all_set:
       enabled: true
     apache.worker.idle:
       enabled: true
-    apache.worker.status:
+    apache.workers:
       enabled: true
       attributes: ["apache.worker.state"]
   resource_attributes:
@@ -41,7 +41,7 @@ reaggregate_set:
   metrics:
     apache.connection.active:
       enabled: true
-    apache.connection.status:
+    apache.connections:
       enabled: true
       attributes: []
     apache.cpu.load:
@@ -57,9 +57,9 @@ reaggregate_set:
       enabled: true
     apache.request.count:
       enabled: true
-    apache.request.io.transmitted:
-      enabled: true
     apache.request.time:
+      enabled: true
+    apache.traffic:
       enabled: true
     apache.uptime:
       enabled: true
@@ -67,7 +67,7 @@ reaggregate_set:
       enabled: true
     apache.worker.idle:
       enabled: true
-    apache.worker.status:
+    apache.workers:
       enabled: true
       attributes: []
   resource_attributes:
@@ -79,7 +79,7 @@ none_set:
   metrics:
     apache.connection.active:
       enabled: false
-    apache.connection.status:
+    apache.connections:
       enabled: false
       attributes: ["apache.connection.state"]
     apache.cpu.load:
@@ -95,9 +95,9 @@ none_set:
       enabled: false
     apache.request.count:
       enabled: false
-    apache.request.io.transmitted:
-      enabled: false
     apache.request.time:
+      enabled: false
+    apache.traffic:
       enabled: false
     apache.uptime:
       enabled: false
@@ -105,7 +105,7 @@ none_set:
       enabled: false
     apache.worker.idle:
       enabled: false
-    apache.worker.status:
+    apache.workers:
       enabled: false
       attributes: ["apache.worker.state"]
   resource_attributes:

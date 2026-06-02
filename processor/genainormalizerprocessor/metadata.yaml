@@ -1,19 +1,21 @@
 display_name: GenAI Normalizer Processor
-type: genainormalizer
+type: gen_ai_normalizer
 
 status:
   class: processor
   stability:
-    development: [traces]
-  distributions: []
+    alpha: [traces]
+  distributions: [contrib]
   codeowners:
     active: [TylerHelmuth]
 
 tests:
   config:
     sources:
-      openinference: {}
-      openllmetry: {}
-      custom:
-        custom_mappings:
-          my_vendor.model: gen_ai.request.model
+      - name: openinference
+      - name: my_vendor
+        mappings:
+          my_vendor.op: gen_ai.operation.name
+        value_mappings:
+          gen_ai.operation.name:
+            chat_completion: chat

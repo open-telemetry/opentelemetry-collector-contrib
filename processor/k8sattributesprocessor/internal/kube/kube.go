@@ -81,12 +81,6 @@ func PodIdentifierAttributeFromResourceAttribute(key, value string) PodIdentifie
 	)
 }
 
-var (
-	// TODO: move these to config with default values
-	defaultPodDeleteGracePeriod = time.Second * 120
-	watchSyncPeriod             = time.Minute * 5
-)
-
 // Client defines the main interface that allows querying pods by metadata.
 type Client interface {
 	GetPod(PodIdentifier) (*Pod, bool)
@@ -101,7 +95,7 @@ type Client interface {
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformersFactoryList, bool, time.Duration) (Client, error)
+type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformersFactoryList, bool, time.Duration, time.Duration, time.Duration) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.

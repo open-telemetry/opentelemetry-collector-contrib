@@ -29,23 +29,23 @@ func (ms *ApacheConnectionActiveMetricConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// ApacheConnectionStatusMetricAttributeKey specifies the key of an attribute for the apache.connection.status metric.
-type ApacheConnectionStatusMetricAttributeKey string
+// ApacheConnectionsMetricAttributeKey specifies the key of an attribute for the apache.connections metric.
+type ApacheConnectionsMetricAttributeKey string
 
 const (
-	ApacheConnectionStatusMetricAttributeKeyApacheConnectionState ApacheConnectionStatusMetricAttributeKey = "apache.connection.state"
+	ApacheConnectionsMetricAttributeKeyApacheConnectionState ApacheConnectionsMetricAttributeKey = "apache.connection.state"
 )
 
-// ApacheConnectionStatusMetricConfig provides config for the apache.connection.status metric.
-type ApacheConnectionStatusMetricConfig struct {
+// ApacheConnectionsMetricConfig provides config for the apache.connections metric.
+type ApacheConnectionsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ApacheConnectionStatusMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ApacheConnectionsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ApacheConnectionStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ApacheConnectionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -59,12 +59,12 @@ func (ms *ApacheConnectionStatusMetricConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-func (ms *ApacheConnectionStatusMetricConfig) Validate() error {
+func (ms *ApacheConnectionsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ApacheConnectionStatusMetricAttributeKeyApacheConnectionState:
+		case ApacheConnectionsMetricAttributeKeyApacheConnectionState:
 		default:
-			return fmt.Errorf("metric apache.connection.status doesn't have an attribute %v, valid attributes: [apache.connection.state]", val)
+			return fmt.Errorf("metric apache.connections doesn't have an attribute %v, valid attributes: [apache.connection.state]", val)
 		}
 	}
 
@@ -226,13 +226,13 @@ func (ms *ApacheRequestCountMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// ApacheRequestIoTransmittedMetricConfig provides config for the apache.request.io.transmitted metric.
-type ApacheRequestIoTransmittedMetricConfig struct {
+// ApacheRequestTimeMetricConfig provides config for the apache.request.time metric.
+type ApacheRequestTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ApacheRequestIoTransmittedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ApacheRequestTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -246,13 +246,13 @@ func (ms *ApacheRequestIoTransmittedMetricConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// ApacheRequestTimeMetricConfig provides config for the apache.request.time metric.
-type ApacheRequestTimeMetricConfig struct {
+// ApacheTrafficMetricConfig provides config for the apache.traffic metric.
+type ApacheTrafficMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ApacheRequestTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ApacheTrafficMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -326,23 +326,23 @@ func (ms *ApacheWorkerIdleMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ApacheWorkerStatusMetricAttributeKey specifies the key of an attribute for the apache.worker.status metric.
-type ApacheWorkerStatusMetricAttributeKey string
+// ApacheWorkersMetricAttributeKey specifies the key of an attribute for the apache.workers metric.
+type ApacheWorkersMetricAttributeKey string
 
 const (
-	ApacheWorkerStatusMetricAttributeKeyApacheWorkerState ApacheWorkerStatusMetricAttributeKey = "apache.worker.state"
+	ApacheWorkersMetricAttributeKeyApacheWorkerState ApacheWorkersMetricAttributeKey = "apache.worker.state"
 )
 
-// ApacheWorkerStatusMetricConfig provides config for the apache.worker.status metric.
-type ApacheWorkerStatusMetricConfig struct {
+// ApacheWorkersMetricConfig provides config for the apache.workers metric.
+type ApacheWorkersMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ApacheWorkerStatusMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ApacheWorkersMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ApacheWorkerStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ApacheWorkersMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -356,12 +356,12 @@ func (ms *ApacheWorkerStatusMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-func (ms *ApacheWorkerStatusMetricConfig) Validate() error {
+func (ms *ApacheWorkersMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ApacheWorkerStatusMetricAttributeKeyApacheWorkerState:
+		case ApacheWorkersMetricAttributeKeyApacheWorkerState:
 		default:
-			return fmt.Errorf("metric apache.worker.status doesn't have an attribute %v, valid attributes: [apache.worker.state]", val)
+			return fmt.Errorf("metric apache.workers doesn't have an attribute %v, valid attributes: [apache.worker.state]", val)
 		}
 	}
 
@@ -376,20 +376,20 @@ func (ms *ApacheWorkerStatusMetricConfig) Validate() error {
 
 // MetricsConfig provides config for apache metrics.
 type MetricsConfig struct {
-	ApacheConnectionActive     ApacheConnectionActiveMetricConfig     `mapstructure:"apache.connection.active"`
-	ApacheConnectionStatus     ApacheConnectionStatusMetricConfig     `mapstructure:"apache.connection.status"`
-	ApacheCPULoad              ApacheCPULoadMetricConfig              `mapstructure:"apache.cpu.load"`
-	ApacheCPUTime              ApacheCPUTimeMetricConfig              `mapstructure:"apache.cpu.time"`
-	ApacheLoad1                ApacheLoad1MetricConfig                `mapstructure:"apache.load.1"`
-	ApacheLoad15               ApacheLoad15MetricConfig               `mapstructure:"apache.load.15"`
-	ApacheLoad5                ApacheLoad5MetricConfig                `mapstructure:"apache.load.5"`
-	ApacheRequestCount         ApacheRequestCountMetricConfig         `mapstructure:"apache.request.count"`
-	ApacheRequestIoTransmitted ApacheRequestIoTransmittedMetricConfig `mapstructure:"apache.request.io.transmitted"`
-	ApacheRequestTime          ApacheRequestTimeMetricConfig          `mapstructure:"apache.request.time"`
-	ApacheUptime               ApacheUptimeMetricConfig               `mapstructure:"apache.uptime"`
-	ApacheWorkerActive         ApacheWorkerActiveMetricConfig         `mapstructure:"apache.worker.active"`
-	ApacheWorkerIdle           ApacheWorkerIdleMetricConfig           `mapstructure:"apache.worker.idle"`
-	ApacheWorkerStatus         ApacheWorkerStatusMetricConfig         `mapstructure:"apache.worker.status"`
+	ApacheConnectionActive ApacheConnectionActiveMetricConfig `mapstructure:"apache.connection.active"`
+	ApacheConnections      ApacheConnectionsMetricConfig      `mapstructure:"apache.connections"`
+	ApacheCPULoad          ApacheCPULoadMetricConfig          `mapstructure:"apache.cpu.load"`
+	ApacheCPUTime          ApacheCPUTimeMetricConfig          `mapstructure:"apache.cpu.time"`
+	ApacheLoad1            ApacheLoad1MetricConfig            `mapstructure:"apache.load.1"`
+	ApacheLoad15           ApacheLoad15MetricConfig           `mapstructure:"apache.load.15"`
+	ApacheLoad5            ApacheLoad5MetricConfig            `mapstructure:"apache.load.5"`
+	ApacheRequestCount     ApacheRequestCountMetricConfig     `mapstructure:"apache.request.count"`
+	ApacheRequestTime      ApacheRequestTimeMetricConfig      `mapstructure:"apache.request.time"`
+	ApacheTraffic          ApacheTrafficMetricConfig          `mapstructure:"apache.traffic"`
+	ApacheUptime           ApacheUptimeMetricConfig           `mapstructure:"apache.uptime"`
+	ApacheWorkerActive     ApacheWorkerActiveMetricConfig     `mapstructure:"apache.worker.active"`
+	ApacheWorkerIdle       ApacheWorkerIdleMetricConfig       `mapstructure:"apache.worker.idle"`
+	ApacheWorkers          ApacheWorkersMetricConfig          `mapstructure:"apache.workers"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -397,10 +397,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		ApacheConnectionActive: ApacheConnectionActiveMetricConfig{
 			Enabled: true,
 		},
-		ApacheConnectionStatus: ApacheConnectionStatusMetricConfig{
+		ApacheConnections: ApacheConnectionsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []ApacheConnectionStatusMetricAttributeKey{ApacheConnectionStatusMetricAttributeKeyApacheConnectionState},
+			EnabledAttributes:   []ApacheConnectionsMetricAttributeKey{ApacheConnectionsMetricAttributeKeyApacheConnectionState},
 		},
 		ApacheCPULoad: ApacheCPULoadMetricConfig{
 			Enabled: true,
@@ -422,10 +422,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		ApacheRequestCount: ApacheRequestCountMetricConfig{
 			Enabled: true,
 		},
-		ApacheRequestIoTransmitted: ApacheRequestIoTransmittedMetricConfig{
+		ApacheRequestTime: ApacheRequestTimeMetricConfig{
 			Enabled: true,
 		},
-		ApacheRequestTime: ApacheRequestTimeMetricConfig{
+		ApacheTraffic: ApacheTrafficMetricConfig{
 			Enabled: true,
 		},
 		ApacheUptime: ApacheUptimeMetricConfig{
@@ -437,10 +437,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		ApacheWorkerIdle: ApacheWorkerIdleMetricConfig{
 			Enabled: true,
 		},
-		ApacheWorkerStatus: ApacheWorkerStatusMetricConfig{
+		ApacheWorkers: ApacheWorkersMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ApacheWorkerStatusMetricAttributeKey{ApacheWorkerStatusMetricAttributeKeyApacheWorkerState},
+			EnabledAttributes:   []ApacheWorkersMetricAttributeKey{ApacheWorkersMetricAttributeKeyApacheWorkerState},
 		},
 	}
 }

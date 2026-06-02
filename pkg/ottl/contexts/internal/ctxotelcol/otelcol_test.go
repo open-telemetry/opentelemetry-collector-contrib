@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
+	featureMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -477,12 +478,12 @@ func TestContextGrpcMetadata(t *testing.T) {
 }
 
 func Test_enableOTelColContextFeatureGate(t *testing.T) {
-	original := enableOTelColContext.IsEnabled()
+	original := featureMetadata.OttlContextsEnableOTelColContextFeatureGate.IsEnabled()
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(enableOTelColContext.ID(), original))
+		require.NoError(t, featuregate.GlobalRegistry().Set(featureMetadata.OttlContextsEnableOTelColContextFeatureGate.ID(), original))
 	}()
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(enableOTelColContext.ID(), false))
+	require.NoError(t, featuregate.GlobalRegistry().Set(featureMetadata.OttlContextsEnableOTelColContextFeatureGate.ID(), false))
 	_, err := PathGetSetter(&pathtest.Path[testContext]{})
 	assert.Equal(t, errOTelColContextDisabled, err)
 }

@@ -15,7 +15,18 @@ issues: [47327]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  Attribute Changes:
+    - `connection_state` is now `apache.connection.state`
+    - `state` is now `apache.worker.state`
+    - `mode` is now `cpu.mode`
+    - `level` is now `apache.process.level`
+  Metric Changes:
+    - `apache.connections.async` is now `apache.connections`
+    - `apache.current_connections` is now `apache.connection.active`
+    - `apache.requests` is now `apache.request.count`
+    - `apache.scoreboard` is now `apache.workers`
+    - `apache.workers` was replaced by `apache.worker.active` and `apache.worker.idle`
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

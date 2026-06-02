@@ -20,7 +20,7 @@ The number of active connections currently attached to the HTTP server.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {connection} | Sum | Int | Cumulative | false | Development |
 
-### apache.connection.status
+### apache.connections
 
 The number of connections in different asynchronous states reported by Apache's server-status.
 
@@ -83,19 +83,11 @@ The average server load during the last 5 minutes.
 
 ### apache.request.count
 
-The number of requests serviced by the HTTP server per second.
+The number of requests serviced by the HTTP server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {request} | Sum | Int | Cumulative | true | Development |
-
-### apache.request.io.transmitted
-
-Total HTTP server traffic.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | Development |
 
 ### apache.request.time
 
@@ -104,6 +96,14 @@ Total time spent on handling requests.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | ms | Sum | Int | Cumulative | true | Development |
+
+### apache.traffic
+
+Total HTTP server traffic.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### apache.uptime
 
@@ -129,7 +129,7 @@ The number of idle workers currently attached to the HTTP server.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {worker} | Sum | Int | Cumulative | false | Development |
 
-### apache.worker.status
+### apache.workers
 
 The number of workers in each state.
 
@@ -143,7 +143,7 @@ The [apache scoreboard](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION)
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| apache.worker.state | The state of a connection. | Str: ``open``, ``waiting``, ``starting``, ``reading``, ``sending``, ``keepalive``, ``dnslookup``, ``closing``, ``logging``, ``finishing``, ``idle_cleanup``, ``unknown`` | Recommended | - |
+| apache.worker.state | The state of a worker. | Str: ``open``, ``waiting``, ``starting``, ``reading``, ``sending``, ``keepalive``, ``dnslookup``, ``closing``, ``logging``, ``finishing``, ``idle_cleanup``, ``unknown`` | Recommended | - |
 
 ## Resource Attributes
 

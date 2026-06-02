@@ -16,6 +16,7 @@ feature_gates:
       When enabled, datadogexporter and datadogconnector use improved logic to compute operation name and resource name.
     from_version: v0.118.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/36419
+    skip_strict_validation: true
 
   - id: datadog.EnableReceiveResourceSpansV2
     stage: beta
@@ -23,6 +24,7 @@ feature_gates:
       When enabled, use a refactored implementation of the span receiver which improves performance by 10% and deprecates some not-to-spec functionality.
     from_version: v0.118.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/37171
+    skip_strict_validation: true
 
   - id: exporter.datadogexporter.DisableAllMetricRemapping
     stage: beta
@@ -30,6 +32,7 @@ feature_gates:
       When enabled the Datadog Exporter stops mapping OpenTelemetry semantic conventions to Datadog semantic conventions for all locally mapped conventions including system and runtime metrics.
     from_version: v0.146.0
     reference_url: https://docs.datadoghq.com/opentelemetry/schema_semantics/metrics_mapping/
+    skip_strict_validation: true
 
   - id: exporter.datadogexporter.EnableAttributeSliceMultiTagExporting
     stage: alpha
@@ -37,6 +40,7 @@ feature_gates:
       When enabled, attributes with slice values will have their elements turned into individual `key:value` Datadog tags.
     from_version: v0.142.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44859
+    skip_strict_validation: true
 
   - id: exporter.datadogexporter.InferIntervalForDeltaMetrics
     stage: alpha
@@ -44,6 +48,7 @@ feature_gates:
       When enabled, the exporter will infer the metrics interval for OTLP delta sums using a heuristic.
     from_version: v0.148.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/46851
+    skip_strict_validation: true
 
   - id: exporter.datadogexporter.metricremappingdisabled
     stage: beta
@@ -51,3 +56,4 @@ feature_gates:
       When enabled the Datadog Exporter stops mapping OpenTelemetry semantic conventions to Datadog semantic conventions. This feature gate is only for internal use. [DEPRECATED] Use 'exporter.datadogexporter.DisableAllMetricRemapping' instead.
     from_version: v0.110.0
     reference_url: https://docs.datadoghq.com/opentelemetry/schema_semantics/metrics_mapping/
+    skip_strict_validation: true

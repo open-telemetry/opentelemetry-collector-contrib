@@ -42,7 +42,7 @@ attributes:
       - self
       - children
   apache.worker.state:
-    description: The state of a connection.
+    description: The state of a worker.
     type: string
     requirement_level: recommended
     enum:
@@ -78,7 +78,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: []
-  apache.connection.status:
+  apache.connections:
     enabled: true
     stability: development
     description: The number of connections in different asynchronous states reported by Apache's server-status.
@@ -137,21 +137,11 @@ metrics:
   apache.request.count:
     enabled: true
     stability: development
-    description: The number of requests serviced by the HTTP server per second.
+    description: The number of requests serviced by the HTTP server.
     unit: "{request}"
     sum:
       value_type: int
       input_type: string
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: []
-  apache.request.io.transmitted:
-    enabled: true
-    stability: development
-    description: Total HTTP server traffic.
-    unit: By
-    sum:
-      value_type: int
       monotonic: true
       aggregation_temporality: cumulative
     attributes: []
@@ -163,6 +153,16 @@ metrics:
     sum:
       value_type: int
       input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
+  apache.traffic:
+    enabled: true
+    stability: development
+    description: Total HTTP server traffic.
+    unit: By
+    sum:
+      value_type: int
       monotonic: true
       aggregation_temporality: cumulative
     attributes: []
@@ -199,7 +199,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: []
-  apache.worker.status:
+  apache.workers:
     enabled: true
     stability: development
     description: The number of workers in each state.

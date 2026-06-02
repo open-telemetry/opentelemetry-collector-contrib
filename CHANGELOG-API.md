@@ -7,6 +7,45 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.153.0
+
+### 💡 Enhancements 💡
+
+- `extension/file_storage`: Implement `storage.Walker` interface to allow iterating over all stored keys with deferred operations (#47755)
+- `internal/kafka`: Remove the dependency on github.com/IBM/sarama from all Kafka components. (#48260)
+  The Kafka exporter, receiver, metrics receiver, and topics observer have all
+  been migrated to github.com/twmb/franz-go. The remaining sarama-based helpers
+  in internal/kafka are removed, and protocol_version validation in
+  pkg/kafka/configkafka now uses franz-go's kversion package.
+  
+- `pkg/pdatatest`: Add `/exists` operator support to `pmetricassert` (#48079)
+- `pkg/pdatatest`: Introduce `pmetricassert` package for MTS-focused YAML metric assertions (#48079)
+- `receiver/file_log`: Improves file-reading efficiency by evicting previously read data from the OS page cache. (#48273)
+  Clears the cache on Linux; acts as a no-op on unsupported platforms.
+- `receiver/http_check`: Enables dynamic metric reaggregation in the HTTP Check receiver. This does not break existing configuration files. (#46358)
+
+<!-- previous-version -->
+
+## v0.152.0
+
+### 💡 Enhancements 💡
+
+- `pkg/faro`: Emit `k6_testRunId` in the log body when `meta.k6.testRunId` is present in the Faro payload. (#47935)
+  Surfaces the k6 test run identifier that the Faro Web SDK already
+  forwards from `window.k6.testRunId`, alongside the existing
+  `k6_isK6Browser` key. The reverse (logs -> Faro) translator extracts
+  it back into `Meta.K6.TestRunID` for round-trip parity.
+  
+- `pkg/translator/pprof`: Expose the `ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error)` method (#48014)
+- `receiver/couchdb`: Enables dynamic metric reaggregation in the CouchDB receiver. This does not break existing configuration files. (#46351)
+- `receiver/kafka`: Add support for custom consumer-group partition-assignment strategies via extensions that implement `kgo.GroupBalancer`. Set `group_rebalance_strategy` to the component ID of a registered extension to use a custom balancer. (#48096)
+  The four built-in strategies (`range`, `roundrobin`, `sticky`, `cooperative-sticky`) continue to work unchanged.
+  Any other value for `group_rebalance_strategy` is now resolved as an extension component ID at runtime.
+  
+- `receiver/memcached`: Enables dynamic metric reaggregation in the Memcached receiver. This does not break existing configuration files. (#46364)
+
+<!-- previous-version -->
+
 ## v0.151.0
 
 ### 🛑 Breaking changes 🛑
