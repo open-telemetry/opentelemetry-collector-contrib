@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	hostmetricsmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/ucal"
 )
@@ -106,7 +107,7 @@ func (s *processScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	// cached boot time value for use in the current scrape. This functionally
 	// replicates the previous functionality in all but the most extreme
 	// cases of boot time changing in the middle of a scrape.
-	if !bootTimeCacheFeaturegate.IsEnabled() {
+	if !hostmetricsmetadata.HostmetricsProcessBootTimeCacheFeatureGate.IsEnabled() {
 		host.EnableBootTimeCache(false)
 		_, err := host.BootTimeWithContext(ctx)
 		if err != nil {
@@ -371,6 +372,9 @@ func (s *processScraper) scrapeAndAppendPagingMetric(ctx context.Context, now pc
 	pageFaultsStat, err := handle.PageFaultsWithContext(ctx)
 	if err != nil {
 		return err
+	}
+	if pageFaultsStat == nil {
+		return nil
 	}
 
 	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MajorFaults), metadata.AttributePagingFaultTypeMajor)

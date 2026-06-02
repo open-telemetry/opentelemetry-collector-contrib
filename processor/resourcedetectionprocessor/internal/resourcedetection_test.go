@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -125,10 +124,7 @@ func TestDetectResource_DetectorFactoryError(t *testing.T) {
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
-func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set(metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.ID(), true)
-	assert.NoError(t, err)
-
+func TestDetectResource_Error_ContextDeadline(t *testing.T) {
 	md1 := &mockDetector{}
 	md1.On("Detect").Return(pcommon.NewResource(), "", errors.New("err1"))
 
@@ -141,10 +137,17 @@ func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 
-	err = p.Refresh(ctx, &http.Client{Timeout: 10 * time.Second})
+	err := p.Refresh(ctx, &http.Client{Timeout: 10 * time.Second})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "err1")
 	require.Contains(t, err.Error(), "err2")
+}
+
+func TestDetectResource_NoDetectors(t *testing.T) {
+	p := NewResourceProvider(zap.NewNop(), time.Second)
+
+	err := p.Refresh(t.Context(), &http.Client{Timeout: 10 * time.Second})
+	require.EqualError(t, err, "resource detection failed: no detectors succeeded")
 }
 
 func TestMergeResource(t *testing.T) {

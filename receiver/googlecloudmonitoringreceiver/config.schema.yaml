@@ -9,6 +9,9 @@ $defs:
         type: string
 type: object
 properties:
+  endpoint:
+    description: Overrides the default monitoring.googleapis.com:443 endpoint. Use this when targeting non-standard universe domains.
+    type: string
   metrics_list:
     type: array
     items:

@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: receiver/sqlserver
-note: Add missing `host.name` for logs when using `datasource` configuration
-issues: [46740]
-change_logs: [user]

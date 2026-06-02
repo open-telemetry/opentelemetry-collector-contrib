@@ -170,6 +170,8 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 		"",
 		buildInfo,
 		int64(5*time.Minute*3),
+		"",
+		"",
 	)
 
 	// Add full components (what would come from module info)
@@ -439,6 +441,8 @@ func TestPrepareOtelCollectorMetadata_DeploymentType(t *testing.T) {
 				"",
 				buildInfo,
 				int64(5*time.Minute*3),
+				"",
+				"",
 			)
 
 			assert.Equal(t, tt.deploymentType, metadata.CollectorDeploymentType)
@@ -465,6 +469,77 @@ func TestPrepareOtelCollectorMetadata_DeploymentType(t *testing.T) {
 	}
 }
 
+func TestPrepareOtelCollectorMetadata_GatewayTopology(t *testing.T) {
+	tests := []struct {
+		name               string
+		gatewayService     string
+		gatewayDestination string
+		expectInJSON       bool
+	}{
+		{
+			name:               "both empty - omitted from JSON",
+			gatewayService:     "",
+			gatewayDestination: "",
+			expectInJSON:       false,
+		},
+		{
+			name:               "gateway_service set by gateway collector",
+			gatewayService:     "monitoring/otelcol-gateway",
+			gatewayDestination: "",
+			expectInJSON:       true,
+		},
+		{
+			name:               "gateway_destination set by daemonset collector",
+			gatewayService:     "",
+			gatewayDestination: "monitoring/otelcol-gateway",
+			expectInJSON:       true,
+		},
+		{
+			name:               "both set for intermediate gateway",
+			gatewayService:     "monitoring/otelcol-gateway-l2",
+			gatewayDestination: "monitoring/otelcol-gateway-l1",
+			expectInJSON:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buildInfo := CustomBuildInfo{Command: "otelcol", Description: "Test Collector", Version: "1.0.0"}
+			metadata := PrepareOtelCollectorMetadata(
+				"test-host", "config", "test-uuid", "1.0.0", "datadoghq.com", "{}",
+				"unknown", "", buildInfo, int64(5*time.Minute*3),
+				tt.gatewayService, tt.gatewayDestination,
+			)
+
+			assert.Equal(t, tt.gatewayService, metadata.GatewayService)
+			assert.Equal(t, tt.gatewayDestination, metadata.GatewayDestination)
+
+			p := &OtelCollectorPayload{Hostname: "test-host", Timestamp: time.Now().UnixNano(), UUID: "test-uuid", Metadata: metadata}
+			jsonData, err := json.Marshal(p)
+			require.NoError(t, err)
+
+			var jsonMap map[string]any
+			err = json.Unmarshal(jsonData, &jsonMap)
+			require.NoError(t, err)
+
+			metadataMap, ok := jsonMap["otel_collector"].(map[string]any)
+			require.True(t, ok)
+
+			if tt.expectInJSON {
+				if tt.gatewayService != "" {
+					assert.Equal(t, tt.gatewayService, metadataMap["gateway_service"])
+				}
+				if tt.gatewayDestination != "" {
+					assert.Equal(t, tt.gatewayDestination, metadataMap["gateway_destination"])
+				}
+			} else {
+				assert.NotContains(t, metadataMap, "gateway_service")
+				assert.NotContains(t, metadataMap, "gateway_destination")
+			}
+		})
+	}
+}
+
 func TestPrepareOtelCollectorMetadata_InstallationMethod(t *testing.T) {
 	tests := []struct {
 		name               string
@@ -484,6 +559,7 @@ func TestPrepareOtelCollectorMetadata_InstallationMethod(t *testing.T) {
 			metadata := PrepareOtelCollectorMetadata(
 				"test-host", "config", "test-uuid", "1.0.0", "datadoghq.com", "{}",
 				"unknown", tt.installationMethod, buildInfo, int64(5*time.Minute*3),
+				"", "",
 			)
 
 			assert.Equal(t, tt.installationMethod, metadata.CollectorInstallationMethod)

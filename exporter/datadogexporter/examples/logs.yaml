@@ -1,5 +1,5 @@
 receivers:
- filelog:
+ file_log:
     include_file_path: true
     poll_interval: 500ms
     include:
@@ -35,6 +35,6 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       processors: [transform]
       exporters: [datadog]

@@ -77,7 +77,7 @@ func getCredsProviderFromConfig(cfg *Config) (*aws.CredentialsProvider, error) {
 	if cfg.AssumeRole.ARN != "" {
 		stsSvc := sts.NewFromConfig(awscfg)
 
-		provider := stscreds.NewAssumeRoleProvider(stsSvc, cfg.AssumeRole.ARN)
+		provider := stscreds.NewAssumeRoleProvider(stsSvc, cfg.AssumeRole.ARN, assumeRoleOptions(cfg))
 		awscfg.Credentials = aws.NewCredentialsCache(provider)
 	}
 
@@ -116,4 +116,12 @@ func getCredsProviderFromWebIdentityConfig(cfg *Config) (*aws.CredentialsProvide
 	awscfg.Credentials = aws.NewCredentialsCache(provider)
 
 	return &awscfg.Credentials, nil
+}
+
+func assumeRoleOptions(cfg *Config) func(*stscreds.AssumeRoleOptions) {
+	return func(o *stscreds.AssumeRoleOptions) {
+		if cfg.AssumeRole.ExternalID != "" {
+			o.ExternalID = &cfg.AssumeRole.ExternalID
+		}
+	}
 }

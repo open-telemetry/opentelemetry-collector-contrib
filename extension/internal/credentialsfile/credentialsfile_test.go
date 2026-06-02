@@ -82,6 +82,23 @@ func TestFileWatcher_TrimsWhitespace(t *testing.T) {
 	assert.Equal(t, "mytoken", r.Value())
 }
 
+func TestFileWatcher_DoubleStartFails(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	f := filepath.Join(dir, "secret")
+	require.NoError(t, os.WriteFile(f, []byte("mytoken"), 0o600))
+
+	r, err := NewValueResolver("", f, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context()))
+	defer func() { require.NoError(t, r.Shutdown()) }()
+
+	// Second start should fail
+	err = r.Start(t.Context())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "already started")
+}
+
 func TestFileWatcher_UpdatesOnWrite(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()

@@ -171,6 +171,8 @@ behaviours, which may be configured through the following settings:
 - `mapping`:
   - `mode` (DEPRECATED): The mapping mode if supplied via config file is ignored. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead. If not specified via these methods, the default mapping mode is `otel`.
   - `allowed_modes` (defaults to all mapping modes): A list of allowed mapping modes.
+    If `otel` is included in the list, it is used as the default mapping mode.
+    Otherwise, the first entry in the list is used as the default.
 
 The mapping mode can be controlled via the client metadata key `X-Elastic-Mapping-Mode`,
 e.g. via HTTP headers, gRPC metadata.
@@ -236,7 +238,7 @@ service:
 > `otel` and `ecs` mapping modes require Elasticsearch 8.12 or above[^1].
 > `otel` mode works best with Elasticsearch 8.16 or above[^2].
 
-[^1]: as OTel and ECS mapping modes rely on the `require_data_stream` bulk API parameter, available since Elasticsearch 8.12
+[^1]: as OTel and ECS mapping modes rely on the `require_data_stream` bulk action metadata, available since Elasticsearch 8.12
 [^2]: Elasticsearch 8.16 contains a built-in `otel-data` plugin
 
 #### OTel mapping mode
@@ -443,6 +445,19 @@ The index template must define dynamic templates whose names match the values se
 - **OTel**: Each metric is written under the `metrics` object; the bulk action maps full field names (e.g. `metrics.my_metric`) to one of the OTel template names above based on metric type (histogram, summary, gauge, or counter) and value type.
 - **ECS**: Each metric is written as a top-level field `metric.<name>`; the bulk action maps that field name to one of the ECS/APM template names (`histogram_metrics`, `summary_metrics`, or `double_metrics` for gauges and counters).
 
+### Bulk Response Filter Path
+
+The Elasticsearch bulk API accepts a [filter_path](https://www.elastic.co/docs/reference/elasticsearch/rest-apis/common-options#common-options-response-filtering) parameter.  This can be used to reduce the response returned by Elasticsearch.  The exporter uses a default `filter_path` that is set by the [go-docappender](https://github.com/elastic/go-docappender).  The default is currently `items.*._index,items.*.status,items.*.failure_store,items.*.error.type,items.*.error.reason` and is defined by the `DefaultFilterPath` in the [go-docappnder](https://github.com/elastic/go-docappender) package.
+
+If you want to change the `filter_path` you may do so by setting `bulk_response_filter_path` to the desired string in the configuration.
+
+
+> [!NOTE]
+> If `items.*._index.items` is not in the BulkResponseFilterPath than for any failed documents, the exporter will not be able to log the index to which the document was being written to.
+
+> [!NOTE]
+> If `items.*._index.items` is not in the BulkResponseFilterPath than the exporter will log rejection of duplicates to ".profiling-stackframes" which were previously suppressed.
+
 ## Exporting profiles
 
 Profiles support is currently in development, and should not be used in
@@ -564,28 +579,6 @@ There are ECS fields that are not mapped easily 1 to 1 but require more advanced
 
 Maintains the SemConv Value `host.name` as ECS Value `host.name` and maps it to ECS Value `host.hostname`, if this does not already exist.
 
-#### `host.os.type`
-
-Maps values of `os.type` in the following manner:
-
-| SemConv Value | ECS Value |
-|---------------|-----------|
-| windows       | windows   |
-| linux         | linux     |
-| darwin        | macos     |
-| aix           | unix      |
-| hpux          | unix      |
-| solaris       | unix      |
-
-In case `os.name` is present and falls within the specified range of values:
-
-| SemConv Value | ECS Value |
-|---------------|-----------|
-| Android       | android   |
-| iOS           | ios       |
-
-Otherwise, it is mapped to an empty string ("").
-
 #### `@timestamp`
 
 In case the record contains `timestamp`, this value is used. Otherwise, the `observed timestamp` is used.
@@ -702,7 +695,7 @@ error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flu
 }
 ```
 
-In this scenario, Elasticsearch may reject the bulk request because the `require_data_stream` query parameter is not supported.
+In this scenario, Elasticsearch may reject the bulk request because the `require_data_stream` bulk action metadata is not supported.
 This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0, or explicitly by configuring `mapping::mode: otel`) or [ECS mapping mode](#ecs-mapping-mode), and send data to Elasticsearch version < 8.12.
 
 To resolve this, upgrade Elasticsearch to 8.12+; for OTel mapping mode, 8.16+ is recommended.

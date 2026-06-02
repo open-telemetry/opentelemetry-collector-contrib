@@ -1,0 +1,27 @@
+description: Config contains the information necessary for enabling the Datadog Extension.
+type: object
+properties:
+  api:
+    description: Define the site and API key (and whether to fail on invalid API key) in API.
+    $ref: /pkg/datadog/config.api_config
+  deployment_type:
+    description: DeploymentType indicates the type of deployment (gateway, daemonset, or unknown). Defaults to "unknown" if not set.
+    type: string
+  gateway_destination:
+    description: 'GatewayDestination is the k8s Service that this collector forwards telemetry to. Set by agent/daemonset collectors. Format: "service" or "namespace/service". Must match gateway_service on the receiving gateway collector.'
+    type: string
+  gateway_service:
+    description: 'GatewayService is the k8s Service fronting the gateway collector pods. Set by gateway collectors. Format: "service" or "namespace/service". Together with cluster_name, it forms the join key for fleet topology queries.'
+    type: string
+  hostname:
+    description: If Hostname is empty extension will use available system APIs and cloud provider endpoints.
+    type: string
+  http:
+    description: HTTPConfig is v2 config for the http metadata service.
+    x-pointer: true
+    $ref: ./internal/httpserver.config
+  installation_method:
+    description: 'InstallationMethod indicates how the collector was installed. Valid values: "", "kubernetes", "bare-metal", "docker", "ecs-fargate", "eks-fargate". Defaults to "" (unset) if not configured.'
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config

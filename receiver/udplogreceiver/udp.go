@@ -6,6 +6,7 @@ package udplogreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -13,9 +14,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver/internal/metadata"
 )
 
-// NewFactory creates a factory for udp receiver
+// NewFactory creates a factory for udp_log receiver
 func NewFactory() receiver.Factory {
-	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability)
+	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability,
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 // ReceiverType implements adapter.LogReceiverType
@@ -42,7 +45,7 @@ func (ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*UDPLogConfig).BaseConfig
 }
 
-// UDPLogConfig defines configuration for the udp receiver
+// UDPLogConfig defines configuration for the udp_log receiver
 type UDPLogConfig struct {
 	InputConfig        udp.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`

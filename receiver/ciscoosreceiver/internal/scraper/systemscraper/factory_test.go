@@ -65,7 +65,7 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "valid_config",
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				Device: connection.DeviceConfig{
 					Device: connection.DeviceInfo{
 						Host: connection.HostInfo{IP: "192.168.1.1", Port: 22},
@@ -78,7 +78,7 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "empty_device",
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				Device:               connection.DeviceConfig{},
 			},
 			expectError: false, // Empty device is allowed at config level
@@ -98,7 +98,7 @@ func TestConfig_Validate(t *testing.T) {
 
 func TestConfig_MetricsConfiguration(t *testing.T) {
 	config := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 
 	// Verify metrics are configurable

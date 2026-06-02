@@ -17,6 +17,7 @@ var (
 	api = windows.NewLazySystemDLL("wevtapi.dll")
 
 	subscribeProc             SyscallProc = api.NewProc("EvtSubscribe")
+	queryProc                 SyscallProc = api.NewProc("EvtQuery")
 	nextProc                  SyscallProc = api.NewProc("EvtNext")
 	renderProc                SyscallProc = api.NewProc("EvtRender")
 	closeProc                 SyscallProc = api.NewProc("EvtClose")
@@ -86,6 +87,13 @@ const (
 	EvtRenderContextSystem uint32 = 1
 )
 
+const (
+	// EvtQueryChannelPath specifies that the query is against one or more channels.
+	EvtQueryChannelPath uint32 = 1
+	// EvtQueryFilePath specifies that the query is against one or more log files
+	EvtQueryFilePath uint32 = 2
+)
+
 // evtSubscribe is the direct syscall implementation of EvtSubscribe (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtsubscribe)
 var evtSubscribe = func(session uintptr, signalEvent windows.Handle, channelPath, query *uint16, bookmark, context, callback uintptr, flags uint32) (uintptr, error) {
 	handle, _, err := subscribeProc.Call(session, uintptr(signalEvent), uintptr(unsafe.Pointer(channelPath)), uintptr(unsafe.Pointer(query)), bookmark, context, callback, uintptr(flags))
@@ -148,7 +156,7 @@ var evtCreateRenderContext = func(valuePathsCount uint32, valuePaths **uint16, f
 	return handle, nil
 }
 
-// evtUpdateBookmark is the direct syscall implementation of EvtUpdateBookmark (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtcreatebookmark)
+// evtUpdateBookmark is the direct syscall implementation of EvtUpdateBookmark (https://learn.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtupdatebookmark)
 var evtUpdateBookmark = func(bookmark, event uintptr) error {
 	_, _, err := updateBookmarkProc.Call(bookmark, event)
 	if !errors.Is(err, ErrorSuccess) {
@@ -186,5 +194,15 @@ var evtOpenSession = func(loginClass uint32, login *EvtRPCLogin, timeout, flags 
 	if handle == 0 {
 		return handle, e1
 	}
+	return handle, nil
+}
+
+// evtQuery is the direct syscall implementation of EvtQuery (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtquery)
+var evtQuery = func(session uintptr, path, query *uint16, flags uint32) (uintptr, error) {
+	handle, _, err := queryProc.Call(session, uintptr(unsafe.Pointer(path)), uintptr(unsafe.Pointer(query)), uintptr(flags))
+	if !errors.Is(err, ErrorSuccess) {
+		return 0, err
+	}
+
 	return handle, nil
 }

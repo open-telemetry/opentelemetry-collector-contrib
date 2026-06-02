@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver/internal/metadata"
 )
 
 func TestConvertCountEnvelope(t *testing.T) {
@@ -76,9 +78,9 @@ func TestConvertCountEnvelope(t *testing.T) {
 			resourceMetricSlice := pmetric.NewResourceMetricsSlice()
 
 			if tt.resourceAttrs {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowResourceAttributes.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.CloudfoundryResourceAttributesAllowFeatureGate.ID(), true))
 				t.Cleanup(func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowResourceAttributes.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.CloudfoundryResourceAttributesAllowFeatureGate.ID(), false))
 				})
 			}
 
@@ -175,9 +177,9 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 			resourceMetricSlice := pmetric.NewResourceMetricsSlice()
 
 			if tt.resourceAttrs {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowResourceAttributes.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.CloudfoundryResourceAttributesAllowFeatureGate.ID(), true))
 				t.Cleanup(func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowResourceAttributes.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.CloudfoundryResourceAttributesAllowFeatureGate.ID(), false))
 				})
 			}
 
@@ -353,9 +355,9 @@ func TestConvertLogsEnvelope(t *testing.T) {
 		t.Run(tt.id, func(t *testing.T) {
 			resourceLogSlice := plog.NewResourceLogsSlice()
 			if tt.resourceAttrs {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowResourceAttributes.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.CloudfoundryResourceAttributesAllowFeatureGate.ID(), true))
 				t.Cleanup(func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowResourceAttributes.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.CloudfoundryResourceAttributesAllowFeatureGate.ID(), false))
 				})
 			}
 			e := convertEnvelopeToLogs(&tt.envelope, resourceLogSlice.AppendEmpty().ScopeLogs().AppendEmpty().LogRecords(), now)

@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
@@ -176,16 +176,20 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 	var value string
 	var err error
 	for i = 0; remaining != ""; i++ {
-		if i >= len(attributeNames) {
-			return errors.New("values in log line exceed the number of available fields")
-		}
-
 		value, remaining, err = scanField(remaining)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
 			return err
+		}
+
+		if i >= len(attributeNames) {
+			// Skip unknown fields for forward compatibility with future AWS S3
+			// access log format additions. AWS may append new fields without a
+			// format version bump.
+			// See https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html.
+			continue
 		}
 
 		if value == unknownField && i != fieldIndexACLRequired {
@@ -207,7 +211,7 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 		}
 	}
 
-	if i != fieldIndexACLRequired+1 {
+	if i < fieldIndexACLRequired+1 {
 		return errors.New("values in log line are less than the number of available fields")
 	}
 

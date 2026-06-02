@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: extension/google_cloud_logentry_encoding
-note: Fix incorrect snake_case conversion for keys containing numbers (e.g., "k8s" becoming "k8_s") in Google Cloud log entries.
-issues: [46571]
-subtext: ""

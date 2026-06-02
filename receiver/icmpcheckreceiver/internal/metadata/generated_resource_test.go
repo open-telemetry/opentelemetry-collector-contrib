@@ -30,16 +30,15 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("net.peer.ip")
+			netPeerIPAttrVal, ok := res.Attributes().Get("net.peer.ip")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "net.peer.ip-val", val.Str())
+				assert.Equal(t, "net.peer.ip-val", netPeerIPAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("net.peer.name")
+			netPeerNameAttrVal, ok := res.Attributes().Get("net.peer.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "net.peer.name-val", val.Str())
+				assert.Equal(t, "net.peer.name-val", netPeerNameAttrVal.Str())
 			}
 		})
 	}

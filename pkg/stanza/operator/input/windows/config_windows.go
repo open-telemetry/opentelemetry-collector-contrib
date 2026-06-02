@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
@@ -24,8 +25,12 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		return nil, err
 	}
 
-	if c.Channel == "" && c.Query == nil {
-		return nil, errors.New("either `channel` or `query` must be set")
+	if c.Channel == "" && c.Query == nil && c.Path == nil {
+		return nil, errors.New("either `channel`, `query` or `path` must be set")
+	}
+
+	if c.Path != nil && (c.Channel != "" || c.Query != nil) {
+		return nil, errors.New("the `path` field cannot be used with `channel` or `query`")
 	}
 
 	if c.Channel != "" && c.Query != nil {
@@ -49,22 +54,32 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		return nil, errors.New("remote configuration must have non-empty `username` and `password`")
 	}
 
+	eventDrivenScraping := c.EventDrivenScraping || metadata.StanzaWindowsEventDrivenScrapingFeatureGate.IsEnabled()
+
+	maxEventsPerPoll := c.MaxEventsPerPoll
+	if eventDrivenScraping {
+		maxEventsPerPoll = 0
+	}
+
 	input := &Input{
 		InputOperator:            inputOperator,
 		buffer:                   NewBuffer(),
 		channel:                  c.Channel,
 		ignoreChannelErrors:      c.IgnoreChannelErrors,
 		maxReads:                 c.MaxReads,
-		maxEventsPerPollCycle:    c.MaxEventsPerPoll,
+		maxEventsPerPollCycle:    maxEventsPerPoll,
 		currentMaxReads:          c.MaxReads,
 		startAt:                  c.StartAt,
 		pollInterval:             c.PollInterval,
+		waitTimeout:              c.WaitTimeout,
+		eventDrivenScraping:      eventDrivenScraping,
 		raw:                      c.Raw,
 		eventDataFormat:          c.EventDataFormat,
 		includeLogRecordOriginal: c.IncludeLogRecordOriginal,
 		excludeProviders:         excludeProvidersSet(c.ExcludeProviders),
 		remote:                   c.Remote,
 		query:                    c.Query,
+		path:                     c.Path,
 	}
 	input.startRemoteSession = input.defaultStartRemoteSession
 

@@ -109,8 +109,10 @@ func TestComponentParser(t *testing.T) {
 				DirPath:  dir,
 				Mappings: testMappings(),
 				AllowedRefs: []string{
+					"go.opentelemetry.io/collector",
 					"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen",
 				},
+				Namespace: "github.com/open-telemetry/opentelemetry-collector-contrib",
 			}
 			if tc.rootType != "" {
 				cfg.ConfigType = tc.rootType

@@ -11,7 +11,7 @@ import (
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding"
@@ -60,8 +60,8 @@ func (*defaultCWLogsDecoder) UnmarshalLogs(data []byte) (plog.Logs, error) {
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 	resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), cwLog.Owner)
-	resourceAttrs.PutStr(string(conventions.AWSLogGroupNamesKey), cwLog.LogGroup)
-	resourceAttrs.PutStr(string(conventions.AWSLogStreamNamesKey), cwLog.LogStream)
+	resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwLog.LogGroup)
+	resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwLog.LogStream)
 
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName(metadata.ScopeName)

@@ -21,8 +21,7 @@ func TestMdtDialout_BasicFlow(t *testing.T) {
 	consumer := &consumertest.MetricsSink{}
 	settings := createTestSettings()
 
-	receiver, err := createMetricsReceiver(t.Context(), settings, config, consumer)
-	require.NoError(t, err)
+	receiver := createMetricsReceiver(t.Context(), settings, config, consumer)
 
 	yangParser := internal.NewYANGParser()
 	yangParser.LoadBuiltinModules()
@@ -44,8 +43,7 @@ func TestProcessTelemetryData_ErrorHandling(t *testing.T) {
 	consumer := &consumertest.MetricsSink{}
 	settings := createTestSettings()
 
-	receiver, err := createMetricsReceiver(t.Context(), settings, config, consumer)
-	require.NoError(t, err)
+	receiver := createMetricsReceiver(t.Context(), settings, config, consumer)
 
 	yangParser := internal.NewYANGParser()
 	yangParser.LoadBuiltinModules()
@@ -60,9 +58,8 @@ func TestProcessTelemetryData_ErrorHandling(t *testing.T) {
 		ReqId: 12345,
 		Data:  []byte{}, // Empty data
 	}
-	err = service.processTelemetryData(emptyMsg)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "empty telemetry data")
+	err := service.processTelemetryData(emptyMsg)
+	assert.NoError(t, err)
 
 	// Test with invalid protobuf data
 	invalidMsg := &pb.MdtDialoutArgs{
@@ -71,7 +68,7 @@ func TestProcessTelemetryData_ErrorHandling(t *testing.T) {
 	}
 	err = service.processTelemetryData(invalidMsg)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to unmarshal telemetry data")
+	assert.Contains(t, err.Error(), "cannot parse invalid wire-format data")
 
 	// Test with valid telemetry data (simple case)
 	validTelemetry := &pb.Telemetry{
@@ -90,51 +87,12 @@ func TestProcessTelemetryData_ErrorHandling(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// Add more coverage for helper methods that show 0% coverage
-func TestGrpcServiceHelpers(t *testing.T) {
-	config := createValidTestConfig()
-	consumer := &consumertest.MetricsSink{}
-	settings := createTestSettings()
-
-	receiver, err := createMetricsReceiver(t.Context(), settings, config, consumer)
-	require.NoError(t, err)
-
-	yangParser := internal.NewYANGParser()
-	yangParser.LoadBuiltinModules()
-
-	service := &grpcService{
-		receiver:   receiver.(*yangReceiver),
-		yangParser: yangParser,
-	}
-
-	// Test extractFieldName method (currently 0% coverage)
-	fieldName := service.extractFieldName("test.path.field-name")
-	assert.Equal(t, "field-name", fieldName)
-
-	fieldName = service.extractFieldName("simple-field")
-	assert.Equal(t, "simple-field", fieldName)
-
-	fieldName = service.extractFieldName("field_info")
-	assert.Equal(t, "field", fieldName) // Should remove _info suffix
-
-	// Test extractYANGModule method
-	module := service.extractYANGModule("Cisco-IOS-XE-interfaces-oper:interfaces")
-	assert.Equal(t, "Cisco-IOS-XE-interfaces-oper", module)
-
-	module = service.extractYANGModule("simple-path")
-	assert.Equal(t, "unknown", module) // Returns "unknown" if no colon found
-
-	module = service.extractYANGModule("")
-	assert.Equal(t, "unknown", module)
-}
-
 func TestConvertToOTELMetrics(t *testing.T) {
 	config := createValidTestConfig()
 	consumer := &consumertest.MetricsSink{}
 	settings := createTestSettings()
 
-	receiver, err := createMetricsReceiver(t.Context(), settings, config, consumer)
-	require.NoError(t, err)
+	receiver := createMetricsReceiver(t.Context(), settings, config, consumer)
 
 	yangParser := internal.NewYANGParser()
 	yangParser.LoadBuiltinModules()

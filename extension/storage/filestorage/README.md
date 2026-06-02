@@ -118,12 +118,12 @@ exporters:
 ## Replacing unsafe characters in component names
 
 The extension uses the type and name of the component using the extension to create a file where the component's data is stored.
-For example, if a file log receiver named `filelog/logs` uses the extension, its data is stored in a file named `receiver_filelog_logs`.
+For example, if a Journald receiver named `journald/myservice` uses the extension, its data is stored in a file named `receiver_journald_myservice`.
 
 Sometimes the component name contains characters that either have special meaning in paths - like `/` - or are problematic or even forbidden in file names (depending on the host operating system), like `?` or `|`.
 To prevent surprising or erroneous behavior, some characters in the component names are replaced before creating the file name to store data by the extension.
 
-For example, for a file log receiver named `filelog/logs/container`, the component name `logs/container` is sanitized into `logs~007Econtainer` and the data is stored in a file named `receiver_filelog_logs~007Econtainer`.
+For example, for a Journald receiver named `journal/mynamespace/myservice`, the component name `mynamespace/myservice` is sanitized into `mynamespace~002Fmyservice` and the data is stored in a file named `receiver_journald_mynamespace~002Fmyservice`.
 
 Every unsafe character is replaced with a tilde `~` and the character's [Unicode number][unicode_chars] in hex.
 The only safe characters are: uppercase and lowercase ASCII letters `A-Z` and `a-z`, digits `0-9`, dot `.`, hyphen `-`, underscore `_`.
@@ -152,7 +152,7 @@ created by the File Storage extension is to use the strings utility ([Linux](htt
 [Windows](https://learn.microsoft.com/en-us/sysinternals/downloads/strings)).
 
 For example, here are the contents of the file created by the File Storage extension when it's configured as the storage
-for the `filelog` receiver.
+for the File Log receiver.
 
 ```sh
 $ strings /tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_

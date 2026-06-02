@@ -31,21 +31,20 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("host.ip")
+			hostIPAttrVal, ok := res.Attributes().Get("host.ip")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "host.ip-val", val.Str())
+				assert.Equal(t, "host.ip-val", hostIPAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("hw.type")
+			hwTypeAttrVal, ok := res.Attributes().Get("hw.type")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "hw.type-val", val.Str())
+				assert.Equal(t, "hw.type-val", hwTypeAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("os.name")
+			osNameAttrVal, ok := res.Attributes().Get("os.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "os.name-val", val.Str())
+				assert.Equal(t, "os.name-val", osNameAttrVal.Str())
 			}
 		})
 	}

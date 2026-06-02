@@ -18,6 +18,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "state"
+            default:
+              - "state"
       nginx.connections_handled:
         description: "NginxConnectionsHandledMetricConfig provides config for the nginx.connections_handled metric."
         type: object

@@ -10,6 +10,12 @@ resourceMetrics:
         - key: k8s.job.uid
           value:
             stringValue: test-job-1-uid
+      entityRefs:
+        - descriptionKeys:
+            - k8s.job.name
+          idKeys:
+            - k8s.job.uid
+          type: k8s.job
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -46,4 +52,3 @@ resourceMetrics:
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
-

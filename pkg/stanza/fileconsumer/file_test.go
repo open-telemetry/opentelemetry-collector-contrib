@@ -4,6 +4,7 @@
 package fileconsumer
 
 import (
+	"bytes"
 	"compress/gzip"
 	"context"
 	"fmt"
@@ -752,7 +753,7 @@ func TestRestartOffsets(t *testing.T) {
 		{"start_at_beginning_short", "beginning", 20},
 		{"start_at_end_short", "end", 20},
 		{"start_at_beginning_long", "beginning", 2000},
-		{"start_at_end_short", "end", 2000},
+		{"start_at_end_long", "end", 2000},
 	}
 
 	for _, tc := range testCases {
@@ -773,14 +774,16 @@ func TestRestartOffsets(t *testing.T) {
 			during2ndRun := filetest.TokenWithLength(tc.lineLength)
 
 			operatorOne, sink1 := testManager(t, cfg)
+			operatorOne.persister = persister
 			filetest.WriteString(t, logFile, string(before1stRun)+"\n")
-			require.NoError(t, operatorOne.Start(persister))
+			operatorOne.poll(t.Context())
 			if tc.startAt == "beginning" {
 				sink1.ExpectToken(t, before1stRun)
 			} else {
-				sink1.ExpectNoCallsUntil(t, 500*time.Millisecond)
+				sink1.ExpectNoCalls(t)
 			}
 			filetest.WriteString(t, logFile, string(during1stRun)+"\n")
+			operatorOne.poll(t.Context())
 			sink1.ExpectToken(t, during1stRun)
 			require.NoError(t, operatorOne.Stop())
 
@@ -1317,10 +1320,8 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 	filetest.WriteString(t, temp, "|headerField1: headerValue1\n")
 
 	persister := testutil.NewUnscopedMockPersister()
-
-	// Start and stop the operator, ensuring that at least one poll cycle occurs in between
-	require.NoError(t, op1.Start(persister))
-	time.Sleep(2 * cfg1.PollInterval)
+	op1.persister = persister
+	op1.poll(t.Context())
 	require.NoError(t, op1.Stop())
 
 	filetest.WriteString(t, temp, "|headerField2: headerValue2\nlog line\n")
@@ -1668,4 +1669,64 @@ func TestArchive(t *testing.T) {
 	log4 := emit.Token{Body: []byte("testlog4"), Attributes: map[string]any{attrs.LogFileName: filepath.Base(temp.Name())}}
 
 	sink.ExpectCalls(t, log3, log4)
+}
+
+func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
+	t.Parallel()
+
+	line := string(bytes.Repeat([]byte("a"), 1024)) // identical 1024B lines
+
+	tempDir := t.TempDir()
+
+	// Create the log file first so we can scope the include to its exact path.
+	log := filetest.OpenTemp(t, tempDir)
+
+	cfg := NewConfig()
+	cfg.Include = append(cfg.Include, log.Name())
+	cfg.StartAt = "beginning"
+	cfg.FingerprintSize = 1000 // identical prefix across rotations
+	cfg.OnTruncate = OnTruncateReadWholeFile
+
+	// Manager #1 (manual polling, no background goroutine)
+	op1, sink1 := testManager(t, cfg)
+	op1.persister = testutil.NewUnscopedMockPersister()
+
+	// Write 20 lines
+	for range 20 {
+		filetest.WriteString(t, log, line+"\n")
+	}
+
+	// First poll: read the existing 20 lines
+	op1.poll(t.Context())
+	for range 20 {
+		sink1.ExpectToken(t, []byte(line))
+	}
+
+	// Grab metadata before truncation -- this captures the stale offset
+	// from reading the original 20 lines.
+	metadata := op1.tracker.GetMetadata()
+	require.NotEmpty(t, metadata)
+
+	// Simulate truncation while op1 is "down" (no more polls)
+	require.NoError(t, log.Truncate(0))
+	_, err := log.Seek(0, 0)
+	require.NoError(t, err)
+	for range 10 {
+		filetest.WriteString(t, log, line+"\n")
+	}
+
+	// Manager #2 (manual polling) resumes from persisted metadata
+	op2, sink2 := testManager(t, cfg)
+	op2.persister = testutil.NewUnscopedMockPersister()
+
+	// Load stale metadata so op2 sees the old (large) offset
+	op2.tracker.LoadMetadata(metadata)
+
+	// On poll, stored offset > current file size is detected.
+	// With read_whole_file, offset resets to 0, so all 10 lines are read.
+	op2.poll(t.Context())
+	for range 10 {
+		sink2.ExpectToken(t, []byte(line))
+	}
+	sink2.ExpectNoCalls(t)
 }

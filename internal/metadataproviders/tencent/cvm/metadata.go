@@ -9,6 +9,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -77,48 +79,31 @@ func (c *metadataClient) getMetadata(ctx context.Context, path string) (string, 
 
 // Metadata retrieves all CVM instance metadata.
 func (c *metadataClient) Metadata(ctx context.Context) (*Metadata, error) {
-	instanceName, err := c.getMetadata(ctx, "instance-name")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get instance-name: %w", err)
+	g, ctx := errgroup.WithContext(ctx)
+	var md Metadata
+
+	fetch := func(dst *string, key, label string) {
+		g.Go(func() error {
+			val, err := c.getMetadata(ctx, key)
+			if err != nil {
+				return fmt.Errorf("failed to get %s: %w", label, err)
+			}
+			*dst = val
+			return nil
+		})
 	}
 
-	imageID, err := c.getMetadata(ctx, "instance/image-id")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get image-id: %w", err)
+	fetch(&md.InstanceName, "instance-name", "instance-name")
+	fetch(&md.ImageID, "instance/image-id", "image-id")
+	fetch(&md.InstanceID, "instance-id", "instance-id")
+	fetch(&md.InstanceType, "instance/instance-type", "instance-type")
+	fetch(&md.AppID, "app-id", "app-id")
+	fetch(&md.RegionID, "placement/region", "region")
+	fetch(&md.ZoneID, "placement/zone", "zone")
+
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
-	instanceID, err := c.getMetadata(ctx, "instance-id")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get instance-id: %w", err)
-	}
-
-	instanceType, err := c.getMetadata(ctx, "instance/instance-type")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get instance-type: %w", err)
-	}
-
-	appID, err := c.getMetadata(ctx, "app-id")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get app-id: %w", err)
-	}
-
-	regionID, err := c.getMetadata(ctx, "placement/region")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get region: %w", err)
-	}
-
-	zoneID, err := c.getMetadata(ctx, "placement/zone")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get zone: %w", err)
-	}
-
-	return &Metadata{
-		InstanceName: instanceName,
-		ImageID:      imageID,
-		InstanceID:   instanceID,
-		InstanceType: instanceType,
-		AppID:        appID,
-		RegionID:     regionID,
-		ZoneID:       zoneID,
-	}, nil
+	return &md, nil
 }

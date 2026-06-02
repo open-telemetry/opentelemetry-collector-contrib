@@ -62,6 +62,7 @@
       {
         "type": "Error",
         "value": "Cannot read property 'find' of undefined",
+        "fatal": true,
         "stacktrace": {
           "frames": [
             {
@@ -272,7 +273,8 @@
         "release": "0.8.2",
         "version": "abcdefg",
         "environment": "production",
-        "bundleId": "testBundleId"
+        "bundleId": "testBundleId",
+        "installationId": "install-abc-123"
       },
       "user": {
         "username": "testuser",
@@ -296,6 +298,20 @@
         "version": "88.12.1",
         "os": "linux",
         "mobile": false
+      },
+      "device": {
+        "manufacturer": "Apple",
+        "model_identifier": "iPhone14,5",
+        "model_name": "iPhone 13",
+        "brand": "iPhone",
+        "is_physical": true,
+        "type": "mobile"
+      },
+      "os": {
+        "name": "iOS",
+        "version": "18.1",
+        "build_id": "22G91",
+        "detail": "iOS 18.1 (22G91)"
       },
       "view": {
         "name": "foobar"

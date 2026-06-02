@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: receiver/datadog
-note: Preserve original per-span service name when `_dd.base_service` overrides the resource-level service name, so the DD exporter can recover it on the DD-to-OTEL-to-DD roundtrip path.
-issues: [1909]
-change_logs: [user]

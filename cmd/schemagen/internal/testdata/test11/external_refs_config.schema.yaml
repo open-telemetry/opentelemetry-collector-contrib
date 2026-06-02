@@ -1,7 +1,8 @@
 type: object
 allOf:
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/external.test_config
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: /cmd/schemagen/internal/testdata/external.test_config
 properties:
   test_nested:
-    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/external.test_config
+    $ref: /cmd/schemagen/internal/testdata/external.test_config
 

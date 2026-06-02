@@ -330,7 +330,6 @@ func TestProcessor_RefreshInterval_UpdatesResource(t *testing.T) {
 	mp, err := factory.createMetricsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, msink)
 	require.NoError(t, err)
 	require.NoError(t, mp.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() { assert.NoError(t, mp.Shutdown(t.Context())) }()
 
 	// Send one batch → should see res1.
 	md1 := pmetric.NewMetrics()
@@ -368,9 +367,6 @@ func TestProcessor_RefreshInterval_UpdatesResource(t *testing.T) {
 		return false
 	}, 500*time.Millisecond, 20*time.Millisecond, "refresh loop did not update resource from v1 to v2")
 
-	// Verify Detect was called at least twice (initial + at least one refresh).
-	assert.GreaterOrEqual(t, len(md.Calls), 2, "Detect should have been called at least twice")
-
 	// Send final batch to confirm resource is now res2.
 	md2 := pmetric.NewMetrics()
 	require.NoError(t, md2.ResourceMetrics().AppendEmpty().Resource().Attributes().FromRaw(map[string]any{}))
@@ -385,6 +381,12 @@ func TestProcessor_RefreshInterval_UpdatesResource(t *testing.T) {
 	allMetrics := msink.AllMetrics()
 	got2 := allMetrics[len(allMetrics)-1].ResourceMetrics().At(0).Resource().Attributes().AsRaw()
 	assert.Equal(t, map[string]any{"k": "v2"}, got2)
+
+	// Stop the refresh loop before reading mock state to avoid a data race.
+	require.NoError(t, mp.Shutdown(t.Context()))
+
+	// Verify Detect was called at least twice (initial + at least one refresh).
+	assert.GreaterOrEqual(t, len(md.Calls), 2, "Detect should have been called at least twice")
 }
 
 func TestProcessor_RefreshInterval_KeepsLastGoodOnFailure(t *testing.T) {
@@ -441,7 +443,6 @@ func TestProcessor_RefreshInterval_KeepsLastGoodOnFailure(t *testing.T) {
 	mp, err := factory.createMetricsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, msink)
 	require.NoError(t, err)
 	require.NoError(t, mp.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() { assert.NoError(t, mp.Shutdown(t.Context())) }()
 
 	// Helper to push one metrics batch and return the resource attrs of that batch.
 	getAttrsAfterConsume := func() map[string]any {
@@ -488,6 +489,9 @@ func TestProcessor_RefreshInterval_KeepsLastGoodOnFailure(t *testing.T) {
 		attrs := getAttrsAfterConsume()
 		return assert.ObjectsAreEqual(map[string]any{"k": "v2"}, attrs)
 	}, time.Second, 10*time.Millisecond)
+
+	// Stop the refresh loop before asserting mock expectations.
+	require.NoError(t, mp.Shutdown(t.Context()))
 
 	// Verify the mock saw exactly 3 Detect calls in the order we expected.
 	md.AssertExpectations(t)

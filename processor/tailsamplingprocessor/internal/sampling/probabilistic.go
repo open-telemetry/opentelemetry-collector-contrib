@@ -54,6 +54,10 @@ func (s *probabilisticSampler) Evaluate(_ context.Context, traceID pcommon.Trace
 	return samplingpolicy.NotSampled, nil
 }
 
+func (*probabilisticSampler) IsStateful() bool {
+	return false
+}
+
 // calculateThreshold converts a ratio into a value between 0 and MaxUint64
 func calculateThreshold(ratio float64) uint64 {
 	// Use big.Float and big.Int to calculate threshold because directly convert

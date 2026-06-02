@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,17 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := scrapertest.NewNopSettings(scrapertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["system.network.errors"] = mb.metricSystemNetworkErrors.config.AggregationStrategy
+			aggMap["system.network.interface.status"] = mb.metricSystemNetworkInterfaceStatus.config.AggregationStrategy
+			aggMap["system.network.io"] = mb.metricSystemNetworkIo.config.AggregationStrategy
+			aggMap["system.network.packet.count"] = mb.metricSystemNetworkPacketCount.config.AggregationStrategy
+			aggMap["system.network.packet.dropped"] = mb.metricSystemNetworkPacketDropped.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -70,22 +84,37 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkErrorsDataPoint(ts, 1, AttributeNetworkIoDirectionReceive, "network.interface.description-val", "network.interface.mac-val", "network.interface.name-val", "network.interface.speed-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemNetworkErrorsDataPoint(ts, 3, AttributeNetworkIoDirectionTransmit, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkInterfaceStatusDataPoint(ts, 1, "network.interface.description-val", "network.interface.mac-val", "network.interface.name-val", "network.interface.speed-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemNetworkInterfaceStatusDataPoint(ts, 3, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkIoDataPoint(ts, 1, AttributeNetworkIoDirectionReceive, "network.interface.description-val", "network.interface.mac-val", "network.interface.name-val", "network.interface.speed-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemNetworkIoDataPoint(ts, 3, AttributeNetworkIoDirectionTransmit, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkPacketCountDataPoint(ts, 1, AttributeNetworkPacketTypeMulticast, "network.interface.description-val", "network.interface.mac-val", "network.interface.name-val", "network.interface.speed-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemNetworkPacketCountDataPoint(ts, 3, AttributeNetworkPacketTypeBroadcast, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkPacketDroppedDataPoint(ts, 1, AttributeNetworkIoDirectionReceive, "network.interface.description-val", "network.interface.mac-val", "network.interface.name-val", "network.interface.speed-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemNetworkPacketDroppedDataPoint(ts, 3, AttributeNetworkIoDirectionTransmit, "network.interface.description-val-2", "network.interface.mac-val-2", "network.interface.name-val-2", "network.interface.speed-val-2")
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetHostIP("host.ip-val")
@@ -93,6 +122,13 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetOsName("os.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricSystemNetworkErrors.aggDataPoints)
+				assert.Empty(t, mb.metricSystemNetworkInterfaceStatus.aggDataPoints)
+				assert.Empty(t, mb.metricSystemNetworkIo.aggDataPoints)
+				assert.Empty(t, mb.metricSystemNetworkPacketCount.aggDataPoints)
+				assert.Empty(t, mb.metricSystemNetworkPacketDropped.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -120,145 +156,316 @@ func TestMetricsBuilder(t *testing.T) {
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
 				case "system.network.errors":
-					assert.False(t, validatedMetrics["system.network.errors"], "Found a duplicate in the metrics slice: system.network.errors")
-					validatedMetrics["system.network.errors"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "The number of errors encountered", mi.Description())
-					assert.Equal(t, "{errors}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("network.io.direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.description")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.description-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.mac")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.mac-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.name")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.speed")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.speed-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.network.errors"], "Found a duplicate in the metrics slice: system.network.errors")
+						validatedMetrics["system.network.errors"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of errors encountered", mi.Description())
+						assert.Equal(t, "{errors}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						networkIoDirectionAttrVal, ok := dp.Attributes().Get("network.io.direction")
+						assert.True(t, ok)
+						assert.Equal(t, "receive", networkIoDirectionAttrVal.Str())
+						networkInterfaceDescriptionAttrVal, ok := dp.Attributes().Get("network.interface.description")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.description-val", networkInterfaceDescriptionAttrVal.Str())
+						networkInterfaceMacAttrVal, ok := dp.Attributes().Get("network.interface.mac")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.mac-val", networkInterfaceMacAttrVal.Str())
+						networkInterfaceNameAttrVal, ok := dp.Attributes().Get("network.interface.name")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.name-val", networkInterfaceNameAttrVal.Str())
+						networkInterfaceSpeedAttrVal, ok := dp.Attributes().Get("network.interface.speed")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.speed-val", networkInterfaceSpeedAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.network.errors"], "Found a duplicate in the metrics slice: system.network.errors")
+						validatedMetrics["system.network.errors"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of errors encountered", mi.Description())
+						assert.Equal(t, "{errors}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.network.errors"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("network.io.direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.description")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.mac")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.speed")
+						assert.False(t, ok)
+					}
 				case "system.network.interface.status":
-					assert.False(t, validatedMetrics["system.network.interface.status"], "Found a duplicate in the metrics slice: system.network.interface.status")
-					validatedMetrics["system.network.interface.status"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Interface operational status (1 = up, 0 = down)", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("network.interface.description")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.description-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.mac")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.mac-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.name")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.speed")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.speed-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.network.interface.status"], "Found a duplicate in the metrics slice: system.network.interface.status")
+						validatedMetrics["system.network.interface.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Interface operational status (1 = up, 0 = down)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						networkInterfaceDescriptionAttrVal, ok := dp.Attributes().Get("network.interface.description")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.description-val", networkInterfaceDescriptionAttrVal.Str())
+						networkInterfaceMacAttrVal, ok := dp.Attributes().Get("network.interface.mac")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.mac-val", networkInterfaceMacAttrVal.Str())
+						networkInterfaceNameAttrVal, ok := dp.Attributes().Get("network.interface.name")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.name-val", networkInterfaceNameAttrVal.Str())
+						networkInterfaceSpeedAttrVal, ok := dp.Attributes().Get("network.interface.speed")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.speed-val", networkInterfaceSpeedAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.network.interface.status"], "Found a duplicate in the metrics slice: system.network.interface.status")
+						validatedMetrics["system.network.interface.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Interface operational status (1 = up, 0 = down)", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.network.interface.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("network.interface.description")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.mac")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.speed")
+						assert.False(t, ok)
+					}
 				case "system.network.io":
-					assert.False(t, validatedMetrics["system.network.io"], "Found a duplicate in the metrics slice: system.network.io")
-					validatedMetrics["system.network.io"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "The number of bytes transmitted and received", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("network.io.direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.description")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.description-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.mac")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.mac-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.name")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.speed")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.speed-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.network.io"], "Found a duplicate in the metrics slice: system.network.io")
+						validatedMetrics["system.network.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of bytes transmitted and received", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						networkIoDirectionAttrVal, ok := dp.Attributes().Get("network.io.direction")
+						assert.True(t, ok)
+						assert.Equal(t, "receive", networkIoDirectionAttrVal.Str())
+						networkInterfaceDescriptionAttrVal, ok := dp.Attributes().Get("network.interface.description")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.description-val", networkInterfaceDescriptionAttrVal.Str())
+						networkInterfaceMacAttrVal, ok := dp.Attributes().Get("network.interface.mac")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.mac-val", networkInterfaceMacAttrVal.Str())
+						networkInterfaceNameAttrVal, ok := dp.Attributes().Get("network.interface.name")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.name-val", networkInterfaceNameAttrVal.Str())
+						networkInterfaceSpeedAttrVal, ok := dp.Attributes().Get("network.interface.speed")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.speed-val", networkInterfaceSpeedAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.network.io"], "Found a duplicate in the metrics slice: system.network.io")
+						validatedMetrics["system.network.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of bytes transmitted and received", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.network.io"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("network.io.direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.description")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.mac")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.speed")
+						assert.False(t, ok)
+					}
 				case "system.network.packet.count":
-					assert.False(t, validatedMetrics["system.network.packet.count"], "Found a duplicate in the metrics slice: system.network.packet.count")
-					validatedMetrics["system.network.packet.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "The number of packets transmitted or received, categorized by type", mi.Description())
-					assert.Equal(t, "{packets}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("network.packet.type")
-					assert.True(t, ok)
-					assert.Equal(t, "multicast", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.description")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.description-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.mac")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.mac-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.name")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.speed")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.speed-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.network.packet.count"], "Found a duplicate in the metrics slice: system.network.packet.count")
+						validatedMetrics["system.network.packet.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of packets transmitted or received, categorized by type", mi.Description())
+						assert.Equal(t, "{packets}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						networkPacketTypeAttrVal, ok := dp.Attributes().Get("network.packet.type")
+						assert.True(t, ok)
+						assert.Equal(t, "multicast", networkPacketTypeAttrVal.Str())
+						networkInterfaceDescriptionAttrVal, ok := dp.Attributes().Get("network.interface.description")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.description-val", networkInterfaceDescriptionAttrVal.Str())
+						networkInterfaceMacAttrVal, ok := dp.Attributes().Get("network.interface.mac")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.mac-val", networkInterfaceMacAttrVal.Str())
+						networkInterfaceNameAttrVal, ok := dp.Attributes().Get("network.interface.name")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.name-val", networkInterfaceNameAttrVal.Str())
+						networkInterfaceSpeedAttrVal, ok := dp.Attributes().Get("network.interface.speed")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.speed-val", networkInterfaceSpeedAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.network.packet.count"], "Found a duplicate in the metrics slice: system.network.packet.count")
+						validatedMetrics["system.network.packet.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of packets transmitted or received, categorized by type", mi.Description())
+						assert.Equal(t, "{packets}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.network.packet.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("network.packet.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.description")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.mac")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.speed")
+						assert.False(t, ok)
+					}
 				case "system.network.packet.dropped":
-					assert.False(t, validatedMetrics["system.network.packet.dropped"], "Found a duplicate in the metrics slice: system.network.packet.dropped")
-					validatedMetrics["system.network.packet.dropped"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "The number of packets dropped", mi.Description())
-					assert.Equal(t, "{packets}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("network.io.direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.description")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.description-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.mac")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.mac-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.name")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("network.interface.speed")
-					assert.True(t, ok)
-					assert.Equal(t, "network.interface.speed-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.network.packet.dropped"], "Found a duplicate in the metrics slice: system.network.packet.dropped")
+						validatedMetrics["system.network.packet.dropped"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of packets dropped", mi.Description())
+						assert.Equal(t, "{packets}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						networkIoDirectionAttrVal, ok := dp.Attributes().Get("network.io.direction")
+						assert.True(t, ok)
+						assert.Equal(t, "receive", networkIoDirectionAttrVal.Str())
+						networkInterfaceDescriptionAttrVal, ok := dp.Attributes().Get("network.interface.description")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.description-val", networkInterfaceDescriptionAttrVal.Str())
+						networkInterfaceMacAttrVal, ok := dp.Attributes().Get("network.interface.mac")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.mac-val", networkInterfaceMacAttrVal.Str())
+						networkInterfaceNameAttrVal, ok := dp.Attributes().Get("network.interface.name")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.name-val", networkInterfaceNameAttrVal.Str())
+						networkInterfaceSpeedAttrVal, ok := dp.Attributes().Get("network.interface.speed")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.speed-val", networkInterfaceSpeedAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.network.packet.dropped"], "Found a duplicate in the metrics slice: system.network.packet.dropped")
+						validatedMetrics["system.network.packet.dropped"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of packets dropped", mi.Description())
+						assert.Equal(t, "{packets}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.network.packet.dropped"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("network.io.direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.description")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.mac")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.speed")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})

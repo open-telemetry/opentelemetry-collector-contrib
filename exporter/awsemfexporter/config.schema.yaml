@@ -94,7 +94,7 @@ properties:
       type: string
   resource_to_telemetry_conversion:
     description: ResourceToTelemetrySettings is an option for converting resource attributes to telemetry attributes. "Enabled" - A boolean field to enable/disable this option. Default is `false`. If enabled, all the resource attributes will be converted to metric labels by default.
-    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry.settings
+    $ref: /pkg/resourcetotelemetry.settings
   retain_initial_value_of_delta_metric:
     description: RetainInitialValueOfDeltaMetric is the flag to signal that the initial value of a metric is a valid datapoint. The default behavior is that the first value occurrence of a metric is set as the baseline for the calculation of the delta to the next occurrence. With this flag set to true the exporter will instead use this first value as the initial delta value. This is especially useful when handling low frequency metrics.
     type: boolean
@@ -107,4 +107,4 @@ properties:
     description: Version is an option for sending metrics to CloudWatchLogs with Embedded Metric Format in selected version  (with "_aws") https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html#CloudWatch_Embedded_Metric_Format_Specification_structure Otherwise, sending metrics as Embedded Metric Format version 0 (without "_aws")
     type: string
 allOf:
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil.aws_session_settings
+  - $ref: /internal/aws/awsutil.aws_session_settings

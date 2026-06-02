@@ -316,15 +316,10 @@ func TestExporterLogs(t *testing.T) {
 	})
 
 	t.Run("publish with ecs mapping mode sets require_data_stream", func(t *testing.T) {
-		done := make(chan struct{}, 1)
-		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
-			assert.Equal(t, "true", r.URL.Query().Get("require_data_stream"))
-
-			w.WriteHeader(http.StatusOK)
-			select {
-			case done <- struct{}{}:
-			default:
-			}
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
 		})
 
 		exporter := newTestLogsExporter(t, server.URL)
@@ -336,7 +331,9 @@ func TestExporterLogs(t *testing.T) {
 			client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})},
 		)
 		mustSendLogsWithCtx(ctx, t, exporter, logs)
-		<-done
+
+		docs := rec.WaitItems(1)
+		assert.JSONEq(t, `{"create":{"_index":"logs-generic-default","require_data_stream":true}}`, string(docs[0].Action))
 	})
 
 	t.Run("publish with elasticsearch.index", func(t *testing.T) {
@@ -518,7 +515,7 @@ func TestExporterLogs(t *testing.T) {
 
 				expected := []itemRequest{
 					{
-						Action:   []byte(`{"create":{"_index":"logs-attr.dataset.otel-resource.attribute.namespace"}}`),
+						Action:   []byte(`{"create":{"_index":"logs-attr.dataset.otel-resource.attribute.namespace","require_data_stream":true}}`),
 						Document: tc.wantDocument,
 					},
 				}
@@ -940,6 +937,48 @@ func TestExporterLogs(t *testing.T) {
 		}
 	})
 
+	t.Run("dynamic id disabled ignores document_id attribute", func(t *testing.T) {
+		t.Parallel()
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			assert.NotContains(t, string(docs[0].Action), "_id", "_id must not be set when LogsDynamicID is disabled")
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsDynamicID.Enabled = false
+		})
+		logs := newLogsWithAttributes(
+			map[string]any{elasticsearch.DocumentIDAttributeName: "should-be-ignored"},
+			nil, nil,
+		)
+		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("body")
+		mustSendLogs(t, exporter, logs)
+		rec.WaitItems(1)
+	})
+
+	t.Run("dynamic pipeline disabled ignores ingest_pipeline attribute", func(t *testing.T) {
+		t.Parallel()
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			assert.NotContains(t, string(docs[0].Action), "pipeline", "pipeline must not be set when LogsDynamicPipeline is disabled")
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsDynamicPipeline.Enabled = false
+		})
+		logs := newLogsWithAttributes(
+			map[string]any{elasticsearch.DocumentPipelineAttributeName: "should-be-ignored"},
+			nil, nil,
+		)
+		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("body")
+		mustSendLogs(t, exporter, logs)
+		rec.WaitItems(1)
+	})
+
 	t.Run("publish with dynamic pipeline", func(t *testing.T) {
 		t.Parallel()
 		examplePipeline := "abc123"
@@ -1015,6 +1054,33 @@ func TestExporterLogs(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("drops log records with _noindex mapping hint", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL)
+
+		logs := plog.NewLogs()
+		scope := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+		noindex := scope.LogRecords().AppendEmpty()
+		noindex.Body().SetStr("dropped")
+		noindex.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey).AppendEmpty().SetStr(string(elasticsearch.HintNoIndex))
+		kept := scope.LogRecords().AppendEmpty()
+		kept.Body().SetStr("kept")
+
+		mustSendLogs(t, exporter, logs)
+		rec.WaitItems(1)
+		// Drain the pipeline so the recorder reflects the final state.
+		require.NoError(t, exporter.Shutdown(t.Context()))
+
+		items := rec.Items()
+		require.Len(t, items, 1, "only the non-noindex log record should reach the bulk indexer")
+		assert.Equal(t, "kept", gjson.GetBytes(items[0].Document, "body.text").Str)
+	})
 }
 
 func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
@@ -1083,15 +1149,10 @@ func TestExporterMetrics(t *testing.T) {
 	})
 
 	t.Run("publish with ecs mapping mode sets require_data_stream", func(t *testing.T) {
-		done := make(chan struct{}, 1)
-		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
-			assert.Equal(t, "true", r.URL.Query().Get("require_data_stream"))
-
-			w.WriteHeader(http.StatusOK)
-			select {
-			case done <- struct{}{}:
-			default:
-			}
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
 		})
 
 		exporter := newTestMetricsExporter(t, server.URL)
@@ -1101,7 +1162,10 @@ func TestExporterMetrics(t *testing.T) {
 			client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})},
 		)
 		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
-		<-done
+
+		docs := rec.WaitItems(1)
+		assert.Equal(t, "metrics-generic-default", actionJSONToIndex(t, docs[0].Action))
+		assert.True(t, gjson.GetBytes(docs[0].Action, "create.require_data_stream").Bool())
 	})
 
 	t.Run("publish with elasticsearch.index", func(t *testing.T) {
@@ -1195,11 +1259,11 @@ func TestExporterMetrics(t *testing.T) {
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}}}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}}}`),
 			},
 		}
@@ -1238,7 +1302,7 @@ func TestExporterMetrics(t *testing.T) {
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[1,1,2,1,1],"values":[-24.0,-3.0,0.0,6.0,12.0]}}}`),
 			},
 		}
@@ -1341,11 +1405,11 @@ func TestExporterMetrics(t *testing.T) {
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.bar":"double_metrics","metric.foo":"histogram_metrics"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.bar":"double_metrics","metric.foo":"histogram_metrics"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"bar":1.0}}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}}}`),
 			},
 		}
@@ -1433,19 +1497,19 @@ func TestExporterMetrics(t *testing.T) {
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":0,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":3600000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum.monotonic.delta":"gauge_double","metrics.metric.sum.nonmonotonic.cumulative":"gauge_double","metrics.metric.sum.nonmonotonic.delta":"gauge_double","metrics.metric.sum.monotonic.cumulative":"counter_double"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum.monotonic.delta":"gauge_double","metrics.metric.sum.nonmonotonic.cumulative":"gauge_double","metrics.metric.sum.nonmonotonic.delta":"gauge_double","metrics.metric.sum.monotonic.cumulative":"counter_double"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":3600000,"start_timestamp":7200000,"data_stream":{"type":"metrics","dataset":"generic.otel","namespace":"default"},"resource":{},"scope":{},"metrics":{"metric.sum.monotonic.cumulative":1.5,"metric.sum.monotonic.delta":2.5,"metric.sum.nonmonotonic.cumulative":3.5,"metric.sum.nonmonotonic.delta":4.5},"_metric_names_hash":"4c23ec9ba381ab20"}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.summary":"summary"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.summary":"summary"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":10800000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.summary":{"sum":1.5,"value_count":1}},"resource":{},"scope":{},"start_timestamp":10800000,"_metric_names_hash":"2f30c89222c9d308"}`),
 			},
 		}
@@ -1551,12 +1615,44 @@ func TestExporterMetrics(t *testing.T) {
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.sum":"gauge_long","metrics.summary":"summary"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.sum":"gauge_long","metrics.summary":"summary"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":0,"_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"sum":0,"summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"e446964dc8337bbb"}`),
 			},
 		}
 
 		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("ecs mode _doc_count hint", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+		metrics := pmetric.NewMetrics()
+		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+
+		gaugeMetric := scopeMetric.Metrics().AppendEmpty()
+		gaugeMetric.SetName("ecs.gauge")
+		gaugeDp := gaugeMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+		gaugeDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
+		gaugeDp.SetDoubleValue(2.5)
+		fillAttributeMap(gaugeDp.Attributes(), map[string]any{
+			"elasticsearch.mapping.hints": []string{"_doc_count"},
+		})
+
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		docs := rec.WaitItems(1)
+		require.Len(t, docs, 1)
+		doc := docs[0].Document
+		docCount := gjson.GetBytes(doc, "_doc_count")
+		require.True(t, docCount.Exists(), "ECS mode document should include _doc_count when hint is set")
+		assert.Equal(t, uint64(1), docCount.Uint(), "_doc_count value")
 	})
 
 	t.Run("otel mode aggregate_metric_double hint", func(t *testing.T) {
@@ -1600,11 +1696,11 @@ func TestExporterMetrics(t *testing.T) {
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.histogram.summary":"summary"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.histogram.summary":"summary"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":0,"_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"histogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"fcd1d6737d725996"}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.exphistogram.summary":"summary"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.exphistogram.summary":"summary"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":3600000,"_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"exphistogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"6a10ca190ae63c5"}`),
 			},
 		}
@@ -1642,7 +1738,7 @@ func TestExporterMetrics(t *testing.T) {
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.foo.bar":"gauge_long","metrics.foo":"gauge_long","metrics.foo.bar.baz":"gauge_long"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.foo.bar":"gauge_long","metrics.foo":"gauge_long","metrics.foo.bar.baz":"gauge_long"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":0,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"foo":0,"foo.bar":0,"foo.bar.baz":0},"resource":{},"scope":{},"_metric_names_hash":"9c732a69b35274fe"}`),
 			},
 		}
@@ -1679,11 +1775,11 @@ func TestExporterMetrics(t *testing.T) {
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"summary_metrics"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"summary_metrics"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"sum":1.5,"value_count":1}}}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"summary_metrics"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"summary_metrics"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"sum":2.0,"value_count":3}}}`),
 			},
 		}
@@ -1781,11 +1877,44 @@ func TestExporterMetrics(t *testing.T) {
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"ecs.counter":"double_metrics","ecs.gauge":"double_metrics","ecs.histogram":"histogram_metrics","ecs.summary":"summary_metrics"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"ecs.counter":"double_metrics","ecs.gauge":"double_metrics","ecs.histogram":"histogram_metrics","ecs.summary":"summary_metrics"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"ecs":{"counter":2.0,"gauge":1.0,"histogram":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]},"summary":{"sum":5.0,"value_count":10}}}`),
 			},
 		}
 		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("drops data points with _noindex mapping hint", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		metrics := pmetric.NewMetrics()
+		scope := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		metric := scope.Metrics().AppendEmpty()
+		metric.SetName("sum")
+		sum := metric.SetEmptySum().DataPoints()
+
+		noindex := sum.AppendEmpty()
+		noindex.SetIntValue(1)
+		noindex.Attributes().PutStr("series", "dropped")
+		noindex.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey).AppendEmpty().SetStr(string(elasticsearch.HintNoIndex))
+
+		kept := sum.AppendEmpty()
+		kept.SetIntValue(2)
+		kept.Attributes().PutStr("series", "kept")
+
+		mustSendMetrics(t, exporter, metrics)
+		rec.WaitItems(1)
+		require.NoError(t, exporter.Shutdown(t.Context()))
+
+		items := rec.Items()
+		require.Len(t, items, 1, "noindex datapoint should be skipped; only the kept series should index")
+		assert.Equal(t, "kept", gjson.GetBytes(items[0].Document, "attributes.series").Str)
 	})
 }
 
@@ -2030,11 +2159,11 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"foo":"double_metrics"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"foo":"double_metrics"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"foo":1.0,"a":"c"}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"bar":"double_metrics","baz":"double_metrics"}}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"bar":"double_metrics","baz":"double_metrics"},"require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"bar":1.0,"baz":1.0,"a":"b"}`),
 			},
 		}
@@ -2192,15 +2321,10 @@ func TestExporterTraces(t *testing.T) {
 	})
 
 	t.Run("publish with ecs mapping mode sets require_data_stream", func(t *testing.T) {
-		done := make(chan struct{}, 1)
-		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
-			assert.Equal(t, "true", r.URL.Query().Get("require_data_stream"))
-
-			w.WriteHeader(http.StatusOK)
-			select {
-			case done <- struct{}{}:
-			default:
-			}
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
 		})
 
 		exporter := newTestTracesExporter(t, server.URL)
@@ -2210,7 +2334,9 @@ func TestExporterTraces(t *testing.T) {
 			client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})},
 		)
 		mustSendTracesWithCtx(ctx, t, exporter, traces)
-		<-done
+
+		docs := rec.WaitItems(1)
+		assert.JSONEq(t, `{"create":{"_index":"traces-generic-default","require_data_stream":true}}`, string(docs[0].Action))
 	})
 
 	t.Run("publish with elasticsearch.index", func(t *testing.T) {
@@ -2382,11 +2508,11 @@ func TestExporterTraces(t *testing.T) {
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"traces-generic.otel-default"}}`),
+				Action:   []byte(`{"create":{"_index":"traces-generic.otel-default","require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":"3600000.0","attributes":{"attr.foo":"attr.bar"},"data_stream":{"dataset":"generic.otel","namespace":"default","type":"traces"},"dropped_attributes_count":2,"dropped_events_count":3,"dropped_links_count":4,"duration":3600000000000,"kind":"Unspecified","links":[{"attributes":{"link.attr.foo":"link.attr.bar"},"dropped_attributes_count":11,"span_id":"0100000000000000","trace_id":"01000000000000000000000000000000","trace_state":"bar"}],"name":"name","resource":{"attributes":{"resource.foo":"resource.bar"}},"scope":{},"status":{},"trace_state":"foo"}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"logs-generic.otel-default"}}`),
+				Action:   []byte(`{"create":{"_index":"logs-generic.otel-default","require_data_stream":true}}`),
 				Document: []byte(`{"@timestamp":"0.0","event_name":"exception","attributes":{"event.attr.foo":"event.attr.bar","event.name":"exception"},"event_name":"exception","data_stream":{"dataset":"generic.otel","namespace":"default","type":"logs"},"dropped_attributes_count":1,"resource":{"attributes":{"resource.foo":"resource.bar"}},"scope":{}}`),
 			},
 		}
@@ -2679,6 +2805,51 @@ func TestExporterTraces(t *testing.T) {
 		}
 	})
 
+	t.Run("traces dynamic id disabled ignores document_id attribute on span", func(t *testing.T) {
+		t.Parallel()
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			assert.NotContains(t, string(docs[0].Action), "_id", "_id must not be set when TracesDynamicID is disabled")
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesDynamicID.Enabled = false
+		})
+		traces := newTracesWithAttributes(
+			map[string]any{elasticsearch.DocumentIDAttributeName: "should-be-ignored"},
+			nil, nil,
+		)
+		mustSendTraces(t, exporter, traces)
+		rec.WaitItems(1)
+	})
+
+	t.Run("traces dynamic id disabled ignores document_id attribute on span event", func(t *testing.T) {
+		t.Parallel()
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			// Two items expected: 1 span + 1 span event. Neither should carry _id.
+			for _, doc := range docs {
+				assert.NotContains(t, string(doc.Action), "_id", "_id must not be set when TracesDynamicID is disabled")
+			}
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesDynamicID.Enabled = false
+		})
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("parent")
+		event := span.Events().AppendEmpty()
+		event.SetName("evt")
+		event.Attributes().PutStr(elasticsearch.DocumentIDAttributeName, "should-be-ignored")
+		mustSendTraces(t, exporter, traces)
+		rec.WaitItems(2)
+	})
+
 	t.Run("publish with dynamic id in ecs mode", func(t *testing.T) {
 		t.Parallel()
 		// Test that spans respect dynamic document IDs in ECS mode,
@@ -2722,6 +2893,58 @@ func TestExporterTraces(t *testing.T) {
 
 		// Verify the document ID attribute is removed from the span
 		assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "document id attribute should be removed")
+	})
+
+	t.Run("drops spans with _noindex mapping hint", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL)
+
+		traces := ptrace.NewTraces()
+		scope := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+		noindex := scope.Spans().AppendEmpty()
+		noindex.SetName("dropped")
+		noindex.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey).AppendEmpty().SetStr(string(elasticsearch.HintNoIndex))
+		kept := scope.Spans().AppendEmpty()
+		kept.SetName("kept")
+
+		mustSendTraces(t, exporter, traces)
+		rec.WaitItems(1)
+		require.NoError(t, exporter.Shutdown(t.Context()))
+
+		items := rec.Items()
+		require.Len(t, items, 1, "only the non-noindex span should reach the bulk indexer")
+		assert.Equal(t, "kept", gjson.GetBytes(items[0].Document, "name").Str)
+	})
+
+	t.Run("drops span events with _noindex mapping hint", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL)
+
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("parent")
+		noindex := span.Events().AppendEmpty()
+		noindex.SetName("dropped-event")
+		noindex.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey).AppendEmpty().SetStr(string(elasticsearch.HintNoIndex))
+		span.Events().AppendEmpty().SetName("kept-event")
+
+		mustSendTraces(t, exporter, traces)
+		// One span doc + one (non-noindex) span event doc = 2 items expected.
+		rec.WaitItems(2)
+		require.NoError(t, exporter.Shutdown(t.Context()))
+
+		items := rec.Items()
+		require.Len(t, items, 2, "noindex span event should be skipped; one span + one event expected")
 	})
 }
 
@@ -2951,6 +3174,41 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 				for i, item := range items {
 					tc.checks[i](t, item.Document, "traces")
 				}
+			})
+		}
+	})
+	t.Run("default mode from allowed modes", func(t *testing.T) {
+		for _, tc := range []struct {
+			name         string
+			allowedModes []string
+			check        checkFunc
+		}{
+			{
+				name:         "first allowed mode if otel not included",
+				allowedModes: []string{"ecs", "raw"},
+				check:        checkECSResource,
+			},
+			{
+				name:         "otel if otel is included",
+				allowedModes: []string{"raw", "ecs", "otel"},
+				check:        checkOTelResource,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				traces := createTraces(defaultScope)
+				exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.AllowedModes = tc.allowedModes
+				})
+				mustSendTraces(t, exporter, traces)
+
+				docs := rec.WaitItems(1)
+				tc.check(t, docs[0].Document, "traces")
 			})
 		}
 	})

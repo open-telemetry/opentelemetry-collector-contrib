@@ -17,6 +17,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
+	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
 )
 
@@ -42,30 +43,12 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfig: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "text_vpcflow"),
 			expected: &Config{
 				Format: constants.FormatVPCFlowLog,
-				VPCFlowLogConfig: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "text_vpc_flow_log"),
-			expected: &Config{
-				Format: constants.FormatVPCFlowLogV1,
-				VPCFlowLogConfigV1: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
 				VPCFlowLogConfig: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
@@ -78,20 +61,10 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfig: vpcflowlog.Config{
 					FileFormat: constants.FileFormatParquet,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "invalid_vpcflow"),
-			expectedErr: fmt.Sprintf(
-				`unsupported file format "invalid" for VPC flow log, expected one of %q`,
-				supportedVPCFlowLogFileFormat,
-			),
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "invalid_vpc_flow_log"),
 			expectedErr: fmt.Sprintf(
 				`unsupported file format "invalid" for VPC flow log, expected one of %q`,
 				supportedVPCFlowLogFileFormat,
@@ -104,9 +77,6 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfig: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
 			},
 		},
 		{
@@ -114,9 +84,6 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Format: constants.FormatWAFLog,
 				VPCFlowLogConfig: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
 			},
@@ -128,9 +95,6 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfig: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
 			},
 		},
 		{
@@ -138,9 +102,6 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Format: constants.FormatELBAccessLog,
 				VPCFlowLogConfig: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
 			},
@@ -152,10 +113,54 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfig: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "cw_routing"),
+			expected: &Config{
+				Format: constants.FormatCloudWatchLogsSubscriptionFilter,
+				VPCFlowLogConfig: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
+				CloudWatch: CloudWatchConfig{
+					Streams: []subscriptionfilter.CloudWatchStream{
+						{
+							Name:     "vpcflow",
+							Encoding: component.MustNewIDWithName("aws_logs_encoding", "vpcflow_inner"),
+						},
+						{
+							Name:            "payment-lambda",
+							LogGroupPattern: "/aws/lambda/payment-*",
+							Encoding:        component.MustNewIDWithName("aws_logs_encoding", "lambda_inner"),
+						},
+						{
+							Name:            "catchall",
+							LogGroupPattern: "*",
+							Encoding:        component.MustNewIDWithName("aws_logs_encoding", "raw"),
+						},
+					},
+				},
 			},
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "cw_routing_invalid_format"),
+			expectedErr: `'cloudwatch.streams' is only valid with format "cloudwatch"; got "vpcflow"`,
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "cw_routing_missing_name"),
+			expectedErr: `cloudwatch.streams[0]: 'name' is required`,
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "cw_routing_missing_encoding"),
+			expectedErr: `cloudwatch.streams[0]: 'encoding' is required`,
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "cw_routing_unknown_name"),
+			expectedErr: `cloudwatch.streams[0]: name "not-a-known-service" has no defaults; set 'log_group_pattern' or 'log_stream_pattern'`,
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "cw_routing_duplicate_name"),
+			expectedErr: `cloudwatch.streams[1]: duplicate name "vpcflow" also at cloudwatch.streams[0]`,
 		},
 	}
 

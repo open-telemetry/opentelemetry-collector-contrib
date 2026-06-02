@@ -64,6 +64,10 @@ type YANGConfig struct {
 
 	// MaxModules is the maximum number of YANG modules to cache
 	MaxModules int `mapstructure:"max_modules"`
+
+	// ModulePaths defines the directories where .yang files are stored.
+	// This is used by the internal parser to resolve Cisco-specific schemas.
+	ModulePaths []string `mapstructure:"module_paths"`
 }
 
 // Config defines configuration for yanggrpc receiver.
@@ -77,14 +81,21 @@ type Config struct {
 	Security SecurityConfig `mapstructure:"security"`
 }
 
-// Validate checks the receiver configuration is valid
+// Validate checks the receiver configuration is valid.
 func (c *Config) Validate() error {
+	// Validate the base gRPC server configuration (endpoint, TLS, etc.)
 	if err := c.ServerConfig.Validate(); err != nil {
 		return err
 	}
+
+	// Validate security settings
 	if err := c.Security.Validate(); err != nil {
 		return err
 	}
+
+	// Optional: You could add a check here to ensure ModulePaths aren't empty
+	// if EnableRFCParser is true, but since we have a "fallback" logic
+	// in grpc_service.go, it's better to keep it optional.
 
 	return nil
 }

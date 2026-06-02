@@ -6,6 +6,7 @@ package k8seventsreceiver
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,6 +17,62 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
+
+func TestConfigValidationAPIRateLimit(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc        string
+		cfg         *Config
+		expectedErr string
+	}{
+		{
+			desc: "negative qps is invalid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: -1, KubeAPIBurst: 10},
+			},
+			expectedErr: "kube_api_qps must be greater than 0",
+		},
+		{
+			desc: "negative burst is invalid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 5, KubeAPIBurst: -1},
+			},
+			expectedErr: "kube_api_burst must be greater than 0",
+		},
+		{
+			desc: "custom qps and burst are valid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 100, KubeAPIBurst: 200},
+			},
+		},
+		{
+			desc: "negative dedup_interval is valid",
+			cfg: &Config{
+				APIConfig:     k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 5, KubeAPIBurst: 10},
+				DedupInterval: -1 * time.Second,
+			},
+		},
+		{
+			desc: "positive dedup_interval is valid",
+			cfg: &Config{
+				APIConfig:     k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 5, KubeAPIBurst: 10},
+				DedupInterval: 5 * time.Minute,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -37,8 +94,21 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Namespaces: []string{"default", "my_namespace"},
 				APIConfig: k8sconfig.APIConfig{
-					AuthType: k8sconfig.AuthTypeServiceAccount,
+					AuthType:     k8sconfig.AuthTypeServiceAccount,
+					KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
+					KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "with_dedup"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{
+					AuthType:     k8sconfig.AuthTypeServiceAccount,
+					KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
+					KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
+				},
+				DedupInterval: 5 * time.Minute,
 			},
 		},
 	}

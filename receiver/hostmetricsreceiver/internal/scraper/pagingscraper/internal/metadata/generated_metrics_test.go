@@ -58,10 +58,10 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemPagingFaults"] = mb.metricSystemPagingFaults.config.AggregationStrategy
-			aggMap["SystemPagingOperations"] = mb.metricSystemPagingOperations.config.AggregationStrategy
-			aggMap["SystemPagingUsage"] = mb.metricSystemPagingUsage.config.AggregationStrategy
-			aggMap["SystemPagingUtilization"] = mb.metricSystemPagingUtilization.config.AggregationStrategy
+			aggMap["system.paging.faults"] = mb.metricSystemPagingFaults.config.AggregationStrategy
+			aggMap["system.paging.operations"] = mb.metricSystemPagingOperations.config.AggregationStrategy
+			aggMap["system.paging.usage"] = mb.metricSystemPagingUsage.config.AggregationStrategy
+			aggMap["system.paging.utilization"] = mb.metricSystemPagingUtilization.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -147,9 +147,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
+						typeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "major", attrVal.Str())
+						assert.Equal(t, "major", typeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.paging.faults"], "Found a duplicate in the metrics slice: system.paging.faults")
 						validatedMetrics["system.paging.faults"] = true
@@ -191,12 +191,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("direction")
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "page_in", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("type")
+						assert.Equal(t, "page_in", directionAttrVal.Str())
+						typeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "major", attrVal.Str())
+						assert.Equal(t, "major", typeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.paging.operations"], "Found a duplicate in the metrics slice: system.paging.operations")
 						validatedMetrics["system.paging.operations"] = true
@@ -240,12 +240,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device")
+						deviceAttrVal, ok := dp.Attributes().Get("device")
 						assert.True(t, ok)
-						assert.Equal(t, "device-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("state")
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+						stateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.Equal(t, "cached", attrVal.Str())
+						assert.Equal(t, "cached", stateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.paging.usage"], "Found a duplicate in the metrics slice: system.paging.usage")
 						validatedMetrics["system.paging.usage"] = true
@@ -287,12 +287,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("device")
+						deviceAttrVal, ok := dp.Attributes().Get("device")
 						assert.True(t, ok)
-						assert.Equal(t, "device-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("state")
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+						stateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.Equal(t, "cached", attrVal.Str())
+						assert.Equal(t, "cached", stateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.paging.utilization"], "Found a duplicate in the metrics slice: system.paging.utilization")
 						validatedMetrics["system.paging.utilization"] = true

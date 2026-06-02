@@ -77,6 +77,8 @@ To avoid such performance bottleneck - is possible to use WAL journal mode, when
 
 For more available options you take a look on [SQLite List Of PRAGMAs](https://www.sqlite.org/pragma.html#toc). Each PRAGMA option could be passed to driver in form of query params: `_pragma=<PRAGMA_NAME>(<PRAGMA_VALUE>)
 
+**NOTE**: sqlite driver is not supported on AIX.
+
 ### Migration Guide From `sqlite3` to `sqlite` Driver Options
 
 Driver `sqlite3` options could be converted to `sqlite` driver options using provided table

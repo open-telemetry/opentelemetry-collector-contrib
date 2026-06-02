@@ -18,8 +18,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
 type DetectorType string
@@ -200,9 +198,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 	for _, ch := range resultsChan {
 		result := <-ch
 		if result.err != nil {
-			if metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.IsEnabled() {
-				joinedErr = errors.Join(joinedErr, result.err)
-			}
+			joinedErr = errors.Join(joinedErr, result.err)
 			continue
 		}
 		successes++
@@ -212,22 +208,15 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 
 	p.logger.Info("detected resource information", zap.Any("resource", res.Attributes().AsRaw()))
 
-	// Determine the error to return based on feature gate setting.
 	var returnErr error
-	if metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.IsEnabled() {
-		// Feature gate enabled: return joined errors (if any)
-		if successes == 0 && joinedErr == nil {
-			returnErr = errors.New("resource detection failed: no detectors succeeded")
-		} else {
-			returnErr = joinedErr
-		}
+	if successes == 0 && joinedErr == nil {
+		returnErr = errors.New("resource detection failed: no detectors succeeded")
+	} else {
+		returnErr = joinedErr
 	}
 
 	// If all detectors failed, return empty resource.
 	if successes == 0 {
-		if !metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.IsEnabled() {
-			p.logger.Warn("resource detection failed but error propagation is disabled")
-		}
 		return pcommon.NewResource(), "", returnErr
 	}
 

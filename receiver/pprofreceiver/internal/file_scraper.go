@@ -52,7 +52,10 @@ func (fs FileScraper) Scrape(_ context.Context) (pprofile.Profiles, error) {
 			continue
 		}
 
-		profiles.ResourceProfiles().MoveAndAppendTo(result.ResourceProfiles())
+		if err := profiles.MergeTo(result); err != nil {
+			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to merge profiles from %s: %w", match, err))
+			continue
+		}
 		fs.Logger.Debug("Successfully scraped pprof file", zap.String("file", match))
 	}
 

@@ -4,6 +4,7 @@
 package checkpoint
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -162,4 +163,34 @@ func BenchmarkCheckpointRoundTrip(b *testing.B) {
 			}
 		})
 	}
+}
+
+// benchSink prevents the compiler from optimizing away benchmark results.
+var benchSink []byte
+
+func BenchmarkFingerprintConversion(b *testing.B) {
+	// Toggle protobuf encoding: false = JSON (default), true = Protobuf
+	setProtobufEncoding(b, true)
+
+	// Benchmark the JSON roundtrip vs direct Bytes() access
+	fpBytes := make([]byte, fingerprint.DefaultSize)
+	for j := range fpBytes {
+		fpBytes[j] = byte(j % 256)
+	}
+	fp := fingerprint.New(fpBytes)
+
+	b.Run("json_roundtrip", func(b *testing.B) {
+		b.ReportAllocs()
+		for range b.N {
+			fpJSON, err := json.Marshal(fp)
+			if err != nil {
+				b.Fatal(err)
+			}
+			var fpMap map[string][]byte
+			if err := json.Unmarshal(fpJSON, &fpMap); err != nil {
+				b.Fatal(err)
+			}
+			benchSink = fpMap["first_bytes"]
+		}
+	})
 }

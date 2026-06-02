@@ -24,7 +24,7 @@ The journald receiver has specific requirements that must be met:
 
 ### journalctl Binary Requirement
 
-The journald receiver **requires the journalctl binary** to be available in the container or on the system. This is because the receiver uses journalctl to read logs from the systemd journal. The receiver does not implement its own journal reading logic and relies on journalctl for this functionality.
+The journald receiver **requires the journalctl binary** to be available in the container or on the system. This is because the receiver uses journalctl to read logs from the systemd journal. The receiver does not implement its own journal reading logic and relies on journalctl for this functionality. If running the collector in a container, the journalctl binary should match the host system, and this receiver should be configured with the `root_path`/`journalctl_path` options so that the journalctl from the host is used.
 
 ### Permissions
 

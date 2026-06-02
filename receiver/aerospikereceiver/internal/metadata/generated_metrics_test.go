@@ -67,12 +67,12 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["AerospikeNamespaceMemoryUsage"] = mb.metricAerospikeNamespaceMemoryUsage.config.AggregationStrategy
-			aggMap["AerospikeNamespaceQueryCount"] = mb.metricAerospikeNamespaceQueryCount.config.AggregationStrategy
-			aggMap["AerospikeNamespaceScanCount"] = mb.metricAerospikeNamespaceScanCount.config.AggregationStrategy
-			aggMap["AerospikeNamespaceTransactionCount"] = mb.metricAerospikeNamespaceTransactionCount.config.AggregationStrategy
-			aggMap["AerospikeNodeConnectionCount"] = mb.metricAerospikeNodeConnectionCount.config.AggregationStrategy
-			aggMap["AerospikeNodeConnectionOpen"] = mb.metricAerospikeNodeConnectionOpen.config.AggregationStrategy
+			aggMap["aerospike.namespace.memory.usage"] = mb.metricAerospikeNamespaceMemoryUsage.config.AggregationStrategy
+			aggMap["aerospike.namespace.query.count"] = mb.metricAerospikeNamespaceQueryCount.config.AggregationStrategy
+			aggMap["aerospike.namespace.scan.count"] = mb.metricAerospikeNamespaceScanCount.config.AggregationStrategy
+			aggMap["aerospike.namespace.transaction.count"] = mb.metricAerospikeNamespaceTransactionCount.config.AggregationStrategy
+			aggMap["aerospike.node.connection.count"] = mb.metricAerospikeNodeConnectionCount.config.AggregationStrategy
+			aggMap["aerospike.node.connection.open"] = mb.metricAerospikeNodeConnectionOpen.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -290,9 +290,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("component")
+						namespaceComponentAttrVal, ok := dp.Attributes().Get("component")
 						assert.True(t, ok)
-						assert.Equal(t, "data", attrVal.Str())
+						assert.Equal(t, "data", namespaceComponentAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["aerospike.namespace.memory.usage"], "Found a duplicate in the metrics slice: aerospike.namespace.memory.usage")
 						validatedMetrics["aerospike.namespace.memory.usage"] = true
@@ -334,15 +334,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
+						queryTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "aggregation", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("index")
+						assert.Equal(t, "aggregation", queryTypeAttrVal.Str())
+						indexTypeAttrVal, ok := dp.Attributes().Get("index")
 						assert.True(t, ok)
-						assert.Equal(t, "primary", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("result")
+						assert.Equal(t, "primary", indexTypeAttrVal.Str())
+						queryResultAttrVal, ok := dp.Attributes().Get("result")
 						assert.True(t, ok)
-						assert.Equal(t, "abort", attrVal.Str())
+						assert.Equal(t, "abort", queryResultAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["aerospike.namespace.query.count"], "Found a duplicate in the metrics slice: aerospike.namespace.query.count")
 						validatedMetrics["aerospike.namespace.query.count"] = true
@@ -388,12 +388,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
+						scanTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "aggregation", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("result")
+						assert.Equal(t, "aggregation", scanTypeAttrVal.Str())
+						scanResultAttrVal, ok := dp.Attributes().Get("result")
 						assert.True(t, ok)
-						assert.Equal(t, "abort", attrVal.Str())
+						assert.Equal(t, "abort", scanResultAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["aerospike.namespace.scan.count"], "Found a duplicate in the metrics slice: aerospike.namespace.scan.count")
 						validatedMetrics["aerospike.namespace.scan.count"] = true
@@ -437,12 +437,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
+						transactionTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "delete", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("result")
+						assert.Equal(t, "delete", transactionTypeAttrVal.Str())
+						transactionResultAttrVal, ok := dp.Attributes().Get("result")
 						assert.True(t, ok)
-						assert.Equal(t, "error", attrVal.Str())
+						assert.Equal(t, "error", transactionResultAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["aerospike.namespace.transaction.count"], "Found a duplicate in the metrics slice: aerospike.namespace.transaction.count")
 						validatedMetrics["aerospike.namespace.transaction.count"] = true
@@ -486,12 +486,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
+						connectionTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "client", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("operation")
+						assert.Equal(t, "client", connectionTypeAttrVal.Str())
+						connectionOpAttrVal, ok := dp.Attributes().Get("operation")
 						assert.True(t, ok)
-						assert.Equal(t, "close", attrVal.Str())
+						assert.Equal(t, "close", connectionOpAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["aerospike.node.connection.count"], "Found a duplicate in the metrics slice: aerospike.node.connection.count")
 						validatedMetrics["aerospike.node.connection.count"] = true
@@ -535,9 +535,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
+						connectionTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "client", attrVal.Str())
+						assert.Equal(t, "client", connectionTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["aerospike.node.connection.open"], "Found a duplicate in the metrics slice: aerospike.node.connection.open")
 						validatedMetrics["aerospike.node.connection.open"] = true

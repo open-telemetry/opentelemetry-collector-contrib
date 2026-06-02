@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -178,91 +179,45 @@ func TestNewHTTPClientWithCustomTimeout(t *testing.T) {
 	assert.Equal(t, 60*time.Second, client.Timeout)
 }
 
-// Test getProxyAddress function
-func TestGetProxyAddress(t *testing.T) {
-	testCases := []struct {
-		name         string
-		proxyAddress string
-		envProxy     string
-		expected     string
-	}{
-		{
-			name:         "Explicit proxy address",
-			proxyAddress: "http://explicit.proxy.com",
-			envProxy:     "http://env.proxy.com",
-			expected:     "http://explicit.proxy.com",
-		},
-		{
-			name:         "Environment proxy address",
-			proxyAddress: "",
-			envProxy:     "http://env.proxy.com",
-			expected:     "http://env.proxy.com",
-		},
-		{
-			name:         "No proxy address",
-			proxyAddress: "",
-			envProxy:     "",
-			expected:     "",
-		},
-	}
+func TestNoProxyIsRespectedWhenUsingEnvProxy(t *testing.T) {
+	t.Setenv("HTTPS_PROXY", "http://mitmproxy:8080")
+	t.Setenv("NO_PROXY", ".amazonaws.com,localhost,127.0.0.1")
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			if tc.envProxy != "" {
-				t.Setenv("HTTPS_PROXY", tc.envProxy)
-			} else {
-				t.Setenv("HTTPS_PROXY", "")
-			}
+	logger := zap.NewNop()
 
-			result := getProxyAddress(tc.proxyAddress)
-			assert.Equal(t, tc.expected, result)
-		})
-	}
+	client, err := newHTTPClient(logger, 8, 30, false, "")
+	require.NoError(t, err)
+
+	transport, ok := client.Transport.(*http.Transport)
+	require.True(t, ok, "Transport should be *http.Transport")
+	require.NotNil(t, transport.Proxy, "Proxy function should not be nil")
+
+	req, err := http.NewRequest(http.MethodGet, "https://logs.eu-west-1.amazonaws.com/", http.NoBody)
+	require.NoError(t, err)
+
+	proxyURL, err := transport.Proxy(req)
+	assert.NoError(t, err)
+	assert.Nil(t, proxyURL,
+		"Proxy should be nil for hosts matching NO_PROXY, but got: %v — "+
+			"this proves NO_PROXY is not respected", proxyURL)
 }
 
-// Test getProxyURL function
-func TestGetProxyURL(t *testing.T) {
-	testCases := []struct {
-		name        string
-		proxyAddr   string
-		expectError bool
-		expectNil   bool
-	}{
-		{
-			name:        "Valid proxy URL",
-			proxyAddr:   "http://proxy.example.com:8080",
-			expectError: false,
-			expectNil:   false,
-		},
-		{
-			name:        "Empty proxy address",
-			proxyAddr:   "",
-			expectError: false,
-			expectNil:   true,
-		},
-		{
-			name:        "Invalid proxy URL",
-			proxyAddr:   "://invalid",
-			expectError: true,
-			expectNil:   false,
-		},
-	}
+func TestProxyIsUsedForNonExcludedHosts(t *testing.T) {
+	t.Setenv("HTTPS_PROXY", "http://mitmproxy:8080")
+	t.Setenv("NO_PROXY", ".amazonaws.com,localhost,127.0.0.1")
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			url, err := getProxyURL(tc.proxyAddr)
+	logger := zap.NewNop()
+	client, err := newHTTPClient(logger, 8, 30, false, "")
+	require.NoError(t, err)
 
-			if tc.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
+	transport, ok := client.Transport.(*http.Transport)
+	require.True(t, ok)
 
-			if tc.expectNil {
-				assert.Nil(t, url)
-			} else if !tc.expectError {
-				assert.NotNil(t, url)
-			}
-		})
-	}
+	req, err := http.NewRequest(http.MethodGet, "https://example.com/", http.NoBody)
+	require.NoError(t, err)
+
+	proxyURL, err := transport.Proxy(req)
+	assert.NoError(t, err)
+	assert.NotNil(t, proxyURL, "Proxy should be used for hosts NOT in NO_PROXY")
+	assert.Equal(t, "http://mitmproxy:8080", proxyURL.String())
 }

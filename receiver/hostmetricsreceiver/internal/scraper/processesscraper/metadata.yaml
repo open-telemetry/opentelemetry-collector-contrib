@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [dmitryax, braydonk]
+    active: [dmitryax, braydonk, rogercoll]
 
 sem_conv_version: 1.9.0
 
@@ -32,7 +32,7 @@ metrics:
     attributes: [status]
   system.processes.created:
     enabled: true
-    description: Total number of created processes.
+    description: Total number of created processes. Supported on Linux and OpenBSD.
     unit: "{processes}"
     stability: development
     sum:

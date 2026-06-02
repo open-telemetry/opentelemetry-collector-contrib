@@ -35,41 +35,40 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("host.name")
+			hostNameAttrVal, ok := res.Attributes().Get("host.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "host.name-val", val.Str())
+				assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("server.address")
+			serverAddressAttrVal, ok := res.Attributes().Get("server.address")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "server.address-val", val.Str())
+				assert.Equal(t, "server.address-val", serverAddressAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("server.port")
+			serverPortAttrVal, ok := res.Attributes().Get("server.port")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, 11, val.Int())
+				assert.EqualValues(t, 11, serverPortAttrVal.Int())
 			}
-			val, ok = res.Attributes().Get("service.instance.id")
+			serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "service.instance.id-val", val.Str())
+				assert.Equal(t, "service.instance.id-val", serviceInstanceIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("sqlserver.computer.name")
+			sqlserverComputerNameAttrVal, ok := res.Attributes().Get("sqlserver.computer.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "sqlserver.computer.name-val", val.Str())
+				assert.Equal(t, "sqlserver.computer.name-val", sqlserverComputerNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("sqlserver.database.name")
+			sqlserverDatabaseNameAttrVal, ok := res.Attributes().Get("sqlserver.database.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "sqlserver.database.name-val", val.Str())
+				assert.Equal(t, "sqlserver.database.name-val", sqlserverDatabaseNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("sqlserver.instance.name")
+			sqlserverInstanceNameAttrVal, ok := res.Attributes().Get("sqlserver.instance.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "sqlserver.instance.name-val", val.Str())
+				assert.Equal(t, "sqlserver.instance.name-val", sqlserverInstanceNameAttrVal.Str())
 			}
 		})
 	}

@@ -252,6 +252,98 @@ func TestEncodeMetric(t *testing.T) {
 	assert.Equal(t, expectedMetricsEncoded, allDocsSorted)
 }
 
+func TestEncodeMetricDocCountHint(t *testing.T) {
+	encoder, err := newEncoder(MappingECS)
+	require.NoError(t, err)
+
+	ec := encodingContext{
+		resource:          pcommon.NewResource(),
+		resourceSchemaURL: "",
+		scope:             pcommon.NewInstrumentationScope(),
+		scopeSchemaURL:    "",
+	}
+	idx := elasticsearch.Index{}
+	ts := pcommon.NewTimestampFromTime(time.Unix(0, 0))
+
+	tests := []struct {
+		name              string
+		buildDataPoints   func() []datapoints.DataPoint
+		wantDocCountInDoc bool
+		wantDocCountValue uint64
+	}{
+		{
+			name: "doc count hint absent",
+			buildDataPoints: func() []datapoints.DataPoint {
+				m := pmetric.NewMetric()
+				m.SetName("gauge")
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+				dp.SetDoubleValue(1.0)
+				return []datapoints.DataPoint{datapoints.NewNumber(m, dp)}
+			},
+			wantDocCountInDoc: false,
+		},
+		{
+			name: "doc count hint present with zero doc count",
+			buildDataPoints: func() []datapoints.DataPoint {
+				m := pmetric.NewMetric()
+				m.SetName("summary")
+				summaryDp := m.SetEmptySummary().DataPoints().AppendEmpty()
+				summaryDp.SetTimestamp(ts)
+				summaryDp.SetSum(0)
+				summaryDp.SetCount(0)
+
+				hints := summaryDp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				hints.AppendEmpty().SetStr(string(elasticsearch.HintDocCount))
+
+				return []datapoints.DataPoint{datapoints.NewSummary(m, summaryDp)}
+			},
+			wantDocCountInDoc: false,
+		},
+		{
+			name: "doc count hint with positive doc count",
+			buildDataPoints: func() []datapoints.DataPoint {
+				m := pmetric.NewMetric()
+				m.SetName("gauge")
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+				dp.SetDoubleValue(2.5)
+
+				hints := dp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				hints.AppendEmpty().SetStr(string(elasticsearch.HintDocCount))
+
+				return []datapoints.DataPoint{datapoints.NewNumber(m, dp)}
+			},
+			wantDocCountInDoc: true,
+			wantDocCountValue: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dataPoints := tt.buildDataPoints()
+
+			var buf bytes.Buffer
+			validationErrors := make([]error, 0)
+			_, err := encoder.encodeMetrics(ec, dataPoints, &validationErrors, idx, &buf)
+			require.NoError(t, err)
+			require.Empty(t, validationErrors)
+
+			if !tt.wantDocCountInDoc {
+				var doc map[string]any
+				require.NoError(t, json.Unmarshal(buf.Bytes(), &doc))
+				_, hasDocCount := doc["_doc_count"]
+				assert.False(t, hasDocCount, "expected no _doc_count in document")
+				return
+			}
+
+			docCount := gjson.GetBytes(buf.Bytes(), "_doc_count")
+			require.True(t, docCount.Exists(), "expected _doc_count in document")
+			assert.Equal(t, tt.wantDocCountValue, docCount.Uint(), "_doc_count value")
+		})
+	}
+}
+
 func docBytesToSortedString(docsBytes [][]byte) string {
 	// Convert the byte arrays to strings and sort the docs to make the test deterministic.
 	docs := make([]string, len(docsBytes))
@@ -489,7 +581,7 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"custom-agent","version":"1.2.3"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","type":"macos","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
+	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"custom-agent","version":"1.2.3"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
 
 	resourceContainerImageTags := resource.Attributes().PutEmptySlice("container.image.tags")
 	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
@@ -783,8 +875,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		    "platform": "darwin",
 		    "full": "Mac OS Mojave",
 		    "name": "Mac OS X",
-		    "version": "10.14.1",
-		    "type": "macos"
+		    "version": "10.14.1"
 		  }
 		},
 		"process": {
@@ -845,132 +936,6 @@ func TestEncodeLogECSMode(t *testing.T) {
 		     "trigger": { "type": "api-gateway" }
 	  }
 	}`, buf.String())
-}
-
-func TestEncodeLogECSModeHostOSType(t *testing.T) {
-	tests := map[string]struct {
-		osType string
-		osName string
-
-		expectedHostOsName     string
-		expectedHostOsType     string
-		expectedHostOsPlatform string
-	}{
-		"none_set": {
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "", // should not be set
-			expectedHostOsPlatform: "", // should not be set
-		},
-		"type_windows": {
-			osType:                 "windows",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "windows",
-			expectedHostOsPlatform: "windows",
-		},
-		"type_linux": {
-			osType:                 "linux",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "linux",
-			expectedHostOsPlatform: "linux",
-		},
-		"type_darwin": {
-			osType:                 "darwin",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "macos",
-			expectedHostOsPlatform: "darwin",
-		},
-		"type_aix": {
-			osType:                 "aix",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "unix",
-			expectedHostOsPlatform: "aix",
-		},
-		"type_hpux": {
-			osType:                 "hpux",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "unix",
-			expectedHostOsPlatform: "hpux",
-		},
-		"type_solaris": {
-			osType:                 "solaris",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "unix",
-			expectedHostOsPlatform: "solaris",
-		},
-		"type_unknown": {
-			osType:                 "unknown",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "", // should not be set
-			expectedHostOsPlatform: "unknown",
-		},
-		"name_android": {
-			osName:                 "Android",
-			expectedHostOsName:     "Android",
-			expectedHostOsType:     "android",
-			expectedHostOsPlatform: "", // should not be set
-		},
-		"name_ios": {
-			osName:                 "iOS",
-			expectedHostOsName:     "iOS",
-			expectedHostOsType:     "ios",
-			expectedHostOsPlatform: "", // should not be set
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			logs := plog.NewLogs()
-			resource := logs.ResourceLogs().AppendEmpty().Resource()
-			scope := pcommon.NewInstrumentationScope()
-			record := plog.NewLogRecord()
-
-			resource.Attributes().PutStr("agent.name", "custom-agent")
-			resource.Attributes().PutStr("agent.version", "1.2.3")
-			if test.osType != "" {
-				resource.Attributes().PutStr("os.type", test.osType)
-			}
-			if test.osName != "" {
-				resource.Attributes().PutStr("os.name", test.osName)
-			}
-
-			timestamp := pcommon.Timestamp(1710373859123456789)
-			record.SetTimestamp(timestamp)
-			logs.MarkReadOnly()
-
-			var buf bytes.Buffer
-			encoder, _ := newEncoder(MappingECS)
-			err := encoder.encodeLog(
-				encodingContext{resource: resource, scope: scope},
-				record, elasticsearch.Index{}, &buf,
-			)
-			require.NoError(t, err)
-
-			expectedJSON := `{"@timestamp":"2024-03-13T23:50:59.123456789Z","agent":{"name":"custom-agent","version":"1.2.3"}`
-			if test.expectedHostOsName != "" ||
-				test.expectedHostOsPlatform != "" ||
-				test.expectedHostOsType != "" {
-				expectedJSON += `, "host":{"os":{`
-
-				first := true
-				maybeAdd := func(k, v string) {
-					if v != "" {
-						if first {
-							first = false
-						} else {
-							expectedJSON += ","
-						}
-						expectedJSON += fmt.Sprintf("%q:%q", k, v)
-					}
-				}
-				maybeAdd("name", test.expectedHostOsName)
-				maybeAdd("type", test.expectedHostOsType)
-				maybeAdd("platform", test.expectedHostOsPlatform)
-				expectedJSON += "}}"
-			}
-			expectedJSON += "}"
-			require.JSONEq(t, expectedJSON, buf.String())
-		})
-	}
 }
 
 func TestEncodeLogECSModeTimestamps(t *testing.T) {

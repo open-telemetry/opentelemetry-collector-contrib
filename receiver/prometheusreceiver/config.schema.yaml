@@ -18,9 +18,6 @@ properties:
   config:
     x-pointer: true
     $ref: prom_config
-  report_extra_scrape_metrics:
-    description: 'ReportExtraScrapeMetrics - enables reporting of additional metrics for Prometheus client like scrape_body_size_bytes Deprecated: use the feature gate "receiver.prometheusreceiver.EnableReportExtraScrapeMetrics" instead.'
-    type: boolean
   target_allocator:
     x-optional: true
     $ref: ./internal/targetallocator.config

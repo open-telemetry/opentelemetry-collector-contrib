@@ -1,0 +1,103 @@
+version: 1
+signal: metrics
+resources:
+    - scopes:
+        - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver
+          version: latest
+          metrics:
+            - name: memcached.bytes
+              type: gauge
+              unit: By
+            - name: memcached.commands
+              type: sum
+              unit: '{commands}'
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    command: flush
+                - attributes:
+                    command: get
+                - attributes:
+                    command: set
+                - attributes:
+                    command: touch
+            - name: memcached.connections.current
+              type: sum
+              unit: '{connections}'
+              temporality: cumulative
+              monotonic: false
+            - name: memcached.connections.total
+              type: sum
+              unit: '{connections}'
+              temporality: cumulative
+              monotonic: true
+            - name: memcached.cpu.usage
+              type: sum
+              unit: s
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    state: system
+                - attributes:
+                    state: user
+            - name: memcached.current_items
+              type: sum
+              unit: '{items}'
+              temporality: cumulative
+              monotonic: false
+            - name: memcached.evictions
+              type: sum
+              unit: '{evictions}'
+              temporality: cumulative
+              monotonic: true
+            - name: memcached.network
+              type: sum
+              unit: by
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    direction: received
+                - attributes:
+                    direction: sent
+            - name: memcached.operation_hit_ratio
+              type: gauge
+              unit: '%'
+              datapoints:
+                - attributes:
+                    operation: decrement
+                - attributes:
+                    operation: get
+                - attributes:
+                    operation: increment
+            - name: memcached.operations
+              type: sum
+              unit: '{operations}'
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    operation: decrement
+                    type: hit
+                - attributes:
+                    operation: decrement
+                    type: miss
+                - attributes:
+                    operation: get
+                    type: hit
+                - attributes:
+                    operation: get
+                    type: miss
+                - attributes:
+                    operation: increment
+                    type: hit
+                - attributes:
+                    operation: increment
+                    type: miss
+            - name: memcached.threads
+              type: sum
+              unit: '{threads}'
+              temporality: cumulative
+              monotonic: false

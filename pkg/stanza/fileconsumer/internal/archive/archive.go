@@ -20,8 +20,7 @@ import (
 )
 
 const (
-	archiveIndexKey          = "knownFilesArchiveIndex"
-	archivePollsToArchiveKey = "knonwFilesPollsToArchive"
+	archiveIndexKey = "knownFilesArchiveIndex"
 )
 
 type Archive interface {

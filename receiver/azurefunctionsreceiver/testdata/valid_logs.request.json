@@ -1,0 +1,14 @@
+{
+  "Data": {
+    "logs": "[\"dmFsaWQ=\"]"
+  },
+  "Metadata": {
+    "TriggerPartitionContext": {
+      "IsCheckpointingAfterInvocation": true,
+      "FullyQualifiedNamespace": "test-namespace.servicebus.windows.net",
+      "EventHubName": "logs",
+      "ConsumerGroup": "test",
+      "PartitionId": "3"
+    }
+  }
+}

@@ -64,7 +64,7 @@ func createDefaultConfig() component.Config {
 			Insecure:           false,
 			InsecureSkipVerify: true,
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		QuerySampleCollection: QuerySampleCollection{
 			MaxRowsPerQuery: 1000,
@@ -89,7 +89,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	var clientFactory postgreSQLClientFactory
-	if connectionPoolGate.IsEnabled() {
+	if metadata.ReceiverPostgresqlConnectionPoolFeatureGate.IsEnabled() {
 		clientFactory = newPoolClientFactory(cfg)
 	} else {
 		clientFactory = newDefaultClientFactory(cfg)
@@ -117,7 +117,7 @@ func createLogsReceiver(
 	cfg := receiverCfg.(*Config)
 
 	var clientFactory postgreSQLClientFactory
-	if connectionPoolGate.IsEnabled() {
+	if metadata.ReceiverPostgresqlConnectionPoolFeatureGate.IsEnabled() {
 		clientFactory = newPoolClientFactory(cfg)
 	} else {
 		clientFactory = newDefaultClientFactory(cfg)

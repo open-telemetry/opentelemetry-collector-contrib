@@ -88,4 +88,5 @@ properties:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
 allOf:
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config

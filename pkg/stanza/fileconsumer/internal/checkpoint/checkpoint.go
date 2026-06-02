@@ -31,7 +31,7 @@ func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Meta
 func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string, ops ...*storage.Operation) error {
 	// Use protobuf if feature gate is enabled
 	if metadata.FilelogProtobufCheckpointEncodingFeatureGate.IsEnabled() {
-		return SaveKeyProto(ctx, persister, rmds, key, ops...)
+		return saveKeyProto(ctx, persister, rmds, key, ops...)
 	}
 
 	// Otherwise use JSON (default)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.uber.org/zap"
 )
 
 func TestNewUploadManager(t *testing.T) {
@@ -63,6 +64,7 @@ func TestNewUploadManager(t *testing.T) {
 			sm, err := newUploadManager(
 				t.Context(),
 				tc.conf,
+				zap.NewNop(),
 				"metrics",
 				"otlp",
 				false,

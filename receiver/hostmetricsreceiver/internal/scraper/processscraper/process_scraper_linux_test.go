@@ -69,7 +69,7 @@ func getTestdataPid(handles processHandles, pid int32) processHandle {
 
 func newTestProcessScraper(ctx context.Context, t *testing.T) *processScraper {
 	t.Helper()
-	metricsCfg := metadata.DefaultMetricsBuilderConfig()
+	metricsCfg := metadata.NewDefaultMetricsBuilderConfig()
 	metricsCfg.Metrics = metricsConfigAllEnabled()
 	cfg := &Config{
 		MetricsBuilderConfig: metricsCfg,
@@ -189,8 +189,11 @@ func metricsConfigAllEnabled() metadata.MetricsConfig {
 	v := reflect.ValueOf(&cfg).Elem()
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
-		if field.Type() == reflect.TypeFor[metadata.MetricConfig]() {
-			field.FieldByName("Enabled").SetBool(true)
+		if field.Kind() == reflect.Struct {
+			enabledField := field.FieldByName("Enabled")
+			if enabledField.IsValid() && enabledField.CanSet() {
+				enabledField.SetBool(true)
+			}
 		}
 	}
 	return cfg

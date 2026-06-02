@@ -13,8 +13,9 @@ import (
 
 func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 	type args struct {
-		defaults map[string]string
-		metadata metadata.MetadataUpdate
+		defaults            map[string]string
+		metadata            metadata.MetadataUpdate
+		stripK8sLabelPrefix bool
 	}
 	tests := []struct {
 		name string
@@ -115,6 +116,63 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 					"ta.g1": true,
 					"ta/g2": false,
 				},
+			},
+		},
+		{
+			"Test k8s resource label prefix is stripped",
+			args{
+				stripK8sLabelPrefix: true,
+				metadata: metadata.MetadataUpdate{
+					ResourceIDKey: "k8s.pod.uid",
+					ResourceID:    "pod-123",
+					MetadataDelta: metadata.MetadataDelta{
+						MetadataToAdd: map[string]string{
+							"k8s.pod.label.app":                          "my-app",
+							"k8s.node.label.topology.kubernetes.io/zone": "",
+							"k8s.deployment.label.version":               "v1",
+						},
+						MetadataToRemove: map[string]string{
+							"k8s.pod.label.old-label": "old-value",
+						},
+					},
+				},
+			},
+			&DimensionUpdate{
+				Name:  "k8s.pod.uid",
+				Value: "pod-123",
+				Properties: getMapToPointers(map[string]string{
+					"app":       "my-app",
+					"version":   "v1",
+					"old-label": "",
+				}),
+				Tags: map[string]bool{
+					"topology.kubernetes.io/zone": true,
+				},
+			},
+		},
+		{
+			"Test k8s service label prefix is NOT stripped even when stripK8sLabelPrefix is true",
+			args{
+				stripK8sLabelPrefix: true,
+				metadata: metadata.MetadataUpdate{
+					ResourceIDKey: "k8s.service.uid",
+					ResourceID:    "svc-123",
+					MetadataDelta: metadata.MetadataDelta{
+						MetadataToAdd: map[string]string{
+							"k8s.service.label.app":     "my-app",
+							"k8s.service.label.version": "v1",
+						},
+					},
+				},
+			},
+			&DimensionUpdate{
+				Name:  "k8s.service.uid",
+				Value: "svc-123",
+				Properties: getMapToPointers(map[string]string{
+					"k8s.service.label.app":     "my-app",
+					"k8s.service.label.version": "v1",
+				}),
+				Tags: map[string]bool{},
 			},
 		},
 		{
@@ -237,6 +295,104 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 			},
 		},
 		{
+			"Test k8s.persistentvolume.uid label prefix is NOT stripped even when stripK8sLabelPrefix is true",
+			args{
+				stripK8sLabelPrefix: true,
+				metadata: metadata.MetadataUpdate{
+					ResourceIDKey: "k8s.persistentvolume.uid",
+					ResourceID:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+					MetadataDelta: metadata.MetadataDelta{
+						MetadataToAdd: map[string]string{
+							"k8s.persistentvolume.name":                                       "pvc-a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+							"k8s.persistentvolume.creation_timestamp":                         "2026-04-21T00:00:00Z",
+							"k8s.persistentvolume.label.storage-tier":                         "fast",
+							"k8s.persistentvolume.label.env":                                  "production",
+							"k8s.persistentvolume.annotation.pv.kubernetes.io/provisioned-by": "ebs.csi.aws.com",
+						},
+					},
+				},
+			},
+			&DimensionUpdate{
+				Name:  "k8s.persistentvolume.uid",
+				Value: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+				Properties: getMapToPointers(map[string]string{
+					"k8s.persistentvolume.name":                                       "pvc-a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+					"k8s.persistentvolume.creation_timestamp":                         "2026-04-21T00:00:00Z",
+					"k8s.persistentvolume.label.storage-tier":                         "fast",
+					"k8s.persistentvolume.label.env":                                  "production",
+					"k8s.persistentvolume.annotation.pv.kubernetes.io/provisioned-by": "ebs.csi.aws.com",
+				}),
+				Tags: map[string]bool{},
+			},
+		},
+		{
+			"Test k8s.persistentvolumeclaim.uid label prefix is NOT stripped even when stripK8sLabelPrefix is true",
+			args{
+				stripK8sLabelPrefix: true,
+				metadata: metadata.MetadataUpdate{
+					ResourceIDKey: "k8s.persistentvolumeclaim.uid",
+					ResourceID:    "f9e8d7c6-b5a4-3210-fedc-ba0987654321",
+					MetadataDelta: metadata.MetadataDelta{
+						MetadataToAdd: map[string]string{
+							"k8s.persistentvolumeclaim.name":                                                "data-postgres-0",
+							"k8s.namespace.name":                                                            "database",
+							"k8s.persistentvolumeclaim.creation_timestamp":                                  "2026-04-21T00:00:00Z",
+							"k8s.persistentvolume.name":                                                     "pvc-f9e8d7c6-b5a4-3210-fedc-ba0987654321",
+							"k8s.persistentvolumeclaim.label.app":                                           "postgres",
+							"k8s.persistentvolumeclaim.label.app.kubernetes.io/managed-by":                  "Helm",
+							"k8s.persistentvolumeclaim.annotation.volume.kubernetes.io/storage-provisioner": "ebs.csi.aws.com",
+							"k8s.persistentvolumeclaim.annotation.volume.kubernetes.io/selected-node":       "ip-10-0-1-42.ec2.internal",
+						},
+					},
+				},
+			},
+			&DimensionUpdate{
+				Name:  "k8s.persistentvolumeclaim.uid",
+				Value: "f9e8d7c6-b5a4-3210-fedc-ba0987654321",
+				Properties: getMapToPointers(map[string]string{
+					"k8s.persistentvolumeclaim.name":                                                "data-postgres-0",
+					"k8s.namespace.name":                                                            "database",
+					"k8s.persistentvolumeclaim.creation_timestamp":                                  "2026-04-21T00:00:00Z",
+					"k8s.persistentvolume.name":                                                     "pvc-f9e8d7c6-b5a4-3210-fedc-ba0987654321",
+					"k8s.persistentvolumeclaim.label.app":                                           "postgres",
+					"k8s.persistentvolumeclaim.label.app.kubernetes.io/managed-by":                  "Helm",
+					"k8s.persistentvolumeclaim.annotation.volume.kubernetes.io/storage-provisioner": "ebs.csi.aws.com",
+					"k8s.persistentvolumeclaim.annotation.volume.kubernetes.io/selected-node":       "ip-10-0-1-42.ec2.internal",
+				}),
+				Tags: map[string]bool{},
+			},
+		},
+		{
+			"Test k8s.persistentvolume.uid property lifecycle (add, remove, update)",
+			args{
+				metadata: metadata.MetadataUpdate{
+					ResourceIDKey: "k8s.persistentvolume.uid",
+					ResourceID:    "pv-lifecycle-uid",
+					MetadataDelta: metadata.MetadataDelta{
+						MetadataToAdd: map[string]string{
+							"k8s.persistentvolume.label.new-label": "new-value",
+						},
+						MetadataToRemove: map[string]string{
+							"k8s.persistentvolume.label.to-remove": "old-value",
+						},
+						MetadataToUpdate: map[string]string{
+							"k8s.persistentvolume.label.to-update": "updated-value",
+						},
+					},
+				},
+			},
+			&DimensionUpdate{
+				Name:  "k8s.persistentvolume.uid",
+				Value: "pv-lifecycle-uid",
+				Properties: map[string]*string{
+					"k8s.persistentvolume.label.new-label": pointerString("new-value"),
+					"k8s.persistentvolume.label.to-remove": nil,
+					"k8s.persistentvolume.label.to-update": pointerString("updated-value"),
+				},
+				Tags: map[string]bool{},
+			},
+		},
+		{
 			"Test k8s.service.uid property lifecycle (add, remove, update)",
 			args{
 				metadata: metadata.MetadataUpdate{
@@ -269,7 +425,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, getDimensionUpdateFromMetadata(tt.args.defaults, tt.args.metadata, "-_."))
+			assert.Equal(t, tt.want, getDimensionUpdateFromMetadata(tt.args.defaults, tt.args.metadata, "-_.", tt.args.stripK8sLabelPrefix))
 		})
 	}
 }

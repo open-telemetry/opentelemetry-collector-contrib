@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.147.0
+    version: v0.153.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -84,6 +84,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/azureauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension
@@ -105,6 +106,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/mcp
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver
@@ -125,6 +127,8 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension/integrationtest
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight
@@ -163,6 +167,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic
@@ -189,14 +194,16 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cardinalityguardianprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor
-      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/drainprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
@@ -215,6 +222,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor

@@ -12,7 +12,7 @@ exporters:
     sending_queue:
       batch:
   debug:
-    loglevel: info
+    verbosity: normal
 
 service:
   pipelines:

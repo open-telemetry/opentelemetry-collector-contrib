@@ -1,0 +1,58 @@
+type: ibmcloudvpcdetector
+
+status:
+  class: processor
+  stability:
+    development: [traces, metrics, logs, profiles]
+  codeowners:
+    active: [dashpole, paulojmdias]
+
+resource_attributes:
+  cloud.account.id:
+    description: The IBM Cloud account ID.
+    type: string
+    enabled: true
+  cloud.availability_zone:
+    description: The IBM Cloud availability zone (e.g., us-south-1).
+    type: string
+    enabled: true
+  cloud.platform:
+    description: The cloud platform (ibm_cloud.vpc).
+    type: string
+    enabled: true
+  cloud.provider:
+    description: The cloud provider (ibm_cloud).
+    type: string
+    enabled: true
+  cloud.region:
+    description: The IBM Cloud region (e.g., us-south).
+    type: string
+    enabled: true
+  cloud.resource_id:
+    description: The CRN (Cloud Resource Name) of the instance.
+    type: string
+    enabled: true
+  host.id:
+    description: The unique ID of the virtual server instance.
+    type: string
+    enabled: true
+  host.image.id:
+    description: The VM image ID of the virtual server instance.
+    type: string
+    enabled: true
+  host.image.name:
+    description: The VM image name of the virtual server instance.
+    type: string
+    enabled: true
+  host.name:
+    description: The name of the virtual server instance.
+    type: string
+    enabled: true
+  host.type:
+    description: The instance profile name (e.g., bx2-2x8).
+    type: string
+    enabled: true
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

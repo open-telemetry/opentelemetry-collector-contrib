@@ -200,8 +200,10 @@ func TestUnmarshalLogs(t *testing.T) {
 			expectedErr: "values in log line are less than the number of available fields",
 		},
 		"too_many_values": {
-			logFilename: "too_many_values.log",
-			expectedErr: "values in log line exceed the number of available fields",
+			// Extra fields beyond the known schema are silently skipped for
+			// forward compatibility with future AWS S3 access log additions.
+			logFilename:      "too_many_values.log",
+			expectedFilename: "too_many_values_expected.yaml",
 		},
 	}
 

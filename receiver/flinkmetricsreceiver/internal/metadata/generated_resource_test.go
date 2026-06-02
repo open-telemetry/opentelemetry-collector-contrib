@@ -34,36 +34,35 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("flink.job.name")
+			flinkJobNameAttrVal, ok := res.Attributes().Get("flink.job.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "flink.job.name-val", val.Str())
+				assert.Equal(t, "flink.job.name-val", flinkJobNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("flink.resource.type")
+			flinkResourceTypeAttrVal, ok := res.Attributes().Get("flink.resource.type")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "jobmanager", val.Str())
+				assert.Equal(t, "jobmanager", flinkResourceTypeAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("flink.subtask.index")
+			flinkSubtaskIndexAttrVal, ok := res.Attributes().Get("flink.subtask.index")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "flink.subtask.index-val", val.Str())
+				assert.Equal(t, "flink.subtask.index-val", flinkSubtaskIndexAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("flink.task.name")
+			flinkTaskNameAttrVal, ok := res.Attributes().Get("flink.task.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "flink.task.name-val", val.Str())
+				assert.Equal(t, "flink.task.name-val", flinkTaskNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("flink.taskmanager.id")
+			flinkTaskmanagerIDAttrVal, ok := res.Attributes().Get("flink.taskmanager.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "flink.taskmanager.id-val", val.Str())
+				assert.Equal(t, "flink.taskmanager.id-val", flinkTaskmanagerIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.name")
+			hostNameAttrVal, ok := res.Attributes().Get("host.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "host.name-val", val.Str())
+				assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
 			}
 		})
 	}

@@ -13,6 +13,8 @@ properties:
     type: boolean
   enable_simple_tags:
     type: boolean
+  ignore_host:
+    type: boolean
   is_monotonic_counter:
     type: boolean
   socket_permissions:

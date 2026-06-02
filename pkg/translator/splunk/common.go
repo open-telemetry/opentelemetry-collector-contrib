@@ -9,10 +9,16 @@ import (
 	"strconv"
 	"strings"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
+
+// nanoToEpochSeconds converts a nanosecond timestamp to epoch seconds.
+func nanoToEpochSeconds(ts pcommon.Timestamp) float64 {
+	return float64(ts) / 1e9
+}
 
 const (
 	// hecEventMetricType is the type of HEC event. Set to metric, as per https://docs.splunk.com/Documentation/Splunk/8.0.3/Metrics/GetMetricsInOther.
@@ -52,12 +58,15 @@ type OtelToHecFields struct {
 	SeverityText string `mapstructure:"severity_text"`
 	// SeverityNumber informs the exporter to map the severity number field to a specific HEC field.
 	SeverityNumber string `mapstructure:"severity_number"`
+	// Name informs the exporter to map the log record event name field to a specific HEC field.
+	Name string `mapstructure:"name"`
 }
 
 func DefaultOtelToHecFields() OtelToHecFields {
 	return OtelToHecFields{
 		SeverityText:   splunk.DefaultSeverityTextLabel,
 		SeverityNumber: splunk.DefaultSeverityNumberLabel,
+		Name:           splunk.DefaultNameLabel,
 	}
 }
 

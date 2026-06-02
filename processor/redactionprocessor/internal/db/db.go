@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
-	semconv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
+	semconv138 "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 )
 

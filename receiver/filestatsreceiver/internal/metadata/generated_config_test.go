@@ -20,25 +20,27 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					FileAtime: MetricConfig{
+					FileAtime: FileAtimeMetricConfig{
 						Enabled: true,
 					},
-					FileCount: MetricConfig{
+					FileCount: FileCountMetricConfig{
 						Enabled: true,
 					},
-					FileCtime: MetricConfig{
+					FileCtime: FileCtimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []FileCtimeMetricAttributeKey{FileCtimeMetricAttributeKeyFilePermissions},
+					},
+					FileMtime: FileMtimeMetricConfig{
 						Enabled: true,
 					},
-					FileMtime: MetricConfig{
-						Enabled: true,
-					},
-					FileSize: MetricConfig{
+					FileSize: FileSizeMetricConfig{
 						Enabled: true,
 					},
 				},
@@ -52,19 +54,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					FileAtime: MetricConfig{
+					FileAtime: FileAtimeMetricConfig{
 						Enabled: false,
 					},
-					FileCount: MetricConfig{
+					FileCount: FileCountMetricConfig{
 						Enabled: false,
 					},
-					FileCtime: MetricConfig{
+					FileCtime: FileCtimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []FileCtimeMetricAttributeKey{FileCtimeMetricAttributeKeyFilePermissions},
+					},
+					FileMtime: FileMtimeMetricConfig{
 						Enabled: false,
 					},
-					FileMtime: MetricConfig{
-						Enabled: false,
-					},
-					FileSize: MetricConfig{
+					FileSize: FileSizeMetricConfig{
 						Enabled: false,
 					},
 				},
@@ -78,7 +82,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(FileAtimeMetricConfig{}, FileCountMetricConfig{}, FileCtimeMetricConfig{}, FileMtimeMetricConfig{}, FileSizeMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -89,7 +93,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
