@@ -131,12 +131,12 @@ func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 			},
 		}
 
-		client, err := newClient(ctx, &secondaryConfig, s.logger, true)
+		secondaryClient, err := newClient(ctx, &secondaryConfig, s.logger, true)
 		if err != nil {
 			s.logger.Warn("failed to connect to secondary", zap.String("host", secondary), zap.Error(err))
 			continue
 		}
-		s.secondaryClients = append(s.secondaryClients, client)
+		s.secondaryClients = append(s.secondaryClients, secondaryClient)
 	}
 
 	return nil
@@ -185,36 +185,32 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 func (s *mongodbScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	if err := s.scrapeLogsFromClient(ctx, s.client, now); err != nil {
-		return plog.NewLogs(), err
-	}
+	s.scrapeLogsFromClient(ctx, s.client, now)
 
 	for _, c := range s.secondaryClients {
-		if err := s.scrapeLogsFromClient(ctx, c, now); err != nil {
-			s.logger.Warn("Failed to scrape logs from secondary", zap.Error(err))
-		}
+		s.scrapeLogsFromClient(ctx, c, now)
 	}
 
 	return s.lb.Emit(), nil
 }
 
-func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now pcommon.Timestamp) error {
+func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now pcommon.Timestamp) {
 	serverStatus, err := c.ServerStatus(ctx, "admin")
 	if err != nil {
 		s.logger.Debug("Failed to get server status for logs", zap.Error(err))
-		return nil
+		return
 	}
 
 	serverAddress, serverPort, err := serverAddressAndPort(serverStatus)
 	if err != nil {
 		s.logger.Debug("Failed to extract server address and port for logs", zap.Error(err))
-		return nil
+		return
 	}
 
 	operations, err := c.CurrentOp(ctx)
 	if err != nil {
 		s.logger.Error("Failed to get current operations", zap.Error(err))
-		return nil
+		return
 	}
 
 	s.processCurrentOp(ctx, operations, now)
@@ -224,7 +220,6 @@ func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now
 	rb.SetServerPort(serverPort)
 	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
-	return nil
 }
 
 func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson.M, now pcommon.Timestamp) {

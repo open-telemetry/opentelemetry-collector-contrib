@@ -281,7 +281,7 @@ func TestCurrentOpPipelineStages(t *testing.T) {
 	nsFilter, ok := match["ns"].(bson.M)
 	require.True(t, ok, "$match should constrain ns")
 	require.Equal(t, true, nsFilter["$exists"])
-	require.Equal(t, "", nsFilter["$ne"])
+	require.Empty(t, nsFilter["$ne"])
 	nsNot, ok := nsFilter["$not"].(bson.M)
 	require.True(t, ok)
 	require.Equal(t, currentOpNamespaceFilterRegex, nsNot["$regex"])

@@ -602,7 +602,7 @@ func TestScrapeLogs(t *testing.T) {
 	}{
 		{
 			desc: "CurrentOp returns error",
-			setupMockClient: func(t *testing.T) *fakeClient {
+			setupMockClient: func(_ *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "mongohost:27017"}, nil)
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{}, errors.New("currentOp failed"))
@@ -614,7 +614,7 @@ func TestScrapeLogs(t *testing.T) {
 		},
 		{
 			desc: "ServerStatus returns error",
-			setupMockClient: func(t *testing.T) *fakeClient {
+			setupMockClient: func(_ *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
 					{
@@ -633,7 +633,7 @@ func TestScrapeLogs(t *testing.T) {
 		},
 		{
 			desc: "Missing host in ServerStatus",
-			setupMockClient: func(t *testing.T) *fakeClient {
+			setupMockClient: func(_ *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
 					{
@@ -652,7 +652,7 @@ func TestScrapeLogs(t *testing.T) {
 		},
 		{
 			desc: "Successful scrape with operations",
-			setupMockClient: func(t *testing.T) *fakeClient {
+			setupMockClient: func(_ *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				sessionID := uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
@@ -734,7 +734,7 @@ func TestScrapeLogs(t *testing.T) {
 		},
 		{
 			desc: "Successful scrape with IPv6 client address",
-			setupMockClient: func(t *testing.T) *fakeClient {
+			setupMockClient: func(_ *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
 					{
@@ -764,7 +764,7 @@ func TestScrapeLogs(t *testing.T) {
 		},
 		{
 			desc: "Successful scrape with cursor details",
-			setupMockClient: func(t *testing.T) *fakeClient {
+			setupMockClient: func(_ *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
 					{
@@ -838,7 +838,7 @@ func TestScrapeLogs(t *testing.T) {
 			// records that survived that filter. The remaining residual guard
 			// in scraper.go is for an empty `command` document, exercised here.
 			desc: "Successful scrape skips operation with empty command",
-			setupMockClient: func(t *testing.T) *fakeClient {
+			setupMockClient: func(_ *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
 					{"ns": "mydb.mycol", "op": "query", "command": bson.D{}, "active": true},
@@ -881,7 +881,7 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 	}{
 		{
 			desc: "Primary and secondary both have operations",
-			setupPrimaryClient: func(t *testing.T) *fakeClient {
+			setupPrimaryClient: func(_ *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
 					{"ns": "mydb.orders", "op": "query", "command": bson.D{{Key: "find", Value: "orders"}}, "active": true, "microsecs_running": int64(1000)},
@@ -889,7 +889,7 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "primary:27017"}, nil)
 				return fc
 			},
-			setupSecondaryClients: func(t *testing.T) []*fakeClient {
+			setupSecondaryClients: func(_ *testing.T) []*fakeClient {
 				fc := &fakeClient{}
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
 					{"ns": "mydb.products", "op": "query", "command": bson.D{{Key: "find", Value: "products"}}, "active": true, "microsecs_running": int64(2000)},
@@ -902,7 +902,7 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 		},
 		{
 			desc: "Secondary CurrentOp fails gracefully",
-			setupPrimaryClient: func(t *testing.T) *fakeClient {
+			setupPrimaryClient: func(_ *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
 					{"ns": "mydb.orders", "op": "query", "command": bson.D{{Key: "find", Value: "orders"}}, "active": true, "microsecs_running": int64(1000)},
@@ -910,7 +910,7 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "primary:27017"}, nil)
 				return fc
 			},
-			setupSecondaryClients: func(t *testing.T) []*fakeClient {
+			setupSecondaryClients: func(_ *testing.T) []*fakeClient {
 				fc := &fakeClient{}
 				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "secondary1:27017"}, nil)
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{}, errors.New("secondary unreachable"))
@@ -921,7 +921,7 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 		},
 		{
 			desc: "Multiple secondaries with mixed results",
-			setupPrimaryClient: func(t *testing.T) *fakeClient {
+			setupPrimaryClient: func(_ *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
 					{"ns": "mydb.orders", "op": "query", "command": bson.D{{Key: "find", Value: "orders"}}, "active": true, "microsecs_running": int64(1000)},
@@ -929,7 +929,7 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "primary:27017"}, nil)
 				return fc
 			},
-			setupSecondaryClients: func(t *testing.T) []*fakeClient {
+			setupSecondaryClients: func(_ *testing.T) []*fakeClient {
 				fc1 := &fakeClient{}
 				fc1.On("CurrentOp", mock.Anything).Return([]bson.M{
 					{"ns": "mydb.products", "op": "query", "command": bson.D{{Key: "find", Value: "products"}}, "active": true, "microsecs_running": int64(500)},
@@ -953,13 +953,13 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 		},
 		{
 			desc: "Primary CurrentOp failure does not block healthy secondaries",
-			setupPrimaryClient: func(t *testing.T) *fakeClient {
+			setupPrimaryClient: func(_ *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "primary:27017"}, nil)
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{}, errors.New("primary unreachable"))
 				return fc
 			},
-			setupSecondaryClients: func(t *testing.T) []*fakeClient {
+			setupSecondaryClients: func(_ *testing.T) []*fakeClient {
 				fc := &fakeClient{}
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
 					{"ns": "mydb.products", "op": "query", "command": bson.D{{Key: "find", Value: "products"}}, "active": true, "microsecs_running": int64(1000)},
@@ -972,7 +972,7 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 		},
 		{
 			desc: "No secondaries configured",
-			setupPrimaryClient: func(t *testing.T) *fakeClient {
+			setupPrimaryClient: func(_ *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
 					{"ns": "mydb.orders", "op": "query", "command": bson.D{{Key: "find", Value: "orders"}}, "active": true, "microsecs_running": int64(1000)},
@@ -980,7 +980,7 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "primary:27017"}, nil)
 				return fc
 			},
-			setupSecondaryClients: func(t *testing.T) []*fakeClient {
+			setupSecondaryClients: func(_ *testing.T) []*fakeClient {
 				return nil
 			},
 			expectedLogCount:      1,
