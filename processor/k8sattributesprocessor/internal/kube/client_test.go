@@ -580,17 +580,15 @@ func TestPodDelete(t *testing.T) {
 	tsBeforeDelete = time.Now()
 	c.handlePodDelete(cache.DeletedFinalStateUnknown{Obj: pod})
 	assert.Len(t, c.Pods, 5)
-	assert.Len(t, c.deleteQueue, 5)
-	deleteRequest = c.deleteQueue[0]
-	assert.Equal(t, newPodIdentifier("connection", "k8s.pod.ip", "2.2.2.2"), deleteRequest.id)
-	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", deleteRequest.podUID)
-	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
-	assert.False(t, deleteRequest.ts.After(time.Now()))
-	deleteRequest = c.deleteQueue[1]
-	assert.Equal(t, newPodIdentifier("resource_attribute", "k8s.pod.uid", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"), deleteRequest.id)
-	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", deleteRequest.podUID)
-	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
-	assert.False(t, deleteRequest.ts.After(time.Now()))
+	assert.Len(t, c.deleteQueue, 3)
+	assertDeleteQueueContains(t, c.deleteQueue, newPodIdentifier("connection", "k8s.pod.ip", "2.2.2.2"), "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+	assertDeleteQueueContains(t, c.deleteQueue, newPodIdentifier("resource_attribute", "k8s.pod.uid", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"), "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+	assertDeleteQueueContains(t, c.deleteQueue, newPodIdentifier("resource_attribute", "k8s.pod.ip", "2.2.2.2"), "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+	for i := range c.deleteQueue {
+		deleteRequest = c.deleteQueue[i]
+		assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
+		assert.False(t, deleteRequest.ts.After(time.Now()))
+	}
 }
 
 func TestNamespaceDelete(t *testing.T) {

@@ -1594,6 +1594,9 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	c.m.Lock()
 	if newPod.PodUID != "" {
 		if oldPod, ok := c.Pods[podUIDIdentifier(newPod.PodUID)]; ok && oldPod.PodUID == newPod.PodUID {
+			// Only container.id-based identifiers are handled here.
+			// Other identifiers can disappear and later reappear, so they need separate handling to preserve the grace period.
+			// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48588
 			staleContainerIDRequests = c.staleContainerIDDeleteRequestsLocked(oldPod, newPod)
 		}
 	}
@@ -1622,27 +1625,19 @@ func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 	var deleteRequests []deleteRequest
 
 	c.m.RLock()
-	seenInDeleteEvent := make(map[PodIdentifier]struct{}, len(identifiers))
-	for i := range identifiers {
-		id := identifiers[i]
-		seenInDeleteEvent[id] = struct{}{}
-		if p, ok := c.Pods[id]; ok && p.PodUID == podUID {
-			deleteRequests = append(deleteRequests, deleteRequest{id: id, podUID: p.PodUID})
-		}
-	}
 	if podUID != "" {
-		if cachedPod, ok := c.Pods[podUIDIdentifier(podUID)]; ok && cachedPod.PodUID == podUID {
-			// The delete event may not include historical container IDs. Include the
-			// latest cached pod state so container IDs known to the cache are deleted.
-			cachedIdentifiers := c.getIdentifiersFromAssoc(cachedPod)
-			for i := range cachedIdentifiers {
-				id := cachedIdentifiers[i]
-				if _, ok := seenInDeleteEvent[id]; ok {
-					continue
-				}
-				if p, ok := c.Pods[id]; ok && p.PodUID == podUID {
-					deleteRequests = append(deleteRequests, deleteRequest{id: id, podUID: p.PodUID})
-				}
+		// Delete events may omit identifiers that were previously associated with the pod.
+		// Since the pod is gone, all cache entries for its UID can be removed.
+		for id, p := range c.Pods {
+			if p.PodUID == podUID {
+				deleteRequests = append(deleteRequests, deleteRequest{id: id, podUID: podUID})
+			}
+		}
+	} else {
+		for i := range identifiers {
+			id := identifiers[i]
+			if p, ok := c.Pods[id]; ok && p.PodUID == podUID {
+				deleteRequests = append(deleteRequests, deleteRequest{id: id, podUID: p.PodUID})
 			}
 		}
 	}
