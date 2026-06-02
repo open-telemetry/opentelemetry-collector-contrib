@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/traceutil"
 )
 
 func TestApplyTransactionsAttributes_EmptyTrace(t *testing.T) {
@@ -173,10 +175,71 @@ func TestApplyTransactionsAttributes_ServerAndConsumerSpans(t *testing.T) {
 	}
 }
 
+func TestApplyTransactionsAttributesByTraceID(t *testing.T) {
+	logger := zap.NewNop()
+	traces := createTestTraces(2, ptrace.SpanKindClient)
+	root := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	root.SetKind(ptrace.SpanKindServer)
+
+	ApplyTransactionsAttributesByTraceID(traceutil.GroupSpansByTraceID(traces), logger)
+
+	val, ok := root.Attributes().Get(TransactionIdentifier)
+	assert.True(t, ok)
+	assert.Equal(t, "test-span-0", val.Str())
+}
+
+func TestApplyTransactionsAttributesByTraceID_EmptySpanGroup(t *testing.T) {
+	logger := zap.NewNop()
+	traceID := pcommon.TraceID([16]byte{7})
+
+	assert.NotPanics(t, func() {
+		ApplyTransactionsAttributesByTraceID(map[pcommon.TraceID][]ptrace.Span{
+			traceID: {},
+		}, logger)
+	})
+}
+
+func TestApplyTransactionAttributesToTree(t *testing.T) {
+	logger := zap.NewNop()
+	traces := ptrace.NewTraces()
+	spans := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
+	traceID := pcommon.TraceID([16]byte{9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9})
+
+	root := spans.AppendEmpty()
+	root.SetTraceID(traceID)
+	root.SetSpanID(pcommon.SpanID([8]byte{1}))
+	root.SetName("root")
+	root.SetKind(ptrace.SpanKindServer)
+	child := spans.AppendEmpty()
+	child.SetTraceID(traceID)
+	child.SetSpanID(pcommon.SpanID([8]byte{2}))
+	child.SetParentSpanID(root.SpanID())
+	child.SetName("child-root")
+	child.Attributes().PutBool(TransactionIdentifierRoot, true)
+	grandchild := spans.AppendEmpty()
+	grandchild.SetTraceID(traceID)
+	grandchild.SetSpanID(pcommon.SpanID([8]byte{3}))
+	grandchild.SetParentSpanID(child.SpanID())
+	grandchild.SetName("grandchild")
+
+	ApplyTransactionAttributesToTree(traceutil.BuildTraceTree([]ptrace.Span{
+		root,
+		child,
+		grandchild,
+	}), logger)
+
+	_, ok := child.Attributes().Get(TransactionIdentifier)
+	assert.False(t, ok)
+
+	val, ok := grandchild.Attributes().Get(TransactionIdentifier)
+	assert.True(t, ok)
+	assert.Equal(t, "child-root", val.Str())
+}
+
 func TestGroupSpansByTraceID(t *testing.T) {
 	traces := createTestTraces(3, ptrace.SpanKindClient)
 
-	result := groupSpansByTraceID(traces)
+	result := traceutil.GroupSpansByTraceID(traces)
 	assert.Len(t, result, 1) // All spans should have the same trace ID
 
 	for traceID, spans := range result {

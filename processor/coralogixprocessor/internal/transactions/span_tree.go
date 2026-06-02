@@ -4,75 +4,58 @@
 package transactions // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/transactions"
 
 import (
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/traceutil"
 )
 
-type spanNode struct {
-	span     ptrace.Span
-	children []*spanNode
-}
-
-// buildSpanTree constructs a hierarchical tree of spans
-func buildSpanTree(spans []ptrace.Span, logger *zap.Logger) *spanNode {
-	spanMap := make(map[pcommon.SpanID]*spanNode)
-	var rootSpan *spanNode
-	var orphanedSpans []*spanNode
-
-	for _, span := range spans {
-		node := &spanNode{span: span}
-		spanMap[span.SpanID()] = node
-
-		if span.ParentSpanID().IsEmpty() {
-			if rootSpan != nil {
-				logger.Warn("Multiple root spans found in single trace",
-					zap.String("existingRootSpanID", rootSpan.span.SpanID().String()),
-					zap.String("newRootSpanID", span.SpanID().String()))
-				// We'll keep the earliest span as root
-				if span.StartTimestamp() < rootSpan.span.StartTimestamp() {
-					orphanedSpans = append(orphanedSpans, rootSpan)
-					rootSpan = node
-				} else {
-					orphanedSpans = append(orphanedSpans, node)
-				}
-			} else {
-				rootSpan = node
-			}
-		}
+// buildSpanTree selects the transaction root from a shared trace tree.
+func buildSpanTree(tree traceutil.TraceTree, logger *zap.Logger) *traceutil.TraceTreeNode {
+	if len(tree.Roots) == 0 {
+		return nil
 	}
 
-	if len(orphanedSpans) > 0 {
-		logger.Warn("orphaned spans found", zap.Int("orphanedSpans", len(orphanedSpans)))
+	rootSpan, explicitRootFound := selectTransactionRoot(tree.Roots)
+	if len(tree.Roots) > 1 {
+		for _, root := range tree.Roots[1:] {
+			logger.Warn("Multiple root spans found in single trace",
+				zap.String("existingRootSpanID", rootSpan.Span.SpanID().String()),
+				zap.String("newRootSpanID", root.Span.SpanID().String()))
+		}
+		logger.Warn("orphaned spans found", zap.Int("orphanedSpans", len(tree.Roots)-1))
 	}
-
-	// If no root span was found, use the earliest span as root
-	if rootSpan == nil && len(spans) > 0 {
-		earliestSpan := spanMap[spans[0].SpanID()]
-		earliestTime := spans[0].StartTimestamp()
-
-		for _, node := range spanMap {
-			if node.span.StartTimestamp() < earliestTime {
-				earliestTime = node.span.StartTimestamp()
-				earliestSpan = node
-			}
-		}
-
-		rootSpan = earliestSpan
-		logger.Debug("No root span found in trace, using earliest span as root",
-			zap.String("selectedRootSpanID", rootSpan.span.SpanID().String()))
-	}
-
-	for _, node := range spanMap {
-		if node == rootSpan {
-			continue
-		}
-
-		parentID := node.span.ParentSpanID()
-		if parent, exists := spanMap[parentID]; exists {
-			parent.children = append(parent.children, node)
-		}
+	if !explicitRootFound {
+		logger.Debug("No explicit root span found in trace, using earliest orphaned span as root",
+			zap.String("selectedRootSpanID", rootSpan.Span.SpanID().String()))
 	}
 
 	return rootSpan
+}
+
+func selectTransactionRoot(roots []*traceutil.TraceTreeNode) (*traceutil.TraceTreeNode, bool) {
+	var selectedExplicit *traceutil.TraceTreeNode
+	var selectedFallback *traceutil.TraceTreeNode
+
+	for _, root := range roots {
+		if selectedFallback == nil || isBetterTransactionRoot(root, selectedFallback) {
+			selectedFallback = root
+		}
+		if root.Span.ParentSpanID().IsEmpty() && (selectedExplicit == nil || isBetterTransactionRoot(root, selectedExplicit)) {
+			selectedExplicit = root
+		}
+	}
+
+	if selectedExplicit != nil {
+		return selectedExplicit, true
+	}
+
+	return selectedFallback, false
+}
+
+func isBetterTransactionRoot(candidate, current *traceutil.TraceTreeNode) bool {
+	if candidate.Span.StartTimestamp() != current.Span.StartTimestamp() {
+		return candidate.Span.StartTimestamp() < current.Span.StartTimestamp()
+	}
+
+	return candidate.Span.SpanID().String() < current.Span.SpanID().String()
 }
