@@ -278,6 +278,11 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if compactedDb != nil {
+			_ = compactedDb.Close()
+		}
+	}()
 
 	compactionStart := time.Now()
 
@@ -291,6 +296,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 
 	c.db.Close()
 	compactedDb.Close()
+	compactedDb = nil
 
 	// replace current db file with compacted db file
 	// we reopen the DB file irrespective of the success of the replace, as we can't leave it closed

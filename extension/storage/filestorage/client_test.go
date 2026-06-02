@@ -664,7 +664,7 @@ func TestCompactClosedClientRemovesTempFileFailure(t *testing.T) {
 		removeFile = origRemoveFile
 	})
 
-	client.closed = true
+	require.NoError(t, client.Close(t.Context()))
 	err = client.Compact(t.TempDir(), time.Second, 1)
 	require.NoError(t, err)
 	require.Len(t, logs.FilterMessage("removing temporary compaction file failed").All(), 1)

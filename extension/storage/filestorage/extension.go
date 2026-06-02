@@ -121,8 +121,8 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 				zap.String("file", absoluteName),
 				zap.Any("panic", r))
 
-			// Rename the corrupted file with ISO 8601 timestamp
-			timestamp := time.Now().Format("2006-01-02T15:04:05.000")
+			// Use a filename-safe timestamp so recreate works on Windows too.
+			timestamp := time.Now().UTC().Format("20060102T150405.000Z0700")
 			backupName := absoluteName + "." + timestamp + ".backup"
 			if renameErr := os.Rename(absoluteName, backupName); renameErr != nil {
 				err = fmt.Errorf("error renaming corrupted database. Please remove %s manually: %w", absoluteName, renameErr)
