@@ -8,6 +8,7 @@ package hostmetadata // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -52,19 +53,23 @@ func (c *hostCPU) toStringMap() map[string]string {
 func getCPU(ctx context.Context) (info *hostCPU, err error) {
 	info = &hostCPU{}
 
-	// get physical cpu stats
 	var cpus []cpu.InfoStat
 
 	// On Windows this can sometimes take longer than the default timeout (10 seconds).
 	ctx, cancel := context.WithTimeout(ctx, cpuStatsTimeout)
 	defer cancel()
 
+	// get cpu infoStats
 	cpus, err = cpuInfo(ctx)
 	if err != nil {
 		return info, err
 	}
 
-	info.HostPhysicalCPUs = len(cpus)
+	// get physical cpu stats
+	info.HostPhysicalCPUs, err = cpuCounts(ctx, false)
+	if err != nil {
+		return info, err
+	}
 
 	// get logical cpu stats
 	info.HostLogicalCPUs, err = cpuCounts(ctx, true)
@@ -72,9 +77,14 @@ func getCPU(ctx context.Context) (info *hostCPU, err error) {
 		return info, err
 	}
 
-	// total number of cpu cores
+	// Count physical CPU cores by tracking unique {PhysicalID, CoreID} pairs.
+	physicalCores := make(map[string]bool)
 	for i := range cpus {
-		info.HostCPUCores += int64(cpus[i].Cores)
+		k := fmt.Sprintf("%s,%s", cpus[i].PhysicalID, cpus[i].CoreID)
+		if !physicalCores[k] {
+			physicalCores[k] = true
+			info.HostCPUCores++
+		}
 		// TODO: This is not ideal... if there are different processors
 		// we will only report one of the models... This is unlikely to happen,
 		// but it could

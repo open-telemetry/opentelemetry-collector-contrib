@@ -1,5 +1,6 @@
 display_name: File Stats Receiver
-type: filestats
+type: file_stats
+deprecated_type: filestats
 reaggregation_enabled: true
 
 description: The File Stats receiver collects metrics from files specified with a glob pattern.

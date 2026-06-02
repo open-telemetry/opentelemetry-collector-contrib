@@ -4,19 +4,19 @@ go 1.25.0
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/jackc/pgx/v5 v5.9.1
-	github.com/moby/moby/api v1.54.1
+	github.com/jackc/pgx/v5 v5.9.2
+	github.com/moby/moby/api v1.54.2
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.42.0
-	go.opentelemetry.io/collector/component v1.56.1-0.20260415114935-307e3abdbae9
-	go.opentelemetry.io/collector/component/componenttest v0.150.1-0.20260415114935-307e3abdbae9
-	go.opentelemetry.io/collector/confmap v1.56.1-0.20260415114935-307e3abdbae9
-	go.opentelemetry.io/collector/extension v1.56.1-0.20260415114935-307e3abdbae9
-	go.opentelemetry.io/collector/extension/extensiontest v0.150.1-0.20260415114935-307e3abdbae9
-	go.opentelemetry.io/collector/extension/xextension v0.150.1-0.20260415114935-307e3abdbae9
+	go.opentelemetry.io/collector/component v1.59.1-0.20260528150546-fe2cf23ff222
+	go.opentelemetry.io/collector/component/componenttest v0.153.1-0.20260528150546-fe2cf23ff222
+	go.opentelemetry.io/collector/confmap v1.59.1-0.20260528150546-fe2cf23ff222
+	go.opentelemetry.io/collector/extension v1.59.1-0.20260528150546-fe2cf23ff222
+	go.opentelemetry.io/collector/extension/extensiontest v0.153.1-0.20260528150546-fe2cf23ff222
+	go.opentelemetry.io/collector/extension/xextension v0.153.1-0.20260528150546-fe2cf23ff222
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.1
-	modernc.org/sqlite v1.48.2
+	go.uber.org/zap v1.28.0
+	modernc.org/sqlite v1.50.1
 )
 
 require (
@@ -79,9 +79,9 @@ require (
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.56.1-0.20260415114935-307e3abdbae9 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.150.1-0.20260415114935-307e3abdbae9 // indirect
-	go.opentelemetry.io/collector/pdata v1.56.1-0.20260415114935-307e3abdbae9 // indirect
+	go.opentelemetry.io/collector/featuregate v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.153.1-0.20260528150546-fe2cf23ff222 // indirect
+	go.opentelemetry.io/collector/pdata v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
@@ -90,12 +90,12 @@ require (
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.48.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/crypto v0.52.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	modernc.org/libc v1.70.0 // indirect
+	modernc.org/libc v1.72.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 )

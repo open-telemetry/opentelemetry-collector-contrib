@@ -27,7 +27,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config",
 			cfg: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedSuccess: true,
@@ -35,7 +35,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config with no metric settings",
 			cfg: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedSuccess: true,
@@ -67,7 +67,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config only datasource and none direct connect settings",
 			cfg: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 				DataSource:           "a connection string",
 			},
@@ -76,7 +76,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config with all direct connection settings",
 			cfg: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 				Server:               "0.0.0.0",
 				Username:             "sa",
@@ -88,7 +88,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "config with invalid MaxQuerySampleCount value",
 			cfg: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 				TopQueryCollection: TopQueryCollection{
 					MaxQuerySampleCount: 100000,
@@ -99,7 +99,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "config with invalid TopQueryCount value",
 			cfg: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 				TopQueryCollection: TopQueryCollection{
 					MaxQuerySampleCount: 100,
@@ -111,7 +111,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "config with invalid LookbackTime",
 			cfg: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 				TopQueryCollection: TopQueryCollection{
 					MaxQuerySampleCount: 100,

@@ -50,7 +50,7 @@ func createDefaultConfig() component.Config {
 	cfg.CollectionInterval = 10 * time.Second
 	return &Config{
 		ControllerConfig:     cfg,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		QuerySample: QuerySample{
 			MaxRowsPerQuery: 100,
@@ -269,12 +269,20 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled ||
 		metrics.SqlserverDeadlockRate.Enabled ||
 		metrics.SqlserverIndexSearchRate.Enabled ||
+		metrics.SqlserverLatchSuperlatchCount.Enabled ||
+		metrics.SqlserverLatchSuperlatchTransitionRate.Enabled ||
+		metrics.SqlserverLatchWaitRate.Enabled ||
+		metrics.SqlserverLatchWaitTimeAvg.Enabled ||
+		metrics.SqlserverLatchWaitTimeTotal.Enabled ||
 		metrics.SqlserverLockTimeoutRate.Enabled ||
 		metrics.SqlserverLockWaitCount.Enabled ||
 		metrics.SqlserverLockWaitRate.Enabled ||
 		metrics.SqlserverLoginRate.Enabled ||
 		metrics.SqlserverLogoutRate.Enabled ||
+		metrics.SqlserverMemoryArea.Enabled ||
+		metrics.SqlserverMemoryCacheObjectCount.Enabled ||
 		metrics.SqlserverMemoryGrantsPendingCount.Enabled ||
+		metrics.SqlserverMemoryPageCount.Enabled ||
 		metrics.SqlserverMemoryUsage.Enabled ||
 		metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled ||
 		metrics.SqlserverPageBufferCacheHitRatio.Enabled ||

@@ -1834,7 +1834,7 @@ func (ms *SparkStageTaskResultSizeMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// MetricsConfig provides config for apachespark metrics.
+// MetricsConfig provides config for apache_spark metrics.
 type MetricsConfig struct {
 	SparkDriverBlockManagerDiskUsage                   SparkDriverBlockManagerDiskUsageMetricConfig                   `mapstructure:"spark.driver.block_manager.disk.usage"`
 	SparkDriverBlockManagerMemoryUsage                 SparkDriverBlockManagerMemoryUsageMetricConfig                 `mapstructure:"spark.driver.block_manager.memory.usage"`
@@ -2161,7 +2161,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for apachespark resource attributes.
+// ResourceAttributesConfig provides config for apache_spark resource attributes.
 type ResourceAttributesConfig struct {
 	SparkApplicationID   ResourceAttributeConfig `mapstructure:"spark.application.id"`
 	SparkApplicationName ResourceAttributeConfig `mapstructure:"spark.application.name"`
@@ -2194,15 +2194,20 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for apachespark metrics builder.
+// MetricsBuilderConfig is a configuration for apache_spark metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }

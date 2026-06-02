@@ -89,3 +89,13 @@ kafka/metadata_batch_valid:
           - metadata_key
           - another_key
           - kafka_topic
+kafka/message_record_headers:
+  brokers:
+    - "localhost:9092"
+  record_headers:
+    - name: some-key
+      value: some-value
+    - name: some-key
+      value: another-value     
+    - name: new-key
+      value: new-value  

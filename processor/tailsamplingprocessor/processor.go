@@ -19,7 +19,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/cache"
@@ -40,6 +42,8 @@ type policy struct {
 	evaluator samplingpolicy.Evaluator
 	// attribute to use in the telemetry to denote the policy.
 	attribute metric.MeasurementOption
+	// isDrop indicates this is a drop policy.
+	isDrop bool
 }
 
 // TraceData is a wrapper around the publically used samplingpolicy.TraceData
@@ -64,6 +68,7 @@ type tailSamplingSpanProcessor struct {
 	set       processor.Settings
 	telemetry *metadata.TelemetryBuilder
 	logger    *zap.Logger
+	tracer    trace.Tracer
 
 	deleteTraceQueue   *list.List
 	nextConsumer       consumer.Traces
@@ -105,6 +110,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 	if err != nil {
 		return nil, err
 	}
+	tracer := metadata.Tracer(telemetrySettings)
 	nopCache := cache.NewNopDecisionCache()
 	sampledDecisions := nopCache
 	nonSampledDecisions := nopCache
@@ -126,6 +132,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		cfg:                cfg,
 		set:                set,
 		telemetry:          telemetry,
+		tracer:             tracer,
 		nextConsumer:       nextConsumer,
 		sampledIDCache:     sampledDecisions,
 		nonSampledIDCache:  nonSampledDecisions,
@@ -198,8 +205,14 @@ func (tsp *tailSamplingSpanProcessor) Start(_ context.Context, host component.Ho
 }
 
 // ConsumeTraces is required by the processor.Traces interface.
-func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	_, span := tsp.tracer.Start(ctx, "tailsampling.ConsumeTraces")
+	defer span.End()
+
+	var totalSpans, totalTraces, totalResourceSpans int64
+
 	for _, rss := range td.ResourceSpans().All() {
+		totalResourceSpans++
 		// First group all spans by trace.
 		idToSpansAndScope := groupSpansByTraceKey(rss)
 
@@ -215,11 +228,22 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace
 				rss:       newRSS,
 				spanCount: int64(len(spans)),
 			})
+			totalSpans += int64(len(spans))
+			totalTraces++
 		}
 		if len(batch) > 0 {
 			tsp.workChan <- batch
 		}
 	}
+
+	if span.IsRecording() {
+		span.SetAttributes(
+			attribute.Int64("traces.count", totalTraces),
+			attribute.Int64("spans.count", totalSpans),
+			attribute.Int64("resource_spans.count", totalResourceSpans),
+		)
+	}
+
 	return nil
 }
 
@@ -269,9 +293,10 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, 
 			name:      cfg.Name,
 			evaluator: eval,
 			attribute: metric.WithAttributes(attribute.String("policy", uniquePolicyName)),
+			isDrop:    cfg.Type == Drop,
 		}
 
-		if cfg.Type == Drop {
+		if p.isDrop {
 			dropPolicies = append(dropPolicies, p)
 		} else {
 			policies = append(policies, p)
@@ -404,6 +429,9 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewStatusCodeFilter(settings, scfCfg.StatusCodes)
 	case RateLimiting:
 		rlfCfg := cfg.RateLimitingCfg
+		if rlfCfg.BurstCapacity > 0 {
+			return sampling.NewRateLimitingWithBurstCapacity(settings, rlfCfg.SpansPerSecond, rlfCfg.BurstCapacity), nil
+		}
 		return sampling.NewRateLimiting(settings, rlfCfg.SpansPerSecond), nil
 	case BytesLimiting:
 		blfCfg := cfg.BytesLimitingCfg
@@ -623,13 +651,18 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	tsp.logger.Debug("Sampling Policy Evaluation ticked")
 
-	ctx := context.Background()
 	metrics := newPolicyEvaluationMetrics(len(tsp.policies))
 	startTime := time.Now()
 	globalTracesSampledByDecision := make(map[samplingpolicy.Decision]int64)
 
 	batch, hasMore := tsp.decisionBatcher.CloseCurrentAndTakeFirstBatch()
 	batchLen := len(batch)
+	var span trace.Span
+	ctx := context.Background()
+	if batchLen > 0 {
+		ctx, span = tsp.tracer.Start(ctx, "tailsampling.samplingPolicyOnTick")
+		defer span.End()
+	}
 
 	for id := range batch {
 		trace, ok := tsp.idToTrace[id]
@@ -667,7 +700,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 			SpanCount:       trace.SpanCount,
 			ReceivedBatches: allSpans,
 		}
-		decision, policyName := tsp.makeDecision(id, &traceForDecision, metrics)
+		decision, policyName := tsp.makeDecision(ctx, id, &traceForDecision, metrics)
 		globalTracesSampledByDecision[decision]++
 		// Keep release paths working with tail storage by attaching the
 		// retrieved batches back to trace state for this decision.
@@ -695,6 +728,21 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	}
 	tsp.recordPerPolicyEvaluationMetrics(metrics)
 
+	if span != nil && span.IsRecording() {
+		span.SetAttributes(
+			attribute.Int("batch.size", batchLen),
+			attribute.Int("policy.count", len(tsp.policies)),
+			attribute.Int64("policy.errors", metrics.evaluateErrorCount),
+			attribute.Int64("decisions.sampled", metrics.decisionSampled),
+			attribute.Int64("decisions.not_sampled", metrics.decisionNotSampled),
+			attribute.Int64("decisions.dropped", metrics.decisionDropped),
+		)
+	}
+
+	if metrics.evaluateErrorCount > 0 && span != nil && span.IsRecording() {
+		span.SetStatus(codes.Error, fmt.Sprintf("%d policy evaluation errors", metrics.evaluateErrorCount))
+	}
+
 	tsp.logger.Debug("Sampling policy evaluation completed",
 		zap.Int("batch.len", batchLen),
 		zap.Int64("sampled", metrics.decisionSampled),
@@ -706,7 +754,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	return hasMore
 }
 
-func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyEvaluationMetrics) (samplingpolicy.Decision, string) {
+func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, id pcommon.TraceID, traceData *samplingpolicy.TraceData, metrics *policyEvaluationMetrics) (samplingpolicy.Decision, string) {
 	finalDecision := samplingpolicy.NotSampled
 	samplingDecisions := map[samplingpolicy.Decision]*policy{
 		samplingpolicy.Error:      nil,
@@ -719,12 +767,10 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		samplingpolicy.Dropped:          nil,
 	}
 
-	ctx := context.Background()
-
 	// Check all policies before making a final decision.
 	for i, p := range tsp.policies {
 		startTime := time.Now()
-		decision, err := p.evaluator.Evaluate(ctx, id, trace)
+		decision, err := p.evaluator.Evaluate(ctx, id, traceData)
 		metrics.addDecisionTime(i, time.Since(startTime))
 
 		if err != nil {
@@ -736,7 +782,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 			continue
 		}
 
-		metrics.addDecision(i, decision, trace.SpanCount)
+		metrics.addDecision(i, decision, traceData.SpanCount)
 
 		// We associate the first policy with the sampling decision to understand what policy sampled a span
 		if samplingDecisions[decision] == nil {
@@ -773,7 +819,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	}
 
 	if tsp.recordPolicy && sampledPolicy != nil && finalDecision == samplingpolicy.Sampled {
-		sampling.SetAttrOnScopeSpans(trace.ReceivedBatches, "tailsampling.policy", sampledPolicy.name)
+		sampling.SetAttrOnScopeSpans(traceData.ReceivedBatches, "tailsampling.policy", sampledPolicy.name)
 	}
 
 	switch finalDecision {
@@ -792,7 +838,18 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 // terminal decisions at ingest time. All other outcomes remain pending.
 func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyEvaluationMetrics) (samplingpolicy.Decision, string) {
 	ctx := context.Background()
+	// Track whether a drop policy didn't match this batch. A drop policy
+	// returning NotSampled means it didn't match these spans but could still
+	// match future spans for this trace, so we must defer a Sampled decision
+	// to avoid forwarding spans that should ultimately be dropped.
+	dropPolicyPending := false
 	for i, p := range tsp.policies {
+		// If we have moved past all drop policies and one is pending there is
+		// no use wasting work on evaluation when we can't sample the trace.
+		if !p.isDrop && dropPolicyPending {
+			break
+		}
+
 		startTime := time.Now()
 		decision, err := p.evaluator.Evaluate(ctx, id, trace)
 		metrics.addDecisionTime(i, time.Since(startTime))
@@ -809,7 +866,15 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 			metrics.decisionDropped++
 			return samplingpolicy.Dropped, p.name
 		}
-		if decision == samplingpolicy.Sampled {
+
+		if p.isDrop {
+			// Treat all other results as pending as the result could change.
+			dropPolicyPending = true
+			continue
+		}
+
+		// Since drop policies are always sorted to the top we know dropPolicyPending is accurate.
+		if decision == samplingpolicy.Sampled && !dropPolicyPending {
 			metrics.decisionSampled++
 			if tsp.recordPolicy {
 				sampling.SetAttrOnScopeSpans(trace.ReceivedBatches, "tailsampling.policy", p.name)

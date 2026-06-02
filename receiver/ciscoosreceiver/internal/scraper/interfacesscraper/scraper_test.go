@@ -33,7 +33,7 @@ func TestInterfacesScraper_Start(t *testing.T) {
 			},
 		},
 	}
-	config.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
+	config.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
 
 	scraper := &interfacesScraper{
 		logger: logger,
@@ -60,7 +60,7 @@ func TestInterfacesScraper_Start_EmptyIP(t *testing.T) {
 			},
 		},
 	}
-	config.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
+	config.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
 
 	scraper := &interfacesScraper{
 		logger: logger,

@@ -260,6 +260,56 @@ func TestProcessorConsumeCondition(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestProcessorConsumeCondition_PathContextSyntax(t *testing.T) {
+	logsSink := &consumertest.LogsSink{}
+	cfg := &Config{
+		LogCountAttribute: defaultLogCountAttribute,
+		Interval:          1 * time.Second,
+		Timezone:          defaultTimezone,
+		Conditions:        []string{`(log.attributes["ID"] == 1)`},
+		ExcludeFields: []string{
+			fmt.Sprintf("%s.remove_me", attributeField),
+		},
+	}
+
+	// Create a processor
+	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
+	require.NoError(t, err)
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	logs, err := golden.ReadLogs(filepath.Join("testdata", "input", "conditionLogs.yaml"))
+	require.NoError(t, err)
+
+	// Consume the payload
+	err = p.ConsumeLogs(t.Context(), logs)
+	require.NoError(t, err)
+
+	// Wait for the logs to be emitted
+	require.Eventually(t, func() bool {
+		return logsSink.LogRecordCount() > 4
+	}, 3*time.Second, 200*time.Millisecond)
+
+	allSinkLogs := logsSink.AllLogs()
+	require.Len(t, allSinkLogs, 2)
+
+	expectedConsumedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "conditionConsumedLogs.yaml"))
+	require.NoError(t, err)
+	expectedDedupedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "conditionDedupedLogs.yaml"))
+	require.NoError(t, err)
+
+	consumedLogs := allSinkLogs[0]
+	dedupedLogs := allSinkLogs[1]
+
+	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordsOrder()))
+	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordsOrder()))
+
+	// Cleanup
+	err = p.Shutdown(t.Context())
+	require.NoError(t, err)
+}
+
 func TestProcessorConsumeMultipleConditions(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
 	cfg := &Config{

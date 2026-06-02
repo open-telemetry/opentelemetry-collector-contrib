@@ -26,7 +26,7 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	overriddenMetricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+	overriddenMetricsBuilderConfig := metadata.NewDefaultMetricsBuilderConfig()
 	overriddenMetricsBuilderConfig.Metrics.ActiveDirectoryDsReplicationObjectRate.Enabled = false
 	tests := []struct {
 		id       component.ID

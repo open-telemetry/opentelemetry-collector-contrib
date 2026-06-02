@@ -38,6 +38,11 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sNamespaceUID("k8s.namespace.uid-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
 			rb.SetK8sNodeUID("k8s.node.uid-val")
+			rb.SetK8sPersistentvolumeName("k8s.persistentvolume.name-val")
+			rb.SetK8sPersistentvolumeReclaimPolicyDelete()
+			rb.SetK8sPersistentvolumeUID("k8s.persistentvolume.uid-val")
+			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
+			rb.SetK8sPersistentvolumeclaimUID("k8s.persistentvolumeclaim.uid-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
 			rb.SetK8sPodQosClass("k8s.pod.qos_class-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
@@ -54,6 +59,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sServiceUID("k8s.service.uid-val")
 			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
+			rb.SetK8sStorageclassName("k8s.storageclass.name-val")
 			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
 			rb.SetOpenshiftClusterquotaUID("openshift.clusterquota.uid-val")
 			rb.SetOsDescription("os.description-val")
@@ -64,9 +70,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 33, res.Attributes().Len())
+				assert.Equal(t, 38, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 45, res.Attributes().Len())
+				assert.Equal(t, 51, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -198,6 +204,31 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.Equal(t, "k8s.node.uid-val", k8sNodeUIDAttrVal.Str())
 			}
+			k8sPersistentvolumeNameAttrVal, ok := res.Attributes().Get("k8s.persistentvolume.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "k8s.persistentvolume.name-val", k8sPersistentvolumeNameAttrVal.Str())
+			}
+			k8sPersistentvolumeReclaimPolicyAttrVal, ok := res.Attributes().Get("k8s.persistentvolume.reclaim_policy")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "Delete", k8sPersistentvolumeReclaimPolicyAttrVal.Str())
+			}
+			k8sPersistentvolumeUIDAttrVal, ok := res.Attributes().Get("k8s.persistentvolume.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "k8s.persistentvolume.uid-val", k8sPersistentvolumeUIDAttrVal.Str())
+			}
+			k8sPersistentvolumeclaimNameAttrVal, ok := res.Attributes().Get("k8s.persistentvolumeclaim.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "k8s.persistentvolumeclaim.name-val", k8sPersistentvolumeclaimNameAttrVal.Str())
+			}
+			k8sPersistentvolumeclaimUIDAttrVal, ok := res.Attributes().Get("k8s.persistentvolumeclaim.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "k8s.persistentvolumeclaim.uid-val", k8sPersistentvolumeclaimUIDAttrVal.Str())
+			}
 			k8sPodNameAttrVal, ok := res.Attributes().Get("k8s.pod.name")
 			assert.True(t, ok)
 			if ok {
@@ -277,6 +308,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "k8s.statefulset.uid-val", k8sStatefulsetUIDAttrVal.Str())
+			}
+			k8sStorageclassNameAttrVal, ok := res.Attributes().Get("k8s.storageclass.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "k8s.storageclass.name-val", k8sStorageclassNameAttrVal.Str())
 			}
 			openshiftClusterquotaNameAttrVal, ok := res.Attributes().Get("openshift.clusterquota.name")
 			assert.True(t, ok)
