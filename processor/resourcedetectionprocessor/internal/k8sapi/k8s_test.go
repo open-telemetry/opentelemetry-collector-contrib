@@ -15,6 +15,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/k8snode"
@@ -70,11 +72,12 @@ func TestDetect(t *testing.T) {
 	assert.Equal(t, expected, res.Attributes().AsRaw())
 }
 
-func TestDetectClusterUIDSkipsOnError(t *testing.T) {
+func TestDetectClusterUIDSkipsOnForbidden(t *testing.T) {
 	md := &mockMetadata{}
 	md.On("NodeUID").Return("4b15c589-1a33-42cc-927a-b78ba9947095", nil)
 	md.On("NodeName").Return("mainNode", nil)
-	md.On("ClusterUID").Return("", errors.New("forbidden: namespaces \"kube-system\" is forbidden"))
+	forbiddenErr := k8serrors.NewForbidden(schema.GroupResource{Resource: "namespaces"}, "kube-system", errors.New("forbidden"))
+	md.On("ClusterUID").Return("", forbiddenErr)
 	cfg := CreateDefaultConfig()
 	cfg.AuthType = k8sconfig.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
@@ -91,9 +94,29 @@ func TestDetectClusterUIDSkipsOnError(t *testing.T) {
 	md.AssertExpectations(t)
 
 	_, hasClusterUID := res.Attributes().Get("k8s.cluster.uid")
-	assert.False(t, hasClusterUID, "k8s.cluster.uid should not be set when API call fails")
+	assert.False(t, hasClusterUID, "k8s.cluster.uid should not be set when RBAC permission is missing")
 	require.Equal(t, 1, logs.Len(), "expected exactly one warning log")
-	assert.Equal(t, "failed to get k8s cluster UID, skipping", logs.All()[0].Message)
+	assert.Equal(t, "no permission to get kube-system namespace, skipping k8s.cluster.uid; grant 'get' on namespaces/kube-system to fix", logs.All()[0].Message)
+}
+
+func TestDetectClusterUIDErrorsOnTransientFailure(t *testing.T) {
+	md := &mockMetadata{}
+	md.On("NodeUID").Return("4b15c589-1a33-42cc-927a-b78ba9947095", nil)
+	md.On("NodeName").Return("mainNode", nil)
+	md.On("ClusterUID").Return("", errors.New("connection refused"))
+	cfg := CreateDefaultConfig()
+	cfg.AuthType = k8sconfig.AuthTypeNone
+	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
+	t.Setenv("K8S_NODE_NAME", "mainNode")
+
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	require.NoError(t, err)
+	k8sDetector.(*detector).provider = md
+	_, _, err = k8sDetector.Detect(t.Context())
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "failed getting k8s cluster UID")
+	md.AssertExpectations(t)
 }
 
 func TestDetectDisabledResourceAttributes(t *testing.T) {

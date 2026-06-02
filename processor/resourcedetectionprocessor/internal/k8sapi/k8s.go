@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/k8snode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -75,10 +76,14 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	if d.ra.K8sClusterUID.Enabled {
-		// Warn and skip for backward compatibility: existing deployments may lack kube-system RBAC.
 		clusterUID, err := d.provider.ClusterUID(ctx)
 		if err != nil {
-			d.logger.Warn("failed to get k8s cluster UID, skipping", zap.Error(err))
+			if k8serrors.IsForbidden(err) || k8serrors.IsUnauthorized(err) {
+				// Warn and skip for backward compatibility: existing deployments may lack kube-system RBAC.
+				d.logger.Warn("no permission to get kube-system namespace, skipping k8s.cluster.uid; grant 'get' on namespaces/kube-system to fix", zap.Error(err))
+			} else {
+				return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s cluster UID: %w", err)
+			}
 		} else {
 			d.rb.SetK8sClusterUID(clusterUID)
 		}
