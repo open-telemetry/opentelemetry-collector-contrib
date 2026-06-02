@@ -107,6 +107,9 @@ receivers:
 | `target_allocator` | | Optional Target Allocator client configuration used to fetch dynamically assigned scrape targets. See [OpenTelemetry Operator](#opentelemetry-operator). |
 | `trim_metric_suffixes` | `false` | [**Experimental**] Trims unit and some counter type suffixes from metric names, for example `singing_duration_seconds_total` -> `singing_duration`. Useful when trying to restore metric names closer to OpenTelemetry instrumentation. |
 | `api_server` | | Optional nested block for a local Prometheus agent-mode API server (debugging targets, configuration, and service discovery). See [Prometheus API Server](#prometheus-api-server). |
+| `scrape_on_shutdown` | `false` | Enables a final scrape before the receiver closes. This final scrape ignores the configured scrape interval. |
+| `discovery_reload_on_startup` | `false` | Enables discovering targets immediately on start up as opposed to waiting for the configured interval before initializing the scrape pools. |
+| `initial_scrape_offset` | `0s` | Adds a fixed delay before the initial scrape of targets. This duration is applied on top of the receiver's internal load balancing offset. It avoids readiness races and backend rate limits immediately after startup. |
 
 At least one of `config.scrape_configs`, `config.scrape_config_files`, or `target_allocator` must be set.
 

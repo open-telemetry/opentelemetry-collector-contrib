@@ -116,6 +116,58 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	assert.Equal(t, promModel.Duration(5*time.Second), r2.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
 }
 
+func TestLoadScrapeOptionsConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_scrape_options.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+
+	t.Run("default", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig()
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "default").String())
+		require.NoError(t, err)
+		require.NoError(t, sub.Unmarshal(cfg))
+		require.NoError(t, xconfmap.Validate(cfg))
+
+		r := cfg.(*Config)
+		assert.False(t, r.ScrapeOnShutdown)
+		assert.False(t, r.DiscoveryReloadOnStartup)
+		assert.Zero(t, r.InitialScrapeOffset)
+	})
+
+	t.Run("scrape_on_shutdown", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig()
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "scrape_on_shutdown").String())
+		require.NoError(t, err)
+		require.NoError(t, sub.Unmarshal(cfg))
+		require.NoError(t, xconfmap.Validate(cfg))
+
+		r := cfg.(*Config)
+		assert.True(t, r.ScrapeOnShutdown)
+	})
+
+	t.Run("discovery_reload_on_startup", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig()
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "discovery_reload_on_startup").String())
+		require.NoError(t, err)
+		require.NoError(t, sub.Unmarshal(cfg))
+		require.NoError(t, xconfmap.Validate(cfg))
+
+		r := cfg.(*Config)
+		assert.True(t, r.DiscoveryReloadOnStartup)
+	})
+
+	t.Run("initial_scrape_offset", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig()
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "initial_scrape_offset").String())
+		require.NoError(t, err)
+		require.NoError(t, sub.Unmarshal(cfg))
+		require.NoError(t, xconfmap.Validate(cfg))
+
+		r := cfg.(*Config)
+		assert.Equal(t, 10*time.Second, r.InitialScrapeOffset)
+	})
+}
+
 func TestValidateConfigWithScrapeConfigFiles(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_scrape_config_files.yaml"))
 	require.NoError(t, err)

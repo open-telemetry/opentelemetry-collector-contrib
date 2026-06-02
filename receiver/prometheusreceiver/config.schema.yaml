@@ -23,3 +23,13 @@ properties:
     $ref: ./internal/targetallocator.config
   trim_metric_suffixes:
     type: boolean
+  scrape_on_shutdown:
+    description: ScrapeOnShutdown enables a final scrape before the receiver closes.
+    type: boolean
+  discovery_reload_on_startup:
+    description: DiscoveryReloadOnStartup enables discovering targets immediately on start up as opposed to waiting for the configured interval before initializing the scrape pools.
+    type: boolean
+  initial_scrape_offset:
+    description: InitialScrapeOffset adds a fixed delay before the initial scrape of targets.
+    type: string
+    format: duration
