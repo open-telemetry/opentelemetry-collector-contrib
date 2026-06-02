@@ -61,10 +61,7 @@ const (
 	writeConflictsKey           = "writeConflicts"
 	numYieldsKey                = "numYields"
 	waitingForLockKey           = "waitingForLock"
-	locksKey                    = "locks"
-	lockStatsKey                = "lockStats"
 	waitingForFlowControlKey    = "waitingForFlowControl"
-	flowControlStatsKey         = "flowControlStats"
 	waitingForLatchKey          = "waitingForLatch"
 )
 
@@ -243,7 +240,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		databaseName := getDBFromNamespace(namespace)
 		command := getValue[bson.D](op, commandKey)
 		opType := getValue[string](op, opKey)
-		commandType, queryTruncated := getCommandDetails(command)
+		queryTruncated := commandIsTruncated(command)
 		preparedReadConflictCount := getInt64Value(op, prepareReadConflictsKey)
 		writeConflictCount := getInt64Value(op, writeConflictsKey)
 		yieldCount := getInt64Value(op, numYieldsKey)
@@ -267,10 +264,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		planSummary := getValue[string](op, planSummaryKey)
 		queryFramework := getValue[string](op, queryFrameworkKey)
 		waitingForLock := getValue[bool](op, waitingForLockKey)
-		locks := getJSONValue(op, locksKey)
-		lockStats := getJSONValue(op, lockStatsKey)
 		waitingForFlowControl := getValue[bool](op, waitingForFlowControlKey)
-		flowControlStats := getJSONValue(op, flowControlStatsKey)
 		waitingForLatchDetails := getJSONValue(op, waitingForLatchKey)
 		waitingForLatch := waitingForLatchDetails != ""
 		waitTypes := buildWaitTypes(waitingForLock, waitingForFlowControl, waitingForLatch)
@@ -298,7 +292,6 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 			databaseName,
 			collectionName,
 			operationID,
-			commandType,
 			obfuscatedStatement,
 			queryTruncated,
 			userName,
@@ -320,9 +313,6 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 			writeConflictCount,
 			yieldCount,
 			waitTypes,
-			locks,
-			lockStats,
-			flowControlStats,
 			waitingForLatchDetails,
 		)
 		emitted++
@@ -393,22 +383,17 @@ func getCollectionFromNamespace(namespace string) string {
 	return ""
 }
 
-// getCommandDetails returns the command type (e.g. "find", "insert") and a
-// flag indicating whether MongoDB clipped the command document in $currentOp.
+// commandIsTruncated returns whether MongoDB clipped the command document in $currentOp.
 // MongoDB signals truncation by inserting a "$truncated" key into the command
 // when the rendered form exceeds the per-op size cap; downstream consumers
 // need this so they can tell that db.query.text is not the complete statement.
-func getCommandDetails(command bson.D) (commandType string, truncated bool) {
-	if len(command) == 0 {
-		return "", false
-	}
-	commandType = command[0].Key
+func commandIsTruncated(command bson.D) bool {
 	for _, elem := range command {
 		if elem.Key == "$truncated" {
-			return commandType, true
+			return true
 		}
 	}
-	return commandType, false
+	return false
 }
 
 // lookup returns the value for key from a BSON document. It accepts bson.M,

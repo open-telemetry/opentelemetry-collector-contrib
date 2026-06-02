@@ -568,7 +568,6 @@ query sample
 | db.namespace | The name of a database. | Any Str | - |
 | db.collection.name | The MongoDB collection being accessed within the database stated in db.namespace. | Any Str | - |
 | db.operation.id | Identifier of the MongoDB operation. | Any Str | - |
-| db.operation.name | The name of the MongoDB command being executed. | Any Str | - |
 | db.query.text | The obfuscated MongoDB command statement. | Any Str | - |
 | mongodb.query.truncated | Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output. | Any Bool | - |
 | user.name | Name of the user associated with the operation. | Any Str | - |
@@ -585,16 +584,14 @@ query sample
 | mongodb.query.framework | The MongoDB query execution engine that processed this operation. Only present for operations that flow through the query subsystem (reads, read-modify-writes, and getMore continuations); absent for pure inserts, index management, and administrative commands. Known values include `classic` and `sbe`.
  | Any Str | - |
 | mongodb.operation.state | Simplified state of the MongoDB operation. | Str: ``active``, ``waiting`` | - |
-| mongodb.operation.type | The low-level MongoDB operation type (e.g. query, insert, update, remove, getmore, command). | Any Str | - |
+| mongodb.operation.type | The raw MongoDB operation type from `$currentOp.op` (e.g. query, insert, update, remove, getmore, command). | Any Str | - |
 | mongodb.operation.duration | The duration of the MongoDB operation in seconds. | Any Double | - |
 | mongodb.operation.prepared_read_conflict.count | The number of times the MongoDB operation had to wait for a prepared transaction with a write to commit or abort. | Any Int | - |
 | mongodb.operation.write_conflict.count | The number of times the MongoDB operation conflicted with another write operation on the same document. | Any Int | - |
 | mongodb.operation.yield.count | The number of times the MongoDB operation yielded to allow other operations to complete. | Any Int | - |
-| mongodb.operation.wait.type | The set of wait conditions the MongoDB operation is currently blocked on, derived from `$currentOp`. Possible values: `lock` (from `waitingForLock`), `flow_control` (from `waitingForFlowControl`), and `latch` (when `waitingForLatch` is a non-empty document). An empty slice indicates the operation is not waiting on any of these conditions. | Any Slice | - |
-| mongodb.operation.locks | The type and mode of locks the MongoDB operation currently holds. | Any Str | - |
-| mongodb.operation.lock_stats | The lock acquisition statistics for the MongoDB operation. | Any Str | - |
-| mongodb.operation.flow_control_stats | The flow control statistics for the MongoDB operation. | Any Str | - |
-| mongodb.operation.waiting_for_latch.details | Details about the MongoDB operation's internal latch wait. | Any Str | - |
+| mongodb.operation.wait.type | The set of wait conditions the MongoDB operation is currently blocked on. Possible values: `lock` (from `waitingForLock`), `flow_control` (from `waitingForFlowControl`), and `latch` (when `waitingForLatch` is a non-empty document). An empty slice indicates the operation is not waiting on any of these conditions.
+ | Any Slice | - |
+| mongodb.operation.wait.details | Details about what the MongoDB operation is waiting on. | Any Str | - |
 
 ## Resource Attributes
 

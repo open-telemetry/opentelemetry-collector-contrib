@@ -62,9 +62,6 @@ attributes:
   db.operation.id:
     description: Identifier of the MongoDB operation.
     type: string
-  db.operation.name:
-    description: The name of the MongoDB command being executed.
-    type: string
   db.query.text:
     description: The obfuscated MongoDB command statement.
     type: string
@@ -133,15 +130,6 @@ attributes:
   mongodb.operation.duration:
     description: The duration of the MongoDB operation in seconds.
     type: double
-  mongodb.operation.flow_control_stats:
-    description: The flow control statistics for the MongoDB operation.
-    type: string
-  mongodb.operation.lock_stats:
-    description: The lock acquisition statistics for the MongoDB operation.
-    type: string
-  mongodb.operation.locks:
-    description: The type and mode of locks the MongoDB operation currently holds.
-    type: string
   mongodb.operation.plan.summary:
     description: Summary of the execution plan for the MongoDB operation.
     type: string
@@ -155,15 +143,15 @@ attributes:
       - active
       - waiting
   mongodb.operation.type:
-    description: The low-level MongoDB operation type (e.g. query, insert, update, remove, getmore, command).
+    description: The raw MongoDB operation type from `$currentOp.op` (e.g. query, insert, update, remove, getmore, command).
+    type: string
+  mongodb.operation.wait.details:
+    description: Details about what the MongoDB operation is waiting on.
     type: string
   mongodb.operation.wait.type:
     description: |
       The set of wait conditions the MongoDB operation is currently blocked on. Possible values: `lock` (from `waitingForLock`), `flow_control` (from `waitingForFlowControl`), and `latch` (when `waitingForLatch` is a non-empty document). An empty slice indicates the operation is not waiting on any of these conditions.
     type: slice
-  mongodb.operation.waiting_for_latch.details:
-    description: Details about the MongoDB operation's internal latch wait.
-    type: string
   mongodb.operation.write_conflict.count:
     description: The number of times the MongoDB operation conflicted with another write operation on the same document.
     type: int
@@ -219,7 +207,6 @@ events:
       - db.namespace
       - db.collection.name
       - db.operation.id
-      - db.operation.name
       - db.query.text
       - mongodb.query.truncated
       - user.name
@@ -241,10 +228,7 @@ events:
       - mongodb.operation.write_conflict.count
       - mongodb.operation.yield.count
       - mongodb.operation.wait.type
-      - mongodb.operation.locks
-      - mongodb.operation.lock_stats
-      - mongodb.operation.flow_control_stats
-      - mongodb.operation.waiting_for_latch.details
+      - mongodb.operation.wait.details
 
 metrics:
   mongodb.active.reads:

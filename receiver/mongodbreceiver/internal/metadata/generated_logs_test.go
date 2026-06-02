@@ -4,9 +4,6 @@ package metadata
 
 import (
 	"context"
-	"testing"
-	"time"
-
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -14,6 +11,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"testing"
+	"time"
 )
 
 type eventsTestDataSet int
@@ -131,7 +130,7 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
-			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "client.address-val", 11, AttributeDbSystemNameMongodb, "db.namespace-val", "db.collection.name-val", "db.operation.id-val", "db.operation.name-val", "db.query.text-val", true, "user.name-val", "mongodb.client.app.name-val", false, "mongodb.cursor.id-val", false, "mongodb.cursor.originating_command-val", 31, 33, false, "mongodb.lsid.id-val", "mongodb.operation.plan.summary-val", "mongodb.query.framework-val", AttributeMongodbOperationStateActive, "mongodb.operation.type-val", 26.100000, 46, 38, 29, []any{"mongodb.operation.wait.type-item1", "mongodb.operation.wait.type-item2"}, "mongodb.operation.locks-val", "mongodb.operation.lock_stats-val", "mongodb.operation.flow_control_stats-val", "mongodb.operation.waiting_for_latch.details-val")
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "client.address-val", 11, AttributeDbSystemNameMongodb, "db.namespace-val", "db.collection.name-val", "db.operation.id-val", "db.query.text-val", false, "user.name-val", "mongodb.client.app.name-val", false, "mongodb.cursor.id-val", false, "mongodb.cursor.originating_command-val", 31, 33, false, "mongodb.lsid.id-val", "mongodb.operation.plan.summary-val", "mongodb.query.framework-val", AttributeMongodbOperationStateActive, "mongodb.operation.type-val", 26.100000, 46, 38, 29, []any{"mongodb.operation.wait.type-item1", "mongodb.operation.wait.type-item2"}, "mongodb.operation.wait.details-val")
 
 			rb := lb.NewResourceBuilder()
 			rb.SetServerAddress("server.address-val")
@@ -184,15 +183,12 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("db.operation.id")
 					assert.True(t, ok)
 					assert.Equal(t, "db.operation.id-val", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("db.operation.name")
-					assert.True(t, ok)
-					assert.Equal(t, "db.operation.name-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("db.query.text")
 					assert.True(t, ok)
 					assert.Equal(t, "db.query.text-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("mongodb.query.truncated")
 					assert.True(t, ok)
-					assert.True(t, attrVal.Bool())
+					assert.False(t, attrVal.Bool())
 					attrVal, ok = lr.Attributes().Get("user.name")
 					assert.True(t, ok)
 					assert.Equal(t, "user.name-val", attrVal.Str())
@@ -250,18 +246,9 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("mongodb.operation.wait.type")
 					assert.True(t, ok)
 					assert.Equal(t, []any{"mongodb.operation.wait.type-item1", "mongodb.operation.wait.type-item2"}, attrVal.Slice().AsRaw())
-					attrVal, ok = lr.Attributes().Get("mongodb.operation.locks")
+					attrVal, ok = lr.Attributes().Get("mongodb.operation.wait.details")
 					assert.True(t, ok)
-					assert.Equal(t, "mongodb.operation.locks-val", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("mongodb.operation.lock_stats")
-					assert.True(t, ok)
-					assert.Equal(t, "mongodb.operation.lock_stats-val", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("mongodb.operation.flow_control_stats")
-					assert.True(t, ok)
-					assert.Equal(t, "mongodb.operation.flow_control_stats-val", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("mongodb.operation.waiting_for_latch.details")
-					assert.True(t, ok)
-					assert.Equal(t, "mongodb.operation.waiting_for_latch.details-val", attrVal.Str())
+					assert.Equal(t, "mongodb.operation.wait.details-val", attrVal.Str())
 				}
 			}
 		})

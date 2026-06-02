@@ -692,6 +692,11 @@ func TestScrapeLogs(t *testing.T) {
 				collectionName, ok := logAttrs.Get("db.collection.name")
 				require.True(t, ok)
 				require.Equal(t, "mycol", collectionName.Str())
+				_, ok = logAttrs.Get("db.operation.name")
+				require.False(t, ok)
+				operationType, ok := logAttrs.Get("mongodb.operation.type")
+				require.True(t, ok)
+				require.Equal(t, "query", operationType.Str())
 				queryTruncated, ok := logAttrs.Get("mongodb.query.truncated")
 				require.True(t, ok)
 				require.True(t, queryTruncated.Bool())
@@ -1289,19 +1294,14 @@ func TestProcessCurrentOpContentionAttributes(t *testing.T) {
 	requireSliceAttribute(t, attrs, "mongodb.operation.wait.type", []any{"flow_control", "latch"})
 	requireStringAttribute(t, attrs, "mongodb.operation.state", metadata.AttributeMongodbOperationStateWaiting.String())
 
-	locks, ok := attrs.Get("mongodb.operation.locks")
-	require.True(t, ok)
-	require.JSONEq(t, `{"Database":"r","Global":"r"}`, locks.Str())
+	_, ok := attrs.Get("mongodb.operation.locks")
+	require.False(t, ok)
+	_, ok = attrs.Get("mongodb.operation.lock_stats")
+	require.False(t, ok)
+	_, ok = attrs.Get("mongodb.operation.flow_control_stats")
+	require.False(t, ok)
 
-	lockStats, ok := attrs.Get("mongodb.operation.lock_stats")
-	require.True(t, ok)
-	require.JSONEq(t, `{"Global":{"acquireCount":{"r":1},"timeAcquiringMicros":{"r":20}}}`, lockStats.Str())
-
-	flowControlStats, ok := attrs.Get("mongodb.operation.flow_control_stats")
-	require.True(t, ok)
-	require.JSONEq(t, `{"acquireCount":5,"acquireWaitCount":1,"timeAcquiringMicros":10,"dateTimeValue":{"$date":"2020-03-19T23:25:58.412Z"}}`, flowControlStats.Str())
-
-	latchDetails, ok := attrs.Get("mongodb.operation.waiting_for_latch.details")
+	latchDetails, ok := attrs.Get("mongodb.operation.wait.details")
 	require.True(t, ok)
 	require.JSONEq(t, `{"timestamp":{"$date":"2020-03-19T23:25:58.412Z"},"captureName":"FutureResolution","backtrace":["frame"]}`, latchDetails.Str())
 
