@@ -43,6 +43,9 @@ type Config struct {
 
 type QuerySampleCollection struct {
 	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() error {
