@@ -47,7 +47,9 @@ func TestUnsuccessfulScrape(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.AddrConfig.Endpoint = "fake:11111"
 
-	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	clientFactory := newPoolClientFactory(cfg)
+	defer clientFactory.close()
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, clientFactory, newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, err)
 
 	actualMetrics, err := scraper.scrape(t.Context())
@@ -2412,7 +2414,7 @@ func TestCollectDatabaseLocksError(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disabled by default; enable it so the query actually runs.
 	cfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled = true
-	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newPoolClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, err)
 	var errs errsMux
 	scraper.collectDatabaseLocks(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, "otel", &errs)
@@ -2426,7 +2428,7 @@ func TestCollectServerScopedLocksError(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disabled by default; enable it so the query actually runs.
 	cfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled = true
-	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newPoolClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, err)
 	var errs errsMux
 	scraper.collectServerScopedLocks(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, &errs)
@@ -2678,7 +2680,7 @@ func TestNewPostgreSQLScraperSemconvServiceInstanceID(t *testing.T) {
 	scraper, err := newPostgreSQLScraper(
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
-		newDefaultClientFactory(cfg),
+		newPoolClientFactory(cfg),
 		newCache(1),
 		newTTLCache[string](1, time.Second),
 	)
@@ -2700,7 +2702,7 @@ func TestNewPostgreSQLScraperSemconvUnixServiceInstanceID(t *testing.T) {
 	scraper, err := newPostgreSQLScraper(
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
-		newDefaultClientFactory(cfg),
+		newPoolClientFactory(cfg),
 		newCache(1),
 		newTTLCache[string](1, time.Second),
 	)
