@@ -1,0 +1,41 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: exporter/azuremonitor
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add `tag_mappings` config to override the resource-attribute precedence used to populate Application Insights envelope tags
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [47657]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  The optional `tag_mappings:` block accepts an ordered list of sources per tag.
+  Sources containing a `.` are treated as resource attribute keys; sources
+  without a `.` are treated as string-literal terminal defaults. The first
+  non-empty value wins.
+
+  Supported keys: `cloud_role_instance` (default `[service.instance.id]`)
+  and `application_version` (default `[service.version]`). Defaults preserve
+  the historical hardcoded behavior; zero-config users see no change.
+
+  Example for Azure Container Apps:
+      tag_mappings:
+        cloud_role_instance: [host.name, service.instance.id]
+
+  Marked alpha; the schema may evolve.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
