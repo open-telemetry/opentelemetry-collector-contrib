@@ -38,7 +38,7 @@ resourceMetrics:
                   value:
                     stringValue: closing
                 timeUnixNano: "1632495518500962000"
-            name: apache.connection.status
+            name: apache.connections
             unit: '{connection}'
           - description: Current load of the CPU.
             gauge:
@@ -111,7 +111,7 @@ resourceMetrics:
                   timeUnixNano: "1632495518500962000"
             name: apache.load.5
             unit: '%'
-          - description: The number of requests serviced by the HTTP server per second.
+          - description: The number of requests serviced by the HTTP server.
             name: apache.request.count
             sum:
               aggregationTemporality: 2
@@ -120,15 +120,6 @@ resourceMetrics:
                   timeUnixNano: "1632495518500962000"
               isMonotonic: true
             unit: '{request}'
-          - description: Total HTTP server traffic.
-            name: apache.request.io.transmitted
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "21411840"
-                  timeUnixNano: "1632495518500962000"
-              isMonotonic: true
-            unit: By
           - description: Total time spent on handling requests.
             name: apache.request.time
             sum:
@@ -138,6 +129,15 @@ resourceMetrics:
                   timeUnixNano: "1632495518500962000"
               isMonotonic: true
             unit: ms
+          - description: Total HTTP server traffic.
+            name: apache.traffic
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "21411840"
+                  timeUnixNano: "1632495518500962000"
+              isMonotonic: true
+            unit: By
           - description: The amount of time that the server has been running in seconds.
             name: apache.uptime
             sum:
@@ -164,7 +164,7 @@ resourceMetrics:
                   timeUnixNano: "1632495518500962000"
             unit: '{worker}'
           - description: The number of workers in each state.
-            name: apache.worker.status
+            name: apache.workers
             sum:
               aggregationTemporality: 2
               dataPoints:
