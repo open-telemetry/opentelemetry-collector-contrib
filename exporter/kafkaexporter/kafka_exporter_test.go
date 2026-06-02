@@ -855,6 +855,150 @@ func Test_GetTopic(t *testing.T) {
 	}
 }
 
+func TestGetMessageKey(t *testing.T) {
+	tests := []struct {
+		name      string
+		signalCfg SignalConfig
+		ctx       context.Context
+		wantKey   []byte
+	}{
+		{
+			name:      "not configured returns nil",
+			signalCfg: SignalConfig{},
+			ctx:       t.Context(),
+			wantKey:   nil,
+		},
+		{
+			name: "metadata key present",
+			signalCfg: SignalConfig{
+				MessageKeyFromMetadataKey: "my_partition_key",
+			},
+			ctx: client.NewContext(t.Context(),
+				client.Info{Metadata: client.NewMetadata(map[string][]string{
+					"my_partition_key": {"tenant-123"},
+				})},
+			),
+			wantKey: []byte("tenant-123"),
+		},
+		{
+			name: "metadata key not found returns nil",
+			signalCfg: SignalConfig{
+				MessageKeyFromMetadataKey: "my_partition_key",
+			},
+			ctx: client.NewContext(t.Context(),
+				client.Info{Metadata: client.NewMetadata(map[string][]string{
+					"other_key": {"tenant-123"},
+				})},
+			),
+			wantKey: nil,
+		},
+		{
+			name: "empty metadata value returns nil",
+			signalCfg: SignalConfig{
+				MessageKeyFromMetadataKey: "my_partition_key",
+			},
+			ctx: client.NewContext(t.Context(),
+				client.Info{Metadata: client.NewMetadata(map[string][]string{
+					"my_partition_key": {""},
+				})},
+			),
+			wantKey: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.wantKey, getMessageKey(tt.ctx, tt.signalCfg))
+		})
+	}
+}
+
+func TestMessageKeyFromMetadataKey(t *testing.T) {
+	const metadataKey = "kafka_message_key"
+	const keyValue = "my-partition-key"
+
+	metaCtx := client.NewContext(t.Context(),
+		client.Info{Metadata: client.NewMetadata(map[string][]string{
+			metadataKey: {keyValue},
+		})},
+	)
+
+	t.Run("logs", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.Logs.MessageKeyFromMetadataKey = metadataKey
+		exp, fakeCluster := newKgoMockLogsExporter(t, *config,
+			componenttest.NewNopHost(), config.Logs.Topic)
+		defer fakeCluster.Close()
+
+		input := testdata.GenerateLogs(1)
+		require.NoError(t, exp.exportData(metaCtx, input))
+
+		records := fetchKgoRecords(t, fakeCluster.ListenAddrs(), config.Logs.Topic, 1)
+		require.Len(t, records, 1)
+		assert.Equal(t, []byte(keyValue), records[0].Key)
+	})
+
+	t.Run("metrics", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.Metrics.MessageKeyFromMetadataKey = metadataKey
+		exp, fakeCluster := newKgoMockMetricsExporter(t, *config,
+			componenttest.NewNopHost(), config.Metrics.Topic)
+		defer fakeCluster.Close()
+
+		input := testdata.GenerateMetrics(1)
+		require.NoError(t, exp.exportData(metaCtx, input))
+
+		records := fetchKgoRecords(t, fakeCluster.ListenAddrs(), config.Metrics.Topic, 1)
+		require.Len(t, records, 1)
+		assert.Equal(t, []byte(keyValue), records[0].Key)
+	})
+
+	t.Run("traces", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.Traces.MessageKeyFromMetadataKey = metadataKey
+		exp, fakeCluster := newKgoMockTracesExporter(t, *config,
+			componenttest.NewNopHost(), config.Traces.Topic)
+		defer fakeCluster.Close()
+
+		input := testdata.GenerateTraces(1)
+		require.NoError(t, exp.exportData(metaCtx, input))
+
+		records := fetchKgoRecords(t, fakeCluster.ListenAddrs(), config.Traces.Topic, 1)
+		require.Len(t, records, 1)
+		assert.Equal(t, []byte(keyValue), records[0].Key)
+	})
+
+	t.Run("profiles", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.Profiles.MessageKeyFromMetadataKey = metadataKey
+		exp, fakeCluster := newKgoMockProfilesExporter(t, *config,
+			componenttest.NewNopHost(), config.Profiles.Topic)
+		defer fakeCluster.Close()
+
+		input := testdata.GenerateProfiles(1)
+		require.NoError(t, exp.exportData(metaCtx, input))
+
+		records := fetchKgoRecords(t, fakeCluster.ListenAddrs(), config.Profiles.Topic, 1)
+		require.Len(t, records, 1)
+		assert.Equal(t, []byte(keyValue), records[0].Key)
+	})
+
+	t.Run("metadata absent leaves key nil", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.Logs.MessageKeyFromMetadataKey = "absent_key"
+		exp, fakeCluster := newKgoMockLogsExporter(t, *config,
+			componenttest.NewNopHost(), config.Logs.Topic)
+		defer fakeCluster.Close()
+
+		input := testdata.GenerateLogs(1)
+		require.NoError(t, exp.exportData(metaCtx, input))
+
+		records := fetchKgoRecords(t, fakeCluster.ListenAddrs(), config.Logs.Topic, 1)
+		require.Len(t, records, 1)
+		assert.Nil(t, records[0].Key)
+	})
+}
+
 func TestLogsPusher_partitioning(t *testing.T) {
 	// Build input with 2 distinct resources, each with 1 scope + 1 log record.
 	input := plog.NewLogs()
