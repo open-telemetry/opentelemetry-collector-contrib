@@ -134,7 +134,7 @@ func (p *eventHubEventHandler) newMessageHandler(ctx context.Context, event *aze
 		return marshalErr
 	}
 	subject := eventDataSlice[0].Subject
-	containerName := strings.Split(strings.Split(subject, "containers/")[1], "/")[0]
+	containerName, _, _ := strings.Cut(strings.Split(subject, "containers/")[1], "/")
 	eventType := eventDataSlice[0].EventType
 	blobName := strings.Split(subject, "blobs/")[1]
 
@@ -153,11 +153,11 @@ func (p *eventHubEventHandler) processBlobCreatedEventType(ctx context.Context, 
 
 	switch containerName {
 	case p.logsContainerName:
-		if err := p.logsDataConsumer.consumeLogsJSON(ctx, blobData.Bytes()); err != nil {
+		if err := p.logsDataConsumer.consumeLogs(ctx, blobData.Bytes()); err != nil {
 			return err
 		}
 	case p.tracesContainerName:
-		if err := p.tracesDataConsumer.consumeTracesJSON(ctx, blobData.Bytes()); err != nil {
+		if err := p.tracesDataConsumer.consumeTraces(ctx, blobData.Bytes()); err != nil {
 			return err
 		}
 	default:
