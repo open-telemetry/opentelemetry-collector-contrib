@@ -4,11 +4,16 @@
 package sentryexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetAllProjectsPagination(t *testing.T) {
@@ -127,4 +132,77 @@ func TestGetProjectKeysPagination(t *testing.T) {
 	if got := callCount.Load(); got != 2 {
 		t.Fatalf("expected 2 requests, got %d", got)
 	}
+}
+
+func TestSentryClient_EscapesPathSegments(t *testing.T) {
+	t.Parallel()
+
+	pathRecorder := func() (*httptest.Server, *string) {
+		var seen string
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			seen = r.URL.EscapedPath()
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`[]`))
+		}))
+		return srv, &seen
+	}
+
+	segments := func(escapedPath string) []string {
+		var out []string
+		for _, p := range strings.Split(escapedPath, "/") {
+			if p != "" {
+				out = append(out, p)
+			}
+		}
+		return out
+	}
+
+	t.Run("GetAllProjects_orgSlug", func(t *testing.T) {
+		t.Parallel()
+		srv, seen := pathRecorder()
+		defer srv.Close()
+
+		c := newSentryClientImpl(srv.URL, "tok", srv.Client())
+		_, err := c.GetAllProjects(context.Background(), "../../evil")
+		require.NoError(t, err)
+
+		assert.Equal(t,
+			[]string{"api", "0", "organizations", "..%2F..%2Fevil", "projects"},
+			segments(*seen),
+			"orgSlug must be a single path segment after escaping; got %s", *seen,
+		)
+	})
+
+	t.Run("GetProjectKeys_bothSlugs", func(t *testing.T) {
+		t.Parallel()
+		srv, seen := pathRecorder()
+		defer srv.Close()
+
+		c := newSentryClientImpl(srv.URL, "tok", srv.Client())
+		_, err := c.GetProjectKeys(context.Background(), "victim", "../../organizations/foo/members")
+		require.NoError(t, err)
+
+		got := segments(*seen)
+		require.Len(t, got, 6, "slug introduced extra path separators: %s", *seen)
+		assert.Equal(t, "victim", got[3])
+		assert.Equal(t, "..%2F..%2Forganizations%2Ffoo%2Fmembers", got[4],
+			"projectSlug must be percent-escaped to a single segment")
+		assert.Equal(t, "keys", got[5])
+	})
+
+	t.Run("GetOrgProjectKeys_orgSlug", func(t *testing.T) {
+		t.Parallel()
+		srv, seen := pathRecorder()
+		defer srv.Close()
+
+		c := newSentryClientImpl(srv.URL, "tok", srv.Client())
+		_, err := c.GetOrgProjectKeys(context.Background(), "../escape")
+		require.NoError(t, err)
+
+		assert.Equal(t,
+			[]string{"api", "0", "organizations", "..%2Fescape", "project-keys"},
+			segments(*seen),
+			"orgSlug must be a single path segment after escaping; got %s", *seen,
+		)
+	})
 }
