@@ -52,7 +52,7 @@ receivers:
       memory:
 
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: "https://aps-workspaces.us-west-2.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write"
     auth:
       authenticator: sigv4auth
@@ -63,7 +63,7 @@ service:
     metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [prometheusremotewrite]
+      exporters: [prometheus_remote_write]
 ```
 
 ## Notes
@@ -94,7 +94,7 @@ receivers:
       memory:
 
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: "https://aps-workspaces.us-west-2.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write"
     auth:
       authenticator: sigv4auth
@@ -105,7 +105,7 @@ service:
     metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [prometheusremotewrite]
+      exporters: [prometheus_remote_write]
 ```
 
 ## Assume Role with External ID
