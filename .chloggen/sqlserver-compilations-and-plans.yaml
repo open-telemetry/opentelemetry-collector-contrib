@@ -20,7 +20,7 @@ subtext: |
   - `sqlserver.attention.rate`: rate of SQL attentions (client cancellation interrupts).
   - `sqlserver.parameterization.rate`: rate of auto-parameterization activity, classified by result
     (`auto_attempted`, `safe`, `unsafe`, `failed`, `forced`).
-  - `sqlserver.plan_execution.rate`: rate of plan executions, classified by plan guide result
+  - `sqlserver.plan.execution.rate`: rate of plan executions, classified by plan guide result
     (`guided`, `misguided`).
   - `sqlserver.recompilation.ratio`: derived ratio of SQL recompilations to compilations,
     expressed as a percentage.

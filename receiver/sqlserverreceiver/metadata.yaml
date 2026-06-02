@@ -791,7 +791,7 @@ metrics:
     gauge:
       value_type: double
     attributes: [sqlserver.parameterization.result]
-  sqlserver.plan_execution.rate:
+  sqlserver.plan.execution.rate:
     enabled: false
     description: Rate of plan executions, classified by plan guide result.
     stability: development

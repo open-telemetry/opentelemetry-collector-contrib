@@ -100,7 +100,7 @@ all_set:
     sqlserver.parameterization.rate:
       enabled: true
       attributes: ["sqlserver.parameterization.result"]
-    sqlserver.plan_execution.rate:
+    sqlserver.plan.execution.rate:
       enabled: true
       attributes: ["sqlserver.plan.guidance.result"]
     sqlserver.processes.blocked:
@@ -263,7 +263,7 @@ reaggregate_set:
     sqlserver.parameterization.rate:
       enabled: true
       attributes: []
-    sqlserver.plan_execution.rate:
+    sqlserver.plan.execution.rate:
       enabled: true
       attributes: []
     sqlserver.processes.blocked:
@@ -426,7 +426,7 @@ none_set:
     sqlserver.parameterization.rate:
       enabled: false
       attributes: ["sqlserver.parameterization.result"]
-    sqlserver.plan_execution.rate:
+    sqlserver.plan.execution.rate:
       enabled: false
       attributes: ["sqlserver.plan.guidance.result"]
     sqlserver.processes.blocked:

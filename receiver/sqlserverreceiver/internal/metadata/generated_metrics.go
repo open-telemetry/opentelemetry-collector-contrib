@@ -559,7 +559,7 @@ var MetricsInfo = metricsInfo{
 		Name: "sqlserver.parameterization.rate",
 	},
 	SqlserverPlanExecutionRate: metricInfo{
-		Name: "sqlserver.plan_execution.rate",
+		Name: "sqlserver.plan.execution.rate",
 	},
 	SqlserverProcessesBlocked: metricInfo{
 		Name: "sqlserver.processes.blocked",
@@ -3398,9 +3398,9 @@ type metricSqlserverPlanExecutionRate struct {
 	aggDataPoints []float64                              // slice containing number of aggregated datapoints at each index
 }
 
-// init fills sqlserver.plan_execution.rate metric with initial data.
+// init fills sqlserver.plan.execution.rate metric with initial data.
 func (m *metricSqlserverPlanExecutionRate) init() {
-	m.data.SetName("sqlserver.plan_execution.rate")
+	m.data.SetName("sqlserver.plan.execution.rate")
 	m.data.SetDescription("Rate of plan executions, classified by plan guide result.")
 	m.data.SetUnit("{executions}/s")
 	m.data.SetEmptyGauge()
@@ -5114,7 +5114,7 @@ func (mb *MetricsBuilder) RecordSqlserverParameterizationRateDataPoint(ts pcommo
 	mb.metricSqlserverParameterizationRate.recordDataPoint(mb.startTime, ts, val, sqlserverParameterizationResultAttributeValue.String())
 }
 
-// RecordSqlserverPlanExecutionRateDataPoint adds a data point to sqlserver.plan_execution.rate metric.
+// RecordSqlserverPlanExecutionRateDataPoint adds a data point to sqlserver.plan.execution.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverPlanExecutionRateDataPoint(ts pcommon.Timestamp, val float64, sqlserverPlanGuidanceResultAttributeValue AttributeSqlserverPlanGuidanceResult) {
 	mb.metricSqlserverPlanExecutionRate.recordDataPoint(mb.startTime, ts, val, sqlserverPlanGuidanceResultAttributeValue.String())
 }

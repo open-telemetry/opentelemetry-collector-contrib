@@ -580,7 +580,7 @@ Rate of auto-parameterization activity, broken down by result.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | sqlserver.parameterization.result | The result of an auto-parameterization attempt by the SQL Server query optimizer. | Str: ``auto_attempted``, ``safe``, ``unsafe``, ``failed``, ``forced`` | Recommended | - |
 
-### sqlserver.plan_execution.rate
+### sqlserver.plan.execution.rate
 
 Rate of plan executions, classified by plan guide result.
 

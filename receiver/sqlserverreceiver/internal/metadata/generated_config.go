@@ -1243,14 +1243,14 @@ func (ms *SqlserverParameterizationRateMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverPlanExecutionRateMetricAttributeKey specifies the key of an attribute for the sqlserver.plan_execution.rate metric.
+// SqlserverPlanExecutionRateMetricAttributeKey specifies the key of an attribute for the sqlserver.plan.execution.rate metric.
 type SqlserverPlanExecutionRateMetricAttributeKey string
 
 const (
 	SqlserverPlanExecutionRateMetricAttributeKeySqlserverPlanGuidanceResult SqlserverPlanExecutionRateMetricAttributeKey = "sqlserver.plan.guidance.result"
 )
 
-// SqlserverPlanExecutionRateMetricConfig provides config for the sqlserver.plan_execution.rate metric.
+// SqlserverPlanExecutionRateMetricConfig provides config for the sqlserver.plan.execution.rate metric.
 type SqlserverPlanExecutionRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -1278,7 +1278,7 @@ func (ms *SqlserverPlanExecutionRateMetricConfig) Validate() error {
 		switch val {
 		case SqlserverPlanExecutionRateMetricAttributeKeySqlserverPlanGuidanceResult:
 		default:
-			return fmt.Errorf("metric sqlserver.plan_execution.rate doesn't have an attribute %v, valid attributes: [sqlserver.plan.guidance.result]", val)
+			return fmt.Errorf("metric sqlserver.plan.execution.rate doesn't have an attribute %v, valid attributes: [sqlserver.plan.guidance.result]", val)
 		}
 	}
 
@@ -1781,7 +1781,7 @@ type MetricsConfig struct {
 	SqlserverPageOperationRate                  SqlserverPageOperationRateMetricConfig                  `mapstructure:"sqlserver.page.operation.rate"`
 	SqlserverPageSplitRate                      SqlserverPageSplitRateMetricConfig                      `mapstructure:"sqlserver.page.split.rate"`
 	SqlserverParameterizationRate               SqlserverParameterizationRateMetricConfig               `mapstructure:"sqlserver.parameterization.rate"`
-	SqlserverPlanExecutionRate                  SqlserverPlanExecutionRateMetricConfig                  `mapstructure:"sqlserver.plan_execution.rate"`
+	SqlserverPlanExecutionRate                  SqlserverPlanExecutionRateMetricConfig                  `mapstructure:"sqlserver.plan.execution.rate"`
 	SqlserverProcessesBlocked                   SqlserverProcessesBlockedMetricConfig                   `mapstructure:"sqlserver.processes.blocked"`
 	SqlserverRecompilationRatio                 SqlserverRecompilationRatioMetricConfig                 `mapstructure:"sqlserver.recompilation.ratio"`
 	SqlserverReplicaDataRate                    SqlserverReplicaDataRateMetricConfig                    `mapstructure:"sqlserver.replica.data.rate"`

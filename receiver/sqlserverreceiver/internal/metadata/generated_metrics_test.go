@@ -80,7 +80,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.page.life_expectancy"] = mb.metricSqlserverPageLifeExpectancy.config.AggregationStrategy
 			aggMap["sqlserver.page.operation.rate"] = mb.metricSqlserverPageOperationRate.config.AggregationStrategy
 			aggMap["sqlserver.parameterization.rate"] = mb.metricSqlserverParameterizationRate.config.AggregationStrategy
-			aggMap["sqlserver.plan_execution.rate"] = mb.metricSqlserverPlanExecutionRate.config.AggregationStrategy
+			aggMap["sqlserver.plan.execution.rate"] = mb.metricSqlserverPlanExecutionRate.config.AggregationStrategy
 			aggMap["sqlserver.replica.data.rate"] = mb.metricSqlserverReplicaDataRate.config.AggregationStrategy
 			aggMap["sqlserver.resource_pool.disk.operations"] = mb.metricSqlserverResourcePoolDiskOperations.config.AggregationStrategy
 			aggMap["sqlserver.table.count"] = mb.metricSqlserverTableCount.config.AggregationStrategy
@@ -1363,10 +1363,10 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("sqlserver.parameterization.result")
 						assert.False(t, ok)
 					}
-				case "sqlserver.plan_execution.rate":
+				case "sqlserver.plan.execution.rate":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.plan_execution.rate"], "Found a duplicate in the metrics slice: sqlserver.plan_execution.rate")
-						validatedMetrics["sqlserver.plan_execution.rate"] = true
+						assert.False(t, validatedMetrics["sqlserver.plan.execution.rate"], "Found a duplicate in the metrics slice: sqlserver.plan.execution.rate")
+						validatedMetrics["sqlserver.plan.execution.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Rate of plan executions, classified by plan guide result.", mi.Description())
@@ -1380,8 +1380,8 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.True(t, ok)
 						assert.Equal(t, "guided", sqlserverPlanGuidanceResultAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["sqlserver.plan_execution.rate"], "Found a duplicate in the metrics slice: sqlserver.plan_execution.rate")
-						validatedMetrics["sqlserver.plan_execution.rate"] = true
+						assert.False(t, validatedMetrics["sqlserver.plan.execution.rate"], "Found a duplicate in the metrics slice: sqlserver.plan.execution.rate")
+						validatedMetrics["sqlserver.plan.execution.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Rate of plan executions, classified by plan guide result.", mi.Description())
@@ -1390,7 +1390,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-						switch aggMap["sqlserver.plan_execution.rate"] {
+						switch aggMap["sqlserver.plan.execution.rate"] {
 						case "sum":
 							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
 						case "avg":
