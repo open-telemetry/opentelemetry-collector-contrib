@@ -3,8 +3,8 @@
 
 package splunk // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 
-// this file is a slightly different version of pkg/translator/pprof/profiles_to_pprof.go
-// using an older version of the pprof model and setting additional labels.
+// this file is a slightly different version of wh,
+// setting additional Splunk-specific labels on each sample.
 
 import (
 	"errors"
@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/signalfx/pprof/profile"
+	"github.com/google/pprof/profile"
 	"github.com/zeebo/xxh3"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"

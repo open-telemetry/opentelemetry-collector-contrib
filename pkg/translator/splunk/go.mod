@@ -4,9 +4,9 @@ go 1.25.0
 
 require (
 	github.com/goccy/go-json v0.10.6
+	github.com/google/pprof v0.0.0-20260507013755-92041b743c96
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.153.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.153.0
-	github.com/signalfx/pprof v0.0.0-20260502061645-d32fe129401b
 	github.com/stretchr/testify v1.11.1
 	github.com/zeebo/xxh3 v1.1.0
 	go.opentelemetry.io/collector/pdata v1.59.1-0.20260528150546-fe2cf23ff222
@@ -21,7 +21,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/google/pprof v0.0.0-20260507013755-92041b743c96 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
