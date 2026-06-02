@@ -126,7 +126,6 @@ require (
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.153.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.68.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect
-	go.opentelemetry.io/otel/metric/x v0.66.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
