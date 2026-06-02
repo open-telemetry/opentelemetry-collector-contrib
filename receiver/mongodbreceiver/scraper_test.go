@@ -816,6 +816,11 @@ func TestScrapeLogs(t *testing.T) {
 				require.True(t, ok)
 				require.Equal(t, "99", cursorID.Str())
 
+				statement, ok := logAttrs.Get("db.query.text")
+				require.True(t, ok)
+				require.Contains(t, statement.Str(), `"getMore":"?"`)
+				require.NotContains(t, statement.Str(), "$numberLong")
+
 				noTimeout, ok := logAttrs.Get("mongodb.cursor.no_timeout")
 				require.True(t, ok)
 				require.True(t, noTimeout.Bool())

@@ -28,7 +28,7 @@ func TestObfuscateCommand(t *testing.T) {
 		{Key: "filter", Value: bson.M{"name": "test", "age": 30}},
 	}, cleanedCommand)
 
-	obfuscated := o.obfuscateMongoDBString(cleanedCommand.String())
+	obfuscated := o.obfuscateCommand(cleanedCommand)
 	require.Contains(t, obfuscated, "find")
 	require.NotContains(t, obfuscated, "comment")
 	require.NotContains(t, obfuscated, "lsid")
@@ -38,4 +38,18 @@ func TestObfuscateCommand(t *testing.T) {
 	require.NotContains(t, obfuscated, "30")
 	require.NotContains(t, obfuscated, "session-1")
 	require.NotContains(t, obfuscated, "time")
+}
+
+func TestObfuscateCommandUsesRelaxedExtendedJSON(t *testing.T) {
+	o := newObfuscator()
+
+	command := bson.D{
+		{Key: "getMore", Value: int64(4296433915628356331)},
+		{Key: "collection", Value: "orders"},
+		{Key: "$db", Value: "sample_business"},
+	}
+
+	obfuscated := o.obfuscateCommand(command)
+	require.Contains(t, obfuscated, `"getMore":"?"`)
+	require.NotContains(t, obfuscated, "$numberLong")
 }

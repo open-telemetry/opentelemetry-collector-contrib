@@ -253,7 +253,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		obfuscatedCursorOriginatingCommand := ""
 		if len(cursorOriginatingCommand) > 0 {
 			cleanedCursorOriginatingCommand := cleanCommand(cursorOriginatingCommand)
-			obfuscatedCursorOriginatingCommand = s.obfuscator.obfuscateMongoDBString(cleanedCursorOriginatingCommand.String())
+			obfuscatedCursorOriginatingCommand = s.obfuscator.obfuscateCommand(cleanedCursorOriginatingCommand)
 		}
 		cursorTailable := getValue[bool](cursor, cursorTailableKey)
 		planSummary := getValue[string](op, planSummaryKey)
@@ -276,7 +276,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		clientAddress, clientPort := clientAddressAndPort(clientAddr)
 		collectionName := getCollectionFromNamespace(namespace)
 		cleanedCommand := cleanCommand(command)
-		obfuscatedStatement := s.obfuscator.obfuscateMongoDBString(cleanedCommand.String())
+		obfuscatedStatement := s.obfuscator.obfuscateCommand(cleanedCommand)
 
 		s.lb.RecordDbServerQuerySampleEvent(
 			ctx,

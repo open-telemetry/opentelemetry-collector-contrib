@@ -28,6 +28,14 @@ func (o *obfuscator) obfuscateMongoDBString(command string) string {
 	return (*obfuscate.Obfuscator)(o).ObfuscateMongoDBString(command)
 }
 
+func (o *obfuscator) obfuscateCommand(command bson.D) string {
+	serialized, err := bson.MarshalExtJSON(command, false, false)
+	if err != nil {
+		return ""
+	}
+	return o.obfuscateMongoDBString(string(serialized))
+}
+
 func cleanCommand(command bson.D) bson.D {
 	cleaned := make(bson.D, 0, len(command))
 	for _, v := range command {
