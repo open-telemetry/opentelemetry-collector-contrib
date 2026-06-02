@@ -463,6 +463,7 @@ type parsedEvent interface {
 	getSystemTime() string
 	getLevel() string
 	getRenderedLevel() string
+	getRecordID() uint64
 	// formattedBody returns the structured body map for non-raw mode.
 	// Panics if called on rawParsedEvent — only valid when raw=false.
 	toEventXML() *EventXML
@@ -471,6 +472,7 @@ type parsedEvent interface {
 func (e *EventXML) getOriginal() string   { return e.Original }
 func (e *EventXML) getSystemTime() string { return e.TimeCreated.SystemTime }
 func (e *EventXML) getLevel() string      { return e.Level }
+func (e *EventXML) getRecordID() uint64   { return e.RecordID }
 func (e *EventXML) getRenderedLevel() string {
 	if e.RenderingInfo != nil {
 		return e.RenderingInfo.Level
@@ -502,6 +504,7 @@ type rawEventXML struct {
 	Original      string               `xml:"-"`
 	TimeCreated   TimeCreated          `xml:"System>TimeCreated"`
 	Level         string               `xml:"System>Level"`
+	RecordID      uint64               `xml:"System>EventRecordID"`
 	RenderingInfo *rawRenderingInfoXML `xml:"RenderingInfo"`
 }
 
@@ -513,6 +516,7 @@ type rawRenderingInfoXML struct {
 func (r *rawEventXML) getOriginal() string   { return r.Original }
 func (r *rawEventXML) getSystemTime() string { return r.TimeCreated.SystemTime }
 func (r *rawEventXML) getLevel() string      { return r.Level }
+func (r *rawEventXML) getRecordID() uint64   { return r.RecordID }
 func (r *rawEventXML) getRenderedLevel() string {
 	if r.RenderingInfo != nil {
 		return r.RenderingInfo.Level
