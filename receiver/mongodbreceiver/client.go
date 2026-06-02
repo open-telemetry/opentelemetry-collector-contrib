@@ -26,6 +26,7 @@ type client interface {
 	TopStats(ctx context.Context) (bson.M, error)
 	IndexStats(ctx context.Context, DBName, collectionName string) ([]bson.M, error)
 	RunCommand(ctx context.Context, db string, command bson.M) (bson.M, error)
+	CurrentOp(ctx context.Context) ([]bson.M, error)
 }
 
 // mongodbClient is a mongodb metric scraper client
@@ -102,6 +103,53 @@ func (c *mongodbClient) IndexStats(ctx context.Context, database, collectionName
 		return nil, err
 	}
 	return indexStats, nil
+}
+
+const currentOpNamespaceFilterRegex = `^(?:admin|local)(?:\.|$)`
+
+func currentOpPipeline() mongo.Pipeline {
+	return mongo.Pipeline{
+		bson.D{
+			{Key: "$currentOp", Value: bson.M{
+				"allUsers":        true,
+				"idleConnections": false,
+				"idleCursors":     false,
+				"idleSessions":    false,
+				"localOps":        true,
+			}},
+		},
+		bson.D{
+			{Key: "$match", Value: bson.M{
+				"ns": bson.M{
+					"$exists": true,
+					"$ne":     "",
+					"$not":    bson.M{"$regex": currentOpNamespaceFilterRegex},
+				},
+				"command":          bson.M{"$exists": true},
+				"command.hello":    bson.M{"$exists": false},
+				"command.ping":     bson.M{"$exists": false},
+				"command.isMaster": bson.M{"$exists": false},
+			}},
+		},
+	}
+}
+
+// CurrentOp returns the result of
+// db.aggregate([{$currentOp: {...}}, {$match: {...}}]).
+// More information: https://www.mongodb.com/docs/manual/reference/operator/aggregation/currentOp/
+func (c *mongodbClient) CurrentOp(ctx context.Context) ([]bson.M, error) {
+	cursor, err := c.Database("admin").Aggregate(ctx, currentOpPipeline())
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var operations []bson.M
+	err = cursor.All(ctx, &operations)
+	if err != nil {
+		return nil, err
+	}
+	return operations, nil
 }
 
 // GetVersion returns a result of the version of mongo the client is connected to so adjustments in collection protocol can

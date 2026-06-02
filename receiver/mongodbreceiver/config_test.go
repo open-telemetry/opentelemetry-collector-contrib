@@ -350,6 +350,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.AuthMechanismProperties = map[string]string{
 		"SERVICE_NAME": "mongodb",
 	}
+	expected.QuerySampleCollection.MaxRowsPerQuery = 42
 
 	require.Equal(t, expected, cfg)
 }

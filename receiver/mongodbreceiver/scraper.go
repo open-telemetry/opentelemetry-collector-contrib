@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -32,6 +34,37 @@ var (
 	otelNamespaceUUID = uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
 )
 
+const (
+	namespaceKey                = "ns"
+	commandKey                  = "command"
+	opKey                       = "op"
+	activeKey                   = "active"
+	durationMicrosKey           = "microsecs_running"
+	clientKey                   = "client"
+	applicationNameKey          = "appName"
+	effectiveUsersKey           = "effectiveUsers"
+	userKey                     = "user"
+	cursorKey                   = "cursor"
+	cursorAwaitDataKey          = "awaitData"
+	cursorIDKey                 = "cursorId"
+	cursorNBatchesReturnedKey   = "nBatchesReturned"
+	cursorNDocsReturnedKey      = "nDocsReturned"
+	cursorNoCursorTimeoutKey    = "noCursorTimeout"
+	cursorOriginatingCommandKey = "originatingCommand"
+	cursorTailableKey           = "tailable"
+	idKey                       = "id"
+	lsidKey                     = "lsid"
+	operationIDKey              = "opid"
+	planSummaryKey              = "planSummary"
+	queryFrameworkKey           = "queryFramework"
+	prepareReadConflictsKey     = "prepareReadConflicts"
+	writeConflictsKey           = "writeConflicts"
+	numYieldsKey                = "numYields"
+	waitingForLockKey           = "waitingForLock"
+	waitingForFlowControlKey    = "waitingForFlowControl"
+	waitingForLatchKey          = "waitingForLatch"
+)
+
 // generateInstanceID generates a deterministic UUID v5 from server address and port.
 func generateInstanceID(serverAddress string, serverPort int64) string {
 	name := fmt.Sprintf("%s:%d", serverAddress, serverPort)
@@ -45,12 +78,14 @@ type mongodbScraper struct {
 	secondaryClients   []client
 	mongoVersion       *version.Version
 	mb                 *metadata.MetricsBuilder
+	lb                 *metadata.LogsBuilder
 	prevReplTimestamp  pcommon.Timestamp
 	prevReplCounts     map[string]int64
 	prevTimestamp      pcommon.Timestamp
 	prevFlushTimestamp pcommon.Timestamp
 	prevCounts         map[string]int64
 	prevFlushCount     int64
+	obfuscator         *obfuscator
 }
 
 func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScraper {
@@ -58,6 +93,7 @@ func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScrap
 		logger:             settings.Logger,
 		config:             config,
 		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		lb:                 metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
 		mongoVersion:       unknownVersion(),
 		prevReplTimestamp:  pcommon.Timestamp(0),
 		prevReplCounts:     make(map[string]int64),
@@ -65,6 +101,7 @@ func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScrap
 		prevFlushTimestamp: pcommon.Timestamp(0),
 		prevCounts:         make(map[string]int64),
 		prevFlushCount:     0,
+		obfuscator:         newObfuscator(),
 	}
 }
 
@@ -94,12 +131,12 @@ func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 			},
 		}
 
-		client, err := newClient(ctx, &secondaryConfig, s.logger, true)
+		secondaryClient, err := newClient(ctx, &secondaryConfig, s.logger, true)
 		if err != nil {
 			s.logger.Warn("failed to connect to secondary", zap.String("host", secondary), zap.Error(err))
 			continue
 		}
-		s.secondaryClients = append(s.secondaryClients, client)
+		s.secondaryClients = append(s.secondaryClients, secondaryClient)
 	}
 
 	return nil
@@ -143,6 +180,337 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	errs := &scrapererror.ScrapeErrors{}
 	s.collectMetrics(ctx, errs)
 	return s.mb.Emit(), errs.Combine()
+}
+
+func (s *mongodbScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.scrapeLogsFromClient(ctx, s.client, now)
+
+	for _, c := range s.secondaryClients {
+		s.scrapeLogsFromClient(ctx, c, now)
+	}
+
+	return s.lb.Emit(), nil
+}
+
+func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now pcommon.Timestamp) {
+	serverStatus, err := c.ServerStatus(ctx, "admin")
+	if err != nil {
+		s.logger.Debug("Failed to get server status for logs", zap.Error(err))
+		return
+	}
+
+	serverAddress, serverPort, err := serverAddressAndPort(serverStatus)
+	if err != nil {
+		s.logger.Debug("Failed to extract server address and port for logs", zap.Error(err))
+		return
+	}
+
+	operations, err := c.CurrentOp(ctx)
+	if err != nil {
+		s.logger.Error("Failed to get current operations", zap.Error(err))
+		return
+	}
+
+	s.processCurrentOp(ctx, operations, now)
+
+	rb := s.lb.NewResourceBuilder()
+	rb.SetServerAddress(serverAddress)
+	rb.SetServerPort(serverPort)
+	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
+	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
+}
+
+func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson.M, now pcommon.Timestamp) {
+	emitted := uint64(0)
+	for _, op := range operations {
+		if emitted >= s.config.QuerySampleCollection.MaxRowsPerQuery {
+			break
+		}
+		if !s.shouldIncludeOperation(op) {
+			continue
+		}
+		namespace := getValue[string](op, namespaceKey)
+		databaseName := getDBFromNamespace(namespace)
+		command := getValue[bson.D](op, commandKey)
+		opType := getValue[string](op, opKey)
+		queryTruncated := commandIsTruncated(command)
+		preparedReadConflictCount := getInt64Value(op, prepareReadConflictsKey)
+		writeConflictCount := getInt64Value(op, writeConflictsKey)
+		yieldCount := getInt64Value(op, numYieldsKey)
+		lsid := ""
+		if v, ok := lookup(op[lsidKey], idKey); ok {
+			lsid = formatLsidID(v)
+		}
+		cursor := getValue[bson.D](op, cursorKey)
+		cursorAwaitData := getValue[bool](cursor, cursorAwaitDataKey)
+		cursorID := getFormattedValue(cursor, cursorIDKey)
+		cursorNoTimeout := getValue[bool](cursor, cursorNoCursorTimeoutKey)
+		cursorReturnedBatches := getInt64Value(cursor, cursorNBatchesReturnedKey)
+		cursorReturnedDocuments := getInt64Value(cursor, cursorNDocsReturnedKey)
+		cursorOriginatingCommand := getValue[bson.D](cursor, cursorOriginatingCommandKey)
+		obfuscatedCursorOriginatingCommand := ""
+		if len(cursorOriginatingCommand) > 0 {
+			cleanedCursorOriginatingCommand := cleanCommand(cursorOriginatingCommand)
+			obfuscatedCursorOriginatingCommand = s.obfuscator.obfuscateMongoDBString(cleanedCursorOriginatingCommand.String())
+		}
+		cursorTailable := getValue[bool](cursor, cursorTailableKey)
+		planSummary := getValue[string](op, planSummaryKey)
+		queryFramework := getValue[string](op, queryFrameworkKey)
+		waitingForLock := getValue[bool](op, waitingForLockKey)
+		waitingForFlowControl := getValue[bool](op, waitingForFlowControlKey)
+		waitingForLatchDetails := getJSONValue(op, waitingForLatchKey)
+		waitingForLatch := waitingForLatchDetails != ""
+		waitTypes := buildWaitTypes(waitingForLock, waitingForFlowControl, waitingForLatch)
+		operationState, ok := deriveOperationState(op, waitingForLock, waitingForFlowControl, waitingForLatch)
+		if !ok {
+			s.logger.Debug("Skipping operation without supported state", zap.Any("operation", op))
+			continue
+		}
+		durationSeconds := float64(getInt64Value(op, durationMicrosKey)) / 1_000_000.0
+		clientAddr := getValue[string](op, clientKey)
+		clientAppName := getValue[string](op, applicationNameKey)
+		userName := extractEffectiveUserName(op)
+		operationID := extractOperationID(op)
+		clientAddress, clientPort := clientAddressAndPort(clientAddr)
+		collectionName := getCollectionFromNamespace(namespace)
+		cleanedCommand := cleanCommand(command)
+		obfuscatedStatement := s.obfuscator.obfuscateMongoDBString(cleanedCommand.String())
+
+		s.lb.RecordDbServerQuerySampleEvent(
+			ctx,
+			now,
+			clientAddress,
+			clientPort,
+			metadata.AttributeDbSystemNameMongodb,
+			databaseName,
+			collectionName,
+			operationID,
+			obfuscatedStatement,
+			queryTruncated,
+			userName,
+			clientAppName,
+			cursorAwaitData,
+			cursorID,
+			cursorNoTimeout,
+			obfuscatedCursorOriginatingCommand,
+			cursorReturnedBatches,
+			cursorReturnedDocuments,
+			cursorTailable,
+			lsid,
+			planSummary,
+			queryFramework,
+			operationState,
+			opType,
+			durationSeconds,
+			preparedReadConflictCount,
+			writeConflictCount,
+			yieldCount,
+			waitTypes,
+			waitingForLatchDetails,
+		)
+		emitted++
+	}
+	s.logger.Debug("Processed MongoDB current operations", zap.Int("total_operations", len(operations)))
+}
+
+func extractOperationID(op bson.M) string {
+	if opIDRaw, ok := op[operationIDKey]; ok {
+		return fmt.Sprintf("%v", opIDRaw)
+	}
+	return ""
+}
+
+func deriveOperationState(op bson.M, waitingForLock, waitingForFlowControl, waitingForLatch bool) (metadata.AttributeMongodbOperationState, bool) {
+	if waitingForLock || waitingForFlowControl || waitingForLatch {
+		return metadata.AttributeMongodbOperationStateWaiting, true
+	}
+	if getValue[bool](op, activeKey) {
+		return metadata.AttributeMongodbOperationStateActive, true
+	}
+	return 0, false
+}
+
+func buildWaitTypes(waitingForLock, waitingForFlowControl, waitingForLatch bool) []any {
+	waitTypes := []any{}
+	if waitingForLock {
+		waitTypes = append(waitTypes, "lock")
+	}
+	if waitingForFlowControl {
+		waitTypes = append(waitTypes, "flow_control")
+	}
+	if waitingForLatch {
+		waitTypes = append(waitTypes, "latch")
+	}
+	return waitTypes
+}
+
+func extractEffectiveUserName(op bson.M) string {
+	users, ok := op[effectiveUsersKey].(bson.A)
+	if !ok || len(users) == 0 {
+		return ""
+	}
+	return getValue[string](users[0], userKey)
+}
+
+func (s *mongodbScraper) shouldIncludeOperation(op bson.M) bool {
+	if len(getValue[bson.D](op, commandKey)) == 0 {
+		s.logger.Debug("Skipping operation with empty command", zap.Any("operation", op))
+		return false
+	}
+	return true
+}
+
+func getDBFromNamespace(namespace string) string {
+	parts := strings.SplitN(namespace, ".", 2)
+	if len(parts) == 2 {
+		return parts[0]
+	}
+	return ""
+}
+
+func getCollectionFromNamespace(namespace string) string {
+	parts := strings.SplitN(namespace, ".", 2)
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	return ""
+}
+
+// commandIsTruncated returns whether MongoDB clipped the command document in $currentOp.
+// MongoDB signals truncation by inserting a "$truncated" key into the command
+// when the rendered form exceeds the per-op size cap; downstream consumers
+// need this so they can tell that db.query.text is not the complete statement.
+func commandIsTruncated(command bson.D) bool {
+	for _, elem := range command {
+		if elem.Key == "$truncated" {
+			return true
+		}
+	}
+	return false
+}
+
+// lookup returns the value for key from a BSON document. It accepts bson.M,
+// bson.D, or map[string]any so callers do not need to know which container
+// the driver returned.
+func lookup(doc any, key string) (any, bool) {
+	switch d := doc.(type) {
+	case bson.M:
+		v, ok := d[key]
+		return v, ok
+	case bson.D:
+		for _, elem := range d {
+			if elem.Key == key {
+				return elem.Value, true
+			}
+		}
+		return nil, false
+	case map[string]any:
+		v, ok := d[key]
+		return v, ok
+	default:
+		return nil, false
+	}
+}
+
+// getValue returns the value for key cast to T, or T's zero value if the key
+// is missing or the value is not of type T.
+func getValue[T any](doc any, key string) T {
+	var zero T
+	v, ok := lookup(doc, key)
+	if !ok {
+		return zero
+	}
+	typed, _ := v.(T)
+	return typed
+}
+
+// getInt64Value returns the value for key coerced to int64 via parseInt
+// (shared with metrics.go), or 0 when the key is missing or the value is
+// not a supported numeric type.
+func getInt64Value(doc any, key string) int64 {
+	v, ok := lookup(doc, key)
+	if !ok {
+		return 0
+	}
+	n, _ := parseInt(v)
+	return n
+}
+
+// getFormattedValue returns fmt.Sprintf("%v", value) for the key, or "" when
+// the key is missing.
+func getFormattedValue(doc any, key string) string {
+	v, ok := lookup(doc, key)
+	if !ok {
+		return ""
+	}
+	return fmt.Sprintf("%v", v)
+}
+
+// getJSONValue returns the value for key encoded as MongoDB Extended JSON.
+// It returns "" when the key is missing or when the value encodes to an empty
+// document ("{}"), so attributes are omitted instead of carrying a placeholder.
+func getJSONValue(doc any, key string) string {
+	v, ok := lookup(doc, key)
+	if !ok {
+		return ""
+	}
+	j, err := bson.MarshalExtJSON(v, false, false)
+	if err != nil {
+		// Unmarshalable values (notably explicit nil) carry no useful JSON
+		// payload; treat them like a missing key rather than leaking a Go
+		// debug representation into telemetry.
+		return ""
+	}
+	// An empty document ("{}") carries no information for downstream consumers;
+	// treat it the same as a missing key so the attribute is omitted rather than
+	// surfacing a misleading placeholder.
+	if s := string(j); s != "{}" {
+		return s
+	}
+	return ""
+}
+
+// formatLsidID renders a logical-session UUID. MongoDB returns lsid.id as a
+// bson.Binary with the standard UUID subtype, which fmt.Sprintf would print
+// as a raw byte slice; convert to the canonical hex form when possible.
+func formatLsidID(value any) string {
+	if b, ok := value.(bson.Binary); ok && b.Subtype == 0x04 && len(b.Data) == 16 {
+		if u, err := uuid.FromBytes(b.Data); err == nil {
+			return u.String()
+		}
+	}
+	return fmt.Sprintf("%v", value)
+}
+
+func clientAddressAndPort(clientAddr string) (string, int64) {
+	if clientAddr == "" {
+		return "", 0
+	}
+
+	host, port, err := net.SplitHostPort(clientAddr)
+	if err == nil {
+		parsedPort, parseErr := strconv.ParseInt(port, 10, 64)
+		if parseErr != nil {
+			return host, 0
+		}
+		return host, parsedPort
+	}
+
+	if strings.Count(clientAddr, ":") == 1 {
+		host, port, found := strings.Cut(clientAddr, ":")
+		if !found {
+			return clientAddr, 0
+		}
+		parsedPort, parseErr := strconv.ParseInt(port, 10, 64)
+		if parseErr != nil {
+			return host, 0
+		}
+		return host, parsedPort
+	}
+
+	return clientAddr, 0
 }
 
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {
