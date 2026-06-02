@@ -126,7 +126,7 @@ func (i *Input) resubscribe() error {
 		}
 	}
 
-	if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
+	if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.path, i.bookmark); err != nil {
 		return fmt.Errorf("failed to reopen subscription: %w", err)
 	}
 	return nil
