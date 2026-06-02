@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.20
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.40.2
-	github.com/aws/smithy-go v1.26.0
+	github.com/aws/smithy-go v1.27.0
 	github.com/goccy/go-json v0.10.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.153.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.153.0
