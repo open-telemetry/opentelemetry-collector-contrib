@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.153.0
-	github.com/prometheus/common v0.67.5
+	github.com/prometheus/common v0.68.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.59.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/component/componenttest v0.153.1-0.20260528150546-fe2cf23ff222
@@ -84,7 +84,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.yaml.in/yaml/v2 v2.4.3 // indirect
+	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
