@@ -148,7 +148,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 						S3: events.S3Entity{
 							Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
 							Object: events.S3Object{
-								Key:  "test-file.txt",
+								Key:  "test-file.txt.gz",
 								Size: 10,
 							},
 						},
@@ -157,7 +157,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 			},
 			s3MockContent: s3Content{
 				bucketName: "test-bucket",
-				objectKey:  "test-file.txt",
+				objectKey:  "test-file.txt.gz",
 				data:       compressData(t, []byte("Logs in Gzip S3 object")),
 			},
 			extension:     internal.NewDefaultS3LogsDecoder(),
@@ -393,7 +393,7 @@ func TestHandleCloudwatchLogEvent(t *testing.T) {
 	}
 }
 
-func TestEnrichments(t *testing.T) {
+func TestS3Enrichments(t *testing.T) {
 	t.Parallel()
 
 	observedTimestamp := time.UnixMilli(1765574662915)
@@ -466,6 +466,57 @@ func TestEnrichments(t *testing.T) {
 		require.Equal(t, "bucket-name", metadata.Get("aws.s3.bucket.name")[0])
 		require.Equal(t, "arn:aws:s3:::bucket-name", metadata.Get("aws.s3.bucket.arn")[0])
 		require.Equal(t, "object-key", metadata.Get("aws.s3.key")[0])
+	})
+}
+
+func TestCWLogsEnrichments(t *testing.T) {
+	t.Parallel()
+
+	cwMetadata := cwMetadataEnvelope{
+		Owner:     "123456789012",
+		LogGroup:  "/aws/lambda/my-function",
+		LogStream: "test-stream",
+	}
+
+	// given
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	// when
+	getEnrichedCWLog(logs, cwMetadata)
+	enrichedCtx := getEnrichedCtxForCWLogs(t.Context(), cwMetadata)
+
+	t.Run("Validate log enrichment", func(t *testing.T) {
+		for _, resource := range logs.ResourceLogs().All() {
+			resourceAttrs := resource.Resource().Attributes()
+
+			v, b := resourceAttrs.Get("cloud.provider")
+			require.True(t, b)
+			require.Equal(t, "aws", v.AsString())
+
+			v, b = resourceAttrs.Get("cloud.account.id")
+			require.True(t, b)
+			require.Equal(t, "123456789012", v.AsString())
+
+			v, b = resourceAttrs.Get("aws.log.group.names")
+			require.True(t, b)
+
+			require.Equal(t, "/aws/lambda/my-function", v.Slice().At(0).AsString())
+
+			v, b = resourceAttrs.Get("aws.log.stream.names")
+			require.True(t, b)
+			require.Equal(t, "test-stream", v.Slice().At(0).AsString())
+		}
+	})
+
+	t.Run("Validate context enrichment", func(t *testing.T) {
+		info := client.FromContext(enrichedCtx)
+		metadata := info.Metadata
+
+		require.Equal(t, "123456789012", metadata.Get("cloud.account.id")[0])
+		require.Equal(t, "/aws/lambda/my-function", metadata.Get("aws.log.group.names")[0])
+		require.Equal(t, "test-stream", metadata.Get("aws.log.stream.names")[0])
 	})
 }
 
@@ -693,7 +744,7 @@ func TestMultiFormatS3LogsHandler(t *testing.T) {
 			s3MockContent: s3Content{
 				bucketName: "test-bucket",
 				objectKey:  "AWSLogs/123/vpcflowlogs/us-east-1/file.log.gz",
-				data:       []byte("vpc flow log data"),
+				data:       compressData(t, []byte("vpc flow log data")),
 			},
 			encodings: []S3Encoding{
 				{Name: "vpcflow", Encoding: "awslogs_encoding/vpc"},
@@ -722,7 +773,7 @@ func TestMultiFormatS3LogsHandler(t *testing.T) {
 			s3MockContent: s3Content{
 				bucketName: "test-bucket",
 				objectKey:  "AWSLogs/123/CloudTrail/us-east-1/file.json.gz",
-				data:       []byte("cloudtrail data"),
+				data:       compressData(t, []byte("cloudtrail data")),
 			},
 			encodings: []S3Encoding{
 				{Name: "vpcflow", Encoding: "awslogs_encoding/vpc"},

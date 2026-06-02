@@ -1,0 +1,12 @@
+change_type: enhancement
+component: receiver/sqlserver
+note: Add Latch metrics for SQL Server receiver.
+issues: [48032]
+subtext: |
+  Added five new opt-in metrics:
+  - `sqlserver.latch.wait.rate` — latch waits per second
+  - `sqlserver.latch.wait_time.avg` — average latch wait time
+  - `sqlserver.latch.wait_time.total` — total cumulative latch wait time
+  - `sqlserver.latch.superlatch.count` — active superlatch count
+  - `sqlserver.latch.superlatch.transition.rate` — superlatch promotions/demotions with `transition.direction` attribute
+change_logs: [user]

@@ -34,7 +34,9 @@ jobs:
             - First-time contributors should have **at most one PR not marked as draft until their first PR is merged**.
             - If your change isn't one of our [priority components](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44130), reviews may take more time.
             - Give reviewers at least a few days before pinging them for feedback.
-            - If you need help or struggle to move your PR forward, raise the topic on [#otel-collector-dev](https://cloud-native.slack.com/archives/C07CCCMRXBK) or a [Collector SIG meeting](https://github.com/open-telemetry/community?tab=readme-ov-file#sig-collector).
+            - If you need help or struggle to move your PR forward:
+              - Ask questions regarding general setup, development process, or contributor etiquette in [#opentelemetry-new-contributors](https://cloud-native.slack.com/archives/C09H3MNMBQV).
+              - Raise technical or Collector-specific questions in [#otel-collector-dev](https://cloud-native.slack.com/archives/C07CCCMRXBK) or a [Collector SIG meeting](https://github.com/open-telemetry/community?tab=readme-ov-file#sig-collector).
 
   draft_if_multiple_prs:
     runs-on: ubuntu-latest
@@ -44,7 +46,7 @@ jobs:
       github.event.pull_request.draft == false &&
       !contains(github.event.pull_request.labels.*.name, 'keep-as-non-draft')
     steps:
-      - uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}

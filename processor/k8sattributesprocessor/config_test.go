@@ -31,10 +31,11 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:   ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}},
 				Extract: ExtractConfig{
 					Metadata:                     enabledAttributes(),
-					DeploymentNameFromReplicaSet: false,
+					DeploymentNameFromReplicaSet: true,
 				},
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -52,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 						{TagName: "l1", Key: "label1", From: "pod"},
 						{TagName: "l2", Key: "label2", From: kube.MetadataFromPod},
 					},
-					DeploymentNameFromReplicaSet: false,
+					DeploymentNameFromReplicaSet: true,
 				},
 				Filter: FilterConfig{
 					Namespace:      "ns2",
@@ -109,6 +110,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -124,7 +126,7 @@ func TestLoadConfig(t *testing.T) {
 						{KeyRegex: "opentel.*", From: kube.MetadataFromPod},
 					},
 					Metadata:                     enabledAttributes(),
-					DeploymentNameFromReplicaSet: false,
+					DeploymentNameFromReplicaSet: true,
 				},
 				Exclude: ExcludeConfig{
 					Pods: []ExcludePodConfig{
@@ -134,6 +136,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -147,6 +150,21 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "deployment_name_from_replicaset_false"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: false,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -183,11 +201,12 @@ func TestLoadConfig(t *testing.T) {
 				Extract: ExtractConfig{
 					Metadata:                     enabledAttributes(),
 					OtelAnnotations:              true,
-					DeploymentNameFromReplicaSet: false,
+					DeploymentNameFromReplicaSet: true,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -196,12 +215,13 @@ func TestLoadConfig(t *testing.T) {
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				Extract: ExtractConfig{
 					Metadata:                     enabledAttributes(),
-					DeploymentNameFromReplicaSet: false,
+					DeploymentNameFromReplicaSet: true,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadata:        true,
 				WaitForMetadataTimeout: 30 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -211,11 +231,12 @@ func TestLoadConfig(t *testing.T) {
 				Passthrough: true,
 				Extract: ExtractConfig{
 					Metadata:                     enabledAttributes(),
-					DeploymentNameFromReplicaSet: false,
+					DeploymentNameFromReplicaSet: true,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -224,7 +245,7 @@ func TestLoadConfig(t *testing.T) {
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				Extract: ExtractConfig{
 					Metadata:                     enabledAttributes(),
-					DeploymentNameFromReplicaSet: false,
+					DeploymentNameFromReplicaSet: true,
 				},
 				Filter: FilterConfig{
 					Labels: []FieldFilterConfig{
@@ -234,6 +255,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -242,7 +264,7 @@ func TestLoadConfig(t *testing.T) {
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				Extract: ExtractConfig{
 					Metadata:                     enabledAttributes(),
-					DeploymentNameFromReplicaSet: false,
+					DeploymentNameFromReplicaSet: true,
 				},
 				Filter: FilterConfig{
 					Labels: []FieldFilterConfig{
@@ -252,6 +274,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -266,11 +289,12 @@ func TestLoadConfig(t *testing.T) {
 					Annotations: []FieldExtractConfig{
 						{TagName: "ns_annotation", Key: "owner", From: "namespace"},
 					},
-					DeploymentNameFromReplicaSet: false,
+					DeploymentNameFromReplicaSet: true,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -282,11 +306,12 @@ func TestLoadConfig(t *testing.T) {
 					Labels: []FieldExtractConfig{
 						{TagName: "node_label", Key: "node-role", From: "node"},
 					},
-					DeploymentNameFromReplicaSet: false,
+					DeploymentNameFromReplicaSet: true,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -298,11 +323,12 @@ func TestLoadConfig(t *testing.T) {
 					Labels: []FieldExtractConfig{
 						{TagName: "deployment_label", Key: "app", From: "deployment"},
 					},
-					DeploymentNameFromReplicaSet: false,
+					DeploymentNameFromReplicaSet: true,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -314,11 +340,12 @@ func TestLoadConfig(t *testing.T) {
 					Labels: []FieldExtractConfig{
 						{TagName: "statefulset_label", Key: "app", From: "statefulset"},
 					},
-					DeploymentNameFromReplicaSet: false,
+					DeploymentNameFromReplicaSet: true,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -330,11 +357,12 @@ func TestLoadConfig(t *testing.T) {
 					Labels: []FieldExtractConfig{
 						{TagName: "daemonset_label", Key: "app", From: "daemonset"},
 					},
-					DeploymentNameFromReplicaSet: false,
+					DeploymentNameFromReplicaSet: true,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -346,11 +374,12 @@ func TestLoadConfig(t *testing.T) {
 					Labels: []FieldExtractConfig{
 						{TagName: "job_label", Key: "app", From: "job"},
 					},
-					DeploymentNameFromReplicaSet: false,
+					DeploymentNameFromReplicaSet: true,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -368,11 +397,12 @@ func TestLoadConfig(t *testing.T) {
 						"container.image.repo_digests", "service.namespace", "service.name",
 						"service.version", "service.instance.id", "k8s.cluster.uid",
 					},
-					DeploymentNameFromReplicaSet: false,
+					DeploymentNameFromReplicaSet: true,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -383,10 +413,12 @@ func TestLoadConfig(t *testing.T) {
 					Metadata: []string{
 						"container.image.tag", "container.image.tags",
 					},
+					DeploymentNameFromReplicaSet: true,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
 		},
 		{
@@ -397,11 +429,13 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				Extract: ExtractConfig{
-					Metadata: enabledAttributes(),
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        20 * time.Second,
+				PodDeleteGracePeriod:   30 * time.Second,
 			},
 		},
 		{
@@ -412,12 +446,17 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				Extract: ExtractConfig{
-					Metadata: enabledAttributes(),
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
 				WatchSyncPeriod:        0,
+				PodDeleteGracePeriod:   120 * time.Second,
 			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_pod_delete_grace_period"),
 		},
 	}
 

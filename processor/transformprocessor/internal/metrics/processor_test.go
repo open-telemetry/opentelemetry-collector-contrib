@@ -1022,6 +1022,57 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 	}
 }
 
+func Test_ProcessMetrics_MergeHistogramBucketsLimitBuckets(t *testing.T) {
+	td := pmetric.NewMetrics()
+	metric := td.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetName("test_histogram")
+	dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+	dp.SetCount(17)
+	dp.SetSum(25.5)
+	dp.ExplicitBounds().FromRaw([]float64{0.1, 0.5, 1.0})
+	dp.BucketCounts().FromRaw([]uint64{5, 8, 3, 1})
+
+	processor, err := NewProcessor(
+		[]common.ContextStatements{
+			{
+				Context:    "datapoint",
+				Statements: []string{`merge_histogram_buckets(3, method="limit_buckets") where metric.name == "test_histogram"`},
+			},
+		},
+		ottl.IgnoreError,
+		componenttest.NewNopTelemetrySettings(),
+		DefaultMetricFunctions,
+		DefaultDataPointFunctions,
+	)
+	require.NoError(t, err)
+
+	_, err = processor.ProcessMetrics(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, []float64{0.5}, dp.ExplicitBounds().AsRaw())
+	assert.Equal(t, []uint64{13, 4}, dp.BucketCounts().AsRaw())
+	assert.Equal(t, uint64(17), dp.Count())
+	assert.Equal(t, 25.5, dp.Sum())
+}
+
+func Test_ProcessMetrics_MergeHistogramBucketsLimitBucketsInvalidLiteralTargetValue(t *testing.T) {
+	processor, err := NewProcessor(
+		[]common.ContextStatements{
+			{
+				Context:    "datapoint",
+				Statements: []string{`merge_histogram_buckets(2.5, method="limit_buckets") where metric.name == "test_histogram"`},
+			},
+		},
+		ottl.IgnoreError,
+		componenttest.NewNopTelemetrySettings(),
+		DefaultMetricFunctions,
+		DefaultDataPointFunctions,
+	)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `target_value must be a positive integer when method is "limit_buckets"`)
+	assert.Nil(t, processor)
+}
+
 func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
 	tests := []struct {
 		statements []string

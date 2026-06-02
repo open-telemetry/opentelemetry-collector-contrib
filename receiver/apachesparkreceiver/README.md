@@ -30,6 +30,9 @@ This receiver supports Apache Spark versions:
 
 ## Configuration
 
+> **Note:** This receiver was renamed from `apachespark` to `apache_spark` to match the snake_case naming convention.
+> The deprecated component type `apachespark` is still accepted as an alias and will log a deprecation warning.
+
 These configuration options are for connecting to an Apache Spark application.
 
 The following settings are optional:
@@ -43,7 +46,7 @@ The following settings are optional:
 
 ```yaml
 receivers:
-  apachespark:
+  apache_spark:
     collection_interval: 60s
     endpoint: http://localhost:4040
     application_names:

@@ -67,8 +67,8 @@ func TestBlobEventHandler_ProcessContainers(t *testing.T) {
 
 	handler.processContainers(t.Context())
 
-	logsConsumer.AssertNumberOfCalls(t, "consumeLogsJSON", 2)
-	tracesConsumer.AssertNumberOfCalls(t, "consumeTracesJSON", 1)
+	logsConsumer.AssertNumberOfCalls(t, "consumeLogs", 2)
+	tracesConsumer.AssertNumberOfCalls(t, "consumeTraces", 1)
 	blobClient.AssertNumberOfCalls(t, "readBlob", 3)
 	blobClient.AssertNumberOfCalls(t, "deleteBlob", 3)
 }

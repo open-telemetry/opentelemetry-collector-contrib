@@ -18,12 +18,12 @@ func TestGetValidPublisher(t *testing.T) {
 	}()
 
 	// Provider "Application" exists in all Windows versions.
-	publisher, openPublisherErr := publisherCache.get("Application")
+	publisher, openPublisherErr := publisherCache.get("Application", nil)
 	require.NoError(t, openPublisherErr)
 	require.True(t, publisher.Valid())
 
 	// Get the same publisher again.
-	publisher, openPublisherErr = publisherCache.get("Application")
+	publisher, openPublisherErr = publisherCache.get("Application", nil)
 	require.NoError(t, openPublisherErr)
 	require.True(t, publisher.Valid())
 }
@@ -35,12 +35,12 @@ func TestGetInvalidPublisher(t *testing.T) {
 	}()
 
 	// Provider "InvalidProvider" does not exist in any Windows version.
-	publisher, openPublisherErr := publisherCache.get("InvalidProvider")
+	publisher, openPublisherErr := publisherCache.get("InvalidProvider", nil)
 	require.Error(t, openPublisherErr, "%v", publisherCache)
 	require.False(t, publisher.Valid())
 
 	// Get "InvalidProvider" publisher again.
-	publisher, openPublisherErr = publisherCache.get("InvalidProvider")
+	publisher, openPublisherErr = publisherCache.get("InvalidProvider", nil)
 	require.NoError(t, openPublisherErr) // It is cached, no error opening it.
 	require.False(t, publisher.Valid())
 }
@@ -51,12 +51,12 @@ func TestEmptyPublisherNameBehavior(t *testing.T) {
 		require.NoError(t, publisherCache.evictAll())
 	}()
 
-	publisher, openPublisherErr := publisherCache.get("")
+	publisher, openPublisherErr := publisherCache.get("", nil)
 	require.NoError(t, openPublisherErr) // There should be no error for an empty provider.
 	require.False(t, publisher.Valid())
 
 	// Checked that the cached version works as expected.
-	publisher, openPublisherErr = publisherCache.get("")
+	publisher, openPublisherErr = publisherCache.get("", nil)
 	require.NoError(t, openPublisherErr)
 	require.False(t, publisher.Valid())
 }
@@ -68,22 +68,22 @@ func TestValidAndInvalidPublishers(t *testing.T) {
 	}()
 
 	// Provider "Application" exists in all Windows versions.
-	publisher, openPublisherErr := publisherCache.get("Application")
+	publisher, openPublisherErr := publisherCache.get("Application", nil)
 	require.NoError(t, openPublisherErr)
 	require.True(t, publisher.Valid())
 
 	// Provider "InvalidProvider" does not exist in any Windows version.
-	publisher, openPublisherErr = publisherCache.get("InvalidProvider")
+	publisher, openPublisherErr = publisherCache.get("InvalidProvider", nil)
 	require.Error(t, openPublisherErr, "%v", publisherCache)
 	require.False(t, publisher.Valid())
 
 	// Get the existing publisher again.
-	publisher, openPublisherErr = publisherCache.get("Application")
+	publisher, openPublisherErr = publisherCache.get("Application", nil)
 	require.NoError(t, openPublisherErr)
 	require.True(t, publisher.Valid())
 
 	// Get "InvalidProvider" publisher again.
-	publisher, openPublisherErr = publisherCache.get("InvalidProvider")
+	publisher, openPublisherErr = publisherCache.get("InvalidProvider", nil)
 	require.NoError(t, openPublisherErr) // It is cached, no error opening it.
 	require.False(t, publisher.Valid())
 }

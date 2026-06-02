@@ -19,102 +19,164 @@ type perfCounterRecorderConf struct {
 	recorders map[string]recordFunc
 }
 
-var totalPerfCounterRecorders = []perfCounterRecorderConf{
-	{
-		object:   "Process",
-		instance: "_Total",
-		recorders: map[string]recordFunc{
-			"Thread Count": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisThreadActiveDataPoint(ts, int64(val))
+func buildTotalPerfCounterRecordersFromConfig(metricsConfig metadata.MetricsConfig) []perfCounterRecorderConf {
+	if !metricsConfig.IisThreadActive.Enabled {
+		// if the metric is not enabled, we don't need to build any recorders
+		return nil
+	}
+
+	return []perfCounterRecorderConf{
+		{
+			object:   "Process",
+			instance: "_Total",
+			recorders: map[string]recordFunc{
+				"Thread Count": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+					mb.RecordIisThreadActiveDataPoint(ts, int64(val))
+				},
 			},
 		},
-	},
+	}
 }
 
-var sitePerfCounterRecorders = []perfCounterRecorderConf{
-	{
-		object:   "Web Service",
-		instance: "*",
-		recorders: map[string]recordFunc{
-			"Current Connections": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+func buildSitePerfCounterRecordersFromConfig(metricsConfig metadata.MetricsConfig) []perfCounterRecorderConf {
+	var sitePerfCounterRecorders []perfCounterRecorderConf
+
+	if metricsConfig.IisConnectionActive.Enabled ||
+		metricsConfig.IisNetworkIo.Enabled ||
+		metricsConfig.IisConnectionAttemptCount.Enabled ||
+		metricsConfig.IisRequestCount.Enabled ||
+		metricsConfig.IisNetworkFileCount.Enabled ||
+		metricsConfig.IisConnectionAnonymous.Enabled ||
+		metricsConfig.IisNetworkBlocked.Enabled ||
+		metricsConfig.IisUptime.Enabled {
+		siteRecorders := map[string]recordFunc{}
+
+		if metricsConfig.IisConnectionActive.Enabled {
+			siteRecorders["Current Connections"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisConnectionActiveDataPoint(ts, int64(val))
-			},
-			"Total Bytes Received": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+		}
+
+		if metricsConfig.IisNetworkIo.Enabled {
+			siteRecorders["Total Bytes Received"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisNetworkIoDataPoint(ts, int64(val), metadata.AttributeDirectionReceived)
-			},
-			"Total Bytes Sent": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+			siteRecorders["Total Bytes Sent"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisNetworkIoDataPoint(ts, int64(val), metadata.AttributeDirectionSent)
-			},
-			"Total Connection Attempts (all instances)": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp,
+			}
+		}
+
+		if metricsConfig.IisConnectionAttemptCount.Enabled {
+			siteRecorders["Total Connection Attempts (all instances)"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp,
 				val float64,
 			) {
 				mb.RecordIisConnectionAttemptCountDataPoint(ts, int64(val))
-			},
-			"Total Delete Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+		}
+
+		if metricsConfig.IisRequestCount.Enabled {
+			siteRecorders["Total Delete Requests"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisRequestCountDataPoint(ts, int64(val), metadata.AttributeRequestDelete)
-			},
-			"Total Get Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+			siteRecorders["Total Get Requests"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisRequestCountDataPoint(ts, int64(val), metadata.AttributeRequestGet)
-			},
-			"Total Head Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+			siteRecorders["Total Head Requests"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisRequestCountDataPoint(ts, int64(val), metadata.AttributeRequestHead)
-			},
-			"Total Options Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+			siteRecorders["Total Options Requests"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisRequestCountDataPoint(ts, int64(val), metadata.AttributeRequestOptions)
-			},
-			"Total Post Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+			siteRecorders["Total Post Requests"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisRequestCountDataPoint(ts, int64(val), metadata.AttributeRequestPost)
-			},
-			"Total Put Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+			siteRecorders["Total Put Requests"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisRequestCountDataPoint(ts, int64(val), metadata.AttributeRequestPut)
-			},
-			"Total Trace Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+			siteRecorders["Total Trace Requests"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisRequestCountDataPoint(ts, int64(val), metadata.AttributeRequestTrace)
-			},
-			"Total Files Received": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+		}
+
+		if metricsConfig.IisNetworkFileCount.Enabled {
+			siteRecorders["Total Files Received"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisNetworkFileCountDataPoint(ts, int64(val), metadata.AttributeDirectionReceived)
-			},
-			"Total Files Sent": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+			siteRecorders["Total Files Sent"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisNetworkFileCountDataPoint(ts, int64(val), metadata.AttributeDirectionSent)
-			},
-			"Total Anonymous Users": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+		}
+
+		if metricsConfig.IisConnectionAnonymous.Enabled {
+			siteRecorders["Total Anonymous Users"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisConnectionAnonymousDataPoint(ts, int64(val))
-			},
-			"Total blocked bandwidth bytes.": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+		}
+
+		if metricsConfig.IisNetworkBlocked.Enabled {
+			siteRecorders["Total blocked bandwidth bytes."] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisNetworkBlockedDataPoint(ts, int64(val))
-			},
-			"Service Uptime": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+		}
+
+		if metricsConfig.IisUptime.Enabled {
+			siteRecorders["Service Uptime"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisUptimeDataPoint(ts, int64(val))
-			},
-		},
-	},
+			}
+		}
+
+		sitePerfCounterRecorders = append(sitePerfCounterRecorders, perfCounterRecorderConf{
+			object:    "Web Service",
+			instance:  "*",
+			recorders: siteRecorders,
+		})
+	}
+
+	return sitePerfCounterRecorders
 }
 
-var appPoolPerfCounterRecorders = []perfCounterRecorderConf{
-	{
-		object:   "HTTP Service Request Queues",
-		instance: "*",
-		recorders: map[string]recordFunc{
-			"RejectedRequests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+func buildAppPoolPerfCounterRecordersFromConfig(metricsConfig metadata.MetricsConfig) []perfCounterRecorderConf {
+	appPoolPerfCounterRecorders := []perfCounterRecorderConf{}
+
+	if metricsConfig.IisRequestRejected.Enabled || metricsConfig.IisRequestQueueCount.Enabled {
+		requestRecorders := map[string]recordFunc{}
+		if metricsConfig.IisRequestRejected.Enabled {
+			requestRecorders["RejectedRequests"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisRequestRejectedDataPoint(ts, int64(val))
-			},
-			"CurrentQueueSize": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+		}
+		if metricsConfig.IisRequestQueueCount.Enabled {
+			requestRecorders["CurrentQueueSize"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisRequestQueueCountDataPoint(ts, int64(val))
-			},
-		},
-	},
-	{
-		object:   "APP_POOL_WAS",
-		instance: "*",
-		recorders: map[string]recordFunc{
-			"Current Application Pool State": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+		}
+		appPoolPerfCounterRecorders = append(appPoolPerfCounterRecorders, perfCounterRecorderConf{
+			object:    "HTTP Service Request Queues",
+			instance:  "*",
+			recorders: requestRecorders,
+		})
+	}
+
+	if metricsConfig.IisApplicationPoolState.Enabled || metricsConfig.IisApplicationPoolUptime.Enabled {
+		appPoolRecorders := map[string]recordFunc{}
+		if metricsConfig.IisApplicationPoolState.Enabled {
+			appPoolRecorders["Current Application Pool State"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisApplicationPoolStateDataPoint(ts, int64(val))
-			},
-			"Current Application Pool Uptime": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			}
+		}
+		if metricsConfig.IisApplicationPoolUptime.Enabled {
+			appPoolRecorders["Current Application Pool Uptime"] = func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisApplicationPoolUptimeDataPoint(ts, int64(val))
-			},
-		},
-	},
+			}
+		}
+		appPoolPerfCounterRecorders = append(appPoolPerfCounterRecorders, perfCounterRecorderConf{
+			object:    "APP_POOL_WAS",
+			instance:  "*",
+			recorders: appPoolRecorders,
+		})
+	}
+
+	return appPoolPerfCounterRecorders
 }
 
 func recordMaxQueueItemAge(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {

@@ -36,6 +36,25 @@ func TestAssertMetrics_IgnoresValuesAndTimestamps(t *testing.T) {
 	require.NoError(t, AssertMetrics(path, m))
 }
 
+func TestAssertMetrics_IncludeValues(t *testing.T) {
+	m := buildSampleMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, WriteAssertionFile(t, path, m, IncludeValues()))
+
+	// Assertion must pass against the original metrics.
+	require.NoError(t, AssertMetrics(path, m))
+
+	// Mutate values; assertion must fail because the snapshot includes values.
+	rm := m.ResourceMetrics().At(0)
+	metric := rm.ScopeMetrics().At(0).Metrics().At(1) // the sum metric
+	dp := metric.Sum().DataPoints().At(0)
+	dp.SetIntValue(dp.IntValue() + 9999)
+
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "value mismatch")
+}
+
 func TestAssertMetrics_DetectsMissingMetric(t *testing.T) {
 	m := buildSampleMetrics()
 	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
@@ -112,6 +131,87 @@ resources:
 	rm.Resource().Attributes().PutStr("service.instance.id", "generated-2")
 	dps.At(0).Attributes().PutStr("request.id", "request-2")
 	require.NoError(t, AssertMetrics(path, m))
+}
+
+func TestAssertMetrics_AttributeRegexMatcher(t *testing.T) {
+	m := buildSampleMetrics()
+	rm := m.ResourceMetrics().At(0)
+	rm.Resource().Attributes().PutStr("host.name", "worker-42")
+	dps := rm.ScopeMetrics().At(0).Metrics().At(1).Sum().DataPoints()
+	dps.At(0).Attributes().PutStr("request.id", "request-123")
+	dps.At(1).Attributes().PutStr("request.id", "request-456")
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        host.name/regex: worker-[0-9]+
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                    request.id/regex: request-[0-9]+
+                - attributes:
+                    method: POST
+                    request.id/regex: request-[0-9]+
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+
+	rm.Resource().Attributes().PutStr("host.name", "worker-7")
+	dps.At(0).Attributes().PutStr("request.id", "request-789")
+	require.NoError(t, AssertMetrics(path, m))
+}
+
+func TestCompareAttributes_RegexMatcherRequiresFullStringMatch(t *testing.T) {
+	err := compareAttributes(
+		map[string]any{"host.name/regex": "worker-[0-9]+"},
+		map[string]any{"host.name": "worker-42-extra"},
+	)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `attribute "host.name" value "worker-42-extra" does not match regex "worker-[0-9]+"`)
+}
+
+func TestCompareAttributes_RegexMatcherSchemaErrors(t *testing.T) {
+	t.Run("expected value must be string", func(t *testing.T) {
+		err := compareAttributes(
+			map[string]any{"host.name/regex": true},
+			map[string]any{"host.name": "worker-42"},
+		)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), `attribute "host.name"/regex must be a string pattern`)
+	})
+
+	t.Run("actual value must be string", func(t *testing.T) {
+		err := compareAttributes(
+			map[string]any{"host.name/regex": "worker-[0-9]+"},
+			map[string]any{"host.name": int64(42)},
+		)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), `attribute "host.name" must be a string to match /regex`)
+	})
+
+	t.Run("pattern must compile", func(t *testing.T) {
+		err := compareAttributes(
+			map[string]any{"host.name/regex": "["},
+			map[string]any{"host.name": "worker-42"},
+		)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), `attribute "host.name"/regex has invalid pattern "["`)
+	})
 }
 
 func TestAssertMetrics_AttributeExistsMatcherIsOrderInsensitive(t *testing.T) {

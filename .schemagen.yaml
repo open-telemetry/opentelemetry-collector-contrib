@@ -21,6 +21,9 @@ mappings:
   k8s.io/apimachinery/pkg/watch:
     EventType:
       schemaType: string
+  go.opentelemetry.io/collector/exporter/exporterhelper/internal/request:
+    SizerType:
+      schemaType: string
 allowedRefs:
   - go.opentelemetry.io/collector
   - github.com/open-telemetry/opentelemetry-collector-contrib

@@ -28,6 +28,9 @@ This exporter writes received OpenTelemetry data to a cloud storage bucket.
 | `bucket.reuse_if_exists` | Controls bucket creation behavior. If `true`, checks if bucket exists and uses it (requires `storage.buckets.get` permission on the bucket); fails if bucket doesn't exist. If `false`, attempts to create bucket; fails if bucket already exists (requires `storage.buckets.create` permission at project level). Set to `true` when the service account lacks project-level bucket creation permissions but has bucket-level permissions. | No       | `false` |
 | `bucket.region`          | Region where the bucket will be created or where it exists. If left empty, it will query the metadata endpoint. It requires the collector to be running in a Google Cloud environment.                                   | Yes      |         |
 | `bucket.compression`     | Compression algorithm used to compress data before uploading. Valid values are `gzip`, `zstd`, or no value set for no compression.                                                                                        | No       |         |
+| `timeout`                | Time to wait per individual attempt to send data to the backend. See `exporterhelper` docs for details.                                                                                                                  | No       | `5s`    |
+| `retry_on_failure`       | Configuration for how to retry failed requests. See `exporterhelper` docs for details.                                                                                                                                   | No       |         |
+| `sending_queue`          | Configuration for the internal sending queue. See `exporterhelper` docs for details.                                                                                                                                     | No       |         |
 
 ### Partition Configuration
 
@@ -60,6 +63,43 @@ extensions:
   # text encoding to ensure only the body is placed in the bucket
   text_encoding:
 ```
+
+### Resiliency Settings
+
+This exporter supports standard OpenTelemetry Collector resiliency settings. You can configure timeouts, retry behaviors, and a sending queue to ensure reliable data delivery to Google Cloud Storage.
+
+```yaml
+exporters:
+  google_cloud_storage:
+    bucket:
+      name: bucket-test
+      region: europe-west1
+    timeout: 5s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 1000
+```
+For more details on how to configure these specific sections, refer to the [exporterhelper configuration documentation](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration).
+
+### Retry Behavior
+
+This exporter utilizes two independent layers of retries:
+
+**Google Cloud SDK Retries (always on)**: The underlying Google Cloud Go SDK automatically retries transient errors (like network blips) in the background. By default, the SDK handles its own exponential backoff and idempotency checks.
+
+**Exporter Helper Retries (optional via retry_on_failure)**: This is the OpenTelemetry-level retry mechanism. It integrates with the sending queue to ensure data is not dropped during prolonged outages.
+
+**Important Notes on Retries:**
+
+If the Google Cloud SDK determines an error is permanent (e.g., unauthorized access) or not idempotent, the exporter will immediately wrap it as a permanent error. This halts the `retry_on_failure` loop and drops the payload to prevent infinite queue blocking. You can find more information on what the SDK considers retryable in the [Google Cloud Storage Retry Strategy documentation](https://docs.cloud.google.com/storage/docs/retry-strategy).
+
+Because file names are generated dynamically using a UUID and timestamp, each retry attempt by the OpenTelemetry `retry_on_failure` mechanism generates a new filename. In rare cases (such as when GCS commits an object but returns a transient error before the client receives acknowledgment) this can result in duplicate blobs in GCS.
 
 ### Compression Example
 

@@ -303,9 +303,9 @@ govulncheck:
 
 .PHONY: modernize
 modernize:
-	$(MODERNIZE) -fix -test -tags integration -v -any -fmtappendf -forvar -mapsloop -minmax -newexpr \
+	$(MODERNIZE) -fix -test -tags integration -v -any -atomictypes -embedlit -errorsastype -forvar -mapsloop -minmax -newexpr \
 		-omitzero -plusbuild \
-		-rangeint -reflecttypefor -slicescontains -slicessort -stditerators -stringscut \
+		-rangeint -reflecttypefor -slicesbackward -slicescontains -slicessort -stditerators -stringscut \
 		-stringscutprefix -stringsseq -stringsbuilder -testingcontext -unsafefuncs -waitgroupgo ./...
 
 .PHONY: tidy

@@ -48,39 +48,39 @@ type timingInfo struct {
 	responseStart atomic.Int64
 }
 
-// getDurations calculates the duration for each phase in milliseconds
-func (t *timingInfo) getDurations() (dnsMs, tcpMs, tlsMs, requestMs, responseMs int64) {
+// getDurations returns the duration for each phase in nanoseconds.
+func (t *timingInfo) getDurations() (dnsNs, tcpNs, tlsNs, requestNs, responseNs int64) {
 	dnsStartNs := t.dnsStart.Load()
 	dnsEndNs := t.dnsEnd.Load()
 	if dnsStartNs != 0 && dnsEndNs != 0 {
-		dnsMs = (dnsEndNs - dnsStartNs) / int64(time.Millisecond)
+		dnsNs = dnsEndNs - dnsStartNs
 	}
 
 	connectStartNs := t.connectStart.Load()
 	connectEndNs := t.connectEnd.Load()
 	if connectStartNs != 0 && connectEndNs != 0 {
-		tcpMs = (connectEndNs - connectStartNs) / int64(time.Millisecond)
+		tcpNs = connectEndNs - connectStartNs
 	}
 
 	tlsStartNs := t.tlsStart.Load()
 	tlsEndNs := t.tlsEnd.Load()
 	if tlsStartNs != 0 && tlsEndNs != 0 {
-		tlsMs = (tlsEndNs - tlsStartNs) / int64(time.Millisecond)
+		tlsNs = tlsEndNs - tlsStartNs
 	}
 
 	writeStartNs := t.writeStart.Load()
 	writeEndNs := t.writeEnd.Load()
 	if writeStartNs != 0 && writeEndNs != 0 {
-		requestMs = (writeEndNs - writeStartNs) / int64(time.Millisecond)
+		requestNs = writeEndNs - writeStartNs
 	}
 
 	readStartNs := t.readStart.Load()
 	readEndNs := t.readEnd.Load()
 	if readStartNs != 0 && readEndNs != 0 {
-		responseMs = (readEndNs - readStartNs) / int64(time.Millisecond)
+		responseNs = readEndNs - readStartNs
 	}
 
-	return dnsMs, tcpMs, tlsMs, requestMs, responseMs
+	return dnsNs, tcpNs, tlsNs, requestNs, responseNs
 }
 
 type httpcheckScraper struct {
@@ -365,7 +365,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 				}
 			}
 			// Record timing breakdown metrics
-			dnsMs, tcpMs, tlsMs, requestMs, responseMs := timing.getDurations()
+			dnsNs, tcpNs, tlsNs, requestNs, responseNs := timing.getDurations()
 			endpoint := h.cfg.Targets[targetIndex].Endpoint
 
 			h.mb.RecordHttpcheckDurationDataPoint(
@@ -394,11 +394,11 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 			// Record detailed timing metrics if enabled
 			// Always record timing metrics regardless of value for enabled metrics
-			h.mb.RecordHttpcheckDNSLookupDurationDataPoint(now, dnsMs, endpoint)
-			h.mb.RecordHttpcheckClientConnectionDurationDataPoint(now, tcpMs, endpoint, "tcp")
-			h.mb.RecordHttpcheckTLSHandshakeDurationDataPoint(now, tlsMs, endpoint)
-			h.mb.RecordHttpcheckClientRequestDurationDataPoint(now, requestMs, endpoint)
-			h.mb.RecordHttpcheckResponseDurationDataPoint(now, responseMs, endpoint)
+			h.mb.RecordHttpcheckDNSLookupDurationDataPoint(now, dnsNs, endpoint)
+			h.mb.RecordHttpcheckClientConnectionDurationDataPoint(now, tcpNs, endpoint, "tcp")
+			h.mb.RecordHttpcheckTLSHandshakeDurationDataPoint(now, tlsNs, endpoint)
+			h.mb.RecordHttpcheckClientRequestDurationDataPoint(now, requestNs, endpoint)
+			h.mb.RecordHttpcheckResponseDurationDataPoint(now, responseNs, endpoint)
 
 			// Check if TLS metric is enabled and this is an HTTPS endpoint
 			if h.cfg.Metrics.HttpcheckTLSCertRemaining.Enabled && resp != nil && resp.TLS != nil {

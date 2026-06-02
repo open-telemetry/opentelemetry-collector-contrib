@@ -123,12 +123,13 @@ The following settings can be optionally configured:
   - `exponential`:
     - `max_size` (default: `160`) the maximum number of buckets per positive or negative number range.
 - `dimensions`: the list of dimensions to add to `traces.span.metrics.calls`, `traces.span.metrics.duration` and `traces.span.metrics.event` metrics with the default dimensions defined above.
-  Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes or
-  resource attributes (AKA process tags) such as `ip`, `host.name` or `region`.
-  
-  If the `name`d attribute is missing in the span, the optional provided `default` is used.
-  
-  If no `default` is provided, this dimension will be **omitted** from the metric.
+  Each list entry must set **exactly one** of:
+  1. `name` which is looked up in the span's collection of attributes or resource attributes (AKA process tags) such as `ip`, `host.name` or `region`.
+
+     If the `name`d attribute is missing in the span, the optional provided `default` is used.
+
+     If no `default` is provided, this dimension will be **omitted** from the metric.
+  2. `glob`: a glob pattern with '.' treated as a separator. Every span or resource attribute whose key matches the pattern is emitted as its own dimension.
 - `calls_dimensions`: additional attributes to add as dimensions to the `traces.span.metrics.calls` metric, 
   which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
 - `exclude_dimensions`: the list of dimensions to be excluded from the default set of dimensions. Use to exclude unneeded data from metrics. 
@@ -184,13 +185,15 @@ connectors:
       - name: http.method
         default: GET
       - name: http.status_code
+      - glob: "k8s.*.name" # match single namespace between 'k8s' and 'name' ('k8s.cluster.name', not 'k8s.cluster.label.name')
+      - glob: "db.**.name" # match any number of namespaces between 'db' and 'name'
     calls_dimensions:
       - name: http.url
         default: /ping
     exemplars:
       enabled: true
     exclude_dimensions: ['status.code']
-    aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"    
+    aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
     metrics_flush_interval: 15s
     metrics_expiration: 5m
     series_expiration: 5m
@@ -224,7 +227,7 @@ For some functionality of the exporters, e.g. like generation of the `target_inf
 incoming spans resource scope attributes must contain `service.name` and `service.instance.id`
 attributes.
 
-Let's look at the example of using the `spanmetrics` connector with the `prometheusremotewrite` exporter:
+Let's look at the example of using the `spanmetrics` connector with the `prometheus_remote_write` exporter:
 
 ```yaml
 receivers:
@@ -234,7 +237,7 @@ receivers:
       grpc:
 
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: http://localhost:9090/api/v1/write
     target_info:
       enabled: true
@@ -250,7 +253,7 @@ service:
       exporters: [span_metrics]
     metrics:
       receivers: [span_metrics]
-      exporters: [prometheusremotewrite]
+      exporters: [prometheus_remote_write]
 ```
 
 This configures the `spanmetrics` connector to generate metrics from received spans and export the

@@ -7,38 +7,62 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func TestTransformValue(t *testing.T) {
+func TestTransform_OperationName(t *testing.T) {
 	tests := []struct {
-		name      string
-		targetKey string
-		value     string
-		want      string
+		name  string
+		value string
+		want  string
 	}{
-		// openinference.span.kind values.
-		{"span.kind LLM", "gen_ai.operation.name", "LLM", "chat"},
-		{"span.kind EMBEDDING", "gen_ai.operation.name", "EMBEDDING", "embeddings"},
-		{"span.kind CHAIN", "gen_ai.operation.name", "CHAIN", "invoke_agent"},
-		{"span.kind RETRIEVER", "gen_ai.operation.name", "RETRIEVER", "retrieval"},
-		{"span.kind RERANKER", "gen_ai.operation.name", "RERANKER", "retrieval"},
-		{"span.kind TOOL", "gen_ai.operation.name", "TOOL", "execute_tool"},
-		{"span.kind AGENT", "gen_ai.operation.name", "AGENT", "invoke_agent"},
-		{"span.kind PROMPT", "gen_ai.operation.name", "PROMPT", "text_completion"},
+		{"LLM", "LLM", "chat"},
+		{"EMBEDDING", "EMBEDDING", "embeddings"},
+		{"CHAIN", "CHAIN", "invoke_agent"},
+		{"RETRIEVER", "RETRIEVER", "retrieval"},
+		{"RERANKER", "RERANKER", "retrieval"},
+		{"TOOL", "TOOL", "execute_tool"},
+		{"AGENT", "AGENT", "invoke_agent"},
+		{"PROMPT", "PROMPT", "text_completion"},
 
 		// Case-insensitivity.
-		{"lowercase input", "gen_ai.operation.name", "llm", "chat"},
-		{"mixed case input", "gen_ai.operation.name", "Embedding", "embeddings"},
+		{"lowercase", "llm", "chat"},
+		{"mixed case", "Embedding", "embeddings"},
 
 		// Unknown values pass through unchanged.
-		{"unknown value", "gen_ai.operation.name", "something-weird", "something-weird"},
-
-		// Non-operation-name target keys pass through unchanged.
-		{"unrelated target key", "gen_ai.request.model", "LLM", "LLM"},
+		{"unknown", "something-unknown", "something-unknown"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, Transformer{}.TransformValue(tt.targetKey, tt.value))
+			src := pcommon.NewValueStr(tt.value)
+			dst := pcommon.NewValueEmpty()
+			Transform("gen_ai.operation.name", src, dst)
+
+			require.Equal(t, pcommon.ValueTypeStr, dst.Type())
+			assert.Equal(t, tt.want, dst.Str())
 		})
 	}
+}
+
+// TestTransform_PassthroughForUnrelatedKeys confirms the transformer is a
+// no-op clone for any target key outside its known set.
+func TestTransform_PassthroughForUnrelatedKeys(t *testing.T) {
+	src := pcommon.NewValueStr("LLM")
+	dst := pcommon.NewValueEmpty()
+	Transform("gen_ai.request.model", src, dst)
+
+	require.Equal(t, pcommon.ValueTypeStr, dst.Type())
+	assert.Equal(t, "LLM", dst.Str())
+}
+
+// TestTransform_PassthroughForNonStringTypes confirms scalar int/bool/double
+// copy cleanly even on keys the transformer knows about.
+func TestTransform_PassthroughForNonStringTypes(t *testing.T) {
+	src := pcommon.NewValueInt(42)
+	dst := pcommon.NewValueEmpty()
+	Transform("gen_ai.operation.name", src, dst)
+
+	require.Equal(t, pcommon.ValueTypeInt, dst.Type())
+	assert.Equal(t, int64(42), dst.Int())
 }

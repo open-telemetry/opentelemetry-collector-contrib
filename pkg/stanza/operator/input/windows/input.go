@@ -18,7 +18,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -31,6 +30,7 @@ type Input struct {
 	channel                  string
 	ignoreChannelErrors      bool
 	query                    *string
+	path                     *string
 	maxReads                 int
 	currentMaxReads          int
 	startAt                  string
@@ -40,6 +40,7 @@ type Input struct {
 	excludeProviders         map[string]struct{}
 	pollInterval             time.Duration
 	waitTimeout              time.Duration
+	eventDrivenScraping      bool
 	// cancelEvent is a manual-reset Windows event handle signaled by Stop() to unblock
 	// WaitForMultipleObjects in awaitAndReadEvents. A plain context cancellation cannot
 	// interrupt a blocking Windows syscall, so this handle bridges Go's cancellation model
@@ -151,7 +152,7 @@ func (i *Input) Start(persister operator.Persister) error {
 		subscription = NewRemoteSubscription(i.remote.Server, i.Logger())
 	}
 
-	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
+	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.path, i.bookmark); err != nil {
 		var errorString string
 		if isNonTransientError(err) {
 			if i.isRemote() {
@@ -175,7 +176,7 @@ func (i *Input) Start(persister operator.Persister) error {
 
 	if !subscriptionError {
 		i.subscription = subscription
-		if metadata.StanzaWindowsEventDrivenScrapingFeatureGate.IsEnabled() {
+		if i.eventDrivenScraping {
 			cancelEvent, err := windows.CreateEvent(nil, 1, 0, nil) // manual-reset, initially non-signaled
 			if err != nil {
 				return fmt.Errorf("failed to create cancel event: %w", err)
@@ -261,6 +262,28 @@ func (i *Input) read(ctx context.Context) {
 	}
 }
 
+// readWithRetry reads events from the subscription, handling RPC_S_INVALID_BOUND by closing and
+// reopening the subscription with a halved batch size until a read succeeds or a non-retryable
+// error occurs.
+func (i *Input) readWithRetry(maxReads int) ([]Event, error) {
+	events, err := i.subscription.Read(maxReads)
+	if !errors.Is(err, windows.RPC_S_INVALID_BOUND) {
+		return events, err
+	}
+
+	// Error is RPC_S_INVALID_BOUND. Close the subscription and reopen it with a halved batch size.
+	if closeErr := i.subscription.Close(); closeErr != nil {
+		return nil, fmt.Errorf("failed to close subscription during RPC_S_INVALID_BOUND recovery: %w", closeErr)
+	}
+	if openErr := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.path, i.bookmark); openErr != nil {
+		return nil, fmt.Errorf("failed to reopen subscription during RPC_S_INVALID_BOUND recovery: %w", openErr)
+	}
+	newMaxReads := max(maxReads/2, 1)
+	i.currentMaxReads = newMaxReads
+	i.Logger().Debug("Encountered RPC_S_INVALID_BOUND, reduced batch size", zap.Int("current_batch_size", i.currentMaxReads), zap.Int("original_batch_size", i.maxReads))
+	return i.readWithRetry(newMaxReads)
+}
+
 // readBatch will read events from the subscription
 func (i *Input) readBatch(ctx context.Context) bool {
 	maxBatchSize := i.getCurrentBatchSize()
@@ -268,14 +291,7 @@ func (i *Input) readBatch(ctx context.Context) bool {
 		return false
 	}
 
-	events, actualMaxReads, err := i.subscription.Read(maxBatchSize)
-
-	// Update the current max reads if it changed
-	if err == nil && actualMaxReads < maxBatchSize {
-		i.currentMaxReads = actualMaxReads
-		i.Logger().Debug("Encountered RPC_S_INVALID_BOUND, reduced batch size", zap.Int("current_batch_size", i.currentMaxReads), zap.Int("original_batch_size", i.maxReads))
-	}
-
+	events, err := i.readWithRetry(maxBatchSize)
 	if err != nil {
 		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
 		if i.isRemote() && (errors.Is(err, windows.ERROR_INVALID_HANDLE) || errors.Is(err, errSubscriptionHandleNotOpen)) {
@@ -294,7 +310,7 @@ func (i *Input) readBatch(ctx context.Context) bool {
 				i.Logger().Error("Failed to re-establish remote session", zap.String("server", i.remote.Server), zap.Error(err))
 				return false
 			}
-			if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
+			if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.path, i.bookmark); err != nil {
 				i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
 				return false
 			}
@@ -308,9 +324,6 @@ func (i *Input) readBatch(ctx context.Context) bool {
 		}
 		if len(events) == n+1 {
 			i.updateBookmarkOffset(ctx, event)
-			if err := i.subscription.bookmark.Update(event); err != nil {
-				i.Logger().Error("Failed to update bookmark from event", zap.Error(err))
-			}
 		}
 		event.Close()
 	}
@@ -399,7 +412,7 @@ func (i *Input) processEventWithRenderingInfo(ctx context.Context, event Event) 
 		return nil
 	}
 
-	publisher, err := i.publisherCache.get(providerName)
+	publisher, err := i.publisherCache.get(providerName, i.path)
 	if err != nil {
 		return multierr.Append(
 			fmt.Errorf("open event source for provider %q: %w", providerName, err),

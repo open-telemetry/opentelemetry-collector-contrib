@@ -1685,6 +1685,150 @@ func TestTranslateV2(t *testing.T) {
 			},
 		},
 		{
+			name: "exponential histogram - stale NaN sum",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Sum:            math.Float64frombits(value.StaleNaN),
+								Timestamp:      1,
+								StartTimestamp: 1,
+								ZeroThreshold:  1,
+								Schema:         -4,
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 1,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetScale(-4)
+				dp.SetZeroThreshold(1)
+				dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+
+				return metrics
+			}(),
+		},
+		{
+			name: "exponential histogram - overflow buckets dropped",
+			// This test case verifies that the bucket with index 1026 is dropped because the limit is 1025 at scale 0 (1024 + 1 for +Inf bucket).
+			// Bucket 1025 is valid (+Inf bucket).
+			// The original count was 50. Bucket 1025 has count 10. Bucket 1026 has count 30 (10 + 20).
+			// Bucket 1026 overflows (> 1025) and is dropped.
+			// The total count is updated to 50 - 30 = 20.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count: &writev2.Histogram_CountInt{
+									CountInt: 50,
+								},
+								Sum:            100,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         0,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1025, Length: 2}},
+								PositiveDeltas: []int64{10, 20},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 1,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetScale(0)
+				dp.SetSum(100)
+				dp.SetCount(20)
+
+				dp.Positive().SetOffset(1024)
+				dp.Positive().BucketCounts().FromRaw([]uint64{10})
+
+				return metrics
+			}(),
+		},
+		{
 			name: "multiple histogram metrics with exemplars",
 			request: &writev2.Request{
 				Symbols: []string{
@@ -2480,6 +2624,117 @@ func TestTranslateV2(t *testing.T) {
 				spanID, _ = hex.DecodeString("fff067aa0ba902ff")
 				copy(sid[:], spanID)
 				ex.SetSpanID(pcommon.SpanID(sid))
+
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Exemplars: 2,
+				Samples:   2,
+				Confirmed: true,
+			},
+		},
+		{
+			// Regression test: exemplars from different label-set variants of the
+			// same counter must be attached to their matching datapoint, not At(0).
+			name: "counter metric with exemplars for multiple label-set variants",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"job", "production/service_a", // 1, 2
+					"instance", "host1", // 3, 4
+					"__name__", "http_requests_total", // 5, 6
+					"status", "200", "500", // 7, 8, 9
+					"trace_id", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // 10, 11
+					"span_id", "aaaaaaaaaaaaaaaa", // 12, 13
+					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", // 14
+					"bbbbbbbbbbbbbbbb", // 15
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						// samples for status=200
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+						Samples:    []writev2.Sample{{Value: 100, Timestamp: 1}},
+					},
+					{
+						// samples for status=500
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 9},
+						Samples:    []writev2.Sample{{Value: 5, Timestamp: 1}},
+					},
+					{
+						// disconnected exemplar for status=200
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+						Exemplars: []writev2.Exemplar{{
+							Value:      100,
+							Timestamp:  1,
+							LabelsRefs: []uint32{10, 11, 12, 13},
+						}},
+					},
+					{
+						// disconnected exemplar for status=500
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 9},
+						Exemplars: []writev2.Exemplar{{
+							Value:      5,
+							Timestamp:  1,
+							LabelsRefs: []uint32{10, 14, 12, 15},
+						}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.namespace", "production")
+				rm.Resource().Attributes().PutStr("service.name", "service_a")
+				rm.Resource().Attributes().PutStr("service.instance.id", "host1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("http_requests_total")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+				sum := m.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sum.SetIsMonotonic(true)
+
+				// datapoint for status=200 must get only trace-A
+				dp200 := sum.DataPoints().AppendEmpty()
+				dp200.SetDoubleValue(100)
+				dp200.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp200.Attributes().PutStr("status", "200")
+				ex200 := dp200.Exemplars().AppendEmpty()
+				ex200.SetDoubleValue(100)
+				ex200.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				traceA, _ := hex.DecodeString("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"[:32])
+				var tidA [16]byte
+				copy(tidA[:], traceA)
+				ex200.SetTraceID(pcommon.TraceID(tidA))
+				spanA, _ := hex.DecodeString("aaaaaaaaaaaaaaaa")
+				var sidA [8]byte
+				copy(sidA[:], spanA)
+				ex200.SetSpanID(pcommon.SpanID(sidA))
+
+				// datapoint for status=500 must get only trace-B
+				dp500 := sum.DataPoints().AppendEmpty()
+				dp500.SetDoubleValue(5)
+				dp500.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp500.Attributes().PutStr("status", "500")
+				ex500 := dp500.Exemplars().AppendEmpty()
+				ex500.SetDoubleValue(5)
+				ex500.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				traceB, _ := hex.DecodeString("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"[:32])
+				var tidB [16]byte
+				copy(tidB[:], traceB)
+				ex500.SetTraceID(pcommon.TraceID(tidB))
+				spanB, _ := hex.DecodeString("bbbbbbbbbbbbbbbb")
+				var sidB [8]byte
+				copy(sidB[:], spanB)
+				ex500.SetSpanID(pcommon.SpanID(sidB))
 
 				return metrics
 			}(),

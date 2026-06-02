@@ -4,18 +4,22 @@
 package spanpruningprocessor
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadatatest"
 )
 
 func TestNewTraces(t *testing.T) {
@@ -401,7 +405,139 @@ func TestLeafSpanPruning_TemplateEventsAndLinksPreserved(t *testing.T) {
 	assert.Equal(t, "template", linkAttr.Str())
 }
 
+func TestAttributeLoss_RecordsMetricsAndSummaryAttributesWhenEnabled(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.EnableAttributeLossAnalysis = true
+	cfg.AttributeLossExemplarSampleRate = 0
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td, _ := createTestTraceWithAttributeLoss(t)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	leafSummary, found := findSummarySpanByName(td, "SELECT")
+	require.True(t, found, "leaf summary span should exist")
+	leafDiverse, exists := leafSummary.Attributes().Get("aggregation.diverse_attributes")
+	require.True(t, exists)
+	assert.Contains(t, leafDiverse.Str(), "db.system(1)")
+	leafMissing, exists := leafSummary.Attributes().Get("aggregation.missing_attributes")
+	require.True(t, exists)
+	assert.Contains(t, leafMissing.Str(), "db.instance(2)")
+
+	parentSummary, found := findSummarySpanByName(td, "handler")
+	require.True(t, found, "parent summary span should exist")
+	parentDiverse, exists := parentSummary.Attributes().Get("aggregation.diverse_attributes")
+	require.True(t, exists)
+	assert.Contains(t, parentDiverse.Str(), "service.instance.id(1)")
+	parentMissing, exists := parentSummary.Attributes().Get("aggregation.missing_attributes")
+	require.True(t, exists)
+	assert.Contains(t, parentMissing.Str(), "handler.version(1)")
+
+	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_leaf_attribute_diversity_loss")
+	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_leaf_attribute_loss")
+	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_parent_attribute_diversity_loss")
+	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_parent_attribute_loss")
+}
+
+func TestAttributeLoss_ExemplarSampling(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.EnableAttributeLossAnalysis = true
+	cfg.AttributeLossExemplarSampleRate = 1
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td, traceID := createTestTraceWithAttributeLoss(t)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assertHistogramHasTraceExemplar(t, tel, "otelcol_processor_spanpruning_leaf_attribute_diversity_loss", traceID)
+	assertHistogramHasTraceExemplar(t, tel, "otelcol_processor_spanpruning_leaf_attribute_loss", traceID)
+	assertHistogramHasTraceExemplar(t, tel, "otelcol_processor_spanpruning_parent_attribute_diversity_loss", traceID)
+	assertHistogramHasTraceExemplar(t, tel, "otelcol_processor_spanpruning_parent_attribute_loss", traceID)
+}
+
+func TestAttributeLoss_DisabledByDefault(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	require.False(t, cfg.EnableAttributeLossAnalysis, "attribute loss analysis should be disabled by default")
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td, _ := createTestTraceWithAttributeLoss(t)
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	leafSummary, found := findSummarySpanByName(td, "SELECT")
+	require.True(t, found, "leaf summary span should exist")
+	_, exists := leafSummary.Attributes().Get("aggregation.diverse_attributes")
+	assert.False(t, exists)
+	_, exists = leafSummary.Attributes().Get("aggregation.missing_attributes")
+	assert.False(t, exists)
+
+	parentSummary, found := findSummarySpanByName(td, "handler")
+	require.True(t, found, "parent summary span should exist")
+	_, exists = parentSummary.Attributes().Get("aggregation.diverse_attributes")
+	assert.False(t, exists)
+	_, exists = parentSummary.Attributes().Get("aggregation.missing_attributes")
+	assert.False(t, exists)
+
+	_, err = tel.GetMetric("otelcol_processor_spanpruning_leaf_attribute_diversity_loss")
+	assert.Error(t, err)
+	_, err = tel.GetMetric("otelcol_processor_spanpruning_leaf_attribute_loss")
+	assert.Error(t, err)
+	_, err = tel.GetMetric("otelcol_processor_spanpruning_parent_attribute_diversity_loss")
+	assert.Error(t, err)
+	_, err = tel.GetMetric("otelcol_processor_spanpruning_parent_attribute_loss")
+	assert.Error(t, err)
+}
+
 // Helper functions
+
+func assertHistogramRecordedOnceWithSum(t *testing.T, tel *componenttest.Telemetry, metricName string) {
+	t.Helper()
+	hist := requireInt64HistogramMetric(t, tel, metricName)
+	require.Len(t, hist.DataPoints, 1, "expected a single data point for %s", metricName)
+	assert.Equal(t, uint64(1), hist.DataPoints[0].Count)
+	assert.Equal(t, int64(1), hist.DataPoints[0].Sum)
+}
+
+func assertHistogramHasTraceExemplar(t *testing.T, tel *componenttest.Telemetry, metricName string, expectedTraceID pcommon.TraceID) {
+	t.Helper()
+	hist := requireInt64HistogramMetric(t, tel, metricName)
+	require.NotEmpty(t, hist.DataPoints)
+	require.NotEmpty(t, hist.DataPoints[0].Exemplars, "expected exemplar on %s", metricName)
+	exemplar := hist.DataPoints[0].Exemplars[0]
+	assert.Equal(t, expectedTraceID[:], exemplar.TraceID)
+	assert.Len(t, exemplar.SpanID, 8)
+}
+
+func requireInt64HistogramMetric(t *testing.T, tel *componenttest.Telemetry, metricName string) metricdata.Histogram[int64] {
+	t.Helper()
+	metric, err := tel.GetMetric(metricName)
+	require.NoError(t, err)
+
+	hist, ok := metric.Data.(metricdata.Histogram[int64])
+	require.True(t, ok, "metric %s should be an int64 histogram", metricName)
+	return hist
+}
 
 func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName string, attrs map[string]string) ptrace.Traces {
 	t.Helper()
@@ -433,6 +569,100 @@ func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName strin
 	}
 
 	return td
+}
+
+func createTestTraceWithAttributeLoss(t *testing.T) (ptrace.Traces, pcommon.TraceID) {
+	t.Helper()
+
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{5, 4, 3, 2, 1, 9, 8, 7, 6, 0, 1, 2, 3, 4, 5, 6})
+	rootID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+	handler1ID := pcommon.SpanID([8]byte{2, 0, 0, 0, 0, 0, 0, 0})
+	handler2ID := pcommon.SpanID([8]byte{3, 0, 0, 0, 0, 0, 0, 0})
+
+	root := ss.Spans().AppendEmpty()
+	root.SetTraceID(traceID)
+	root.SetSpanID(rootID)
+	root.SetName("root")
+	root.SetStartTimestamp(pcommon.Timestamp(1000))
+	root.SetEndTimestamp(pcommon.Timestamp(3000))
+
+	handler1 := ss.Spans().AppendEmpty()
+	handler1.SetTraceID(traceID)
+	handler1.SetSpanID(handler1ID)
+	handler1.SetParentSpanID(rootID)
+	handler1.SetName("handler")
+	handler1.Attributes().PutStr("service.instance.id", "svc-a")
+	handler1.Attributes().PutStr("handler.version", "v1")
+	handler1.SetStartTimestamp(pcommon.Timestamp(1100))
+	handler1.SetEndTimestamp(pcommon.Timestamp(1600))
+
+	handler2 := ss.Spans().AppendEmpty()
+	handler2.SetTraceID(traceID)
+	handler2.SetSpanID(handler2ID)
+	handler2.SetParentSpanID(rootID)
+	handler2.SetName("handler")
+	handler2.Attributes().PutStr("service.instance.id", "svc-b")
+	handler2.SetStartTimestamp(pcommon.Timestamp(1200))
+	handler2.SetEndTimestamp(pcommon.Timestamp(2100))
+
+	leafConfigs := []struct {
+		spanID      pcommon.SpanID
+		parentID    pcommon.SpanID
+		dbSystem    string
+		dbInstance  string
+		start, stop pcommon.Timestamp
+	}{
+		{
+			spanID:     pcommon.SpanID([8]byte{4, 0, 0, 0, 0, 0, 0, 0}),
+			parentID:   handler1ID,
+			dbSystem:   "postgres",
+			dbInstance: "orders-db",
+			start:      pcommon.Timestamp(1200),
+			stop:       pcommon.Timestamp(1350),
+		},
+		{
+			spanID:   pcommon.SpanID([8]byte{4, 1, 0, 0, 0, 0, 0, 0}),
+			parentID: handler1ID,
+			dbSystem: "mysql",
+			start:    pcommon.Timestamp(1250),
+			stop:     pcommon.Timestamp(1400),
+		},
+		{
+			spanID:   pcommon.SpanID([8]byte{5, 0, 0, 0, 0, 0, 0, 0}),
+			parentID: handler2ID,
+			dbSystem: "postgres",
+			start:    pcommon.Timestamp(1300),
+			stop:     pcommon.Timestamp(1900),
+		},
+		{
+			spanID:     pcommon.SpanID([8]byte{5, 1, 0, 0, 0, 0, 0, 0}),
+			parentID:   handler2ID,
+			dbSystem:   "mysql",
+			dbInstance: "users-db",
+			start:      pcommon.Timestamp(1350),
+			stop:       pcommon.Timestamp(1500),
+		},
+	}
+
+	for _, cfg := range leafConfigs {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(cfg.spanID)
+		span.SetParentSpanID(cfg.parentID)
+		span.SetName("SELECT")
+		span.Attributes().PutStr("db.system", cfg.dbSystem)
+		if cfg.dbInstance != "" {
+			span.Attributes().PutStr("db.instance", cfg.dbInstance)
+		}
+		span.SetStartTimestamp(cfg.start)
+		span.SetEndTimestamp(cfg.stop)
+	}
+
+	return td, traceID
 }
 
 func createTestTraceWithNonStringAttributes(t *testing.T) ptrace.Traces {

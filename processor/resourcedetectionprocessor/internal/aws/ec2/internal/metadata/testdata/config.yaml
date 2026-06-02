@@ -19,6 +19,26 @@ all_set:
       enabled: true
     host.type:
       enabled: true
+reaggregate_set:
+  resource_attributes:
+    cloud.account.id:
+      enabled: true
+    cloud.availability_zone:
+      enabled: true
+    cloud.platform:
+      enabled: true
+    cloud.provider:
+      enabled: true
+    cloud.region:
+      enabled: true
+    host.id:
+      enabled: true
+    host.image.id:
+      enabled: true
+    host.name:
+      enabled: true
+    host.type:
+      enabled: true
 none_set:
   resource_attributes:
     cloud.account.id:

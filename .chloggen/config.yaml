@@ -50,21 +50,20 @@ components:
     - exporter/faro
     - exporter/file
     - exporter/google_cloud_storage
-    - exporter/google_secops
     - exporter/googlecloud
     - exporter/googlecloudpubsub
     - exporter/googlemanagedprometheus
     - exporter/honeycomb_marker
     - exporter/influxdb
     - exporter/kafka
-    - exporter/loadbalancing
+    - exporter/load_balancing
     - exporter/logicmonitor
     - exporter/logzio
     - exporter/mezmo
     - exporter/opensearch
     - exporter/otelarrow
     - exporter/prometheus
-    - exporter/prometheusremotewrite
+    - exporter/prometheus_remote_write
     - exporter/pulsar
     - exporter/rabbitmq
     - exporter/sematext
@@ -218,7 +217,7 @@ components:
     - processor/redaction
     - processor/remotetap
     - processor/resource
-    - processor/resourcedetection
+    - processor/resource_detection
     - processor/scalewaydetector
     - processor/schema
     - processor/span
@@ -227,6 +226,7 @@ components:
     - processor/tail_sampling
     - processor/tencentcvmdetector
     - processor/transform
+    - processor/transformprocessor/internal/logparsingfuncs
     - processor/unroll
     - processor/upclouddetector
     - processor/vultrdetector
@@ -237,7 +237,7 @@ components:
     - receiver/active_directory_ds
     - receiver/aerospike
     - receiver/apache
-    - receiver/apachespark
+    - receiver/apache_spark
     - receiver/aws_lambda
     - receiver/awscloudwatch
     - receiver/awscontainerinsightreceiver
@@ -259,7 +259,7 @@ components:
     - receiver/datadog
     - receiver/docker_stats
     - receiver/elasticsearch
-    - receiver/envoyals
+    - receiver/envoy_als
     - receiver/expvar
     - receiver/faro
     - receiver/file_log
@@ -303,7 +303,7 @@ components:
     - receiver/oracledb
     - receiver/osquery
     - receiver/otelarrow
-    - receiver/otlpjsonfile
+    - receiver/otlp_json_file
     - receiver/podman_stats
     - receiver/postgresql
     - receiver/pprof
@@ -340,7 +340,7 @@ components:
     - receiver/vcenter
     - receiver/vcr
     - receiver/wavefront
-    - receiver/webhookevent
+    - receiver/webhook_event
     - receiver/windows_event_log
     - receiver/windowsperfcounters
     - receiver/windowsservice
