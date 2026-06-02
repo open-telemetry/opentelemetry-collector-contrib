@@ -82,7 +82,8 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 				return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s cluster UID: %w", err)
 			}
 			// Warn and skip for backward compatibility: existing deployments may lack kube-system RBAC.
-			d.logger.Warn("no permission to get kube-system namespace, skipping k8s.cluster.uid; grant 'get' on namespaces/kube-system to fix", zap.Error(err))
+			// This will become a hard error in a future release.
+			d.logger.Warn("no permission to get kube-system namespace, skipping k8s.cluster.uid; this will become an error in a future release — disable the attribute or grant 'get' on namespaces/kube-system", zap.Error(err))
 		} else {
 			d.rb.SetK8sClusterUID(clusterUID)
 		}
