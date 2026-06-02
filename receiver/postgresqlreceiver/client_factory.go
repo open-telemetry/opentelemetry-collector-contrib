@@ -13,7 +13,6 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
 type postgreSQLClientFactory interface {
@@ -23,49 +22,6 @@ type postgreSQLClientFactory interface {
 	// password).
 	setCredentialProvider(provider dbauth.Provider)
 	close() error
-}
-
-// newClientFactory selects the pool or default client factory based on the
-// connection-pool feature gate. The credential provider (if any) is resolved from
-// the host extension map later, at scraper Start, and injected via
-// setCredentialProvider — the host is not available at receiver-create time.
-func newClientFactory(cfg *Config) postgreSQLClientFactory {
-	if metadata.ReceiverPostgresqlConnectionPoolFeatureGate.IsEnabled() {
-		return newPoolClientFactory(cfg)
-	}
-	return newDefaultClientFactory(cfg)
-}
-
-// defaultClientFactory creates one PG connection per call
-type defaultClientFactory struct {
-	baseConfig postgreSQLConfig
-}
-
-func newDefaultClientFactory(cfg *Config) *defaultClientFactory {
-	return &defaultClientFactory{
-		baseConfig: postgreSQLConfig{
-			username: cfg.Username,
-			password: string(cfg.Password),
-			address:  cfg.AddrConfig,
-			tls:      cfg.ClientConfig,
-		},
-	}
-}
-
-func (d *defaultClientFactory) setCredentialProvider(provider dbauth.Provider) {
-	d.baseConfig.credentialProvider = provider
-}
-
-func (d *defaultClientFactory) getClient(ctx context.Context, database string) (client, error) {
-	db, err := getDB(ctx, d.baseConfig, database)
-	if err != nil {
-		return nil, err
-	}
-	return &postgreSQLClient{client: db, closeFn: db.Close}, nil
-}
-
-func (*defaultClientFactory) close() error {
-	return nil
 }
 
 // poolClientFactory creates one PG connection per database, keeping a pool of connections
