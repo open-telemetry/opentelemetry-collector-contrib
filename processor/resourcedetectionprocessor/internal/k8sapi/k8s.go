@@ -78,12 +78,11 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if d.ra.K8sClusterUID.Enabled {
 		clusterUID, err := d.provider.ClusterUID(ctx)
 		if err != nil {
-			if k8serrors.IsForbidden(err) || k8serrors.IsUnauthorized(err) {
-				// Warn and skip for backward compatibility: existing deployments may lack kube-system RBAC.
-				d.logger.Warn("no permission to get kube-system namespace, skipping k8s.cluster.uid; grant 'get' on namespaces/kube-system to fix", zap.Error(err))
-			} else {
+			if !(k8serrors.IsForbidden(err) || k8serrors.IsUnauthorized(err)) {
 				return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s cluster UID: %w", err)
 			}
+			// Warn and skip for backward compatibility: existing deployments may lack kube-system RBAC.
+			d.logger.Warn("no permission to get kube-system namespace, skipping k8s.cluster.uid; grant 'get' on namespaces/kube-system to fix", zap.Error(err))
 		} else {
 			d.rb.SetK8sClusterUID(clusterUID)
 		}
