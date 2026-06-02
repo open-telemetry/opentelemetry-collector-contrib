@@ -2,18 +2,20 @@
 set -euo pipefail
 
 # ======================================================================================
-# Runs one shard of the build-and-test-experimental "exp-checks" matrix.
+# Runs one shard of the build-and-test "checks" matrix.
 #
-# The original `checks` job in build-and-test.yml runs 18 codegen + validation
-# targets serially. Splitting them into matrix shards lets a fresh runner
-# handle each subset so the file-modifying targets (goporto, gogci, gotidy,
-# crosslink, generate) don't share a working tree.
+# The `checks` job runs codegen + validation targets split into matrix shards
+# so file-modifying targets (goporto, gogci, gotidy, crosslink, generate)
+# don't share a working tree.
 #
 # Usage:
 #   ./run-checks-shard.sh <shard-name>
 #
 # Shards:
-#   codegen                -- `make generate` + git-clean check
+#   codegen-<group>        -- `make generate GROUP=<group>` + git-clean check.
+#                             <group> is one of the standard module groups
+#                             (receiver-0, processor-1, exporter-2, extension,
+#                             connector, internal, pkg, cmd-0, other, ...).
 #   porto-and-gci          -- goporto + gogci (both write to source files)
 #   go-mod-hygiene         -- crosslink + tidylist + gotidy (all touch go.mod/go.sum)
 #   small-generators       -- gendistributions + genlabels + gencodecov
@@ -35,10 +37,11 @@ fi
 shard="$1"
 
 case "${shard}" in
-  codegen)
-    make generate
+  codegen-*)
+    group="${shard#codegen-}"
+    make generate GROUP="${group}"
     if [[ -n $(git status -s) ]]; then
-      echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.'
+      echo "Generated code is out of date for group '${group}', please run \"make generate\" and commit the changes in this PR."
       exit 1
     fi
     ;;
@@ -81,7 +84,7 @@ case "${shard}" in
     ;;
   *)
     echo "Unknown shard: ${shard}" >&2
-    echo "Known shards: codegen porto-and-gci go-mod-hygiene small-generators schemas-and-templates read-only-checks" >&2
+    echo "Known shards: codegen-<group> porto-and-gci go-mod-hygiene small-generators schemas-and-templates read-only-checks" >&2
     exit 2
     ;;
 esac

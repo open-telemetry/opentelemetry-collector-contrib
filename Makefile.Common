@@ -257,9 +257,13 @@ mdatagen:
 .PHONY: generate
 generate:
 ifeq ($(CURDIR),$(SRC_ROOT))
+ifeq ($(GROUP),)
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
 	$(MAKE) gogci
+else
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET=generate
+endif
 else
 	$(GOCMD) generate ./...
 	$(MAKE) fmt
@@ -299,9 +303,9 @@ govulncheck:
 
 .PHONY: modernize
 modernize:
-	$(MODERNIZE) -fix -test -tags integration -v -any -fmtappendf -forvar -mapsloop -minmax -newexpr \
+	$(MODERNIZE) -fix -test -tags integration -v -any -atomictypes -embedlit -errorsastype -forvar -mapsloop -minmax -newexpr \
 		-omitzero -plusbuild \
-		-rangeint -reflecttypefor -slicescontains -slicessort -stditerators -stringscut \
+		-rangeint -reflecttypefor -slicesbackward -slicescontains -slicessort -stditerators -stringscut \
 		-stringscutprefix -stringsseq -stringsbuilder -testingcontext -unsafefuncs -waitgroupgo ./...
 
 .PHONY: tidy
