@@ -32,6 +32,7 @@ const (
 type xrayReceiver struct {
 	poller   udppoller.Poller
 	server   proxy.Server
+	proxyCfg *proxy.Config
 	settings receiver.Settings
 	consumer consumer.Traces
 	obsrecv  *receiverhelper.ObsReport
@@ -56,11 +57,6 @@ func newReceiver(config *Config,
 	set.Logger.Info("Listening on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
 
-	srv, err := proxy.NewServer(config.ProxyServer, set.Logger)
-	if err != nil {
-		return nil, err
-	}
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              udppoller.Transport,
@@ -72,7 +68,7 @@ func newReceiver(config *Config,
 
 	return &xrayReceiver{
 		poller:   poller,
-		server:   srv,
+		proxyCfg: config.ProxyServer,
 		settings: set,
 		consumer: consumer,
 		obsrecv:  obsrecv,
@@ -80,7 +76,12 @@ func newReceiver(config *Config,
 	}, nil
 }
 
-func (x *xrayReceiver) Start(ctx context.Context, _ component.Host) error {
+func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
+	srv, err := proxy.NewServer(x.proxyCfg, host, x.settings.TelemetrySettings)
+	if err != nil {
+		return err
+	}
+	x.server = srv
 	// TODO: Might want to pass `host` into read() below to report a fatal error
 	x.poller.Start(ctx)
 	go x.start()

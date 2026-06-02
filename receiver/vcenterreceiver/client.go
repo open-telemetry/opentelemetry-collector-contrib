@@ -10,6 +10,7 @@ import (
 	"maps"
 	"net/url"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -326,39 +327,56 @@ func (vc *vcenterClient) PerfMetricsQuery(
 		return &perfMetricsQueryResult{}, nil
 	}
 	vc.pm.Sort = true
-	sample, err := vc.pm.SampleByName(ctx, spec, names, objs)
-	if err != nil {
-		resultsByRef := map[string]*performance.EntityMetric{}
-		for _, obj := range objs {
-			singleSample, singleErr := vc.pm.SampleByName(ctx, spec, names, []vt.ManagedObjectReference{obj})
-			if singleErr != nil {
-				continue
-			}
-
-			singleResult, singleErr := vc.pm.ToMetricSeries(ctx, singleSample)
-			if singleErr != nil {
-				continue
-			}
-
-			for i := range singleResult {
-				resultsByRef[singleResult[i].Entity.Value] = &singleResult[i]
-			}
-		}
-
-		return &perfMetricsQueryResult{resultsByRef: resultsByRef}, nil
-	}
-	result, err := vc.pm.ToMetricSeries(ctx, sample)
-	if err != nil {
-		return nil, err
+	batchSize := vc.batchSizeForMetrics(len(names))
+	if batchSize <= 0 || batchSize >= len(objs) {
+		batchSize = max(len(objs), 1)
 	}
 
 	resultsByRef := map[string]*performance.EntityMetric{}
-	for i := range result {
-		resultsByRef[result[i].Entity.Value] = &result[i]
+	for batch := range slices.Chunk(objs, batchSize) {
+		sample, err := vc.pm.SampleByName(ctx, spec, names, batch)
+		if err != nil {
+			for _, obj := range batch {
+				singleSample, singleErr := vc.pm.SampleByName(ctx, spec, names, []vt.ManagedObjectReference{obj})
+				if singleErr != nil {
+					continue
+				}
+
+				singleResult, singleErr := vc.pm.ToMetricSeries(ctx, singleSample)
+				if singleErr != nil {
+					continue
+				}
+
+				for i := range singleResult {
+					resultsByRef[singleResult[i].Entity.Value] = &singleResult[i]
+				}
+			}
+			continue
+		}
+		result, err := vc.pm.ToMetricSeries(ctx, sample)
+		if err != nil {
+			return nil, err
+		}
+
+		for i := range result {
+			resultsByRef[result[i].Entity.Value] = &result[i]
+		}
 	}
+
 	return &perfMetricsQueryResult{
 		resultsByRef: resultsByRef,
 	}, nil
+}
+
+func (vc *vcenterClient) batchSizeForMetrics(numMetrics int) int {
+	if vc.cfg == nil {
+		return 0
+	}
+	limit := vc.cfg.MaxQueryMetrics
+	if limit <= 0 || numMetrics == 0 {
+		return 0
+	}
+	return limit / numMetrics
 }
 
 // vSANQueryResults contains all returned vSAN metric related data

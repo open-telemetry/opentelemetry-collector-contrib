@@ -242,6 +242,42 @@ func TestPerfMetricsQuery_FallbackOnBatchError(t *testing.T) {
 	}, esx)
 }
 
+func TestPerfMetricsQueryBatching(t *testing.T) {
+	vpx := simulator.VPX()
+	vpx.Host = 10
+	simulator.Test(func(ctx context.Context, c *vim25.Client) {
+		pm := performance.NewManager(c)
+		m := view.NewManager(c)
+		finder := find.NewFinder(c)
+		client := vcenterClient{
+			vimDriver: c,
+			vm:        m,
+			pm:        pm,
+			finder:    finder,
+			cfg: &Config{
+				MaxQueryMetrics: len(hostPerfMetricList) * 3,
+			},
+		}
+
+		dc, err := finder.DefaultDatacenter(ctx)
+		require.NoError(t, err)
+
+		hss, err := client.HostSystems(ctx, dc.Reference())
+		require.NoError(t, err)
+		require.NotEmpty(t, hss)
+
+		var refs []types.ManagedObjectReference
+		for _, hs := range hss {
+			refs = append(refs, hs.Reference())
+		}
+
+		spec := types.PerfQuerySpec{Format: string(types.PerfFormatNormal), IntervalId: int32(20)}
+		metrics, err := client.PerfMetricsQuery(ctx, spec, hostPerfMetricList, refs)
+		require.NoError(t, err)
+		require.Len(t, metrics.resultsByRef, len(hss))
+	}, vpx)
+}
+
 func TestDatacenterInventoryListObjects(t *testing.T) {
 	vpx := simulator.VPX()
 	vpx.Datacenter = 2
