@@ -204,15 +204,16 @@ func TestBasicAuth_ServerInvalid(t *testing.T) {
 
 func TestPerRPCAuth(t *testing.T) {
 	t.Parallel()
-	client := &basicAuthClient{
+	ext := &basicAuthClient{
 		clientAuth: &ClientAuthSettings{
 			Username: "username",
 			Password: "passwordxxx",
 		},
 	}
-	require.NoError(t, client.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 
-	rpcAuth := &perRPCAuth{client: client}
+	rpcAuth, err := ext.PerRPCCredentials()
+	require.NoError(t, err)
 	md, err := rpcAuth.GetRequestMetadata(t.Context())
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]string{

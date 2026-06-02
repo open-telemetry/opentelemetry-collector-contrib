@@ -17,7 +17,7 @@ import (
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,6 +54,7 @@ type WatchClient struct {
 	waitForMetadata        bool
 	waitForMetadataTimeout time.Duration
 	watchSyncPeriod        time.Duration
+	podDeleteGracePeriod   time.Duration
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
@@ -135,6 +136,7 @@ func New(
 	waitForMetadata bool,
 	waitForMetadataTimeout time.Duration,
 	watchSyncPeriod time.Duration,
+	podDeleteGracePeriod time.Duration,
 ) (Client, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
@@ -153,6 +155,7 @@ func New(
 		waitForMetadata:        waitForMetadata,
 		waitForMetadataTimeout: waitForMetadataTimeout,
 		watchSyncPeriod:        watchSyncPeriod,
+		podDeleteGracePeriod:   podDeleteGracePeriod,
 	}
 
 	c.Pods = map[PodIdentifier]*Pod{}
@@ -272,7 +275,7 @@ func New(
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
 	// Start the delete loop for cleaning up old pods from cache
-	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
+	go c.deleteLoop(time.Second*30, c.podDeleteGracePeriod)
 
 	synced := make([]cache.InformerSynced, 0)
 	// start the replicaSet informer first, as the replica sets need to be
