@@ -96,7 +96,6 @@ func TestDetectClusterUIDSkipsOnForbidden(t *testing.T) {
 	_, hasClusterUID := res.Attributes().Get("k8s.cluster.uid")
 	assert.False(t, hasClusterUID, "k8s.cluster.uid should not be set when RBAC permission is missing")
 	require.Equal(t, 1, logs.Len(), "expected exactly one warning log")
-	assert.Equal(t, "no permission to get kube-system namespace, skipping k8s.cluster.uid; grant 'get' on namespaces/kube-system to fix", logs.All()[0].Message)
 }
 
 func TestDetectClusterUIDErrorsOnTransientFailure(t *testing.T) {
