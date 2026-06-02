@@ -196,7 +196,7 @@ linters:
 
             # Block AWS SDK v1 to prevent new usage while migration to v2 is in progress.
             # See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
-            - pkg: github.com/aws/aws-sdk-go$
+            - pkg: github.com/aws/aws-sdk-go/
               desc: "Use github.com/aws/aws-sdk-go-v2 instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699"
 
         semconv:
