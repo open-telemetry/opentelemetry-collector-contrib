@@ -4,7 +4,6 @@
 package sentryexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -149,7 +148,7 @@ func TestSentryClient_EscapesPathSegments(t *testing.T) {
 
 	segments := func(escapedPath string) []string {
 		var out []string
-		for _, p := range strings.Split(escapedPath, "/") {
+		for p := range strings.SplitSeq(escapedPath, "/") {
 			if p != "" {
 				out = append(out, p)
 			}
@@ -163,7 +162,7 @@ func TestSentryClient_EscapesPathSegments(t *testing.T) {
 		defer srv.Close()
 
 		c := newSentryClientImpl(srv.URL, "tok", srv.Client())
-		_, err := c.GetAllProjects(context.Background(), "../../evil")
+		_, err := c.GetAllProjects(t.Context(), "../../evil")
 		require.NoError(t, err)
 
 		assert.Equal(t,
@@ -179,7 +178,7 @@ func TestSentryClient_EscapesPathSegments(t *testing.T) {
 		defer srv.Close()
 
 		c := newSentryClientImpl(srv.URL, "tok", srv.Client())
-		_, err := c.GetProjectKeys(context.Background(), "victim", "../../organizations/foo/members")
+		_, err := c.GetProjectKeys(t.Context(), "victim", "../../organizations/foo/members")
 		require.NoError(t, err)
 
 		got := segments(*seen)
@@ -196,7 +195,7 @@ func TestSentryClient_EscapesPathSegments(t *testing.T) {
 		defer srv.Close()
 
 		c := newSentryClientImpl(srv.URL, "tok", srv.Client())
-		_, err := c.GetOrgProjectKeys(context.Background(), "../escape")
+		_, err := c.GetOrgProjectKeys(t.Context(), "../escape")
 		require.NoError(t, err)
 
 		assert.Equal(t,
