@@ -12,5 +12,15 @@ status:
     active: [carsonip, jmacd, axw]
 
 tests:
-  config:
-    directory: /tmp/pebble-tail-storage
+  # The lifecycle test starts then re-starts the extension on the same
+  # directory; that conflicts with the ErrorIfExists Pebble option set in
+  # pebble.go (covered by TestStartErrorsIfDBExists in storage_test.go).
+  skip_lifecycle: true
+  goleak:
+    ignore:
+      # Pebble's diskHealthCheckingFS is set up inside pebble.Open and is not
+      # reliably torn down when Open fails (e.g. when ErrorIfExists triggers),
+      # so the ticker goroutine outlives the failed Open call. Ignore it here
+      # rather than reach into pebble internals.
+      top:
+        - github.com/cockroachdb/pebble/v2/vfs.(*diskHealthCheckingFS).startTickerLocked.func1

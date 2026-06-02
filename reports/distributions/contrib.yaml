@@ -8,8 +8,8 @@ components:
         - exceptions
         - failover
         - grafanacloud
-        - otlpjson
-        - roundrobin
+        - otlp_json
+        - round_robin
         - routing
         - service_graph
         - signal_to_metrics
@@ -25,7 +25,7 @@ components:
         - azure_blob
         - azuredataexplorer
         - azuremonitor
-        - bmchelix
+        - bmc_helix
         - cassandra
         - clickhouse
         - coralogix
@@ -42,14 +42,14 @@ components:
         - honeycomb_marker
         - influxdb
         - kafka
-        - loadbalancing
+        - load_balancing
         - logicmonitor
         - logzio
         - mezmo
         - opensearch
         - otelarrow
         - prometheus
-        - prometheusremotewrite
+        - prometheus_remote_write
         - pulsar
         - rabbitmq
         - sentry
@@ -106,6 +106,7 @@ components:
         - deltatorate
         - drain
         - filter
+        - gen_ai_normalizer
         - geoip
         - groupbyattrs
         - groupbytrace
@@ -114,13 +115,14 @@ components:
         - k8s_attributes
         - log_dedup
         - metric_start_time
+        - metrics_transform
         - metricsgeneration
-        - metricstransform
         - probabilistic_sampler
         - redaction
         - remotetap
         - resource
-        - resourcedetection
+        - resource_detection
+        - schema
         - span
         - spanpruning
         - sumologic
@@ -136,12 +138,12 @@ components:
         - active_directory_ds
         - aerospike
         - apache
-        - apachespark
+        - apache_spark
+        - aws_lambda
         - awscloudwatch
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
-        - awslambda
         - awss3
         - awsxray
         - azure_blob
@@ -150,14 +152,14 @@ components:
         - carbon
         - chrony
         - cisco_os
+        - cloud_foundry
         - cloudflare
-        - cloudfoundry
         - collectd
         - couchdb
         - datadog
         - docker_stats
         - elasticsearch
-        - envoyals
+        - envoy_als
         - expvar
         - faro
         - file_log
@@ -166,9 +168,9 @@ components:
         - fluent_forward
         - github
         - gitlab
+        - google_cloud_spanner
         - googlecloudmonitoring
         - googlecloudpubsub
-        - googlecloudspanner
         - haproxy
         - host_metrics
         - http_check
@@ -181,8 +183,8 @@ components:
         - k8s_events
         - k8s_objects
         - kafka
-        - kafkametrics
-        - kubeletstats
+        - kafka_metrics
+        - kubelet_stats
         - libhoney
         - loki
         - macos_unified_logging
@@ -197,7 +199,7 @@ components:
         - ntp
         - oracledb
         - otelarrow
-        - otlpjsonfile
+        - otlp_json_file
         - podman_stats
         - postgresql
         - pprof
@@ -226,13 +228,13 @@ components:
         - stef
         - syslog
         - systemd
+        - tcp_check
         - tcp_log
-        - tcpcheck
         - tls_check
         - udp_log
         - vcenter
         - wavefront
-        - webhookevent
+        - webhook_event
         - windows_event_log
         - windowsperfcounters
         - windowsservice

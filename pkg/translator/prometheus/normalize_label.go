@@ -7,15 +7,10 @@ import (
 	"strings"
 	"unicode"
 
-	"go.opentelemetry.io/collector/featuregate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus/internal/metadata"
 )
 
-var DropSanitizationGate = featuregate.GlobalRegistry().MustRegister(
-	"pkg.translator.prometheus.PermissiveLabelSanitization",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950"),
-)
+var DropSanitizationGate = metadata.PkgTranslatorPrometheusPermissiveLabelSanitizationFeatureGate
 
 // Normalizes the specified label to follow Prometheus label names standard
 //
