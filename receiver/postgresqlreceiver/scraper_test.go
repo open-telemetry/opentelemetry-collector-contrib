@@ -37,7 +37,9 @@ func TestUnsuccessfulScrape(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "fake:11111"
 
-	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	clientFactory := newPoolClientFactory(cfg)
+	defer clientFactory.close()
+	scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, clientFactory, newCache(1), newTTLCache[string](1, time.Second))
 
 	actualMetrics, err := scraper.scrape(t.Context())
 	require.Error(t, err)

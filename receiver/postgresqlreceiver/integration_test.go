@@ -221,7 +221,8 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 			return cfg
 		}(),
 	}
-	clientFactory := newDefaultClientFactory(&cfg)
+	clientFactory := newPoolClientFactory(&cfg)
+	defer clientFactory.close()
 
 	ns := newPostgreSQLScraper(receiver.Settings{
 		TelemetrySettings: component.TelemetrySettings{
