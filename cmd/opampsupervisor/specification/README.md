@@ -186,6 +186,15 @@ agent:
   # OpAmp extension will connect to
   opamp_server_port:
 
+  # Optional configuration for how collector executable updates are identified
+  # and verified. The archive format is not configured here; the supervisor
+  # detects it from the download URL and Content-Type header.
+  # NOTE: This functionality is not yet fully implemented.
+  package:
+    # Name of the collector binary as it appears inside the archive the supervisor
+    # downloads. Used to locate the binary in archives that bundle multiple files.
+    agent_binary: "otelcol-contrib"
+
   # List of paths to fallback configuration files to use when the OpAMP server is
   # unreachable. If more than one path is specified, they are merged in order.
   # Together, these must be complete, standalone Collector configuration.

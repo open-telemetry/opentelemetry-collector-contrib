@@ -1119,6 +1119,8 @@ agent:
   passthrough_logs: true
   automatic_config_rollback: true
   collector_crash_log_snippet_kib: 100
+  package:
+    agent_binary: custom-otelcol
 
 telemetry:
   logs:
@@ -1170,7 +1172,10 @@ telemetry:
 						CollectorCrashLogSnippetKiB: 100,
 						AutomaticConfigRollback:     true,
 						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
-						Package:                     DefaultSupervisor().Agent.Package,
+						Package: AgentPackage{
+							AgentBinary: "custom-otelcol",
+							Verifier:    DefaultSupervisor().Agent.Package.Verifier,
+						},
 					},
 					Telemetry: Telemetry{
 						Logs: Logs{
