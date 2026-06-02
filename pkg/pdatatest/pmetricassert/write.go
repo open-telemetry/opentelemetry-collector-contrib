@@ -47,28 +47,5 @@ func WriteAssertionFile(tb testing.TB, path string, actual pmetric.Metrics, opts
 	if err != nil {
 		return err
 	}
-	if !o.includeValues {
-		maskValues(doc)
-	}
 	return writeDocument(path, doc)
-}
-
-func maskValues(doc *document) {
-	for i := range doc.Resources {
-		for j := range doc.Resources[i].Scopes {
-			for k := range doc.Resources[i].Scopes[j].Metrics {
-				m := &doc.Resources[i].Scopes[j].Metrics[k]
-				for l := range m.Datapoints {
-					dp := &m.Datapoints[l]
-					dp.Value = nil
-					dp.Count = nil
-					dp.Sum = nil
-					dp.ExplicitBounds = nil
-					dp.BucketCounts = nil
-					dp.Min = nil
-					dp.Max = nil
-				}
-			}
-		}
-	}
 }

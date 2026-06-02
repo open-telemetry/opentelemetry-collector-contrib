@@ -84,26 +84,28 @@ func normalize(m pmetric.Metrics, opts writeOptions) (*document, error) {
 						continue
 					}
 					dp := datapointAssertion{Attributes: raw}
-					if opts.includeValues && extDP.value != nil {
-						dp.Value = extDP.value
-					}
-					if extDP.count != nil {
-						dp.Count = extDP.count
-					}
-					if extDP.sum != nil {
-						dp.Sum = extDP.sum
-					}
-					if extDP.minVal != nil {
-						dp.Min = extDP.minVal
-					}
-					if extDP.maxVal != nil {
-						dp.Max = extDP.maxVal
-					}
-					if extDP.explicitBounds != nil {
-						dp.ExplicitBounds = extDP.explicitBounds
-					}
-					if extDP.bucketCounts != nil {
-						dp.BucketCounts = extDP.bucketCounts
+					if opts.includeValues {
+						if extDP.value != nil {
+							dp.Value = extDP.value
+						}
+						if extDP.count != nil {
+							dp.Count = extDP.count
+						}
+						if extDP.sum != nil {
+							dp.Sum = extDP.sum
+						}
+						if extDP.minVal != nil {
+							dp.Min = extDP.minVal
+						}
+						if extDP.maxVal != nil {
+							dp.Max = extDP.maxVal
+						}
+						if extDP.explicitBounds != nil {
+							dp.ExplicitBounds = extDP.explicitBounds
+						}
+						if extDP.bucketCounts != nil {
+							dp.BucketCounts = extDP.bucketCounts
+						}
 					}
 					mAgg.datapoints[key] = dp
 				}
