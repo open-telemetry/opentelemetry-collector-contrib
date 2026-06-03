@@ -72,7 +72,7 @@ func (s *consumerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, err
 
 	lgs, err := s.adm.ListGroupsByType(ctx, []string{"classic", "consumer"})
 	if err != nil {
-		return pmetric.Metrics{}, fmt.Errorf("franz-go: ListGroups failed: %w", err)
+		return pmetric.Metrics{}, fmt.Errorf("franz-go: ListGroupsByType failed: %w", err)
 	}
 
 	var matchedGrpIDs []string
@@ -117,13 +117,9 @@ func (s *consumerScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, err
 				if gml.Commit.At != -1 {
 					isConsumed = true
 					offsetSum += gml.Commit.At
+					lagSum += gml.Lag // franz-go clamps Lag to >= 0 and only returns Lag == -1 when gml.Err != nil
 					s.mb.RecordKafkaConsumerGroupOffsetDataPoint(now, gml.Commit.At, group, topic, int64(partition))
-					if gml.Lag <= 0 {
-						s.mb.RecordKafkaConsumerGroupLagDataPoint(now, 0, group, topic, int64(partition))
-					} else {
-						lagSum += gml.Lag
-						s.mb.RecordKafkaConsumerGroupLagDataPoint(now, gml.Lag, group, topic, int64(partition))
-					}
+					s.mb.RecordKafkaConsumerGroupLagDataPoint(now, gml.Lag, group, topic, int64(partition))
 				}
 			}
 			if isConsumed {
