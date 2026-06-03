@@ -49,7 +49,6 @@ The following settings are available:
 The routing connector supports OTTL context inference, allowing you to write clearer and more maintainable routing conditions using context-qualified paths. This is the recommended approach for specifying routing conditions.
 
 ```yaml
-# Recommended: Use context-qualified paths for clarity
 - condition: resource.attributes["env"] == "prod"
   pipelines: [logs/prod]
 - condition: span.attributes["http.method"] == "GET"
@@ -428,7 +427,6 @@ routing:
   match_once: true
   default_pipelines: [ logs/default ]
   table:
-    - condition: attributes["region"] == "west"
     - condition: resource.attributes["env"] == "prod"
       pipelines: [ logs/prod ]
     - condition: resource.attributes["env"] == "dev"

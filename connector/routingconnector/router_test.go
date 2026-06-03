@@ -129,6 +129,48 @@ func TestContextInference(t *testing.T) {
 			context:         "datapoint",
 			expectedContext: "datapoint",
 		},
+		{
+			name:            "otelcol/log signal with qualified paths infers otelcol",
+			condition:       `otelcol.client.metadata["foo"][0] == "bar"`,
+			signal:          pipeline.SignalLogs,
+			context:         "",
+			expectedContext: "otelcol",
+		},
+		{
+			name:            "otelcol/log signal with explicit context overrides inference",
+			condition:       `client.metadata["foo"][0] == "bar"`,
+			signal:          pipeline.SignalLogs,
+			context:         "otelcol",
+			expectedContext: "otelcol",
+		},
+		{
+			name:            "otelcol/metric signal with qualified paths infers otelcol",
+			condition:       `otelcol.client.metadata["foo"][0] == "bar"`,
+			signal:          pipeline.SignalMetrics,
+			context:         "",
+			expectedContext: "otelcol",
+		},
+		{
+			name:            "otelcol/metric signal with explicit context overrides inference",
+			condition:       `client.metadata["foo"][0] == "bar"`,
+			signal:          pipeline.SignalMetrics,
+			context:         "otelcol",
+			expectedContext: "otelcol",
+		},
+		{
+			name:            "otelcol/trace signal with qualified paths infers otelcol",
+			condition:       `otelcol.client.metadata["foo"][0] == "bar"`,
+			signal:          pipeline.SignalTraces,
+			context:         "",
+			expectedContext: "otelcol",
+		},
+		{
+			name:            "otelcol/trace signal with explicit context overrides inference",
+			condition:       `client.metadata["foo"][0] == "bar"`,
+			signal:          pipeline.SignalTraces,
+			context:         "otelcol",
+			expectedContext: "otelcol",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -160,42 +202,7 @@ func TestRequestContextCannotBeInferred(t *testing.T) {
 	_, err := newRouter(routeTable, nil,
 		func(...pipeline.ID) (consumer.Logs, error) { return sink, nil },
 		componenttest.NewNopTelemetrySettings())
-	require.Error(t, err)
-}
-
-func TestOtelcolPathsParseWithExplicitContext(t *testing.T) {
-	// otelcol.* paths require explicit context — verify they parse correctly.
-	// Context inference does not work for otelcol.* paths (the OTTL inferrer
-	// sees "otelcol" as a context prefix but it is not a registered context).
-	testCases := []struct {
-		name      string
-		condition string
-	}{
-		{
-			name:      "otelcol.client.metadata",
-			condition: `otelcol.client.metadata["X-Tenant"][0] == "acme"`,
-		},
-		{
-			name:      "otelcol.grpc.metadata",
-			condition: `otelcol.grpc.metadata["x-tenant"][0] == "acme"`,
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			routeTable := []RoutingTableItem{{
-				Context:   "resource",
-				Condition: tc.condition,
-				Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalLogs, "test")},
-			}}
-			sink := new(consumertest.LogsSink)
-			router, err := newRouter(routeTable, nil,
-				func(...pipeline.ID) (consumer.Logs, error) { return sink, nil },
-				componenttest.NewNopTelemetrySettings())
-			require.NoError(t, err)
-			require.Len(t, router.routeSlice, 1)
-			assert.Equal(t, "resource", router.routeSlice[0].statementContext)
-		})
-	}
+	require.ErrorContains(t, err, `segment "request" from path "resource.request[X-Tenant]" is not a valid path`)
 }
 
 func TestRequestContextDeprecationWarning(t *testing.T) {
