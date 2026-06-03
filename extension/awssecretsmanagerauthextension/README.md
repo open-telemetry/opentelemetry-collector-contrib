@@ -94,6 +94,127 @@ has appropriate IAM permissions:
 }
 ```
 
+## Architecture
+
+### Client Mode (Outbound Authentication)
+
+```
+OTel Collector       Auth Extension       AWS Provider        AWS Secrets Manager     Exporter        Backend
+(startup)            (client mode)        (refresh loop)      (API)                   (HTTP/gRPC)     (destination)
+     │                    │                    │                    │                    │                │
+     │  CreateExtension   │                    │                    │                    │                │
+     │───────────────────▶│                    │                    │                    │                │
+     │                    │  NewProvider        │                    │                    │                │
+     │                    │───────────────────▶│                    │                    │                │
+     │  Start             │                    │                    │                    │                │
+     │───────────────────▶│                    │                    │                    │                │
+     │                    │  Start             │                    │                    │                │
+     │                    │───────────────────▶│                    │                    │                │
+     │                    │                    │  GetSecretValue    │                    │                │
+     │                    │                    │───────────────────▶│                    │                │
+     │                    │                    │◀───────────────────│                    │                │
+     │                    │                    │  (parse JSON:      │                    │                │
+     │                    │                    │   username_key,    │                    │                │
+     │                    │                    │   password_key)    │                    │                │
+     │                    │  FetchFunc(creds)  │                    │                    │                │
+     │                    │◀───────────────────│                    │                    │                │
+     │                    │  atomic.Store      │                    │                    │                │
+     │                    │───────────────────▶│                    │                    │                │
+     │                    │                    │  StartTicker(5m)   │                    │                │
+     │                    │                    │─────────┐          │                    │                │
+     │                    │                    │◀────────┘          │                    │                │
+     │                    │                    │                    │                    │                │
+     │                    │                    │                    │  SendData          │                │
+     │                    │                    │                    │◀───────────────────│                │
+     │                    │  RoundTripper()    │                    │                    │                │
+     │                    │◀─────────────────────────────────────────────────────────────│                │
+     │                    │  Username/Password │                    │                    │                │
+     │                    │  (atomic.Load)     │                    │                    │                │
+     │                    │─────────────────────────────────────────────────────────────▶│                │
+     │                    │                    │                    │                    │  HTTP+BasicAuth│
+     │                    │                    │                    │                    │───────────────▶│
+     │                    │                    │                    │                    │◀───────────────│
+     │                    │                    │                    │                    │                │
+     │                    │                    │  ── REFRESH ──     │                    │                │
+     │                    │                    │  (ticker fires)    │                    │                │
+     │                    │                    │  GetSecretValue    │                    │                │
+     │                    │                    │───────────────────▶│                    │                │
+     │                    │                    │◀───────────────────│                    │                │
+     │                    │  FetchFunc(new)    │                    │                    │                │
+     │                    │◀───────────────────│                    │                    │                │
+     │                    │  atomic.Store      │                    │                    │                │
+     │                    │───────────────────▶│                    │                    │                │
+```
+
+### Server Mode (Inbound Authentication)
+
+```
+Client/Agent         OTel Receiver        Auth Extension       AWS Provider        AWS Secrets Manager
+(sending data)       (HTTP/gRPC)          (server mode)        (refresh loop)      (API)
+     │                    │                    │                    │                    │
+     │                    │                    │  Start             │                    │
+     │                    │                    │───────────────────▶│                    │
+     │                    │                    │                    │  GetSecretValue    │
+     │                    │                    │                    │───────────────────▶│
+     │                    │                    │                    │◀───────────────────│
+     │                    │                    │                    │  (parse htpasswd   │
+     │                    │                    │                    │   or JSON+value_key)│
+     │                    │                    │  FetchFunc(matcher)│                    │
+     │                    │                    │◀───────────────────│                    │
+     │                    │                    │  atomic.Store      │                    │
+     │                    │                    │  (matchFunc)       │                    │
+     │                    │                    │                    │  StartTicker(5m)   │
+     │                    │                    │                    │─────────┐          │
+     │                    │                    │                    │◀────────┘          │
+     │                    │                    │                    │                    │
+     │  OTLP + BasicAuth  │                    │                    │                    │
+     │───────────────────▶│                    │                    │                    │
+     │                    │  Authenticate(ctx) │                    │                    │
+     │                    │───────────────────▶│                    │                    │
+     │                    │                    │  atomic.Load       │                    │
+     │                    │                    │  matchFunc(u, p)   │                    │
+     │                    │                    │─────────┐          │                    │
+     │                    │                    │◀────────┘          │                    │
+     │                    │  ctx + AuthData    │                    │                    │
+     │                    │◀───────────────────│                    │                    │
+     │  200 OK            │                    │                    │                    │
+     │◀───────────────────│                    │                    │                    │
+     │                    │                    │                    │                    │
+     │  OTLP + BadAuth    │                    │                    │                    │
+     │───────────────────▶│                    │                    │                    │
+     │                    │  Authenticate(ctx) │                    │                    │
+     │                    │───────────────────▶│                    │                    │
+     │                    │                    │  matchFunc(u, p)   │                    │
+     │                    │                    │  → NO MATCH        │                    │
+     │                    │  401 Unauthorized  │                    │                    │
+     │                    │◀───────────────────│                    │                    │
+     │  401 Unauthorized  │                    │                    │                    │
+     │◀───────────────────│                    │                    │                    │
+```
+
+### Config Provider Flow (Configuration Resolution)
+
+```
+Collector Startup    confmap Resolver     Secrets Manager       AWS Secrets Manager
+(config loading)     (provider)           Provider              (API)
+     │                    │                    │                    │
+     │  Resolve config    │                    │                    │
+     │───────────────────▶│                    │                    │
+     │                    │  Retrieve(uri)     │                    │
+     │                    │  "secretsmanager:  │                    │
+     │                    │   arn:...:secret"  │                    │
+     │                    │───────────────────▶│                    │
+     │                    │                    │  GetSecretValue    │
+     │                    │                    │───────────────────▶│
+     │                    │                    │◀───────────────────│
+     │                    │                    │  (extract #key     │
+     │                    │                    │   or :-default)    │
+     │                    │  confmap.Retrieved │                    │
+     │                    │◀───────────────────│                    │
+     │  Resolved config   │                    │                    │
+     │◀───────────────────│                    │                    │
+```
+
 ## Behavior
 
 - **Fail-fast**: The extension performs a synchronous initial fetch on startup.
