@@ -72,7 +72,7 @@ func substring[K any](
 			for byteStart < len(val) && !utf8.RuneStart(val[byteStart]) {
 				byteStart++
 			}
-			for byteEnd > byteStart && byteEnd < len(val) && !utf8.RuneStart(val[byteEnd]) {
+			for byteEnd < len(val) && !utf8.RuneStart(val[byteEnd]) {
 				byteEnd--
 			}
 			if byteEnd < byteStart {

@@ -348,6 +348,17 @@ func Test_substring_utf8Safe(t *testing.T) {
 			utf8Safe: ottl.NewTestingOptional(true),
 			expected: "",
 		},
+		{
+			// start snaps forward to end-of-rune,
+			// end snaps back to start-of-rune byteStart > byteEnd;
+			// the clamp prevents a val[hi:lo] slice panic.
+			name:     "both bounds inside one multibyte rune yields empty",
+			input:    "\xf0\x9f\x98\x80",
+			start:    1,
+			length:   1,
+			utf8Safe: ottl.NewTestingOptional(true),
+			expected: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(
