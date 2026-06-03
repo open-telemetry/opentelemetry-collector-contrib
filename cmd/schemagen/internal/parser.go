@@ -41,6 +41,10 @@ func NewParser(cfg *Config) *Parser {
 }
 
 func (p *Parser) Parse() (*Schema, error) {
+	return p.ParsePattern(".")
+}
+
+func (p *Parser) ParsePattern(pattern string) (*Schema, error) {
 	set := token.NewFileSet()
 	pkgs, e := packages.Load(&packages.Config{
 		Mode: packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles |
@@ -48,7 +52,7 @@ func (p *Parser) Parse() (*Schema, error) {
 		Fset:  set,
 		Dir:   p.config.DirPath,
 		Tests: false,
-	}, ".")
+	}, pattern)
 
 	if e != nil {
 		return nil, e

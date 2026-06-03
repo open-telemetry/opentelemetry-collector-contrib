@@ -73,7 +73,7 @@ This metadata is added to the request context and can be accessed by any downstr
 > Static metadata such as `cloud.provider` are not available through `client.Info`.
 > These can be added using processors (for example, the resource processor).
 
-### CloudWatch Logs subscription
+### CloudWatch Logs subscription handling
 
 CloudWatch Logs events are handled in the following manner:
 
@@ -82,6 +82,19 @@ CloudWatch Logs events are handled in the following manner:
 - Decode payload using the configured encoding extension
   - Default encoding: Parse CloudWatch Logs messages to OpenTelemetry log records
   - Custom encoding: Use specified encoding extension (for example, `aws_logs_encoding` for AWS log formats)
+
+The following metadata is available through `client.Info` for CloudWatch Logs events.
+This metadata is added to the request context and can be accessed by any downstream component in the pipeline (for example, processors):
+
+| Metadata Key         | Description                |
+|----------------------|----------------------------|
+| cloud.account.id     | AWS account ID             |
+| aws.log.group.names  | CloudWatch log group name  |
+| aws.log.stream.names | CloudWatch log stream name |
+
+> [!NOTE]
+> Static metadata such as `cloud.provider` are not available through `client.Info`.
+> These can be added using processors (for example, the resource processor).
 
 ## Deployment
 

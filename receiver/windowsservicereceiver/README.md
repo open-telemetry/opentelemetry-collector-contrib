@@ -25,7 +25,7 @@ By default the Windows Service Receiver will attempt to identify and monitor the
 An example of monitoring three services on a host:
 
 ```yaml
-windowsservice:
+windows_service:
   collection_interval: <duration> # default = 1m
   include_services:
     - service1
@@ -37,7 +37,7 @@ windowsservice:
 The case where you wish to monitor all services present on a host machine, except for `service3`:
 
 ```yaml
-windowsservice:
+windows_service:
   collection_interval: <duration> # default = 1m
   include_services:
   exclude_services:

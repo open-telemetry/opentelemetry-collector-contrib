@@ -11,9 +11,9 @@ The `syslog_parser` operator parses the string-type field selected by `parse_fro
 | `parse_from`                         | `body`           | The [field](../types/field.md) from which the value will be parsed. |
 | `parse_to`                           | `attributes`     | The [field](../types/field.md) to which the value will be parsed. |
 | `on_error`                           | `send`           | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md). |
-| `protocol`                           | required         | The protocol to parse the syslog messages as. Options are `rfc3164` and `rfc5424`. |
+| `protocol`                           | required         | The protocol to parse the syslog messages as. Options are `rfc3164`, `rfc5424`, and experimental `none`. Use `none` for syslog data that does not conform to RFC3164 or RFC5424 but is still delivered over the syslog transport (and therefore relies on syslog framing such as octet counting). The message contents are not parsed and are stored as-is in the `message` field. A leading PRI header (e.g. `<34>`) is additionally decoded into the `priority`, `facility`, `facility_text`, and severity fields when present, but is left in place in the `message` field. |
 | `location`                           | `UTC`            | The geographic location (timezone) to use when parsing the timestamp (Syslog RFC 3164 only). The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
-| `enable_octet_counting`              | `false`          | Wether or not to enable [RFC 6587](https://www.rfc-editor.org/rfc/rfc6587#section-3.4.1) Octet Counting on syslog parsing (Syslog RFC 5424 only).  |
+| `enable_octet_counting`              | `false`          | Wether or not to enable [RFC 6587](https://www.rfc-editor.org/rfc/rfc6587#section-3.4.1) Octet Counting on syslog parsing (Syslog RFC 5424 and `none` only).  |
 | `allow_skip_pri_header`              | `false`          | Allow parsing records without the PRI header. If this setting is enabled, messages without the PRI header will be successfully parsed. The `severity` and `severity_text` fields as well as the `priority`, `facility`, and `facility_text` attributes will not be set. If this setting is disabled (the default), messages without PRI header will throw an exception. To set this setting to `true`, the `enable_octet_counting` setting must be `false`.|
 | `non_transparent_framing_trailer`    | `nil`            | The framing trailer, either `LF` or `NUL`, when using [RFC 6587](https://www.rfc-editor.org/rfc/rfc6587#section-3.4.2) Non-Transparent-Framing (Syslog RFC 5424 only). |
 | `timestamp`                          | `nil`            | An optional [timestamp](../types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator                                                                                               |
@@ -62,6 +62,47 @@ Configuration:
     "msg_id": null,
     "priority": 34,
     "proc_id": null,
+    "severity": 2
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
+#### Pass through a non-conforming message with the `none` protocol
+
+The message contents are not parsed. A leading PRI header is still decoded when present,
+but is left in place; the full message is stored verbatim in the `message` field.
+
+Configuration:
+```yaml
+- type: syslog_parser
+  protocol: none
+```
+
+<table>
+<tr><td> Input body </td> <td> Output body </td></tr>
+<tr>
+<td>
+
+```json
+{
+  "body": "<34>a message that does not conform to any RFC"
+}
+```
+
+</td>
+<td>
+
+```json
+{
+  "body": {
+    "facility": 4,
+    "facility_text": "auth",
+    "message": "<34>a message that does not conform to any RFC",
+    "priority": 34,
     "severity": 2
   }
 }
