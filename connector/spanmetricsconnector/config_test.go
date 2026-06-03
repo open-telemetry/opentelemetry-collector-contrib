@@ -26,7 +26,7 @@ import (
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(useSecondAsDefaultMetricsUnit.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConnectorSpanmetricsUseSecondAsDefaultMetricsUnitFeatureGate.ID(), true))
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
@@ -227,6 +227,24 @@ func TestLoadConfig(t *testing.T) {
 				Namespace: DefaultNamespace,
 			},
 		},
+		{
+			name: "dimensions_with_globs",
+			id:   component.NewIDWithName(metadata.Type, "dimensions_with_globs"),
+			expected: &Config{
+				AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				Histogram:              HistogramConfig{Disable: false, Unit: defaultUnit},
+				Dimensions: []Dimension{
+					{Name: "http.method", Default: &defaultMethod},
+					{Glob: "db.*"},
+				},
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     60 * time.Second,
+				Exemplars: ExemplarsConfig{
+					MaxPerDataPoint: defaultMaxPerDatapoint,
+				},
+				Namespace: DefaultNamespace,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -285,7 +303,7 @@ func TestValidateDimensions(t *testing.T) {
 			dimensions: []Dimension{
 				{Name: "service.name"},
 			},
-			expectedErr: "duplicate dimension name service.name",
+			expectedErr: "duplicate dimension name \"service.name\"",
 		},
 		{
 			name: "duplicate additional dimensions",
@@ -293,7 +311,57 @@ func TestValidateDimensions(t *testing.T) {
 				{Name: "service_name"},
 				{Name: "service_name"},
 			},
-			expectedErr: "duplicate dimension name service_name",
+			expectedErr: "duplicate dimension name \"service_name\"",
+		},
+		{
+			name: "name and glob mixed",
+			dimensions: []Dimension{
+				{Name: "http.method"},
+				{Glob: "db.*"},
+			},
+		},
+		{
+			name: "entry sets both name and glob",
+			dimensions: []Dimension{
+				{Name: "http.method", Glob: "http.*"},
+			},
+			expectedErr: "dimension entry must set only one of `name` or `glob`, got both: name=\"http.method\" glob=\"http.*\"",
+		},
+		{
+			name: "entry sets neither name nor glob",
+			dimensions: []Dimension{
+				{},
+			},
+			expectedErr: "dimension entry must set one of `name` or `glob`",
+		},
+		{
+			name: "default on glob",
+			dimensions: []Dimension{
+				{Glob: "db.*", Default: stringp("x")},
+			},
+			expectedErr: "`default` is not supported on `glob` dimension \"db.*\"",
+		},
+		{
+			name: "invalid glob pattern",
+			dimensions: []Dimension{
+				{Glob: "db.["},
+			},
+			expectedErr: "invalid dimension glob \"db.[\": unexpected end of input",
+		},
+		{
+			name: "glob conflicts with reserved label",
+			dimensions: []Dimension{
+				{Glob: "service.*"},
+			},
+			expectedErr: "duplicate dimension name \"service.name\" conflicting with glob \"service.*\"",
+		},
+		{
+			name: "glob conflicts with configured name dimension",
+			dimensions: []Dimension{
+				{Name: "http.method"},
+				{Glob: "http.*"},
+			},
+			expectedErr: "duplicate dimension name \"http.method\" conflicting with glob \"http.*\"",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -337,7 +405,7 @@ func TestValidateEventDimensions(t *testing.T) {
 				{Name: "exception_type"},
 				{Name: "exception_type"},
 			},
-			expectedErr: "duplicate dimension name exception_type",
+			expectedErr: "duplicate dimension name \"exception_type\"",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -439,7 +507,7 @@ func TestConfigValidate(t *testing.T) {
 					{Name: "service.name"},
 				},
 			},
-			expectedErr: "failed validating dimensions: duplicate dimension name service.name",
+			expectedErr: "failed validating dimensions: duplicate dimension name \"service.name\"",
 		},
 		{
 			name: "events enabled with no dimensions",

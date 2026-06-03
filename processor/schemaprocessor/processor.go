@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -17,19 +18,22 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 )
 
 type schemaProcessor struct {
-	telemetry component.TelemetrySettings
-	config    *Config
+	telemetry   component.TelemetrySettings
+	componentID component.ID
+	config      *Config
 
 	log *zap.Logger
 
 	manager           translation.Manager
 	telemetryBuilder  *metadata.TelemetryBuilder
+	storageClient     storage.Client
 	migrationFromURLs map[string]string // target schema URL → migration from URL (for metrics)
 }
 
@@ -68,6 +72,7 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 	}
 	return &schemaProcessor{
 		config:            cfg,
+		componentID:       set.ID,
 		telemetry:         set.TelemetrySettings,
 		log:               set.Logger,
 		manager:           m,
@@ -89,8 +94,7 @@ func (t schemaProcessor) recordTranslation(ctx context.Context, fromSchemaURL, t
 
 func (t schemaProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	var skipped, failed int64
-	for rt := 0; rt < ld.ResourceLogs().Len(); rt++ {
-		rLogs := ld.ResourceLogs().At(rt)
+	for _, rLogs := range ld.ResourceLogs().All() {
 		resourceSchemaURL := rLogs.SchemaUrl()
 		if resourceSchemaURL != "" {
 			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
@@ -108,8 +112,7 @@ func (t schemaProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 			}
 			t.recordTranslation(ctx, resourceSchemaURL, tr.TargetSchemaURL())
 		}
-		for ss := 0; ss < rLogs.ScopeLogs().Len(); ss++ {
-			logs := rLogs.ScopeLogs().At(ss)
+		for _, logs := range rLogs.ScopeLogs().All() {
 			schemaURL := cmp.Or(logs.SchemaUrl(), resourceSchemaURL)
 			if schemaURL == "" {
 				skipped++
@@ -139,8 +142,7 @@ func (t schemaProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 
 func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	var skipped, failed int64
-	for mt := 0; mt < md.ResourceMetrics().Len(); mt++ {
-		rMetric := md.ResourceMetrics().At(mt)
+	for _, rMetric := range md.ResourceMetrics().All() {
 		resourceSchemaURL := rMetric.SchemaUrl()
 		if resourceSchemaURL != "" {
 			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
@@ -158,8 +160,7 @@ func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 			}
 			t.recordTranslation(ctx, resourceSchemaURL, tr.TargetSchemaURL())
 		}
-		for sm := 0; sm < rMetric.ScopeMetrics().Len(); sm++ {
-			metric := rMetric.ScopeMetrics().At(sm)
+		for _, metric := range rMetric.ScopeMetrics().All() {
 			schemaURL := cmp.Or(metric.SchemaUrl(), resourceSchemaURL)
 			if schemaURL == "" {
 				skipped++
@@ -189,8 +190,7 @@ func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 
 func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	var skipped, failed int64
-	for rt := 0; rt < td.ResourceSpans().Len(); rt++ {
-		rTrace := td.ResourceSpans().At(rt)
+	for _, rTrace := range td.ResourceSpans().All() {
 		resourceSchemaURL := rTrace.SchemaUrl()
 		if resourceSchemaURL != "" {
 			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
@@ -208,8 +208,7 @@ func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 			}
 			t.recordTranslation(ctx, resourceSchemaURL, tr.TargetSchemaURL())
 		}
-		for ss := 0; ss < rTrace.ScopeSpans().Len(); ss++ {
-			span := rTrace.ScopeSpans().At(ss)
+		for _, span := range rTrace.ScopeSpans().All() {
 			schemaURL := cmp.Or(span.SchemaUrl(), resourceSchemaURL)
 			if schemaURL == "" {
 				skipped++
@@ -247,16 +246,49 @@ func (t *schemaProcessor) start(ctx context.Context, host component.Host) error 
 	if err != nil {
 		return err
 	}
-	t.manager.AddProvider(translation.NewHTTPProvider(client))
 
-	go func(ctx context.Context) {
-		for _, schemaURL := range t.config.Prefetch {
-			t.log.Info("prefetching schema", zap.String("url", schemaURL))
+	provider := translation.NewHTTPProvider(client)
+
+	if t.config.StorageID != nil {
+		storageClient, err := getStorageClient(ctx, host, *t.config.StorageID, t.componentID)
+		if err != nil {
+			return err
+		}
+		t.storageClient = storageClient
+		provider = translation.NewStorageProvider(provider, storageClient, t.log.Named("storage"))
+	}
+
+	t.manager.AddProvider(provider)
+
+	wg := new(errgroup.Group)
+	for _, schemaURL := range t.config.Prefetch {
+		t.log.Info("prefetching schema", zap.String("url", schemaURL))
+		wg.Go(func() error {
 			if _, err := t.manager.RequestTranslation(ctx, schemaURL); err != nil {
 				t.log.Warn("failed to prefetch schema", zap.String("url", schemaURL), zap.Error(err))
 			}
-		}
-	}(ctx)
+			return nil
+		})
+	}
 
+	return wg.Wait()
+}
+
+func (t *schemaProcessor) shutdown(ctx context.Context) error {
+	if t.storageClient != nil {
+		return t.storageClient.Close(ctx)
+	}
 	return nil
+}
+
+func getStorageClient(ctx context.Context, host component.Host, storageID, componentID component.ID) (storage.Client, error) {
+	ext, ok := host.GetExtensions()[storageID]
+	if !ok {
+		return nil, fmt.Errorf("storage extension %q not found", storageID)
+	}
+	storageExt, ok := ext.(storage.Extension)
+	if !ok {
+		return nil, fmt.Errorf("extension %q is not a storage extension", storageID)
+	}
+	return storageExt.GetClient(ctx, component.KindProcessor, componentID, "")
 }
