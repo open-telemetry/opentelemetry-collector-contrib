@@ -9,6 +9,14 @@ status:
   class: pkg
 
 feature_gates:
+  - id: internal.coreinternal.goldendataset.DontEmitV0HTTPConventions
+    stage: alpha
+    description: >-
+      When enabled, goldendataset no longer generates spans with deprecated
+      semconv v1.20.0 HTTP attributes (http.client_ip).
+    from_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45295
+    skip_strict_validation: true
   - id: internal.coreinternal.goldendataset.DontEmitV0NetworkConventions
     stage: beta
     description: >-
@@ -24,6 +32,14 @@ feature_gates:
       semconv RPC attributes rpc.service and peer.service.
     from_version: v0.148.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548
+    skip_strict_validation: true
+  - id: internal.coreinternal.goldendataset.EmitV1HTTPConventions
+    stage: alpha
+    description: >-
+      When enabled, goldendataset generates spans with client.address
+      (semconv v1.40.0) alongside legacy http.client_ip to support migration.
+    from_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45295
     skip_strict_validation: true
   - id: internal.coreinternal.goldendataset.EmitV1NetworkConventions
     stage: beta
