@@ -104,26 +104,6 @@ func (m *mySQLScraper) logDetectedVersion(dbVer dbVersion) {
 	}
 }
 
-// setScopeAttributes stamps db.version and db.product onto the instrumentation
-// scope of every ScopeLogs in logs. These are set at the scope level (not the
-// resource or record level) so that they are available to downstream processors
-// and exporters without affecting the data model — users who don't need them
-// can ignore them, and those who do can access them via
-// instrumentation_scope.attributes["db.version"] in OTTL.
-func (m *mySQLScraper) setScopeAttributes(logs plog.Logs) {
-	if m.detectedVersion.version == nil {
-		return
-	}
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
-		sls := logs.ResourceLogs().At(i).ScopeLogs()
-		for j := 0; j < sls.Len(); j++ {
-			attrs := sls.At(j).Scope().Attributes()
-			attrs.PutStr("db.version", m.detectedVersion.version.String())
-			attrs.PutStr("db.product", m.detectedVersion.productString())
-		}
-	}
-}
-
 // shutdown closes the db connection
 func (m *mySQLScraper) shutdown(context.Context) error {
 	if m.sqlclient == nil {
@@ -174,20 +154,27 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	m.scrapeReplicaStatusStats(now)
 
 	rb := m.mb.NewResourceBuilder()
-	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	m.setResourceAttributes(rb)
 	m.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	return m.mb.Emit(), errs.Combine()
 }
 
-// emitLogsWithScopeAttrs emits accumulated log records, stamps the resource
-// endpoint, applies scope-level version attributes, and returns the result.
-func (m *mySQLScraper) emitLogsWithScopeAttrs(errs *scrapererror.ScrapeErrors) (plog.Logs, error) {
+// emitLogs emits accumulated log records, stamps the resource
+// endpoint, applies resource-level version attributes, and returns the result.
+func (m *mySQLScraper) emitLogs(errs *scrapererror.ScrapeErrors) (plog.Logs, error) {
 	rb := m.lb.NewResourceBuilder()
-	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	m.setResourceAttributes(rb)
 	logs := m.lb.Emit(metadata.WithLogsResource(rb.Emit()))
-	m.setScopeAttributes(logs)
 	return logs, errs.Combine()
+}
+
+func (m *mySQLScraper) setResourceAttributes(rb *metadata.ResourceBuilder) {
+	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	if m.detectedVersion.version != nil {
+		rb.SetDbSystemName(m.detectedVersion.productString())
+		rb.SetDbSystemVersion(m.detectedVersion.version.String())
+	}
 }
 
 func (m *mySQLScraper) scrapeTopQueryFunc(_ context.Context) (plog.Logs, error) {
@@ -204,7 +191,7 @@ func (m *mySQLScraper) scrapeTopQueryFunc(_ context.Context) (plog.Logs, error) 
 	} else {
 		m.scrapeTopQueries(now, errs)
 	}
-	return m.emitLogsWithScopeAttrs(errs)
+	return m.emitLogs(errs)
 }
 
 func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, error) {
@@ -217,7 +204,7 @@ func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, er
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	m.scrapeQuerySamples(ctx, now, errs)
-	return m.emitLogsWithScopeAttrs(errs)
+	return m.emitLogs(errs)
 }
 
 func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {

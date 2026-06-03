@@ -246,6 +246,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					DbSystemName:          ResourceAttributeConfig{Enabled: true},
+					DbSystemVersion:       ResourceAttributeConfig{Enabled: true},
 					MysqlInstanceEndpoint: ResourceAttributeConfig{Enabled: true},
 				},
 			},
@@ -474,6 +476,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					DbSystemName:          ResourceAttributeConfig{Enabled: false},
+					DbSystemVersion:       ResourceAttributeConfig{Enabled: false},
 					MysqlInstanceEndpoint: ResourceAttributeConfig{Enabled: false},
 				},
 			},
@@ -520,12 +524,16 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
+				DbSystemName:          ResourceAttributeConfig{Enabled: true},
+				DbSystemVersion:       ResourceAttributeConfig{Enabled: true},
 				MysqlInstanceEndpoint: ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
+				DbSystemName:          ResourceAttributeConfig{Enabled: false},
+				DbSystemVersion:       ResourceAttributeConfig{Enabled: false},
 				MysqlInstanceEndpoint: ResourceAttributeConfig{Enabled: false},
 			},
 		},
