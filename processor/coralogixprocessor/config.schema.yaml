@@ -1,19 +1,17 @@
 $defs:
-  transactions_config:
-    description: TransactionsConfig holds configuration for transactions.
-    type: object
-    properties:
-      enabled:
-        type: boolean
   critical_path_config:
     description: CriticalPathConfig holds configuration for critical path processing.
     type: object
     properties:
       enabled:
         type: boolean
+  transactions_config:
+    description: TransactionsConfig holds configuration for transactions.
+    type: object
+    properties:
+      enabled:
+        type: boolean
 type: object
-properties:
-  transactions:
-    $ref: "#/$defs/transactions_config"
-  critical_path:
-    $ref: "#/$defs/critical_path_config"
+allOf:
+  - $ref: transactions_config
+  - $ref: critical_path_config
