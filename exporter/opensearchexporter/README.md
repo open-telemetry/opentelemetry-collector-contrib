@@ -110,6 +110,7 @@ The OpenSearch exporter supports several document schemas and preprocessing beha
     - `flatten_attributes`: Uses the ECS mapping but flattens all resource and log attributes in the record to the top-level.
     - `bodymap`: uses the "body" of a log record as the exact content of the OpenSearch document, without any transformation. This mapping mode is intended for use cases where the client wishes to have complete control over the OpenSearch document structure.
     - `otel-v1`: exports logs and traces using the Data Prepper OTel v1 schema, compatible with OpenSearch Observability dashboards.
+  - `manage_index_template`: (optional, default=`false`) When `true`, creates composable index templates on startup. Only valid with `otel-v1` mode.
   - `timestamp_field`: (optional) Field to store the timestamp in. If not set, uses the default `@timestamp`.
   - `unix_timestamp`: (optional) Whether to store the timestamp in epoch milliseconds.
   - `dedup`: (optional) removes fields from the document, that have duplicate keys. The filtering only keeps the last value for a key.
@@ -171,6 +172,8 @@ Default index names:
 
 These defaults can be overridden using `traces_index` and `logs_index` configuration options.
 
+The `manage_index_template` option controls whether the exporter automatically creates composable index templates on startup. This ensures correct field mappings (e.g., `date_nanos` timestamps, dynamic attribute typing) are in place before documents are indexed.
+
 | Signal    | `otel-v1`           |
 | --------- | ------------------- |
 | Logs      | :white_check_mark:  |
@@ -181,7 +184,7 @@ Schema references:
 - [logs-otel-v1 index template](https://github.com/opensearch-project/data-prepper/blob/main/data-prepper-plugins/opensearch/src/main/resources/index-template/logs-otel-v1-index-standard-template.json)
 
 > [!NOTE]
-> The exporter emits nanosecond-precision timestamps in the document body, but to materialize them as `date_nanos` (and apply the rest of the recommended field mappings) you must install the matching index templates before indexing begins. Without a template OpenSearch's dynamic mapping will infer `date` (millisecond precision) for timestamp fields. Install the templates out-of-band for now; see also the schema references above.
+> The exporter emits nanosecond-precision timestamps in the document body, but OpenSearch's dynamic mapping will infer `date` (millisecond precision) unless a matching index template is installed before indexing begins. Set `manage_index_template: true` to have the exporter create the templates on startup, or install them out-of-band — see the schema references above.
 
 ##### Example Configuration
 
@@ -192,6 +195,7 @@ exporters:
       endpoint: http://opensearch.example.com:9200
     mapping:
       mode: "otel-v1"
+      manage_index_template: true
     sending_queue:
       batch:
 ```
