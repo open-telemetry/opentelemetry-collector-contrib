@@ -1,3 +1,18 @@
+$defs:
+  tag_mappings_config:
+    description: TagMappingsConfig overrides the precedence used to populate selected Application Insights envelope tags from OpenTelemetry resource attributes. Each field is an ordered list of sources consulted left-to-right; the first source that resolves to a non-empty string wins. A source entry is interpreted as a resource attribute key when it contains a "." (e.g. "service.instance.id"); otherwise it is treated as a string literal terminal default (e.g. "unknown-instance"). When a field is left unset, the factory default — which preserves the historical hardcoded behavior — is used. This feature is alpha and the schema may evolve.
+    type: object
+    properties:
+      application_version:
+        description: 'ApplicationVersion controls how the ai.application.ver envelope tag is populated. Default: [service.version].'
+        type: array
+        items:
+          type: string
+      cloud_role_instance:
+        description: 'CloudRoleInstance controls how the ai.cloud.roleInstance envelope tag is populated. Default: [service.instance.id].'
+        type: array
+        items:
+          type: string
 description: Config defines configuration for Azure Monitor
 type: object
 properties:
@@ -22,5 +37,7 @@ properties:
     format: duration
   spaneventsenabled:
     type: boolean
+  tag_mappings:
+    $ref: tag_mappings_config
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
