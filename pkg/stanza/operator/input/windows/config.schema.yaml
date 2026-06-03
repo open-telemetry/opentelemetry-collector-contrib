@@ -22,6 +22,9 @@ $defs:
         type: integer
       max_reads:
         type: integer
+      path:
+        x-pointer: true
+        type: string
       poll_interval:
         type: string
         format: duration
