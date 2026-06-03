@@ -9,10 +9,11 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver/internal/metadata"
 )
 
 const (
@@ -37,13 +38,6 @@ var ResourceAttributesKeys = []string{
 	"process_instance_id",
 }
 
-var allowResourceAttributes = featuregate.GlobalRegistry().MustRegister(
-	"cloudfoundry.resourceAttributes.allow",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, envelope tags are copied to the metrics as resource attributes instead of datapoint attributes"),
-	featuregate.WithRegisterFromVersion("v0.117.0"),
-)
-
 func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pmetric.MetricSlice, startTime time.Time) {
 	namePrefix := envelope.Tags["origin"] + "."
 
@@ -55,7 +49,7 @@ func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pme
 		dataPoint.SetDoubleValue(float64(message.Counter.GetTotal()))
 		dataPoint.SetTimestamp(pcommon.Timestamp(envelope.GetTimestamp()))
 		dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
-		if allowResourceAttributes.IsEnabled() {
+		if metadata.CloudfoundryResourceAttributesAllowFeatureGate.IsEnabled() {
 			attrs := getEnvelopeDataAttributes(envelope)
 			attrs.CopyTo(dataPoint.Attributes())
 		} else {
@@ -69,7 +63,7 @@ func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pme
 			dataPoint.SetDoubleValue(value.Value)
 			dataPoint.SetTimestamp(pcommon.Timestamp(envelope.GetTimestamp()))
 			dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
-			if allowResourceAttributes.IsEnabled() {
+			if metadata.CloudfoundryResourceAttributesAllowFeatureGate.IsEnabled() {
 				attrs := getEnvelopeDataAttributes(envelope)
 				attrs.CopyTo(dataPoint.Attributes())
 			} else {
@@ -96,7 +90,7 @@ func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogR
 	default:
 		return fmt.Errorf("unsupported envelope log type: %s", envelope.GetLog().GetType())
 	}
-	if allowResourceAttributes.IsEnabled() {
+	if metadata.CloudfoundryResourceAttributesAllowFeatureGate.IsEnabled() {
 		attrs := getEnvelopeDataAttributes(envelope)
 		attrs.CopyTo(log.Attributes())
 	} else {

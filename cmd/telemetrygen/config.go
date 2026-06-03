@@ -26,7 +26,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:     "telemetrygen",
 	Short:   "Telemetrygen simulates a client generating traces, metrics, and logs",
-	Example: "telemetrygen traces\ntelemetrygen metrics\ntelemetrygen logs",
+	Example: "telemetrygen metrics --otlp-insecure --metrics 1\ntelemetrygen traces --otlp-insecure --traces 1\ntelemetrygen logs --otlp-insecure --logs 1",
 }
 
 // tracesCmd is the command responsible for sending traces
@@ -42,7 +42,7 @@ var tracesCmd = &cobra.Command{
 // metricsCmd is the command responsible for sending metrics
 var metricsCmd = &cobra.Command{
 	Use:     "metrics",
-	Short:   "Simulates a client generating metrics. (Stability level: development)",
+	Short:   "Simulates a client generating metrics. (Stability level: alpha)",
 	Example: "telemetrygen metrics",
 	RunE: func(*cobra.Command, []string) error {
 		return metrics.Start(metricsCfg)
@@ -52,7 +52,7 @@ var metricsCmd = &cobra.Command{
 // logsCmd is the command responsible for sending logs
 var logsCmd = &cobra.Command{
 	Use:     "logs",
-	Short:   "Simulates a client generating metrics. (Stability level: development)",
+	Short:   "Simulates a client generating logs. (Stability level: alpha)",
 	Example: "telemetrygen logs",
 	RunE: func(*cobra.Command, []string) error {
 		return logs.Start(logsCfg)
@@ -60,7 +60,7 @@ var logsCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(tracesCmd, metricsCmd, logsCmd)
+	rootCmd.AddCommand(metricsCmd, tracesCmd, logsCmd)
 
 	tracesCfg = traces.NewConfig()
 	tracesCfg.Flags(tracesCmd.Flags())

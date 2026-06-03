@@ -8,7 +8,7 @@ The Database Storage Extension can persist state to a relational database.
 | Stability     | [alpha]  |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fdbstorage%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fdbstorage) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fdbstorage%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fdbstorage) |
-| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_db_storage)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_db_storage&displayType=list) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_dbstorage)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_dbstorage&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@atoulme](https://www.github.com/atoulme) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -76,6 +76,8 @@ To avoid such performance bottleneck - is possible to use WAL journal mode, when
   * `journal_mode(WAL)` with `synchronous(NORMAL)` is safe from corruption, but doesn't guarantee data durability, i.e. last transaction before unexpected shutdown might be rolled back. If durability is a concern - consider using `synchronous(FULL)` with `journal_mode(WAL)`
 
 For more available options you take a look on [SQLite List Of PRAGMAs](https://www.sqlite.org/pragma.html#toc). Each PRAGMA option could be passed to driver in form of query params: `_pragma=<PRAGMA_NAME>(<PRAGMA_VALUE>)
+
+**NOTE**: sqlite driver is not supported on AIX.
 
 ### Migration Guide From `sqlite3` to `sqlite` Driver Options
 

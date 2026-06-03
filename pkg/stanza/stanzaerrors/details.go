@@ -18,11 +18,9 @@ func (d ErrorDetails) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 
 // createDetails will create details for an error from key/value pairs.
 func createDetails(keyValues []string) ErrorDetails {
-	details := make(ErrorDetails)
-	if len(keyValues) > 0 {
-		for i := 0; i+1 < len(keyValues); i += 2 {
-			details[keyValues[i]] = keyValues[i+1]
-		}
+	details := make(ErrorDetails, len(keyValues)/2)
+	for i := 0; i+1 < len(keyValues); i += 2 {
+		details[keyValues[i]] = keyValues[i+1]
 	}
 	return details
 }

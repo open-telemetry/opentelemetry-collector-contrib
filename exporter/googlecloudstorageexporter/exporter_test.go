@@ -212,17 +212,25 @@ func TestStart(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("bucket exists and cannot be reused", func(t *testing.T) {
+	t.Run("bucket exists and cannot be reused (reuse_if_exists=false)", func(t *testing.T) {
 		gcsExporter.cfg.Bucket.Name = bucketExistsName
+		gcsExporter.cfg.Bucket.ReuseIfExists = false
 		err := gcsExporter.Start(t.Context(), mHost)
 		require.ErrorContains(t, err, "failed to create storage bucket")
 	})
 
-	t.Run("bucket exists and can be reused", func(t *testing.T) {
+	t.Run("bucket exists and can be reused (reuse_if_exists=true)", func(t *testing.T) {
 		gcsExporter.cfg.Bucket.Name = bucketExistsName
 		gcsExporter.cfg.Bucket.ReuseIfExists = true
 		err := gcsExporter.Start(t.Context(), mHost)
 		require.NoError(t, err)
+	})
+
+	t.Run("bucket does not exist with reuse_if_exists=true should fail", func(t *testing.T) {
+		gcsExporter.cfg.Bucket.Name = "non-existent-bucket"
+		gcsExporter.cfg.Bucket.ReuseIfExists = true
+		err := gcsExporter.Start(t.Context(), mHost)
+		require.ErrorContains(t, err, "does not exist and reuse_if_exists is true")
 	})
 }
 
@@ -605,8 +613,8 @@ func newTestGCSExporter(t *testing.T, cfg *Config, signal ...signalType) *storag
 
 func newTestStorageEmulator(t *testing.T, bucketExistsName, uploadBucketName string) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method + " " + r.URL.Path {
-		case "POST /storage/v1/b":
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/storage/v1/b":
 			// Handle bucket creation
 			var body struct {
 				Name string `json:"name"`
@@ -624,7 +632,22 @@ func newTestStorageEmulator(t *testing.T, bucketExistsName, uploadBucketName str
 			w.WriteHeader(http.StatusOK)
 			errEncode := json.NewEncoder(w).Encode(body)
 			assert.NoError(t, errEncode)
-		case "POST /upload/storage/v1/b/" + uploadBucketName + "/o":
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/storage/v1/b/"):
+			// Handle bucket.Attrs() - check if bucket exists
+			bucketName := strings.TrimPrefix(r.URL.Path, "/storage/v1/b/")
+			if bucketName == bucketExistsName || bucketName == uploadBucketName {
+				w.WriteHeader(http.StatusOK)
+				errEncode := json.NewEncoder(w).Encode(map[string]any{
+					"name": bucketName,
+				})
+				assert.NoError(t, errEncode)
+				return
+			}
+			// Bucket does not exist
+			w.WriteHeader(http.StatusNotFound)
+			errEncode := json.NewEncoder(w).Encode(googleapi.Error{Code: http.StatusNotFound})
+			assert.NoError(t, errEncode)
+		case r.Method == http.MethodPost && r.URL.Path == "/upload/storage/v1/b/"+uploadBucketName+"/o":
 			w.WriteHeader(http.StatusOK)
 			errEncode := json.NewEncoder(w).Encode(map[string]any{
 				"bucket": uploadBucketName,

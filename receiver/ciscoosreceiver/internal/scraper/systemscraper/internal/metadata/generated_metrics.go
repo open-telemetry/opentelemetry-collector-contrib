@@ -12,6 +12,13 @@ import (
 	"go.opentelemetry.io/collector/scraper"
 )
 
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
+)
+
 var MetricsInfo = metricsInfo{
 	CiscoDeviceUp: metricInfo{
 		Name: "cisco.device.up",
@@ -35,9 +42,9 @@ type metricInfo struct {
 }
 
 type metricCiscoDeviceUp struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric            // data buffer for generated metric.
+	config   CiscoDeviceUpMetricConfig // metric config provided by user.
+	capacity int                       // max observed number of data points added to the metric.
 }
 
 // init fills cisco.device.up metric with initial data.
@@ -74,7 +81,7 @@ func (m *metricCiscoDeviceUp) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricCiscoDeviceUp(cfg MetricConfig) metricCiscoDeviceUp {
+func newMetricCiscoDeviceUp(cfg CiscoDeviceUpMetricConfig) metricCiscoDeviceUp {
 	m := metricCiscoDeviceUp{config: cfg}
 
 	if cfg.Enabled {
@@ -85,9 +92,9 @@ func newMetricCiscoDeviceUp(cfg MetricConfig) metricCiscoDeviceUp {
 }
 
 type metricSystemCPUUtilization struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   SystemCPUUtilizationMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills system.cpu.utilization metric with initial data.
@@ -124,7 +131,7 @@ func (m *metricSystemCPUUtilization) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemCPUUtilization(cfg MetricConfig) metricSystemCPUUtilization {
+func newMetricSystemCPUUtilization(cfg SystemCPUUtilizationMetricConfig) metricSystemCPUUtilization {
 	m := metricSystemCPUUtilization{config: cfg}
 
 	if cfg.Enabled {
@@ -135,9 +142,9 @@ func newMetricSystemCPUUtilization(cfg MetricConfig) metricSystemCPUUtilization 
 }
 
 type metricSystemMemoryUtilization struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   SystemMemoryUtilizationMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills system.memory.utilization metric with initial data.
@@ -174,7 +181,7 @@ func (m *metricSystemMemoryUtilization) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemMemoryUtilization(cfg MetricConfig) metricSystemMemoryUtilization {
+func newMetricSystemMemoryUtilization(cfg SystemMemoryUtilizationMetricConfig) metricSystemMemoryUtilization {
 	m := metricSystemMemoryUtilization{config: cfg}
 
 	if cfg.Enabled {

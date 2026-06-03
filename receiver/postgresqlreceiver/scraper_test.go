@@ -4,6 +4,7 @@
 package postgresqlreceiver
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"database/sql/driver"
@@ -12,7 +13,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -49,7 +52,7 @@ func TestScraper(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	runTest := func(separateSchemaAttr bool, file string) {
-		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
 
 		cfg := createDefaultConfig().(*Config)
 		cfg.Databases = []string{"otel"}
@@ -89,7 +92,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	runTest := func(separateSchemaAttr bool, file, fileDefault string) {
-		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
 
 		cfg := createDefaultConfig().(*Config)
 
@@ -167,8 +170,8 @@ func TestScraperNoDatabaseMultipleWithoutPreciseLag(t *testing.T) {
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
 	runTest := func(separateSchemaAttr bool, file string) {
-		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
-		defer testutil.SetFeatureGateForTest(t, preciseLagMetricsFg, false)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
+		defer testutil.SetFeatureGateForTest(t, metadata.PostgresqlreceiverPreciselagmetricsFeatureGate, false)()
 
 		cfg := createDefaultConfig().(*Config)
 
@@ -220,7 +223,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
 	runTest := func(separateSchemaAttr bool, file string) {
-		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
 
 		cfg := createDefaultConfig().(*Config)
 
@@ -273,7 +276,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
 	runTest := func(separateSchemaAttr bool, file string) {
-		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
 
 		cfg := createDefaultConfig().(*Config)
 
@@ -327,7 +330,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	runTest := func(separateSchemaAttr bool, file string) {
-		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
 
 		cfg := createDefaultConfig().(*Config)
 
@@ -380,7 +383,7 @@ func TestScraperExcludeDatabase(t *testing.T) {
 	factory.initMocks([]string{"otel", "telemetry"})
 
 	runTest := func(separateSchemaAttr bool, file string) {
-		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
 
 		cfg := createDefaultConfig().(*Config)
 		cfg.ExcludeDatabases = []string{"open"}
@@ -543,6 +546,160 @@ func TestScrapeQuerySampleWithTraceparent(t *testing.T) {
 	require.Equal(t, traceparent, applicationName.Str())
 }
 
+func TestQuerySampleTemplateRendering(t *testing.T) {
+	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
+
+	tests := []struct {
+		name   string
+		params map[string]any
+	}{
+		{
+			name: "renders with standard parameters",
+			params: map[string]any{
+				"limit":                int64(50),
+				"newestQueryTimestamp": 999999.555,
+			},
+		},
+		{
+			name: "renders with zero timestamp",
+			params: map[string]any{
+				"limit":                int64(10),
+				"newestQueryTimestamp": float64(0),
+			},
+		},
+	}
+
+	requiredClauses := []string{
+		"pid != pg_backend_pid()",
+		"query_start IS NOT NULL",
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			buf := bytes.Buffer{}
+			err := tmpl.Execute(&buf, tc.params)
+			require.NoError(t, err)
+
+			rendered := buf.String()
+			for _, clause := range requiredClauses {
+				assert.Contains(t, rendered, clause, "rendered SQL should contain %q", clause)
+			}
+
+			assert.Contains(t, rendered, fmt.Sprintf("LIMIT %v;", tc.params["limit"]))
+			assert.Contains(t, rendered, fmt.Sprintf("TO_TIMESTAMP(%v)", tc.params["newestQueryTimestamp"]))
+		})
+	}
+}
+
+func TestScrapeQuerySampleNoResults(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.Events.DbServerQuerySample.Enabled = true
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+
+	defer db.Close()
+
+	factory := mockSimpleClientFactory{db: db}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper.newestQueryTimestamp = 123440.111
+
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(sqlmock.NewRows(querySampleColumns))
+
+	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
+	assert.NoError(t, err)
+
+	totalRecords := 0
+	for i := 0; i < actualLogs.ResourceLogs().Len(); i++ {
+		rl := actualLogs.ResourceLogs().At(i)
+		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+			totalRecords += rl.ScopeLogs().At(j).LogRecords().Len()
+		}
+	}
+	assert.Equal(t, 0, totalRecords)
+}
+
+func TestScrapeQuerySampleMultipleRows(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.Events.DbServerQuerySample.Enabled = true
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+
+	defer db.Close()
+
+	factory := mockSimpleClientFactory{db: db}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	scraper.newestQueryTimestamp = 123440.111
+
+	row1 := map[string]any{
+		querySampleColumnDatname:              "postgres",
+		querySampleColumnUsename:              "user1",
+		querySampleColumnClientAddr:           "10.0.0.1",
+		querySampleColumnClientHostname:       "host1",
+		querySampleColumnClientPort:           "5432",
+		querySampleColumnQueryStart:           "2025-02-12T16:37:54.843+08:00",
+		querySampleColumnQueryID:              "111",
+		querySampleColumnPID:                  "1001",
+		querySampleColumnApplicationName:      "app1",
+		querySampleColumnQueryStartTimestamp:  "123445.123",
+		querySampleColumnState:                "active",
+		querySampleColumnQuery:                "SELECT * FROM orders WHERE status = 'pending'",
+		querySampleColumnDurationMilliseconds: "5.3",
+	}
+	row2 := map[string]any{
+		querySampleColumnDatname:              "postgres",
+		querySampleColumnUsename:              "user2",
+		querySampleColumnClientAddr:           "10.0.0.2",
+		querySampleColumnClientHostname:       "host2",
+		querySampleColumnClientPort:           "5433",
+		querySampleColumnQueryStart:           "2025-02-12T16:38:00.000+08:00",
+		querySampleColumnQueryID:              "222",
+		querySampleColumnPID:                  "1002",
+		querySampleColumnApplicationName:      "app2",
+		querySampleColumnQueryStartTimestamp:  "123450.000",
+		querySampleColumnState:                "idle",
+		querySampleColumnQuery:                "UPDATE users SET last_login = now() WHERE id = 42",
+		querySampleColumnDurationMilliseconds: "12.7",
+	}
+
+	rows := sqlmock.NewRows(querySampleColumns)
+	for _, rowData := range []map[string]any{row1, row2} {
+		rowValues := make([]driver.Value, len(querySampleColumns))
+		for i, col := range querySampleColumns {
+			if v, ok := rowData[col]; ok {
+				rowValues[i] = v
+				continue
+			}
+			rowValues[i] = ""
+		}
+		rows.AddRow(rowValues...)
+	}
+
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(rows)
+
+	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
+	assert.NoError(t, err)
+
+	require.Equal(t, 1, actualLogs.ResourceLogs().Len())
+	rl := actualLogs.ResourceLogs().At(0)
+	require.Equal(t, 1, rl.ScopeLogs().Len())
+	sl := rl.ScopeLogs().At(0)
+	assert.Equal(t, 2, sl.LogRecords().Len())
+}
+
 //go:embed testdata/scraper/top-query/expectedSql.sql
 var expectedScrapeTopQuery string
 
@@ -588,11 +745,12 @@ func TestScrapeTopQueries(t *testing.T) {
 	}
 
 	expectedRows := make([]string, 0, len(expectedReturnedValue))
-	expectedValues := ""
+	var expectedValuesBuilder strings.Builder
 	for k, v := range expectedReturnedValue {
 		expectedRows = append(expectedRows, k)
-		expectedValues += fmt.Sprintf("%s,", v)
+		fmt.Fprintf(&expectedValuesBuilder, "%s,", v)
 	}
+	expectedValues := expectedValuesBuilder.String()
 
 	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 	scraper.cache.Add(queryid+totalExecTimeColumnName, 10)
@@ -629,6 +787,73 @@ func TestScrapeTopQueries(t *testing.T) {
 	planTime, planTimeExists := scraper.cache.Get(queryid + totalPlanTimeColumnName)
 	assert.True(t, planTimeExists)
 	assert.Equal(t, float64(12), planTime)
+}
+
+func TestIsExplainableQuery(t *testing.T) {
+	testCases := []struct {
+		name     string
+		query    string
+		expected bool
+	}{
+		// Explainable queries (whitelist: SELECT, TABLE, DELETE, INSERT, UPDATE, WITH, MERGE, VALUES)
+		{name: "simple SELECT", query: "SELECT * FROM users", expected: true},
+		{name: "SELECT with WHERE", query: "SELECT id, name FROM users WHERE active = true", expected: true},
+		{name: "INSERT", query: "INSERT INTO users (name) VALUES ('test')", expected: true},
+		{name: "UPDATE", query: "UPDATE users SET name = 'test' WHERE id = 1", expected: true},
+		{name: "DELETE", query: "DELETE FROM users WHERE id = 1", expected: true},
+		{name: "SELECT with leading whitespace", query: "   SELECT * FROM users", expected: true},
+		{name: "WITH CTE", query: "WITH cte AS (SELECT * FROM users) SELECT * FROM cte", expected: true},
+		{name: "TABLE shorthand", query: "TABLE users", expected: true},
+		{name: "VALUES", query: "VALUES (1, 'a'), (2, 'b')", expected: true},
+		{name: "MERGE", query: "MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN UPDATE SET name = source.name", expected: true},
+		{name: "SELECT after comment", query: "-- comment\nSELECT * FROM users", expected: true},
+		{name: "SELECT after multi-line comment", query: "/* comment */ SELECT * FROM users", expected: true},
+		{name: "SELECT with parenthesis", query: "(SELECT * FROM users)", expected: false}, // Subquery alone - first char is '('
+
+		// Non-explainable queries (anything not in whitelist)
+		{name: "GRANT", query: "GRANT SELECT ON pg_locks TO demo", expected: false},
+		{name: "REVOKE", query: "REVOKE ALL ON FUNCTION pg_stat_statements_reset() FROM PUBLIC", expected: false},
+		{name: "DROP FUNCTION", query: "DROP FUNCTION pg_stat_statements_reset(Oid, Oid, bigint)", expected: false},
+		{name: "DROP TRIGGER", query: "DROP TRIGGER IF EXISTS update_users_updated_at ON users", expected: false},
+		{name: "DROP TABLE", query: "DROP TABLE users", expected: false},
+		{name: "CREATE INDEX", query: "CREATE INDEX idx_users_name ON users(name)", expected: false},
+		{name: "CREATE EXTENSION", query: "CREATE EXTENSION IF NOT EXISTS pg_stat_statements", expected: false},
+		{name: "CREATE FUNCTION", query: "CREATE FUNCTION my_func() RETURNS void AS $$ BEGIN END; $$ LANGUAGE plpgsql", expected: false},
+		{name: "CREATE TRIGGER", query: "CREATE TRIGGER update_users BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at()", expected: false},
+		{name: "CREATE TABLE", query: "CREATE TABLE users (id INT)", expected: false},
+		{name: "CREATE TABLE AS SELECT", query: "CREATE TABLE new_table AS SELECT * FROM old_table", expected: false}, // CREATE not in whitelist
+		{name: "ALTER TABLE", query: "ALTER TABLE users ADD COLUMN email VARCHAR(255)", expected: false},
+		{name: "TRUNCATE", query: "TRUNCATE TABLE users", expected: false},
+		{name: "SET", query: "SET plan_cache_mode = force_generic_plan", expected: false},
+		{name: "COMMENT", query: "COMMENT ON TABLE users IS 'User table'", expected: false},
+		{name: "VACUUM", query: "VACUUM ANALYZE users", expected: false},
+		{name: "ANALYZE", query: "ANALYZE users", expected: false},
+		{name: "BEGIN", query: "BEGIN", expected: false},
+		{name: "COMMIT", query: "COMMIT", expected: false},
+		{name: "ROLLBACK", query: "ROLLBACK", expected: false},
+		{name: "COPY", query: "COPY users FROM '/tmp/data.csv'", expected: false},
+		{name: "EXPLAIN", query: "EXPLAIN SELECT * FROM users", expected: false}, // EXPLAIN itself not in whitelist
+		{name: "PREPARE", query: "PREPARE stmt AS SELECT * FROM users", expected: false},
+		{name: "EXECUTE", query: "EXECUTE stmt", expected: false},
+		{name: "DEALLOCATE", query: "DEALLOCATE stmt", expected: false},
+
+		// DDL with leading comments (should still be detected as non-explainable)
+		{name: "GRANT after comment", query: "-- Grant permissions\nGRANT SELECT ON users TO demo", expected: false},
+		{name: "DROP after multi-line comment", query: "/* cleanup */ DROP TABLE old_table", expected: false},
+		{name: "REVOKE after nested comments", query: "/* comment */ -- another\nREVOKE ALL FROM demo", expected: false},
+
+		// Edge cases
+		{name: "empty query", query: "", expected: false},
+		{name: "only whitespace", query: "   ", expected: false},
+		{name: "only comment", query: "-- just a comment", expected: false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := isExplainableQuery(tc.query)
+			assert.Equal(t, tc.expected, result, "query: %s", tc.query)
+		})
+	}
 }
 
 func TestScrapeTopQueriesCollectsOnlyWhenIntervalHasElapsed(t *testing.T) {

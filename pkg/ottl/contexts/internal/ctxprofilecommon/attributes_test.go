@@ -409,7 +409,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 			},
 		}
 		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
-		err := getSetter.Setter(t.Context(), ctx, 42)
+		err := getSetter.Setter(t.Context(), ctx, int64(42))
 		require.NoError(t, err)
 
 		// Verify all original attributes in shared tables remain unchanged

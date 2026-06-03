@@ -104,6 +104,7 @@ Operators that support batching:
 - `regex_replace`
 - `remove`
 - `retain`
+- `router`
 - `scope_name`
 - `severity`
 - `syslog`
@@ -115,7 +116,6 @@ Operators that support batching:
 Operators that do not support batching:
 
 - `csv_parser`
-- `router`
 
 ### FAQ
 

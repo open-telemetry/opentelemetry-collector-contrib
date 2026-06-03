@@ -22,9 +22,9 @@ The number of connections in different asynchronous states reported by Apache's 
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| connection_state | The asynchronous connection state reported by Apache's server-status. | Str: ``writing``, ``keepalive``, ``closing`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| connection_state | The asynchronous connection state reported by Apache's server-status. | Str: ``writing``, ``keepalive``, ``closing`` | Recommended | - |
 
 ### apache.cpu.load
 
@@ -44,10 +44,10 @@ Jiffs used by processes of given category.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| level | Level of processes. | Str: ``self``, ``children`` | Recommended |
-| mode | Mode of processes. | Str: ``system``, ``user`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| level | Level of processes. | Str: ``self``, ``children`` | Recommended | - |
+| mode | Mode of processes. | Str: ``system``, ``user`` | Recommended | - |
 
 ### apache.current_connections
 
@@ -109,9 +109,9 @@ The [apache scoreboard](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION)
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| state | The state of a connection. | Str: ``open``, ``waiting``, ``starting``, ``reading``, ``sending``, ``keepalive``, ``dnslookup``, ``closing``, ``logging``, ``finishing``, ``idle_cleanup``, ``unknown`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| state | The state of a connection. | Str: ``open``, ``waiting``, ``starting``, ``reading``, ``sending``, ``keepalive``, ``dnslookup``, ``closing``, ``logging``, ``finishing``, ``idle_cleanup``, ``unknown`` | Recommended | - |
 
 ### apache.traffic
 
@@ -139,13 +139,13 @@ The number of workers currently attached to the HTTP server.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| state | The state of workers. | Str: ``busy``, ``idle`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| state | The state of workers. | Str: ``busy``, ``idle`` | Recommended | - |
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| apache.server.name | The name of the Apache HTTP server. | Any Str | true |
-| apache.server.port | The port of the Apache HTTP server. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| apache.server.name | The name of the Apache HTTP server. | Any Str | true | - |
+| apache.server.port | The port of the Apache HTTP server. | Any Str | true | - |

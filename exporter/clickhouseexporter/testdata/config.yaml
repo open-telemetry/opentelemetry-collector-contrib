@@ -31,6 +31,9 @@ clickhouse/full:
       name: "otel_metrics_custom_histogram"
     exponential_histogram: 
       name: "otel_metrics_custom_exp_histogram"
+clickhouse/json:
+  endpoint: clickhouse://127.0.0.1:9000
+  json: true
 clickhouse/invalid-endpoint:
   endpoint: 127.0.0.1:9000
 

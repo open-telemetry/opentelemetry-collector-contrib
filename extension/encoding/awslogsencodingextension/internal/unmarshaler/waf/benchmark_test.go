@@ -44,7 +44,7 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 		},
 	}
 
-	u := wafLogUnmarshaler{
+	u := WafLogUnmarshaler{
 		buildInfo: component.BuildInfo{},
 	}
 

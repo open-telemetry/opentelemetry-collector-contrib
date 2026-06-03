@@ -70,9 +70,9 @@ Number of transmitted files.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction data is moving. | Str: ``sent``, ``received`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction data is moving. | Str: ``sent``, ``received`` | Recommended | - |
 
 ### iis.network.io
 
@@ -84,9 +84,9 @@ Total amount of bytes sent and received.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction data is moving. | Str: ``sent``, ``received`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction data is moving. | Str: ``sent``, ``received`` | Recommended | - |
 
 ### iis.request.count
 
@@ -98,9 +98,9 @@ Total number of requests of a given type.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| request | The type of request sent by a client. | Str: ``delete``, ``get``, ``head``, ``options``, ``post``, ``put``, ``trace`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| request | The type of request sent by a client. | Str: ``delete``, ``get``, ``head``, ``options``, ``post``, ``put``, ``trace`` | Recommended | - |
 
 ### iis.request.queue.age.max
 
@@ -144,7 +144,7 @@ The amount of time the server has been up.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| iis.application_pool | The application pool, which is associated with worker processes of one or more applications. | Any Str | true |
-| iis.site | The site of the web server. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| iis.application_pool | The application pool, which is associated with worker processes of one or more applications. | Any Str | true | - |
+| iis.site | The site of the web server. | Any Str | true | - |

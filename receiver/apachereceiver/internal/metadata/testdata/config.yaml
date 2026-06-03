@@ -3,10 +3,12 @@ all_set:
   metrics:
     apache.connections.async:
       enabled: true
+      attributes: ["connection_state"]
     apache.cpu.load:
       enabled: true
     apache.cpu.time:
       enabled: true
+      attributes: ["level","mode"]
     apache.current_connections:
       enabled: true
     apache.load.1:
@@ -21,12 +23,51 @@ all_set:
       enabled: true
     apache.scoreboard:
       enabled: true
+      attributes: ["state"]
     apache.traffic:
       enabled: true
     apache.uptime:
       enabled: true
     apache.workers:
       enabled: true
+      attributes: ["state"]
+  resource_attributes:
+    apache.server.name:
+      enabled: true
+    apache.server.port:
+      enabled: true
+reaggregate_set:
+  metrics:
+    apache.connections.async:
+      enabled: true
+      attributes: []
+    apache.cpu.load:
+      enabled: true
+    apache.cpu.time:
+      enabled: true
+      attributes: []
+    apache.current_connections:
+      enabled: true
+    apache.load.1:
+      enabled: true
+    apache.load.15:
+      enabled: true
+    apache.load.5:
+      enabled: true
+    apache.request.time:
+      enabled: true
+    apache.requests:
+      enabled: true
+    apache.scoreboard:
+      enabled: true
+      attributes: []
+    apache.traffic:
+      enabled: true
+    apache.uptime:
+      enabled: true
+    apache.workers:
+      enabled: true
+      attributes: []
   resource_attributes:
     apache.server.name:
       enabled: true
@@ -36,10 +77,12 @@ none_set:
   metrics:
     apache.connections.async:
       enabled: false
+      attributes: ["connection_state"]
     apache.cpu.load:
       enabled: false
     apache.cpu.time:
       enabled: false
+      attributes: ["level","mode"]
     apache.current_connections:
       enabled: false
     apache.load.1:
@@ -54,12 +97,14 @@ none_set:
       enabled: false
     apache.scoreboard:
       enabled: false
+      attributes: ["state"]
     apache.traffic:
       enabled: false
     apache.uptime:
       enabled: false
     apache.workers:
       enabled: false
+      attributes: ["state"]
   resource_attributes:
     apache.server.name:
       enabled: false

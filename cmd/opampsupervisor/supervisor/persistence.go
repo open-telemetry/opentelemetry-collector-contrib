@@ -16,6 +16,7 @@ import (
 
 // persistentState represents persistent state for the supervisor
 type persistentState struct {
+	// InstanceID must be a valid UUID string. If it is not, a new UUIDv7 will be generated automatically.
 	InstanceID             uuid.UUID           `yaml:"instance_id"`
 	LastRemoteConfigStatus *RemoteConfigStatus `yaml:"last_remote_config_status"`
 
@@ -77,11 +78,12 @@ func (p *persistentState) writeState() error {
 
 // loadOrCreatePersistentState attempts to load the persistent state from disk. If it doesn't
 // exist, a new persistent state file is created.
-func loadOrCreatePersistentState(file string, logger *zap.Logger) (*persistentState, error) {
+// instanceID must be a valid UUID string, or an empty string to generate a new UUIDv7 automatically.
+func loadOrCreatePersistentState(file, instanceID string, logger *zap.Logger) (*persistentState, error) {
 	state, err := loadPersistentState(file, logger)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
-		return createNewPersistentState(file, logger)
+		return createNewPersistentState(file, instanceID, logger)
 	case err != nil:
 		return nil, err
 	default:
@@ -107,10 +109,16 @@ func loadPersistentState(file string, logger *zap.Logger) (*persistentState, err
 	return state, nil
 }
 
-func createNewPersistentState(file string, logger *zap.Logger) (*persistentState, error) {
-	id, err := uuid.NewV7()
+func createNewPersistentState(file, instanceID string, logger *zap.Logger) (*persistentState, error) {
+	id, err := uuid.Parse(instanceID)
 	if err != nil {
-		return nil, err
+		if instanceID != "" {
+			logger.Warn("Failed to parse instance_id, generating one automatically", zap.Error(err))
+		}
+		id, err = uuid.NewV7()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	p := &persistentState{

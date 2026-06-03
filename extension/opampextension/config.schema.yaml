@@ -1,0 +1,87 @@
+$defs:
+  agent_description:
+    type: object
+    properties:
+      include_resource_attributes:
+        description: 'IncludeResourceAttributes determines whether the agent should copy its resource attributes to the non identifying attributes. (default: false)'
+        type: boolean
+      non_identifying_attributes:
+        description: NonIdentifyingAttributes are a map of key-value pairs that may be specified to provide extra information about the agent to the OpAMP server.
+        type: object
+        additionalProperties:
+          type: string
+  capabilities:
+    type: object
+    properties:
+      accepts_restart_command:
+        description: 'AcceptsRestartCommand enables the OpAMP AcceptsRestartCommand Capability (default: false)'
+        type: boolean
+      reports_available_components:
+        description: 'ReportsAvailableComponents enables the OpAMP ReportsAvailableComponents Capability (default: true)'
+        type: boolean
+      reports_effective_config:
+        description: 'ReportsEffectiveConfig enables the OpAMP ReportsEffectiveConfig Capability. (default: true)'
+        type: boolean
+      reports_health:
+        description: 'ReportsHealth enables the OpAMP ReportsHealth Capability. (default: true)'
+        type: boolean
+  op_amp_server:
+    description: OpAMPServer contains the OpAMP transport configuration.
+    type: object
+    properties:
+      http:
+        x-pointer: true
+        type: object
+        properties:
+          auth:
+            type: string
+            x-customType: go.opentelemetry.io/collector/component.ID
+          endpoint:
+            type: string
+          headers:
+            type: object
+            additionalProperties:
+              $ref: go.opentelemetry.io/collector/config/configopaque.string
+          polling_interval:
+            type: string
+            format: duration
+          tls:
+            $ref: go.opentelemetry.io/collector/config/configtls.client_config
+      ws:
+        x-pointer: true
+        type: object
+        properties:
+          auth:
+            type: string
+            x-customType: go.opentelemetry.io/collector/component.ID
+          endpoint:
+            type: string
+          headers:
+            type: object
+            additionalProperties:
+              $ref: go.opentelemetry.io/collector/config/configopaque.string
+          tls:
+            $ref: go.opentelemetry.io/collector/config/configtls.client_config
+description: Config contains the configuration for the opamp extension. Trying to mirror the OpAMP supervisor config for some consistency.
+type: object
+properties:
+  agent_description:
+    description: Agent descriptions contains options to modify the AgentDescription message
+    $ref: agent_description
+  capabilities:
+    description: Capabilities contains options to enable a particular OpAMP capability
+    $ref: capabilities
+  instance_uid:
+    description: InstanceUID is a UUID formatted as a 36 character string in canonical representation. Auto-generated on start if missing.
+    type: string
+  ppid:
+    description: PPID is the process ID of the parent for the collector. If the PPID is specified, the extension will continuously poll for the status of the parent process, and emit a fatal error when the parent process is no longer running. If unspecified, the orphan detection logic does not run.
+    type: integer
+    x-customType: int32
+  ppid_poll_interval:
+    description: PPIDPollInterval is the time between polling for whether PPID is running.
+    type: string
+    format: duration
+  server:
+    x-pointer: true
+    $ref: op_amp_server

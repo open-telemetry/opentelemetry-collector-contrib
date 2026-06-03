@@ -9,6 +9,7 @@ The `recombine` operator combines consecutive logs into single logs based on sim
 | `id`                           | `recombine`                 | A unique identifier for the operator. |
 | `output`                       | Next in pipeline            | The connected operator(s) that will receive all outbound entries. |
 | `on_error`                     | `send`                      | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md). |
+| `if`                           |                             | An [expression](../types/expression.md) that, when set, will be evaluated for each entry. Entries that do not match the expression will pass through the operator unmodified, without being recombined. |
 | `is_first_entry`               |                             | An [expression](../types/expression.md) that returns true if the entry being processed is the first entry in a multiline series. |
 | `is_last_entry`                |                             | An [expression](../types/expression.md) that returns true if the entry being processed is the last entry in a multiline series. |
 | `combine_field`                | required                    | The [field](../types/field.md) from all the entries that will be recombined. |

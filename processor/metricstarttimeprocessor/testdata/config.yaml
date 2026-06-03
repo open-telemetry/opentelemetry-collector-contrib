@@ -1,28 +1,28 @@
-metricstarttime:
+metric_start_time:
 
-metricstarttime/subtract_initial_point:
+metric_start_time/subtract_initial_point:
   strategy: subtract_initial_point
 
-metricstarttime/gc_interval:
+metric_start_time/gc_interval:
   gc_interval: 1h
 
-metricstarttime/negative_interval:
+metric_start_time/negative_interval:
   gc_interval: -1h
 
-metricstarttime/true_reset_point:
+metric_start_time/true_reset_point:
   strategy: true_reset_point
 
-metricstarttime/start_time_metric:
+metric_start_time/start_time_metric:
   strategy: start_time_metric
   start_time_metric_regex: "^.+_process_start_time_seconds$"
 
-metricstarttime/invalid_regex:
+metric_start_time/invalid_regex:
   strategy: start_time_metric
   start_time_metric_regex: "(((("
 
-metricstarttime/invalid_strategy:
+metric_start_time/invalid_strategy:
   strategy: bad
 
-metricstarttime/regex_with_subtract_initial_point:
+metric_start_time/regex_with_subtract_initial_point:
   strategy: subtract_initial_point
   start_time_metric_regex: "^.+_process_start_time_seconds$"

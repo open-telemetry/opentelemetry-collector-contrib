@@ -51,6 +51,9 @@ properties:
   endpoint:
     description: Endpoint is the clickhouse endpoint.
     type: string
+  json:
+    description: JSON enables the JSON column type for attributes in logs and traces tables. When false (default), Map columns are used. When true, JSON columns are used. ClickHouse v25+ is recommended for reliable JSON support. You may also need to add `enable_json_type=1` to your endpoint or connection_params.
+    type: boolean
   logs_table_name:
     description: LogsTableName is the table name for logs. default is `otel_logs`.
     type: string

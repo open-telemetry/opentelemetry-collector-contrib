@@ -12,17 +12,19 @@ import (
 	gomaxecs "github.com/rdforte/gomaxecs/maxprocs"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/xextension"
 	"go.uber.org/automaxprocs/maxprocs"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension/internal/metadata"
 )
 
 func NewFactory() extension.Factory {
-	return extension.NewFactory(
+	return xextension.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
 		createExtension,
 		metadata.ExtensionStability,
+		xextension.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 

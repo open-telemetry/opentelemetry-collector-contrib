@@ -1,4 +1,9 @@
+display_name: Systemd Receiver
 type: systemd
+
+description: The Systemd Receiver gathers metrics for locally running systemd units.
+
+reaggregation_enabled: true
 
 status:
   class: receiver
@@ -20,11 +25,13 @@ attributes:
   cpu.mode:
     description: Breakdown of CPU usage by type.
     type: string
+    requirement_level: recommended
     enum: [system, user]
 
   systemd.unit.active_state:
     description: The active state of the unit (https://www.freedesktop.org/software/systemd/man/latest/systemd.html#Units)
     type: string
+    requirement_level: recommended
     enum:
       - active
       - reloading

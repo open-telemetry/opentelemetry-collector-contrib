@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	ctypes "github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	ctypes "github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -82,11 +82,34 @@ func (r *metricsReceiver) shutdown(context.Context) error {
 	if r.cancel != nil {
 		r.cancel()
 	}
+	if r.client != nil {
+		return r.client.Close()
+	}
 	return nil
 }
 
 func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
 	containers := r.client.Containers()
+	var errs error
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	if r.config.StreamStats {
+		for _, container := range containers {
+			stats, ok := r.client.LatestContainerStats(container.ID, r.config.CollectionInterval)
+			if !ok {
+				// Stream is still starting up; skip until first frame arrives.
+				errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(
+					fmt.Errorf("no stats available yet for container %s", container.ID), 0))
+				continue
+			}
+			if err := r.recordContainerStats(now, stats, &container); err != nil {
+				errs = multierr.Append(errs, err)
+			}
+		}
+		return r.mb.Emit(), errs
+	}
+
+	// Default (non-streaming): open a fresh connection per container each scrape.
 	results := make(chan resultV2, len(containers))
 
 	wg := &sync.WaitGroup{}
@@ -111,9 +134,6 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 	wg.Wait()
 	close(results)
 
-	var errs error
-
-	now := pcommon.NewTimestampFromTime(time.Now())
 	for res := range results {
 		if res.err != nil {
 			// Don't know the number of failed stats, but one container fetch is a partial error.
@@ -135,10 +155,10 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
 	r.recordNetworkMetrics(now, &containerStats.Networks)
 	r.recordPidsMetrics(now, &containerStats.PidsStats)
-	if err := r.recordBaseMetrics(now, container.ContainerJSONBase); err != nil {
+	if err := r.recordBaseMetrics(now, container.InspectResponse); err != nil {
 		errs = multierr.Append(errs, err)
 	}
-	if err := r.recordHostConfigMetrics(now, container.ContainerJSON); err != nil {
+	if err := r.recordHostConfigMetrics(now, container.InspectResponse); err != nil {
 		errs = multierr.Append(errs, err)
 	}
 	r.mb.RecordContainerRestartsDataPoint(now, int64(container.RestartCount))
@@ -293,7 +313,7 @@ func (r *metricsReceiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *ct
 	}
 }
 
-func (r *metricsReceiver) recordBaseMetrics(now pcommon.Timestamp, base *ctypes.ContainerJSONBase) error {
+func (r *metricsReceiver) recordBaseMetrics(now pcommon.Timestamp, base *ctypes.InspectResponse) error {
 	t, err := time.Parse(time.RFC3339, base.State.StartedAt)
 	if err != nil {
 		// value not available or invalid

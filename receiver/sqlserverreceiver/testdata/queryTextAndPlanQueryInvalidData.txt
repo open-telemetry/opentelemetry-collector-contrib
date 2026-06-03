@@ -16,6 +16,7 @@
 		"query_text": "SELECT cpu_time AS [CPU Usage (time)",
 		"query_plan": "<ShowPlanXML",
 		"procedure_id": "0",
-		"procedure_name": ""
+		"procedure_name": "",
+		"procedure_execution_count": "0"
 	}
 ]

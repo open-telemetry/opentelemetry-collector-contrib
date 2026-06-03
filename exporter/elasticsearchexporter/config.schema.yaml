@@ -111,6 +111,9 @@ $defs:
 description: Config defines configuration for Elastic exporter.
 type: object
 properties:
+  bulk_response_filter_path:
+    description: 'BulkResponseFilterPath sets the filter_path parameter of bulk API requests, which controls what data is returned in the response from Elasticsearch. Note: If `items.*._index.items` is not in the BulkResponseFilterPath than for any failed documents, the exporter will not be able to log the index to which the document was being written to. Note: if `items.*._index.items` is not in the BulkResponseFilterPath than the export will log rejection of duplicates to ".profiling-stackframes" which were previously suppressed. BulkResponseFilterPath defaults to "items.*._index,items.*.status,items.*.failure_store,items.*.error.type,items.*.error.reason"'
+    type: string
   cloudid:
     description: CloudID holds the cloud ID to identify the Elastic Cloud cluster to send events to. https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html This setting is required if no URL is configured.
     type: string
@@ -165,6 +168,9 @@ properties:
     description: QueueBatchConfig configures the sending queue and the batching done by the exporter. The performed batching can further be customized by configuring `metadata_keys` which will be used to partition the batches.
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  suppress_conflict_errors:
+    description: SuppressConflictErrors configures whether 409 Conflict responses are logged as errors. If set to true, document level version conflict exceptions (409) will not be logged.
+    type: boolean
   traces_dynamic_id:
     description: TracesDynamicID configures whether span attribute `elasticsearch.document_id` is set as the document ID in ES.
     $ref: dynamic_id_settings

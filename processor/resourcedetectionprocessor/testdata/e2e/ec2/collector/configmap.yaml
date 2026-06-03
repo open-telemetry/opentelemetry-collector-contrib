@@ -14,7 +14,7 @@ data:
       health_check:
         endpoint: 0.0.0.0:13133
     processors:
-      resourcedetection:
+      resource_detection:
         detectors: [ec2]
         timeout: 2s
         override: false
@@ -38,6 +38,10 @@ data:
               enabled: true
             host.type:
               enabled: true
+          tags_from_imds: true
+          tags:
+            - Name
+            - Test
     receivers:
       hostmetrics:
         collection_interval: 1s
@@ -54,6 +58,6 @@ data:
           receivers:
             - hostmetrics
           processors:
-            - resourcedetection
+            - resource_detection
           exporters:
             - otlp

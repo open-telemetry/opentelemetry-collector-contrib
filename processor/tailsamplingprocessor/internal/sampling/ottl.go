@@ -41,13 +41,13 @@ func NewOTTLConditionFilter(settings component.TelemetrySettings, spanConditions
 	}
 
 	if len(spanConditions) > 0 {
-		if filter.sampleSpanExpr, err = filterottl.NewBoolExprForSpan(spanConditions, filterottl.StandardSpanFuncs(), errMode, settings); err != nil {
+		if filter.sampleSpanExpr, err = filterottl.NewBoolExprForSpanWithPathContextNames(spanConditions, filterottl.StandardSpanFuncs(), errMode, settings); err != nil {
 			return nil, err
 		}
 	}
 
 	if len(spanEventConditions) > 0 {
-		if filter.sampleSpanEventExpr, err = filterottl.NewBoolExprForSpanEvent(spanEventConditions, filterottl.StandardSpanEventFuncs(), errMode, settings); err != nil {
+		if filter.sampleSpanEventExpr, err = filterottl.NewBoolExprForSpanEventWithPathContextNames(spanEventConditions, filterottl.StandardSpanEventFuncs(), errMode, settings); err != nil {
 			return nil, err
 		}
 	}
@@ -116,4 +116,8 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 		}
 	}
 	return samplingpolicy.NotSampled, nil
+}
+
+func (*ottlConditionFilter) IsStateful() bool {
+	return false
 }

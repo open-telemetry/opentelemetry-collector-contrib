@@ -8,7 +8,7 @@ This extension unmarshalls logs encoded in formats produced by AWS services.
 | Stability     | [alpha]  |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fawslogsencoding%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fawslogsencoding) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fawslogsencoding%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fawslogsencoding) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@axw](https://www.github.com/axw), [@constanca-m](https://www.github.com/constanca-m) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@axw](https://www.github.com/axw), [@constanca-m](https://www.github.com/constanca-m), [@Kavindu-Dodan](https://www.github.com/Kavindu-Dodan), [@MichaelKatsoulis](https://www.github.com/MichaelKatsoulis) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -16,8 +16,9 @@ This extension unmarshalls logs encoded in formats produced by AWS services.
 
 This extension unmarshals logs encoded in formats produced by AWS services, including:
  - [Amazon CloudWatch Logs Subscription Filters](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html).
- - [VPC flow log records](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html) sent to S3 in plain text.
-   - Parquet support still to be added.
+ - [VPC flow log records](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html) sent to S3.
+   - Includes support for both plain text and Parquet formats.
+   - Includes support for Transit Gateway (TGW) flow logs, which use the same VPC flow log format.
  - [S3 access log records](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html).
  - [AWS CloudTrail logs](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-examples.html).
 - ELB access logs:
@@ -47,14 +48,15 @@ extensions:
     format: vpcflow
     vpcflow:
       # options [parquet, plain-text]. 
-      # parquet option still needs to be implemented.
-      file_format: plain-text 
+      file_format: plain-text
       # Optional: format of the VPC flow log. Used when processing VPC flow logs arriving through CloudWatch Logs subscription filters. 
       # Ignored when decoding VPC flow logs sent to S3, which include the format as a file header.
       # Accepts a space delimited list of fields in the VPC flow log.
-      # When unset, built-in default is used matching fields of Version 2 VPC flow logs format.
+      # When unset, built-in default auto-detects VPC (version 2 fields) vs. TGW (version 2-6 fields).
       format: version interface-id srcaddr dstaddr
 ```
+
+**Note**: [Transit Gateway (TGW) flow logs](https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html) are also supported.
 
 Example for S3 access logs:
 ```yaml
@@ -84,6 +86,142 @@ extensions:
     format: networkfirewall
 ```
 
+## Routing CloudWatch subscription-filter events to other encodings
+
+When subscription filters from multiple CloudWatch log groups feed a single
+collector pipeline (for example via Firehose or Lambda receivers), this extension can
+dispatch each envelope to a configured inner encoding based on its log group
+and log stream. This removes the need for a separate pipeline per log format.
+
+Routing decisions are made **per envelope**, which means CloudWatch payloads
+that aggregate multiple envelopes from different log groups (common with
+Firehose) are dispatched correctly: each envelope is matched independently
+against the routing table.
+
+Routing is configured via the nested `cloudwatch.streams` list. Each entry is
+an object with:
+
+| Field                | Description                                                                                                                         |
+|----------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `name`               | Required. Identifies the stream for diagnostics and is the lookup key for default patterns and payload mode.                        |
+| `encoding`           | Required. The component ID of an inner encoding extension that implements `plog.Unmarshaler`.                                       |
+| `log_group_pattern`  | Optional. Pattern matched against the event's `logGroup`.                                                                           |
+| `log_stream_pattern` | Optional. Pattern matched against the event's `logStream`.                                                                          |
+| `payload`            | Optional. Defaults to `message` (except `vpcflow` and `cloudtrail`, which default to `envelope`). See [Payload modes](#payload-modes). |
+
+A stream must set at least one of `log_group_pattern` / `log_stream_pattern`,
+**or** use a `name` that has a built-in default (see table below). Explicit
+values always take precedence over defaults.
+
+### Payload modes
+
+The `payload` field controls what the inner encoding receives when this stream
+matches.
+
+- **`message`** — for each `logEvent` in the matched envelope, the inner
+  encoding receives only the `event.message` bytes. The subscription-filter
+  unmarshaler attaches `cloud.provider`, `cloud.account.id`, `cloud.region`,
+  `aws.log.group.names`, and `aws.log.stream.names` to the inner's output and
+  back-fills any log record whose timestamp is unset, using the CloudWatch
+  event timestamp. Use this when the inner encoding expects a single record
+  per call (e.g. line-delimited JSON formats like WAF).
+- **`envelope`** — the inner encoding receives the entire CloudWatch
+  subscription envelope's raw bytes once. The inner is responsible for parsing
+  the envelope, iterating events, and attaching its own resource attributes;
+  the unmarshaler does not enrich or back-fill in this mode. Use this when
+  the inner encoding has its own CloudWatch-envelope-aware code path
+  (`cloudtrail` and `vpcflow` do via their internal `fromCloudWatch`
+  handlers).
+
+### Pattern syntax
+
+Patterns are matched segment-by-segment after splitting on `/`. Each segment
+may be:
+
+- an exact literal — compared by string equality
+- `*` — matches any single segment
+- an affix wildcard within a single segment: `foo*`, `*foo`, or `*foo*`
+
+Mid-segment globs such as `foo*bar` are not supported. The bare pattern `*`
+acts as a catch-all. The target may have extra trailing segments beyond the
+pattern's length — patterns are prefix-style, so `/aws/eks/*` matches both
+`/aws/eks/my-cluster` and `/aws/eks/my-cluster/audit`.
+
+### Default patterns and payload modes
+
+For known names the corresponding defaults are applied at start time when the
+user did not supply them:
+
+| `name`       | Default field        | Default pattern                  | Default `payload` |
+|--------------|----------------------|----------------------------------|-------------------|
+| `vpcflow`    | `log_stream_pattern` | `eni-*`                          | `envelope`        |
+| `cloudtrail` | `log_stream_pattern` | `*_CloudTrail_*`                 | `envelope`        |
+| `lambda`     | `log_group_pattern`  | `/aws/lambda/*`                  | `message`         |
+| `waf`        | `log_group_pattern`  | `aws-waf-logs-*`                 | `message`         |
+| `rds`        | `log_group_pattern`  | `/aws/rds/instance/*/*`          | `message`         |
+| `eks`        | `log_group_pattern`  | `/aws/eks/*`                     | `message`         |
+| `apigateway` | `log_group_pattern`  | `API-Gateway-Execution-Logs_*`   | `message`         |
+
+`vpcflow` and `cloudtrail` default to `envelope` because the built-in
+encoders for those formats have CloudWatch-envelope-aware code paths. The
+rest default to `message` because their typical inner encoders expect a
+single record per call.
+
+### Evaluation order
+
+Streams are sorted at start time; declaration order in YAML does not matter.
+The unmarshaler evaluates streams in this order:
+
+1. Catch-all entries (`*`) are evaluated last.
+2. Streams with a `log_group_pattern` are evaluated before streams that use
+   only `log_stream_pattern`.
+3. Within each group, more-specific patterns (more literal segments, fewer
+   wildcards) come before less-specific ones.
+
+The first matching stream wins. If no stream matches an envelope, the event
+falls back to the default subscription-filter behavior: each `event.message`
+is emitted as a log record body with CloudWatch resource attributes attached,
+exactly as if no routing were configured.
+
+### Example: routing to built-in formats
+
+```yaml
+extensions:
+  awslogs_encoding/vpcflow:
+    format: vpcflow
+  awslogs_encoding/cloudtrail:
+    format: cloudtrail
+
+  # "Plain" CloudWatch — used as a fallback for events that should be
+  # forwarded as raw bodies without format-specific decoding.
+  awslogs_encoding/cw_default:
+    format: cloudwatch
+
+  # The router. Same format as cw_default, with cloudwatch.streams set.
+  awslogs_encoding/cw_router:
+    format: cloudwatch
+    cloudwatch:
+      streams:
+        - name: vpcflow
+          encoding: awslogs_encoding/vpcflow      # defaults: log_stream_pattern "eni-*", payload envelope
+        - name: cloudtrail
+          encoding: awslogs_encoding/cloudtrail   # defaults: log_stream_pattern "*_CloudTrail_*", payload envelope
+        - name: lambda
+          encoding: awslogs_encoding/cw_default   # defaults: log_group_pattern "/aws/lambda/*", payload message
+        - name: catchall
+          log_group_pattern: "*"
+          encoding: awslogs_encoding/cw_default
+
+receivers:
+  awslambda:
+    cloudwatch:
+      encoding: awslogs_encoding/cw_router
+```
+
+Extensions referenced from `cloudwatch.streams` are declared as dependencies
+via [`extensioncapabilities.Dependent`](https://pkg.go.dev/go.opentelemetry.io/collector/extension/extensioncapabilities#Dependent),
+so the collector starts them before this extension.
+
 ## Log Format Identification
 
 All logs processed by this extension are automatically tagged with an `encoding.format` attribute at the scope level to identify the source format. This allows you to easily filter and route logs based on their AWS service origin.
@@ -107,25 +245,6 @@ The following format values are supported in the `awslogsencodingextension` to i
 | WAF Logs | `waf` | AWS Web Application Firewall logs |
 | CloudWatch Logs | `cloudwatch` | CloudWatch Logs Subscription Filter events |
 | Network Firewall Logs | `networkfirewall` | AWS Network Firewall event logs (Alert/Flow, TLS) |
-
-### Breaking Change Notice
-
-**Format values have been simplified in v0.137.0**
-
-**The old format values are deprecated and will be unsupported in v0.138.0.**
-
-| **AWS Log Type** | **Old Format Value (Deprecated)** | **New Format Value** |
-|------------------|-----------------------------------|---------------------|
-| VPC Flow Logs | `vpc_flow_log` | `vpcflow` |
-| ELB Access Logs | `elb_access_log` | `elbaccess` |
-| S3 Access Logs | `s3_access_log` | `s3access` |
-| CloudTrail Logs | `cloudtrail_log` | `cloudtrail` |
-| WAF Logs | `waf_log` | `waf` |
-| CloudWatch Logs | `cloudwatch_logs_subscription_filter` | `cloudwatch` |
-
-#### Migration Path
-
-If you're using the old format values you should update the encoding extension configuration with the new format values.
 
 ## Feature Gates
 
@@ -176,19 +295,35 @@ otelcol --config=config.yaml --feature-gates --feature-gates=<FEATURE_GATE_ID>
 The extension implements streaming support which allows processing of input data to be processed without loading entire logs into memory.
 The implementation follows `encoding.LogsDecoderExtension` contract and streamed unmarhaling is exposed through `NewLogsDecoder`.
 
-Note that, unlike non-streaming unmarshaling, caller is expected to detect and perform decompression operations (e.g. un-gzip).
-This allows streaming implementation to work independently of compression algorithms and buffer sizes.
+Caller is expected to detect and perform decompression operations (e.g. un-gzip) before invoking the extension.
+
+> [!WARNING]
+> Transparent gzip decompression inside `aws_logs_encoding` is deprecated and will be removed in a future release.
+> This currently only affects the non-streaming `UnmarshalLogs` API for backward compatibility. Receivers should decompress payloads before passing data to the extension.
+
+This allows the implementation to work independently of compression algorithms and buffer sizes.
 
 The table below summarizes streaming support details for each log type, along with the offset tracking mechanism,
 
-| Log Type      | Sub Log Type/Source            | Offset Tracking                   | Notes |
-|---------------|--------------------------------|-----------------------------------|-------|
+| Log Type            | Sub Log Type/Source            | Offset Tracking             | Notes                                                                                                                 |
+|---------------------|--------------------------------|-----------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| CloudTrail          | Generic records                | Number of records processed | Number of records are used as CloudTrail logs arrives as a JSON. Streaming is done on internal `Records` array        |
+| CloudTrail          | CloudWatch trigger             | Number of bytes processed   | If non-zero offset is given, then invocation returns EOF with an empty log. The offset carries the full record length |
+| CloudTrail          | Digest record                  | Number of bytes processed   | If non-zero offset is given, then invocation returns EOF with an empty log. The offset carries the full record length |
+| ELB Access Logs     | ALB/NLB/CLB                    | Bytes processed             |                                                                                                                       |
+| Network Firewall    | Alert/Flow/TLS                 | Bytes processed             |                                                                                                                       |
+| S3 Access Logs      | -                              | Bytes processed             |                                                                                                                       |
+| Subscription filter | -                              | Number of records processed | Supports processing multi-line inputs and offset tracks number of records that get processed                          |
+| VPC Flow Logs       | S3 plain text                  | Bytes processed             |                                                                                                                       |
+| VPC Flow Logs       | S3 Parquet                     | Rows processed              | If the reader implements `io.ReaderAt`, and `io.Seeker` or `Size() int64`, the content is decoded without full buffering. Otherwise the full content is buffered in memory, in which case you may wish to decrease the VPC flow log aggregation interval to reduce the size of the S3 files, and memory needed to decode them. |
+| VPC Flow Logs       | CloudWatch subscription filter | Bytes processed             | If non-zero offset is given, then invocation returns EOF with an empty log. The offset carries the full record length |
+| WAF Logs            | -                              | Bytes processed             |                                                                                                                       |
 
 ## Produced Records per Format
 
 ### VPC flow log record fields
 
-[VPC flow log record fields](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html#flow-logs-fields) are mapped this way in the resulting OpenTelemetry log:
+[VPC flow log record fields](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html#flow-logs-fields) and [Transit Gateway flow log record fields](https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html#flow-logs-fields) are mapped this way in the resulting OpenTelemetry log:
 
 | Flow log field               | Attribute in OpenTelemetry log                                                                        |
 |------------------------------|-------------------------------------------------------------------------------------------------------|
@@ -203,6 +338,10 @@ The table below summarizes streaming support details for each log type, along wi
 | `dstport`                    | `destination.port`                                                                                    |
 | `protocol`                   | `network.protocol.name`                                                                               |
 | `packets`                    | `aws.vpc.flow.packets`                                                                                |
+| `packets-lost-no-route`      | `aws.vpc.flow.packets_lost_no_route`                                                                  |
+| `packets-lost-blackhole`     | `aws.vpc.flow.packets_lost_blackhole`                                                                 |
+| `packets-lost-mtu-exceeded`  | `aws.vpc.flow.packets_lost_mtu_exceeded`                                                              |
+| `packets-lost-ttl-expired`   | `aws.vpc.flow.packets_lost_ttl_expired`                                                               |
 | `bytes`                      | `aws.vpc.flow.bytes`                                                                                  |
 | `start`                      | `aws.vpc.flow.start`                                                                                  |
 | `end`                        | Log timestamp                                                                                         |
@@ -232,6 +371,18 @@ The table below summarizes streaming support details for each log type, along wi
 | `ecs-task-arn`               | `aws.ecs.task.arn`                                                                                    |
 | `ecs-task-id`                | `aws.ecs.task.id`                                                                                     |
 | `reject-reason`              | `aws.vpc.flow.reject_reason`                                                                          |
+| `tgw-id`                     | `aws.tgw.id`                                                                                          |
+| `transit-gateway-id`         | `aws.tgw.id`                                                                                          |
+| `tgw-attachment-id`          | `aws.tgw.attachment.id`                                                                               |
+| `tgw-src-vpc-id`             | `aws.tgw.source.vpc.id`                                                                               |
+| `tgw-dst-vpc-id`             | `aws.tgw.destination.vpc.id`                                                                          |
+| `tgw-src-subnet-id`          | `aws.tgw.source.vpc.subnet.id`                                                                        |
+| `tgw-dst-subnet-id`          | `aws.tgw.destination.vpc.subnet.id`                                                                   |
+| `tgw-src-eni`                | `aws.tgw.source.eni.id`                                                                               |
+| `tgw-dst-eni`                | `aws.tgw.destination.eni.id`                                                                          |
+| `tgw-src-az-id`              | `aws.tgw.source.az.id`                                                                                |
+| `tgw-dst-az-id`              | `aws.tgw.destination.az.id`                                                                           |
+| `tgw-pair-attachment-id`     | `aws.tgw.attachment.pair.id`                                                                          |
 
 ### S3 access log record fields
 

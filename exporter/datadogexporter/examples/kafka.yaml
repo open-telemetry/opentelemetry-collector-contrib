@@ -5,7 +5,7 @@ receivers:
         endpoint: "localhost:4318"
       grpc:
         endpoint: "localhost:4317"
-  filelog:
+  file_log:
     include_file_path: true
     poll_interval: 500ms
     include:
@@ -53,6 +53,6 @@ service:
       receivers: [otlp, kafkametrics, jmx, jmx/consumer, jmx/producer]
       exporters: [datadog]
     logs:
-      receivers: [otlp, filelog]
+      receivers: [otlp, file_log]
       processors: [attributes]
       exporters: [datadog]

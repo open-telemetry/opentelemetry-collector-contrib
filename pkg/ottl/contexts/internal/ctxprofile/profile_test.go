@@ -176,14 +176,19 @@ func TestPathGetSetter(t *testing.T) {
 			accessor, err := PathGetSetter(path)
 			require.NoError(t, err)
 
-			err = accessor.Set(t.Context(), newProfileContext(profile, dictionary), tt.val)
+			ctx := newProfileContext(profile, dictionary)
+			err = accessor.Set(t.Context(), ctx, tt.val)
 			if tt.setFails {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
 
-			got, err := accessor.Get(t.Context(), newProfileContext(profile, dictionary))
+			// Verify that setting an invalid type returns an error
+			err = accessor.Set(t.Context(), ctx, struct{}{})
+			require.Error(t, err)
+
+			got, err := accessor.Get(t.Context(), ctx)
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.val, got)

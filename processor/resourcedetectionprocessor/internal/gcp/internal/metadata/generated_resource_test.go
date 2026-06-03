@@ -47,101 +47,100 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("cloud.account.id")
+			cloudAccountIDAttrVal, ok := res.Attributes().Get("cloud.account.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.account.id-val", val.Str())
+				assert.Equal(t, "cloud.account.id-val", cloudAccountIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.availability_zone")
+			cloudAvailabilityZoneAttrVal, ok := res.Attributes().Get("cloud.availability_zone")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.availability_zone-val", val.Str())
+				assert.Equal(t, "cloud.availability_zone-val", cloudAvailabilityZoneAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.platform")
+			cloudPlatformAttrVal, ok := res.Attributes().Get("cloud.platform")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.platform-val", val.Str())
+				assert.Equal(t, "cloud.platform-val", cloudPlatformAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.provider")
+			cloudProviderAttrVal, ok := res.Attributes().Get("cloud.provider")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.provider-val", val.Str())
+				assert.Equal(t, "cloud.provider-val", cloudProviderAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.region")
+			cloudRegionAttrVal, ok := res.Attributes().Get("cloud.region")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.region-val", val.Str())
+				assert.Equal(t, "cloud.region-val", cloudRegionAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("faas.instance")
+			faasInstanceAttrVal, ok := res.Attributes().Get("faas.instance")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "faas.instance-val", val.Str())
+				assert.Equal(t, "faas.instance-val", faasInstanceAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("faas.name")
+			faasNameAttrVal, ok := res.Attributes().Get("faas.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "faas.name-val", val.Str())
+				assert.Equal(t, "faas.name-val", faasNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("faas.version")
+			faasVersionAttrVal, ok := res.Attributes().Get("faas.version")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "faas.version-val", val.Str())
+				assert.Equal(t, "faas.version-val", faasVersionAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("gcp.cloud_run.job.execution")
+			gcpCloudRunJobExecutionAttrVal, ok := res.Attributes().Get("gcp.cloud_run.job.execution")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "gcp.cloud_run.job.execution-val", val.Str())
+				assert.Equal(t, "gcp.cloud_run.job.execution-val", gcpCloudRunJobExecutionAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("gcp.cloud_run.job.task_index")
+			gcpCloudRunJobTaskIndexAttrVal, ok := res.Attributes().Get("gcp.cloud_run.job.task_index")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "gcp.cloud_run.job.task_index-val", val.Str())
+				assert.Equal(t, "gcp.cloud_run.job.task_index-val", gcpCloudRunJobTaskIndexAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("gcp.gce.instance.hostname")
+			gcpGceInstanceHostnameAttrVal, ok := res.Attributes().Get("gcp.gce.instance.hostname")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "gcp.gce.instance.hostname-val", val.Str())
+				assert.Equal(t, "gcp.gce.instance.hostname-val", gcpGceInstanceHostnameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("gcp.gce.instance.name")
+			gcpGceInstanceNameAttrVal, ok := res.Attributes().Get("gcp.gce.instance.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "gcp.gce.instance.name-val", val.Str())
+				assert.Equal(t, "gcp.gce.instance.name-val", gcpGceInstanceNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("gcp.gce.instance_group_manager.name")
+			gcpGceInstanceGroupManagerNameAttrVal, ok := res.Attributes().Get("gcp.gce.instance_group_manager.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "gcp.gce.instance_group_manager.name-val", val.Str())
+				assert.Equal(t, "gcp.gce.instance_group_manager.name-val", gcpGceInstanceGroupManagerNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("gcp.gce.instance_group_manager.region")
+			gcpGceInstanceGroupManagerRegionAttrVal, ok := res.Attributes().Get("gcp.gce.instance_group_manager.region")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "gcp.gce.instance_group_manager.region-val", val.Str())
+				assert.Equal(t, "gcp.gce.instance_group_manager.region-val", gcpGceInstanceGroupManagerRegionAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("gcp.gce.instance_group_manager.zone")
+			gcpGceInstanceGroupManagerZoneAttrVal, ok := res.Attributes().Get("gcp.gce.instance_group_manager.zone")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "gcp.gce.instance_group_manager.zone-val", val.Str())
+				assert.Equal(t, "gcp.gce.instance_group_manager.zone-val", gcpGceInstanceGroupManagerZoneAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.id")
+			hostIDAttrVal, ok := res.Attributes().Get("host.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "host.id-val", val.Str())
+				assert.Equal(t, "host.id-val", hostIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.name")
+			hostNameAttrVal, ok := res.Attributes().Get("host.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "host.name-val", val.Str())
+				assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.type")
+			hostTypeAttrVal, ok := res.Attributes().Get("host.type")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "host.type-val", val.Str())
+				assert.Equal(t, "host.type-val", hostTypeAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.cluster.name")
+			k8sClusterNameAttrVal, ok := res.Attributes().Get("k8s.cluster.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.cluster.name-val", val.Str())
+				assert.Equal(t, "k8s.cluster.name-val", k8sClusterNameAttrVal.Str())
 			}
 		})
 	}

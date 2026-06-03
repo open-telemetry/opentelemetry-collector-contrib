@@ -34,7 +34,13 @@ func (dp ExponentialHistogram) Value() (pcommon.Value, error) {
 		return vm, nil
 	}
 
-	counts, values := exphistogram.ToTDigest(dp.ExponentialHistogramDataPoint)
+	var counts []int64
+	var values []float64
+	if dp.HasMappingHint(elasticsearch.HintHistogramRaw) {
+		counts, values = exphistogram.ToRaw(dp.ExponentialHistogramDataPoint)
+	} else {
+		counts, values = exphistogram.ToTDigest(dp.ExponentialHistogramDataPoint)
+	}
 
 	vm := pcommon.NewValueMap()
 	m := vm.Map()
@@ -52,7 +58,13 @@ func (dp ExponentialHistogram) Value() (pcommon.Value, error) {
 	return vm, nil
 }
 
-func (dp ExponentialHistogram) DynamicTemplate(_ pmetric.Metric) string {
+func (dp ExponentialHistogram) DynamicTemplate(_ pmetric.Metric, mode DynamicTemplateMode) string {
+	if mode == DynamicTemplateModeECS {
+		if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
+			return "summary_metrics"
+		}
+		return "histogram_metrics"
+	}
 	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
 		return "summary"
 	}

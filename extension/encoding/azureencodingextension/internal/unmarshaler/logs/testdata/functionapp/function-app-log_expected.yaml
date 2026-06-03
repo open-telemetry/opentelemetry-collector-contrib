@@ -94,6 +94,10 @@ resourceLogs:
             severityText: Error
             timeUnixNano: "1718029365000000000"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.function_app
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version
   - resource:
@@ -158,6 +162,10 @@ resourceLogs:
             severityText: Informational
             timeUnixNano: "1717924533000000000"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.function_app
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version
   - resource:
@@ -222,6 +230,10 @@ resourceLogs:
             severityText: Informational
             timeUnixNano: "1717924533000000000"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.function_app
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version
   - resource:
@@ -286,5 +298,9 @@ resourceLogs:
             severityText: Informational
             timeUnixNano: "1717924533000000000"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.function_app
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

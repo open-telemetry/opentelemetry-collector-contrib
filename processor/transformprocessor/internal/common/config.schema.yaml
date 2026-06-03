@@ -12,7 +12,7 @@ $defs:
         $ref: context_id
       error_mode:
         description: ErrorMode determines how the processor reacts to errors that occur while processing this group of statements. When provided, it overrides the default Config ErrorMode.
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl.error_mode
+        $ref: /pkg/ottl.error_mode
       statements:
         type: array
         items:

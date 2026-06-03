@@ -102,8 +102,12 @@ properties:
   format:
     description: FormatType is the format of encoded telemetry data. Supported values are json and proto.
     type: string
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
   url:
     description: URL is the endpoint to the azure storage account. This is only required until there is an azure auth extension in the future.
     type: string
 allOf:
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
   - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

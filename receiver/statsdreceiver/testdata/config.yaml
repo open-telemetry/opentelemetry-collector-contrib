@@ -1,4 +1,6 @@
 statsd:
+statsd/counter_float:
+  counter_type: "float"
 statsd/receiver_settings:
   endpoint: "localhost:12345"
   transport: "udp6"

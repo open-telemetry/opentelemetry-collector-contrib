@@ -17,6 +17,7 @@ const (
 
 type (
 	Settings struct {
+		Namespace          string             `yaml:"namespace"`
 		Mappings           Mappings           `yaml:"mappings"`
 		ComponentOverrides ComponentOverrides `yaml:"componentOverrides"`
 		AllowedRefs        []string           `yaml:"allowedRefs"`

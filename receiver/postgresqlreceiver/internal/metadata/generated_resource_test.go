@@ -33,31 +33,30 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("postgresql.database.name")
+			postgresqlDatabaseNameAttrVal, ok := res.Attributes().Get("postgresql.database.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "postgresql.database.name-val", val.Str())
+				assert.Equal(t, "postgresql.database.name-val", postgresqlDatabaseNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("postgresql.index.name")
+			postgresqlIndexNameAttrVal, ok := res.Attributes().Get("postgresql.index.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "postgresql.index.name-val", val.Str())
+				assert.Equal(t, "postgresql.index.name-val", postgresqlIndexNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("postgresql.schema.name")
+			postgresqlSchemaNameAttrVal, ok := res.Attributes().Get("postgresql.schema.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "postgresql.schema.name-val", val.Str())
+				assert.Equal(t, "postgresql.schema.name-val", postgresqlSchemaNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("postgresql.table.name")
+			postgresqlTableNameAttrVal, ok := res.Attributes().Get("postgresql.table.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "postgresql.table.name-val", val.Str())
+				assert.Equal(t, "postgresql.table.name-val", postgresqlTableNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("service.instance.id")
+			serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "service.instance.id-val", val.Str())
+				assert.Equal(t, "service.instance.id-val", serviceInstanceIDAttrVal.Str())
 			}
 		})
 	}

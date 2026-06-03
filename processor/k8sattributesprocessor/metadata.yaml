@@ -1,5 +1,6 @@
 display_name: Kubernetes Attributes Processor
 type: k8s_attributes
+deprecated_type: k8sattributes
 
 description: |
   The Kubernetes Attributes Processor allows adding k8s metadata to resource attributes for spans, metrics and logs.
@@ -33,7 +34,7 @@ resource_attributes:
     type: string
     enabled: true
   container.image.tags:
-    description: Container image tags. Requires container.id or k8s.container.name.
+    description: Container image tags. Defaults to "latest" if not provided (unless digest also in image path). Requires container.id or k8s.container.name.
     type: slice
     enabled: true
   k8s.cluster.uid:
@@ -150,30 +151,43 @@ feature_gates:
     from_version: v0.125.0
     to_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39774
+    skip_strict_validation: true
   - id: processor.k8sattributes.DontEmitV0K8sConventions
     stage: alpha
     description: >-
       When enabled, semconv legacy attributes are disabled.
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589
+    skip_strict_validation: true
   - id: processor.k8sattributes.EmitV1K8sConventions
     stage: alpha
     description: >-
       When enabled, semconv stable attributes are enabled.
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589
+    skip_strict_validation: true
+  - id: processor.k8sattributes.ShareProcessorBetweenPipelines
+    stage: alpha
+    description: >-
+      When enabled, processor instances with identical configuration are shared
+      across different signal type pipelines, reducing duplicate Kubernetes API watchers.
+    from_version: v0.150.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/2450
+    skip_strict_validation: true
   - id: processor.k8sattributes.telemetry.disableOldFormatMetrics
     stage: alpha
     description: >-
       When enabled, old formatted internal telemetry metrics are disabled.
     from_version: v0.146.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871
+    skip_strict_validation: true
   - id: processor.k8sattributes.telemetry.enableNewFormatMetrics
     stage: alpha
     description: >-
       When enabled, new formatted internal telemetry metrics are enabled.
     from_version: v0.146.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871
+    skip_strict_validation: true
 
 tests:
   config:
@@ -191,7 +205,7 @@ attributes:
       - logs
       - profiles
   pod_identifier:
-    description: The pod identifier value(s) used for the association attempt
+    description: The source(s) used to identify the pod, formatted as 'from/name' (e.g., 'connection', 'resource_attribute/k8s.pod.ip'). Does not contain actual identifier values to avoid high cardinality.
     type: string
   status:
     description: The status of the pod association operation
@@ -204,7 +218,7 @@ telemetry:
   metrics:
     k8s.pod.association:
       prefix: otelcol.
-      enabled: false
+      enabled: true
       description: Number of pod associations' evaluations
       stability: development
       unit: "{resources}"

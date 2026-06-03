@@ -1,0 +1,56 @@
+$defs:
+  attribute_mapping:
+    description: AttributeMapping defines where to write a lookup result.
+    type: object
+    properties:
+      context:
+        description: 'Context overrides the parent LookupConfig context for this mapping. Valid values: "record", "resource". Default: inherits from parent LookupConfig.'
+        $ref: context_id
+      default:
+        description: Default is the value to use when the lookup returns no result. If not set and the lookup fails, no attribute is written. Optional.
+        type: string
+      destination:
+        description: Destination is the attribute key to write the result to. Required.
+        type: string
+      source:
+        description: Source is the field name in the lookup result for map results. Leave empty for 1:1 scalar lookups. Optional.
+        type: string
+  context_id:
+    description: ContextID specifies where to apply the lookup.
+    type: string
+  lookup_config:
+    description: LookupConfig defines a single lookup rule.
+    type: object
+    properties:
+      attributes:
+        description: 'Attributes defines where to write lookup results. Required: at least one mapping.'
+        type: array
+        items:
+          $ref: attribute_mapping
+      context:
+        description: 'Context is the default context for destination attributes. Valid values: "record", "resource". Default: "record"'
+        $ref: context_id
+      key:
+        description: 'Key is an OTTL value expression for extracting the lookup key. Examples: attributes["user.id"], Trim(attributes["raw.id"]), resource.attributes["service.name"] Required.'
+        type: string
+  source_config:
+    description: SourceConfig captures the source type and its opaque settings. Source-specific fields are collected into Config via mapstructure's ",remain" tag and decoded later in the factory's createSource using a mapstructure decoder. An alternative would be to implement confmap.Unmarshaler on Config (like geoipprocessor does) to resolve the source config at unmarshal time. We defer decoding to the factory because the set of available source factories is not known until the factory is constructed (custom sources can be injected via WithSources), so the config layer cannot look up the correct factory. Both paths run during collector startup, so validation timing is equivalent in practice.
+    type: object
+    properties:
+      Config:
+        description: Config holds the source-specific configuration as raw map. It is decoded into the source's typed config struct by the factory at processor creation time.
+        type: object
+        additionalProperties:
+          x-customType: any
+      type:
+        description: Type is the source type identifier (e.g., "noop", "yaml").
+        type: string
+type: object
+properties:
+  lookups:
+    description: Lookups defines the lookup rules. Each rule specifies a key expression to extract the lookup value, and one or more attribute mappings for where to write the results.
+    type: array
+    items:
+      $ref: lookup_config
+  source:
+    $ref: source_config

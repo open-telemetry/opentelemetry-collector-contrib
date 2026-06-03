@@ -3,7 +3,7 @@
 
 //go:generate make mdatagen
 
-// Package awscloudwatchlogsexporter provides a logging exporter for the OpenTelemetry collector.
+// Package awscloudwatchlogsexporter provides an AWS CloudWatch Logs exporter for the OpenTelemetry collector.
 // This package is subject to change and may break configuration settings and behavior.
 package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 

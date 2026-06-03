@@ -6,6 +6,7 @@ package adapter // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
@@ -26,7 +27,11 @@ func GetStorageClient(ctx context.Context, host component.Host, storageID *compo
 		return nil, fmt.Errorf("non-storage extension '%s' found", storageID)
 	}
 
-	return storageExtension.GetClient(ctx, component.KindReceiver, componentID, "")
+	// Make storage immune to component renames that add underscores to the component type.
+	// This is a workaround for https://github.com/open-telemetry/opentelemetry-collector/issues/14988.
+	normalizedComponentType := strings.ReplaceAll(componentID.Type().String(), "_", "")
+	normalizedComponentID := component.MustNewIDWithName(normalizedComponentType, componentID.Name())
+	return storageExtension.GetClient(ctx, component.KindReceiver, normalizedComponentID, "")
 }
 
 func (r *receiver) setStorageClient(ctx context.Context, host component.Host) error {

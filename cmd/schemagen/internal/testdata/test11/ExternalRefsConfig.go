@@ -3,9 +3,14 @@
 
 package test11
 
-import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/external"
+import (
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/external"
+)
 
 type ExternalRefsConfig struct {
-	external.TestConfig `mapstructure:",squash"`
-	Test                external.TestConfig `mapstructure:"test_nested"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	external.TestConfig            `mapstructure:",squash"`
+	Test                           external.TestConfig `mapstructure:"test_nested"`
 }

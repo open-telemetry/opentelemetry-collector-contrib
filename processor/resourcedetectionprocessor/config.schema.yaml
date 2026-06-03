@@ -19,7 +19,7 @@ $defs:
         description: ConsulConfig contains user-specified configurations for the Consul detector
         $ref: ./internal/consul.config
       digitalocean:
-        description: DigitalOceanConfig contains user-specified configurations for the docker detector
+        description: DigitalOceanConfig contains user-specified configurations for the digitalocean detector
         $ref: ./internal/digitalocean.config
       docker:
         description: DockerConfig contains user-specified configurations for the docker detector
@@ -45,6 +45,12 @@ $defs:
       hetzner:
         description: HetznerConfig contains user-specified configurations for the hetzner detector
         $ref: ./internal/hetzner.config
+      ibmcloud_classic:
+        description: IBMCloudClassicConfig contains user-specified configurations for the IBM Cloud Classic detector
+        $ref: ./internal/ibmcloud/classic.config
+      ibmcloud_vpc:
+        description: IBMCloudVPCConfig contains user-specified configurations for the IBM Cloud VPC detector
+        $ref: ./internal/ibmcloud/vpc.config
       k8snode:
         description: K8SNode contains user-specified configurations for the K8SNode detector
         $ref: ./internal/k8snode.config

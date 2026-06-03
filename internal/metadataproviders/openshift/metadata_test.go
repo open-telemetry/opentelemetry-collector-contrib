@@ -329,3 +329,39 @@ func TestQueryEndpointCorrectInfrastructureOpenstack(t *testing.T) {
 	}
 	assert.Equal(t, expect, *got)
 }
+
+func TestOpenShiftClusterVersion_Non200Status(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer ts.Close()
+
+	provider := NewProvider(ts.URL, "bad-token", nil)
+	_, err := provider.OpenShiftClusterVersion(t.Context())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "403")
+}
+
+func TestInfrastructure_Non200Status(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer ts.Close()
+
+	provider := NewProvider(ts.URL, "test-token", nil)
+	_, err := provider.Infrastructure(t.Context())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "500")
+}
+
+func TestK8SClusterVersion_Non200Status(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer ts.Close()
+
+	provider := NewProvider(ts.URL, "bad-token", nil)
+	_, err := provider.K8SClusterVersion(t.Context())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "401")
+}

@@ -135,6 +135,11 @@ func TestReceiver_Headers_Metadata(t *testing.T) {
 				for key, values := range testcase.expected {
 					assert.Equal(t, values, info.Metadata.Get(key))
 				}
+
+				// Verify Kafka record metadata is always present.
+				assert.Equal(t, []string{"otlp_spans"}, info.Metadata.Get("kafka.topic"))
+				assert.Equal(t, []string{"0"}, info.Metadata.Get("kafka.partition"))
+				assert.Equal(t, []string{"0"}, info.Metadata.Get("kafka.offset"))
 			})
 		})
 	}

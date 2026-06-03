@@ -4,16 +4,160 @@
 package container
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
+
+var testPod = &corev1.Pod{
+	ObjectMeta: v1.ObjectMeta{
+		Name:      "test-pod",
+		Namespace: "test-namespace",
+		UID:       types.UID("test-pod-uid"),
+	},
+	Spec: corev1.PodSpec{
+		NodeName: "test-node",
+		Containers: []corev1.Container{
+			{
+				Name:  "test-container",
+				Image: "docker/test-image:v1.0",
+				Resources: corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("2"),
+						corev1.ResourceMemory: resource.MustParse("512Mi"),
+					},
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU:    resource.MustParse("500m"),
+						corev1.ResourceMemory: resource.MustParse("256Mi"),
+					},
+				},
+			},
+		},
+	},
+}
+
+func TestRecordSpecMetrics(t *testing.T) {
+	tests := []struct {
+		name            string
+		containerStatus *corev1.ContainerStatus
+		metricsConfig   func(metadata.MetricsBuilderConfig) metadata.MetricsBuilderConfig
+		expectedFile    string
+	}{
+		{
+			name: "running container",
+			containerStatus: &corev1.ContainerStatus{
+				Name:         "test-container",
+				Image:        "docker/test-image:v1.0",
+				ContainerID:  "docker://abc123",
+				Ready:        true,
+				RestartCount: 2,
+				State: corev1.ContainerState{
+					Running: &corev1.ContainerStateRunning{},
+				},
+			},
+			expectedFile: "expected_running.yaml",
+		},
+		{
+			name: "terminated container",
+			containerStatus: &corev1.ContainerStatus{
+				Name:         "test-container",
+				Image:        "docker/test-image:v1.0",
+				ContainerID:  "docker://def456",
+				Ready:        false,
+				RestartCount: 5,
+				State: corev1.ContainerState{
+					Terminated: &corev1.ContainerStateTerminated{
+						Reason:   "OOMKilled",
+						ExitCode: 137,
+					},
+				},
+				LastTerminationState: corev1.ContainerState{
+					Terminated: &corev1.ContainerStateTerminated{
+						Reason: "OOMKilled",
+					},
+				},
+			},
+			metricsConfig: func(mbc metadata.MetricsBuilderConfig) metadata.MetricsBuilderConfig {
+				mbc.Metrics.K8sContainerStatusState.Enabled = true
+				mbc.Metrics.K8sContainerStatusReason.Enabled = true
+				return mbc
+			},
+			expectedFile: "expected_terminated.yaml",
+		},
+		{
+			name: "waiting container",
+			containerStatus: &corev1.ContainerStatus{
+				Name:         "test-container",
+				Image:        "docker/test-image:v1.0",
+				Ready:        false,
+				RestartCount: 3,
+				State: corev1.ContainerState{
+					Waiting: &corev1.ContainerStateWaiting{
+						Reason: "CrashLoopBackOff",
+					},
+				},
+			},
+			metricsConfig: func(mbc metadata.MetricsBuilderConfig) metadata.MetricsBuilderConfig {
+				mbc.Metrics.K8sContainerStatusState.Enabled = true
+				mbc.Metrics.K8sContainerStatusReason.Enabled = true
+				return mbc
+			},
+			expectedFile: "expected_waiting.yaml",
+		},
+		{
+			name:            "no matching container status",
+			containerStatus: nil,
+			expectedFile:    "expected_no_status.yaml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pod := testPod.DeepCopy()
+			if tt.containerStatus != nil {
+				pod.Status.ContainerStatuses = []corev1.ContainerStatus{*tt.containerStatus}
+			}
+
+			mbc := metadata.NewDefaultMetricsBuilderConfig()
+			if tt.metricsConfig != nil {
+				mbc = tt.metricsConfig(mbc)
+			}
+			mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
+			ts := pcommon.Timestamp(time.Now().UnixNano())
+			assert.NotPanics(t, func() {
+				RecordSpecMetrics(zap.NewNop(), mb, pod.Spec.Containers[0], pod, ts)
+			})
+			m := mb.Emit()
+
+			expectedFile := filepath.Join("testdata", tt.expectedFile)
+			// golden.WriteMetrics(t, expectedFile, m)
+			expected, err := golden.ReadMetrics(expectedFile)
+			require.NoError(t, err)
+			require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+			))
+		})
+	}
+}
 
 func TestGetMetadata(t *testing.T) {
 	refTime := v1.Now()

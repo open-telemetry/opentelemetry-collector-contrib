@@ -6,6 +6,7 @@ package logs
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,7 +28,61 @@ func TestAsSeverity(t *testing.T) {
 
 	for input, expected := range tests {
 		t.Run(input, func(t *testing.T) {
-			assert.Equal(t, expected, asSeverity(input))
+			assert.Equal(t, expected, asSeverity(json.Number(input)))
+		})
+	}
+}
+
+func TestParseUnixTimestamp(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		input   string
+		want    time.Time
+		wantErr bool
+	}{
+		{
+			name:  "valid epoch (zero)",
+			input: "0",
+			want:  time.Unix(0, 0).UTC(),
+		},
+		{
+			name:  "valid epoch (2024-01-01)",
+			input: "1704067200",
+			want:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			name:  "valid epoch (negative, before 1970)",
+			input: "-86400",
+			want:  time.Date(1969, 12, 31, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			name:    "empty string",
+			input:   "",
+			wantErr: true,
+		},
+		{
+			name:    "non-numeric string",
+			input:   "not-a-timestamp",
+			wantErr: true,
+		},
+		{
+			name:    "floating point value",
+			input:   "1704067200.5",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseUnixTimestamp(tt.input)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
 		})
 	}
 }
@@ -267,6 +322,68 @@ func TestConvertInvalidSingleQuotedJSON(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := convertInvalidSingleQuotedJSON(tt.input)
 			assert.Equal(t, string(tt.expected), string(got))
+		})
+	}
+}
+
+func TestUnmarshalStringOrObjectJSON(t *testing.T) {
+	t.Parallel()
+
+	type simple struct {
+		Key   string `json:"key"`
+		Count int    `json:"count"`
+	}
+
+	tests := []struct {
+		name        string
+		input       []byte
+		expected    simple
+		expectError bool
+	}{
+		{
+			name:     "JSON object",
+			input:    []byte(`{"key":"value","count":42}`),
+			expected: simple{Key: "value", Count: 42},
+		},
+		{
+			name:     "stringified JSON object",
+			input:    []byte(`"{\"key\":\"value\",\"count\":42}"`),
+			expected: simple{Key: "value", Count: 42},
+		},
+		{
+			name:        "non-JSON string payload",
+			input:       []byte(`"not-json"`),
+			expectError: true,
+		},
+		{
+			name:        "empty string",
+			input:       []byte(`""`),
+			expectError: true,
+		},
+		{
+			name:        "invalid JSON",
+			input:       []byte(`{invalid`),
+			expectError: true,
+		},
+		{
+			name:     "null value",
+			input:    []byte(`null`),
+			expected: simple{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var got simple
+			err := unmarshalStringOrObjectJSON(tt.input, &got)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expected, got)
+			}
 		})
 	}
 }

@@ -42,7 +42,7 @@ receivers:
         static_configs:
         - targets: ['0.0.0.0:8888']
 
-  filelog:
+  file_log:
     include_file_path: true
     poll_interval: 500ms
     include:
@@ -64,7 +64,7 @@ processors:
     check_interval: 1s
     limit_mib: 4000
     spike_limit_mib: 800
-  resourcedetection:
+  resource_detection:
     detectors: [env, ec2, system]
     system:
       resource_attributes:
@@ -102,17 +102,17 @@ service:
   pipelines:
     metrics:
       receivers: [datadog/connector, otlp, hostmetrics]
-      processors: [memory_limiter, resourcedetection]
+      processors: [memory_limiter, resource_detection]
       exporters: [datadog]
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, resourcedetection]
+      processors: [memory_limiter, resource_detection]
       exporters: [datadog/connector]
     traces/sampling:
       receivers: [datadog/connector]
-      processors: [memory_limiter, resourcedetection]
+      processors: [memory_limiter, resource_detection]
       exporters: [datadog]
     logs:
-      receivers: [otlp, filelog]
-      processors: [memory_limiter, resourcedetection]
+      receivers: [otlp, file_log]
+      processors: [memory_limiter, resource_detection]
       exporters: [datadog]

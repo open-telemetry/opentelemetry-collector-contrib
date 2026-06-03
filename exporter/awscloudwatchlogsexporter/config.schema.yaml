@@ -28,4 +28,4 @@ properties:
       type: string
 allOf:
   - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil.aws_session_settings
+  - $ref: /internal/aws/awsutil.aws_session_settings

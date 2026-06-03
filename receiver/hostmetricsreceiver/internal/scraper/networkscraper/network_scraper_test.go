@@ -44,7 +44,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Standard",
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 			expectConntrakMetrics:   true,
 			expectConnectionsMetric: true,
@@ -52,7 +52,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Standard with direction removed",
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 			expectConntrakMetrics:   true,
 			expectConnectionsMetric: true,
@@ -60,7 +60,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Validate Start Time",
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 			bootTimeFunc:            func(context.Context) (uint64, error) { return 100, nil },
 			expectConntrakMetrics:   true,
@@ -70,7 +70,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Include Filter that matches nothing",
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				Include:              MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
 			},
 			expectConntrakMetrics:   false,
@@ -79,7 +79,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Include Filter",
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				Include:              MatchConfig{Interfaces: []string{"test"}},
 			},
 			newErrRegex:             "^error creating network interface include filters:",
@@ -88,7 +88,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Exclude Filter",
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				Exclude:              MatchConfig{Interfaces: []string{"test"}},
 			},
 			newErrRegex:             "^error creating network interface exclude filters:",
@@ -111,7 +111,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name:             "Connections Error",
-			config:           &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
+			config:           &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()},
 			connectionsFunc:  func(context.Context, string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") },
 			expectedErr:      "failed to read TCP connections: err3",
 			expectedErrCount: connectionsMetricsLen,
@@ -119,7 +119,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Conntrack error ignored if metric disabled",
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(), // conntrack metrics are disabled by default
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(), // conntrack metrics are disabled by default
 			},
 			conntrackFunc:           func(context.Context) ([]net.FilterStat, error) { return nil, errors.New("conntrack failed") },
 			expectConntrakMetrics:   true,
@@ -128,7 +128,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Connections metrics is disabled",
 			config: func() *Config {
-				cfg := Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg := Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 				cfg.Metrics.SystemNetworkConnections.Enabled = false
 				return &cfg
 			}(),

@@ -62,6 +62,9 @@ type accumulator interface {
 	// Collect returns a slice with relevant aggregated metrics and their resource attributes.
 	// The number or metrics and attributes returned will be the same.
 	Collect() (metrics []pmetric.Metric, resourceAttrs []pcommon.Map, scopeNames, scopeVersions, scopeSchemaURLs []string, scopeAttributes []pcommon.Map)
+	// cleanupExpired removes registered metrics whose last update exceeds the
+	// configured expiration, independently of Collect.
+	cleanupExpired()
 }
 
 // LastValueAccumulator keeps last value for accumulated metrics
@@ -423,6 +426,22 @@ func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []str
 	})
 
 	return metrics, resourceAttrs, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes
+}
+
+// cleanupExpired removes registered metrics that have exceeded the expiration
+// time. This is the same expiration logic that Collect() performs inline, but
+// can be called independently so that stale time series are evicted even when
+// no Prometheus scrape is active.
+func (a *lastValueAccumulator) cleanupExpired() {
+	expirationTime := time.Now().Add(-a.metricExpiration)
+	a.registeredMetrics.Range(func(key, value any) bool {
+		v := value.(*accumulatedValue)
+		if expirationTime.After(v.updated) {
+			a.logger.Debug(fmt.Sprintf("metric expired: %s", v.value.Name()))
+			a.registeredMetrics.Delete(key)
+		}
+		return true
+	})
 }
 
 func timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map, metric pmetric.Metric, attributes, resourceAttrs pcommon.Map) string {

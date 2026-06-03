@@ -13,21 +13,25 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding"
 )
 
-type elbAccessLogUnmarshaler struct {
+var _ unmarshaler.StreamingLogsUnmarshaler = (*ElbAccessLogUnmarshaler)(nil)
+
+type ElbAccessLogUnmarshaler struct {
 	buildInfo component.BuildInfo
 	logger    *zap.Logger
 }
 
-func NewELBAccessLogUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) unmarshaler.AWSUnmarshaler {
-	return &elbAccessLogUnmarshaler{
+func NewELBAccessLogUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) *ElbAccessLogUnmarshaler {
+	return &ElbAccessLogUnmarshaler{
 		buildInfo: buildInfo,
 		logger:    logger,
 	}
@@ -37,89 +41,106 @@ type resourceAttributes struct {
 	resourceID string
 }
 
-// UnmarshalAWSLogs processes a file containing ELB access logs.
-func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	scanner := bufio.NewScanner(reader)
-
-	logs, resourceLogs, scopeLogs := f.createLogs()
-	resourceAttr := &resourceAttributes{}
-
-	var line string
-	var fields []string
-
-	// Read first line to determine format
-	if !scanner.Scan() {
-		return plog.Logs{}, errors.New("no log lines found")
-	}
-	line = scanner.Text()
-
-	fields, err := extractFields(line)
+// UnmarshalAWSLogs processes all logs from the provided reader
+func (f *ElbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
+	// Decode as a stream but flush all at once using flush options
+	streamDecoder, err := f.NewLogsDecoder(reader, encoding.WithFlushItems(0), encoding.WithFlushBytes(0))
 	if err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to parse log line: %w", err)
-	}
-	if len(fields) == 0 {
-		return plog.Logs{}, fmt.Errorf("log line has no fields: %s", line)
+		return plog.Logs{}, err
 	}
 
-	// Check for control message
-	if fields[0] == EnableControlMessage {
-		f.logger.Info(fmt.Sprintf("Control message received: %s", line))
-		return plog.NewLogs(), nil
-	}
-
-	// Determine syntax
-	syntax, err := findLogSyntaxByField(fields[0])
+	logs, err := streamDecoder.DecodeLogs()
 	if err != nil {
-		return plog.Logs{}, fmt.Errorf("unable to determine log syntax: %w", err)
-	}
-	for {
-		// Process lines based on determined syntax
-		switch syntax {
-		case albAccessLogs:
-			err = f.handleALBAccessLogs(fields, resourceAttr, scopeLogs)
-			if err != nil {
-				return plog.Logs{}, err
-			}
-		case nlbAccessLogs:
-			err = f.handleNLBAccessLogs(fields, resourceAttr, scopeLogs)
-			if err != nil {
-				return plog.Logs{}, err
-			}
-		case clbAccessLogs:
-			err = f.handleCLBAccessLogs(fields, resourceAttr, scopeLogs)
-			if err != nil {
-				return plog.Logs{}, err
-			}
-		default:
-			return plog.Logs{}, fmt.Errorf("unsupported log syntax: %s", syntax)
+		// we must check for EOF with direct comparison and avoid wrapped EOF that can come from stream itself
+		//nolint:errorlint
+		if err == io.EOF {
+			// EOF indicates no logs were found, return any logs that's available
+			return logs, nil
 		}
 
-		// Refill with next line until we reach the scanner end
-		if !scanner.Scan() {
-			break
-		}
-
-		line = scanner.Text()
-		fields, err = extractFields(line)
-		if err != nil {
-			return plog.Logs{}, fmt.Errorf("failed to parse log line: %w", err)
-		}
-		if len(fields) == 0 {
-			return plog.Logs{}, fmt.Errorf("log line has no fields: %s", line)
-		}
+		return plog.Logs{}, err
 	}
 
-	// Handle potential scanner errors
-	if err := scanner.Err(); err != nil {
-		return plog.Logs{}, fmt.Errorf("error scanning log lines: %w", err)
-	}
-
-	f.setResourceAttributes(resourceAttr, resourceLogs)
 	return logs, nil
 }
 
+// NewLogsDecoder returns a LogsDecoder that processes ELB access logs from the provided reader.
+// Auto-detects the ELB Log type (ALB, NLB, CLB, or control message) using the first log line.
+// Supported sub formats:
+//   - ALB/NLB/CLB access logs: Supports offset-based streaming; offset tracks bytes processed
+//   - Control message: Returns empty log; offset tracks bytes processed
+func (f *ElbAccessLogUnmarshaler) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	bufReader := bufio.NewReader(reader)
+	syntax, err := peekAndGetSyntax(bufReader)
+	if err != nil {
+		return nil, err
+	}
+
+	scannerHelper, err := xstreamencoding.NewScannerHelper(bufReader, options...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create scanner helper: %w", err)
+	}
+
+	decodeF := func() (plog.Logs, error) {
+		logs, resourceLogs, scopeLogs := f.createLogs()
+		resourceAttr := &resourceAttributes{}
+
+		for {
+			line, flush, err := scannerHelper.ScanString()
+			if err != nil {
+				if !errors.Is(err, io.EOF) {
+					return plog.Logs{}, fmt.Errorf("error reading ELB access logs from stream: %w", err)
+				}
+
+				if line == "" {
+					break
+				}
+			}
+
+			fields, err := extractFields(line)
+			if err != nil {
+				return plog.Logs{}, fmt.Errorf("failed to parse log line: %w", err)
+			}
+
+			if len(fields) == 0 {
+				return plog.Logs{}, fmt.Errorf("log line has no fields: %s", line)
+			}
+
+			// Process line based on syntax
+			switch syntax {
+			case albAccessLogs:
+				err = f.handleALBAccessLogs(fields, resourceAttr, scopeLogs)
+			case nlbAccessLogs:
+				err = f.handleNLBAccessLogs(fields, resourceAttr, scopeLogs)
+			case clbAccessLogs:
+				err = f.handleCLBAccessLogs(fields, resourceAttr, scopeLogs)
+			case controlMessage:
+				// Control messages are conveyed as empty logs
+			}
+			if err != nil {
+				return plog.Logs{}, err
+			}
+
+			if flush {
+				break
+			}
+		}
+
+		f.setResourceAttributes(resourceAttr, resourceLogs)
+
+		if scopeLogs.LogRecords().Len() == 0 {
+			// return empty log with EOF
+			return plog.NewLogs(), io.EOF
+		}
+
+		return logs, nil
+	}
+
+	return xstreamencoding.NewLogsDecoderAdapter(decodeF, scannerHelper.Offset), nil
+}
+
 // createLogs with the expected fields for the scope logs
-func (f *elbAccessLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog.ScopeLogs) {
+func (f *ElbAccessLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog.ScopeLogs) {
 	logs := plog.NewLogs()
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
@@ -130,14 +151,14 @@ func (f *elbAccessLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, pl
 }
 
 // setResourceAttributes based on the resourceAttributes
-func (*elbAccessLogUnmarshaler) setResourceAttributes(r *resourceAttributes, logs plog.ResourceLogs) {
+func (*ElbAccessLogUnmarshaler) setResourceAttributes(r *resourceAttributes, logs plog.ResourceLogs) {
 	attr := logs.Resource().Attributes()
 	attr.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 	attr.PutStr(string(conventions.CloudResourceIDKey), r.resourceID)
 }
 
 // handleCLBAccessLogs handles clb access logs
-func (f *elbAccessLogUnmarshaler) handleCLBAccessLogs(fields []string, resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs) error {
+func (f *ElbAccessLogUnmarshaler) handleCLBAccessLogs(fields []string, resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs) error {
 	record, err := convertTextToCLBAccessLogRecord(fields)
 	if err != nil {
 		return fmt.Errorf("unable to convert log line to CLB record: %w", err)
@@ -148,7 +169,7 @@ func (f *elbAccessLogUnmarshaler) handleCLBAccessLogs(fields []string, resourceA
 
 // addToCLBAccessLogs adds clb record to provided logs based
 // on the extracted logs of each resource
-func (f *elbAccessLogUnmarshaler) addToCLBAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, clbRecord CLBAccessLogRecord) {
+func (f *ElbAccessLogUnmarshaler) addToCLBAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, clbRecord CLBAccessLogRecord) {
 	// Convert timestamp first; if invalid, skip log creation
 	epochNanoseconds, err := convertToUnixEpoch(clbRecord.Time)
 	if err != nil {
@@ -198,7 +219,7 @@ func (f *elbAccessLogUnmarshaler) addToCLBAccessLogs(resourceAttr *resourceAttri
 }
 
 // handleALBAccessLogs handles alb access logs
-func (f *elbAccessLogUnmarshaler) handleALBAccessLogs(fields []string, resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs) error {
+func (f *ElbAccessLogUnmarshaler) handleALBAccessLogs(fields []string, resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs) error {
 	record, err := convertTextToALBAccessLogRecord(fields)
 	if err != nil {
 		return fmt.Errorf("unable to convert log line to ALB record: %w", err)
@@ -209,7 +230,7 @@ func (f *elbAccessLogUnmarshaler) handleALBAccessLogs(fields []string, resourceA
 
 // addToALBAccessLogs adds alb record to provided logs based
 // on the extracted logs of each resource
-func (f *elbAccessLogUnmarshaler) addToALBAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, albRecord ALBAccessLogRecord) {
+func (f *ElbAccessLogUnmarshaler) addToALBAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, albRecord ALBAccessLogRecord) {
 	// Convert timestamp first; if invalid, skip log creation
 	epochNanoseconds, err := convertToUnixEpoch(albRecord.Time)
 	if err != nil {
@@ -323,10 +344,10 @@ func (f *elbAccessLogUnmarshaler) addToALBAccessLogs(resourceAttr *resourceAttri
 }
 
 // handleNLBAccessLogs handles nlb access logs
-func (f *elbAccessLogUnmarshaler) handleNLBAccessLogs(fields []string, resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs) error {
+func (f *ElbAccessLogUnmarshaler) handleNLBAccessLogs(fields []string, resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs) error {
 	record, err := convertTextToNLBAccessLogRecord(fields)
 	if err != nil {
-		return fmt.Errorf("unable to convert log line to ALB record: %w", err)
+		return fmt.Errorf("unable to convert log line to NLB record: %w", err)
 	}
 	f.addToNLBAccessLogs(resourceAttr, scopeLogs, record)
 	return nil
@@ -334,7 +355,7 @@ func (f *elbAccessLogUnmarshaler) handleNLBAccessLogs(fields []string, resourceA
 
 // addToNLBAccessLogs adds nlb record to provided logs based
 // on the extracted logs of each resource
-func (f *elbAccessLogUnmarshaler) addToNLBAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, nlbRecord NLBAccessLogRecord) {
+func (f *ElbAccessLogUnmarshaler) addToNLBAccessLogs(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, nlbRecord NLBAccessLogRecord) {
 	// Convert timestamp first; if invalid, skip log creation
 	epochNanoseconds, err := convertToUnixEpoch(nlbRecord.Time)
 	if err != nil {
@@ -413,4 +434,35 @@ func (f *elbAccessLogUnmarshaler) addToNLBAccessLogs(resourceAttr *resourceAttri
 	// move recordLog to scope
 	rScope := scopeLogs.LogRecords().AppendEmpty()
 	recordLog.MoveTo(rScope)
+}
+
+func peekAndGetSyntax(bufReader *bufio.Reader) (logSyntaxType, error) {
+	// 100 bytes should be enough to cover first sections of the log line
+	peekedData, err := bufReader.Peek(100)
+	if err != nil {
+		if !errors.Is(err, io.EOF) {
+			return "", fmt.Errorf("failed to peek log line: %w", err)
+		}
+	}
+
+	fields, err := extractFields(string(peekedData))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse log line: %w", err)
+	}
+	if len(fields) == 0 {
+		return "", fmt.Errorf("invalid first ELB access log line part: %s", string(peekedData))
+	}
+
+	// Check for control message
+	if fields[0] == EnableControlMessage {
+		return controlMessage, nil
+	}
+
+	// Determine syntax
+	syntax, err := findLogSyntaxByField(fields[0])
+	if err != nil {
+		return "", fmt.Errorf("unable to determine log syntax: %w", err)
+	}
+
+	return syntax, nil
 }

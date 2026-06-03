@@ -20,12 +20,13 @@ import (
 )
 
 type Settings struct {
-	Namespace         string
-	ExternalLabels    map[string]string
-	DisableTargetInfo bool
-	DisableScopeInfo  bool
-	AddMetricSuffixes bool
-	SendMetadata      bool
+	Namespace           string
+	ExternalLabels      map[string]string
+	DisableTargetInfo   bool
+	DisableScopeInfo    bool
+	AddMetricSuffixes   bool
+	TranslationStrategy string
+	SendMetadata        bool
 }
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.
@@ -51,13 +52,37 @@ type prometheusConverter struct {
 	unitNamer   otlptranslator.UnitNamer
 }
 
+func getTranslationConfiguration(settings Settings) (withSuffixes, utf8Allowed bool) {
+	withSuffixes = settings.AddMetricSuffixes
+	utf8Allowed = false
+
+	if settings.TranslationStrategy == "" {
+		return withSuffixes, utf8Allowed
+	}
+
+	switch settings.TranslationStrategy {
+	case "UnderscoreEscapingWithSuffixes":
+		return true, false
+	case "UnderscoreEscapingWithoutSuffixes":
+		return false, false
+	case "NoUTF8EscapingWithSuffixes":
+		return true, true
+	case "NoTranslation":
+		return false, true
+	default:
+		return withSuffixes, utf8Allowed
+	}
+}
+
 func newPrometheusConverter(settings Settings) *prometheusConverter {
+	withSuffixes, utf8Allowed := getTranslationConfiguration(settings)
+
 	return &prometheusConverter{
 		unique:      map[uint64]*prompb.TimeSeries{},
 		conflicts:   map[uint64][]*prompb.TimeSeries{},
-		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
-		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled()},
-		unitNamer:   otlptranslator.UnitNamer{},
+		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: withSuffixes, Namespace: settings.Namespace, UTF8Allowed: utf8Allowed},
+		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled(), UTF8Allowed: utf8Allowed},
+		unitNamer:   otlptranslator.UnitNamer{UTF8Allowed: utf8Allowed},
 	}
 }
 
@@ -108,7 +133,11 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, scope, metric, settings, promName))
+					if metric.Sum().IsMonotonic() {
+						errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, scope, metric, settings, promName))
+					} else {
+						errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, settings, promName))
+					}
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
 					if dataPoints.Len() == 0 {

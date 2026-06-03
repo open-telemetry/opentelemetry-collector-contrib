@@ -1,4 +1,11 @@
-type: kubeletstats
+display_name: Kubelet Stats Receiver
+type: kubelet_stats
+deprecated_type: kubeletstats
+reaggregation_enabled: true
+
+description: |
+  The Kubelet Stats Receiver pulls node, pod, container, and volume metrics from the API server on a kubelet
+  and sends it down the metric pipeline for further processing.
 
 status:
   class: receiver
@@ -11,7 +18,7 @@ status:
 resource_attributes:
   aws.volume.id:
     description: "[DEPRECATED] The id of the AWS Volume"
-    enabled: true
+    enabled: false
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
@@ -21,25 +28,25 @@ resource_attributes:
     type: string
   fs.type:
     description: "[DEPRECATED] The filesystem type of the Volume"
-    enabled: true
+    enabled: false
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
   gce.pd.name:
     description: "[DEPRECATED] The name of the persistent disk in GCE"
-    enabled: true
+    enabled: false
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
   glusterfs.endpoints.name:
     description: "[DEPRECATED] The endpoint name that details Glusterfs topology"
-    enabled: true
+    enabled: false
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
   glusterfs.path:
     description: "[DEPRECATED] Glusterfs volume path"
-    enabled: true
+    enabled: false
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
@@ -54,6 +61,10 @@ resource_attributes:
     type: string
   k8s.node.name:
     description: "The name of the Node"
+    enabled: true
+    type: string
+  k8s.node.system_container.name:
+    description: "The name of the system container"
     enabled: true
     type: string
   k8s.persistentvolumeclaim.name:
@@ -78,17 +89,23 @@ resource_attributes:
     type: string
   partition:
     description: "[DEPRECATED] The partition in the Volume"
-    enabled: true
+    enabled: false
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
 attributes:
   direction:
     description: Direction of flow of bytes/operations (receive or transmit).
+    requirement_level: recommended
     type: string
     enum: [receive, transmit]
+  fs.type:
+    description: The type of filesystem component.
+    type: string
+    enum: [rootfs, logs]
   interface:
     description: Name of the network interface.
+    requirement_level: recommended
     type: string
 
 metrics:
@@ -216,6 +233,16 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  k8s.container.ephemeral_storage.usage:
+    enabled: false
+    description: "Ephemeral storage used by the container."
+    unit: By
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [fs.type]
   k8s.container.memory.node.utilization:
     enabled: false
     description: "Container memory utilization as a ratio of the node's capacity"
@@ -350,6 +377,40 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
+  k8s.node.system_container.cpu.time:
+    enabled: false
+    description: "Total cumulative CPU time (sum of all cores) spent by the system container since its creation"
+    unit: s
+    stability: development
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
+  k8s.node.system_container.cpu.usage:
+    enabled: false
+    description: "Total CPU usage (sum of all cores per second) averaged over the sample window for the system container"
+    unit: "{cpu}"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: []
+  k8s.node.system_container.memory.usage:
+    enabled: false
+    description: "System container memory usage"
+    unit: By
+    stability: development
+    gauge:
+      value_type: int
+    attributes: []
+  k8s.node.system_container.memory.working_set:
+    enabled: false
+    description: "System container memory working_set"
+    unit: By
+    stability: development
+    gauge:
+      value_type: int
+    attributes: []
   k8s.node.uptime:
     enabled: false
     description: "The time since the node started"

@@ -8,7 +8,7 @@ list-tests:
 
 .PHONY: run-tests
 run-tests: $(GOJUNIT)
-	GOJUNIT="$(GOJUNIT)" ./runtests.sh
+	TEST_ARGS="$${TEST_ARGS} -timeout 30m" GOJUNIT="$(GOJUNIT)" ./runtests.sh
 
 .PHONY: list-loadtest-tests
 list-loadtest-tests:

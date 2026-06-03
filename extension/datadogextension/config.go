@@ -1,10 +1,15 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
 import (
 	"errors"
+	"fmt"
+	"slices"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -27,6 +32,18 @@ type Config struct {
 	// DeploymentType indicates the type of deployment (gateway, daemonset, or unknown).
 	// Defaults to "unknown" if not set.
 	DeploymentType string `mapstructure:"deployment_type"`
+	// InstallationMethod indicates how the collector was installed.
+	// Valid values: "", "kubernetes", "bare-metal", "docker", "ecs-fargate", "eks-fargate".
+	// Defaults to "" (unset) if not configured.
+	InstallationMethod string `mapstructure:"installation_method"`
+	// GatewayService is the k8s Service fronting the gateway collector pods.
+	// Set by gateway collectors. Format: "service" or "namespace/service".
+	// Together with cluster_name, it forms the join key for fleet topology queries.
+	GatewayService string `mapstructure:"gateway_service"`
+	// GatewayDestination is the k8s Service that this collector forwards telemetry to.
+	// Set by agent/daemonset collectors. Format: "service" or "namespace/service".
+	// Must match gateway_service on the receiving gateway collector.
+	GatewayDestination string `mapstructure:"gateway_destination"`
 }
 
 // Validate ensures that the configuration is valid.
@@ -47,6 +64,11 @@ func (c *Config) Validate() error {
 	// Set default if not provided
 	if c.DeploymentType == "" {
 		c.DeploymentType = "unknown"
+	}
+	// Validate installation_method if set
+	validInstallationMethods := []string{"", "kubernetes", "bare-metal", "docker", "ecs-fargate", "eks-fargate"}
+	if !slices.Contains(validInstallationMethods, c.InstallationMethod) {
+		return fmt.Errorf("installation_method must be one of: %s", strings.Join(validInstallationMethods[1:], ", "))
 	}
 	return nil
 }

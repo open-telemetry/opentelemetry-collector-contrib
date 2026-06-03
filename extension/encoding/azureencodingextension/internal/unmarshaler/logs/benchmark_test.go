@@ -56,7 +56,7 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 func BenchmarkUnmarshalLogsByCategory(b *testing.B) {
 	testCategoriesDirs, err := os.ReadDir(testFilesDirectory)
 	require.NoError(b, err)
-	rootPath, err := gojson.CreatePath(unmarshaler.JSONPathEventHubLogRecords)
+	rootPath, err := gojson.CreatePath(unmarshaler.JSONPathEventHubRecords)
 	require.NoError(b, err)
 	u := &ResourceLogsUnmarshaler{
 		buildInfo: component.BuildInfo{

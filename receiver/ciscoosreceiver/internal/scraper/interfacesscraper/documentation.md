@@ -22,13 +22,13 @@ The number of errors encountered
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| network.io.direction | Direction of flow of bytes/operations (receive or transmit) | Str: ``receive``, ``transmit`` | Recommended |
-| network.interface.description | The description/alias of the network interface | Any Str | Recommended |
-| network.interface.mac | The MAC address of the network interface | Any Str | Recommended |
-| network.interface.name | The name of the network interface | Any Str | Recommended |
-| network.interface.speed | The configured speed of the network interface | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| network.io.direction | Direction of flow of bytes/operations (receive or transmit) | Str: ``receive``, ``transmit`` | Recommended | - |
+| network.interface.description | The description/alias of the network interface | Any Str | Recommended | - |
+| network.interface.mac | The MAC address of the network interface | Any Str | Recommended | - |
+| network.interface.name | The name of the network interface | Any Str | Recommended | - |
+| network.interface.speed | The configured speed of the network interface | Any Str | Recommended | - |
 
 ### system.network.interface.status
 
@@ -40,12 +40,12 @@ Interface operational status (1 = up, 0 = down)
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| network.interface.description | The description/alias of the network interface | Any Str | Recommended |
-| network.interface.mac | The MAC address of the network interface | Any Str | Recommended |
-| network.interface.name | The name of the network interface | Any Str | Recommended |
-| network.interface.speed | The configured speed of the network interface | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| network.interface.description | The description/alias of the network interface | Any Str | Recommended | - |
+| network.interface.mac | The MAC address of the network interface | Any Str | Recommended | - |
+| network.interface.name | The name of the network interface | Any Str | Recommended | - |
+| network.interface.speed | The configured speed of the network interface | Any Str | Recommended | - |
 
 ### system.network.io
 
@@ -57,13 +57,13 @@ The number of bytes transmitted and received
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| network.io.direction | Direction of flow of bytes/operations (receive or transmit) | Str: ``receive``, ``transmit`` | Recommended |
-| network.interface.description | The description/alias of the network interface | Any Str | Recommended |
-| network.interface.mac | The MAC address of the network interface | Any Str | Recommended |
-| network.interface.name | The name of the network interface | Any Str | Recommended |
-| network.interface.speed | The configured speed of the network interface | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| network.io.direction | Direction of flow of bytes/operations (receive or transmit) | Str: ``receive``, ``transmit`` | Recommended | - |
+| network.interface.description | The description/alias of the network interface | Any Str | Recommended | - |
+| network.interface.mac | The MAC address of the network interface | Any Str | Recommended | - |
+| network.interface.name | The name of the network interface | Any Str | Recommended | - |
+| network.interface.speed | The configured speed of the network interface | Any Str | Recommended | - |
 
 ### system.network.packet.count
 
@@ -75,13 +75,13 @@ The number of packets transmitted or received, categorized by type
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| network.packet.type | Type of packet (multicast or broadcast) | Str: ``multicast``, ``broadcast`` | Recommended |
-| network.interface.description | The description/alias of the network interface | Any Str | Recommended |
-| network.interface.mac | The MAC address of the network interface | Any Str | Recommended |
-| network.interface.name | The name of the network interface | Any Str | Recommended |
-| network.interface.speed | The configured speed of the network interface | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| network.packet.type | Type of packet (multicast or broadcast) | Str: ``multicast``, ``broadcast`` | Recommended | - |
+| network.interface.description | The description/alias of the network interface | Any Str | Recommended | - |
+| network.interface.mac | The MAC address of the network interface | Any Str | Recommended | - |
+| network.interface.name | The name of the network interface | Any Str | Recommended | - |
+| network.interface.speed | The configured speed of the network interface | Any Str | Recommended | - |
 
 ### system.network.packet.dropped
 
@@ -93,18 +93,18 @@ The number of packets dropped
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| network.io.direction | Direction of flow of bytes/operations (receive or transmit) | Str: ``receive``, ``transmit`` | Recommended |
-| network.interface.description | The description/alias of the network interface | Any Str | Recommended |
-| network.interface.mac | The MAC address of the network interface | Any Str | Recommended |
-| network.interface.name | The name of the network interface | Any Str | Recommended |
-| network.interface.speed | The configured speed of the network interface | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| network.io.direction | Direction of flow of bytes/operations (receive or transmit) | Str: ``receive``, ``transmit`` | Recommended | - |
+| network.interface.description | The description/alias of the network interface | Any Str | Recommended | - |
+| network.interface.mac | The MAC address of the network interface | Any Str | Recommended | - |
+| network.interface.name | The name of the network interface | Any Str | Recommended | - |
+| network.interface.speed | The configured speed of the network interface | Any Str | Recommended | - |
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| host.ip | The IP address of the Cisco network device | Any Str | true |
-| hw.type | Type of the physical hardware component | Any Str | true |
-| os.name | The operating system type of the Cisco device | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| host.ip | The IP address of the Cisco network device | Any Str | true | - |
+| hw.type | Type of the physical hardware component | Any Str | true | - |
+| os.name | The operating system type of the Cisco device | Any Str | true | - |

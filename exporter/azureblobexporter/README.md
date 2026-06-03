@@ -87,7 +87,7 @@ extensions:
     unmarshaling_separator: "\r?\n"
 
 exporter:
-  azureblob/1:
+  azure_blob/1:
     url: "https://<your-account>.blob.core.windows.net/"
     container:
       logs: "logs"

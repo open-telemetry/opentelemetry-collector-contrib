@@ -10,7 +10,10 @@ import (
 	"github.com/lestrrat-go/strftime"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 var (
@@ -20,6 +23,10 @@ var (
 )
 
 type Config struct {
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	RetrySettings   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+
 	Encoding *component.ID `mapstructure:"encoding"`
 	Bucket   bucketConfig  `mapstructure:"bucket"`
 }
@@ -44,10 +51,15 @@ type bucketConfig struct {
 	// Partition configures the time-based partition format and file prefix.
 	Partition partitionConfig `mapstructure:"partition"`
 
-	// ReuseIfExists decides if the bucket should be used if it already
-	// exists. If it is set to false, an error will be thrown if the
-	// bucket already exists. Otherwise, the existent bucket will be
-	// used.
+	// ReuseIfExists controls whether to reuse an existing bucket or create a new one.
+	// When set to true:
+	//   - The exporter checks if the bucket exists (requires storage.buckets.get on the bucket)
+	//   - If the bucket exists, it will be used
+	//   - If the bucket does not exist, an error is returned
+	// When set to false:
+	//   - The exporter attempts to create the bucket (requires storage.buckets.create at project level)
+	//   - If the bucket already exists, an error is returned
+	// Set to true when the service account lacks project-level bucket creation permissions but has bucket-level permissions.
 	ReuseIfExists bool `mapstructure:"reuse_if_exists"`
 
 	// Region where bucket will be created or where it exists. If it is left
@@ -80,6 +92,9 @@ var _ xconfmap.Validator = (*Config)(nil)
 
 func createDefaultConfig() component.Config {
 	return &Config{
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+		QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+		RetrySettings:   configretry.NewDefaultBackOffConfig(),
 		Bucket: bucketConfig{
 			ReuseIfExists: false,
 			FilePrefix:    "logs",

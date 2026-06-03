@@ -31,6 +31,7 @@ import (
 	toolkit_web "github.com/prometheus/exporter-toolkit/web"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
+	"github.com/prometheus/prometheus/promql/parser"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/util/httputil"
@@ -79,13 +80,6 @@ type pReceiver struct {
 
 // New creates a new prometheus.Receiver reference.
 func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Metrics) (*pReceiver, error) {
-	// This serves as the default for all ScrapeConfigs that don't have it explicitly set.
-	// TODO: Remove this once feature-gates and configuration options are removed.
-	extraMetrics := metadata.ReceiverPrometheusreceiverEnableReportExtraScrapeMetricsFeatureGate.IsEnabled() || (cfg.ReportExtraScrapeMetrics && !metadata.ReceiverPrometheusreceiverRemoveReportExtraScrapeMetricsConfigFeatureGate.IsEnabled())
-	if extraMetrics {
-		cfg.PrometheusConfig.GlobalConfig.ExtraScrapeMetrics = &extraMetrics
-	}
-
 	if err := cfg.PrometheusConfig.Reload(); err != nil {
 		return nil, fmt.Errorf("failed to reload Prometheus config: %w", err)
 	}
@@ -152,11 +146,8 @@ func (r *pReceiver) initPrometheusComponents(
 	ctx context.Context, logger *slog.Logger, host component.Host,
 	opts prometheusComponentTestOptions,
 ) error {
-	// Some SD mechanisms use the "refresh" package, which has its own metrics.
-	refreshSdMetrics := discovery.NewRefreshMetrics(r.registerer)
-
-	// Register the metrics specific for each SD mechanism, and the ones for the refresh package.
-	sdMetrics, err := discovery.RegisterSDMetrics(r.registerer, refreshSdMetrics)
+	// Register the metrics needed by service discovery mechanisms.
+	sdMetrics, err := discovery.CreateAndRegisterSDMetrics(r.registerer)
 	if err != nil {
 		return fmt.Errorf("failed to register service discovery metrics: %w", err)
 	}
@@ -196,21 +187,21 @@ func (r *pReceiver) initPrometheusComponents(
 	// for testing only
 	if r.cfg.skipOffsetting {
 		optsValue := reflect.ValueOf(scrapeOpts).Elem()
-		field := optsValue.FieldByName("skipOffsetting")
+		field := optsValue.FieldByName("skipJitterOffsetting")
 		reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).
 			Elem().
 			Set(reflect.ValueOf(true))
 	}
 
-	scrapeManager, err := scrape.NewManager(scrapeOpts, logger, nil, store, r.registerer)
+	scrapeManager, err := scrape.NewManager(scrapeOpts, logger, nil, nil, store, r.registerer)
 	if err != nil {
 		return err
 	}
 	r.scrapeManager = scrapeManager
 
 	r.unregisterMetrics = func() {
-		refreshSdMetrics.Unregister()
-		for _, sdMetric := range sdMetrics {
+		sdMetrics.RefreshManager.Unregister()
+		for _, sdMetric := range sdMetrics.MechanismMetrics {
 			sdMetric.Unregister()
 		}
 		r.discoveryManager.UnregisterMetrics()
@@ -295,9 +286,10 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	factoryAr := func(_ context.Context) api_v1.AlertmanagerRetriever { return nil }
 	factoryRr := func(_ context.Context) api_v1.RulesRetriever { return nil }
 	var app storage.Appendable
+	var appV2 storage.AppendableV2
 	logger := promslog.NewNopLogger()
 
-	apiV1 := api_v1.NewAPI(o.QueryEngine, o.Storage, app, o.ExemplarStorage, factorySPr, factoryTr, factoryAr,
+	apiV1 := api_v1.NewAPI(o.QueryEngine, o.Storage, app, appV2, o.ExemplarStorage, factorySPr, factoryTr, factoryAr,
 
 		// This ensures that any changes to the config made, even by the target allocator, are reflected in the API.
 		func() promconfig.Config {
@@ -314,14 +306,14 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 				f(w, r)
 			}
 		},
-		o.LocalStorage,   // nil
-		o.TSDBDir,        // nil
-		o.EnableAdminAPI, // nil
+		nil,              // TSDBAdminStats
+		o.TSDBDir,        // ""
+		o.EnableAdminAPI, // false
 		logger,
 		factoryRr,
-		o.RemoteReadSampleLimit,      // nil
-		o.RemoteReadConcurrencyLimit, // nil
-		o.RemoteReadBytesInFrame,     // nil
+		o.RemoteReadSampleLimit,      // 0
+		o.RemoteReadConcurrencyLimit, // 0
+		o.RemoteReadBytesInFrame,     // 0
 		o.IsAgent,
 		o.CORSOrigin,
 		func() (api_v1.RuntimeInfo, error) {
@@ -335,7 +327,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 
 			return status, nil
 		},
-		&web.PrometheusVersion{
+		&api_v1.PrometheusVersion{
 			Version:   version.Version,
 			Revision:  version.Revision,
 			Branch:    version.Branch,
@@ -359,6 +351,8 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 		false, // appendMetadata from remote write
 		nil,   // OverrideErrorCode
 		nil,   // FeatureRegistry
+		api_v1.OpenAPIOptions{},
+		parser.NewParser(parser.Options{}),
 	)
 
 	// Create listener and monitor with conntrack in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579

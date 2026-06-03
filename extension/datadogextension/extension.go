@@ -1,10 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
 import (
 	"context"
+	"runtime"
 	"sync"
 	"time"
 
@@ -20,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
@@ -78,11 +82,15 @@ type datadogExtension struct {
 	configs *configs
 
 	// components to assist in payload sending/logging
-	logger     *zap.Logger
-	serializer agentcomponents.SerializerWithForwarder
+	logger            *zap.Logger
+	serializer        agentcomponents.SerializerWithForwarder
+	telemetrySettings component.TelemetrySettings
 
 	// struct to store extension info
 	info *info
+
+	// host stores the component host for use when creating the HTTP server
+	host component.Host
 
 	otelCollectorMetadata *payload.OtelCollector
 	httpServer            *httpserver.Server
@@ -125,8 +133,11 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		e.configs.extension.API.Site,
 		fullConfig,
 		e.configs.extension.DeploymentType,
+		e.configs.extension.InstallationMethod,
 		buildInfo,
 		int64(payloadTTL),
+		e.configs.extension.GatewayService,
+		e.configs.extension.GatewayDestination,
 	)
 
 	// Populate resource attributes collected from TelemetrySettings.Resource
@@ -165,8 +176,12 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		e.info.host.Identifier,
 		e.info.uuid,
 		otelCollectorPayload,
+		e.telemetrySettings,
 	)
-	e.httpServer.Start()
+	startErr := e.httpServer.Start(context.Background(), e.host)
+	if startErr != nil {
+		return startErr
+	}
 	_, err = e.httpServer.SendPayload()
 	if err != nil {
 		return err
@@ -197,6 +212,9 @@ func (*datadogExtension) ComponentStatusChanged(
 
 // Start starts the extension via the component interface.
 func (e *datadogExtension) Start(_ context.Context, host component.Host) error {
+	// Store host for later use when creating the HTTP server
+	e.host = host
+
 	// Retrieve module information from the host
 	if mi, ok := host.(hostcapabilities.ModuleInfo); ok {
 		e.info.modules = mi.GetModuleInfos()
@@ -390,6 +408,10 @@ func newExtension(
 			return true
 		})
 	}
+	// Ensure os.type is always present; defer to any value already set by a resource detector
+	if _, ok := resourceMap[string(conventions.OSTypeKey)]; !ok {
+		resourceMap[string(conventions.OSTypeKey)] = runtime.GOOS
+	}
 
 	// configure payloadSender struct
 	ctxWithCancel, cancel := context.WithCancel(ctx)
@@ -397,9 +419,10 @@ func newExtension(
 	channel := make(chan struct{}, 1)
 
 	e := &datadogExtension{
-		configs:    &configs{extension: cfg},
-		logger:     set.Logger,
-		serializer: serializer,
+		configs:           &configs{extension: cfg},
+		logger:            set.Logger,
+		serializer:        serializer,
+		telemetrySettings: set.TelemetrySettings,
 		info: &info{
 			host:               host,
 			hostnameSource:     hostnameSource,

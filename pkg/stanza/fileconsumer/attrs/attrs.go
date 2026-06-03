@@ -17,6 +17,7 @@ const (
 	LogFilePathResolved   = "log.file.path_resolved"
 	LogFileOwnerName      = "log.file.owner.name"
 	LogFileOwnerGroupName = "log.file.owner.group.name"
+	LogFilePermissions    = "log.file.permissions"
 	LogFileRecordNumber   = "log.file.record_number"
 	LogFileRecordOffset   = "log.file.record_offset"
 )
@@ -28,6 +29,7 @@ type Resolver struct {
 	IncludeFilePathResolved   bool `mapstructure:"include_file_path_resolved,omitempty"`
 	IncludeFileOwnerName      bool `mapstructure:"include_file_owner_name,omitempty"`
 	IncludeFileOwnerGroupName bool `mapstructure:"include_file_owner_group_name,omitempty"`
+	IncludeFilePermissions    bool `mapstructure:"include_file_permissions,omitempty"`
 }
 
 func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error) {
@@ -40,8 +42,8 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 	if r.IncludeFilePath {
 		attributes[LogFilePath] = path
 	}
-	if r.IncludeFileOwnerName || r.IncludeFileOwnerGroupName {
-		err = r.addOwnerInfo(file, attributes)
+	if r.IncludeFileOwnerName || r.IncludeFileOwnerGroupName || r.IncludeFilePermissions {
+		err = r.addPermissionInfo(file, attributes)
 		if err != nil {
 			return nil, err
 		}

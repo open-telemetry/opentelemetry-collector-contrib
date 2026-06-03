@@ -8,6 +8,10 @@ $defs:
           type: string
       endpoint:
         type: string
+      max_request_body_size:
+        description: 'MaxRequestBodySize sets the maximum request body size in bytes. 0 means no limit. Default: 20MB'
+        type: integer
+        x-customType: int64
       secret:
         type: string
       separator:

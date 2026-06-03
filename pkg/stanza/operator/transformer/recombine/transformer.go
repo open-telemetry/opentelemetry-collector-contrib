@@ -110,6 +110,17 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 	}
 
 	for _, e := range entries {
+		// Short circuit if the "if" condition does not match
+		skip, err := t.Skip(ctx, e)
+		if err != nil {
+			errs = append(errs, t.HandleEntryErrorWithWrite(ctx, e, err, collectWrite))
+			continue
+		}
+		if skip {
+			_ = collectWrite(ctx, e)
+			continue
+		}
+
 		// Get the environment for executing the expression
 		env := helper.GetExprEnv(e)
 
@@ -164,6 +175,15 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 }
 
 func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
+	// Short circuit if the "if" condition does not match
+	skip, err := t.Skip(ctx, e)
+	if err != nil {
+		return t.HandleEntryError(ctx, e, err)
+	}
+	if skip {
+		return t.Write(ctx, e)
+	}
+
 	// Lock the recombine operator because process can't run concurrently
 	t.Lock()
 	defer t.Unlock()

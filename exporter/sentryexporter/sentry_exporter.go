@@ -38,7 +38,7 @@ var (
 )
 
 const (
-	maxProjects              = 1000
+	maxProjects              = 1000 // only prevents auto-creation when total number of seen projects (existing + created) reaches this number
 	projectCreationQueueSize = 1000
 	timeout                  = 5 * time.Second
 )
@@ -731,6 +731,10 @@ func (s *endpointState) extractProjectSlug(attrs pcommon.Map) string {
 		if mappedSlug, ok := s.projectMapping[serviceName]; ok {
 			return mappedSlug
 		}
+	}
+
+	if !projectSlugRegexp.MatchString(serviceName) {
+		return ""
 	}
 
 	return serviceName

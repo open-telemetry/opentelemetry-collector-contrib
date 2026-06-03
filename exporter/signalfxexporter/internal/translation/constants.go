@@ -169,6 +169,7 @@ translation_rules:
     buffered: true
     cached: true
     free: true
+    inactive: true
     used: true
 - action: aggregate_metric
   metric_name: sf_temp.memory.total

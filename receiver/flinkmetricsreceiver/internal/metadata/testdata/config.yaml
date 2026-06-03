@@ -55,8 +55,85 @@ all_set:
       enabled: true
     flink.operator.record.count:
       enabled: true
+      attributes: ["name","record"]
     flink.operator.watermark.output:
       enabled: true
+      attributes: ["name"]
+    flink.task.record.count:
+      enabled: true
+  resource_attributes:
+    flink.job.name:
+      enabled: true
+    flink.resource.type:
+      enabled: true
+    flink.subtask.index:
+      enabled: true
+    flink.task.name:
+      enabled: true
+    flink.taskmanager.id:
+      enabled: true
+    host.name:
+      enabled: true
+reaggregate_set:
+  metrics:
+    flink.job.checkpoint.count:
+      enabled: true
+    flink.job.checkpoint.in_progress:
+      enabled: true
+    flink.job.last_checkpoint.size:
+      enabled: true
+    flink.job.last_checkpoint.time:
+      enabled: true
+    flink.job.restart.count:
+      enabled: true
+    flink.jvm.class_loader.classes_loaded:
+      enabled: true
+    flink.jvm.cpu.load:
+      enabled: true
+    flink.jvm.cpu.time:
+      enabled: true
+    flink.jvm.gc.collections.count:
+      enabled: true
+    flink.jvm.gc.collections.time:
+      enabled: true
+    flink.jvm.memory.direct.total_capacity:
+      enabled: true
+    flink.jvm.memory.direct.used:
+      enabled: true
+    flink.jvm.memory.heap.committed:
+      enabled: true
+    flink.jvm.memory.heap.max:
+      enabled: true
+    flink.jvm.memory.heap.used:
+      enabled: true
+    flink.jvm.memory.mapped.total_capacity:
+      enabled: true
+    flink.jvm.memory.mapped.used:
+      enabled: true
+    flink.jvm.memory.metaspace.committed:
+      enabled: true
+    flink.jvm.memory.metaspace.max:
+      enabled: true
+    flink.jvm.memory.metaspace.used:
+      enabled: true
+    flink.jvm.memory.nonheap.committed:
+      enabled: true
+    flink.jvm.memory.nonheap.max:
+      enabled: true
+    flink.jvm.memory.nonheap.used:
+      enabled: true
+    flink.jvm.threads.count:
+      enabled: true
+    flink.memory.managed.total:
+      enabled: true
+    flink.memory.managed.used:
+      enabled: true
+    flink.operator.record.count:
+      enabled: true
+      attributes: ["record"]
+    flink.operator.watermark.output:
+      enabled: true
+      attributes: []
     flink.task.record.count:
       enabled: true
   resource_attributes:
@@ -128,8 +205,10 @@ none_set:
       enabled: false
     flink.operator.record.count:
       enabled: false
+      attributes: ["name","record"]
     flink.operator.watermark.output:
       enabled: false
+      attributes: ["name"]
     flink.task.record.count:
       enabled: false
   resource_attributes:

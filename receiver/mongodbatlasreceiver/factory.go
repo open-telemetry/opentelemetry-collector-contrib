@@ -33,7 +33,7 @@ func NewFactory() receiver.Factory {
 		createDefaultConfig,
 		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 		xreceiver.WithLogs(createCombinedLogReceiver, metadata.LogsStability),
-		xreceiver.WithDeprecatedTypeAlias(component.MustNewType("mongodbatlas")),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
@@ -114,7 +114,7 @@ func createDefaultConfig() component.Config {
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		Granularity:          defaultGranularity,
 		BackOffConfig:        configretry.NewDefaultBackOffConfig(),
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		Alerts: AlertConfig{
 			Enabled:      defaultAlertsEnabled,
 			Mode:         alertModeListen,

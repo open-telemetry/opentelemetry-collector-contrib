@@ -6,7 +6,7 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| k8s.node.name | The Kubernetes node name | Any Str | true |
-| k8s.node.uid | The Kubernetes node UID | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| k8s.node.name | The Kubernetes node name | Any Str | true | - |
+| k8s.node.uid | The Kubernetes node UID | Any Str | true | - |

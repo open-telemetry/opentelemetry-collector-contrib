@@ -7,10 +7,13 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"strconv"
+	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler"
 )
@@ -47,8 +50,8 @@ var (
 // According to the documentation, the level Must be one of:
 // `Informational`, `Warning`, `Error` or `Critical`.
 // see https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-schema
-func asSeverity(input string) plog.SeverityNumber {
-	switch input {
+func asSeverity(number json.Number) plog.SeverityNumber {
+	switch number.String() {
 	case "Informational":
 		return plog.SeverityNumberInfo
 	case "Warning":
@@ -212,4 +215,28 @@ func convertStringToJSONNumber(s string) json.Number {
 	}
 
 	return json.Number(s)
+}
+
+// parseUnixTimestamp parses a Unix timestamp string (seconds since epoch) and returns a time.Time
+func parseUnixTimestamp(s string) (time.Time, error) {
+	ts, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Unix(ts, 0).UTC(), nil
+}
+
+// unmarshalStringOrObjectJSON handles Azure properties fields that can be either
+// a JSON object or a stringified JSON string (where Azure wraps the object in quotes).
+// Some Azure Event Hub sources emit `"properties": "{\"key\":\"value\"}"` instead of
+// `"properties": {"key":"value"}`.
+func unmarshalStringOrObjectJSON(data []byte, v any) error {
+	if len(data) > 1 && data[0] == '"' {
+		var s string
+		if err := jsoniter.ConfigFastest.Unmarshal(data, &s); err != nil {
+			return err
+		}
+		data = []byte(s)
+	}
+	return jsoniter.ConfigFastest.Unmarshal(data, v)
 }

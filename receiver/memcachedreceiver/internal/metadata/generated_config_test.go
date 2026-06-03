@@ -20,23 +20,55 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					MemcachedBytes:              MetricConfig{Enabled: true},
-					MemcachedCommands:           MetricConfig{Enabled: true},
-					MemcachedConnectionsCurrent: MetricConfig{Enabled: true},
-					MemcachedConnectionsTotal:   MetricConfig{Enabled: true},
-					MemcachedCPUUsage:           MetricConfig{Enabled: true},
-					MemcachedCurrentItems:       MetricConfig{Enabled: true},
-					MemcachedEvictions:          MetricConfig{Enabled: true},
-					MemcachedNetwork:            MetricConfig{Enabled: true},
-					MemcachedOperationHitRatio:  MetricConfig{Enabled: true},
-					MemcachedOperations:         MetricConfig{Enabled: true},
-					MemcachedThreads:            MetricConfig{Enabled: true},
+					MemcachedBytes: MemcachedBytesMetricConfig{
+						Enabled: true,
+					},
+					MemcachedCommands: MemcachedCommandsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MemcachedCommandsMetricAttributeKey{MemcachedCommandsMetricAttributeKeyCommand},
+					},
+					MemcachedConnectionsCurrent: MemcachedConnectionsCurrentMetricConfig{
+						Enabled: true,
+					},
+					MemcachedConnectionsTotal: MemcachedConnectionsTotalMetricConfig{
+						Enabled: true,
+					},
+					MemcachedCPUUsage: MemcachedCPUUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MemcachedCPUUsageMetricAttributeKey{MemcachedCPUUsageMetricAttributeKeyState},
+					},
+					MemcachedCurrentItems: MemcachedCurrentItemsMetricConfig{
+						Enabled: true,
+					},
+					MemcachedEvictions: MemcachedEvictionsMetricConfig{
+						Enabled: true,
+					},
+					MemcachedNetwork: MemcachedNetworkMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MemcachedNetworkMetricAttributeKey{MemcachedNetworkMetricAttributeKeyDirection},
+					},
+					MemcachedOperationHitRatio: MemcachedOperationHitRatioMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MemcachedOperationHitRatioMetricAttributeKey{MemcachedOperationHitRatioMetricAttributeKeyOperation},
+					},
+					MemcachedOperations: MemcachedOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MemcachedOperationsMetricAttributeKey{MemcachedOperationsMetricAttributeKeyType, MemcachedOperationsMetricAttributeKeyOperation},
+					},
+					MemcachedThreads: MemcachedThreadsMetricConfig{
+						Enabled: true,
+					},
 				},
 			},
 		},
@@ -44,17 +76,49 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					MemcachedBytes:              MetricConfig{Enabled: false},
-					MemcachedCommands:           MetricConfig{Enabled: false},
-					MemcachedConnectionsCurrent: MetricConfig{Enabled: false},
-					MemcachedConnectionsTotal:   MetricConfig{Enabled: false},
-					MemcachedCPUUsage:           MetricConfig{Enabled: false},
-					MemcachedCurrentItems:       MetricConfig{Enabled: false},
-					MemcachedEvictions:          MetricConfig{Enabled: false},
-					MemcachedNetwork:            MetricConfig{Enabled: false},
-					MemcachedOperationHitRatio:  MetricConfig{Enabled: false},
-					MemcachedOperations:         MetricConfig{Enabled: false},
-					MemcachedThreads:            MetricConfig{Enabled: false},
+					MemcachedBytes: MemcachedBytesMetricConfig{
+						Enabled: false,
+					},
+					MemcachedCommands: MemcachedCommandsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MemcachedCommandsMetricAttributeKey{MemcachedCommandsMetricAttributeKeyCommand},
+					},
+					MemcachedConnectionsCurrent: MemcachedConnectionsCurrentMetricConfig{
+						Enabled: false,
+					},
+					MemcachedConnectionsTotal: MemcachedConnectionsTotalMetricConfig{
+						Enabled: false,
+					},
+					MemcachedCPUUsage: MemcachedCPUUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MemcachedCPUUsageMetricAttributeKey{MemcachedCPUUsageMetricAttributeKeyState},
+					},
+					MemcachedCurrentItems: MemcachedCurrentItemsMetricConfig{
+						Enabled: false,
+					},
+					MemcachedEvictions: MemcachedEvictionsMetricConfig{
+						Enabled: false,
+					},
+					MemcachedNetwork: MemcachedNetworkMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MemcachedNetworkMetricAttributeKey{MemcachedNetworkMetricAttributeKeyDirection},
+					},
+					MemcachedOperationHitRatio: MemcachedOperationHitRatioMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []MemcachedOperationHitRatioMetricAttributeKey{MemcachedOperationHitRatioMetricAttributeKeyOperation},
+					},
+					MemcachedOperations: MemcachedOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MemcachedOperationsMetricAttributeKey{MemcachedOperationsMetricAttributeKeyType, MemcachedOperationsMetricAttributeKeyOperation},
+					},
+					MemcachedThreads: MemcachedThreadsMetricConfig{
+						Enabled: false,
+					},
 				},
 			},
 		},
@@ -62,7 +126,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MemcachedBytesMetricConfig{}, MemcachedCommandsMetricConfig{}, MemcachedConnectionsCurrentMetricConfig{}, MemcachedConnectionsTotalMetricConfig{}, MemcachedCPUUsageMetricConfig{}, MemcachedCurrentItemsMetricConfig{}, MemcachedEvictionsMetricConfig{}, MemcachedNetworkMetricConfig{}, MemcachedOperationHitRatioMetricConfig{}, MemcachedOperationsMetricConfig{}, MemcachedThreadsMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -73,7 +137,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

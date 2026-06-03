@@ -208,3 +208,111 @@ func (a MetricsDecoderAdapter) DecodeMetrics() (pmetric.Metrics, error) {
 func (a MetricsDecoderAdapter) Offset() int64 {
 	return a.offset()
 }
+
+// logsUnmarshalerDecoderFactory adapts a plog.Unmarshaler into an encoding.LogsDecoderFactory.
+// It reads the entire remaining stream and delegates to the unmarshaler on the first decode call.
+type logsUnmarshalerDecoderFactory struct {
+	unmarshaler plog.Unmarshaler
+}
+
+// NewLogsUnmarshalerDecoderFactory returns an encoding.LogsDecoderFactory that reads the full
+// stream into memory and delegates to the provided plog.Unmarshaler.
+func NewLogsUnmarshalerDecoderFactory(unmarshaler plog.Unmarshaler) encoding.LogsDecoderFactory {
+	return &logsUnmarshalerDecoderFactory{unmarshaler: unmarshaler}
+}
+
+func (f *logsUnmarshalerDecoderFactory) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	return &logsUnmarshalerDecoder{
+		unmarshaler: f.unmarshaler,
+		reader:      reader,
+		opts:        encoding.NewDecoderOptions(options...),
+	}, nil
+}
+
+type logsUnmarshalerDecoder struct {
+	unmarshaler plog.Unmarshaler
+	reader      io.Reader
+	opts        encoding.DecoderOptions
+	offset      int64
+	done        bool
+}
+
+func (d *logsUnmarshalerDecoder) DecodeLogs() (plog.Logs, error) {
+	if d.done {
+		return plog.Logs{}, io.EOF
+	}
+	d.done = true
+	if d.opts.Offset > 0 {
+		if _, err := io.CopyN(io.Discard, d.reader, d.opts.Offset); err != nil {
+			return plog.Logs{}, fmt.Errorf("failed to discard offset %d: %w", d.opts.Offset, err)
+		}
+	}
+	buf, err := io.ReadAll(d.reader)
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to read stream: %w", err)
+	}
+	d.offset = d.opts.Offset + int64(len(buf))
+	logs, err := d.unmarshaler.UnmarshalLogs(buf)
+	if err != nil {
+		return plog.Logs{}, err
+	}
+	return logs, nil
+}
+
+func (d *logsUnmarshalerDecoder) Offset() int64 {
+	return d.offset
+}
+
+// metricsUnmarshalerDecoderFactory adapts a pmetric.Unmarshaler into an encoding.MetricsDecoderFactory.
+// It reads the entire remaining stream and delegates to the unmarshaler on the first decode call.
+type metricsUnmarshalerDecoderFactory struct {
+	unmarshaler pmetric.Unmarshaler
+}
+
+// NewMetricsUnmarshalerDecoderFactory returns an encoding.MetricsDecoderFactory that reads the full
+// stream into memory and delegates to the provided pmetric.Unmarshaler.
+func NewMetricsUnmarshalerDecoderFactory(unmarshaler pmetric.Unmarshaler) encoding.MetricsDecoderFactory {
+	return &metricsUnmarshalerDecoderFactory{unmarshaler: unmarshaler}
+}
+
+func (f *metricsUnmarshalerDecoderFactory) NewMetricsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.MetricsDecoder, error) {
+	return &metricsUnmarshalerDecoder{
+		unmarshaler: f.unmarshaler,
+		reader:      reader,
+		opts:        encoding.NewDecoderOptions(options...),
+	}, nil
+}
+
+type metricsUnmarshalerDecoder struct {
+	unmarshaler pmetric.Unmarshaler
+	reader      io.Reader
+	opts        encoding.DecoderOptions
+	offset      int64
+	done        bool
+}
+
+func (d *metricsUnmarshalerDecoder) DecodeMetrics() (pmetric.Metrics, error) {
+	if d.done {
+		return pmetric.Metrics{}, io.EOF
+	}
+	d.done = true
+	if d.opts.Offset > 0 {
+		if _, err := io.CopyN(io.Discard, d.reader, d.opts.Offset); err != nil {
+			return pmetric.Metrics{}, fmt.Errorf("failed to discard offset %d: %w", d.opts.Offset, err)
+		}
+	}
+	buf, err := io.ReadAll(d.reader)
+	if err != nil {
+		return pmetric.Metrics{}, fmt.Errorf("failed to read stream: %w", err)
+	}
+	d.offset = d.opts.Offset + int64(len(buf))
+	metrics, err := d.unmarshaler.UnmarshalMetrics(buf)
+	if err != nil {
+		return pmetric.Metrics{}, err
+	}
+	return metrics, nil
+}
+
+func (d *metricsUnmarshalerDecoder) Offset() int64 {
+	return d.offset
+}

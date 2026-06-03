@@ -29,11 +29,10 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("snowflake.account.name")
+			snowflakeAccountNameAttrVal, ok := res.Attributes().Get("snowflake.account.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "snowflake.account.name-val", val.Str())
+				assert.Equal(t, "snowflake.account.name-val", snowflakeAccountNameAttrVal.Str())
 			}
 		})
 	}

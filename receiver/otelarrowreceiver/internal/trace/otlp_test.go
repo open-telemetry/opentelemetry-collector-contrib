@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -105,7 +106,23 @@ func TestExport_ErrorConsumer(t *testing.T) {
 
 	traceClient, selfExp, selfProv := makeTraceServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := traceClient.Export(t.Context(), req)
-	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
+	// Non-permanent errors should be mapped to Unavailable (retryable), not Unknown.
+	assert.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
+	assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
+
+	// One self-tracing spans is issued.
+	require.NoError(t, selfProv.ForceFlush(t.Context()))
+	require.Len(t, selfExp.GetSpans(), 1)
+}
+
+func TestExport_PermanentErrorConsumer(t *testing.T) {
+	td := testdata.GenerateTraces(1)
+	req := ptraceotlp.NewExportRequestFromTraces(td)
+
+	traceClient, selfExp, selfProv := makeTraceServiceClient(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("bad data"))))
+	resp, err := traceClient.Export(t.Context(), req)
+	// Permanent errors should be mapped to Internal, not Unknown.
+	assert.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: bad data")
 	assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
 
 	// One self-tracing spans is issued.
@@ -114,19 +131,56 @@ func TestExport_ErrorConsumer(t *testing.T) {
 }
 
 func TestExport_AdmissionRequestTooLarge(t *testing.T) {
-	td := testdata.GenerateTraces(10)
-	traceSink := newTestSink()
-	req := ptraceotlp.NewExportRequestFromTraces(td)
-	traceClient, selfExp, selfProv := makeTraceServiceClient(t, traceSink)
+	t.Run("with data points", func(t *testing.T) {
+		td := testdata.GenerateTraces(10)
+		traceSink := newTestSink()
+		req := ptraceotlp.NewExportRequestFromTraces(td)
+		traceClient, selfExp, selfProv := makeTraceServiceClient(t, traceSink)
 
-	go traceSink.unblock()
-	resp, err := traceClient.Export(t.Context(), req)
-	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = rejecting request, request is too large")
-	assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
+		go traceSink.unblock()
+		resp, err := traceClient.Export(t.Context(), req)
+		assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = rejecting request, request is too large")
+		assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
 
-	// One self-tracing spans is issued.
-	require.NoError(t, selfProv.ForceFlush(t.Context()))
-	require.Len(t, selfExp.GetSpans(), 1)
+		// One self-tracing spans is issued.
+		require.NoError(t, selfProv.ForceFlush(t.Context()))
+		require.Len(t, selfExp.GetSpans(), 1)
+	})
+
+	t.Run("with metadata only", func(t *testing.T) {
+		// Create traces with metadata but no actual spans.
+		// This should still go through admission control based on size.
+		td := ptrace.NewTraces()
+		for range 100 {
+			rs := td.ResourceSpans().AppendEmpty()
+			// Add large attributes to the resource.
+			for range 10 {
+				rs.Resource().Attributes().PutStr(
+					"large.attribute.key.that.takes.space",
+					"This is a large attribute value that demonstrates metadata can be significant even without spans",
+				)
+			}
+			// Add scope but no spans.
+			ss := rs.ScopeSpans().AppendEmpty()
+			ss.Scope().SetName("test-scope")
+		}
+
+		require.Equal(t, 0, td.SpanCount(), "Test setup: should have no spans")
+
+		sizer := &ptrace.ProtoMarshaler{}
+		sizeBytes := sizer.TracesSize(td)
+		require.Greater(t, sizeBytes, maxBytes, "Test setup: metadata size should exceed admission limit")
+
+		req := ptraceotlp.NewExportRequestFromTraces(td)
+		traceSink := newTestSink()
+		traceClient, _, _ := makeTraceServiceClient(t, traceSink)
+
+		// No need to call unblock() - request is rejected by admission control
+		// before ConsumeTraces is ever called.
+		_, err := traceClient.Export(t.Context(), req)
+		// Should be rejected by admission control due to size, not accepted with early return.
+		assert.ErrorContains(t, err, "rejecting request", "Should be rejected by admission control")
+	})
 }
 
 func TestExport_AdmissionLimitExceeded(t *testing.T) {

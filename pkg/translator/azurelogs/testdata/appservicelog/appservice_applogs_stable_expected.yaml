@@ -1,0 +1,44 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /RESOURCE_ID
+    scopeLogs:
+      - logRecords:
+          - body:
+              kvlistValue:
+                values:
+                  - key: code.function.name
+                    value:
+                      stringValue: METHOD
+                  - key: code.file.path
+                    value:
+                      stringValue: FILEPATH
+                  - key: exception.stacktrace
+                    value:
+                      stringValue: STACKTRACE
+                  - key: container.id
+                    value:
+                      stringValue: CONTAINER_ID
+                  - key: exception.type
+                    value:
+                      stringValue: EXCEPTION_CLASS
+                  - key: category
+                    value:
+                      stringValue: AppServiceAppLogs
+                  - key: operation.name
+                    value:
+                      stringValue: AppLog
+                  - key: host.id
+                    value:
+                      stringValue: HOST
+            eventName: az.resource.log
+            observedTimeUnixNano: "1772031025080472000"
+            timeUnixNano: "1713960372000000000"
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3

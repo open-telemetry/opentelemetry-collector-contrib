@@ -1,4 +1,5 @@
-type: googlecloudstorage
+type: google_cloud_storage
+deprecated_type: googlecloudstorage
 display_name: Google Cloud Storage Exporter
 
 status:

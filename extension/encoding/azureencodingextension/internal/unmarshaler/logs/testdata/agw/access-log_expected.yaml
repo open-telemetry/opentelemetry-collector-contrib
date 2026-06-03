@@ -67,6 +67,10 @@ resourceLogs:
             body: {}
             timeUnixNano: "1493234858000000000"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.application_gateway
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version
   - resource:
@@ -143,6 +147,10 @@ resourceLogs:
             body: {}
             timeUnixNano: "1493234858000000000"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.application_gateway
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version
   - resource:
@@ -261,6 +269,10 @@ resourceLogs:
             body: {}
             timeUnixNano: "1634249831000000000"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.application_gateway
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version
   - resource:
@@ -331,6 +343,10 @@ resourceLogs:
             body: {}
             timeUnixNano: "1493234858000000000"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.application_gateway
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version
   - resource:
@@ -440,6 +456,10 @@ resourceLogs:
             body: {}
             timeUnixNano: "1686589119000000000"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.application_gateway
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version
   - resource:
@@ -492,5 +512,9 @@ resourceLogs:
             body: {}
             timeUnixNano: "1493234858000000000"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.application_gateway
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

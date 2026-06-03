@@ -6,6 +6,7 @@ package protocol // import "github.com/open-telemetry/opentelemetry-collector-co
 type (
 	TypeName     string // How humans describe the MetricTypes ("counter", "gauge")
 	ObserverType string // How the server will aggregate histogram and timings ("gauge", "summary")
+	CounterType  string // How counter values are represented ("int", "float", "stochastic_int")
 )
 
 const (
@@ -22,6 +23,16 @@ const (
 	DisableObserver   ObserverType = "disabled"
 
 	DefaultObserverType = DisableObserver
+
+	// CounterTypeInt truncates counter values to integers (default, backwards compatible).
+	CounterTypeInt CounterType = "int"
+	// CounterTypeFloat preserves fractional counter values.
+	CounterTypeFloat CounterType = "float"
+	// CounterTypeStochasticInt uses probabilistic rounding to maintain integer type
+	// while being statistically accurate over time.
+	CounterTypeStochasticInt CounterType = "stochastic_int"
+
+	DefaultCounterType = CounterTypeInt
 )
 
 type TimerHistogramMapping struct {

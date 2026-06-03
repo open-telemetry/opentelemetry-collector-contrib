@@ -1,10 +1,14 @@
+display_name: Receiver Creator
 type: receiver_creator
+
+description: |
+  This receiver can instantiate other receivers at runtime based on whether observed endpoints match a configured rule.
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-    alpha: [logs, traces]
+    alpha: [logs, traces, profiles]
   distributions: [contrib, k8s]
   codeowners:
     active: [dmitryax, ChrsMark]

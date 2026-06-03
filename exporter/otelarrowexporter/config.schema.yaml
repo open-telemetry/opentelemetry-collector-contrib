@@ -24,7 +24,7 @@ $defs:
         $ref: ./internal/arrow.prioritizer_name
       zstd:
         description: Zstd settings apply to OTel-Arrow use of gRPC specifically. Note that when multiple Otel-Arrow exporters are configured their settings will be applied in arbitrary order. Identical Zstd settings are recommended when multiple OTel-Arrow exporters are in use.
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd.encoder_config
+        $ref: /internal/otelarrow/compression/zstd.encoder_config
 description: Config defines configuration for OTLP exporter.
 type: object
 properties:

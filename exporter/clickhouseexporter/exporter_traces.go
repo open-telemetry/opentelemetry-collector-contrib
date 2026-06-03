@@ -159,7 +159,14 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 }
 
 func convertEvents(events ptrace.SpanEventSlice) (times []time.Time, names []string, attrs []column.IterableOrderedMap) {
-	for i := 0; i < events.Len(); i++ {
+	n := events.Len()
+	if n == 0 {
+		return nil, nil, nil
+	}
+	times = make([]time.Time, 0, n)
+	names = make([]string, 0, n)
+	attrs = make([]column.IterableOrderedMap, 0, n)
+	for i := range n {
 		event := events.At(i)
 		times = append(times, event.Timestamp().AsTime())
 		names = append(names, event.Name())
@@ -170,7 +177,15 @@ func convertEvents(events ptrace.SpanEventSlice) (times []time.Time, names []str
 }
 
 func convertLinks(links ptrace.SpanLinkSlice) (traceIDs, spanIDs, states []string, attrs []column.IterableOrderedMap) {
-	for i := 0; i < links.Len(); i++ {
+	n := links.Len()
+	if n == 0 {
+		return nil, nil, nil, nil
+	}
+	traceIDs = make([]string, 0, n)
+	spanIDs = make([]string, 0, n)
+	states = make([]string, 0, n)
+	attrs = make([]column.IterableOrderedMap, 0, n)
+	for i := range n {
 		link := links.At(i)
 		traceIDs = append(traceIDs, traceutil.TraceIDToHexOrEmptyString(link.TraceID()))
 		spanIDs = append(spanIDs, traceutil.SpanIDToHexOrEmptyString(link.SpanID()))

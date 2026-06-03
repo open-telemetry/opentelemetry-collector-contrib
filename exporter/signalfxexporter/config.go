@@ -108,12 +108,12 @@ type Config struct {
 
 	// SyncHostMetadata defines if the exporter should scrape host metadata and
 	// sends it as property updates to SignalFx backend.
-	// IMPORTANT: Host metadata synchronization relies on `resourcedetection` processor.
-	//            If this option is enabled make sure that `resourcedetection` processor
+	// IMPORTANT: Host metadata synchronization relies on `resource_detection` processor.
+	//            If this option is enabled make sure that `resource_detection` processor
 	//            is enabled in the pipeline with one of the cloud provider detectors
 	//            or environment variable detector setting a unique value to
 	//            `host.name` attribute within your k8s cluster. Also keep override
-	//            And keep `override=true` in resourcedetection config.
+	//            And keep `override=true` in resource_detection config.
 	SyncHostMetadata bool `mapstructure:"sync_host_metadata"`
 
 	// RootPath is the host's root directory used when syncing metadata; applies to linux only.
@@ -163,6 +163,7 @@ type DimensionClientConfig struct {
 	IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
 	Timeout             time.Duration `mapstructure:"timeout"`
 	DropTags            bool          `mapstructure:"drop_tags"`
+	StripK8sLabelPrefix bool          `mapstructure:"strip_k8s_label_prefix"`
 }
 
 func (cfg *Config) getMetricTranslator(done chan struct{}) (*translation.MetricTranslator, error) {
@@ -184,7 +185,7 @@ func (cfg *Config) getMetricTranslator(done chan struct{}) (*translation.MetricT
 func (cfg *Config) getIngestURL() (*url.URL, error) {
 	strURL := cfg.IngestURL
 	if cfg.IngestURL == "" {
-		strURL = fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm)
+		strURL = fmt.Sprintf("https://ingest.%s.observability.splunkcloud.com", cfg.Realm)
 	}
 
 	ingestURL, err := url.Parse(strURL)
@@ -197,7 +198,7 @@ func (cfg *Config) getIngestURL() (*url.URL, error) {
 func (cfg *Config) getAPIURL() (*url.URL, error) {
 	strURL := cfg.APIURL
 	if cfg.APIURL == "" {
-		strURL = fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm)
+		strURL = fmt.Sprintf("https://api.%s.observability.splunkcloud.com", cfg.Realm)
 	}
 
 	apiURL, err := url.Parse(strURL)

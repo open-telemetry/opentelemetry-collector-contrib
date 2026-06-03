@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -34,6 +35,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	otelattr "go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -579,7 +586,7 @@ func TestTranslateV2(t *testing.T) {
 				// The second metric should have 1 data point.
 				metrics1 := sm1.Metrics().AppendEmpty()
 				metrics1.SetName("test_metric")
-				metrics1.SetUnit("seconds")
+				metrics1.SetUnit("s")
 				metrics1.SetDescription("longer description")
 				metrics1.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
 
@@ -595,7 +602,7 @@ func TestTranslateV2(t *testing.T) {
 
 				metrics2 := sm1.Metrics().AppendEmpty()
 				metrics2.SetName("test_metric")
-				metrics2.SetUnit("milliseconds")
+				metrics2.SetUnit("ms")
 				metrics2.SetDescription("small desc")
 				metrics2.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
 
@@ -1678,6 +1685,150 @@ func TestTranslateV2(t *testing.T) {
 			},
 		},
 		{
+			name: "exponential histogram - stale NaN sum",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Sum:            math.Float64frombits(value.StaleNaN),
+								Timestamp:      1,
+								StartTimestamp: 1,
+								ZeroThreshold:  1,
+								Schema:         -4,
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 1,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetScale(-4)
+				dp.SetZeroThreshold(1)
+				dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+
+				return metrics
+			}(),
+		},
+		{
+			name: "exponential histogram - overflow buckets dropped",
+			// This test case verifies that the bucket with index 1026 is dropped because the limit is 1025 at scale 0 (1024 + 1 for +Inf bucket).
+			// Bucket 1025 is valid (+Inf bucket).
+			// The original count was 50. Bucket 1025 has count 10. Bucket 1026 has count 30 (10 + 20).
+			// Bucket 1026 overflows (> 1025) and is dropped.
+			// The total count is updated to 50 - 30 = 20.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count: &writev2.Histogram_CountInt{
+									CountInt: 50,
+								},
+								Sum:            100,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         0,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1025, Length: 2}},
+								PositiveDeltas: []int64{10, 20},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0,
+				Histograms: 1,
+				Exemplars:  0,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetScale(0)
+				dp.SetSum(100)
+				dp.SetCount(20)
+
+				dp.Positive().SetOffset(1024)
+				dp.Positive().BucketCounts().FromRaw([]uint64{10})
+
+				return metrics
+			}(),
+		},
+		{
 			name: "multiple histogram metrics with exemplars",
 			request: &writev2.Request{
 				Symbols: []string{
@@ -1860,6 +2011,1025 @@ func TestTranslateV2(t *testing.T) {
 				Samples:    0,
 				Histograms: 2,
 				Exemplars:  2,
+			},
+		},
+		{
+			name: "counter metric with exemplar",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"job", "production/service_a", // 1,2
+					"instance", "host1", // 3,4
+					"__name__", "request_duration_ms", // 5,6
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7,8
+					"span_id", "00f067aa0ba902b7", // 9,10,
+					"4bf92f3577b34da6a3ce929d0e0e4740", "fff067aa0ba902b7", // 11, 12
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 6, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Samples: []writev2.Sample{
+							{
+								Value:     1,
+								Timestamp: 1,
+							},
+						},
+					},
+					// We're sending exemplars disconnected from counters because
+					// remote-write 2.0 emits exemplars independently of counter samples.
+					// See https://github.com/prometheus/prometheus/issues/17857.
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 6, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Exemplars: []writev2.Exemplar{
+							{
+								Value:     1.0,
+								Timestamp: 1,
+								LabelsRefs: []uint32{
+									7, 8, // trace_id
+									9, 10, // span_id
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				m := sm.Metrics().AppendEmpty()
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+
+				m.SetName("request_duration_ms")
+				m.SetUnit("")
+				m.SetDescription("")
+
+				sum := m.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sum.SetIsMonotonic(true)
+
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				ex := dp.Exemplars().AppendEmpty()
+				ex.SetDoubleValue(1.0)
+				ex.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				traceID, _ := hex.DecodeString("4bf92f3577b34da6a3ce929d0e0e4736")
+				var tid [16]byte
+				copy(tid[:], traceID)
+				ex.SetTraceID(pcommon.TraceID(tid))
+
+				spanID, _ := hex.DecodeString("00f067aa0ba902b7")
+				var sid [8]byte
+				copy(sid[:], spanID)
+				ex.SetSpanID(pcommon.SpanID(sid))
+
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Samples:   1,
+				Exemplars: 1,
+				Confirmed: true,
+			},
+		},
+		{
+			name: "counter metric with exemplar, multiple data points",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"job", "production/service_a", // 1,2
+					"instance", "host1", // 3,4
+					"__name__", "request_duration_ms", // 5,6
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7,8
+					"span_id", "00f067aa0ba902b7", // 9,10,
+					"4bf92f3577b34da6a3ce929d0e0e4740", "fff067aa0ba902b7", // 11, 12
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 6, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Samples: []writev2.Sample{
+							{
+								Value:     1,
+								Timestamp: 1,
+							},
+							{
+								Value:     2,
+								Timestamp: 2,
+							},
+						},
+					},
+					// We're sending exemplars disconnected from counters because
+					// remote-write 2.0 emits exemplars independently of counter samples.
+					// See https://github.com/prometheus/prometheus/issues/17857.
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 6, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Exemplars: []writev2.Exemplar{
+							{
+								Value:     1.0,
+								Timestamp: 1,
+								LabelsRefs: []uint32{
+									7, 8, // trace_id
+									9, 10, // span_id
+								},
+							},
+							{
+								Value:     2.0,
+								Timestamp: 2,
+								LabelsRefs: []uint32{
+									7, 8, // trace_id
+									9, 10, // span_id
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				m := sm.Metrics().AppendEmpty()
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+
+				m.SetName("request_duration_ms")
+				m.SetUnit("")
+				m.SetDescription("")
+
+				sum := m.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sum.SetIsMonotonic(true)
+
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				ex := dp.Exemplars().AppendEmpty()
+				ex.SetDoubleValue(1.0)
+				ex.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				traceID, _ := hex.DecodeString("4bf92f3577b34da6a3ce929d0e0e4736")
+				var tid [16]byte
+				copy(tid[:], traceID)
+				ex.SetTraceID(pcommon.TraceID(tid))
+
+				spanID, _ := hex.DecodeString("00f067aa0ba902b7")
+				var sid [8]byte
+				copy(sid[:], spanID)
+				ex.SetSpanID(pcommon.SpanID(sid))
+
+				// 2nd exemplar
+				ex = dp.Exemplars().AppendEmpty()
+				ex.SetDoubleValue(2.0)
+				ex.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+
+				traceID, _ = hex.DecodeString("4bf92f3577b34da6a3ce929d0e0e4736")
+				copy(tid[:], traceID)
+				ex.SetTraceID(pcommon.TraceID(tid))
+
+				spanID, _ = hex.DecodeString("00f067aa0ba902b7")
+				copy(sid[:], spanID)
+				ex.SetSpanID(pcommon.SpanID(sid))
+
+				dp = sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(2)
+				dp.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Exemplars: 2,
+				Samples:   2,
+				Confirmed: true,
+			},
+		},
+		{
+			name: "unit word conversion - bytes to By",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "disk_read", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"bytes", // 7
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, UnitRef: 7},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples:    []writev2.Sample{{Value: 512, Timestamp: 1, StartTimestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("disk_read")
+				m.SetUnit("By")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+				sum := m.SetEmptySum()
+				sum.SetIsMonotonic(true)
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(512)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+				Samples:   1,
+			},
+		},
+		{
+			name: "unit word conversion - bytes_per_second rate to By/s",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "network_throughput", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"bytes_per_second", // 7
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 7},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples:    []writev2.Sample{{Value: 1024, Timestamp: 1, StartTimestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("network_throughput")
+				m.SetUnit("By/s")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1024)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+				Samples:   1,
+			},
+		},
+		{
+			name: "unit word conversion - meters_per_second rate to m/s",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "velocity", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"meters_per_second", // 7
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 7},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples:    []writev2.Sample{{Value: 30, Timestamp: 1, StartTimestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("velocity")
+				m.SetUnit("m/s")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(30)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+				Samples:   1,
+			},
+		},
+		{
+			name: "unit word conversion - unknown unit passes through unchanged",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "custom_metric", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"widgets", // 7 - unknown unit, not in the wordToUCUM map
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 7},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples:    []writev2.Sample{{Value: 42, Timestamp: 1, StartTimestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("custom_metric")
+				m.SetUnit("widgets")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(42)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+				Samples:   1,
+			},
+		},
+		{
+			name: "unit word conversion - histogram with seconds unit to s",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"seconds", // 7
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							UnitRef: 7,
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{
+							{
+								Schema:         -53,
+								Count:          &writev2.Histogram_CountInt{CountInt: 10},
+								Sum:            5.0,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								CustomValues:   []float64{0.1, 0.5, 1.0},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 4}},
+								PositiveDeltas: []int64{2, 3, 4, 1},
+							},
+						},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("request_duration")
+				m.SetUnit("s")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+				hist := m.SetEmptyHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetCount(10)
+				dp.SetSum(5.0)
+				dp.ExplicitBounds().FromRaw([]float64{0.1, 0.5, 1.0})
+				dp.BucketCounts().FromRaw([]uint64{2, 5, 9, 10})
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Histograms: 1,
+			},
+		},
+		{
+			name: "multiple counter metrics with exemplar",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"job", "production/service_a", // 1,2
+					"instance", "host1", // 3,4
+					"__name__", "request_duration_ms", // 5,6
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7,8
+					"span_id", "00f067aa0ba902b7", // 9,10,
+					"4bf92f3577b34da6a3ce929d0e0e4740", "fff067aa0ba902b7", // 11, 12
+					"latency_ms",                                           // 13
+					"4bf92f3577b34da6a3ce929d0e0e47ab", "fff067aa0ba902ff", // 14, 15
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 6, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Samples: []writev2.Sample{
+							{
+								Value:     1,
+								Timestamp: 1,
+							},
+						},
+					},
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 13, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Samples: []writev2.Sample{
+							{
+								Value:     2,
+								Timestamp: 1,
+							},
+						},
+					},
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 6, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Exemplars: []writev2.Exemplar{
+							{
+								Value:     1.0,
+								Timestamp: 1,
+								LabelsRefs: []uint32{
+									7, 8, // trace_id
+									9, 10, // span_id
+								},
+							},
+						},
+					},
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							5, 13, // __name__
+							1, 2, // job
+							3, 4, // instance
+						},
+						Exemplars: []writev2.Exemplar{
+							{
+								Value:     1.0,
+								Timestamp: 1,
+								LabelsRefs: []uint32{
+									7, 14, // trace_id
+									9, 15, // span_id
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("request_duration_ms")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+
+				sum := m.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sum.SetIsMonotonic(true)
+
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				ex := dp.Exemplars().AppendEmpty()
+				ex.SetDoubleValue(1.0)
+				ex.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				traceID, _ := hex.DecodeString("4bf92f3577b34da6a3ce929d0e0e4736")
+				var tid [16]byte
+				copy(tid[:], traceID)
+				ex.SetTraceID(pcommon.TraceID(tid))
+
+				spanID, _ := hex.DecodeString("00f067aa0ba902b7")
+				var sid [8]byte
+				copy(sid[:], spanID)
+				ex.SetSpanID(pcommon.SpanID(sid))
+
+				m = sm.Metrics().AppendEmpty()
+				m.SetName("latency_ms")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+
+				sum = m.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sum.SetIsMonotonic(true)
+
+				dp = sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(2)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				ex = dp.Exemplars().AppendEmpty()
+				ex.SetDoubleValue(1.0)
+				ex.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				traceID, _ = hex.DecodeString("4bf92f3577b34da6a3ce929d0e0e47ab")
+				copy(tid[:], traceID)
+				ex.SetTraceID(pcommon.TraceID(tid))
+
+				spanID, _ = hex.DecodeString("fff067aa0ba902ff")
+				copy(sid[:], spanID)
+				ex.SetSpanID(pcommon.SpanID(sid))
+
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Exemplars: 2,
+				Samples:   2,
+				Confirmed: true,
+			},
+		},
+		{
+			// Regression test: exemplars from different label-set variants of the
+			// same counter must be attached to their matching datapoint, not At(0).
+			name: "counter metric with exemplars for multiple label-set variants",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"job", "production/service_a", // 1, 2
+					"instance", "host1", // 3, 4
+					"__name__", "http_requests_total", // 5, 6
+					"status", "200", "500", // 7, 8, 9
+					"trace_id", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // 10, 11
+					"span_id", "aaaaaaaaaaaaaaaa", // 12, 13
+					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", // 14
+					"bbbbbbbbbbbbbbbb", // 15
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						// samples for status=200
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+						Samples:    []writev2.Sample{{Value: 100, Timestamp: 1}},
+					},
+					{
+						// samples for status=500
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 9},
+						Samples:    []writev2.Sample{{Value: 5, Timestamp: 1}},
+					},
+					{
+						// disconnected exemplar for status=200
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+						Exemplars: []writev2.Exemplar{{
+							Value:      100,
+							Timestamp:  1,
+							LabelsRefs: []uint32{10, 11, 12, 13},
+						}},
+					},
+					{
+						// disconnected exemplar for status=500
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 9},
+						Exemplars: []writev2.Exemplar{{
+							Value:      5,
+							Timestamp:  1,
+							LabelsRefs: []uint32{10, 14, 12, 15},
+						}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.namespace", "production")
+				rm.Resource().Attributes().PutStr("service.name", "service_a")
+				rm.Resource().Attributes().PutStr("service.instance.id", "host1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("http_requests_total")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+				sum := m.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sum.SetIsMonotonic(true)
+
+				// datapoint for status=200 must get only trace-A
+				dp200 := sum.DataPoints().AppendEmpty()
+				dp200.SetDoubleValue(100)
+				dp200.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp200.Attributes().PutStr("status", "200")
+				ex200 := dp200.Exemplars().AppendEmpty()
+				ex200.SetDoubleValue(100)
+				ex200.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				traceA, _ := hex.DecodeString("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"[:32])
+				var tidA [16]byte
+				copy(tidA[:], traceA)
+				ex200.SetTraceID(pcommon.TraceID(tidA))
+				spanA, _ := hex.DecodeString("aaaaaaaaaaaaaaaa")
+				var sidA [8]byte
+				copy(sidA[:], spanA)
+				ex200.SetSpanID(pcommon.SpanID(sidA))
+
+				// datapoint for status=500 must get only trace-B
+				dp500 := sum.DataPoints().AppendEmpty()
+				dp500.SetDoubleValue(5)
+				dp500.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp500.Attributes().PutStr("status", "500")
+				ex500 := dp500.Exemplars().AppendEmpty()
+				ex500.SetDoubleValue(5)
+				ex500.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				traceB, _ := hex.DecodeString("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"[:32])
+				var tidB [16]byte
+				copy(tidB[:], traceB)
+				ex500.SetTraceID(pcommon.TraceID(tidB))
+				spanB, _ := hex.DecodeString("bbbbbbbbbbbbbbbb")
+				var sidB [8]byte
+				copy(sidB[:], spanB)
+				ex500.SetSpanID(pcommon.SpanID(sidB))
+
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Exemplars: 2,
+				Samples:   2,
+				Confirmed: true,
+			},
+		},
+		{
+			name: "service with only target_info metric",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"job", "production/service_a", // 1, 2
+					"instance", "host1", // 3, 4
+					"machine_type", "n1-standard-1", // 5, 6
+					"cloud_provider", "gcp", // 7, 8
+					"region", "us-central1", // 9, 10
+					"datacenter", "sdc", // 11, 12
+					"__name__", "target_info", // 13, 14
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						// target_info metric
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+				attrs.PutStr("machine_type", "n1-standard-1")
+				attrs.PutStr("cloud_provider", "gcp")
+				attrs.PutStr("region", "us-central1")
+				attrs.PutStr("datacenter", "sdc")
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    1,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+		},
+		{
+			// otel_scope_schema_url must be set as the schema URL on the ScopeMetrics,
+			// not appear as a metric data point attribute.
+			name: "otel_scope_schema_url sets scope schema URL",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "myscope", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"otel_scope_schema_url", "https://example.com/schema/v1", // 11, 12
+					"extra_attr", "extra_value", // 13, 14
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.namespace", "service-x")
+				rm.Resource().Attributes().PutStr("service.name", "test")
+				rm.Resource().Attributes().PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("myscope")
+				sm.Scope().SetVersion("v1")
+				sm.SetSchemaUrl("https://example.com/schema/v1")
+
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName("test_metric")
+				metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetDoubleValue(1.0)
+				dp.Attributes().PutStr("extra_attr", "extra_value")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{Confirmed: true, Samples: 1},
+		},
+		{
+			// Labels with otel_scope_ prefix other than name/version/schema_url must become
+			// scope attributes (with the prefix stripped) and must NOT appear as metric point attributes.
+			name: "otel_scope_* extra labels become scope attributes",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "myscope", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"otel_scope_foo", "bar", // 11, 12  → scope attr "foo"="bar"
+					"regular_attr", "regular_value", // 13, 14
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.namespace", "service-x")
+				rm.Resource().Attributes().PutStr("service.name", "test")
+				rm.Resource().Attributes().PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("myscope")
+				sm.Scope().SetVersion("v1")
+				sm.Scope().Attributes().PutStr("foo", "bar")
+
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName("test_metric")
+				metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetDoubleValue(1.0)
+				dp.Attributes().PutStr("regular_attr", "regular_value")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{Confirmed: true, Samples: 1},
+		},
+		{
+			// All otel_scope_* label variants together (name, version, schema_url, extra attr).
+			name: "all otel_scope_* labels handled correctly for NHCB histogram",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_hist", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "histscope", // 7, 8
+					"otel_scope_version", "v2", // 9, 10
+					"otel_scope_schema_url", "https://example.com/schema/v2", // 11, 12
+					"otel_scope_lib", "mylib", // 13, 14  → scope attr "lib"="mylib"
+					"dp_attr", "dp_value", // 15, 16
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+						Histograms: []writev2.Histogram{
+							{
+								Schema:         -53, // NHCB
+								Count:          &writev2.Histogram_CountInt{CountInt: 2},
+								Sum:            3.0,
+								Timestamp:      1000,
+								CustomValues:   []float64{1.0},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+								PositiveDeltas: []int64{1, 1},
+							},
+						},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.namespace", "service-x")
+				rm.Resource().Attributes().PutStr("service.name", "test")
+				rm.Resource().Attributes().PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("histscope")
+				sm.Scope().SetVersion("v2")
+				sm.SetSchemaUrl("https://example.com/schema/v2")
+				sm.Scope().Attributes().PutStr("lib", "mylib")
+
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName("test_hist")
+				metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+				hist := metric.SetEmptyHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1000 * int64(time.Millisecond)))
+				dp.SetSum(3.0)
+				dp.SetCount(2)
+				dp.ExplicitBounds().FromRaw([]float64{1.0})
+				dp.BucketCounts().FromRaw([]uint64{1, 2})
+				dp.Attributes().PutStr("dp_attr", "dp_value")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{Confirmed: true, Histograms: 1},
+		},
+		{
+			name: "info metric - converted to non-monotonic sum",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "build_info", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"version", "v1.0.0", // 7, 8
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_INFO},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1, StartTimestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("build_info")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "info")
+				sum := m.SetEmptySum()
+				sum.SetIsMonotonic(false)
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.Attributes().PutStr("version", "v1.0.0")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+				Samples:   1,
+			},
+		},
+		{
+			name: "stateset metric - converted to non-monotonic sum",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "my_feature_flag", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"my_feature_flag", "enabled", // 7, 8
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_STATESET},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1, StartTimestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("my_feature_flag")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "stateset")
+				sum := m.SetEmptySum()
+				sum.SetIsMonotonic(false)
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.Attributes().PutStr("my_feature_flag", "enabled")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+				Samples:   1,
 			},
 		},
 	} {
@@ -2428,4 +3598,180 @@ func TestHandlePRWConsumerResponse(t *testing.T) {
 		require.NoError(t, err)
 		assert.Contains(t, string(body), "permanent failure")
 	})
+}
+
+// TestEndMetricsOpReportsDataPointCount verifies that EndMetricsOp is called with the
+// number of data points, not the number of resource metric groups.
+// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48306
+func TestEndMetricsOpReportsDataPointCount(t *testing.T) {
+	// Build a request with 3 gauge time series all from the same job/instance.
+	// ResourceMetrics().Len() == 1, but DataPointCount() == 3.
+	request := &writev2.Request{
+		Symbols: []string{
+			"",              // 0 - required empty string
+			"__name__",      // 1
+			"gauge_a",       // 2
+			"gauge_b",       // 3
+			"gauge_c",       // 4
+			"job",           // 5
+			"test-job",      // 6
+			"instance",      // 7
+			"test-instance", // 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 1.0, Timestamp: 1000}},
+			},
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 3, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 2.0, Timestamp: 1000}},
+			},
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 3.0, Timestamp: 1000}},
+			},
+		},
+	}
+	pBuf := proto.NewBuffer(nil)
+	err := pBuf.Marshal(request)
+	require.NoError(t, err)
+
+	receiverID := component.NewIDWithName(metadata.Type, "test")
+	tt := componenttest.NewTelemetry()
+	defer func() {
+		require.NoError(t, tt.Shutdown(t.Context()))
+	}()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.TelemetrySettings = tt.NewTelemetrySettings()
+	settings.ID = receiverID
+
+	sink := &consumertest.MetricsSink{}
+	prwReceiver, err := factory.CreateMetrics(t.Context(), settings, cfg, sink)
+	require.NoError(t, err)
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              "http",
+		ReceiverCreateSettings: settings,
+	})
+	require.NoError(t, err)
+	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
+
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(pBuf.Bytes()))
+	req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
+	w := httptest.NewRecorder()
+	writeReceiver.handlePRW(w, req)
+
+	assert.Equal(t, http.StatusNoContent, w.Result().StatusCode)
+
+	// The accepted metric points must equal the data point count (3), not the
+	// resource group count (1). This is the regression check for #48306.
+	got, err := tt.GetMetric("otelcol_receiver_accepted_metric_points")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_accepted_metric_points",
+			Description: "Number of metric points successfully pushed into the pipeline. [Alpha]",
+			Unit:        "{datapoint}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: otelattr.NewSet(
+							otelattr.String("receiver", receiverID.String()),
+							otelattr.String("transport", "http")),
+						Value: 3, // 3 data points, not 1 (resource count)
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+// TestInvalidSchemaLogging verifies that invalid histogram schemas trigger debug logs
+func TestInvalidSchemaLogging(t *testing.T) {
+	core, obs := observer.New(zapcore.DebugLevel)
+	logger := zap.New(core)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = logger
+
+	prwReceiver, err := factory.CreateMetrics(t.Context(), settings, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, prwReceiver)
+
+	receiverID := component.MustNewID("test")
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              "http",
+		ReceiverCreateSettings: settings,
+	})
+	require.NoError(t, err)
+
+	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+	})
+
+	request := &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_invalid_histogram",
+			"job", "test_job",
+			"instance", "test_instance",
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+				Metadata: writev2.Metadata{
+					Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+				},
+				Histograms: []writev2.Histogram{
+					{
+						Timestamp: 123456789,
+						Schema:    -10, // Invalid schema
+						Sum:       100.5,
+						Count:     &writev2.Histogram_CountInt{CountInt: 50},
+						PositiveSpans: []writev2.BucketSpan{
+							{Offset: 0, Length: 2},
+						},
+						PositiveDeltas: []int64{10, 15},
+					},
+				},
+			},
+		},
+	}
+
+	metrics, stats, err := writeReceiver.translateV2(t.Context(), request)
+	require.NoError(t, err)
+	assert.Equal(t, 0, metrics.MetricCount())
+	assert.Equal(t, 0, stats.Histograms)
+
+	// Verify that debug log was emitted for the invalid schema
+	logs := obs.All()
+	require.Len(t, logs, 1, "Expected 1 debug log for invalid schema")
+
+	// Check log entry
+	assert.Equal(t, "Dropping histogram with invalid schema", logs[0].Message)
+	assert.Equal(t, "test_invalid_histogram", logs[0].ContextMap()["metric_name"])
+	assert.Equal(t, int32(-10), logs[0].ContextMap()["schema"])
+	assert.Equal(t, "test_job", logs[0].ContextMap()["job"])
+	assert.Equal(t, "test_instance", logs[0].ContextMap()["instance"])
+	assert.Equal(t, int64(123456789), logs[0].ContextMap()["timestamp"])
 }

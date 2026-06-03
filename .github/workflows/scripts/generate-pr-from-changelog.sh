@@ -31,6 +31,10 @@ change_type_label() {
 }
 
 main() {
+    # Fetch the PR head ref so the commit is available locally for git diff
+    # (pull_request_target only checks out the base branch).
+    git fetch origin "refs/pull/${PR}/head"
+
     # Find changelog YAML files added in this PR (excluding TEMPLATE.yaml, config.yaml)
     ADDED_FILES=$(git diff --diff-filter=A --name-only "$(git merge-base origin/main "${PR_HEAD}")" "${PR_HEAD}" ./.chloggen/ \
         | grep -E '\.yaml$' \
@@ -54,26 +58,29 @@ main() {
     SUBTEXTS=()
 
     for FILE in ${ADDED_FILES}; do
-        if [[ ! -f "${FILE}" ]]; then
-            echo "Warning: File ${FILE} not found, skipping."
+        # Read file content from the PR head commit via git show
+        # (the PR branch is not checked out with pull_request_target).
+        FILE_CONTENT=$(git show "${PR_HEAD}:${FILE}" 2>/dev/null || true)
+        if [[ -z "${FILE_CONTENT}" ]]; then
+            echo "Warning: File ${FILE} not found in PR head commit, skipping."
             continue
         fi
 
         # Parse YAML fields using grep + sed (avoids requiring yq as a dependency)
         # Extract change_type
-        CHANGE_TYPE=$(grep -E '^change_type:' "${FILE}" | head -1 | sed "s/^change_type:[[:space:]]*//" | sed "s/['\"]//g" | xargs)
+        CHANGE_TYPE=$(echo "${FILE_CONTENT}" | grep -E '^change_type:' | head -1 | sed "s/^change_type:[[:space:]]*//" | sed "s/['\"]//g" | xargs)
 
         # Extract component
-        COMPONENT=$(grep -E '^component:' "${FILE}" | head -1 | sed "s/^component:[[:space:]]*//" | sed "s/['\"]//g" | xargs)
+        COMPONENT=$(echo "${FILE_CONTENT}" | grep -E '^component:' | head -1 | sed "s/^component:[[:space:]]*//" | sed "s/['\"]//g" | xargs)
 
         # Extract note
-        NOTE=$(grep -E '^note:' "${FILE}" | head -1 | sed "s/^note:[[:space:]]*//" | sed "s/['\"]//g" | xargs)
+        NOTE=$(echo "${FILE_CONTENT}" | grep -E '^note:' | head -1 | sed "s/^note:[[:space:]]*//" | sed "s/['\"]//g" | xargs)
 
         # Extract issues (format: issues: [1234] or issues: [1234, 5678])
-        ISSUES=$(grep -E '^issues:' "${FILE}" | head -1 | sed "s/^issues:[[:space:]]*//" | tr -d '[]' | xargs)
+        ISSUES=$(echo "${FILE_CONTENT}" | grep -E '^issues:' | head -1 | sed "s/^issues:[[:space:]]*//" | tr -d '[]' | xargs)
 
         # Extract subtext (can be multiline with pipe |)
-        SUBTEXT_LINE=$(grep -n '^subtext:' "${FILE}" | head -1)
+        SUBTEXT_LINE=$(echo "${FILE_CONTENT}" | grep -n '^subtext:' | head -1)
         SUBTEXT=""
         if [[ -n "${SUBTEXT_LINE}" ]]; then
             LINE_NUM=$(echo "${SUBTEXT_LINE}" | cut -d: -f1)
@@ -81,7 +88,7 @@ main() {
 
             if [[ "${SUBTEXT_VALUE}" == "|" ]]; then
                 # Multiline subtext: read indented lines after the pipe
-                SUBTEXT=$(awk -v start="${LINE_NUM}" '
+                SUBTEXT=$(echo "${FILE_CONTENT}" | awk -v start="${LINE_NUM}" '
                     NR > start {
                         if (/^[[:space:]]+[^#]/) {
                             sub(/^[[:space:]]{2}/, ""); print
@@ -91,7 +98,7 @@ main() {
                             exit
                         }
                     }
-                ' "${FILE}")
+                ')
             elif [[ -n "${SUBTEXT_VALUE}" ]]; then
                 # shellcheck disable=SC2001
                 SUBTEXT=$(echo "${SUBTEXT_VALUE}" | sed "s/['\"]//g")

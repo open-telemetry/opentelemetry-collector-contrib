@@ -32,27 +32,33 @@ func TestGetCPU(t *testing.T) {
 		{
 			name: "successful host cpu info",
 			fixtures: testfixture{
+				// Simulate a Linux host: 2 sockets, 2 cores each, 2 threads per core = 8 logical CPUs.
+				// On Linux, cpu.InfoWithContext returns one InfoStat per logical CPU with Cores=1,
+				// so PhysicalID and CoreID must be set to identify unique physical cores.
 				cpuInfo: func(context.Context) ([]cpu.InfoStat, error) {
 					return []cpu.InfoStat{
-						{
-							ModelName: "testmodelname",
-							Cores:     4,
-						},
-						{
-							ModelName: "testmodelname2",
-							Cores:     4,
-						},
+						{ModelName: "testmodelname", Cores: 1, PhysicalID: "0", CoreID: "0"},
+						{ModelName: "testmodelname", Cores: 1, PhysicalID: "0", CoreID: "0"}, // hyperthreading sibling
+						{ModelName: "testmodelname", Cores: 1, PhysicalID: "0", CoreID: "1"},
+						{ModelName: "testmodelname", Cores: 1, PhysicalID: "0", CoreID: "1"}, // hyperthreading sibling
+						{ModelName: "testmodelname2", Cores: 1, PhysicalID: "1", CoreID: "0"},
+						{ModelName: "testmodelname2", Cores: 1, PhysicalID: "1", CoreID: "0"}, // hyperthreading sibling
+						{ModelName: "testmodelname2", Cores: 1, PhysicalID: "1", CoreID: "1"},
+						{ModelName: "testmodelname2", Cores: 1, PhysicalID: "1", CoreID: "1"}, // hyperthreading sibling
 					}, nil
 				},
-				cpuCounts: func(context.Context, bool) (int, error) {
-					return 2, nil
+				cpuCounts: func(_ context.Context, logical bool) (int, error) {
+					if logical {
+						return 8, nil // 2 sockets * 2 cores * 2 threads
+					}
+					return 2, nil // 2 physical sockets
 				},
 			},
 			wantInfo: map[string]string{
 				"host_physical_cpus": "2",
-				"host_cpu_cores":     "8",
+				"host_cpu_cores":     "4",
 				"host_cpu_model":     "testmodelname2",
-				"host_logical_cpus":  "2",
+				"host_logical_cpus":  "8",
 			},
 		},
 		{
@@ -90,7 +96,7 @@ func TestGetCPU(t *testing.T) {
 				},
 			},
 			wantInfo: map[string]string{
-				"host_physical_cpus": "2",
+				"host_physical_cpus": "0", // cpuCounts(false) fails, HostPhysicalCPUs stays at zero
 				"host_cpu_cores":     "0",
 				"host_cpu_model":     "",
 				"host_logical_cpus":  "0",

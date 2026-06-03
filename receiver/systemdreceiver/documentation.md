@@ -22,9 +22,9 @@ Total CPU time spent by this service.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| cpu.mode | Breakdown of CPU usage by type. | Str: ``system``, ``user`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cpu.mode | Breakdown of CPU usage by type. | Str: ``system``, ``user`` | Recommended | - |
 
 ### systemd.unit.state
 
@@ -36,9 +36,9 @@ Total CPU time spent by this service.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| systemd.unit.active_state | The active state of the unit (https://www.freedesktop.org/software/systemd/man/latest/systemd.html#Units) | Str: ``active``, ``reloading``, ``inactive``, ``failed``, ``activating``, ``deactivating``, ``maintenance``, ``refreshing`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| systemd.unit.active_state | The active state of the unit (https://www.freedesktop.org/software/systemd/man/latest/systemd.html#Units) | Str: ``active``, ``reloading``, ``inactive``, ``failed``, ``activating``, ``deactivating``, ``maintenance``, ``refreshing`` | Recommended | - |
 
 ## Optional Metrics
 
@@ -65,6 +65,6 @@ not include manual restarts (e.g. from `systemctl restart`).
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| systemd.unit.name | Name of the systemd unit | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| systemd.unit.name | Name of the systemd unit | Any Str | true | - |

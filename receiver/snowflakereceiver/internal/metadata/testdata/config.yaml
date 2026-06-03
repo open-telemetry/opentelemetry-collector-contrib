@@ -96,13 +96,10 @@ all_set:
       attributes: ["user_name"]
     snowflake.storage.failsafe_bytes.total:
       enabled: true
-      attributes: []
     snowflake.storage.stage_bytes.total:
       enabled: true
-      attributes: []
     snowflake.storage.storage_bytes.total:
       enabled: true
-      attributes: []
     snowflake.total_elapsed_time.avg:
       enabled: true
       attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
@@ -206,13 +203,10 @@ reaggregate_set:
       attributes: []
     snowflake.storage.failsafe_bytes.total:
       enabled: true
-      attributes: []
     snowflake.storage.stage_bytes.total:
       enabled: true
-      attributes: []
     snowflake.storage.storage_bytes.total:
       enabled: true
-      attributes: []
     snowflake.total_elapsed_time.avg:
       enabled: true
       attributes: []
@@ -316,13 +310,10 @@ none_set:
       attributes: ["user_name"]
     snowflake.storage.failsafe_bytes.total:
       enabled: false
-      attributes: []
     snowflake.storage.stage_bytes.total:
       enabled: false
-      attributes: []
     snowflake.storage.storage_bytes.total:
       enabled: false
-      attributes: []
     snowflake.total_elapsed_time.avg:
       enabled: false
       attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]

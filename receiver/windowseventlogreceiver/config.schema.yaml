@@ -1,5 +1,28 @@
-description: WindowsLogConfig defines configuration for the windowseventlog receiver
+$defs:
+  resolve_si_ds_config:
+    description: ResolveSIDsConfig contains configuration for SID resolution
+    type: object
+    properties:
+      cache_size:
+        description: 'CacheSize is the maximum number of SIDs to cache (LRU eviction) Default: 10000'
+        type: integer
+        x-customType: uint
+      cache_ttl:
+        description: 'CacheTTL is how long cache entries remain valid Default: 15m'
+        type: string
+        format: duration
+      enabled:
+        description: Enabled controls whether SID resolution is active
+        type: boolean
+description: WindowsLogConfig defines configuration for the Windows Event Log receiver.
 type: object
+properties:
+  discover_domain_controllers:
+    description: DiscoverDomainControllers controls whether to attempt auto-discovery of domain controllers for joined machines with remote credentials
+    type: boolean
+  resolve_sids:
+    description: ResolveSIDs contains configuration for SID-to-username resolution
+    $ref: resolve_si_ds_config
 allOf:
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows.config
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.base_config
+  - $ref: /pkg/stanza/operator/input/windows.config
+  - $ref: /pkg/stanza/adapter.base_config

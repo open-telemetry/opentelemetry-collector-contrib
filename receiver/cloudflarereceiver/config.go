@@ -28,6 +28,9 @@ type LogsConfig struct {
 	TimestampField  string                  `mapstructure:"timestamp_field"`
 	TimestampFormat string                  `mapstructure:"timestamp_format"`
 	Separator       string                  `mapstructure:"separator"`
+	// MaxRequestBodySize sets the maximum request body size in bytes. 0 means no limit.
+	// Default: 20MB
+	MaxRequestBodySize int64 `mapstructure:"max_request_body_size,omitempty"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -46,6 +49,10 @@ var (
 func (c *Config) Validate() error {
 	if c.Logs.Endpoint == "" {
 		return errNoEndpoint
+	}
+
+	if c.Logs.MaxRequestBodySize == 0 {
+		c.Logs.MaxRequestBodySize = 20 * 1024 * 1024 // 20MB default
 	}
 
 	var errs error

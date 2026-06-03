@@ -47,6 +47,10 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 		}
 	}
 	overrideWithTaskLevelLimit(&taskMetrics, metadata)
+	if metadata.EphemeralStorageMetrics != nil {
+		taskMetrics.EphemeralStorageUtilized = metadata.EphemeralStorageMetrics.Utilized
+		taskMetrics.EphemeralStorageReserved = metadata.EphemeralStorageMetrics.Reserved
+	}
 	acc.accumulate(convertToOTLPMetrics(taskPrefix, taskMetrics, taskResource, timestamp))
 }
 

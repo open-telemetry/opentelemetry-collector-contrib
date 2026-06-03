@@ -746,6 +746,34 @@ func TestAttrPutHostPortIf(t *testing.T) {
 				"network.peer.port":    int64(-1),
 			},
 		},
+		{
+			name:    "unspecified IPv4 address",
+			addrKey: "network.peer.address",
+			portKey: "network.peer.port",
+			value:   "0.0.0.0",
+			wantRaw: map[string]any{},
+		},
+		{
+			name:    "unspecified IPv6 address",
+			addrKey: "network.peer.address",
+			portKey: "network.peer.port",
+			value:   "::",
+			wantRaw: map[string]any{},
+		},
+		{
+			name:    "unspecified IPv4 address with unspecified port",
+			addrKey: "network.peer.address",
+			portKey: "network.peer.port",
+			value:   "0.0.0.0:0",
+			wantRaw: map[string]any{},
+		},
+		{
+			name:    "unspecified IPv6 address with unspecified port",
+			addrKey: "network.peer.address",
+			portKey: "network.peer.port",
+			value:   "[::]:0",
+			wantRaw: map[string]any{},
+		},
 	}
 
 	for _, tt := range tests {

@@ -38,6 +38,7 @@ func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
 			dedup:             cfg.Dedup,
 			dedot:             cfg.Dedot,
 			sso:               cfg.Mode == MappingSS4O.String(),
+			otelV1:            cfg.Mode == MappingOTelV1.String(),
 			flattenAttributes: cfg.Mode == MappingFlattenAttributes.String(),
 			timestampField:    cfg.TimestampField,
 			unixTime:          cfg.UnixTimestamp,
@@ -46,13 +47,22 @@ func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
 		}
 	}
 
+	defaultPrefix := "ss4o_logs"
+	dataset := cfg.Dataset
+	namespace := cfg.Namespace
+	if cfg.Mode == MappingOTelV1.String() {
+		defaultPrefix = "otel-v1-logs"
+		dataset = ""
+		namespace = ""
+	}
+
 	return &logExporter{
 		telemetry:     set.TelemetrySettings,
 		bulkAction:    cfg.BulkAction,
 		httpSettings:  cfg.ClientConfig,
 		model:         model,
 		config:        cfg,
-		indexResolver: newIndexResolver("ss4o_logs", cfg.Dataset, cfg.Namespace),
+		indexResolver: newIndexResolver(defaultPrefix, dataset, namespace),
 	}
 }
 
@@ -68,11 +78,12 @@ func (l *logExporter) Start(ctx context.Context, host component.Host) error {
 	}
 
 	l.client = client
+
 	return nil
 }
 
 func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	indexer := newLogBulkIndexer(l.bulkAction, l.model)
+	indexer := newLogBulkIndexer(l.bulkAction, l.model, l.config.Pipeline)
 	startErr := indexer.start(l.client)
 	if startErr != nil {
 		return startErr

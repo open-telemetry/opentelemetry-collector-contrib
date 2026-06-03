@@ -11,12 +11,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
-
-var featureGateJSON = featuregate.GlobalRegistry().MustRegister("clickhouse.json", featuregate.StageAlpha)
 
 // NewFactory creates a factory for the ClickHouse exporter.
 func NewFactory() exporter.Factory {
@@ -38,7 +35,7 @@ func createLogsExporter(
 	c.collectorVersion = set.BuildInfo.Version
 
 	var exp anyLogsExporter
-	if featureGateJSON.IsEnabled() {
+	if c.JSON {
 		exp = newLogsJSONExporter(set.Logger, c)
 	} else {
 		exp = newLogsExporter(set.Logger, c)
@@ -66,7 +63,7 @@ func createTracesExporter(
 	c.collectorVersion = set.BuildInfo.Version
 
 	var exp anyTracesExporter
-	if featureGateJSON.IsEnabled() {
+	if c.JSON {
 		exp = newTracesJSONExporter(set.Logger, c)
 	} else {
 		exp = newTracesExporter(set.Logger, c)

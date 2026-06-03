@@ -41,17 +41,23 @@ func (dp Number) Value() (pcommon.Value, error) {
 	return pcommon.Value{}, fmt.Errorf("invalid number data point %q, wrong ValueType %s", dp.metric.Name(), dp.ValueType())
 }
 
-func (dp Number) DynamicTemplate(metric pmetric.Metric) string {
+func (dp Number) DynamicTemplate(metric pmetric.Metric, mode DynamicTemplateMode) string {
+	if mode == DynamicTemplateModeECS {
+		return "double_metrics"
+	}
+
 	switch metric.Type() {
 	case pmetric.MetricTypeSum:
+		sum := metric.Sum()
+		isCounter := sum.IsMonotonic() && sum.AggregationTemporality() == pmetric.AggregationTemporalityCumulative
 		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeDouble:
-			if metric.Sum().IsMonotonic() && metric.Sum().AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
+			if isCounter {
 				return "counter_double"
 			}
 			return "gauge_double"
 		case pmetric.NumberDataPointValueTypeInt:
-			if metric.Sum().IsMonotonic() && metric.Sum().AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
+			if isCounter {
 				return "counter_long"
 			}
 			return "gauge_long"
@@ -67,8 +73,9 @@ func (dp Number) DynamicTemplate(metric pmetric.Metric) string {
 		default:
 			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
 		}
+	default:
+		return ""
 	}
-	return ""
 }
 
 func (Number) DocCount() uint64 {

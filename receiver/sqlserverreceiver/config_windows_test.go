@@ -24,7 +24,7 @@ func TestValidateWindows(t *testing.T) {
 		{
 			desc: "valid config",
 			cfg: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedSuccess: true,
@@ -32,7 +32,8 @@ func TestValidateWindows(t *testing.T) {
 		{
 			desc: "valid config with no metric settings",
 			cfg: &Config{
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedSuccess: true,
 		},
@@ -44,25 +45,28 @@ func TestValidateWindows(t *testing.T) {
 		{
 			desc: "invalid config with computer_name but not instance_name",
 			cfg: &Config{
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-				ComputerName:     "ComputerName",
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				ComputerName:         "ComputerName",
 			},
 			expectedSuccess: false,
 		},
 		{
 			desc: "invalid config with instance_name but not computer_name",
 			cfg: &Config{
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-				InstanceName:     "InstanceName",
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				InstanceName:         "InstanceName",
 			},
 			expectedSuccess: false,
 		},
 		{
 			desc: "valid config with both names set",
 			cfg: &Config{
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-				ComputerName:     "ComputerName",
-				InstanceName:     "InstanceName",
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				ComputerName:         "ComputerName",
+				InstanceName:         "InstanceName",
 			},
 			expectedSuccess: true,
 		},

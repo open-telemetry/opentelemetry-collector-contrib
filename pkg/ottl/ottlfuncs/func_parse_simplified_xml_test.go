@@ -5,6 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -276,4 +277,18 @@ func TestCreateParseSimplifiedXMLFunc(t *testing.T) {
 	assert.NotNil(t, exprFunc)
 	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
+}
+
+func TestParseSimplifiedXMLMaxDepth(t *testing.T) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			const depth = maxXMLElementDepth + 2
+			return strings.Repeat("<a>", depth) + strings.Repeat("</a>", depth), nil
+		},
+	}
+
+	exprFunc := parseSimplifiedXML(target)
+	_, err := exprFunc(t.Context(), nil)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "exceeded maximum XML nesting depth")
 }

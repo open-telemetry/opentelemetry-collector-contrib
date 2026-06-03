@@ -1,5 +1,5 @@
 receivers:
-  filelog:
+  file_log:
     include: [ "/private/var/log/*.log" ] # MacOs system logs
     include_file_name: false
     include_file_path: true
@@ -10,7 +10,7 @@ receivers:
     attributes:
       type: <<your-logzio-type>>
 processors:
-  resourcedetection/system:
+  resource_detection/system:
     detectors: [ "system" ]
     system:
       hostname_sources: [ "os" ]
@@ -21,8 +21,8 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog]
-      processors: [ resourcedetection/system ]
+      receivers: [file_log]
+      processors: [ resource_detection/system ]
       exporters: [logzio/logs]
   telemetry:
     logs:

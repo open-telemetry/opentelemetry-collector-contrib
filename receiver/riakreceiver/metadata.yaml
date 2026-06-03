@@ -1,4 +1,6 @@
+display_name: Riak Receiver
 type: riak
+reaggregation_enabled: true
 
 status:
   class: receiver
@@ -18,6 +20,7 @@ resource_attributes:
 attributes:
   operation:
     description: The operation type for index operations.
+    requirement_level: recommended
     type: string
     enum:
       - read
@@ -25,6 +28,7 @@ attributes:
       - delete
   request:
     description: The request operation type.
+    requirement_level: recommended
     type: string
     enum:
       - put

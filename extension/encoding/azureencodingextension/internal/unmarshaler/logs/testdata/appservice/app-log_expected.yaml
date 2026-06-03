@@ -52,5 +52,9 @@ resourceLogs:
             severityText: Critical
             timeUnixNano: "1713960372000000000"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.appservice
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

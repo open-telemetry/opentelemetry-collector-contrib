@@ -29,7 +29,9 @@ func TestDefaultConfig(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		APIConfig: k8sconfig.APIConfig{
-			AuthType: k8sconfig.AuthTypeServiceAccount,
+			AuthType:     k8sconfig.AuthTypeServiceAccount,
+			KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
+			KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 		},
 	}, rCfg)
 }

@@ -1,4 +1,12 @@
+display_name: Memcached Receiver
 type: memcached
+reaggregation_enabled: true
+
+description: |
+  This receiver can fetch stats from a Memcached instance using the [stats
+  command](https://github.com/memcached/memcached/wiki/Commands#statistics). A
+  detailed description of all the stats available is at
+  https://github.com/memcached/memcached/blob/master/doc/protocol.txt#L1159.
 
 status:
   class: receiver
@@ -13,6 +21,7 @@ status:
 attributes:
   command:
     description: The type of command.
+    requirement_level: recommended
     type: string
     enum:
       - get
@@ -21,12 +30,14 @@ attributes:
       - touch
   direction:
     description: Direction of data flow.
+    requirement_level: recommended
     type: string
     enum:
       - sent
       - received
   operation:
     description: The type of operation.
+    requirement_level: recommended
     type: string
     enum:
       - increment
@@ -34,6 +45,7 @@ attributes:
       - get
   state:
     description: The type of CPU usage.
+    requirement_level: recommended
     type: string
     enum:
       - system
@@ -41,6 +53,7 @@ attributes:
 
   type:
     description: Result of cache request.
+    requirement_level: recommended
     type: string
     enum:
       - hit

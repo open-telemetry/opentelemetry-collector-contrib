@@ -146,8 +146,8 @@ func (s *redfishScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 		// Always present - resource attributes
 		rb := s.mb.NewResourceBuilder()
-		rb.SetBaseURL(baseURL)
-		rb.SetSystemHostName(compSys.HostName)
+		rb.SetURLFull(baseURL)
+		rb.SetHostName(compSys.HostName)
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}

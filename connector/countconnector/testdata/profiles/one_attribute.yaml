@@ -12,12 +12,14 @@ resourceMetrics:
                     - key: profile.required
                       value:
                         stringValue: foo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: profile.required
                       value:
                         stringValue: notfoo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
               isMonotonic: true
         scope:
@@ -39,12 +41,14 @@ resourceMetrics:
                     - key: profile.required
                       value:
                         stringValue: foo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: profile.required
                       value:
                         stringValue: notfoo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
               isMonotonic: true
         scope:
@@ -69,12 +73,14 @@ resourceMetrics:
                     - key: profile.required
                       value:
                         stringValue: foo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: profile.required
                       value:
                         stringValue: notfoo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
               isMonotonic: true
         scope:
@@ -99,12 +105,14 @@ resourceMetrics:
                     - key: profile.required
                       value:
                         stringValue: foo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: profile.required
                       value:
                         stringValue: notfoo
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
               isMonotonic: true
         scope:

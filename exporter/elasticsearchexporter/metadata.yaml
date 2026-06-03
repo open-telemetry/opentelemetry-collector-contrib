@@ -77,6 +77,25 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    elasticsearch.docs.retried_http_request:
+      prefix: otelcol.
+      stability: alpha
+      enabled: true
+      description: Count of documents retried due to HTTP request-level failures.
+      extended_documentation: |
+            Counts documents that are retried because an entire bulk HTTP
+            request failed with a retryable status code (as configured in
+            `retry_on_status`) and was retried by the Elasticsearch client,
+            up to the `max_retries` limit.
+
+            In contrast, `elasticsearch.docs.retried` counts documents retried
+            individually within otherwise successful bulk requests due to
+            document-specific failures such as mapping conflicts.
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [outcome, http.response.status_code]
     elasticsearch.flushed.bytes:
       prefix: otelcol.
       stability: alpha

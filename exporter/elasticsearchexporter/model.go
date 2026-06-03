@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
@@ -57,8 +57,8 @@ var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventionsv126.DeploymentEnvironmentKey): {to: "service.environment"},
 	string(conventions.DeploymentEnvironmentNameKey): {to: "service.environment"},
 	string(conventions.TelemetrySDKNameKey):          {skip: true},
-	string(conventions.TelemetrySDKLanguageKey):      {skip: true},
-	string(conventions.TelemetrySDKVersionKey):       {skip: true},
+	string(conventions.TelemetrySDKLanguageKey):      {to: "service.language.name"},
+	string(conventions.TelemetrySDKVersionKey):       {to: "service.language.version"},
 	string(conventions.TelemetryDistroNameKey):       {skip: true},
 	string(conventions.TelemetryDistroVersionKey):    {skip: true},
 	string(conventions.CloudPlatformKey):             {to: "cloud.service.name"},
@@ -253,7 +253,6 @@ func (ecsModeEncoder) encodeLog(
 	addDataStreamAttributes(&document, "", idx)
 
 	// Handle special cases.
-	encodeHostOsTypeECSMode(&document, ec.resource)
 	encodeLogTimestampECSMode(&document, record)
 	document.AddTraceID("trace.id", record.TraceID())
 	document.AddSpanID("span.id", record.SpanID())
@@ -284,7 +283,6 @@ func (ecsModeEncoder) encodeSpan(
 	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
 	// Finally, try to map span-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap)
-	encodeHostOsTypeECSMode(&document, ec.resource)
 	addDataStreamAttributes(&document, "", idx)
 
 	document.AddTimestamp("@timestamp", span.StartTimestamp())
@@ -481,6 +479,7 @@ func (ecsDataPointsEncoder) encodeMetrics(
 	document.AddTimestamp("@timestamp", dp0.Timestamp())
 	document.AddAttributes("", dp0.Attributes())
 	addDataStreamAttributes(&document, "", idx)
+	var docCount uint64
 
 	for _, dp := range dataPoints {
 		value, err := dp.Value()
@@ -488,9 +487,21 @@ func (ecsDataPointsEncoder) encodeMetrics(
 			*validationErrors = append(*validationErrors, err)
 			continue
 		}
-		document.AddAttribute(dp.Metric().Name(), value)
+		metric := dp.Metric()
+		metricName := metric.Name()
+		document.AddAttribute(metricName, value)
+		if name := dp.DynamicTemplate(metric, datapoints.DynamicTemplateModeECS); name != "" {
+			document.AddDynamicTemplate(metricName, name)
+		}
+
+		if dp.HasMappingHint(elasticsearch.HintDocCount) {
+			docCount = dp.DocCount()
+		}
 	}
 
+	if docCount != 0 {
+		document.AddUInt("_doc_count", docCount)
+	}
 	err := document.Serialize(buf, true, metricsProtectedFields)
 
 	return document.DynamicTemplates(), err
@@ -582,39 +593,6 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 		// Otherwise, add key at top level with attribute name as-is.
 		document.AddAttribute(k, v)
 	}
-}
-
-func encodeHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {
-	// https://www.elastic.co/guide/en/ecs/current/ecs-os.html#field-os-type:
-	//
-	// "One of these following values should be used (lowercase): linux, macos, unix, windows.
-	// If the OS you’re dealing with is not in the list, the field should not be populated."
-
-	var ecsHostOsType string
-	if semConvOsType, exists := resource.Attributes().Get(string(conventions.OSTypeKey)); exists {
-		switch semConvOsType.Str() {
-		case "windows", "linux":
-			ecsHostOsType = semConvOsType.Str()
-		case "darwin":
-			ecsHostOsType = "macos"
-		case "aix", "hpux", "solaris":
-			ecsHostOsType = "unix"
-		}
-	}
-
-	if semConvOsName, exists := resource.Attributes().Get(string(conventions.OSNameKey)); exists {
-		switch semConvOsName.Str() {
-		case "Android":
-			ecsHostOsType = "android"
-		case "iOS":
-			ecsHostOsType = "ios"
-		}
-	}
-
-	if ecsHostOsType == "" {
-		return
-	}
-	document.AddString("host.os.type", ecsHostOsType)
 }
 
 func encodeLogTimestampECSMode(document *objmodel.Document, record plog.LogRecord) {
