@@ -279,7 +279,7 @@ func profilesForPprofConversion(pp pprofile.Profiles, rp pprofile.ResourceProfil
 	}
 	for _, sample := range prof.Samples().All() {
 		if sample.Values().Len() != numValues {
-			return profiles, fmt.Errorf("profile samples hold varying number of values")
+			return profiles, errors.New("profile samples hold varying number of values")
 		}
 	}
 
