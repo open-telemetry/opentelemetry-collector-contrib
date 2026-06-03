@@ -337,6 +337,44 @@ Number of times parallel execution was executed at the requested degree of paral
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {executions} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.physical_io.cache_writes
+
+Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$sysstat name physical writes from cache.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {writes} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.physical_io.requests
+
+Number of physical I/O requests issued to storage. Sourced from v$sysstat names physical read/write total IO requests (disk.io.block_size=all) and physical read/write total multi block requests (disk.io.block_size=multi).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {requests} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+| disk.io.block_size | Multi-block vs single-block (all) I/O request grouping. | Str: ``all``, ``multi`` | Recommended | - |
+
+### oracledb.physical_io.transferred
+
+Total physical I/O bytes transferred between Oracle and storage. Sums across all data files. Sourced from v$sysstat names physical read/write bytes (disk.io.type=buffered) and physical read/write total bytes (disk.io.type=total).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+| disk.io.type | Whether the I/O bytes are buffered (cache-mediated) or total (raw transfer count). | Str: ``buffered``, ``total`` | Recommended | - |
+
 ### oracledb.physical_read_io_requests
 
 Number of read requests for application activity
@@ -392,6 +430,21 @@ Total size of the recycle bin.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Double | Development |
+
+### oracledb.sqlnet.io.transferred
+
+Bytes transferred via SQL*Net between Oracle and clients/dblinks. Sourced from v$sysstat names bytes received/sent via SQL*Net from/to client/dblink.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| network.io.direction | Direction of the SQL*Net network transfer. | Str: ``receive``, ``transmit`` | Recommended | - |
+| destination.type | Type of the SQL*Net destination endpoint (client application or remote database link). | Str: ``client``, ``dblink`` | Recommended | - |
 
 ### oracledb.storage.usage
 
@@ -478,6 +531,21 @@ sample query
 | oracledb.blocking.object.owner | The owner (schema) of the database object the session is waiting to lock. Empty when no object lock wait is active. | Any Str | - |
 | oracledb.blocking.object.name | The name of the database object the session is waiting to lock. Empty when no object lock wait is active. | Any Str | - |
 
+### db.server.session.wait_sample
+
+Per-session wait event statistics from v$session_event.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| oracledb.sid | ID of the Oracle Server session. | Any Str | - |
+| oracledb.serial | Serial number associated with a session. | Any Str | - |
+| oracledb.event | The specific wait event that a query or session is currently experiencing. | Any Str | - |
+| oracledb.wait_class | The category of wait events a query or session is currently experiencing in Oracle Database. | Any Str | - |
+| oracledb.wait.count | Total number of waits for the wait event across all sessions. | Any Int | - |
+| oracledb.wait.duration | Total time waited in seconds for the wait event. | Any Double | - |
+
 ### db.server.top_query
 
 Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).
@@ -514,6 +582,8 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | oracledb.procedure_id | The identifier of the stored procedure or function being executed by the query. | Any Int | - |
 | oracledb.procedure_name | Name of the database object that a query is accessing. | Any Str | - |
 | oracledb.procedure_type | Type of the database object that a query is accessing. | Any Str | - |
+| oracledb.plan_hash_value | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str | - |
+| oracledb.plan.last_load | Plan load time in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS | Any Str | - |
 
 ## Resource Attributes
 

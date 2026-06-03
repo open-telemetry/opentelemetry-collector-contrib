@@ -44,7 +44,10 @@ func ValidateMetrics(md pmetric.Metrics) error {
 		// TODO (PR 4): Check for multiple ScopeMetrics with equal scope under the same resource
 	}
 
-	// TODO (PR 3): Check for multiple ResourceMetrics with equal resource attributes
+	// Check for multiple ResourceMetrics with equal resource attributes.
+	if err := validateDuplicateResources(rms); err != nil {
+		errs = multierr.Append(errs, err)
+	}
 
 	return errs
 }
@@ -129,6 +132,27 @@ func validateDuplicateMetricNames(ms pmetric.MetricSlice) error {
 			))
 		} else {
 			seen[name] = i
+		}
+	}
+
+	return errs
+}
+
+// validateDuplicateResources checks that no two ResourceMetrics in rms share
+// the same resource attributes. Each resource should appear at most once.
+func validateDuplicateResources(rms pmetric.ResourceMetricsSlice) error {
+	seen := make(map[[16]byte]int, rms.Len()) // resource attributes hash to first-seen index
+	var errs error
+
+	for i := 0; i < rms.Len(); i++ {
+		h := pdatautil.MapHash(rms.At(i).Resource().Attributes())
+		if firstIdx, exists := seen[h]; exists {
+			errs = multierr.Append(errs, fmt.Errorf(
+				"resource %v at index %d is a duplicate of resource at index %d",
+				rms.At(i).Resource().Attributes().AsRaw(), i, firstIdx,
+			))
+		} else {
+			seen[h] = i
 		}
 	}
 
