@@ -59,11 +59,14 @@ func newStorage(storageDir string, logger *zap.Logger) (*storage, error) {
 
 func (s *storage) drop() error {
 	var lo, hi [traceIDBytes + 1]byte
-	lo[traceIDBytes] = traceIDSeparator
-	for i := range traceIDBytes {
+	lo[len(lo)-1] = traceIDSeparator
+	for i := range hi {
+		if i == len(hi)-1 {
+			hi[i] = traceIDSeparator + 1 // +1 to include the greatest trace ID with trace ID separator
+			break
+		}
 		hi[i] = 0xff
 	}
-	hi[traceIDBytes] = traceIDSeparator + 1
 	if err := s.db.DeleteRange(lo[:], hi[:], pebble.NoSync); err != nil {
 		return err
 	}
