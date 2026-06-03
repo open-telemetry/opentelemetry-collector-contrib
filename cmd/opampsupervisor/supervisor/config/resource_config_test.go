@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
-	otelconftelemetry "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 )
 
 func TestTelemetryResourceConfigUnmarshal(t *testing.T) {
@@ -20,33 +20,40 @@ func TestTelemetryResourceConfigUnmarshal(t *testing.T) {
 			"custom.attr":  "value",
 		})
 
-		var cfg otelconftelemetry.ResourceConfig
+		var cfg ResourceConfig
 		require.NoError(t, conf.Unmarshal(&cfg))
 		assert.Empty(t, cfg.Attributes)
 		assert.Equal(t, "my-service", cfg.LegacyAttributes["service.name"])
 		assert.Equal(t, "value", cfg.LegacyAttributes["custom.attr"])
 	})
 
-	t.Run("declarative resource accepts detectors", func(t *testing.T) {
+	t.Run("declarative resource accepts detection development", func(t *testing.T) {
 		conf := confmap.NewFromStringMap(map[string]any{
 			"schema_url": "https://opentelemetry.io/schemas/1.38.0",
 			"attributes": []any{
 				map[string]any{"name": "service.name", "value": "svc"},
 			},
-			"detectors": map[string]any{
+			"detection/development": map[string]any{
 				"attributes": map[string]any{
-					"included": []any{"host"},
+					"included": []any{"host.*"},
+				},
+				"detectors": []any{
+					map[string]any{"host": map[string]any{}},
 				},
 			},
 		})
 
-		var cfg otelconftelemetry.ResourceConfig
+		var cfg ResourceConfig
 		require.NoError(t, conf.Unmarshal(&cfg))
 		require.NoError(t, confmap.Validate(&cfg))
 		require.NotNil(t, cfg.SchemaUrl)
 		assert.Equal(t, "https://opentelemetry.io/schemas/1.38.0", *cfg.SchemaUrl)
 		assert.Len(t, cfg.Attributes, 1)
-		require.NotNil(t, cfg.Detectors)
+		require.NotNil(t, cfg.DetectionDevelopment)
+		require.NotNil(t, cfg.DetectionDevelopment.Attributes)
+		assert.Equal(t, []string{"host.*"}, cfg.DetectionDevelopment.Attributes.Included)
+		require.Len(t, cfg.DetectionDevelopment.Detectors, 1)
+		assert.NotNil(t, cfg.DetectionDevelopment.Detectors[0].Host)
 	})
 
 	t.Run("attributes list rejected", func(t *testing.T) {
@@ -54,7 +61,7 @@ func TestTelemetryResourceConfigUnmarshal(t *testing.T) {
 			"attributes_list": "ignored",
 		})
 
-		var cfg otelconftelemetry.ResourceConfig
+		var cfg ResourceConfig
 		require.NoError(t, conf.Unmarshal(&cfg))
 		require.ErrorContains(t, confmap.Validate(&cfg), "resource::attributes_list is not currently supported")
 	})
@@ -67,7 +74,7 @@ func TestTelemetryResourceConfigUnmarshal(t *testing.T) {
 			"legacy.attr": "value",
 		})
 
-		var cfg otelconftelemetry.ResourceConfig
+		var cfg ResourceConfig
 		require.NoError(t, conf.Unmarshal(&cfg))
 		require.ErrorContains(t, confmap.Validate(&cfg), "resource::attributes cannot be used together with legacy inline resource attributes")
 	})
@@ -75,11 +82,16 @@ func TestTelemetryResourceConfigUnmarshal(t *testing.T) {
 
 func TestTelemetryResourceConfigMarshal(t *testing.T) {
 	schemaURL := "https://opentelemetry.io/schemas/1.38.0"
-	cfg := otelconftelemetry.ResourceConfig{
+	cfg := ResourceConfig{
 		Resource: otelconf.Resource{
 			SchemaUrl: &schemaURL,
 			Attributes: []otelconf.AttributeNameValue{
 				{Name: "service.name", Value: "custom-service"},
+			},
+		},
+		DetectionDevelopment: &xotelconf.ExperimentalResourceDetection{
+			Detectors: []xotelconf.ExperimentalResourceDetector{
+				{Host: xotelconf.ExperimentalHostResourceDetector{}},
 			},
 		},
 		LegacyAttributes: map[string]any{
@@ -105,4 +117,10 @@ func TestTelemetryResourceConfigMarshal(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "service.name", attr["name"])
 	assert.Equal(t, "custom-service", attr["value"])
+
+	detection, ok := raw["detection/development"].(map[string]any)
+	require.True(t, ok)
+	detectors, ok := detection["detectors"].([]any)
+	require.True(t, ok)
+	require.Len(t, detectors, 1)
 }
