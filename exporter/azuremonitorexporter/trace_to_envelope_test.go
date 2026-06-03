@@ -275,8 +275,9 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet2(t *testing.T) {
 	// http.scheme, http.host, http.target => data.Url
 	spanAttributes.PutInt("http.response.status_code", defaultHTTPStatusCode)
 	spanAttributes.PutStr("url.scheme", "https")
-	spanAttributes.PutStr("client.address", "foo")
+	spanAttributes.PutStr("server.address", "foo")
 	spanAttributes.PutStr("url.path", "/bar/12345")
+	spanAttributes.PutInt("server.port", 0)
 	spanAttributes.PutStr("url.query", "biz=baz")
 
 	// Removing URL Full Key to test fallback although http client span requires url.full see https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/docs/http/http-spans.md
@@ -306,8 +307,8 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet3(t *testing.T) {
 
 	spanAttributes.PutInt("http.response.status_code", defaultHTTPStatusCode)
 	spanAttributes.PutStr("url.scheme", "https")
-	spanAttributes.PutStr("client.address", "foo")
-	spanAttributes.PutInt("client.port", 81)
+	spanAttributes.PutStr("server.address", "foo")
+	spanAttributes.PutInt("server.port", 81)
 	spanAttributes.PutStr("url.path", "/bar")
 	spanAttributes.PutStr("url.query", "biz=baz")
 
@@ -331,7 +332,8 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet4(t *testing.T) {
 	spanAttributes.PutInt("http.response.status_code", defaultHTTPStatusCode)
 	spanAttributes.PutStr("url.scheme", "https")
 	spanAttributes.PutStr("network.peer.address", "127.0.0.1")
-	spanAttributes.PutInt("client.port", 81)
+	spanAttributes.PutInt("server.port", 81)
+	spanAttributes.PutStr("server.address", "")
 	spanAttributes.PutStr("url.path", "/bar")
 	spanAttributes.PutStr("url.query", "biz=baz")
 	spanAttributes.PutStr("enduser.id", "12345")
@@ -379,8 +381,8 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 	span := getDefaultRPCClientSpan()
 	spanAttributes := span.Attributes()
 
-	spanAttributes.PutStr("client.address", "foo")
-	spanAttributes.PutInt("client.port", 81)
+	spanAttributes.PutStr("server.address", "foo")
+	spanAttributes.PutInt("server.port", 81)
 	spanAttributes.PutStr("network.peer.address", "127.0.0.1")
 
 	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
@@ -390,7 +392,7 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 	defaultRPCRemoteDependencyDataValidations(t, span, data, "foo:81")
 
 	// test fallback to peerip
-	spanAttributes.PutStr("client.address", "")
+	spanAttributes.PutStr("server.address", "")
 	spanAttributes.PutStr("network.peer.address", "127.0.0.1")
 
 	envelopes, _ = spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
@@ -418,8 +420,8 @@ func TestDatabaseClientSpanToRemoteDependencyData(t *testing.T) {
 	spanAttributes := span.Attributes()
 
 	spanAttributes.PutStr("db.query.text", defaultDBStatement)
-	spanAttributes.PutStr("client.address", "foo")
-	spanAttributes.PutInt("client.port", 81)
+	spanAttributes.PutStr("server.address", "foo")
+	spanAttributes.PutInt("server.port", 81)
 
 	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
 	envelope := envelopes[0]
@@ -445,8 +447,8 @@ func TestMessagingConsumerSpanToRequestData(t *testing.T) {
 	span := getDefaultMessagingConsumerSpan()
 	spanAttributes := span.Attributes()
 
-	spanAttributes.PutStr("server.address", "foo")
-	spanAttributes.PutInt("server.port", 81)
+	spanAttributes.PutStr("client.address", "foo")
+	spanAttributes.PutInt("client.port", 81)
 
 	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
 	envelope := envelopes[0]
@@ -466,8 +468,8 @@ func TestMessagingProducerSpanToRequestData(t *testing.T) {
 	span := getDefaultMessagingProducerSpan()
 	spanAttributes := span.Attributes()
 
-	spanAttributes.PutStr("client.address", "foo")
-	spanAttributes.PutInt("client.port", 81)
+	spanAttributes.PutStr("server.address", "foo")
+	spanAttributes.PutInt("server.port", 81)
 
 	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, nil, zap.NewNop())
 	envelope := envelopes[0]
