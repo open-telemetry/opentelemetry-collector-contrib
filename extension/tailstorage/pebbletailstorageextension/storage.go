@@ -4,6 +4,7 @@
 package pebbletailstorageextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension"
 
 import (
+	"context"
 	"encoding/binary"
 	"path/filepath"
 	"sync/atomic"
@@ -40,12 +41,36 @@ func newStorage(storageDir string, logger *zap.Logger) (*storage, error) {
 		return nil, err
 	}
 
-	return &storage{
+	s := &storage{
 		db:          db,
 		logger:      logger,
 		marshaler:   &ptrace.ProtoMarshaler{},
 		unmarshaler: &ptrace.ProtoUnmarshaler{},
-	}, nil
+	}
+
+	// Persistence across restarts is not supported.
+	// Enforce this at startup to prevent users from relying on persistence.
+	if err := s.drop(); err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
+func (s *storage) drop() error {
+	var lo, hi [traceIDBytes + 1]byte
+	lo[traceIDBytes] = traceIDSeparator
+	for i := range traceIDBytes {
+		hi[i] = 0xff
+	}
+	hi[traceIDBytes] = traceIDSeparator + 1
+	if err := s.db.DeleteRange(lo[:], hi[:], pebble.NoSync); err != nil {
+		return err
+	}
+	if err := s.db.Compact(context.Background(), lo[:], hi[:], true); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *storage) Close() error {

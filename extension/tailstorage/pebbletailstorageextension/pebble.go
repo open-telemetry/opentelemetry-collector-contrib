@@ -16,10 +16,6 @@ func newPebbleDB(storageDir string, logger *zap.Logger) (*pebble.DB, error) {
 	defer cache.Unref()
 
 	opts := &pebble.Options{
-		// TODO: support persistence across restarts as storage schema matures.
-		// Meanwhile, error if DB already exists to prevent users from relying on persistence.
-		ErrorIfExists: true,
-
 		FormatMajorVersion: pebble.FormatValueSeparation,
 		Logger:             logger.Sugar(),
 		MemTableSize:       32 << 20,

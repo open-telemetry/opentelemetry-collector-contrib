@@ -110,10 +110,7 @@ func TestTakeRemovesOnlyTargetTrace(t *testing.T) {
 	require.Equal(t, 1, out2.SpanCount())
 }
 
-// TestStartErrorsIfDBExists guards the ErrorIfExists Pebble option set in pebble.go,
-// which prevents users from relying on persistence across restarts while the
-// on-disk schema is still in development.
-func TestStartErrorsIfDBExists(t *testing.T) {
+func TestDropOnStart(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = t.TempDir()
@@ -121,9 +118,18 @@ func TestStartErrorsIfDBExists(t *testing.T) {
 	first, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 	require.NoError(t, first.Start(t.Context(), componenttest.NewNopHost()))
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
+	appendTraceSpan(first.(TailStorage), traceID, pcommon.SpanID{}, "")
+
 	require.NoError(t, first.Shutdown(t.Context()))
 
 	second, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
-	require.Error(t, second.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, second.Start(t.Context(), componenttest.NewNopHost()))
+
+	_, found := second.(TailStorage).Take(traceID)
+	require.False(t, found)
+
+	require.NoError(t, second.Shutdown(t.Context()))
 }
