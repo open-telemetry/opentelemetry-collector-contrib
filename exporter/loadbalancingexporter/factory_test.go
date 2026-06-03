@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	metricnoop "go.opentelemetry.io/otel/metric/noop"
+	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -169,6 +171,15 @@ func TestBuildExporterSettings(t *testing.T) {
 			zap.String(zapEndpointKey, testEndpoint),
 		)
 	})
+}
+
+func TestBuildTopLevelExporterSettings(t *testing.T) {
+	creationParams := exportertest.NewNopSettings(metadata.Type)
+	helperParams := buildTopLevelExporterSettings(creationParams)
+
+	assert.IsType(t, metricnoop.NewMeterProvider(), helperParams.MeterProvider)
+	assert.IsType(t, tracenoop.NewTracerProvider(), helperParams.TracerProvider)
+	assert.Equal(t, creationParams.ID, helperParams.ID)
 }
 
 func TestWrappedExporterHasEndpointAttribute(t *testing.T) {

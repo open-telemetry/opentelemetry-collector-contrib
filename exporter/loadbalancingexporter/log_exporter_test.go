@@ -162,7 +162,7 @@ func TestConsumeLogs(t *testing.T) {
 	assert.NoError(t, res)
 }
 
-func TestConsumeLogsEmitsOnlyParentExporterMetrics(t *testing.T) {
+func TestConsumeLogsEmitsOnlySubExporterMetrics(t *testing.T) {
 	ctx := t.Context()
 	shutdownCtx := context.Background() //nolint:usetesting // Context must outlive test for cleanup
 	telemetry := componenttest.NewTelemetry()
@@ -190,7 +190,7 @@ func TestConsumeLogsEmitsOnlyParentExporterMetrics(t *testing.T) {
 	}
 	wrappedExporter, err := exporterhelper.NewLogs(
 		ctx,
-		parentParams,
+		buildTopLevelExporterSettings(parentParams),
 		cfg,
 		logsExporter.ConsumeLogs,
 		exporterhelper.WithStart(logsExporter.Start),
@@ -227,9 +227,10 @@ func TestConsumeLogsEmitsOnlyParentExporterMetrics(t *testing.T) {
 		}
 	}
 
-	// Parent exporter should have emitted metrics
-	assert.Equal(t, int64(logs.LogRecordCount()), loadbalancingTotal)
-	// Sub-exporter metrics are now enabled, so they should also be present
+	// Top-level exporterhelper metrics are disabled because partial failures are
+	// still counted incorrectly in collector-core. Users should rely on
+	// sub-exporter metrics plus loadbalancer backend metrics instead.
+	assert.Zero(t, loadbalancingTotal)
 	assert.Positive(t, subExporterTotal, "sub-exporter metrics should be present")
 
 	loadbalancerMetric, err := telemetry.GetMetric("otelcol_loadbalancer_backend_outcome")
