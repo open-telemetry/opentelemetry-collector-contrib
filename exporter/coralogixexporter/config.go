@@ -79,7 +79,12 @@ type Config struct {
 	// Transport settings used with Domain (supports both gRPC and HTTP)
 	DomainSettings TransportConfig `mapstructure:"domain_settings"`
 
-	// Use AWS PrivateLink for the domain
+	// PrivateLink, when enabled, automatically routes telemetry to the AWS PrivateLink ingress
+	// endpoint (ingress.private.<domain>) for the configured domain. AWS PrivateLink provides
+	// private connectivity between VPCs, supported AWS services, and on-premises networks
+	// without exposing traffic to the public internet. If the domain already contains
+	// "private.", no additional prefix is added. For up-to-date PrivateLink endpoints, see
+	// https://coralogix.com/docs/integrations/aws/aws-privatelink/aws-privatelink/#privatelink-endpoints
 	PrivateLink bool `mapstructure:"private_link"`
 
 	// Coralogix traces ingress endpoint (supports both gRPC and HTTP)

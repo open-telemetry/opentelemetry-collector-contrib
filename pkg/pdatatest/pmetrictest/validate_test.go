@@ -437,5 +437,83 @@ func TestValidateMetrics(t *testing.T) {
 
 	// TODO (PR 4): Add tests for multiple ScopeMetrics with equal scope under the same resource
 
-	// TODO (PR 3): Add tests for multiple ResourceMetrics with equal resource attributes
+	t.Run("duplicate-resource-attributes", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+
+		rm1 := md.ResourceMetrics().AppendEmpty()
+		rm1.Resource().Attributes().PutStr("host.name", "worker-42")
+
+		rm2 := md.ResourceMetrics().AppendEmpty()
+		rm2.Resource().Attributes().PutStr("host.name", "worker-42")
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "resource map[host.name:worker-42] at index 1 is a duplicate of resource at index 0")
+	})
+
+	t.Run("no-duplicate-different-resource-attributes", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+
+		rm1 := md.ResourceMetrics().AppendEmpty()
+		rm1.Resource().Attributes().PutStr("host.name", "worker-42")
+
+		rm2 := md.ResourceMetrics().AppendEmpty()
+		rm2.Resource().Attributes().PutStr("host.name", "worker-99")
+
+		assert.NoError(t, ValidateMetrics(md))
+	})
+
+	t.Run("duplicate-resource-multiple-duplicates", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+
+		for range 3 {
+			rm := md.ResourceMetrics().AppendEmpty()
+			rm.Resource().Attributes().PutStr("host.name", "worker-42")
+		}
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "at index 1 is a duplicate of resource at index 0")
+		assert.Contains(t, err.Error(), "at index 2 is a duplicate of resource at index 0")
+	})
+
+	t.Run("duplicate-resource-multiple-pairs", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+
+		rm1 := md.ResourceMetrics().AppendEmpty()
+		rm1.Resource().Attributes().PutStr("host.name", "worker-42")
+		rm2 := md.ResourceMetrics().AppendEmpty()
+		rm2.Resource().Attributes().PutStr("host.name", "worker-42")
+
+		rm3 := md.ResourceMetrics().AppendEmpty()
+		rm3.Resource().Attributes().PutStr("host.name", "worker-99")
+		rm4 := md.ResourceMetrics().AppendEmpty()
+		rm4.Resource().Attributes().PutStr("host.name", "worker-99")
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "worker-42")
+		assert.Contains(t, err.Error(), "worker-99")
+	})
+
+	t.Run("duplicate-resource-empty-attributes", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+
+		// Two ResourceMetrics with empty attributes — they are duplicates.
+		md.ResourceMetrics().AppendEmpty()
+		md.ResourceMetrics().AppendEmpty()
+
+		err := ValidateMetrics(md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "at index 1 is a duplicate of resource at index 0")
+	})
+
+	t.Run("single-resource-no-duplicate", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("host.name", "worker-42")
+
+		assert.NoError(t, ValidateMetrics(md))
+	})
 }

@@ -146,12 +146,12 @@ func getAzureMonitorExporter(config *Config, transportChannel appinsights.Teleme
 		transportChannel,
 		exportertest.NewNopSettings(metadata.Type).TelemetrySettings,
 		zap.NewNop(),
-		newMetricPacker(zap.NewNop()),
+		newMetricPacker(zap.NewNop(), nil),
 	}
 }
 
 func getMetricPacker() *metricPacker {
-	return newMetricPacker(zap.NewNop())
+	return newMetricPacker(zap.NewNop(), nil)
 }
 
 func getTestMetrics() pmetric.Metrics {

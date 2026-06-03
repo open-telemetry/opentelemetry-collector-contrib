@@ -19,7 +19,7 @@ func newPublisherCache() publisherCache {
 	}
 }
 
-func (c *publisherCache) get(provider string) (Publisher, error) {
+func (c *publisherCache) get(provider string, logFilePath *string) (Publisher, error) {
 	publisher, ok := c.cache[provider]
 	if ok {
 		return publisher, nil
@@ -30,7 +30,7 @@ func (c *publisherCache) get(provider string) (Publisher, error) {
 	if provider != "" {
 		// If the provider is empty, there is nothing to be formatted on the event
 		// keep the invalid publisher in the cache. See issue #35135
-		err = publisher.Open(provider)
+		err = publisher.Open(provider, logFilePath)
 	}
 
 	// Always store the publisher even if there was an error opening it.

@@ -127,7 +127,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	gitlab.com/gitlab-org/api/client-go/v2 v2.32.0
+	gitlab.com/gitlab-org/api/client-go/v2 v2.36.0
 	go.opentelemetry.io/collector/client v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.153.1-0.20260528150546-fe2cf23ff222
 	go.opentelemetry.io/collector/config/configauth v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
@@ -142,11 +142,11 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.153.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/collector/pipeline v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect
-	go.opentelemetry.io/otel v1.43.0
-	go.opentelemetry.io/otel/metric v1.43.0 // indirect
+	go.opentelemetry.io/otel v1.44.0
+	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.43.0 // indirect
-	go.opentelemetry.io/otel/trace v1.43.0 // indirect
+	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.28.0
 	golang.org/x/net v0.55.0 // indirect

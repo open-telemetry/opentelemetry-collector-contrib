@@ -4,12 +4,14 @@
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -166,22 +168,105 @@ func TestConsumeLogsEncoding(t *testing.T) {
 	}
 }
 
-func TestNewReceiverUnsupportedEncoding(t *testing.T) {
+func TestUnknownEncodingExtension(t *testing.T) {
 	tests := []struct {
 		name           string
 		logsEncoding   string
 		tracesEncoding string
 	}{
-		{name: "unsupported logs encoding", logsEncoding: "totally_made_up", tracesEncoding: EncodingOTLPJSON},
-		{name: "unsupported traces encoding", logsEncoding: EncodingOTLPJSON, tracesEncoding: "totally_made_up"},
+		{name: "missing logs encoding extension", logsEncoding: "missing_extension", tracesEncoding: EncodingOTLPJSON},
+		{name: "missing traces encoding extension", logsEncoding: EncodingOTLPJSON, tracesEncoding: "missing_extension"},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			// The referenced extension is not registered with the host, so
+			// resolution fails.
 			_, err := getBlobReceiverWithEncodings(t, "polling", tc.logsEncoding, tc.tracesEncoding)
-			require.Error(t, err)
+			require.ErrorContains(t, err, "not found")
 		})
 	}
+}
+
+func TestWrongExtensionType(t *testing.T) {
+	host := &hostWithExtensions{
+		extensions: map[component.ID]component.Component{
+			component.MustNewID("not_an_unmarshaler"): &nonUnmarshalerExtension{},
+		},
+	}
+
+	_, err := getBlobReceiverWithHost(t, "polling", "not_an_unmarshaler", EncodingOTLPJSON, host)
+	require.ErrorContains(t, err, "is not a logs unmarshaler")
+}
+
+func TestConsumeWithEncodingExtension(t *testing.T) {
+	encID := component.MustNewID("fake_encoding")
+	host := &hostWithExtensions{
+		extensions: map[component.ID]component.Component{
+			encID: &fakeUnmarshalerExtension{},
+		},
+	}
+
+	receiver, err := getBlobReceiverWithHost(t, "polling", encID.String(), encID.String(), host)
+	require.NoError(t, err)
+
+	logsSink := new(consumertest.LogsSink)
+	logsConsumer := receiver.(logsDataConsumer)
+	logsConsumer.setNextLogsConsumer(logsSink)
+	require.NoError(t, logsConsumer.consumeLogs(t.Context(), []byte("anything")))
+	assert.Equal(t, 1, logsSink.LogRecordCount())
+
+	tracesSink := new(consumertest.TracesSink)
+	tracesConsumer := receiver.(tracesDataConsumer)
+	tracesConsumer.setNextTracesConsumer(tracesSink)
+	require.NoError(t, tracesConsumer.consumeTraces(t.Context(), []byte("anything")))
+	assert.Equal(t, 1, tracesSink.SpanCount())
+}
+
+// TestStartShutdown exercises the full lifecycle, including unmarshaler
+// resolution and the blob poller started by Start.
+func TestStartShutdown(t *testing.T) {
+	receiver, err := getBlobReceiver(t, "polling")
+	require.NoError(t, err)
+
+	require.NoError(t, receiver.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, receiver.Shutdown(t.Context()))
+}
+
+// hostWithExtensions is a component.Host that exposes a fixed set of extensions.
+type hostWithExtensions struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (h *hostWithExtensions) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+// nonUnmarshalerExtension is an extension that does not implement any
+// unmarshaler interface.
+type nonUnmarshalerExtension struct{}
+
+func (nonUnmarshalerExtension) Start(context.Context, component.Host) error { return nil }
+func (nonUnmarshalerExtension) Shutdown(context.Context) error              { return nil }
+
+// fakeUnmarshalerExtension is an encoding extension that unmarshals any input
+// into a single log record and a single span.
+type fakeUnmarshalerExtension struct{}
+
+func (fakeUnmarshalerExtension) Start(context.Context, component.Host) error { return nil }
+func (fakeUnmarshalerExtension) Shutdown(context.Context) error              { return nil }
+
+func (fakeUnmarshalerExtension) UnmarshalLogs([]byte) (plog.Logs, error) {
+	logs := plog.NewLogs()
+	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	return logs, nil
+}
+
+func (fakeUnmarshalerExtension) UnmarshalTraces([]byte) (ptrace.Traces, error) {
+	traces := ptrace.NewTraces()
+	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	return traces, nil
 }
 
 func getBlobReceiver(t *testing.T, mode string) (component.Component, error) {
@@ -189,16 +274,29 @@ func getBlobReceiver(t *testing.T, mode string) (component.Component, error) {
 }
 
 func getBlobReceiverWithEncodings(t *testing.T, mode, logsEncoding, tracesEncoding string) (component.Component, error) {
+	return getBlobReceiverWithHost(t, mode, logsEncoding, tracesEncoding, componenttest.NewNopHost())
+}
+
+// getBlobReceiverWithHost builds a receiver and resolves its unmarshalers
+// against host, the same way Start does, but without starting the blob poller.
+func getBlobReceiverWithHost(t *testing.T, mode, logsEncoding, tracesEncoding string, host component.Host) (component.Component, error) {
 	set := receivertest.NewNopSettings(metadata.Type)
-	if mode == "eventhub" {
-		blobClient := newMockBlobClient()
-		blobEventHandler := getEventHubEventHandler(t, blobClient)
-		return newReceiver(set, blobEventHandler, logsEncoding, tracesEncoding)
+	var blobEventHandler eventHandler
+	switch mode {
+	case "eventhub":
+		blobEventHandler = getEventHubEventHandler(t, newMockBlobClient())
+	case "polling":
+		blobEventHandler = getBlobEventHandler(t, newMockBlobClient())
+	default:
+		return nil, errors.New("invalid mode")
 	}
-	if mode == "polling" {
-		blobClient := newMockBlobClient()
-		blobEventHandler := getBlobEventHandler(t, blobClient)
-		return newReceiver(set, blobEventHandler, logsEncoding, tracesEncoding)
+
+	r, err := newReceiver(set, blobEventHandler, logsEncoding, tracesEncoding)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New("invalid mode")
+	if err := r.(*blobReceiver).resolveUnmarshalers(host); err != nil {
+		return r, err
+	}
+	return r, nil
 }

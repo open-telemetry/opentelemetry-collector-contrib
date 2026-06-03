@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gobwas/glob"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -27,10 +28,12 @@ var defaultHistogramBucketsMs = []float64{
 
 var defaultDeltaTimestampCacheSize = 1000
 
-// Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
+// Dimension defines a single dimension entry. Exactly one of Name (with optional Default) or Glob must be set.
+// If Name is set, Default value will be used if dimension is missing form a span attribute.
 type Dimension struct {
 	Name    string  `mapstructure:"name"`
 	Default *string `mapstructure:"default"`
+	Glob    string  `mapstructure:"glob"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -156,6 +159,12 @@ func (c Config) Validate() error {
 	if err := validateDimensions(c.Dimensions); err != nil {
 		return fmt.Errorf("failed validating dimensions: %w", err)
 	}
+	if err := validateDimensions(c.CallsDimensions); err != nil {
+		return fmt.Errorf("failed validating calls dimensions: %w", err)
+	}
+	if err := validateDimensions(c.Histogram.Dimensions); err != nil {
+		return fmt.Errorf("failed validating histogram dimensions: %w", err)
+	}
 	if err := validateEventDimensions(c.Events.Enabled, c.Events.Dimensions); err != nil {
 		return fmt.Errorf("failed validating event dimensions: %w", err)
 	}
@@ -210,7 +219,8 @@ func (c Config) GetDeltaTimestampCacheSize() int {
 	return defaultDeltaTimestampCacheSize
 }
 
-// validateDimensions checks duplicates for reserved dimensions and additional dimensions.
+// validateDimensions checks duplicates for reserved dimensions and additional dimensions, and
+// enforces that each entry sets exactly one of Name or Glob.
 func validateDimensions(dimensions []Dimension) error {
 	labelNames := make(map[string]struct{})
 	intervalLabels := []string{serviceNameKey, spanKindKey, statusCodeKey, spanNameKey}
@@ -222,11 +232,36 @@ func validateDimensions(dimensions []Dimension) error {
 		labelNames[key] = struct{}{}
 	}
 
-	for _, key := range dimensions {
-		if _, ok := labelNames[key.Name]; ok {
-			return fmt.Errorf("duplicate dimension name %s", key.Name)
+	globs := make(map[string]glob.Glob)
+	for _, d := range dimensions {
+		switch {
+		case d.Name != "" && d.Glob != "":
+			return fmt.Errorf("dimension entry must set only one of `name` or `glob`, got both: name=%q glob=%q", d.Name, d.Glob)
+		case d.Name == "" && d.Glob == "":
+			return errors.New("dimension entry must set one of `name` or `glob`")
+		case d.Name != "":
+			if _, ok := labelNames[d.Name]; ok {
+				return fmt.Errorf("duplicate dimension name %q", d.Name)
+			}
+			labelNames[d.Name] = struct{}{}
+		default: // Glob != ""
+			if d.Default != nil {
+				return fmt.Errorf("`default` is not supported on `glob` dimension %q", d.Glob)
+			}
+			compiledGlob, err := glob.Compile(d.Glob, '.')
+			if err != nil {
+				return fmt.Errorf("invalid dimension glob %q: %w", d.Glob, err)
+			}
+			globs[d.Glob] = compiledGlob
 		}
-		labelNames[key.Name] = struct{}{}
+	}
+
+	for name := range labelNames {
+		for stringGlob, compiledGlob := range globs {
+			if compiledGlob.Match(name) {
+				return fmt.Errorf("duplicate dimension name %q conflicting with glob %q", name, stringGlob)
+			}
+		}
 	}
 
 	return nil

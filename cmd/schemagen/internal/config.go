@@ -19,7 +19,7 @@ const (
 	Package   RunMode = "package"
 )
 
-type Config = struct {
+type Config struct {
 	Mode          RunMode
 	DirPath       string
 	OutputFolder  string
@@ -30,12 +30,14 @@ type Config = struct {
 	Mappings      Mappings
 	AllowedRefs   []string
 	Namespace     string
+	ResolveRefs   bool
 }
 
 var (
 	configType   = flag.String("c", "Config", "Config type name for component schema generation")
 	outputFolder = flag.String("o", "", "Output schema folder (defaults to input folder)")
 	fileType     = flag.String("t", "yaml", "Output file type (yaml or json)")
+	resolveRefs  = flag.Bool("r", false, "Resolve external $ref entries inline in the output schema")
 )
 
 func usage() {
@@ -138,5 +140,13 @@ func ReadConfig() (*Config, error) {
 		Class:         class,
 		AllowedRefs:   allowedRefs,
 		Namespace:     namespace,
+		ResolveRefs:   *resolveRefs,
 	}, nil
+}
+
+func (c *Config) Fork(mode RunMode, namespace string) *Config {
+	cfg := *c
+	cfg.Mode = mode
+	cfg.Namespace = namespace
+	return &cfg
 }

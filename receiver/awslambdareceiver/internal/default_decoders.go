@@ -60,8 +60,8 @@ func (*defaultCWLogsDecoder) UnmarshalLogs(data []byte) (plog.Logs, error) {
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 	resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), cwLog.Owner)
-	resourceAttrs.PutStr(string(conventions.AWSLogGroupNamesKey), cwLog.LogGroup)
-	resourceAttrs.PutStr(string(conventions.AWSLogStreamNamesKey), cwLog.LogStream)
+	resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwLog.LogGroup)
+	resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwLog.LogStream)
 
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName(metadata.ScopeName)
