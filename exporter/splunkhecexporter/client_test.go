@@ -1822,6 +1822,92 @@ func TestProfileData(t *testing.T) {
 	require.True(t, foundHeader)
 }
 
+func TestProfileDataPprofSampleLabels(t *testing.T) {
+	profiles := pprofile.NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("cpu")
+	dict.StringTable().Append("nanoseconds")
+	dict.LinkTable().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	spanID := pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	link := dict.LinkTable().AppendEmpty()
+	link.SetTraceID(traceID)
+	link.SetSpanID(spanID)
+
+	sp := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+	sp.Scope().SetName("runtime/profiler")
+	p := sp.Profiles().AppendEmpty()
+	p.SampleType().SetTypeStrindex(0)
+	p.SampleType().SetUnitStrindex(1)
+	p.SetPeriod(100)
+	ts := time.Date(2024, 6, 15, 12, 0, 0, 123456789, time.UTC)
+	p.SetTime(pcommon.NewTimestampFromTime(ts))
+	s := p.Samples().AppendEmpty()
+	s.Values().Append(42)
+	s.SetLinkIndex(1)
+
+	logs, errs := buildProfilesLogs(profiles)
+	require.Empty(t, errs)
+	require.Equal(t, 1, logs.LogRecordCount())
+
+	pprofProfile := decodePprofLogRecord(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0))
+	require.Len(t, pprofProfile.Sample, 1)
+	sample := pprofProfile.Sample[0]
+	require.Equal(t, []int64{42}, sample.Value)
+	require.Equal(t, []string{"runtime/profiler"}, sample.Label["source.event.name"])
+	require.Equal(t, []int64{ts.UnixMilli()}, sample.NumLabel["source.event.time"])
+	require.Equal(t, []string{spanID.String()}, sample.Label["span_id"])
+	require.Equal(t, []string{traceID.String()}, sample.Label["trace_id"])
+	require.Equal(t, []string{"100"}, sample.Label["source.event.period"])
+	// TODO: TimeNanos currently carries only the sub-second component; full Unix
+	// nanosecond timestamp to be addressed in a follow-up.
+	require.Equal(t, int64(ts.Nanosecond()), pprofProfile.TimeNanos)
+}
+
+func TestProfileDataMultiValueSamples(t *testing.T) {
+	profiles := pprofile.NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("cpu")
+	dict.StringTable().Append("nanoseconds")
+
+	p := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	p.SampleType().SetTypeStrindex(0)
+	p.SampleType().SetUnitStrindex(1)
+	sample := p.Samples().AppendEmpty()
+	sample.Values().Append(1)
+	sample.Values().Append(2)
+
+	logs, errs := buildProfilesLogs(profiles)
+	require.Empty(t, errs)
+	require.Equal(t, 1, logs.LogRecordCount())
+
+	pprofProfile := decodePprofLogRecord(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0))
+	require.Len(t, pprofProfile.Sample, 1)
+	require.Equal(t, []int64{1, 2}, pprofProfile.Sample[0].Value)
+	require.Len(t, pprofProfile.SampleType, 2)
+	for _, sampleType := range pprofProfile.SampleType {
+		require.Equal(t, "cpu", sampleType.Type)
+		require.Equal(t, "nanoseconds", sampleType.Unit)
+	}
+}
+
+func decodePprofLogRecord(t *testing.T, lr plog.LogRecord) *profile.Profile {
+	t.Helper()
+	decoded, err := base64.StdEncoding.DecodeString(lr.Body().AsString())
+	require.NoError(t, err)
+	gr, err := gzip.NewReader(bytes.NewBuffer(decoded))
+	require.NoError(t, err)
+	defer gr.Close()
+	raw, err := io.ReadAll(gr)
+	require.NoError(t, err)
+	pprofProfile, err := profile.ParseData(raw)
+	require.NoError(t, err)
+	return pprofProfile
+}
+
 func TestProfileDataMultipleResources(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.MaxContentLengthLogs, config.DisableCompression = 0, true
@@ -1977,8 +2063,8 @@ func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
 	rp1.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples().AppendEmpty().Values().Append(1)
 
 	// Resource 2: profile whose samples have inconsistent value counts (first sample has 2 values,
-	// second has 1), which causes checkValid inside ConvertPprofileToPprof to return an error that
-	// is local to this profile and does not affect the shared dictionary used by the good profile.
+	// second has 1), which causes an error that is local to this profile and does not affect the
+	// shared dictionary used by the good profile.
 	rp2 := profiles.ResourceProfiles().AppendEmpty()
 	rp2.Resource().Attributes().PutStr("host.name", "bad-host")
 	badProfile := rp2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()

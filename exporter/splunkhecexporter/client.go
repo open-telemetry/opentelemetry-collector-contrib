@@ -15,6 +15,7 @@ import (
 	"sync"
 
 	"github.com/goccy/go-json"
+	"github.com/google/pprof/profile"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -29,6 +30,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
 	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
@@ -209,7 +211,7 @@ func buildProfilesLogs(pp pprofile.Profiles) (plog.Logs, []error) {
 
 		for _, sp := range rp.ScopeProfiles().All() {
 			for _, prof := range sp.Profiles().All() {
-				if err := profileToLogRecord(pp, sp, prof, sl); err != nil {
+				if err := profileToLogRecord(pp, rp, sp, prof, sl); err != nil {
 					permanentErrors = append(permanentErrors, err)
 				}
 			}
@@ -221,11 +223,12 @@ func buildProfilesLogs(pp pprofile.Profiles) (plog.Logs, []error) {
 
 // profileToLogRecord translates a single pprofile.Profile into a plog.LogRecord appended to sl.
 // Returns a permanent error if translation or encoding fails; on error no log record is appended.
-func profileToLogRecord(pp pprofile.Profiles, scope pprofile.ScopeProfiles, prof pprofile.Profile, sl plog.ScopeLogs) error {
-	p, err := translator.ConvertPprofileToPprof(pp.Dictionary(), scope.Scope(), prof)
+func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile, sl plog.ScopeLogs) error {
+	p, err := convertProfileToPprof(pp, rp, scope, prof)
 	if err != nil {
 		return consumererror.NewPermanent(fmt.Errorf("failed to convert profile: %w", err))
 	}
+	translator.AddProfilingPprofSampleLabels(p, pp.Dictionary(), scope.Scope(), prof)
 
 	var buf bytes.Buffer
 	// The Write method encodes the profile to a gzipped protobuf
@@ -248,6 +251,60 @@ func profileToLogRecord(pp pprofile.Profiles, scope pprofile.ScopeProfiles, prof
 	// TODO find whether it is continuous or snapshot
 	lr.Attributes().PutStr(profilingInstrumentationSourceKey, profilingInstrumentationSourceContinuous)
 	return nil
+}
+
+func convertProfileToPprof(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) (*profile.Profile, error) {
+	profiles, err := profilesForPprofConversion(pp, rp, scope, prof)
+	if err != nil {
+		return nil, err
+	}
+	return pprof.ConvertPprofileToPprof(&profiles)
+}
+
+func profilesForPprofConversion(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) (pprofile.Profiles, error) {
+	profiles := pprofile.NewProfiles()
+	pp.Dictionary().CopyTo(profiles.Dictionary())
+
+	dstRP := profiles.ResourceProfiles().AppendEmpty()
+	rp.Resource().CopyTo(dstRP.Resource())
+	dstRP.SetSchemaUrl(rp.SchemaUrl())
+
+	dstScope := dstRP.ScopeProfiles().AppendEmpty()
+	scope.Scope().CopyTo(dstScope.Scope())
+	dstScope.SetSchemaUrl(scope.SchemaUrl())
+
+	numValues := 1
+	if prof.Samples().Len() > 0 {
+		numValues = max(1, prof.Samples().At(0).Values().Len())
+	}
+	for _, sample := range prof.Samples().All() {
+		if sample.Values().Len() != numValues {
+			return profiles, fmt.Errorf("profile samples hold varying number of values")
+		}
+	}
+
+	if numValues == 1 {
+		prof.CopyTo(dstScope.Profiles().AppendEmpty())
+		return profiles, nil
+	}
+
+	for profileIdx := range numValues {
+		valueIdx := profileIdx
+		switch profileIdx {
+		case 0:
+			valueIdx = numValues - 1
+		case numValues - 1:
+			valueIdx = 0
+		}
+
+		dstProfile := dstScope.Profiles().AppendEmpty()
+		prof.CopyTo(dstProfile)
+		for sampleIdx, sample := range prof.Samples().All() {
+			dstProfile.Samples().At(sampleIdx).Values().FromRaw([]int64{sample.Values().At(valueIdx)})
+		}
+	}
+
+	return profiles, nil
 }
 
 // A guesstimated value > length of bytes of a single event.
