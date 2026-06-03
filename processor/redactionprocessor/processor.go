@@ -10,6 +10,7 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
+	"crypto/sha3"
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
@@ -25,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	"golang.org/x/crypto/sha3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/url"
@@ -530,7 +530,7 @@ func (s *redaction) maskValue(val string, regex *regexp.Regexp) string {
 		case SHA1:
 			return hashString(match, sha1.New())
 		case SHA3:
-			return hashString(match, sha3.New256())
+			return hashString(match, hash.Hash(sha3.New256()))
 		case MD5:
 			return hashString(match, md5.New())
 		case HMACSHA256:
