@@ -15,7 +15,7 @@
 
 This receiver reads logs and trace data from [Azure Blob Storage](https://azure.microsoft.com/en-us/products/storage/blobs/).
 
-Each blob is expected to contain a single OTLP payload, encoded as either OTLP/JSON or OTLP/Protobuf. The encoding is configured per signal via `logs.encoding` and `traces.encoding` (see below).
+Each blob is expected to contain a single payload. By default the payload is decoded as OTLP/JSON, but the encoding is configurable per signal via `logs.encoding` and `traces.encoding` (see below). In addition to the built-in `otlp_json` and `otlp_proto` encodings, you may reference an [encoding extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding) by its component ID to decode other formats.
 
 ## Modes of Operation
 
@@ -37,10 +37,10 @@ The following settings can be optionally configured:
 - `cloud` (default = "AzureCloud"): Defines which Azure Cloud to use when using the `service_principal` authentication method. Value is either `AzureCloud` or `AzureUSGovernment`.
 - `logs:`
   - `container_name:` (default = "logs"): Name of the blob container with the logs
-  - `encoding:` (default = "otlp_json"): Encoding of log blob payloads. Supported values: `otlp_json`, `otlp_proto`.
+  - `encoding:` (default = "otlp_json"): Encoding of log blob payloads. Either one of the built-in values `otlp_json` or `otlp_proto`, or the ID of an encoding extension that implements `plog.Unmarshaler`.
 - `traces:`
   - `container_name:` (default = "traces"): Name of the blob container with the traces
-  - `encoding:` (default = "otlp_json"): Encoding of trace blob payloads. Supported values: `otlp_json`, `otlp_proto`.
+  - `encoding:` (default = "otlp_json"): Encoding of trace blob payloads. Either one of the built-in values `otlp_json` or `otlp_proto`, or the ID of an encoding extension that implements `ptrace.Unmarshaler`.
 
 Authenticating using a connection string requires configuration of the following additional setting:
 
@@ -91,6 +91,19 @@ Using polling mode (no Event Hub):
 receivers:
   azure_blob:
     connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
+```
+
+Using an encoding extension to decode log blobs:
+
+```yaml
+extensions:
+  text_encoding:
+
+receivers:
+  azure_blob:
+    connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
+    logs:
+      encoding: text_encoding
 ```
 
 ## Behavior
