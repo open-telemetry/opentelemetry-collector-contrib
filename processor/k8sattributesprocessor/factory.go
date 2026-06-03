@@ -52,6 +52,7 @@ func createDefaultConfig() component.Config {
 		},
 		WaitForMetadataTimeout: 10 * time.Second,
 		WatchSyncPeriod:        5 * time.Minute,
+		PodDeleteGracePeriod:   120 * time.Second,
 	}
 }
 
@@ -281,7 +282,8 @@ func createProcessorOpts(cfg component.Config) []option {
 		withExtractPodAssociations(oCfg.Association...),
 		withExcludes(oCfg.Exclude),
 		withWaitForMetadataTimeout(oCfg.WaitForMetadataTimeout),
-		withWatchSyncPeriod(oCfg.WatchSyncPeriod))
+		withWatchSyncPeriod(oCfg.WatchSyncPeriod),
+		withPodDeleteGracePeriod(oCfg.PodDeleteGracePeriod))
 
 	if oCfg.WaitForMetadata {
 		opts = append(opts, withWaitForMetadata(true))
