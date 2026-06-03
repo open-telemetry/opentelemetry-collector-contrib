@@ -165,6 +165,9 @@ attributes:
   oracledb.physical_write_requests:
     description: The number of times a query requested to write data to disk (reporting delta).
     type: int
+  oracledb.plan.last_load:
+    description: "Plan load time in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS"
+    type: string
   oracledb.plan_hash_value:
     description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
     type: string
@@ -339,6 +342,8 @@ events:
       - oracledb.procedure_id
       - oracledb.procedure_name
       - oracledb.procedure_type
+      - oracledb.plan_hash_value
+      - oracledb.plan.last_load
 metrics:
   oracledb.consistent_gets:
     description: Number of times a consistent read was requested for a block from the buffer cache.

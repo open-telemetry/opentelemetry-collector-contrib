@@ -124,6 +124,10 @@ const (
 	objectNameAttr  = "PROCEDURE_NAME"
 	objectTypeAttr  = "PROCEDURE_TYPE"
 	commandTypeAttr = "COMMAND_TYPE"
+
+	// Plan metadata columns
+	lastLoadTimeAttr  = "LAST_LOAD_TIME"
+	planHashValueAttr = "PLAN_HASH_VALUE"
 )
 
 var (
@@ -694,15 +698,17 @@ func (s *oracleScraper) collectStorageUsage(ctx context.Context, scrapeErrors *[
 }
 
 type queryMetricCacheHit struct {
-	sqlID        string
-	childNumber  string
-	childAddress string
-	queryText    string
-	metrics      map[string]int64
-	objectID     int64
-	objectName   string
-	objectType   string
-	commandType  int64
+	sqlID         string
+	childNumber   string
+	childAddress  string
+	queryText     string
+	metrics       map[string]int64
+	objectID      int64
+	objectName    string
+	objectType    string
+	commandType   int64
+	lastLoadTime  string
+	planHashValue string
 }
 
 func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
@@ -784,15 +790,17 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			}
 
 			hit := queryMetricCacheHit{
-				sqlID:        row[sqlIDAttr],
-				queryText:    row[sqlTextAttr],
-				childNumber:  row[childNumberAttr],
-				childAddress: row[childAddressAttr],
-				metrics:      make(map[string]int64, len(metricNames)),
-				objectID:     objectID,
-				objectName:   row[objectNameAttr],
-				objectType:   row[objectTypeAttr],
-				commandType:  commandType,
+				sqlID:         row[sqlIDAttr],
+				queryText:     row[sqlTextAttr],
+				childNumber:   row[childNumberAttr],
+				childAddress:  row[childAddressAttr],
+				metrics:       make(map[string]int64, len(metricNames)),
+				objectID:      objectID,
+				objectName:    row[objectNameAttr],
+				objectType:    row[objectTypeAttr],
+				commandType:   commandType,
+				lastLoadTime:  row[lastLoadTimeAttr],
+				planHashValue: hex.EncodeToString([]byte(row[planHashValueAttr])),
 			}
 
 			var possiblePurge bool
@@ -843,7 +851,8 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 
 	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
 
-	for _, hit := range hits {
+	for i := range hits {
+		hit := &hits[i]
 		planBytes, err := json.Marshal(childAddressToPlanMap[hit.childAddress])
 		if err != nil {
 			s.logger.Error("Error marshaling plan data to JSON", zap.Error(err))
@@ -877,7 +886,9 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			hit.metrics[procedureExecutionsMetric],
 			hit.objectID,
 			hit.objectName,
-			hit.objectType)
+			hit.objectType,
+			hit.planHashValue,
+			hit.lastLoadTime)
 	}
 
 	hitCount := len(hits)
@@ -1055,14 +1066,15 @@ func asFloatInSeconds(value int64) float64 {
 
 func (s *oracleScraper) obfuscateCacheHits(hits []queryMetricCacheHit) []queryMetricCacheHit {
 	var obfuscatedHits []queryMetricCacheHit
-	for _, hit := range hits {
+	for i := range hits {
+		hit := &hits[i]
 		// obfuscate and normalize the query text
 		obfuscatedSQL, err := s.obfuscator.obfuscateSQLString(hit.queryText)
 		if err != nil {
 			s.logger.Warn("oracleScraper failed to obfuscate SQL query, skipping entry", zap.String("sql_id", hit.sqlID), zap.Error(err))
 		} else {
 			hit.queryText = obfuscatedSQL
-			obfuscatedHits = append(obfuscatedHits, hit)
+			obfuscatedHits = append(obfuscatedHits, *hit)
 		}
 	}
 	return obfuscatedHits
@@ -1076,9 +1088,9 @@ func (s *oracleScraper) getChildAddressToPlanMap(ctx context.Context, hits []que
 
 	var childAddressSlice []any
 	placeholders := make([]string, len(hits))
-	for i, hit := range hits {
+	for i := range hits {
 		placeholders[i] = fmt.Sprintf("HEXTORAW(:%d)", i+1)
-		childAddressSlice = append(childAddressSlice, hit.childAddress)
+		childAddressSlice = append(childAddressSlice, hits[i].childAddress)
 	}
 
 	placeholdersCombined := strings.Join(placeholders, ", ")
