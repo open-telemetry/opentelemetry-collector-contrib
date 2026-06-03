@@ -192,29 +192,6 @@ Client/Agent         OTel Receiver        Auth Extension       AWS Provider     
      │◀───────────────────│                    │                    │                    │
 ```
 
-### Config Provider Flow (Configuration Resolution)
-
-```
-Collector Startup    confmap Resolver     Secrets Manager       AWS Secrets Manager
-(config loading)     (provider)           Provider              (API)
-     │                    │                    │                    │
-     │  Resolve config    │                    │                    │
-     │───────────────────▶│                    │                    │
-     │                    │  Retrieve(uri)     │                    │
-     │                    │  "secretsmanager:  │                    │
-     │                    │   arn:...:secret"  │                    │
-     │                    │───────────────────▶│                    │
-     │                    │                    │  GetSecretValue    │
-     │                    │                    │───────────────────▶│
-     │                    │                    │◀───────────────────│
-     │                    │                    │  (extract #key     │
-     │                    │                    │   or :-default)    │
-     │                    │  confmap.Retrieved │                    │
-     │                    │◀───────────────────│                    │
-     │  Resolved config   │                    │                    │
-     │◀───────────────────│                    │                    │
-```
-
 ## Behavior
 
 - **Fail-fast**: The extension performs a synchronous initial fetch on startup.
