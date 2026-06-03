@@ -340,6 +340,14 @@ func Test_substring_utf8Safe(t *testing.T) {
 			utf8Safe: ottl.NewTestingOptional(false),
 			expected: "\xe4",
 		},
+		{
+			name:     "all mid-character bytes",
+			input:    "\x80\x80",
+			start:    0,
+			length:   2,
+			utf8Safe: ottl.NewTestingOptional(true),
+			expected: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(
