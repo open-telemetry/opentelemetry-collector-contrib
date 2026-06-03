@@ -59,7 +59,7 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 ### Feature gates
 
-**ALPHA**: `receiver.vcenter.resourcePoolMemoryUsageAttribute`
+**BETA**: `receiver.vcenter.resourcePoolMemoryUsageAttribute`
 
 The feature gate `receiver.vcenter.resourcePoolMemoryUsageAttribute` once enabled will enable the memory usage type attribute for 
 the `vcenter.resource_pool.memory.usage` metric.
