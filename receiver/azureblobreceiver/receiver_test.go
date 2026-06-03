@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
@@ -46,7 +48,7 @@ func TestConsumeLogsJSON(t *testing.T) {
 
 			logsConsumer.setNextLogsConsumer(logsSink)
 
-			err := logsConsumer.consumeLogsJSON(tt.Context(), logsJSON)
+			err := logsConsumer.consumeLogs(tt.Context(), logsJSON)
 			require.NoError(tt, err)
 			assert.Equal(tt, 1, logsSink.LogRecordCount())
 		})
@@ -64,24 +66,139 @@ func TestConsumeTracesJSON(t *testing.T) {
 
 			tracesConsumer.setNextTracesConsumer(tracesSink)
 
-			err := tracesConsumer.consumeTracesJSON(tt.Context(), tracesJSON)
+			err := tracesConsumer.consumeTraces(tt.Context(), tracesJSON)
 			require.NoError(tt, err)
 			assert.Equal(tt, 2, tracesSink.SpanCount())
 		})
 	}
 }
 
+func TestConsumeLogsProto(t *testing.T) {
+	jsonUnmarshaler := &plog.JSONUnmarshaler{}
+	protoMarshaler := &plog.ProtoMarshaler{}
+
+	logs, err := jsonUnmarshaler.UnmarshalLogs(logsJSON)
+	require.NoError(t, err)
+	logsProto, err := protoMarshaler.MarshalLogs(logs)
+	require.NoError(t, err)
+
+	for _, mode := range testModes {
+		t.Run(mode, func(tt *testing.T) {
+			receiver, _ := getBlobReceiverWithEncodings(tt, mode, EncodingOTLPProto, EncodingOTLPJSON)
+
+			logsSink := new(consumertest.LogsSink)
+			logsConsumer, ok := receiver.(logsDataConsumer)
+			require.True(tt, ok)
+
+			logsConsumer.setNextLogsConsumer(logsSink)
+
+			err := logsConsumer.consumeLogs(tt.Context(), logsProto)
+			require.NoError(tt, err)
+			assert.Equal(tt, 1, logsSink.LogRecordCount())
+		})
+	}
+}
+
+func TestConsumeTracesProto(t *testing.T) {
+	jsonUnmarshaler := &ptrace.JSONUnmarshaler{}
+	protoMarshaler := &ptrace.ProtoMarshaler{}
+
+	traces, err := jsonUnmarshaler.UnmarshalTraces(tracesJSON)
+	require.NoError(t, err)
+	tracesProto, err := protoMarshaler.MarshalTraces(traces)
+	require.NoError(t, err)
+
+	for _, mode := range testModes {
+		t.Run(mode, func(tt *testing.T) {
+			receiver, _ := getBlobReceiverWithEncodings(tt, mode, EncodingOTLPJSON, EncodingOTLPProto)
+
+			tracesSink := new(consumertest.TracesSink)
+			tracesConsumer, ok := receiver.(tracesDataConsumer)
+			require.True(tt, ok)
+
+			tracesConsumer.setNextTracesConsumer(tracesSink)
+
+			err := tracesConsumer.consumeTraces(tt.Context(), tracesProto)
+			require.NoError(tt, err)
+			assert.Equal(tt, 2, tracesSink.SpanCount())
+		})
+	}
+}
+
+func TestConsumeLogsEncoding(t *testing.T) {
+	jsonUnmarshaler := &plog.JSONUnmarshaler{}
+	protoMarshaler := &plog.ProtoMarshaler{}
+
+	logs, err := jsonUnmarshaler.UnmarshalLogs(logsJSON)
+	require.NoError(t, err)
+	logsProto, err := protoMarshaler.MarshalLogs(logs)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name      string
+		encoding  string
+		payload   []byte
+		expectErr bool
+	}{
+		{name: "json encoding accepts json", encoding: EncodingOTLPJSON, payload: logsJSON, expectErr: false},
+		{name: "json encoding rejects proto", encoding: EncodingOTLPJSON, payload: logsProto, expectErr: true},
+		{name: "proto encoding accepts proto", encoding: EncodingOTLPProto, payload: logsProto, expectErr: false},
+		{name: "proto encoding rejects json", encoding: EncodingOTLPProto, payload: logsJSON, expectErr: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			receiver, err := getBlobReceiverWithEncodings(t, "polling", tc.encoding, EncodingOTLPJSON)
+			require.NoError(t, err)
+
+			logsSink := new(consumertest.LogsSink)
+			logsConsumer := receiver.(logsDataConsumer)
+			logsConsumer.setNextLogsConsumer(logsSink)
+
+			err = logsConsumer.consumeLogs(t.Context(), tc.payload)
+			if tc.expectErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, 1, logsSink.LogRecordCount())
+			}
+		})
+	}
+}
+
+func TestNewReceiverUnsupportedEncoding(t *testing.T) {
+	tests := []struct {
+		name           string
+		logsEncoding   string
+		tracesEncoding string
+	}{
+		{name: "unsupported logs encoding", logsEncoding: "totally_made_up", tracesEncoding: EncodingOTLPJSON},
+		{name: "unsupported traces encoding", logsEncoding: EncodingOTLPJSON, tracesEncoding: "totally_made_up"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := getBlobReceiverWithEncodings(t, "polling", tc.logsEncoding, tc.tracesEncoding)
+			require.Error(t, err)
+		})
+	}
+}
+
 func getBlobReceiver(t *testing.T, mode string) (component.Component, error) {
+	return getBlobReceiverWithEncodings(t, mode, EncodingOTLPJSON, EncodingOTLPJSON)
+}
+
+func getBlobReceiverWithEncodings(t *testing.T, mode, logsEncoding, tracesEncoding string) (component.Component, error) {
 	set := receivertest.NewNopSettings(metadata.Type)
 	if mode == "eventhub" {
 		blobClient := newMockBlobClient()
 		blobEventHandler := getEventHubEventHandler(t, blobClient)
-		return newReceiver(set, blobEventHandler)
+		return newReceiver(set, blobEventHandler, logsEncoding, tracesEncoding)
 	}
 	if mode == "polling" {
 		blobClient := newMockBlobClient()
 		blobEventHandler := getBlobEventHandler(t, blobClient)
-		return newReceiver(set, blobEventHandler)
+		return newReceiver(set, blobEventHandler, logsEncoding, tracesEncoding)
 	}
 	return nil, errors.New("invalid mode")
 }
