@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
+const NANO_TIMESTAMP = 1780454666123456789
+
 func TestConvertPprofToPprofile(t *testing.T) {
 	tests := map[string]struct {
 		expectedError error
@@ -644,7 +646,7 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 			{Type: "inuse_objects", Unit: "count"},
 			{Type: "inuse_space", Unit: "bytes"},
 		},
-		TimeNanos:     1000000000,
+		TimeNanos:     NANO_TIMESTAMP,
 		DurationNanos: 5000000000,
 		PeriodType:    &profile.ValueType{Type: "space", Unit: "bytes"},
 		Period:        524288,
@@ -759,7 +761,7 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 		}
 
 		// Verify profile metadata
-		require.Equal(t, int64(1000000000), p.Time().AsTime().UnixNano())
+		require.Equal(t, int64(NANO_TIMESTAMP), p.Time().AsTime().UnixNano())
 		require.Equal(t, uint64(5000000000), p.DurationNano())
 		require.Equal(t, int64(524288), p.Period())
 	}
@@ -783,6 +785,7 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 		for j, val := range sample.Value {
 			require.Equal(t, val, roundTrip.Sample[i].Value[j])
 		}
+		require.Equal(t, prof.TimeNanos, roundTrip.TimeNanos)
 	}
 }
 
@@ -796,7 +799,7 @@ func TestDefaultSampleTypeConvention(t *testing.T) {
 			{Type: "inuse_objects", Unit: "count"},
 			{Type: "inuse_space", Unit: "bytes"}, // default (last)
 		},
-		TimeNanos:     1000000000,
+		TimeNanos:     NANO_TIMESTAMP,
 		DurationNanos: 5000000000,
 		PeriodType:    &profile.ValueType{Type: "space", Unit: "bytes"},
 		Period:        524288,
@@ -876,6 +879,7 @@ func TestDefaultSampleTypeConvention(t *testing.T) {
 		for j, val := range sample.Value {
 			require.Equal(t, val, roundTrip.Sample[i].Value[j], "Round-trip should preserve original sample values order")
 		}
+		require.Equal(t, prof.TimeNanos, roundTrip.TimeNanos)
 	}
 }
 
