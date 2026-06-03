@@ -15,7 +15,10 @@
 package structure // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/structure"
 
 import (
+	"encoding/binary"
 	"fmt"
+	"math"
+	"slices"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/mapping"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/mapping/exponent"
@@ -155,6 +158,23 @@ type (
 	Float64 = Histogram[float64]
 )
 
+// Wire-format constants used by the (Un)MarshalBinary codec.
+const (
+	// binaryFormatVersion is the current on-wire format version. Bump this
+	// whenever the encoded layout changes in a backward-incompatible way.
+	binaryFormatVersion uint8 = 1
+
+	// histogramHeaderSize is the fixed-size prefix written by Histogram.AppendBinary:
+	//   version(1) + maxSize(4) + count(8) + zeroCount(8) + sum(8) + min(8) + max(8) + scale(4).
+	histogramHeaderSize = 49
+
+	// bucketsHeaderSize is the fixed-size prefix written by Buckets.AppendBinary:
+	//   indexStart(4) + indexEnd(4) + widthType(1).
+	// indexBase is not stored on the wire: counts are serialized in logical
+	// order, so the decoded backing canonically has indexBase == indexStart.
+	bucketsHeaderSize = 9
+)
+
 // Init initializes a new histogram.
 func (h *Histogram[N]) Init(cfg Config) {
 	cfg, _ = cfg.Validate()
@@ -163,6 +183,118 @@ func (h *Histogram[N]) Init(cfg Config) {
 
 	m, _ := newMapping(logarithm.MaxScale)
 	h.mapping = m
+}
+
+// binarySize returns the exact number of bytes that AppendBinary will append.
+func (h *Histogram[N]) binarySize() int {
+	return histogramHeaderSize + h.positive.binarySize() + h.negative.binarySize()
+}
+
+// binarySize returns the exact number of bytes that AppendBinary will append.
+func (b *Buckets) binarySize() int {
+	n := bucketsHeaderSize
+	if b.backing == nil {
+		return n
+	}
+	logicalLen := int(b.indexEnd - b.indexStart + 1)
+	// countsLen(4) + stride bytes per logical count.
+	n += 4 + bucketsStride(b.backing)*logicalLen
+	return n
+}
+
+// bucketsStride returns the per-count byte width on the wire for the given
+// backing. Returns 0 for an unrecognized backing.
+func bucketsStride(b bucketsBacking) int {
+	switch b.(type) {
+	case *bucketsVarwidth[uint8]:
+		return 1
+	case *bucketsVarwidth[uint16]:
+		return 2
+	case *bucketsVarwidth[uint32]:
+		return 4
+	case *bucketsVarwidth[uint64]:
+		return 8
+	}
+	return 0
+}
+
+// AppendBinary implements the binary appender interface for aggregation.Histogram.
+func (h *Histogram[N]) AppendBinary(buf []byte) []byte {
+	buf = slices.Grow(buf, h.binarySize())
+	buf = append(buf, binaryFormatVersion)
+	buf = binary.BigEndian.AppendUint32(buf, uint32(h.maxSize))
+	buf = binary.BigEndian.AppendUint64(buf, h.count)
+	buf = binary.BigEndian.AppendUint64(buf, h.zeroCount)
+	switch any(h.sum).(type) {
+	case int64:
+		buf = binary.BigEndian.AppendUint64(buf, uint64(h.sum))
+		buf = binary.BigEndian.AppendUint64(buf, uint64(h.min))
+		buf = binary.BigEndian.AppendUint64(buf, uint64(h.max))
+	case float64:
+		buf = binary.BigEndian.AppendUint64(buf, math.Float64bits(float64(h.sum)))
+		buf = binary.BigEndian.AppendUint64(buf, math.Float64bits(float64(h.min)))
+		buf = binary.BigEndian.AppendUint64(buf, math.Float64bits(float64(h.max)))
+	}
+	buf = binary.BigEndian.AppendUint32(buf, uint32(h.mapping.Scale()))
+	buf = h.positive.AppendBinary(buf)
+	buf = h.negative.AppendBinary(buf)
+	return buf
+}
+
+func (h *Histogram[N]) UnmarshalBinary(buf []byte) (err error) {
+	if len(buf) < histogramHeaderSize {
+		return fmt.Errorf("histogram header truncated: need %d bytes, have %d", histogramHeaderSize, len(buf))
+	}
+	if version := buf[0]; version != binaryFormatVersion {
+		return fmt.Errorf("unsupported binary format version %d (expected %d)", version, binaryFormatVersion)
+	}
+	buf = buf[1:]
+
+	h.maxSize = int32(binary.BigEndian.Uint32(buf[:4]))
+	buf = buf[4:]
+
+	h.count = binary.BigEndian.Uint64(buf[:8])
+	buf = buf[8:]
+
+	h.zeroCount = binary.BigEndian.Uint64(buf[:8])
+	buf = buf[8:]
+
+	switch any(h.sum).(type) {
+	case int64:
+		h.sum = N(binary.BigEndian.Uint64(buf[:8]))
+		buf = buf[8:]
+
+		h.min = N(binary.BigEndian.Uint64(buf[:8]))
+		buf = buf[8:]
+
+		h.max = N(binary.BigEndian.Uint64(buf[:8]))
+		buf = buf[8:]
+	case float64:
+		h.sum = N(math.Float64frombits(binary.BigEndian.Uint64(buf[:8])))
+		buf = buf[8:]
+
+		h.min = N(math.Float64frombits(binary.BigEndian.Uint64(buf[:8])))
+		buf = buf[8:]
+
+		h.max = N(math.Float64frombits(binary.BigEndian.Uint64(buf[:8])))
+		buf = buf[8:]
+	}
+	scale := int32(binary.BigEndian.Uint32(buf[:4]))
+	buf = buf[4:]
+
+	h.mapping, err = newMapping(scale)
+	if err != nil {
+		return fmt.Errorf("failed to create mapping for histogram: %w", err)
+	}
+
+	offset, err := h.positive.UnmarshalBinary(buf)
+	if err != nil {
+		return fmt.Errorf("failed to decode positive buckets: %w", err)
+	}
+	if _, err := h.negative.UnmarshalBinary(buf[offset:]); err != nil {
+		return fmt.Errorf("failed to decode negative buckets: %w", err)
+	}
+	return nil
 }
 
 // Sum implements aggregation.Histogram.
@@ -207,6 +339,127 @@ func (h *Histogram[N]) Positive() *Buckets {
 // Negative implements aggregation.Histogram.
 func (h *Histogram[N]) Negative() *Buckets {
 	return &h.negative
+}
+
+func (b *Buckets) AppendBinary(buf []byte) []byte {
+	buf = binary.BigEndian.AppendUint32(buf, uint32(b.indexStart))
+	buf = binary.BigEndian.AppendUint32(buf, uint32(b.indexEnd))
+	if b.backing == nil {
+		buf = append(buf, 0)
+		return buf
+	}
+	countsLen := uint32(b.indexEnd - b.indexStart + 1)
+	switch b.backing.(type) {
+	case *bucketsVarwidth[uint8]:
+		buf = append(buf, 1)
+		buf = binary.BigEndian.AppendUint32(buf, countsLen)
+		for i := range countsLen {
+			buf = append(buf, uint8(b.At(i)))
+		}
+	case *bucketsVarwidth[uint16]:
+		buf = append(buf, 2)
+		buf = binary.BigEndian.AppendUint32(buf, countsLen)
+		for i := range countsLen {
+			buf = binary.BigEndian.AppendUint16(buf, uint16(b.At(i)))
+		}
+	case *bucketsVarwidth[uint32]:
+		buf = append(buf, 3)
+		buf = binary.BigEndian.AppendUint32(buf, countsLen)
+		for i := range countsLen {
+			buf = binary.BigEndian.AppendUint32(buf, uint32(b.At(i)))
+		}
+	case *bucketsVarwidth[uint64]:
+		buf = append(buf, 4)
+		buf = binary.BigEndian.AppendUint32(buf, countsLen)
+		for i := range countsLen {
+			buf = binary.BigEndian.AppendUint64(buf, b.At(i))
+		}
+	}
+	return buf
+}
+
+func (b *Buckets) UnmarshalBinary(buf []byte) (offset int, err error) {
+	if len(buf) < bucketsHeaderSize {
+		return 0, fmt.Errorf("buckets header truncated: need %d bytes, have %d", bucketsHeaderSize, len(buf))
+	}
+	origLen := len(buf)
+	b.indexStart = int32(binary.BigEndian.Uint32(buf[:4]))
+	buf = buf[4:]
+	b.indexEnd = int32(binary.BigEndian.Uint32(buf[:4]))
+	buf = buf[4:]
+	widthType := buf[0]
+	buf = buf[1:]
+
+	if widthType == 0 {
+		b.backing = nil
+		return origLen - len(buf), nil
+	}
+
+	if len(buf) < 4 {
+		return 0, fmt.Errorf("counts header truncated: need 4 bytes, have %d", len(buf))
+	}
+	countsLen := binary.BigEndian.Uint32(buf[:4])
+	buf = buf[4:]
+
+	needed := func(stride uint64) error {
+		if uint64(countsLen)*stride > uint64(len(buf)) {
+			return fmt.Errorf("counts length %d exceeds remaining buffer (%d bytes)", countsLen, len(buf))
+		}
+		return nil
+	}
+
+	switch widthType {
+	case 1:
+		const stride = 1
+		if err := needed(stride); err != nil {
+			return 0, err
+		}
+		bk := &bucketsVarwidth[uint8]{counts: make([]uint8, countsLen)}
+		copy(bk.counts, buf[:countsLen*stride])
+		buf = buf[countsLen*stride:]
+		b.backing = bk
+	case 2:
+		const stride = 2
+		if err := needed(stride); err != nil {
+			return 0, err
+		}
+		bk := &bucketsVarwidth[uint16]{counts: make([]uint16, countsLen)}
+		for i := range bk.counts {
+			bk.counts[i] = binary.BigEndian.Uint16(buf[i*stride:])
+		}
+		buf = buf[countsLen*stride:]
+		b.backing = bk
+	case 3:
+		const stride = 4
+		if err := needed(stride); err != nil {
+			return 0, err
+		}
+		bk := &bucketsVarwidth[uint32]{counts: make([]uint32, countsLen)}
+		for i := range bk.counts {
+			bk.counts[i] = binary.BigEndian.Uint32(buf[i*stride:])
+		}
+		buf = buf[countsLen*stride:]
+		b.backing = bk
+	case 4:
+		const stride = 8
+		if err := needed(stride); err != nil {
+			return 0, err
+		}
+		bk := &bucketsVarwidth[uint64]{counts: make([]uint64, countsLen)}
+		for i := range bk.counts {
+			bk.counts[i] = binary.BigEndian.Uint64(buf[i*stride:])
+		}
+		buf = buf[countsLen*stride:]
+		b.backing = bk
+	default:
+		return 0, fmt.Errorf("unknown bucket width tag %d", widthType)
+	}
+
+	// Counts are written in logical order, so the decoded backing has no
+	// rotation: backing[0] is the count for indexStart.
+	b.indexBase = b.indexStart
+
+	return origLen - len(buf), nil
 }
 
 // Offset implements aggregation.Bucket.
