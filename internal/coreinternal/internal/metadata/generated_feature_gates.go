@@ -6,6 +6,14 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var InternalCoreinternalGoldendatasetDontEmitV0DatabaseConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"internal.coreinternal.goldendataset.DontEmitV0DatabaseConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv v1.28.0 attribute db.system."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45299"),
+	featuregate.WithRegisterFromVersion("v0.154.0"),
+)
+
 var InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"internal.coreinternal.goldendataset.DontEmitV0NetworkConventions",
 	featuregate.StageBeta,
@@ -20,6 +28,14 @@ var InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate = featu
 	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv RPC attributes rpc.service and peer.service."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548"),
 	featuregate.WithRegisterFromVersion("v0.148.0"),
+)
+
+var InternalCoreinternalGoldendatasetEmitV1DatabaseConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"internal.coreinternal.goldendataset.EmitV1DatabaseConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with db.system.name (semconv v1.40.0) instead of the deprecated db.system (semconv v1.28.0)."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45299"),
+	featuregate.WithRegisterFromVersion("v0.154.0"),
 )
 
 var InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
