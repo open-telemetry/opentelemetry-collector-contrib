@@ -723,7 +723,7 @@ The `ParseLEEF` function returns a `pcommon.Map` that is the result of parsing t
 The returned map has the following top-level fields:
 
 * `version` — the LEEF version (`"1.0"` or `"2.0"`).
-* `vendor`, `product_name`, `product_version`, `event_id` — the LEEF header fields.
+* `vendor`, `product.name`, `product.version`, `event.id` — the LEEF header fields.
 * `attributes` — a map of the parsed key/value attribute pairs.
 
 For LEEF 1.0 the attribute delimiter is always a tab. For LEEF 2.0 the delimiter is taken from the header and must be either a single character or a `0x`-prefixed hex value decoding to a single byte (e.g. `0x09` for tab). An empty delimiter field defaults to tab. The delimiter field is also optional: if the position normally occupied by the delimiter looks like the start of an attribute (i.e. contains `=`), it is treated as the first attribute and the delimiter defaults to tab.

@@ -31,9 +31,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "1.0",
 				"vendor":          "Microsoft",
-				"product_name":    "MSExchange",
-				"product_version": "4.0 SP1",
-				"event_id":        "15345",
+				"product.name":    "MSExchange",
+				"product.version": "4.0 SP1",
+				"event.id":        "15345",
 				"attributes": map[string]any{
 					"src": "10.50.1.1",
 					"dst": "2.10.20.20",
@@ -51,9 +51,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "1.0",
 				"vendor":          "QRadar",
-				"product_name":    "QRM",
-				"product_version": "1.0",
-				"event_id":        "NEW_PORT_DISCOVERED",
+				"product.name":    "QRM",
+				"product.version": "1.0",
+				"event.id":        "NEW_PORT_DISCOVERED",
 				"attributes": map[string]any{
 					"src":     "7.5.6.6",
 					"dst":     "172.50.123.1",
@@ -75,9 +75,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "1.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "EventID",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "EventID",
 				"attributes":      map[string]any{},
 			},
 		},
@@ -91,9 +91,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "1.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "EventID",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "EventID",
 				"attributes":      map[string]any{},
 			},
 		},
@@ -107,9 +107,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "2.0",
 				"vendor":          "Lancope",
-				"product_name":    "StealthWatch",
-				"product_version": "1.0",
-				"event_id":        "41",
+				"product.name":    "StealthWatch",
+				"product.version": "1.0",
+				"event.id":        "41",
 				"attributes": map[string]any{
 					"src": "10.0.1.8",
 					"dst": "10.0.0.5",
@@ -127,9 +127,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "2.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "100",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "100",
 				"attributes": map[string]any{
 					"key1": "val1",
 					"key2": "val2",
@@ -146,9 +146,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "2.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "100",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "100",
 				"attributes": map[string]any{
 					"key1": "val1",
 					"key2": "val2",
@@ -165,9 +165,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "2.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "100",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "100",
 				"attributes": map[string]any{
 					"key1": "val1",
 					"key2": "val2",
@@ -184,9 +184,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "2.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "EventID",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "EventID",
 				"attributes":      map[string]any{},
 			},
 		},
@@ -200,9 +200,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "2.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "EventID",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "EventID",
 				"attributes":      map[string]any{},
 			},
 		},
@@ -216,9 +216,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "2.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "EventID",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "EventID",
 				"attributes":      map[string]any{},
 			},
 		},
@@ -232,9 +232,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "2.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "EventID",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "EventID",
 				"attributes":      map[string]any{},
 			},
 		},
@@ -248,9 +248,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "1.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "Event",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "Event",
 				"attributes": map[string]any{
 					"msg": "hello world ",
 					"src": "1.2.3.4",
@@ -267,9 +267,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "1.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "Event",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "Event",
 				"attributes": map[string]any{
 					"msg": "This is a message with spaces",
 					"src": "1.2.3.4",
@@ -286,9 +286,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "1.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "Event",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "Event",
 				"attributes": map[string]any{
 					"url": "http://example.com?foo=bar",
 					"src": "1.2.3.4",
@@ -305,9 +305,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "1.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "Event",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "Event",
 				"attributes": map[string]any{
 					"key1": "",
 					"key2": "value2",
@@ -324,9 +324,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "2.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "100",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "100",
 				"attributes": map[string]any{
 					"key1": "val1",
 					"key2": "val2",
@@ -343,9 +343,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "1.0",
 				"vendor":          "Vendor-Name_123",
-				"product_name":    "Product.Name",
-				"product_version": "1.0-beta",
-				"event_id":        "Event_ID_123",
+				"product.name":    "Product.Name",
+				"product.version": "1.0-beta",
+				"event.id":        "Event_ID_123",
 				"attributes": map[string]any{
 					"key": "value",
 				},
@@ -361,9 +361,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "2.0",
 				"vendor":          "IBM",
-				"product_name":    "QRadar",
-				"product_version": "7.3.2",
-				"event_id":        "Authentication",
+				"product.name":    "QRadar",
+				"product.version": "7.3.2",
+				"event.id":        "Authentication",
 				"attributes": map[string]any{
 					"src":           "192.168.1.100",
 					"dst":           "10.0.0.1",
@@ -385,9 +385,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "1.0",
 				"vendor":          "Cisco",
-				"product_name":    "ASA",
-				"product_version": "9.8",
-				"event_id":        "FirewallDeny",
+				"product.name":    "ASA",
+				"product.version": "9.8",
+				"event.id":        "FirewallDeny",
 				"attributes": map[string]any{
 					"src":     "10.1.1.1",
 					"dst":     "192.168.1.1",
@@ -408,9 +408,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "2.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "Event",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "Event",
 				"attributes": map[string]any{
 					"key1": "val1",
 					"key2": "val2",
@@ -427,9 +427,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "1.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "Event",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "Event",
 				"attributes": map[string]any{
 					"key1": "val1",
 					"key2": "val2",
@@ -446,9 +446,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "1.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "Event",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "Event",
 				"attributes": map[string]any{
 					"key1": "val1",
 					"key2": "val2",
@@ -469,9 +469,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "1.0",
 				"vendor":          "IBM",
-				"product_name":    "Guardium",
-				"product_version": "8.0",
-				"event_id":        "Login failures",
+				"product.name":    "Guardium",
+				"product.version": "8.0",
+				"event.id":        "Login failures",
 				"attributes": map[string]any{
 					"ruleID":            "20026",
 					"ruleDesc":          "Login failures",
@@ -511,9 +511,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "1.0",
 				"vendor":          "IBM",
-				"product_name":    "Guardium",
-				"product_version": "8.0",
-				"event_id":        "Unauthorized Users on Cardholder Objects - Alert",
+				"product.name":    "Guardium",
+				"product.version": "8.0",
+				"event.id":        "Unauthorized Users on Cardholder Objects - Alert",
 				"attributes": map[string]any{
 					"ruleID":            "159",
 					"ruleDesc":          "Unauthorized Users on Cardholder Objects - Alert",
@@ -550,9 +550,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "2.0",
 				"vendor":          "Lancope",
-				"product_name":    "StealthWatch",
-				"product_version": "1.0",
-				"event_id":        "41",
+				"product.name":    "StealthWatch",
+				"product.version": "1.0",
+				"event.id":        "41",
 				"attributes": map[string]any{
 					"src": "10.0.1.8",
 					"dst": "10.0.0.5",
@@ -570,9 +570,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "1.0",
 				"vendor":          "Microsoft",
-				"product_name":    "MSExchange",
-				"product_version": "4.0 SP1",
-				"event_id":        "15345",
+				"product.name":    "MSExchange",
+				"product.version": "4.0 SP1",
+				"event.id":        "15345",
 				"attributes": map[string]any{
 					"src": "192.0.2.0",
 					"dst": "172.50.123.1",
@@ -589,9 +589,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "2.0",
 				"vendor":          "Microsoft",
-				"product_name":    "MSExchange",
-				"product_version": "2016",
-				"event_id":        "15345",
+				"product.name":    "MSExchange",
+				"product.version": "2016",
+				"event.id":        "15345",
 				"attributes": map[string]any{
 					"src": "10.50.1.1",
 					"dst": "2.10.20.20",
@@ -609,9 +609,9 @@ func Test_parseLEEF(t *testing.T) {
 			expected: map[string]any{
 				"version":         "2.0",
 				"vendor":          "Vendor",
-				"product_name":    "Product",
-				"product_version": "1.0",
-				"event_id":        "EventID",
+				"product.name":    "Product",
+				"product.version": "1.0",
+				"event.id":        "EventID",
 				"attributes": map[string]any{
 					"key1": "a|b",
 					"key2": "val2",
@@ -632,9 +632,9 @@ func Test_parseLEEF(t *testing.T) {
 			// Check top-level fields
 			assertMapValue(t, resultMap, "version", tt.expected["version"])
 			assertMapValue(t, resultMap, "vendor", tt.expected["vendor"])
-			assertMapValue(t, resultMap, "product_name", tt.expected["product_name"])
-			assertMapValue(t, resultMap, "product_version", tt.expected["product_version"])
-			assertMapValue(t, resultMap, "event_id", tt.expected["event_id"])
+			assertMapValue(t, resultMap, "product.name", tt.expected["product.name"])
+			assertMapValue(t, resultMap, "product.version", tt.expected["product.version"])
+			assertMapValue(t, resultMap, "event.id", tt.expected["event.id"])
 
 			// Check attributes
 			expectedAttrs := tt.expected["attributes"].(map[string]any)

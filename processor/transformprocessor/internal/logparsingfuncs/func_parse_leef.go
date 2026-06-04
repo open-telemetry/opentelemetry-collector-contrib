@@ -246,9 +246,9 @@ func buildLEEFResult(header leefHeader, attributes map[string]string) pcommon.Ma
 
 	result.PutStr("version", header.version)
 	result.PutStr("vendor", header.vendor)
-	result.PutStr("product_name", header.productName)
-	result.PutStr("product_version", header.productVersion)
-	result.PutStr("event_id", header.eventID)
+	result.PutStr("product.name", header.productName)
+	result.PutStr("product.version", header.productVersion)
+	result.PutStr("event.id", header.eventID)
 
 	attrsMap := result.PutEmptyMap("attributes")
 	attrsMap.EnsureCapacity(len(attributes))
