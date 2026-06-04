@@ -119,5 +119,5 @@ receivers:
     query_sample_collection:                     # this collection exports the currently (relate to the query time) executing queries as logs
       max_rows_per_query: 100                     # the maximum number of samples to bre reported.
     session_wait_event_collection:               # this collection exports per-session wait event statistics from v$session_event as logs
-      max_rows_per_query: 100                    # the maximum number of session wait event rows to be reported.
+      max_rows_per_query: 100                    # the maximum number of session wait event rows to be reported
 ```
