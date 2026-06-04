@@ -451,6 +451,10 @@ properties:
     description: MaximumTraceSizeBytes is the largest size of a trace a decision will be made for. If the trace size exceeds this it will be dropped before the decision period to keep memory more predictable. A 0 value disables dropping large traces early.
     type: integer
     x-customType: uint64
+  num_shards:
+    description: NumShards controls the number of parallel goroutine loops processing traces. Each shard runs an independent event loop with its own trace storage and decision batcher. Traces are routed to shards by trace ID, ensuring all spans for a given trace are processed by the same shard. Higher values reduce contention between trace ingestion and sampling decision evaluation under high load. NumTraces and ExpectedNewTracesPerSec are divided evenly across shards. Defaults to 1 (single event loop, original behavior).
+    type: integer
+    x-customType: uint32
   num_traces:
     description: NumTraces is the number of traces kept on memory. Typically most of the data of a trace is released after a sampling decision is taken.
     type: integer

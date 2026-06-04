@@ -365,6 +365,15 @@ type Config struct {
 	// If the trace size exceeds this it will be dropped before the decision period to keep memory more predictable.
 	// A 0 value disables dropping large traces early.
 	MaximumTraceSizeBytes uint64 `mapstructure:"maximum_trace_size_bytes"`
+	// NumShards controls the number of parallel goroutine loops processing
+	// traces. Each shard runs an independent event loop with its own trace
+	// storage and decision batcher. Traces are routed to shards by trace ID,
+	// ensuring all spans for a given trace are processed by the same shard.
+	// Higher values reduce contention between trace ingestion and sampling
+	// decision evaluation under high load. NumTraces and
+	// ExpectedNewTracesPerSec are divided evenly across shards.
+	// Defaults to 1 (single event loop, original behavior).
+	NumShards uint32 `mapstructure:"num_shards"`
 }
 
 func (cfg *Config) Validate() error {
