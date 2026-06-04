@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
-const NANO_TIMESTAMP = 1780454666123456789
+const NanoTimestamp = 1780454666123456789
 
 func TestConvertPprofToPprofile(t *testing.T) {
 	tests := map[string]struct {
@@ -646,7 +646,7 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 			{Type: "inuse_objects", Unit: "count"},
 			{Type: "inuse_space", Unit: "bytes"},
 		},
-		TimeNanos:     NANO_TIMESTAMP,
+		TimeNanos:     NanoTimestamp,
 		DurationNanos: 5000000000,
 		PeriodType:    &profile.ValueType{Type: "space", Unit: "bytes"},
 		Period:        524288,
@@ -761,7 +761,7 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 		}
 
 		// Verify profile metadata
-		require.Equal(t, int64(NANO_TIMESTAMP), p.Time().AsTime().UnixNano())
+		require.Equal(t, int64(NanoTimestamp), p.Time().AsTime().UnixNano())
 		require.Equal(t, uint64(5000000000), p.DurationNano())
 		require.Equal(t, int64(524288), p.Period())
 	}
@@ -799,7 +799,7 @@ func TestDefaultSampleTypeConvention(t *testing.T) {
 			{Type: "inuse_objects", Unit: "count"},
 			{Type: "inuse_space", Unit: "bytes"}, // default (last)
 		},
-		TimeNanos:     NANO_TIMESTAMP,
+		TimeNanos:     NanoTimestamp,
 		DurationNanos: 5000000000,
 		PeriodType:    &profile.ValueType{Type: "space", Unit: "bytes"},
 		Period:        524288,
