@@ -349,6 +349,14 @@ func Test_substring_utf8Safe(t *testing.T) {
 			expected: "",
 		},
 		{
+			name:     "negative index",
+			input:    "\x80\x80",
+			start:    0,
+			length:   1,
+			utf8Safe: ottl.NewTestingOptional(true),
+			expected: "",
+		},
+		{
 			// start snaps forward to end-of-rune,
 			// end snaps back to start-of-rune byteStart > byteEnd;
 			// the clamp prevents a val[hi:lo] slice panic.
