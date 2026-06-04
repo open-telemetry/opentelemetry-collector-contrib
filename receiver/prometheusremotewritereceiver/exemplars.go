@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
@@ -67,6 +68,7 @@ func collectExemplars(
 			ScopeVersion: scopeVersion,
 			MetricName:   metadata.Name,
 			MetricType:   ts.Metadata.Type,
+			AttrsHash:    pdatautil.MapHash(extractAttributes(ls)),
 		}
 
 		slice, ok := result[key.hash()]
@@ -149,6 +151,7 @@ type exemplarKey struct {
 	ScopeVersion string
 	MetricName   string
 	MetricType   writev2.Metadata_MetricType
+	AttrsHash    [16]byte // hash of data labels (excludes job, instance, __name__, otel_scope_*)
 }
 
 // sep is a byte that is not valid UTF-8, used as a field separator to prevent
@@ -164,5 +167,7 @@ func (k exemplarKey) hash() uint64 {
 	h.Write([]byte(k.MetricName))
 	h.Write(sep)
 	h.Write([]byte(k.MetricType.String()))
+	h.Write(sep)
+	h.Write(k.AttrsHash[:])
 	return h.Sum64()
 }

@@ -35,6 +35,7 @@ The following is example configuration
         label_selector: environment in (production),tier in (frontend)
         field_selector: status.phase=Running
         interval: 15m
+        initial_delay: 5m
         exclude_namespaces:
           - regexp: namespace-to-ignore
       - name: events
@@ -61,6 +62,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `label_selector`: select objects by label(s)
 - `field_selector`: select objects by field(s)
 - `objects[*].interval`: per-resource pull interval override. When set, takes precedence over the top-level `interval`. Only applies to `pull` mode objects.
+- `initial_delay`: exact delay applied before the first pull for an object. Use this to stagger large pull workloads while preserving the configured `interval` cadence afterward. Non-positive values behave like `0`. Must be less than the resolved pull interval when set. Only useful for `pull` mode.
 - `exclude_watch_type`: allows excluding specific watch types. Valid values are `ADDED`, `MODIFIED`, `DELETED`, `BOOKMARK`, and `ERROR`. Only usable in `watch` mode.
 - `resource_version`: **Deprecated.** Pinning a starting `resourceVersion` is no longer supported; any value configured here will be ignored.
 - `namespaces`: An array of `namespaces` to collect events from. (default = `all`)

@@ -49,6 +49,7 @@ type K8sObjectsConfig struct {
 	LabelSelector     string               `mapstructure:"label_selector"`
 	FieldSelector     string               `mapstructure:"field_selector"`
 	Interval          time.Duration        `mapstructure:"interval"`
+	InitialDelay      time.Duration        `mapstructure:"initial_delay"`
 	ResourceVersion   string               `mapstructure:"resource_version"`
 	ExcludeWatchType  []apiWatch.EventType `mapstructure:"exclude_watch_type"`
 	exclude           map[apiWatch.EventType]bool
@@ -115,6 +116,14 @@ func (c *Config) Validate() error {
 
 		if object.Mode == k8sinventory.PullMode && len(object.ExcludeWatchType) != 0 {
 			return errors.New("the Exclude config can only be used with watch mode")
+		}
+
+		if object.Mode == k8sinventory.WatchMode && object.InitialDelay != 0 {
+			return errors.New("initial_delay can only be used with pull mode")
+		}
+
+		if object.Mode == k8sinventory.PullMode && object.InitialDelay > 0 && object.InitialDelay >= object.Interval {
+			return errors.New("initial_delay must be less than interval")
 		}
 
 		if len(object.ExcludeNamespaces) != 0 && len(object.Namespaces) != 0 {
@@ -187,6 +196,7 @@ func (k *K8sObjectsConfig) DeepCopy() *K8sObjectsConfig {
 		LabelSelector:     k.LabelSelector,
 		FieldSelector:     k.FieldSelector,
 		Interval:          k.Interval,
+		InitialDelay:      k.InitialDelay,
 		ResourceVersion:   k.ResourceVersion,
 		ExcludeNamespaces: k.ExcludeNamespaces,
 	}
