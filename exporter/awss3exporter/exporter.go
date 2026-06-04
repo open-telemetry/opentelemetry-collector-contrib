@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/notify"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/upload"
 )
 
@@ -25,6 +27,8 @@ type s3Exporter struct {
 	uploader   upload.Manager
 	logger     *zap.Logger
 	marshaler  marshaler
+	telemetry  component.TelemetrySettings
+	notifier   notify.Notifier
 }
 
 func newS3Exporter(
@@ -36,6 +40,7 @@ func newS3Exporter(
 		config:     config,
 		signalType: signalType,
 		logger:     params.Logger,
+		telemetry:  params.TelemetrySettings,
 	}
 	return s3Exporter
 }
@@ -75,12 +80,34 @@ func (e *s3Exporter) start(ctx context.Context, host component.Host) error {
 
 	e.marshaler = m
 
-	up, err := newUploadManager(ctx, e.config, e.logger, e.signalType, m.format(), m.compressed())
+	// Build the notifier first so it can be injected into the upload manager.
+	// notify.New returns a no-op implementation when the feature is disabled,
+	// so the upload manager path is identical either way.
+	n, err := notify.New(e.config.S3Uploader.Notifications, metadata.ScopeName, e.telemetry, host, e.logger)
 	if err != nil {
+		return fmt.Errorf("build notifier: %w", err)
+	}
+	e.notifier = n
+
+	up, err := newUploadManager(ctx, e.config, e.logger, e.signalType, m.format(), m.compressed(), n)
+	if err != nil {
+		// Unwind the already-built notifier so its goroutines do not outlive
+		// a failed Start.
+		_ = n.Shutdown(ctx)
+		e.notifier = nil
 		return err
 	}
 	e.uploader = up
 	return nil
+}
+
+// shutdown drains any in-flight notifications within ctx's deadline. Safe to
+// call when start was not reached or when no notifier was installed.
+func (e *s3Exporter) shutdown(ctx context.Context) error {
+	if e.notifier == nil {
+		return nil
+	}
+	return e.notifier.Shutdown(ctx)
 }
 
 func (*s3Exporter) Capabilities() consumer.Capabilities {
