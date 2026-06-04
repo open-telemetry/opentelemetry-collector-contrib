@@ -202,7 +202,7 @@ func (p *Parser) parseType(typeInfo *TypeInfo) (SchemaElement, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(typeInfo.comms) > 0 {
+	if schemaElement != nil && len(typeInfo.comms) > 0 {
 		if desc, ok := ExtractDescriptionFromComment(typeInfo.comms[0]); ok {
 			schemaElement.setDescription(desc)
 		}
