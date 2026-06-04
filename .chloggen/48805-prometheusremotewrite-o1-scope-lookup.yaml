@@ -20,4 +20,4 @@ subtext:
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[collector]' or '[collector, contrib]'
 # Default: '[contrib]'
-change_logs: [contrib]
+change_logs: [user]
