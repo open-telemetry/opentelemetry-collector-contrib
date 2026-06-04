@@ -5,13 +5,14 @@ package pebbletailstorageextension // import "github.com/open-telemetry/opentele
 
 import (
 	"bytes"
+	"os"
 
 	"github.com/cockroachdb/pebble/v2"
 	"github.com/cockroachdb/pebble/v2/bloom"
 	"go.uber.org/zap"
 )
 
-func newPebbleDB(storageDir string, logger *zap.Logger) (*pebble.DB, error) {
+func newPebbleDB(storageDir string, logger *zap.Logger) (db *pebble.DB, created bool, err error) {
 	cache := pebble.NewCache(16 << 20)
 	defer cache.Unref()
 
@@ -25,6 +26,7 @@ func newPebbleDB(storageDir string, logger *zap.Logger) (*pebble.DB, error) {
 			return 2, 4
 		},
 	}
+	opts.WithFSDefaults()
 	opts.Experimental.L0CompactionConcurrency = 4
 
 	opts.Levels[0] = pebble.LevelOptions{
@@ -33,7 +35,18 @@ func newPebbleDB(storageDir string, logger *zap.Logger) (*pebble.DB, error) {
 		FilterType:   pebble.TableFilter,
 	}
 
-	return pebble.Open(storageDir, opts)
+	desc, err := pebble.Peek(storageDir, opts.FS)
+	switch {
+	case err != nil && os.IsNotExist(err):
+		created = true
+	case err != nil:
+		return nil, false, err
+	default:
+		created = !desc.Exists
+	}
+
+	db, err = pebble.Open(storageDir, opts)
+	return db, created, err
 }
 
 func traceKeyComparer() *pebble.Comparer {

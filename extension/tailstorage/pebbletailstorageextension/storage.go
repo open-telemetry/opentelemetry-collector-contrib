@@ -36,7 +36,7 @@ func newStorage(storageDir string, logger *zap.Logger) (*storage, error) {
 		logger = zap.NewNop()
 	}
 
-	db, err := newPebbleDB(filepath.Join(storageDir, storageVersion), logger)
+	db, created, err := newPebbleDB(filepath.Join(storageDir, storageVersion), logger)
 	if err != nil {
 		return nil, err
 	}
@@ -48,10 +48,13 @@ func newStorage(storageDir string, logger *zap.Logger) (*storage, error) {
 		unmarshaler: &ptrace.ProtoUnmarshaler{},
 	}
 
-	// Persistence across restarts is not supported.
-	// Enforce this at startup to prevent users from relying on persistence.
-	if err := s.drop(); err != nil {
-		return nil, err
+	if !created {
+		// Persistence across restarts is not supported.
+		// Enforce this at startup to prevent users from relying on persistence.
+		logger.Warn("existing database detected; dropping it as persistence is not supported")
+		if err := s.drop(); err != nil {
+			return nil, err
+		}
 	}
 
 	return s, nil

@@ -6,11 +6,14 @@ package pebbletailstorageextension
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func newStartedTailStorage(t *testing.T) TailStorage {
@@ -115,7 +118,11 @@ func TestDropOnStart(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = t.TempDir()
 
-	first, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
+	zc, logs := observer.New(zap.InfoLevel)
+	set := extensiontest.NewNopSettings(f.Type())
+	set.Logger = zap.New(zc)
+
+	first, err := f.Create(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NoError(t, first.Start(t.Context(), componenttest.NewNopHost()))
 
@@ -124,7 +131,7 @@ func TestDropOnStart(t *testing.T) {
 
 	require.NoError(t, first.Shutdown(t.Context()))
 
-	second, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
+	second, err := f.Create(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NoError(t, second.Start(t.Context(), componenttest.NewNopHost()))
 
@@ -132,4 +139,6 @@ func TestDropOnStart(t *testing.T) {
 	require.False(t, found)
 
 	require.NoError(t, second.Shutdown(t.Context()))
+
+	assert.Equal(t, 1, logs.FilterMessage("existing database detected; dropping it as persistence is not supported").Len())
 }
