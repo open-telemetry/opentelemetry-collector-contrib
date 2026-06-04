@@ -2385,11 +2385,11 @@ Examples:
 
 ### Substring
 
-`Substring(target, start, length)`
+`Substring(target, start, length, Optional[utf8_safe])`
 
 The `Substring` Converter returns a substring from the given start index to the specified length.
 
-`target` is a string. `start` and `length` are `int64`.
+`target` is a string. `start` and `length` are byte offsets as `int64`. `utf8_safe` is an optional boolean (default: `false`); when `true`, a mid-character `start` advances to the next UTF-8 boundary and a mid-character end (`start+length`) backs up to the previous one, so multi-byte characters are never split, and the result may be shorter than `length` bytes.
 
 If `target` is not a string or is nil, an error is returned.
 If the start/length exceed the length of the `target` string, an error is returned.
@@ -2397,6 +2397,7 @@ If the start/length exceed the length of the `target` string, an error is return
 Examples:
 
 - `Substring("123456789", 0, 3)`
+- `Substring("一二三", 0, 4, true)`
 
 ### Time
 
