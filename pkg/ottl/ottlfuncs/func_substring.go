@@ -51,9 +51,10 @@ func substring[K any](target ottl.StringGetter[K], startGetter, lengthGetter ott
 		if err != nil {
 			return nil, err
 		}
-		if start > int64(len(val)) || length > int64(len(val))-start {
-			return nil, fmt.Errorf("invalid range for substring function, start(%d)+length(%d) cannot be greater than the length of target string(%d)", start, length, len(val))
+		runes := []rune(val)
+		if start > int64(len(runes)) || length > int64(len(runes))-start {
+			return nil, fmt.Errorf("invalid range for substring function, start(%d)+length(%d) cannot be greater than the length of target string(%d)", start, length, len(runes))
 		}
-		return val[start : start+length], nil
+		return string(runes[start : start+length]), nil
 	}
 }

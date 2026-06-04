@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: pkg/ottl
+note: Fix Substring function corrupting multibyte UTF-8 strings by using rune-based slicing instead of byte-based slicing.
+issues: [48436]
+change_logs: [user]

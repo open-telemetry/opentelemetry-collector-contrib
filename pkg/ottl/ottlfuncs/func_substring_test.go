@@ -60,6 +60,44 @@ func Test_substring(t *testing.T) {
 			},
 			expected: "123456789",
 		},
+		{
+			name: "substring with multibyte UTF-8 characters",
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "日本語", nil
+				},
+			},
+			start: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(0), nil
+				},
+			},
+			length: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(1), nil
+				},
+			},
+			expected: "日",
+		},
+		{
+			name: "substring with emoji",
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "hello🌍world", nil
+				},
+			},
+			start: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(5), nil
+				},
+			},
+			length: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(1), nil
+				},
+			},
+			expected: "🌍",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
