@@ -344,6 +344,8 @@ go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
 go.opentelemetry.io/collector/component v1.59.1-0.20260528150546-fe2cf23ff222 h1:yIo7FVJzELpVPPc5zaVFKtjKcMW/shKWTVBCP/cJw+I=
 go.opentelemetry.io/collector/component v1.59.1-0.20260528150546-fe2cf23ff222/go.mod h1:5eQCM0tS6qbG2XJ6Bt67kgCxuhCbg4csVv6SywyHZ6w=
+go.opentelemetry.io/collector/component/componentstatus v0.153.1-0.20260528150546-fe2cf23ff222 h1:5Yf9rb4VUH+ZKV3s4cuzPgnAfV6W5EgrLJZL4LevV90=
+go.opentelemetry.io/collector/component/componentstatus v0.153.1-0.20260528150546-fe2cf23ff222/go.mod h1:SfYWwh6pA9jJUcjuX+zIJ9kyn+2Z9SSLMM3xYOBsVW4=
 go.opentelemetry.io/collector/component/componenttest v0.153.1-0.20260528150546-fe2cf23ff222 h1:R3sL1YN78x3GbFEjkYw3b9ooYd3DvM4TR39ZPfh9RuY=
 go.opentelemetry.io/collector/component/componenttest v0.153.1-0.20260528150546-fe2cf23ff222/go.mod h1:Ym/d5UxnoHmrCI5LsVANBicikNiqtwjk8uWBM+Z4jDM=
 go.opentelemetry.io/collector/config/configopaque v1.59.1-0.20260528150546-fe2cf23ff222 h1:j8L+p3O4s0DBWbRTOTqFhMyIZIZZW1W4hFQlrQ7xgGQ=
