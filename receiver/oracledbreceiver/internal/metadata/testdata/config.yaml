@@ -53,6 +53,14 @@ all_set:
       enabled: true
     oracledb.pga_memory:
       enabled: true
+    oracledb.physical_io.cache_writes:
+      enabled: true
+    oracledb.physical_io.requests:
+      enabled: true
+      attributes: ["disk.io.direction","disk.io.block_size"]
+    oracledb.physical_io.transferred:
+      enabled: true
+      attributes: ["disk.io.direction","disk.io.type"]
     oracledb.physical_read_io_requests:
       enabled: true
     oracledb.physical_reads:
@@ -78,6 +86,9 @@ all_set:
     oracledb.sessions.usage:
       enabled: true
       attributes: ["session_type","session_status"]
+    oracledb.sqlnet.io.transferred:
+      enabled: true
+      attributes: ["network.io.direction","destination.type"]
     oracledb.storage.usage:
       enabled: true
     oracledb.storage.utilization:
@@ -104,6 +115,8 @@ all_set:
       enabled: true
   events:
     db.server.query_sample:
+      enabled: true
+    db.server.session.wait_sample:
       enabled: true
     db.server.top_query:
       enabled: true
@@ -168,6 +181,14 @@ reaggregate_set:
       enabled: true
     oracledb.pga_memory:
       enabled: true
+    oracledb.physical_io.cache_writes:
+      enabled: true
+    oracledb.physical_io.requests:
+      enabled: true
+      attributes: []
+    oracledb.physical_io.transferred:
+      enabled: true
+      attributes: []
     oracledb.physical_read_io_requests:
       enabled: true
     oracledb.physical_reads:
@@ -191,6 +212,9 @@ reaggregate_set:
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
+      enabled: true
+      attributes: []
+    oracledb.sqlnet.io.transferred:
       enabled: true
       attributes: []
     oracledb.storage.usage:
@@ -219,6 +243,8 @@ reaggregate_set:
       enabled: true
   events:
     db.server.query_sample:
+      enabled: true
+    db.server.session.wait_sample:
       enabled: true
     db.server.top_query:
       enabled: true
@@ -283,6 +309,14 @@ none_set:
       enabled: false
     oracledb.pga_memory:
       enabled: false
+    oracledb.physical_io.cache_writes:
+      enabled: false
+    oracledb.physical_io.requests:
+      enabled: false
+      attributes: ["disk.io.direction","disk.io.block_size"]
+    oracledb.physical_io.transferred:
+      enabled: false
+      attributes: ["disk.io.direction","disk.io.type"]
     oracledb.physical_read_io_requests:
       enabled: false
     oracledb.physical_reads:
@@ -308,6 +342,9 @@ none_set:
     oracledb.sessions.usage:
       enabled: false
       attributes: ["session_type","session_status"]
+    oracledb.sqlnet.io.transferred:
+      enabled: false
+      attributes: ["network.io.direction","destination.type"]
     oracledb.storage.usage:
       enabled: false
     oracledb.storage.utilization:
@@ -334,6 +371,8 @@ none_set:
       enabled: false
   events:
     db.server.query_sample:
+      enabled: false
+    db.server.session.wait_sample:
       enabled: false
     db.server.top_query:
       enabled: false

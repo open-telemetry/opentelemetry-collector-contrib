@@ -1,0 +1,39 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: cmd/schemagen
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add `factoryMaps` override to generate schemas for config fields populated via factory dispatch maps.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [48815]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Some components tag a config field `mapstructure:"-"` and populate it at runtime by dispatching
+  against a package-level factory map (e.g. `hostmetricsreceiver`'s `scrapers` field). The schemagen
+  parser previously skipped these fields entirely.
+
+  A new `factoryMaps` option in `.schemagen.yaml` `componentOverrides` instructs schemagen to
+  AST-walk the named factory var, enumerate all registered entries, and synthesize a typed object
+  property whose keys are the discriminator strings. Three factory var shapes are supported:
+  call expressions (key resolved from `internal/metadata`), composite literals with inline
+  `component.MustNewType("key")` keys, and composite literals with qualified `pkg.ConstName` keys.
+
+  Wired up for `receiver/hostmetricsreceiver` (11 scraper keys), `receiver/ciscoosreceiver`
+  (2 scraper keys), and `processor/geoipprocessor` (1 provider key).
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]

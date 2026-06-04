@@ -197,10 +197,6 @@ component_management:
     name: exporter_googlemanagedprometheus
     paths:
     - exporter/googlemanagedprometheusexporter/**
-  - component_id: exporter_googlesecops
-    name: exporter_googlesecops
-    paths:
-    - exporter/googlesecopsexporter/**
   - component_id: exporter_honeycombmarker
     name: exporter_honeycombmarker
     paths:
@@ -345,6 +341,10 @@ component_management:
     name: extension_httpforwarder
     paths:
     - extension/httpforwarderextension/**
+  - component_id: extension_internal_basicauth
+    name: extension_internal_basicauth
+    paths:
+    - extension/internal/basicauth/**
   - component_id: extension_internal_credentialsfile
     name: extension_internal_credentialsfile
     paths:
