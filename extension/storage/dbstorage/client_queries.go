@@ -7,6 +7,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
+	"github.com/lib/pq"
 )
 
 const (
@@ -116,6 +118,10 @@ func (d *dbDialect) Close() error {
 
 // newDBDialect creates a new DB dialect which is just a set of DB-specific queries/prepared statements
 func newDBDialect(driverName, tableName string) *dbDialect {
+	// Quote the table name as a SQL identifier to handle special characters
+	// like hyphens in component IDs (e.g. "receiver_awscloudwatch_eks-prod").
+	tableName = pq.QuoteIdentifier(tableName)
+
 	queries := getDialectQueries(driverName)
 
 	var aggSize int
