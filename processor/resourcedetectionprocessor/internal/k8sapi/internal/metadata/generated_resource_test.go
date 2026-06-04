@@ -13,6 +13,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetK8sClusterUID("k8s.cluster.uid-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
 			rb.SetK8sNodeUID("k8s.node.uid-val")
 
@@ -21,14 +22,19 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
+			}
+			k8sClusterUIDAttrVal, ok := res.Attributes().Get("k8s.cluster.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "k8s.cluster.uid-val", k8sClusterUIDAttrVal.Str())
 			}
 			k8sNodeNameAttrVal, ok := res.Attributes().Get("k8s.node.name")
 			assert.True(t, ok)
