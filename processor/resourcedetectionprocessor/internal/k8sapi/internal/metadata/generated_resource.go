@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetK8sClusterUID sets provided value as "k8s.cluster.uid" attribute.
+func (rb *ResourceBuilder) SetK8sClusterUID(val string) {
+	if rb.config.K8sClusterUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.cluster.uid", val)
+	}
+}
+
 // SetK8sNodeName sets provided value as "k8s.node.name" attribute.
 func (rb *ResourceBuilder) SetK8sNodeName(val string) {
 	if rb.config.K8sNodeName.Enabled {
