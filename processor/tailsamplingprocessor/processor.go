@@ -978,12 +978,11 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 				// Release all accumulated spans (prior pending batches + current batch)
 				// without writing the current batch to storage first.
 				merged := ptrace.NewTraces()
-				allSpans, err := tsp.tailStorage.Take(id)
-				if err != nil {
+				if allSpans, err := tsp.tailStorage.Take(id); err != nil {
 					tsp.logger.Error("Failed to retrieve trace from tail storage", zap.Error(err))
-					return
+				} else {
+					appendAllTraces(merged, allSpans)
 				}
-				appendAllTraces(merged, allSpans)
 				appendAllTraces(merged, spanIngestTraceData.ReceivedBatches)
 				actualData.ReceivedBatches = merged
 
@@ -998,7 +997,6 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 				// Persist current batch for pending traces.
 				if err := tsp.tailStorage.Append(id, spanIngestTraceData.ReceivedBatches); err != nil {
 					tsp.logger.Error("Failed to append trace to tail storage", zap.Error(err))
-					return
 				}
 			}
 			return
@@ -1010,7 +1008,6 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		appendToTraces(traceTd, rss)
 		if err := tsp.tailStorage.Append(id, traceTd); err != nil {
 			tsp.logger.Error("Failed to append trace to tail storage", zap.Error(err))
-			return
 		}
 		return
 	}
