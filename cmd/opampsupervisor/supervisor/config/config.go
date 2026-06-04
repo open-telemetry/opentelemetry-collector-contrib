@@ -4,7 +4,6 @@
 package config
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -28,8 +27,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/provider/envprovider"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
@@ -56,22 +53,7 @@ func Load(configFile string) (Supervisor, error) {
 		return Supervisor{}, errors.New("path to config file cannot be empty")
 	}
 
-	resolverSettings := confmap.ResolverSettings{
-		URIs: []string{configFile},
-		ProviderFactories: []confmap.ProviderFactory{
-			fileprovider.NewFactory(),
-			envprovider.NewFactory(),
-		},
-		ConverterFactories: []confmap.ConverterFactory{},
-		DefaultScheme:      "env",
-	}
-
-	resolver, err := confmap.NewResolver(resolverSettings)
-	if err != nil {
-		return Supervisor{}, err
-	}
-
-	conf, err := resolver.Resolve(context.Background())
+	conf, err := ResolveURI(configFile)
 	if err != nil {
 		return Supervisor{}, err
 	}

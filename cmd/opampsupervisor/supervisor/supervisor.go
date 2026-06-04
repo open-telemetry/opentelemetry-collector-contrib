@@ -26,10 +26,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/knadh/koanf/maps"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/rawbytes"
-	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -1213,20 +1209,19 @@ func (s *Supervisor) createRemoteConfigComposers(incomingConfig *protobufs.Agent
 }
 
 func (s *Supervisor) composeNoopConfig() ([]byte, error) {
-	k := koanf.New("::")
-
 	cfg, err := s.composeNoopPipeline()
 	if err != nil {
 		return nil, err
 	}
-	if err := k.Load(rawbytes.Provider(cfg), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+	conf, err := config.NewConfFromYAML(cfg)
+	if err != nil {
 		return nil, err
 	}
-	if err := k.Load(rawbytes.Provider(s.composeOpAMPExtensionConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+	if err := config.MergeConfFromYAML(conf, s.composeOpAMPExtensionConfig()); err != nil {
 		return nil, err
 	}
 
-	return k.Marshal(yaml.Parser())
+	return config.MarshalConfToYAML(conf)
 }
 
 func (s *Supervisor) composeOwnTelemetryConfig() []byte {
@@ -1292,7 +1287,7 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 type configComposer func() []byte
 
 func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemoteConfig, configFiles []string) ([]byte, error) {
-	conf := koanf.New("::")
+	conf := confmap.New()
 
 	specialConfigComposers := map[config.SpecialConfigFile][]configComposer{
 		config.SpecialConfigFileOwnTelemetry:   {s.composeOwnTelemetryConfig, s.composeExtraTelemetryConfig},
@@ -1305,14 +1300,14 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 		// will be due to the typing in the Supervisor's config struct and its
 		// validation function.
 		// The special config file for the remote configuration is the exception
-		// here: it could be invalid yaml. In case it is, the `koanf` loader
+		// here: it could be invalid yaml. In case it is, the confmap loader
 		// will return an error.
 		// Normal config files with invalid yaml should be just ignored.
 		if strings.HasPrefix(file, "$") {
 			cfgProviders := specialConfigComposers[config.SpecialConfigFile(file)]
 			for _, cfgProvider := range cfgProviders {
 				cfgBytes := cfgProvider()
-				err := conf.Load(rawbytes.Provider(cfgBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
+				err := config.MergeConfFromYAML(conf, cfgBytes)
 				if err != nil {
 					s.telemetrySettings.Logger.Error("Could not merge special config file", zap.String("specialConfig", file), zap.Error(err))
 					return nil, err
@@ -1321,20 +1316,20 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 			continue
 		}
 
-		cfgBytes, err := os.ReadFile(file)
+		incomingConf, err := config.RetrieveURIAsConf(file, s.telemetrySettings.Logger)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not read local config file", zap.Error(err))
 			continue
 		}
 
-		err = conf.Load(rawbytes.Provider(cfgBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
+		err = config.MergeConf(conf, incomingConf)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not merge local config file: "+file, zap.Error(err))
 			continue
 		}
 	}
 
-	b, err := conf.Marshal(yaml.Parser())
+	b, err := config.MarshalConfToYAML(conf)
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not marshal merged local config files", zap.Error(err))
 		return []byte(""), err
@@ -1503,7 +1498,7 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 // 2) the own metrics config section
 // 3) the local override config that is hard-coded in the Supervisor.
 func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
-	k := koanf.New("::")
+	conf := confmap.New()
 
 	configFiles := s.addSpecialConfigFiles()
 
@@ -1516,7 +1511,7 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 			return false, fmt.Errorf("could not compose noop pipeline: %w", err)
 		}
 
-		if err = k.Load(rawbytes.Provider(noopConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+		if err = config.MergeConfFromYAML(conf, noopConfig); err != nil {
 			return false, fmt.Errorf("could not merge noop pipeline: %w", err)
 		}
 	}
@@ -1526,13 +1521,13 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 		return false, err
 	}
 
-	err = k.Load(rawbytes.Provider(agentConfigBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
+	err = config.MergeConfFromYAML(conf, agentConfigBytes)
 	if err != nil {
 		return false, err
 	}
 
 	// The merged final result is our new merged config.
-	newMergedConfigBytes, err := k.Marshal(yaml.Parser())
+	newMergedConfigBytes, err := config.MarshalConfToYAML(conf)
 	if err != nil {
 		return false, err
 	}
@@ -1581,25 +1576,28 @@ func (s *Supervisor) composeFallbackConfig() (configChanged bool, err error) {
 		return false, errors.New("no fallback configs configured")
 	}
 
-	k := koanf.New("::")
+	conf := confmap.New()
 	// Load and merge fallback config files in order. Unlike regular config files,
 	// fallback config load failures are fatal because there is no alternate source.
 	for _, fallbackPath := range s.config.Agent.StartupFallbackConfigs {
-		fallbackConfigBytes, readErr := os.ReadFile(fallbackPath)
+		fallbackConf, readErr := config.RetrieveURIAsConf(fallbackPath, s.telemetrySettings.Logger)
 		if readErr != nil {
-			return false, fmt.Errorf("could not read fallback config file: %w", readErr)
+			if errors.Is(readErr, config.ErrConfigFileNotFound) {
+				return false, fmt.Errorf("could not read fallback config file: %w", readErr)
+			}
+			return false, fmt.Errorf("could not load fallback config: %w", readErr)
 		}
 
-		if err = k.Load(rawbytes.Provider(fallbackConfigBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+		if err = config.MergeConf(conf, fallbackConf); err != nil {
 			return false, fmt.Errorf("could not load fallback config: %w", err)
 		}
 	}
 
-	if extraCfgErr := s.loadFallbackExtraConfigs(k); extraCfgErr != nil {
+	if extraCfgErr := s.loadFallbackExtraConfigs(conf); extraCfgErr != nil {
 		return false, extraCfgErr
 	}
 
-	newMergedConfigBytes, err := k.Marshal(yaml.Parser())
+	newMergedConfigBytes, err := config.MarshalConfToYAML(conf)
 	if err != nil {
 		return false, err
 	}
@@ -1620,19 +1618,19 @@ func (s *Supervisor) composeFallbackConfig() (configChanged bool, err error) {
 	return configChanged, nil
 }
 
-func (s *Supervisor) loadFallbackExtraConfigs(k *koanf.Koanf) error {
-	if err := k.Load(rawbytes.Provider(s.composeOpAMPExtensionConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+func (s *Supervisor) loadFallbackExtraConfigs(conf *confmap.Conf) error {
+	if err := config.MergeConfFromYAML(conf, s.composeOpAMPExtensionConfig()); err != nil {
 		return fmt.Errorf("could not merge opamp extension config: %w", err)
 	}
 
 	if ownTelemetryConfig := s.composeOwnTelemetryConfig(); ownTelemetryConfig != nil {
-		if err := k.Load(rawbytes.Provider(ownTelemetryConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+		if err := config.MergeConfFromYAML(conf, ownTelemetryConfig); err != nil {
 			return fmt.Errorf("could not merge own telemetry config: %w", err)
 		}
 	}
 
 	if extraTelemetryConfig := s.composeExtraTelemetryConfig(); extraTelemetryConfig != nil {
-		if err := k.Load(rawbytes.Provider(extraTelemetryConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+		if err := config.MergeConfFromYAML(conf, extraTelemetryConfig); err != nil {
 			return fmt.Errorf("could not merge extra telemetry config: %w", err)
 		}
 	}
@@ -2363,39 +2361,4 @@ func (*Supervisor) findRandomPort() (int, error) {
 func (s *Supervisor) getTracer() trace.Tracer {
 	tracer := s.telemetrySettings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor")
 	return tracer
-}
-
-// The default koanf behavior is to override lists in the config.
-// Instead, we provide this function, which merges the source and destination config's
-// extension lists by concatenating the two.
-// Will be resolved by https://github.com/open-telemetry/opentelemetry-collector/issues/8754
-func configMergeFunc(src, dest map[string]any) error {
-	srcExtensions := maps.Search(src, []string{"service", "extensions"})
-	destExtensions := maps.Search(dest, []string{"service", "extensions"})
-
-	maps.Merge(src, dest)
-
-	if destExt, ok := destExtensions.([]any); ok {
-		if srcExt, ok := srcExtensions.([]any); ok {
-			if service, ok := dest["service"].(map[string]any); ok {
-				allExt := slices.Concat(destExt, srcExt)
-				// This is a small hack to ensure that the order is consitent and
-				// follows this simple rule: extensions from [src], then from [dest],
-				// in the order that they appear.
-				// We cannot use other simpler methods, like [sort.Strings], because
-				// we work with a `[]any` that cannot be cast to `[]string`.
-				seenExt := make(map[any]struct{}, len(allExt))
-				var uniqueExts []any
-				for _, ext := range allExt {
-					if _, ok := seenExt[ext]; !ok {
-						seenExt[ext] = struct{}{}
-						uniqueExts = append(uniqueExts, ext)
-					}
-				}
-				service["extensions"] = uniqueExts
-			}
-		}
-	}
-
-	return nil
 }

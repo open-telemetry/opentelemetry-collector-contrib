@@ -23,9 +23,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/rawbytes"
-	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -313,11 +310,10 @@ service:
 			require.Equal(t, tt.wantChanged, changed)
 			got := s.cfgState.Load().(*configState).mergedConfig
 
-			k := koanf.New("::")
-			err = k.Load(rawbytes.Provider(tt.wantConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
+			wantConf, err := config.NewConfFromYAML(tt.wantConfig)
 			require.NoError(t, err)
 
-			gotParsed, err := k.Marshal(yaml.Parser())
+			gotParsed, err := config.MarshalConfToYAML(wantConf)
 
 			require.NoError(t, err)
 			require.Equal(t, string(gotParsed), got)
@@ -2773,8 +2769,8 @@ service:
 
 	t.Run("multiple fallback configs are merged in order", func(t *testing.T) {
 		// Base config defines exporters list as [nop], override changes it to [logging].
-		// Koanf overrides lists by default (except service.extensions via configMergeFunc),
-		// so this validates later fallback configs override earlier ones.
+		// Confmap overrides lists by default except service.extensions, so this
+		// validates later fallback configs override earlier ones.
 		basePath := filepath.Join(t.TempDir(), "fallback_base.yaml")
 		overridePath := filepath.Join(t.TempDir(), "fallback_override.yaml")
 		require.NoError(t, os.WriteFile(basePath, []byte(fallbackBaseConfigInput), 0o600))
