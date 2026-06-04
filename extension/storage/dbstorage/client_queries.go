@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 )
 
 const (
@@ -116,6 +117,11 @@ func (d *dbDialect) Close() error {
 
 // newDBDialect creates a new DB dialect which is just a set of DB-specific queries/prepared statements
 func newDBDialect(driverName, tableName string) *dbDialect {
+	// Quote the table name as a SQL identifier to handle special characters
+	// like hyphens in component IDs (e.g. "receiver_awscloudwatch_eks-prod").
+	// Escape any embedded double quotes by doubling them, then wrap in quotes.
+	tableName = `"` + strings.ReplaceAll(tableName, `"`, `""`) + `"`
+
 	queries := getDialectQueries(driverName)
 
 	var aggSize int

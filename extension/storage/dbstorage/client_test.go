@@ -18,6 +18,7 @@ import (
 )
 
 var testTableName = "exporter_otlp_test"
+var testQuotedTableName = `"exporter_otlp_test"`
 
 func Test_newClient(t *testing.T) {
 	t.Run("Should return client with PostgreSQL query(s)", func(t *testing.T) {
@@ -26,11 +27,11 @@ func Test_newClient(t *testing.T) {
 		defer db.Close()
 		queries := getDialectQueries(driverPostgreSQL)
 
-		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryCreateTable, testTableName))).
+		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryCreateTable, testQuotedTableName))).
 			WillReturnResult(sqlmock.NewResult(1, 1))
-		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testTableName)))
-		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testTableName)))
-		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testTableName)))
+		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testQuotedTableName)))
+		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testQuotedTableName)))
+		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testQuotedTableName)))
 
 		_, err = newClient(t.Context(), zap.L(), db, driverPostgreSQL, testTableName)
 		assert.NoError(t, err)
@@ -41,11 +42,11 @@ func Test_newClient(t *testing.T) {
 		defer db.Close()
 		queries := getDialectQueries(driverSQLite)
 
-		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryCreateTable, testTableName))).
+		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryCreateTable, testQuotedTableName))).
 			WillReturnResult(sqlmock.NewResult(1, 1))
-		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testTableName)))
-		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testTableName)))
-		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testTableName)))
+		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testQuotedTableName)))
+		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testQuotedTableName)))
+		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testQuotedTableName)))
 
 		_, err = newClient(t.Context(), zap.L(), db, driverSQLite, testTableName)
 		assert.NoError(t, err)
@@ -59,7 +60,7 @@ func Test_dbStorageClient_Get(t *testing.T) {
 		client, mock := newTestClient(t, driverSQLite)
 		defer client.db.Close()
 
-		mock.ExpectQuery(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testTableName))).
+		mock.ExpectQuery(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testQuotedTableName))).
 			WithArgs("test").
 			WillReturnRows(sqlmock.NewRows([]string{"value"}).AddRow([]byte("value")))
 
@@ -72,7 +73,7 @@ func Test_dbStorageClient_Get(t *testing.T) {
 		defer client.db.Close()
 
 		mock.ExpectBegin()
-		mock.ExpectQuery(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testTableName))).
+		mock.ExpectQuery(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testQuotedTableName))).
 			WithArgs("test").
 			WillReturnRows(sqlmock.NewRows([]string{"value"}).AddRow([]byte("value")))
 		mock.ExpectCommit()
@@ -89,7 +90,7 @@ func Test_dbStorageClient_Get(t *testing.T) {
 		client, mock := newTestClient(t, driverSQLite)
 		defer client.db.Close()
 
-		mock.ExpectQuery(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testTableName))).
+		mock.ExpectQuery(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testQuotedTableName))).
 			WithArgs("test").
 			WillReturnRows(sqlmock.NewRows([]string{"value"}).AddRow([]byte("first")).AddRow([]byte("second")))
 
@@ -101,7 +102,7 @@ func Test_dbStorageClient_Get(t *testing.T) {
 		client, mock := newTestClient(t, driverPostgreSQL)
 		defer client.db.Close()
 
-		mock.ExpectQuery(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testTableName))).
+		mock.ExpectQuery(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testQuotedTableName))).
 			WithArgs("test").
 			WillReturnRows(sqlmock.NewRows([]string{"value"}))
 
@@ -118,7 +119,7 @@ func Test_dbStorageClient_Set(t *testing.T) {
 		client, mock := newTestClient(t, driverSQLite)
 		defer client.db.Close()
 
-		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testTableName))).
+		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testQuotedTableName))).
 			WithArgs("test", []byte("value")).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -129,7 +130,7 @@ func Test_dbStorageClient_Set(t *testing.T) {
 		defer client.db.Close()
 
 		mock.ExpectBegin()
-		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testTableName))).
+		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testQuotedTableName))).
 			WithArgs("test", []byte("value")).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
@@ -144,7 +145,7 @@ func Test_dbStorageClient_Set(t *testing.T) {
 		client, mock := newTestClient(t, driverSQLite)
 		defer client.db.Close()
 
-		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testTableName))).
+		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testQuotedTableName))).
 			WithArgs("test", []byte("value")).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
@@ -159,7 +160,7 @@ func Test_dbStorageClient_Delete(t *testing.T) {
 		client, mock := newTestClient(t, driverSQLite)
 		defer client.db.Close()
 
-		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testTableName))).
+		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testQuotedTableName))).
 			WithArgs("test").
 			WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -170,7 +171,7 @@ func Test_dbStorageClient_Delete(t *testing.T) {
 		defer client.db.Close()
 
 		mock.ExpectBegin()
-		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testTableName))).
+		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testQuotedTableName))).
 			WithArgs("test").
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
@@ -185,7 +186,7 @@ func Test_dbStorageClient_Delete(t *testing.T) {
 		client, mock := newTestClient(t, driverSQLite)
 		defer client.db.Close()
 
-		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testTableName))).
+		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testQuotedTableName))).
 			WithArgs("test").
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
@@ -201,16 +202,16 @@ func Test_dbStorageClient_Batch(t *testing.T) {
 		defer client.db.Close()
 
 		mock.ExpectBegin()
-		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testTableName))).
+		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testQuotedTableName))).
 			WithArgs("test", []byte("value")).
 			WillReturnResult(sqlmock.NewResult(1, 1))
-		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testTableName))).
+		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testQuotedTableName))).
 			WithArgs("test").
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
 		mock.ExpectBegin()
-		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testTableName))).
+		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testQuotedTableName))).
 			WithArgs("test").
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
@@ -227,13 +228,13 @@ func Test_dbStorageClient_Batch(t *testing.T) {
 		defer client.db.Close()
 
 		mock.ExpectBegin()
-		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testTableName))).
+		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testQuotedTableName))).
 			WithArgs("test", []byte("value")).
 			WillReturnResult(sqlmock.NewResult(1, 1))
-		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testTableName))).
+		mock.ExpectExec(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testQuotedTableName))).
 			WithArgs("test").
 			WillReturnResult(sqlmock.NewResult(1, 1))
-		mock.ExpectQuery(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testTableName))).
+		mock.ExpectQuery(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testQuotedTableName))).
 			WithArgs("test").
 			WillReturnError(sql.ErrConnDone)
 		mock.ExpectRollback()
@@ -254,7 +255,7 @@ func Test_dbStorageClient_Batch(t *testing.T) {
 			storage.GetOperation("test2"),
 			storage.GetOperation("test3"),
 		}
-		q := fmt.Sprintf(queries.QueryGetMultiRows, testTableName)
+		q := fmt.Sprintf(queries.QueryGetMultiRows, testQuotedTableName)
 		q1 := strings.Replace(q, "$1", generatePlaceholders(2, 0), 1)
 		q2 := strings.Replace(q, "$1", generatePlaceholders(1, 0), 1)
 
@@ -290,7 +291,7 @@ func Test_dbStorageClient_Batch(t *testing.T) {
 			storage.SetOperation("test2", []byte("second")),
 			storage.SetOperation("test3", []byte("third")),
 		}
-		q := fmt.Sprintf(queries.QuerySetMultiRows, testTableName)
+		q := fmt.Sprintf(queries.QuerySetMultiRows, testQuotedTableName)
 		q = strings.Replace(q, "$1", generatePlaceholders(len(ops), 2), 1)
 
 		mock.ExpectBegin()
@@ -311,7 +312,7 @@ func Test_dbStorageClient_Batch(t *testing.T) {
 			storage.DeleteOperation("test2"),
 			storage.DeleteOperation("test3"),
 		}
-		q := fmt.Sprintf(queries.QueryDeleteMultiRows, testTableName)
+		q := fmt.Sprintf(queries.QueryDeleteMultiRows, testQuotedTableName)
 		q = strings.Replace(q, "$1", generatePlaceholders(len(ops), 0), 1)
 
 		mock.ExpectBegin()
@@ -426,9 +427,9 @@ func newTestClient(t *testing.T, driverName string) (*dbStorageClient, sqlmock.S
 
 	queries := getDialectQueries(driverName)
 
-	mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testTableName)))
-	mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testTableName)))
-	mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testTableName)))
+	mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QueryGetRow, testQuotedTableName)))
+	mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testQuotedTableName)))
+	mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testQuotedTableName)))
 
 	dialect := newDBDialect(driverName, testTableName)
 	err = dialect.Prepare(t.Context(), db)
