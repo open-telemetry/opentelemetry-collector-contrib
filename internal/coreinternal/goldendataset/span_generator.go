@@ -197,7 +197,12 @@ func fillStatus(statusStr PICTInputStatus, spanStatus ptrace.Status) {
 }
 
 func appendDatabaseSQLAttributes(attrMap pcommon.Map) {
-	attrMap.PutStr(string(conventionsv128.DBSystemKey), "mysql")
+	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0DatabaseConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventionsv128.DBSystemKey), "mysql")
+	}
+	if metadata.InternalCoreinternalGoldendatasetEmitV1DatabaseConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.DBSystemNameKey), "mysql")
+	}
 	attrMap.PutStr(string(conventionsv125.DBConnectionStringKey), "Server=shopdb.example.com;Database=ShopDb;Uid=billing_user;TableCache=true;UseCompression=True;MinimumPoolSize=10;MaximumPoolSize=50;")
 	attrMap.PutStr(string(conventionsv125.DBUserKey), "billing_user")
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
@@ -222,7 +227,12 @@ func appendDatabaseSQLAttributes(attrMap pcommon.Map) {
 }
 
 func appendDatabaseNoSQLAttributes(attrMap pcommon.Map) {
-	attrMap.PutStr(string(conventionsv128.DBSystemKey), "mongodb")
+	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0DatabaseConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventionsv128.DBSystemKey), "mongodb")
+	}
+	if metadata.InternalCoreinternalGoldendatasetEmitV1DatabaseConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.DBSystemNameKey), "mongodb")
+	}
 	attrMap.PutStr(string(conventionsv125.DBUserKey), "the_user")
 	attrMap.PutStr(string(conventionsv125.NetPeerNameKey), "mongodb0.example.com")
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
