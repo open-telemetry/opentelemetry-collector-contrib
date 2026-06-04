@@ -73,6 +73,10 @@ attributes:
     description: The database name.
     type: string
     requirement_level: recommended
+  db.query.full_text:
+    description: The full text of the SQL batch containing the query.
+    type: string
+    requirement_level: opt_in
   db.query.text:
     description: The text of the database query being executed.
     type: string
@@ -380,6 +384,7 @@ events:
       - user.name
       - sqlserver.procedure_id
       - sqlserver.procedure_name
+      - db.query.full_text
 
   db.server.top_query:
     enabled: false
@@ -405,6 +410,7 @@ events:
       - sqlserver.procedure_id
       - sqlserver.procedure_name
       - sqlserver.query.last_started
+      - db.query.full_text
 
 metrics:
   sqlserver.batch.request.rate:

@@ -990,6 +990,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		queryPlan         = "query_plan"
 		queryPlanHash     = "query_plan_hash"
 		queryText         = "query_text"
+		fullQueryText     = "full_query_text"
 		rowsReturned      = "total_rows"
 		// the time returned from mssql is in microsecond
 		totalElapsedTime = "total_elapsed_time"
@@ -1066,6 +1067,16 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 			return obfuscated, nil
 		})
+
+		var fullQueryTextVal string
+		if s.config.CollectFullQueryText {
+			obfuscated, err := s.obfuscator.obfuscateFullSQLString(row[fullQueryText])
+			if err != nil {
+				s.logger.Error(fmt.Sprintf("failed to obfuscate full SQL text: %v", err))
+			} else {
+				fullQueryTextVal = obfuscated
+			}
+		}
 
 		databaseNameVal := row[databaseName]
 
@@ -1160,6 +1171,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			row[storedProcedureID],
 			row[storedProcedureName],
 			lastExecutionTimeVal,
+			fullQueryTextVal,
 		)
 	}
 	return resources, errors.Join(errs...)
@@ -1301,6 +1313,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const sessionID = "session_id"
 	const sessionStatus = "session_status"
 	const statementText = "statement_text"
+	const fullQueryTextCol = "full_query_text"
 	const totalElapsedTimeMillisecond = "total_elapsed_time"
 	const transactionID = "transaction_id"
 	const transactionIsolationLevel = "transaction_isolation_level"
@@ -1402,6 +1415,17 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			}
 			return obfuscated, nil
 		}).(string)
+
+		var fullQueryTextVal string
+		if s.config.CollectFullQueryText {
+			obfuscated, err := s.obfuscator.obfuscateFullSQLString(row[fullQueryTextCol])
+			if err != nil {
+				s.logger.Error(fmt.Sprintf("failed to obfuscate full SQL text: %v", err))
+			} else {
+				fullQueryTextVal = obfuscated
+			}
+		}
+
 		networkPeerAddressVal := row[clientAddress]
 		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)
@@ -1479,6 +1503,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			totalElapsedTimeSecondVal, transactionIDVal, transactionIsolationLevelVal,
 			waitResourceVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
 			row[storedProcedureID], row[storedProcedureName],
+			fullQueryTextVal,
 		)
 
 		if !resourcesAdded {

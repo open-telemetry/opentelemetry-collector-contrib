@@ -24,6 +24,9 @@ $defs:
 description: Config defines configuration for a sqlserver receiver.
 type: object
 properties:
+  collect_full_query_text:
+    description: CollectFullQueryText enables collection of the full SQL batch text (st.text) in addition to the statement-level substring already captured in db.query.text. When enabled, db.query.full_text is populated in log records.
+    type: boolean
   computer_name:
     type: string
   datasource:

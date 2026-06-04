@@ -46,6 +46,11 @@ type Config struct {
 
 	QuerySample `mapstructure:"query_sample_collection"`
 
+	// CollectFullQueryText enables collection of the full SQL batch text (st.text) in addition
+	// to the statement-level substring already captured in db.query.text.
+	// When enabled, db.query.full_text is populated in log records.
+	CollectFullQueryText bool `mapstructure:"collect_full_query_text"`
+
 	InstanceName string `mapstructure:"instance_name"`
 	ComputerName string `mapstructure:"computer_name"`
 
