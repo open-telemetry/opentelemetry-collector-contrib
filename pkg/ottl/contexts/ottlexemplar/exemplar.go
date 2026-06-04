@@ -1,11 +1,10 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottldatapoint // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+package ottlexemplar // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -17,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxdatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxotelcol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
@@ -30,23 +30,26 @@ var tcPool = sync.Pool{
 	},
 }
 
-// ContextName is the name of the context for datapoints.
+// ContextName is the name of the context for exemplars.
 // Experimental: *NOTE* this constant is subject to change or removal in the future.
-const ContextName = ctxdatapoint.Name
+const ContextName = ctxexemplar.Name
 
 var (
 	_ ctxresource.Context     = (*TransformContext)(nil)
 	_ ctxscope.Context        = (*TransformContext)(nil)
 	_ ctxmetric.Context       = (*TransformContext)(nil)
+	_ ctxdatapoint.Context    = (*TransformContext)(nil)
+	_ ctxexemplar.Context     = (*TransformContext)(nil)
 	_ zapcore.ObjectMarshaler = (*TransformContext)(nil)
 )
 
-// TransformContext represents a Datapoint and all its hierarchy.
+// TransformContext represents an Exemplar and all its hierarchy.
 type TransformContext struct {
 	resourceMetrics pmetric.ResourceMetrics
 	scopeMetrics    pmetric.ScopeMetrics
 	metric          pmetric.Metric
 	dataPoint       any
+	exemplar        pmetric.Exemplar
 	cache           pcommon.Map
 }
 
@@ -56,40 +59,54 @@ func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) er
 	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.GetInstrumentationScope())))
 	err = errors.Join(err, encoder.AddObject("metric", logging.Metric(tCtx.metric)))
 	err = errors.Join(err, encoder.AddObject("datapoint", logging.DataPoint(tCtx.dataPoint)))
+	err = errors.Join(err, encoder.AddObject("exemplar", logging.Exemplar(tCtx.exemplar)))
 	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
 	return err
 }
 
+// TransformContextOption represents an option for configuring a TransformContext.
 type TransformContextOption func(*TransformContext)
 
-// NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
+// NewTransformContextPtr returns a new TransformContext from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
-func NewTransformContextPtr(resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric, dataPoint any, options ...TransformContextOption) *TransformContext {
+func NewTransformContextPtr(resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric, dataPoint any, exemplar pmetric.Exemplar, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.resourceMetrics = resourceMetrics
 	tCtx.scopeMetrics = scopeMetrics
 	tCtx.metric = metric
 	tCtx.dataPoint = dataPoint
+	tCtx.exemplar = exemplar
 	for _, opt := range options {
 		opt(tCtx)
 	}
 	return tCtx
 }
 
-// Close the current TransformContext.
+// Close returns the TransformContext to the pool.
 // After this function returns this instance cannot be used.
 func (tCtx *TransformContext) Close() {
 	tCtx.resourceMetrics = pmetric.ResourceMetrics{}
 	tCtx.scopeMetrics = pmetric.ScopeMetrics{}
 	tCtx.metric = pmetric.Metric{}
 	tCtx.dataPoint = nil
+	tCtx.exemplar = pmetric.Exemplar{}
 	tCtx.cache.Clear()
 	tcPool.Put(tCtx)
 }
 
-// GetDataPoint returns the datapoint from the TransformContext.
+// GetExemplar returns the exemplar from the TransformContext.
+func (tCtx *TransformContext) GetExemplar() pmetric.Exemplar {
+	return tCtx.exemplar
+}
+
+// GetDataPoint returns the parent datapoint from the TransformContext.
 func (tCtx *TransformContext) GetDataPoint() any {
 	return tCtx.dataPoint
+}
+
+// GetMetric returns the metric from the TransformContext.
+func (tCtx *TransformContext) GetMetric() pmetric.Metric {
+	return tCtx.metric
 }
 
 // GetInstrumentationScope returns the instrumentation scope from the TransformContext.
@@ -102,24 +119,19 @@ func (tCtx *TransformContext) GetResource() pcommon.Resource {
 	return tCtx.resourceMetrics.Resource()
 }
 
-// GetMetric returns the metric from the TransformContext.
-func (tCtx *TransformContext) GetMetric() pmetric.Metric {
-	return tCtx.metric
+// GetScopeSchemaURLItem returns the schema URL item for the scope from the TransformContext.
+func (tCtx *TransformContext) GetScopeSchemaURLItem() ctxcommon.SchemaURLItem {
+	return tCtx.scopeMetrics
+}
+
+// GetResourceSchemaURLItem returns the schema URL item for the resource from the TransformContext.
+func (tCtx *TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem {
+	return tCtx.resourceMetrics
 }
 
 // GetMetrics returns the metric slice from the TransformContext.
 func (tCtx *TransformContext) GetMetrics() pmetric.MetricSlice {
 	return tCtx.scopeMetrics.Metrics()
-}
-
-// GetScopeSchemaURLItem returns the scope schema URL item from the TransformContext.
-func (tCtx *TransformContext) GetScopeSchemaURLItem() ctxcommon.SchemaURLItem {
-	return tCtx.scopeMetrics
-}
-
-// GetResourceSchemaURLItem returns the resource schema URL item from the TransformContext.
-func (tCtx *TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem {
-	return tCtx.resourceMetrics
 }
 
 // EnablePathContextNames enables the support for path's context names on statements.
@@ -130,6 +142,7 @@ func (tCtx *TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem
 func EnablePathContextNames() ottl.Option[*TransformContext] {
 	return func(p *ottl.Parser[*TransformContext]) {
 		ottl.WithPathContextNames[*TransformContext]([]string{
+			ctxexemplar.Name,
 			ctxdatapoint.Name,
 			ctxresource.Name,
 			ctxscope.LegacyName,
@@ -140,6 +153,7 @@ func EnablePathContextNames() ottl.Option[*TransformContext] {
 	}
 }
 
+// StatementSequenceOption represents an option for configuring a statement sequence.
 type StatementSequenceOption func(*ottl.StatementSequence[*TransformContext])
 
 // WithStatementSequenceErrorMode sets the error mode for a statement sequence.
@@ -158,6 +172,7 @@ func NewStatementSequence(statements []*ottl.Statement[*TransformContext], telem
 	return s
 }
 
+// ConditionSequenceOption represents an option for configuring a condition sequence.
 type ConditionSequenceOption func(*ottl.ConditionSequence[*TransformContext])
 
 // WithConditionSequenceErrorMode sets the error mode for a condition sequence.
@@ -176,7 +191,7 @@ func NewConditionSequence(conditions []*ottl.Condition[*TransformContext], telem
 	return c
 }
 
-// NewParser creates a new Datapoint parser with the provided functions and options.
+// NewParser creates a new exemplar parser with the provided functions and options.
 func NewParser(
 	functions map[string]ottl.Factory[*TransformContext],
 	telemetrySettings component.TelemetrySettings,
@@ -191,14 +206,8 @@ func NewParser(
 	)
 }
 
-func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
-	if val != nil {
-		if enum, ok := ctxdatapoint.SymbolTable[*val]; ok {
-			return &enum, nil
-		}
-		return nil, fmt.Errorf("enum symbol, %s, not found", *val)
-	}
-	return nil, errors.New("enum symbol not provided")
+func parseEnum(_ *ottl.EnumSymbol) (*ottl.Enum, error) {
+	return nil, errors.New("exemplar context does not support enums")
 }
 
 func getCache(tCtx *TransformContext) pcommon.Map {
@@ -207,8 +216,8 @@ func getCache(tCtx *TransformContext) pcommon.Map {
 
 func pathExpressionParser(cacheGetter ctxcache.Getter[*TransformContext]) ottl.PathExpressionParser[*TransformContext] {
 	return ctxcommon.PathExpressionParser(
-		ctxdatapoint.Name,
-		ctxdatapoint.DocRef,
+		ctxexemplar.Name,
+		ctxexemplar.DocRef,
 		cacheGetter,
 		map[string]ottl.PathExpressionParser[*TransformContext]{
 			ctxresource.Name:    ctxresource.PathGetSetter[*TransformContext],
@@ -216,6 +225,7 @@ func pathExpressionParser(cacheGetter ctxcache.Getter[*TransformContext]) ottl.P
 			ctxscope.LegacyName: ctxscope.PathGetSetter[*TransformContext],
 			ctxmetric.Name:      ctxmetric.PathGetSetter[*TransformContext],
 			ctxdatapoint.Name:   ctxdatapoint.PathGetSetter[*TransformContext],
+			ctxexemplar.Name:    ctxexemplar.PathGetSetter[*TransformContext],
 			ctxotelcol.Name:     ctxotelcol.PathGetSetter[*TransformContext],
 		})
 }
