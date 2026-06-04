@@ -10,7 +10,7 @@ component: exporter/awss3
 note: Add opt-in webhook notifications for successful uploads. Some object stores (e.g. certain NetApp deployments) don't emit object-created events, or they can't be received where they're needed; this lets the exporter POST a small payload (bucket, key, size) to a configured endpoint after each write. Off unless `notifications.endpoint` is set.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [99999]
+issues: [48866]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
