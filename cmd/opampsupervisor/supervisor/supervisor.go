@@ -122,6 +122,10 @@ type Supervisor struct {
 	// Supervisor's own config.
 	config config.Supervisor
 
+	// configWriteMu is used to synchronize writes to the agent config file.
+	// This ensures that configuration write through the OnConnect callback
+	configWriteMu sync.Mutex
+
 	agentDescription    *atomic.Value
 	availableComponents *atomic.Value
 
@@ -193,6 +197,11 @@ type Supervisor struct {
 	// Default is 30 seconds but can be overridden by the OpAMP server with an OpAMPConnectionSettings message.
 	heartbeatIntervalSeconds uint64
 
+	// initialOpampConnSuccess indicates whether the Supervisor's
+	// OpAMP client achieved a successful connection to the OpAMP server
+	// at least once.
+	initialOpampConnSuccess atomic.Bool
+
 	// extensions hosts configured supervisor extensions. nil when none are configured.
 	extensions *extensions.Extensions
 }
@@ -214,6 +223,7 @@ func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Superviso
 		agentReadyChan:                 make(chan struct{}, 1),
 		metrics:                        &supervisorTelemetry.Metrics{},
 		heartbeatIntervalSeconds:       30,
+		initialOpampConnSuccess:        atomic.Bool{},
 	}
 
 	s.runCtx, s.runCtxCancel = context.WithCancel(ctx)
@@ -375,7 +385,9 @@ func (s *Supervisor) Start(ctx context.Context) error {
 		return fmt.Errorf("cannot start OpAMP client: %w", err)
 	}
 
+	s.configWriteMu.Lock()
 	err = s.loadAndWriteInitialMergedConfig()
+	s.configWriteMu.Unlock()
 	if err != nil {
 		return fmt.Errorf("failed loading initial config: %w", err)
 	}
@@ -675,11 +687,9 @@ func (s *Supervisor) startOpAMPClient() error {
 		InstanceUid:        types.InstanceUid(s.persistentState.InstanceID),
 		RemoteConfigStatus: s.persistentState.GetLastRemoteConfigStatus(),
 		Callbacks: types.Callbacks{
-			OnConnect: func(context.Context) {
-				s.telemetrySettings.Logger.Info("Connected to the server.")
-			},
+			OnConnect: s.onConnect,
 			OnConnectFailed: func(_ context.Context, err error) {
-				s.telemetrySettings.Logger.Error("Failed to connect to the server", zap.Error(err))
+				s.telemetrySettings.Logger.Error("Failed to connect to the OpAMP server", zap.Error(err))
 			},
 			OnError: func(_ context.Context, err *protobufs.ServerErrorResponse) {
 				s.telemetrySettings.Logger.Error("Server returned an error response", zap.String("message", err.ErrorMessage))
@@ -866,6 +876,11 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 	s.telemetrySettings.Logger.Debug("Received OpAMP message from the agent")
 	if message.AgentDescription != nil {
 		s.setAgentDescription(message.AgentDescription)
+		ad := s.agentDescription.Load().(*protobufs.AgentDescription)
+		if err := s.opampClient.SetAgentDescription(ad); err != nil {
+			span.SetStatus(codes.Error, fmt.Sprintf("Could not update agent description: %s", err.Error()))
+			s.telemetrySettings.Logger.Error("The OpAMP client failed to update the agent description", zap.Error(err))
+		}
 	}
 
 	if message.EffectiveConfig != nil {
@@ -1023,6 +1038,32 @@ func (*Supervisor) getHeadersFromSettings(protoHeaders *protobufs.Headers) http.
 	return headers
 }
 
+func (s *Supervisor) onConnect(ctx context.Context) {
+	s.telemetrySettings.Logger.Info("Connected to the OpAMP server.")
+	s.metrics.SetCollectorFallbackStatus(ctx, false)
+
+	if s.initialOpampConnSuccess.Load() {
+		return
+	}
+	s.initialOpampConnSuccess.Store(true)
+
+	fallbackEnabled := s.config.Agent.FallbackEnabled()
+	if !fallbackEnabled {
+		return
+	}
+	s.configWriteMu.Lock()
+	err := s.loadAndWriteInitialMergedConfig()
+	s.configWriteMu.Unlock()
+	if err != nil {
+		s.telemetrySettings.Logger.Error("failed loading initial config", zap.Error(err))
+		return
+	}
+	select {
+	case s.hasNewConfig <- struct{}{}:
+	default:
+	}
+}
+
 func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *protobufs.OpAMPConnectionSettings) error {
 	if settings == nil {
 		s.telemetrySettings.Logger.Debug("Received ConnectionSettings request with nil settings")
@@ -1089,12 +1130,14 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 	return nil
 }
 
-func (s *Supervisor) addSpecialConfigFiles() {
+func (s *Supervisor) addSpecialConfigFiles() []string {
+	configFiles := slices.Clone(s.config.Agent.ConfigFiles)
+
 	missingSpecialConfigFiles := make(map[config.SpecialConfigFile]struct{}, len(config.SpecialConfigFiles))
 	for _, file := range config.SpecialConfigFiles {
 		missingSpecialConfigFiles[file] = struct{}{}
 	}
-	for _, file := range s.config.Agent.ConfigFiles {
+	for _, file := range configFiles {
 		if strings.HasPrefix(file, "$") {
 			delete(missingSpecialConfigFiles, config.SpecialConfigFile(file))
 		}
@@ -1102,18 +1145,19 @@ func (s *Supervisor) addSpecialConfigFiles() {
 
 	// if missing builtin, add it to the beginning
 	if _, ok := missingSpecialConfigFiles[config.SpecialConfigFileOwnTelemetry]; ok {
-		s.config.Agent.ConfigFiles = slices.Insert(s.config.Agent.ConfigFiles, 0, string(config.SpecialConfigFileOwnTelemetry))
+		configFiles = slices.Insert(configFiles, 0, string(config.SpecialConfigFileOwnTelemetry))
 	}
 
 	// if missing opamp extension, add it to the end
 	if _, ok := missingSpecialConfigFiles[config.SpecialConfigFileOpAMPExtension]; ok {
-		s.config.Agent.ConfigFiles = append(s.config.Agent.ConfigFiles, string(config.SpecialConfigFileOpAMPExtension))
+		configFiles = append(configFiles, string(config.SpecialConfigFileOpAMPExtension))
 	}
 
 	// if missing remote config, add it to the end
 	if _, ok := missingSpecialConfigFiles[config.SpecialConfigFileRemoteConfig]; ok {
-		s.config.Agent.ConfigFiles = append(s.config.Agent.ConfigFiles, string(config.SpecialConfigFileRemoteConfig))
+		configFiles = append(configFiles, string(config.SpecialConfigFileRemoteConfig))
 	}
+	return configFiles
 }
 
 func (s *Supervisor) composeNoopPipeline() ([]byte, error) {
@@ -1248,7 +1292,7 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 
 type configComposer func() []byte
 
-func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemoteConfig) ([]byte, error) {
+func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemoteConfig, configFiles []string) ([]byte, error) {
 	conf := koanf.New("::")
 
 	specialConfigComposers := map[config.SpecialConfigFile][]configComposer{
@@ -1257,7 +1301,7 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 		config.SpecialConfigFileRemoteConfig:   s.createRemoteConfigComposers(incomingConfig),
 	}
 
-	for _, file := range s.config.Agent.ConfigFiles {
+	for _, file := range configFiles {
 		// The special config files should always be valid yaml and most of them
 		// will be due to the typing in the Supervisor's config struct and its
 		// validation function.
@@ -1303,6 +1347,15 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 // merging the last received remote config, last received own metrics config,
 // and any local configs.
 func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
+	if !s.initialOpampConnSuccess.Load() && !s.hasAgentConfigState() && s.config.Agent.FallbackEnabled() && !s.hasPersistedRemoteConfig() {
+		err := s.loadAndWriteFallbackConfig()
+		if err != nil {
+			return fmt.Errorf("could not switch to fallback config: %w", err)
+		}
+		s.metrics.SetCollectorFallbackStatus(s.runCtx, true)
+		return nil
+	}
+
 	// load the last received remote config
 	s.loadRemoteConfig()
 
@@ -1316,8 +1369,7 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	}
 
 	// write the initial merged config to disk
-	cfgState := s.cfgState.Load().(*configState)
-	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0o600); err != nil {
+	if err := s.writeAgentConfig(); err != nil {
 		s.telemetrySettings.Logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 
@@ -1349,6 +1401,14 @@ func (s *Supervisor) loadRemoteConfig() {
 	default:
 		s.telemetrySettings.Logger.Error("error while reading last received config", zap.Error(err))
 	}
+}
+
+func (s *Supervisor) hasPersistedRemoteConfig() bool {
+	if !s.config.Capabilities.AcceptsRemoteConfig {
+		return false
+	}
+	_, err := os.Stat(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
+	return err == nil
 }
 
 // loadLastReceivedOwnTelemetryConfig loads the last received own telemetry config from file if the capability is supported.
@@ -1446,7 +1506,7 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 	k := koanf.New("::")
 
-	s.addSpecialConfigFiles()
+	configFiles := s.addSpecialConfigFiles()
 
 	hasIncomingConfigMap := len(incomingConfig.GetConfig().GetConfigMap()) != 0
 	if s.config.Capabilities.AcceptsRemoteConfig && !hasIncomingConfigMap {
@@ -1462,7 +1522,7 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 		}
 	}
 
-	agentConfigBytes, err := s.composeAgentConfigFiles(incomingConfig)
+	agentConfigBytes, err := s.composeAgentConfigFiles(incomingConfig, configFiles)
 	if err != nil {
 		return false, err
 	}
@@ -1513,6 +1573,95 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 	}
 
 	return configChanged, nil
+}
+
+// composeFallbackConfig composes the agent configuration using the fallback config files
+// (merged in order) instead of the remote config. This is used when the OpAMP server is unreachable.
+func (s *Supervisor) composeFallbackConfig() (configChanged bool, err error) {
+	if len(s.config.Agent.StartupFallbackConfigs) == 0 {
+		return false, errors.New("no fallback configs configured")
+	}
+
+	k := koanf.New("::")
+	// Load and merge fallback config files in order. Unlike regular config files,
+	// fallback config load failures are fatal because there is no alternate source.
+	for _, fallbackPath := range s.config.Agent.StartupFallbackConfigs {
+		fallbackConfigBytes, readErr := os.ReadFile(fallbackPath)
+		if readErr != nil {
+			return false, fmt.Errorf("could not read fallback config file: %w", readErr)
+		}
+
+		if err = k.Load(rawbytes.Provider(fallbackConfigBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+			return false, fmt.Errorf("could not load fallback config: %w", err)
+		}
+	}
+
+	if extraCfgErr := s.loadFallbackExtraConfigs(k); extraCfgErr != nil {
+		return false, extraCfgErr
+	}
+
+	newMergedConfigBytes, err := k.Marshal(yaml.Parser())
+	if err != nil {
+		return false, err
+	}
+
+	newConfigState := &configState{
+		mergedConfig:     string(newMergedConfigBytes),
+		configMapIsEmpty: false, // Fallback config is never empty
+	}
+
+	configChanged = false
+
+	oldConfigState := s.cfgState.Swap(newConfigState)
+	if oldConfigState == nil || !oldConfigState.(*configState).equal(newConfigState) {
+		s.telemetrySettings.Logger.Debug("Merged config changed (using fallback).")
+		configChanged = true
+	}
+
+	return configChanged, nil
+}
+
+func (s *Supervisor) loadFallbackExtraConfigs(k *koanf.Koanf) error {
+	if err := k.Load(rawbytes.Provider(s.composeOpAMPExtensionConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+		return fmt.Errorf("could not merge opamp extension config: %w", err)
+	}
+
+	if ownTelemetryConfig := s.composeOwnTelemetryConfig(); ownTelemetryConfig != nil {
+		if err := k.Load(rawbytes.Provider(ownTelemetryConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+			return fmt.Errorf("could not merge own telemetry config: %w", err)
+		}
+	}
+
+	if extraTelemetryConfig := s.composeExtraTelemetryConfig(); extraTelemetryConfig != nil {
+		if err := k.Load(rawbytes.Provider(extraTelemetryConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+			return fmt.Errorf("could not merge extra telemetry config: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// loadAndWriteFallbackConfig switches the agent to use the fallback configuration.
+func (s *Supervisor) loadAndWriteFallbackConfig() error {
+	if s.initialOpampConnSuccess.Load() {
+		s.telemetrySettings.Logger.Debug("Already connected to OpAMP backend, skipping switch to fallback config")
+		return nil
+	}
+
+	s.telemetrySettings.Logger.Info("Switching to fallback configuration")
+
+	// Compose the fallback config
+	_, err := s.composeFallbackConfig()
+	if err != nil {
+		s.telemetrySettings.Logger.Error("Failed to compose fallback config", zap.Error(err))
+		return err
+	}
+	if err := s.writeAgentConfig(); err != nil {
+		s.telemetrySettings.Logger.Error("Failed to write fallback config", zap.Error(err))
+		return err
+	}
+
+	return nil
 }
 
 func (s *Supervisor) handleRestartCommand() error {
@@ -1584,9 +1733,12 @@ func (s *Supervisor) runAgentProcess() {
 			restartTimer.Stop()
 
 			if s.config.Agent.UseHUPConfigReload {
-				if err := s.hupReloadAgent(); err != nil {
-					s.telemetrySettings.Logger.Error("Failed to HUP restart agent", zap.Error(err))
-					s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+				if hupErr := s.hupReloadAgent(); hupErr != nil {
+					s.telemetrySettings.Logger.Error("Failed to HUP restart agent", zap.Error(hupErr))
+					s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, hupErr.Error())
+					if healthErr := s.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: hupErr.Error()}); healthErr != nil {
+						s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(healthErr))
+					}
 					continue
 				}
 			} else {
@@ -1792,6 +1944,14 @@ func (s *Supervisor) writeAgentConfig() error {
 	return nil
 }
 
+func (s *Supervisor) hasAgentConfigState() bool {
+	cfgState, ok := s.cfgState.Load().(*configState)
+	if !ok {
+		return false
+	}
+	return cfgState != nil && cfgState.mergedConfig != ""
+}
+
 // validateConfig validates a configuration string without storing it in cfgState.
 // This prevents race conditions where other goroutines might read invalid config during validation.
 // Returns an error if validation fails.
@@ -1848,6 +2008,7 @@ func (s *Supervisor) Shutdown() {
 	defer s.runCtxCancel()
 
 	s.telemetrySettings.Logger.Debug("Supervisor shutting down...")
+
 	close(s.doneChan)
 
 	// Shutdown in order from producer to consumer (agent -> customMessageForwarder -> local OpAMP server -> client to remote OpAMP server).
