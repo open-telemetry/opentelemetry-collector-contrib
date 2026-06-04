@@ -1418,6 +1418,7 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 func TestSupervisorForwardsUpdatedAgentDescriptionFromCollector(t *testing.T) {
 	const updatedServiceName = "updated-agent-description-e2e"
 	const updatedServiceVersion = "updated-version-e2e"
+	const updatedResourceAttributeValue = "updated-resource-value"
 
 	var agentDescription atomic.Value
 	server := newOpAMPServer(
@@ -1433,7 +1434,10 @@ func TestSupervisorForwardsUpdatedAgentDescriptionFromCollector(t *testing.T) {
 			},
 		})
 
-	s, _ := newSupervisor(t, "agent_description", map[string]string{"url": server.addr})
+	s, _ := newSupervisor(t, "agent_description", map[string]string{
+		"url":                         server.addr,
+		"include_resource_attributes": "true",
+	})
 
 	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
@@ -1456,7 +1460,8 @@ service:
     resource:
       service.name: %s
       service.version: %s
-`, updatedServiceName, updatedServiceVersion))
+      test.resource.attr: %s
+`, updatedServiceName, updatedServiceVersion, updatedResourceAttributeValue))
 	updatedConfigHash := sha256.Sum256(updatedConfig)
 
 	server.sendToSupervisor(&protobufs.ServerToAgent{
@@ -1481,6 +1486,7 @@ service:
 		assert.Equal(c, updatedServiceVersion, identifyingAttributes["service.version"])
 		assert.Equal(c, "my-client-id", identifyingAttributes["client.id"])
 		assert.Equal(c, "prod", nonIdentifyingAttributes["env"])
+		assert.Equal(c, updatedResourceAttributeValue, nonIdentifyingAttributes["test.resource.attr"])
 	}, 10*time.Second, 250*time.Millisecond)
 }
 
