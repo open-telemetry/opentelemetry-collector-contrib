@@ -1,0 +1,24 @@
+display_name: Azure Secrets Manager Authenticator Extension
+type: azuresecretsmanagerauth
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [meebok, frzifus, thomasbaldwin, donny-z]
+
+tests:
+  skip_lifecycle: true
+  goleak:
+    ignore:
+      top:
+        - "internal/poll.runtime_pollWait"
+  config:
+    client_auth:
+      key_vault_uri: "https://my-vault.vault.azure.net"
+      secret_name: "my-secret"
+      username_key: "username"
+      password_key: "password"
+      refresh_interval: "5m"
