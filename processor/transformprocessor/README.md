@@ -702,17 +702,25 @@ Examples:
 
 ### ParseCLF
 
-`ParseCLF(target)`
+`ParseCLF(target, Optional[format])`
 
 The `ParseCLF` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [Common Log Format (CLF)](https://www.w3.org/Daemon/User/Config/Logging.html#common-logfile-format) HTTP access log entry.
 
-`target` is a Getter that returns a string. If the returned string is empty, or cannot be parsed as CLF, an error will be returned.
+`target` is a Getter that returns a string. If the returned string is empty, or cannot be parsed in the selected format, an error will be returned.
 
-The CLF entry is expected to have the form:
+`format` is an optional string that selects the log format to parse. Valid values are:
 
-```
-remotehost rfc931 authuser [date] "request" status bytes
-```
+- `"clf"` (default) — the strict Common Log Format:
+
+  ```
+  remotehost rfc931 authuser [date] "request" status bytes
+  ```
+
+- `"combined"` — the NCSA Combined Log Format used by default in many Apache and nginx configurations, which is CLF with the quoted referer and user-agent appended:
+
+  ```
+  remotehost rfc931 authuser [date] "request" status bytes "referer" "user-agent"
+  ```
 
 The returned map has the following fields:
 
@@ -724,11 +732,13 @@ The returned map has the following fields:
 - `method`, `request_uri`, `protocol` — the parsed components of the request line, only set when the request line is well-formed.
 - `status` — the HTTP status code as an integer.
 - `bytes` — the content-length of the response as an integer. Omitted when CLF reports `-` (e.g. on a 304 response).
+- `referer`, `user_agent` — the referer and user-agent strings, only set when `format` is `"combined"`.
 
 Examples:
 
 - `ParseCLF(body)`
 - `ParseCLF("127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] \"GET /apache_pb.gif HTTP/1.0\" 200 2326")`
+- `ParseCLF(body, "combined")`
 
 ### ParseLEEF
 

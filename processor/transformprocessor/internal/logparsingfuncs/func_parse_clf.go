@@ -17,8 +17,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
 
+// Supported values for the optional Format argument.
+const (
+	clfFormatCLF      = "clf"
+	clfFormatCombined = "combined"
+)
+
 type parseCLFArguments struct {
 	Target ottl.StringGetter[*ottllog.TransformContext]
+	Format ottl.Optional[string]
 }
 
 func NewParseCLFFactory() ottl.Factory[*ottllog.TransformContext] {
@@ -31,10 +38,20 @@ func createParseCLFFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.
 		return nil, errors.New("parseCLFFactory args must be of type *parseCLFArguments")
 	}
 
-	return parseCLF(args.Target), nil
+	format := clfFormatCLF
+	if !args.Format.IsEmpty() {
+		format = args.Format.Get()
+	}
+	switch format {
+	case clfFormatCLF, clfFormatCombined:
+	default:
+		return nil, fmt.Errorf("invalid format %q: must be %q or %q", format, clfFormatCLF, clfFormatCombined)
+	}
+
+	return parseCLF(args.Target, format), nil
 }
 
-func parseCLF(target ottl.StringGetter[*ottllog.TransformContext]) ottl.ExprFunc[*ottllog.TransformContext] {
+func parseCLF(target ottl.StringGetter[*ottllog.TransformContext], format string) ottl.ExprFunc[*ottllog.TransformContext] {
 	return func(ctx context.Context, tCtx *ottllog.TransformContext) (any, error) {
 		source, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -45,7 +62,7 @@ func parseCLF(target ottl.StringGetter[*ottllog.TransformContext]) ottl.ExprFunc
 			return nil, errors.New("cannot parse empty CLF message")
 		}
 
-		return parseCLFMessage(source)
+		return parseCLFMessage(source, format)
 	}
 }
 
@@ -56,10 +73,21 @@ func parseCLF(target ottl.StringGetter[*ottllog.TransformContext]) ottl.ExprFunc
 // See https://www.w3.org/Daemon/User/Config/Logging.html#common-logfile-format
 var clfRegex = regexp.MustCompile(`^(\S+) (\S+) (\S+) \[([^\]]+)\] "([^"]*)" (\S+) (\S+)$`)
 
-func parseCLFMessage(message string) (pcommon.Map, error) {
-	matches := clfRegex.FindStringSubmatch(strings.TrimSpace(message))
+// combinedRegex matches the NCSA Combined Log Format, which is CLF with the
+// quoted referer and user-agent appended:
+//
+//	remotehost rfc931 authuser [date] "request" status bytes "referer" "user-agent"
+var combinedRegex = regexp.MustCompile(`^(\S+) (\S+) (\S+) \[([^\]]+)\] "([^"]*)" (\S+) (\S+) "([^"]*)" "([^"]*)"$`)
+
+func parseCLFMessage(message, format string) (pcommon.Map, error) {
+	re := clfRegex
+	if format == clfFormatCombined {
+		re = combinedRegex
+	}
+
+	matches := re.FindStringSubmatch(strings.TrimSpace(message))
 	if matches == nil {
-		return pcommon.NewMap(), errors.New("invalid CLF message: does not match expected format")
+		return pcommon.NewMap(), fmt.Errorf("invalid CLF message: does not match expected %q format", format)
 	}
 
 	result := pcommon.NewMap()
@@ -91,6 +119,11 @@ func parseCLFMessage(message string) (pcommon.Map, error) {
 			return pcommon.NewMap(), fmt.Errorf("invalid bytes value %q: %w", bytesStr, err)
 		}
 		result.PutInt("bytes", bytesInt)
+	}
+
+	if format == clfFormatCombined {
+		result.PutStr("referer", matches[8])
+		result.PutStr("user_agent", matches[9])
 	}
 
 	return result, nil
