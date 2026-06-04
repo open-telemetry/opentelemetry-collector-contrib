@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/notify"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
 )
 
@@ -61,6 +62,7 @@ func createDefaultConfig() component.Config {
 			RetryMode:         DefaultRetryMode,
 			RetryMaxAttempts:  DefaultRetryMaxAttempts,
 			RetryMaxBackoff:   DefaultRetryMaxBackoff,
+			Notifications:     notify.NewDefaultConfig(),
 		},
 		MarshalerName: "otlp_json",
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
@@ -82,6 +84,7 @@ func createLogsExporter(ctx context.Context,
 		config,
 		s3Exporter.ConsumeLogs,
 		exporterhelper.WithStart(s3Exporter.start),
+		exporterhelper.WithShutdown(s3Exporter.shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
@@ -120,6 +123,7 @@ func createMetricsExporter(ctx context.Context,
 		config,
 		s3Exporter.ConsumeMetrics,
 		exporterhelper.WithStart(s3Exporter.start),
+		exporterhelper.WithShutdown(s3Exporter.shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
@@ -159,6 +163,7 @@ func createTracesExporter(ctx context.Context,
 		config,
 		s3Exporter.ConsumeTraces,
 		exporterhelper.WithStart(s3Exporter.start),
+		exporterhelper.WithShutdown(s3Exporter.shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),

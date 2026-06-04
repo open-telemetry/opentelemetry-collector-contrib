@@ -17,8 +17,21 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/notify"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/upload"
 )
+
+// notifyAdapter bridges notify.Notifier (used by the exporter) to
+// upload.EventNotifier (used by the upload manager). Keeping the bridge in
+// this root-package file avoids pulling internal/notify into internal/upload
+// or vice versa.
+type notifyAdapter struct {
+	n notify.Notifier
+}
+
+func (a *notifyAdapter) Enqueue(ctx context.Context, e upload.NotifyEvent) bool {
+	return a.n.Enqueue(ctx, notify.Event{Bucket: e.Bucket, Key: e.Key, Size: e.Size})
+}
 
 func newUploadManager(
 	ctx context.Context,
@@ -27,6 +40,7 @@ func newUploadManager(
 	metadata string,
 	format string,
 	isCompressed bool,
+	notifier notify.Notifier,
 ) (upload.Manager, error) {
 	configOpts := []func(*config.LoadOptions) error{}
 
@@ -82,6 +96,7 @@ func newUploadManager(
 		managerOpts = append(managerOpts,
 			upload.WithACL(s3types.ObjectCannedACL(conf.S3Uploader.ACL)))
 	}
+	managerOpts = append(managerOpts, upload.WithNotifier(&notifyAdapter{n: notifier}))
 
 	var uniqueKeyFunc func() string
 	switch conf.S3Uploader.UniqueKeyFuncName {

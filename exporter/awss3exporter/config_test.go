@@ -19,6 +19,7 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/notify"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -46,6 +47,7 @@ func TestLoadConfig(t *testing.T) {
 		Encoding:              &encoding,
 		EncodingFileExtension: "baz",
 		S3Uploader: S3UploaderConfig{
+			Notifications:     notify.NewDefaultConfig(),
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
@@ -89,6 +91,7 @@ func TestConfig(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		S3Uploader: S3UploaderConfig{
+			Notifications:       notify.NewDefaultConfig(),
 			Region:              "us-east-1",
 			S3Bucket:            "foo",
 			S3Prefix:            "bar",
@@ -132,6 +135,7 @@ func TestConfigS3StorageClass(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		S3Uploader: S3UploaderConfig{
+			Notifications:     notify.NewDefaultConfig(),
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
@@ -169,6 +173,7 @@ func TestConfigS3ACL(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		S3Uploader: S3UploaderConfig{
+			Notifications:     notify.NewDefaultConfig(),
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
@@ -207,6 +212,7 @@ func TestConfigS3ACLDefined(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		S3Uploader: S3UploaderConfig{
+			Notifications:     notify.NewDefaultConfig(),
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
@@ -247,6 +253,7 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		S3Uploader: S3UploaderConfig{
+			Notifications:     notify.NewDefaultConfig(),
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
@@ -411,6 +418,7 @@ func TestMarshallerName(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		S3Uploader: S3UploaderConfig{
+			Notifications:     notify.NewDefaultConfig(),
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
@@ -430,6 +438,7 @@ func TestMarshallerName(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		S3Uploader: S3UploaderConfig{
+			Notifications:     notify.NewDefaultConfig(),
 			Region:            "us-east-1",
 			S3Bucket:          "bar",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
@@ -465,6 +474,7 @@ func TestCompressionName(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		S3Uploader: S3UploaderConfig{
+			Notifications:     notify.NewDefaultConfig(),
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
@@ -485,6 +495,7 @@ func TestCompressionName(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		S3Uploader: S3UploaderConfig{
+			Notifications:     notify.NewDefaultConfig(),
 			Region:            "us-east-1",
 			S3Bucket:          "bar",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
@@ -505,6 +516,7 @@ func TestCompressionName(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		S3Uploader: S3UploaderConfig{
+			Notifications:     notify.NewDefaultConfig(),
 			Region:            "us-east-1",
 			S3Bucket:          "bar",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
@@ -541,6 +553,7 @@ func TestResourceAttrsToS3(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		S3Uploader: S3UploaderConfig{
+			Notifications:     notify.NewDefaultConfig(),
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
@@ -582,6 +595,7 @@ func TestRetry(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		S3Uploader: S3UploaderConfig{
+			Notifications:     notify.NewDefaultConfig(),
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
@@ -617,6 +631,7 @@ func TestConfigS3UniqueKeyFunc(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		S3Uploader: S3UploaderConfig{
+			Notifications:     notify.NewDefaultConfig(),
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
@@ -656,6 +671,7 @@ func TestConfigS3BasePrefix(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		S3Uploader: S3UploaderConfig{
+			Notifications:     notify.NewDefaultConfig(),
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "bar",
@@ -695,6 +711,7 @@ func TestConfigS3BasePrefixWithResourceAttrs(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		S3Uploader: S3UploaderConfig{
+			Notifications:     notify.NewDefaultConfig(),
 			Region:            "us-east-1",
 			S3Bucket:          "foo",
 			S3Prefix:          "default-metric",
