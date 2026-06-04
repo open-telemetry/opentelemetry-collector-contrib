@@ -23,10 +23,6 @@ Tail Sampling processor.
 This extension is intended to be used with the Tail Sampling processor `tail_storage`
 setting and is useful when in-memory pending-trace state would otherwise be too large.
 
-## Status
-
-This extension is in development and may change.
-
 ## Limitations
 
 Persistence across collector restarts is **not yet supported**. The extension
@@ -42,6 +38,17 @@ before restarting the collector.
 
 ## Example
 
+The following example uses the `span-ingest` sampling strategy with a decision
+cache and Pebble tail storage. The `span-ingest` strategy evaluates each
+incoming span batch immediately on ingest, which avoids accumulating complete
+traces in memory before making a decision. Combined with `tail_storage`, spans
+for traces that are still pending a decision are written to disk rather than
+held in memory, keeping collector memory usage bounded under high load.
+
+The `decision_cache` keeps a record of already-decided trace IDs so that late
+spans for sampled or dropped traces are handled correctly without re-evaluating
+policies.
+
 ```yaml
 extensions:
   pebble_tail_storage:
@@ -49,15 +56,23 @@ extensions:
 
 processors:
   tail_sampling:
-    decision_wait: 30s
+    sampling_strategy: span-ingest
+    decision_wait: 2m
     num_traces: 50000
     expected_new_traces_per_sec: 1000
     tail_storage: pebble_tail_storage
+    decision_cache:
+      sampled_cache_size: 100000
+      non_sampled_cache_size: 100000
     policies:
       - name: errors
         type: status_code
         status_code:
           status_codes: [ERROR]
+      - name: slow
+        type: latency
+        latency:
+          threshold_ms: 1000
 
 service:
   extensions: [pebble_tail_storage]
@@ -65,7 +80,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [tail_sampling]
-      exporters: [debug]
+      exporters: [otlp]
 ```
 
 ## Feature Gate
