@@ -51,7 +51,7 @@ func newStorage(ctx context.Context, storageDir string, logger *zap.Logger) (*st
 	if !created {
 		// Persistence across restarts is not supported.
 		// Enforce this at startup to prevent users from relying on persistence.
-		logger.Warn("existing database detected; dropping it as persistence is not supported")
+		logger.Warn("existing database found; dropping all data as persistence across restarts is not supported")
 		if err := s.drop(ctx); err != nil {
 			return nil, err
 		}

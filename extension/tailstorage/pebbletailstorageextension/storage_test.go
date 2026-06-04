@@ -140,5 +140,5 @@ func TestDropOnStart(t *testing.T) {
 
 	require.NoError(t, second.Shutdown(t.Context()))
 
-	assert.Equal(t, 1, logs.FilterMessage("existing database detected; dropping it as persistence is not supported").Len())
+	assert.Equal(t, 1, logs.FilterMessage("existing database found; dropping all data as persistence across restarts is not supported").Len())
 }
