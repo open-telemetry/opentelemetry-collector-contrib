@@ -31,7 +31,7 @@ type storage struct {
 	marshaler   ptrace.Marshaler
 }
 
-func newStorage(storageDir string, logger *zap.Logger) (*storage, error) {
+func newStorage(ctx context.Context, storageDir string, logger *zap.Logger) (*storage, error) {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
@@ -52,7 +52,7 @@ func newStorage(storageDir string, logger *zap.Logger) (*storage, error) {
 		// Persistence across restarts is not supported.
 		// Enforce this at startup to prevent users from relying on persistence.
 		logger.Warn("existing database detected; dropping it as persistence is not supported")
-		if err := s.drop(); err != nil {
+		if err := s.drop(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -60,7 +60,7 @@ func newStorage(storageDir string, logger *zap.Logger) (*storage, error) {
 	return s, nil
 }
 
-func (s *storage) drop() error {
+func (s *storage) drop(ctx context.Context) error {
 	var lo, hi [traceIDBytes + 1]byte
 	lo[len(lo)-1] = traceIDSeparator
 	for i := range hi {
@@ -73,7 +73,7 @@ func (s *storage) drop() error {
 	if err := s.db.DeleteRange(lo[:], hi[:], pebble.NoSync); err != nil {
 		return err
 	}
-	if err := s.db.Compact(context.Background(), lo[:], hi[:], true); err != nil {
+	if err := s.db.Compact(ctx, lo[:], hi[:], true); err != nil {
 		return err
 	}
 	return nil
