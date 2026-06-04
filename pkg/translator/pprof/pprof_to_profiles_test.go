@@ -22,8 +22,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
-const NanoTimestamp = 1780454666123456789
-
 func TestConvertPprofToPprofile(t *testing.T) {
 	tests := map[string]struct {
 		expectedError error
@@ -799,7 +797,17 @@ func TestDefaultSampleTypeConvention(t *testing.T) {
 			{Type: "inuse_objects", Unit: "count"},
 			{Type: "inuse_space", Unit: "bytes"}, // default (last)
 		},
-		TimeNanos:     NanoTimestamp,
+currentTS := time.Now()
+// Create a pprof profile with multiple sample types.
+// By convention, the last sample type (inuse_space) is the default in pprof.
+prof := &profile.Profile{
+SampleType: []*profile.ValueType{
+{Type: "alloc_objects", Unit: "count"},
+{Type: "alloc_space", Unit: "bytes"},
+{Type: "inuse_objects", Unit: "count"},
+{Type: "inuse_space", Unit: "bytes"}, // default (last)
+},
+		TimeNanos:     currentTS.UnixNano(),
 		DurationNanos: 5000000000,
 		PeriodType:    &profile.ValueType{Type: "space", Unit: "bytes"},
 		Period:        524288,
