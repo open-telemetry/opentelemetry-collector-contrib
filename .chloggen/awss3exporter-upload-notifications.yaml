@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/awss3
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add optional HTTP webhook notifications that POST a payload after each successful S3 upload, configured via a new `notifications` block under `s3uploader`.
+note: Add opt-in webhook notifications for successful uploads. Some object stores (e.g. certain NetApp deployments) don't emit object-created events, or they can't be received where they're needed; this lets the exporter POST a small payload (bucket, key, size) to a configured endpoint after each write. Off unless `notifications.endpoint` is set.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [99999]
