@@ -19,6 +19,7 @@ func Test_parseCLF(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
+		format   string
 		expected map[string]any
 		absent   []string
 	}{
@@ -178,6 +179,44 @@ func Test_parseCLF(t *testing.T) {
 				"bytes":       int64(4294967296),
 			},
 		},
+		{
+			name:   "combined format with referer and user-agent",
+			input:  `127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326 "http://www.example.com/start.html" "Mozilla/4.08 [en] (Win98; I ;Nav)"`,
+			format: clfFormatCombined,
+			expected: map[string]any{
+				"remote_host": "127.0.0.1",
+				"rfc931":      "-",
+				"authuser":    "frank",
+				"timestamp":   "10/Oct/2000:13:55:36 -0700",
+				"request":     "GET /apache_pb.gif HTTP/1.0",
+				"method":      "GET",
+				"request_uri": "/apache_pb.gif",
+				"protocol":    "HTTP/1.0",
+				"status":      int64(200),
+				"bytes":       int64(2326),
+				"referer":     "http://www.example.com/start.html",
+				"user_agent":  "Mozilla/4.08 [en] (Win98; I ;Nav)",
+			},
+		},
+		{
+			name:   "combined format with dash referer and empty user-agent",
+			input:  `192.168.1.1 - - [10/Oct/2000:13:55:36 -0700] "GET / HTTP/1.1" 304 - "-" ""`,
+			format: clfFormatCombined,
+			expected: map[string]any{
+				"remote_host": "192.168.1.1",
+				"rfc931":      "-",
+				"authuser":    "-",
+				"timestamp":   "10/Oct/2000:13:55:36 -0700",
+				"request":     "GET / HTTP/1.1",
+				"method":      "GET",
+				"request_uri": "/",
+				"protocol":    "HTTP/1.1",
+				"status":      int64(304),
+				"referer":     "-",
+				"user_agent":  "",
+			},
+			absent: []string{"bytes"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -187,7 +226,11 @@ func Test_parseCLF(t *testing.T) {
 					return tt.input, nil
 				},
 			}
-			exprFunc := parseCLF(target)
+			format := tt.format
+			if format == "" {
+				format = clfFormatCLF
+			}
+			exprFunc := parseCLF(target, format)
 			result, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
 
@@ -207,22 +250,23 @@ func Test_parseCLF_errors(t *testing.T) {
 	tests := []struct {
 		name          string
 		input         string
+		format        string
 		expectedError string
 	}{
 		{
 			name:          "plain text",
 			input:         "this is not a CLF message",
-			expectedError: "does not match expected format",
+			expectedError: "does not match expected",
 		},
 		{
 			name:          "missing brackets around date",
 			input:         `127.0.0.1 - - 10/Oct/2000:13:55:36 -0700 "GET / HTTP/1.1" 200 42`,
-			expectedError: "does not match expected format",
+			expectedError: "does not match expected",
 		},
 		{
 			name:          "missing quotes around request",
 			input:         `127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] GET / HTTP/1.1 200 42`,
-			expectedError: "does not match expected format",
+			expectedError: "does not match expected",
 		},
 		{
 			name:          "non-numeric status",
@@ -237,7 +281,18 @@ func Test_parseCLF_errors(t *testing.T) {
 		{
 			name:          "too few fields",
 			input:         `127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET / HTTP/1.1" 200`,
-			expectedError: "does not match expected format",
+			expectedError: "does not match expected",
+		},
+		{
+			name:          "combined line rejected by strict clf format",
+			input:         `127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET / HTTP/1.1" 200 42 "-" "curl/8.0"`,
+			expectedError: `does not match expected "clf" format`,
+		},
+		{
+			name:          "plain clf line rejected by combined format",
+			input:         `127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET / HTTP/1.1" 200 42`,
+			format:        clfFormatCombined,
+			expectedError: `does not match expected "combined" format`,
 		},
 	}
 
@@ -248,7 +303,11 @@ func Test_parseCLF_errors(t *testing.T) {
 					return tt.input, nil
 				},
 			}
-			exprFunc := parseCLF(target)
+			format := tt.format
+			if format == "" {
+				format = clfFormatCLF
+			}
+			exprFunc := parseCLF(target, format)
 			_, err := exprFunc(t.Context(), nil)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectedError)
@@ -262,7 +321,7 @@ func Test_parseCLF_empty(t *testing.T) {
 			return "", nil
 		},
 	}
-	exprFunc := parseCLF(target)
+	exprFunc := parseCLF(target, clfFormatCLF)
 	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot parse empty CLF message")
@@ -274,7 +333,7 @@ func Test_parseCLF_target_error(t *testing.T) {
 			return nil, assert.AnError
 		},
 	}
-	exprFunc := parseCLF(target)
+	exprFunc := parseCLF(target, clfFormatCLF)
 	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }
@@ -297,6 +356,51 @@ func Test_createParseCLFFunction(t *testing.T) {
 	result, err := exprFunc(t.Context(), nil)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
+}
+
+func Test_createParseCLFFunction_combinedFormat(t *testing.T) {
+	factory := NewParseCLFFactory()
+
+	args := &parseCLFArguments{
+		Target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+			Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+				return `127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET / HTTP/1.1" 200 42 "http://www.example.com/" "curl/8.0"`, nil
+			},
+		},
+		Format: ottl.NewTestingOptional(clfFormatCombined),
+	}
+
+	exprFunc, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+	require.NoError(t, err)
+
+	result, err := exprFunc(t.Context(), nil)
+	require.NoError(t, err)
+
+	resultMap, ok := result.(pcommon.Map)
+	require.True(t, ok, "result should be pcommon.Map")
+	referer, ok := resultMap.Get("referer")
+	require.True(t, ok)
+	assert.Equal(t, "http://www.example.com/", referer.Str())
+	userAgent, ok := resultMap.Get("user_agent")
+	require.True(t, ok)
+	assert.Equal(t, "curl/8.0", userAgent.Str())
+}
+
+func Test_createParseCLFFunction_invalidFormat(t *testing.T) {
+	factory := NewParseCLFFactory()
+
+	args := &parseCLFArguments{
+		Target: ottl.StandardStringGetter[*ottllog.TransformContext]{
+			Getter: func(context.Context, *ottllog.TransformContext) (any, error) {
+				return "", nil
+			},
+		},
+		Format: ottl.NewTestingOptional("common"),
+	}
+
+	_, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid format "common"`)
 }
 
 func Test_createParseCLFFunction_wrongArgs(t *testing.T) {

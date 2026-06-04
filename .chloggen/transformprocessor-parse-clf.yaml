@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: processor/transform/internal/logparsingfuncs
+component: processor/transformprocessor/internal/logparsingfuncs
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add `ParseCLF` function for parsing Common Log Format (CLF) HTTP access log entries.
@@ -18,7 +18,9 @@ issues: [48349]
 subtext: |
   `ParseCLF` is available in log statements and returns a map with the parsed
   `remote_host`, `rfc931`, `authuser`, `timestamp`, `request`, `method`,
-  `request_uri`, `protocol`, `status`, and `bytes` fields.
+  `request_uri`, `protocol`, `status`, and `bytes` fields. An optional `format`
+  parameter selects between the strict `"clf"` format (default) and the NCSA
+  `"combined"` format, which additionally parses `referer` and `user_agent`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
