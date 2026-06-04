@@ -23,12 +23,12 @@ type oracleInstanceInfo struct {
 	pdbName        string
 }
 
-// isVersionGTE reports whether the detected Oracle major version is >= minMajor.
-func (info oracleInstanceInfo) isVersionGTE(minMajor int) bool {
-	if info.dbVersion == "" {
+// oracleVersionGTE reports whether the given Oracle version string has a major version >= minMajor.
+func oracleVersionGTE(version string, minMajor int) bool {
+	if version == "" {
 		return false
 	}
-	major, err := strconv.Atoi(strings.SplitN(info.dbVersion, ".", 2)[0])
+	major, err := strconv.Atoi(strings.SplitN(version, ".", 2)[0])
 	if err != nil {
 		return false
 	}
@@ -36,23 +36,32 @@ func (info oracleInstanceInfo) isVersionGTE(minMajor int) bool {
 }
 
 const (
-	// minMultitenantVersion is the first Oracle version that supports CDB/PDB.
-	minMultitenantVersion = 12
+	hostingTypeOCI         = "OCI"
+	hostingTypeRDS         = "RDS"
+	hostingTypeSelfManaged = "self-managed"
+
+	instanceInfoDetectTimeout = 5 * time.Second
+
+	instanceCDBSQL            = "SELECT cdb, database_role, open_mode FROM v$database"
+	instanceConNameSQL        = "SELECT sys_context('USERENV','CON_NAME') AS con_name FROM dual"
+	instanceConTypeSQL        = "SELECT decode(sys_context('USERENV','CON_ID'),1,'CDB','PDB') AS con_type FROM dual"
+	instanceOCICDBServicesSQL = "SELECT 1 FROM cdb_services WHERE name LIKE '%oraclecloud%' AND rownum = 1"
+	instanceOCISQL            = "SELECT 1 FROM v$pdbs WHERE cloud_identity LIKE '%oraclecloud%' AND rownum = 1"
+	instanceRDSSQL            = "SELECT SUBSTR(name,1,10) AS path FROM v$datafile WHERE rownum = 1"
+	instanceVersionSQL        = "SELECT version FROM v$instance"
+
 	// minHostingDetectionVersion is the first Oracle version where RDS/OCI probes are reliable.
 	minHostingDetectionVersion = 19
-	instanceInfoDetectTimeout  = 5 * time.Second
+	// minMultitenantVersion is the first Oracle version that supports CDB/PDB.
+	minMultitenantVersion = 12
 
-	instanceVersionSQL        = "SELECT version FROM v$instance"
-	instanceCDBSQL            = "SELECT cdb, database_role, open_mode FROM v$database"
-	instanceConTypeSQL        = "SELECT decode(sys_context('USERENV','CON_ID'),1,'CDB','PDB') FROM dual"
-	instanceConNameSQL        = "SELECT sys_context('USERENV','CON_NAME') FROM dual"
-	instanceRDSSQL            = "SELECT SUBSTR(name,1,10) path FROM v$datafile WHERE rownum = 1"
-	instanceOCISQL            = "SELECT 1 FROM v$pdbs WHERE cloud_identity LIKE '%oraclecloud%' AND rownum = 1"
-	instanceOCICDBServicesSQL = "SELECT 1 FROM cdb_services WHERE name LIKE '%oraclecloud%' AND rownum = 1"
-
-	hostingTypeSelfManaged = "self-managed"
-	hostingTypeRDS         = "RDS"
-	hostingTypeOCI         = "OCI"
+	colCDB          = "CDB"
+	colConName      = "CON_NAME"
+	colConType      = "CON_TYPE"
+	colDatabaseRole = "DATABASE_ROLE"
+	colOpenMode     = "OPEN_MODE"
+	colPath         = "PATH"
+	colVersion      = "VERSION"
 )
 
 // detectInstanceInfo queries Oracle at startup to populate version, role, and multitenant info.
@@ -79,10 +88,10 @@ func detectInstanceInfo(
 			zap.Error(err))
 		return info
 	}
-	info.dbVersion = rows[0]["VERSION"]
+	info.dbVersion = rows[0][colVersion]
 	logger.Info("oracledbreceiver: detected Oracle version", zap.String("version", info.dbVersion))
 
-	if !info.isVersionGTE(minMultitenantVersion) {
+	if !oracleVersionGTE(info.dbVersion, minMultitenantVersion) {
 		logger.Info("oracledbreceiver: Oracle version is pre-12c; multitenant detection skipped",
 			zap.String("version", info.dbVersion))
 		return info
@@ -94,12 +103,12 @@ func detectInstanceInfo(
 			zap.Error(err))
 		return info
 	}
-	info.isCDB = strings.EqualFold(rows[0]["CDB"], "YES")
-	info.databaseRole = rows[0]["DATABASE_ROLE"]
-	info.openMode = rows[0]["OPEN_MODE"]
+	info.isCDB = strings.EqualFold(rows[0][colCDB], "YES")
+	info.databaseRole = rows[0][colDatabaseRole]
+	info.openMode = rows[0][colOpenMode]
 
 	if !info.isCDB {
-		if info.isVersionGTE(minHostingDetectionVersion) {
+		if oracleVersionGTE(info.dbVersion, minHostingDetectionVersion) {
 			info.hostingType = detectHostingType(ctx, rdsClient, ociClient, cdbServicesClient, false, logger)
 		}
 		return info
@@ -111,13 +120,9 @@ func detectInstanceInfo(
 			zap.Error(err))
 		return info
 	}
-	// decode() returns an unnamed column; read the first value regardless of key.
-	for _, v := range rows[0] {
-		info.connectedToPDB = v == "PDB"
-		break
-	}
+	info.connectedToPDB = strings.EqualFold(rows[0][colConType], "PDB")
 
-	if info.isVersionGTE(minHostingDetectionVersion) {
+	if oracleVersionGTE(info.dbVersion, minHostingDetectionVersion) {
 		info.hostingType = detectHostingType(ctx, rdsClient, ociClient, cdbServicesClient, info.connectedToPDB, logger)
 	}
 
@@ -131,10 +136,7 @@ func detectInstanceInfo(
 			zap.Error(err))
 		return info
 	}
-	for _, v := range rows[0] {
-		info.pdbName = v
-		break
-	}
+	info.pdbName = rows[0][colConName]
 	logger.Info("oracledbreceiver: connected to PDB", zap.String("pdb_name", info.pdbName))
 
 	return info
@@ -156,11 +158,8 @@ func detectHostingType(
 		logger.Warn("oracledbreceiver: failed to probe RDS hosting; hosting type detection may be inaccurate",
 			zap.Error(err))
 	} else if len(rows) > 0 {
-		for _, v := range rows[0] {
-			if v == "/rdsdbdata" {
-				return hostingTypeRDS
-			}
-			break
+		if strings.EqualFold(rows[0][colPath], "/rdsdbdata") {
+			return hostingTypeRDS
 		}
 	}
 

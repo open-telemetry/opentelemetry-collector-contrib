@@ -5,6 +5,7 @@ package tracking
 
 import (
 	"context"
+	"math"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -31,10 +32,11 @@ func TestMetricTracker_Convert(t *testing.T) {
 	miSum.MetricValueType = pmetric.NumberDataPointValueTypeDouble
 
 	type subTest struct {
-		name    string
-		value   ValuePoint
-		wantOut DeltaValue
-		noOut   bool
+		name       string
+		value      ValuePoint
+		wantOut    DeltaValue
+		noOut      bool
+		wantReason string
 	}
 
 	future := time.Now().Add(1 * time.Hour)
@@ -87,7 +89,8 @@ func TestMetricTracker_Convert(t *testing.T) {
 						FloatValue:        100,
 						IntValue:          100,
 					},
-					noOut: true,
+					noOut:      true,
+					wantReason: ReasonInitial,
 				},
 				keepSubsequentTest,
 			},
@@ -102,7 +105,8 @@ func TestMetricTracker_Convert(t *testing.T) {
 						FloatValue:        100,
 						IntValue:          100,
 					},
-					noOut: true,
+					noOut:      true,
+					wantReason: ReasonInitial,
 				},
 				keepSubsequentTest,
 			},
@@ -118,7 +122,8 @@ func TestMetricTracker_Convert(t *testing.T) {
 						FloatValue:        100,
 						IntValue:          100,
 					},
-					noOut: true,
+					noOut:      true,
+					wantReason: ReasonInitial,
 				},
 				keepSubsequentTest,
 			},
@@ -160,7 +165,8 @@ func TestMetricTracker_Convert(t *testing.T) {
 						FloatValue:        75.0,
 						IntValue:          75,
 					},
-					noOut: true,
+					noOut:      true,
+					wantReason: ReasonReset,
 				},
 				{
 					name: "Convert delta above previous not Converted Value",
@@ -212,14 +218,16 @@ func TestMetricTracker_Convert(t *testing.T) {
 						Value:    ttt.value,
 					}
 
-					gotOut, valid := m.Convert(floatPoint)
+					gotOut, valid, reason := m.Convert(floatPoint)
+					assert.Equal(t, ttt.wantReason, reason)
 					if !ttt.noOut {
 						require.True(t, valid)
 						assert.Equal(t, ttt.wantOut.StartTimestamp, gotOut.StartTimestamp)
 						assert.Equal(t, ttt.wantOut.FloatValue, gotOut.FloatValue)
 					}
 
-					gotOut, valid = m.Convert(intPoint)
+					gotOut, valid, reason = m.Convert(intPoint)
+					assert.Equal(t, ttt.wantReason, reason)
 					if !ttt.noOut {
 						require.True(t, valid)
 						assert.Equal(t, ttt.wantOut.StartTimestamp, gotOut.StartTimestamp)
@@ -234,7 +242,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 		m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueAuto)
 		invalidID := miIntSum
 		invalidID.MetricType = pmetric.MetricTypeGauge
-		_, valid := m.Convert(MetricPoint{
+		_, valid, reason := m.Convert(MetricPoint{
 			Identity: invalidID,
 			Value: ValuePoint{
 				ObservedTimestamp: 0,
@@ -243,6 +251,20 @@ func TestMetricTracker_Convert(t *testing.T) {
 			},
 		})
 		assert.False(t, valid, "Expected invalid for non cumulative metric")
+		assert.Empty(t, reason, "Expected no reason for non cumulative metric")
+	})
+
+	t.Run("NaN float value", func(t *testing.T) {
+		m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueAuto)
+		_, valid, reason := m.Convert(MetricPoint{
+			Identity: miSum,
+			Value: ValuePoint{
+				ObservedTimestamp: pcommon.NewTimestampFromTime(future),
+				FloatValue:        math.NaN(),
+			},
+		})
+		assert.False(t, valid, "Expected invalid for NaN float value")
+		assert.Empty(t, reason, "Expected no reason for NaN float value")
 	})
 }
 

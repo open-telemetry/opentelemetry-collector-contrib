@@ -31,14 +31,14 @@ func cdbRow(cdb, role, openMode string) []metricRow {
 }
 
 // conTypeRow builds the fakeDbClient response for the USERENV CON_ID query.
-// The decode() column is unnamed; instance_info.go reads the first map value regardless of key.
+// The decode() expression uses AS con_type so the column is keyed by CON_TYPE.
 func conTypeRow(t string) []metricRow {
-	return []metricRow{{"TYPE": t}}
+	return []metricRow{{colConType: t}}
 }
 
 // conNameRow builds the fakeDbClient response for the USERENV CON_NAME query.
 func conNameRow(name string) []metricRow {
-	return []metricRow{{"NAME": name}}
+	return []metricRow{{colConName: name}}
 }
 
 // rdsRow builds the fakeDbClient response for the RDS datafile path probe.
@@ -80,9 +80,9 @@ func emptyClient() dbClient {
 	return &fakeDbClient{Responses: [][]metricRow{{}}}
 }
 
-// -- isVersionGTE unit tests --------------------------------------------------
+// -- oracleVersionGTE unit tests ----------------------------------------------
 
-func TestIsVersionGTE(t *testing.T) {
+func TestOracleVersionGTE(t *testing.T) {
 	tests := []struct {
 		name     string
 		version  string
@@ -103,8 +103,7 @@ func TestIsVersionGTE(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			info := oracleInstanceInfo{dbVersion: tt.version}
-			assert.Equal(t, tt.expected, info.isVersionGTE(tt.minMajor))
+			assert.Equal(t, tt.expected, oracleVersionGTE(tt.version, tt.minMajor))
 		})
 	}
 }

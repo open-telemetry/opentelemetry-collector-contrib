@@ -11,21 +11,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.cpu_time:
         description: "OracledbCPUTimeMetricConfig provides config for the oracledb.cpu_time metric."
         type: object
@@ -33,21 +18,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.data_dictionary.hit_ratio:
         description: "OracledbDataDictionaryHitRatioMetricConfig provides config for the oracledb.data_dictionary.hit_ratio metric."
         type: object
@@ -62,21 +32,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.ddl_statements_parallelized:
         description: "OracledbDdlStatementsParallelizedMetricConfig provides config for the oracledb.ddl_statements_parallelized metric."
         type: object
@@ -84,21 +39,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.dml_locks.limit:
         description: "OracledbDmlLocksLimitMetricConfig provides config for the oracledb.dml_locks.limit metric."
         type: object
@@ -120,21 +60,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.enqueue_deadlocks:
         description: "OracledbEnqueueDeadlocksMetricConfig provides config for the oracledb.enqueue_deadlocks metric."
         type: object
@@ -142,21 +67,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.enqueue_locks.limit:
         description: "OracledbEnqueueLocksLimitMetricConfig provides config for the oracledb.enqueue_locks.limit metric."
         type: object
@@ -192,21 +102,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.executions:
         description: "OracledbExecutionsMetricConfig provides config for the oracledb.executions metric."
         type: object
@@ -214,21 +109,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.hard_parses:
         description: "OracledbHardParsesMetricConfig provides config for the oracledb.hard_parses metric."
         type: object
@@ -236,21 +116,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.logical_reads:
         description: "OracledbLogicalReadsMetricConfig provides config for the oracledb.logical_reads metric."
         type: object
@@ -258,21 +123,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.logons:
         description: "OracledbLogonsMetricConfig provides config for the oracledb.logons metric."
         type: object
@@ -280,21 +130,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.parallel_operations_downgraded_1_to_25_pct:
         description: "OracledbParallelOperationsDowngraded1To25PctMetricConfig provides config for the oracledb.parallel_operations_downgraded_1_to_25_pct metric."
         type: object
@@ -302,21 +137,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.parallel_operations_downgraded_25_to_50_pct:
         description: "OracledbParallelOperationsDowngraded25To50PctMetricConfig provides config for the oracledb.parallel_operations_downgraded_25_to_50_pct metric."
         type: object
@@ -324,21 +144,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.parallel_operations_downgraded_50_to_75_pct:
         description: "OracledbParallelOperationsDowngraded50To75PctMetricConfig provides config for the oracledb.parallel_operations_downgraded_50_to_75_pct metric."
         type: object
@@ -346,21 +151,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.parallel_operations_downgraded_75_to_99_pct:
         description: "OracledbParallelOperationsDowngraded75To99PctMetricConfig provides config for the oracledb.parallel_operations_downgraded_75_to_99_pct metric."
         type: object
@@ -368,21 +158,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.parallel_operations_downgraded_to_serial:
         description: "OracledbParallelOperationsDowngradedToSerialMetricConfig provides config for the oracledb.parallel_operations_downgraded_to_serial metric."
         type: object
@@ -390,21 +165,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.parallel_operations_not_downgraded:
         description: "OracledbParallelOperationsNotDowngradedMetricConfig provides config for the oracledb.parallel_operations_not_downgraded metric."
         type: object
@@ -412,21 +172,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.parse_calls:
         description: "OracledbParseCallsMetricConfig provides config for the oracledb.parse_calls metric."
         type: object
@@ -434,21 +179,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.pga_memory:
         description: "OracledbPgaMemoryMetricConfig provides config for the oracledb.pga_memory metric."
         type: object
@@ -456,6 +186,20 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.physical_io.cache_writes:
+        description: "OracledbPhysicalIoCacheWritesMetricConfig provides config for the oracledb.physical_io.cache_writes metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.physical_io.requests:
+        description: "OracledbPhysicalIoRequestsMetricConfig provides config for the oracledb.physical_io.requests metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
           aggregation_strategy:
             type: string
             enum:
@@ -469,8 +213,36 @@ $defs:
             items:
               type: string
               enum:
-                - "oracle.db.pdb"
+                - "disk.io.direction"
+                - "disk.io.block_size"
             default:
+              - "disk.io.direction"
+              - "disk.io.block_size"
+      oracledb.physical_io.transferred:
+        description: "OracledbPhysicalIoTransferredMetricConfig provides config for the oracledb.physical_io.transferred metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk.io.direction"
+                - "disk.io.type"
+            default:
+              - "disk.io.direction"
+              - "disk.io.type"
       oracledb.physical_read_io_requests:
         description: "OracledbPhysicalReadIoRequestsMetricConfig provides config for the oracledb.physical_read_io_requests metric."
         type: object
@@ -478,21 +250,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.physical_reads:
         description: "OracledbPhysicalReadsMetricConfig provides config for the oracledb.physical_reads metric."
         type: object
@@ -500,21 +257,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.physical_reads_direct:
         description: "OracledbPhysicalReadsDirectMetricConfig provides config for the oracledb.physical_reads_direct metric."
         type: object
@@ -522,21 +264,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.physical_write_io_requests:
         description: "OracledbPhysicalWriteIoRequestsMetricConfig provides config for the oracledb.physical_write_io_requests metric."
         type: object
@@ -544,21 +271,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.physical_writes:
         description: "OracledbPhysicalWritesMetricConfig provides config for the oracledb.physical_writes metric."
         type: object
@@ -566,21 +278,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.physical_writes_direct:
         description: "OracledbPhysicalWritesDirectMetricConfig provides config for the oracledb.physical_writes_direct metric."
         type: object
@@ -588,21 +285,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.processes.limit:
         description: "OracledbProcessesLimitMetricConfig provides config for the oracledb.processes.limit metric."
         type: object
@@ -624,21 +306,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.recycle_bin.limit:
         description: "OracledbRecycleBinLimitMetricConfig provides config for the oracledb.recycle_bin.limit metric."
         type: object
@@ -675,10 +342,34 @@ $defs:
               enum:
                 - "session_type"
                 - "session_status"
-                - "oracle.db.pdb"
             default:
               - "session_type"
               - "session_status"
+      oracledb.sqlnet.io.transferred:
+        description: "OracledbSqlnetIoTransferredMetricConfig provides config for the oracledb.sqlnet.io.transferred metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "network.io.direction"
+                - "destination.type"
+            default:
+              - "network.io.direction"
+              - "destination.type"
       oracledb.storage.usage:
         description: "OracledbStorageUsageMetricConfig provides config for the oracledb.storage.usage metric."
         type: object
@@ -714,7 +405,6 @@ $defs:
               type: string
               enum:
                 - "tablespace_name"
-                - "oracle.db.pdb"
             default:
               - "tablespace_name"
       oracledb.tablespace_size.usage:
@@ -738,7 +428,6 @@ $defs:
               type: string
               enum:
                 - "tablespace_name"
-                - "oracle.db.pdb"
             default:
               - "tablespace_name"
       oracledb.transactions.limit:
@@ -762,21 +451,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
       oracledb.user_rollbacks:
         description: "OracledbUserRollbacksMetricConfig provides config for the oracledb.user_rollbacks metric."
         type: object
@@ -784,27 +458,19 @@ $defs:
           enabled:
             type: boolean
             default: true
-          aggregation_strategy:
-            type: string
-            enum:
-              - "sum"
-              - "avg"
-              - "min"
-              - "max"
-            default: "sum"
-          attributes:
-            type: array
-            items:
-              type: string
-              enum:
-                - "oracle.db.pdb"
-            default:
   events_config:
     description: EventsConfig provides config for oracledb events.
     type: object
     properties:
       db.server.query_sample:
         description: EventConfig provides common config for a  db.server.query_sample event.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      db.server.session.wait_sample:
+        description: EventConfig provides common config for a  db.server.session.wait_sample event.
         type: object
         properties:
           enabled:
