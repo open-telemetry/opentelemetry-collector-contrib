@@ -45,6 +45,7 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage v0.153.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.153.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension v0.153.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension v0.153.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension v0.153.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension v0.153.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension v0.153.0
