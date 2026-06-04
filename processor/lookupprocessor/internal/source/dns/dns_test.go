@@ -6,6 +6,7 @@ package dns
 import (
 	"net"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -237,14 +238,25 @@ func TestLookupA_MultipleResults_Integration(t *testing.T) {
 	val, found, err := source.Lookup(t.Context(), "dns.google")
 	require.NoError(t, err)
 
-	if found {
-		result, ok := val.(string)
-		assert.True(t, ok)
-		assert.NotEmpty(t, result)
-		t.Logf("A multiple results for dns.google: %s", result)
-	} else {
-		t.Log("A lookup for dns.google not found (may be network issue)")
+	if !found {
+		t.Skip("A lookup for dns.google not found (may be network issue)")
 	}
+
+	result, ok := val.(string)
+	require.True(t, ok)
+
+	// Multiple results must be comma-separated
+	ips := strings.Split(result, ",")
+	assert.Greater(t, len(ips), 1, "expected multiple IPs but got single result %q — MultipleResults may not be working", result)
+
+	// Each entry must be a valid IPv4 address (no colons)
+	for _, ip := range ips {
+		ip = strings.TrimSpace(ip)
+		assert.NotEmpty(t, ip)
+		assert.Contains(t, ip, ".", "expected IPv4 address, got %q", ip)
+		assert.NotContains(t, ip, ":", "A record should not return IPv6 addresses, got %q", ip)
+	}
+	t.Logf("A multiple ipv4 results for dns.google (%d IPs): %s", len(ips), result)
 }
 
 func TestLookupPTR_Integration(t *testing.T) {
