@@ -24,6 +24,7 @@ func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 		NewReplacePatternFactory[K](),
 		NewSetFactory[K](),
 		NewTruncateAllFactory[K](),
+		NewStringifyAllFactory[K](),
 	}
 	f = append(f, converters[K]()...)
 
