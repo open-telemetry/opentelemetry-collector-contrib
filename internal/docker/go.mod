@@ -9,9 +9,9 @@ require (
 	github.com/moby/moby/api v1.54.2
 	github.com/moby/moby/client v0.4.1
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/config/configoptional v1.58.1-0.20260514231715-e7f22744c28c
-	go.opentelemetry.io/collector/config/configtls v1.58.1-0.20260514231715-e7f22744c28c
-	go.opentelemetry.io/collector/confmap v1.58.1-0.20260514231715-e7f22744c28c
+	go.opentelemetry.io/collector/config/configoptional v1.59.1-0.20260528150546-fe2cf23ff222
+	go.opentelemetry.io/collector/config/configtls v1.59.1-0.20260528150546-fe2cf23ff222
+	go.opentelemetry.io/collector/confmap v1.59.1-0.20260528150546-fe2cf23ff222
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	golang.org/x/sync v0.20.0
@@ -42,9 +42,9 @@ require (
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.58.1-0.20260514231715-e7f22744c28c // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.152.1-0.20260514231715-e7f22744c28c // indirect
-	go.opentelemetry.io/collector/featuregate v1.58.1-0.20260514231715-e7f22744c28c // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.153.1-0.20260528150546-fe2cf23ff222 // indirect
+	go.opentelemetry.io/collector/featuregate v1.59.1-0.20260528150546-fe2cf23ff222 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
@@ -53,8 +53,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.48.0 // indirect
-	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/crypto v0.52.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
