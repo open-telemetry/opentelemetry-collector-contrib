@@ -72,6 +72,10 @@ func (p *Parser) ParsePattern(pattern string) (*Schema, error) {
 		return nil, err
 	}
 
+	if err := p.expandFactoryMaps(); err != nil {
+		return nil, err
+	}
+
 	return p.schema, nil
 }
 
