@@ -7,6 +7,25 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.153.0
+
+### 💡 Enhancements 💡
+
+- `extension/file_storage`: Implement `storage.Walker` interface to allow iterating over all stored keys with deferred operations (#47755)
+- `internal/kafka`: Remove the dependency on github.com/IBM/sarama from all Kafka components. (#48260)
+  The Kafka exporter, receiver, metrics receiver, and topics observer have all
+  been migrated to github.com/twmb/franz-go. The remaining sarama-based helpers
+  in internal/kafka are removed, and protocol_version validation in
+  pkg/kafka/configkafka now uses franz-go's kversion package.
+  
+- `pkg/pdatatest`: Add `/exists` operator support to `pmetricassert` (#48079)
+- `pkg/pdatatest`: Introduce `pmetricassert` package for MTS-focused YAML metric assertions (#48079)
+- `receiver/file_log`: Improves file-reading efficiency by evicting previously read data from the OS page cache. (#48273)
+  Clears the cache on Linux; acts as a no-op on unsupported platforms.
+- `receiver/http_check`: Enables dynamic metric reaggregation in the HTTP Check receiver. This does not break existing configuration files. (#46358)
+
+<!-- previous-version -->
+
 ## v0.152.0
 
 ### 💡 Enhancements 💡
