@@ -692,7 +692,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 			// it unconditionally. dropTrace is idempotent, so the eviction
 			// already performed by releaseNotSampledTrace when a cache is
 			// configured is harmless.
-			tsp.dropTrace(id, time.Now())
+			tsp.dropTrace(id, trace.decisionTime)
 			continue
 		}
 
