@@ -1,0 +1,14 @@
+type: awsecsattributes
+
+status:
+  class: processor
+  stability:
+    development: [logs, metrics, traces, profiles]
+  distributions: []
+  codeowners:
+    active: [daidokoro, iblancasa, dmitryax]
+
+tests:
+  config:
+    container_id:
+      sources: [container.id]
