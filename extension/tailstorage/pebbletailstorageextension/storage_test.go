@@ -135,8 +135,9 @@ func TestDropOnStart(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, second.Start(t.Context(), componenttest.NewNopHost()))
 
-	_, found := second.(TailStorage).Take(traceID)
-	require.False(t, found)
+	out, err := second.(TailStorage).Take(traceID)
+	require.NoError(t, err)
+	require.Equal(t, 0, out.SpanCount())
 
 	require.NoError(t, second.Shutdown(t.Context()))
 
