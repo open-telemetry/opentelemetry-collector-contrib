@@ -172,6 +172,7 @@ func newSyncBulkIndexer(
 
 type syncBulkIndexer struct {
 	config                 docappender.BulkIndexerConfig
+	pool                   sync.Pool
 	maxFlushBytes          int64
 	flushTimeout           time.Duration
 	retryConfig            RetrySettings
@@ -184,16 +185,16 @@ type syncBulkIndexer struct {
 	suppressConflictErrors bool
 }
 
-// StartSession creates a new docappender.BulkIndexer, and wraps
+// StartSession acquires a docappender.BulkIndexer from the pool and wraps
 // it with a syncBulkIndexerSession.
 func (s *syncBulkIndexer) StartSession(ctx context.Context) bulkIndexerSession {
-	bi, err := docappender.NewBulkIndexer(s.config)
-	if err != nil {
-		// This should never happen in practice:
-		// NewBulkIndexer should only fail if the
-		// config is invalid, and we expect it to
-		// always be valid at this point.
-		return errBulkIndexerSession{err: err}
+	bi, _ := s.pool.Get().(*docappender.BulkIndexer)
+	if bi == nil {
+		var err error
+		bi, err = docappender.NewBulkIndexer(s.config)
+		if err != nil {
+			return errBulkIndexerSession{err: err}
+		}
 	}
 	// Compute the docs received attribute set once per session.
 	// Metadata keys are constant within a single request context,
@@ -240,9 +241,11 @@ func (s *syncBulkIndexerSession) Add(ctx context.Context, index, docID, pipeline
 	return nil
 }
 
-// End is a no-op.
-func (*syncBulkIndexerSession) End() {
-	// TODO acquire docappender.BulkIndexer from pool in StartSession, release here
+func (s *syncBulkIndexerSession) End() {
+	if s.bi.Items() == 0 {
+		s.bi.Reset()
+		s.s.pool.Put(s.bi)
+	}
 }
 
 // Flush flushes documents added to the bulk indexer session.
