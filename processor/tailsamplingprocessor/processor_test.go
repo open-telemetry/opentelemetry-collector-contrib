@@ -1734,22 +1734,22 @@ func (e *extension) ensureStorage() {
 	}
 }
 
-func (e *extension) Append(traceID pcommon.TraceID, rss ptrace.ResourceSpans) {
+func (e *extension) Append(traceID pcommon.TraceID, td ptrace.Traces) error {
 	e.ensureStorage()
-	e.storage.Append(traceID, rss)
 	e.appendCount++
+	return e.storage.Append(traceID, td)
 }
 
-func (e *extension) Take(traceID pcommon.TraceID) (ptrace.Traces, bool) {
+func (e *extension) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 	e.ensureStorage()
 	e.takeCount++
 	return e.storage.Take(traceID)
 }
 
-func (e *extension) Delete(traceID pcommon.TraceID) {
+func (e *extension) Delete(traceID pcommon.TraceID) error {
 	e.ensureStorage()
-	e.storage.Delete(traceID)
 	e.deleteCount++
+	return e.storage.Delete(traceID)
 }
 
 // Start implements component.Component.
