@@ -6,7 +6,7 @@ status:
     development: [logs, metrics, traces, profiles]
   distributions: []
   codeowners:
-    active: [daidokoro, iblancasa, dmitryax]
+    active: [povilasv, iblancasa, dmitryax]
 
 tests:
   config:
