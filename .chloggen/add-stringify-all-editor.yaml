@@ -7,10 +7,10 @@ change_type: 'enhancement'
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add `stringify_all` editor that converts all non-string values in a map to their string representation"
+note: Add `stringify_all` editor that converts all non-string values in a map to their string representation
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [48044]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

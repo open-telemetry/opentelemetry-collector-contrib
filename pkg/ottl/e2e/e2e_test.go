@@ -383,9 +383,6 @@ func Test_e2e_editors(t *testing.T) {
 		{
 			statement: `stringify_all(attributes)`,
 			want: func(tCtx *ottllog.TransformContext) {
-				// stringify_all converts all non-string values to strings
-				// String values remain unchanged (http.method, http.path, http.url, flags, total.string)
-				// Map values become JSON strings, slice values become JSON strings
 				tCtx.GetLogRecord().Attributes().PutStr("conflict", `{"conflict1":{"conflict2":"pass"}}`)
 				tCtx.GetLogRecord().Attributes().PutStr("conflict.conflict1", `{"conflict2":"nopass"}`)
 				tCtx.GetLogRecord().Attributes().PutStr("foo", `{"bar":"pass","flags":"pass","nested":{"test":"pass"},"slice":["val"]}`)

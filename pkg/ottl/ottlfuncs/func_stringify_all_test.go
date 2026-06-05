@@ -27,6 +27,7 @@ func Test_stringifyAll(t *testing.T) {
 	s := input.PutEmptySlice("slice_val")
 	s.AppendEmpty().SetInt(1)
 	s.AppendEmpty().SetInt(2)
+	input.PutEmpty("empty_val")
 
 	tests := []struct {
 		name string
@@ -42,6 +43,7 @@ func Test_stringifyAll(t *testing.T) {
 				expectedMap.PutStr("bytes_val", "AQID")
 				expectedMap.PutStr("map_val", "{\"nested\":\"value\"}")
 				expectedMap.PutStr("slice_val", "[1,2]")
+				expectedMap.PutStr("empty_val", "")
 			},
 		},
 	}
@@ -78,36 +80,6 @@ func Test_stringifyAll(t *testing.T) {
 			assert.Equal(t, expected, scenarioMap)
 		})
 	}
-}
-
-func Test_stringifyAll_allStrings(t *testing.T) {
-	input := pcommon.NewMap()
-	input.PutStr("a", "hello")
-	input.PutStr("b", "world")
-
-	scenarioMap := pcommon.NewMap()
-	input.CopyTo(scenarioMap)
-
-	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
-			return tCtx, nil
-		},
-		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
-			if v, ok := m.(pcommon.Map); ok {
-				v.CopyTo(tCtx)
-				return nil
-			}
-			return errors.New("expected pcommon.Map")
-		},
-	}
-
-	exprFunc, err := StringifyAll(target)
-	require.NoError(t, err)
-
-	_, err = exprFunc(nil, scenarioMap)
-	require.NoError(t, err)
-
-	assert.Equal(t, input, scenarioMap)
 }
 
 func Test_stringifyAll_emptyMap(t *testing.T) {

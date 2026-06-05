@@ -692,19 +692,18 @@ func BenchmarkStringifyAll(b *testing.B) {
 		{"mixed_types_50", newMixedTypesMap(50)},
 	}
 
-	ctx := b.Context()
-
 	for _, scenario := range scenarios {
-		logs := plog.NewLogs()
-		rl := logs.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutStr("service.name", "bench")
-		sl := rl.ScopeLogs().AppendEmpty()
-		lr := sl.LogRecords().AppendEmpty()
-		lr.Body().SetStr("benchmark")
-		scenario.template.CopyTo(lr.Attributes())
-		tCtx := ottllog.NewTransformContextPtr(rl, sl, lr)
-
 		b.Run(scenario.name, func(b *testing.B) {
+			ctx := b.Context()
+			logs := plog.NewLogs()
+			rl := logs.ResourceLogs().AppendEmpty()
+			rl.Resource().Attributes().PutStr("service.name", "bench")
+			sl := rl.ScopeLogs().AppendEmpty()
+			lr := sl.LogRecords().AppendEmpty()
+			lr.Body().SetStr("benchmark")
+			scenario.template.CopyTo(lr.Attributes())
+			tCtx := ottllog.NewTransformContextPtr(rl, sl, lr)
+
 			b.ReportAllocs()
 			b.ResetTimer()
 			for b.Loop() {
@@ -713,8 +712,8 @@ func BenchmarkStringifyAll(b *testing.B) {
 					b.Fatalf("execute failed: %v", err)
 				}
 			}
+			tCtx.Close()
 		})
-		tCtx.Close()
 	}
 }
 
