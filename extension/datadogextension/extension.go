@@ -390,6 +390,7 @@ func newExtension(
 		agentcomponents.WithPayloadsConfig(),
 		// Use ClientConfig proxy settings instead of environment variables
 		agentcomponents.WithProxy(ddConfig),
+		agentcomponents.WithTLSSetting(ddConfig),
 		// logging_frequency required to be set to avoid "divide by zero" error
 		agentcomponents.WithCustomConfig("logging_frequency", 1, pkgconfigmodel.SourceDefault),
 	}
