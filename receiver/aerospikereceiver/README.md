@@ -3,7 +3,6 @@
 
 The Aerospike receiver is designed to collect performance metrics from one or more Aerospike nodes.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
