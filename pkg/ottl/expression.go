@@ -77,12 +77,16 @@ func (g *exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	return getIndexedValue[K](ctx, tCtx, result, g.keys)
+}
 
-	if len(g.keys) == 0 {
-		return result, nil
+func getIndexedValue[K any](ctx context.Context, tCtx K, val any, keys []Key[K]) (any, error) {
+	if len(keys) == 0 {
+		return val, nil
 	}
 
-	for _, k := range g.keys {
+	result := val
+	for _, k := range keys {
 		rawKeyVal, err := resolveIndexKey[K](ctx, tCtx, k)
 		if err != nil {
 			return nil, err
