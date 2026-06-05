@@ -37,11 +37,8 @@ func NewFactory() processor.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		CacheTTL: 300, // 5 minutes
-		Attributes: []string{
-			// by default collect attribute names starting with
-			// aws.ecs, image, docker or labels
-			"^aws.ecs.*|^image.*|^docker.*|^labels.*",
-		},
+		// Attributes is left empty so that, by default, all available ECS
+		// metadata attributes are collected.
 		ContainerID: ContainerID{
 			Sources: []string{"container.id"},
 		},
