@@ -94,7 +94,7 @@ func (r *dnsResolver) start(ctx context.Context) error {
 	}
 
 	r.shutdownWg.Add(1)
-	go r.periodicallyResolve()
+	go r.periodicallyResolve(ctx)
 
 	r.logger.Debug("DNS resolver started",
 		zap.String("hostname", r.hostname), zap.String("port", r.port),
@@ -112,7 +112,7 @@ func (r *dnsResolver) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (r *dnsResolver) periodicallyResolve() {
+func (r *dnsResolver) periodicallyResolve(ctx context.Context) {
 	ticker := time.NewTicker(r.resInterval)
 	defer ticker.Stop()
 	defer r.shutdownWg.Done()
@@ -120,8 +120,8 @@ func (r *dnsResolver) periodicallyResolve() {
 	for {
 		select {
 		case <-ticker.C:
-			ctx, cancel := context.WithTimeout(context.Background(), r.resTimeout)
-			if _, err := r.resolve(ctx); err != nil {
+			innerCtx, cancel := context.WithTimeout(ctx, r.resTimeout)
+			if _, err := r.resolve(innerCtx); err != nil {
 				r.logger.Warn("failed to resolve", zap.Error(err))
 			} else {
 				r.logger.Debug("resolved successfully")

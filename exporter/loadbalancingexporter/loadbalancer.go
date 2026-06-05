@@ -35,8 +35,9 @@ type loadBalancer struct {
 	res  resolver
 	ring *hashRing
 
-	componentFactory componentFactory
-	exporters        map[string]*wrappedExporter
+	componentFactory    componentFactory
+	exporters           map[string]*wrappedExporter
+	exportersShutdownWG sync.WaitGroup
 
 	stopped    bool
 	updateLock sync.RWMutex
@@ -203,9 +204,9 @@ func (lb *loadBalancer) removeExtraExporters(ctx context.Context, endpoints []st
 		if !slices.Contains(endpointsWithPort, existing) {
 			exp := lb.exporters[existing]
 			// Shutdown the exporter asynchronously to avoid blocking the resolver
-			go func() {
+			lb.exportersShutdownWG.Go(func() {
 				_ = exp.Shutdown(ctx)
-			}()
+			})
 			delete(lb.exporters, existing)
 		}
 	}
@@ -218,6 +219,7 @@ func (lb *loadBalancer) Shutdown(ctx context.Context) error {
 	for _, e := range lb.exporters {
 		err = errors.Join(err, e.Shutdown(ctx))
 	}
+	lb.exportersShutdownWG.Wait()
 	return err
 }
 
