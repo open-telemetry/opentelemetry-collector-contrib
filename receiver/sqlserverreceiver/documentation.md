@@ -220,6 +220,14 @@ metrics:
     enabled: true
 ```
 
+### sqlserver.attention.rate
+
+Number of SQL attentions (client cancellation interrupts) received per second.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {attentions}/s | Gauge | Double | Development |
+
 ### sqlserver.computer.uptime
 
 Computer uptime.
@@ -558,6 +566,34 @@ Total number of page lookups.
 | ---- | ----------- | ---------- | --------- |
 | “{lookups}/s” | Gauge | Double | Development |
 
+### sqlserver.parameterization.rate
+
+Rate of auto-parameterization activity, broken down by result.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {params}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.parameterization.result | The result of an auto-parameterization attempt by the SQL Server query optimizer. | Str: ``auto_attempted``, ``safe``, ``unsafe``, ``failed``, ``forced`` | Recommended | - |
+
+### sqlserver.plan.execution.rate
+
+Rate of plan executions, classified by plan guide result.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {executions}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.plan.guidance.result | Whether a SQL plan execution successfully used a matching plan guide (guided) or did not (misguided). | Str: ``guided``, ``misguided`` | Recommended | - |
+
 ### sqlserver.processes.blocked
 
 The number of processes that are currently blocked
@@ -567,6 +603,14 @@ This metric is only available when the receiver is configured to directly connec
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {processes} | Gauge | Int | Development |
+
+### sqlserver.recompilation.ratio
+
+Ratio of SQL recompilations to compilations, expressed as a percentage.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
 
 ### sqlserver.replica.data.rate
 
