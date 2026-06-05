@@ -29,7 +29,7 @@ feature_gates:
     stage: alpha
     description: >-
       When enabled, goldendataset no longer generates spans with deprecated
-      semconv HTTP attributes like http.user_agent.
+      semconv HTTP attributes like http.user_agent and http.client_ip.
     from_version: v0.154.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293
     skip_strict_validation: true
@@ -69,7 +69,8 @@ feature_gates:
     stage: alpha
     description: >-
       When enabled, goldendataset generates spans with user_agent.original
-      (semconv v1.40.0) alongside legacy http.user_agent to support migration.
+      and client.address (semconv v1.40.0) alongside legacy http.user_agent
+      and http.client_ip to support migration.
     from_version: v0.154.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293
     skip_strict_validation: true
