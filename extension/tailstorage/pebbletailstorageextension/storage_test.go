@@ -49,7 +49,7 @@ func appendTraceSpan(storage TailStorage, traceID pcommon.TraceID, spanID pcommo
 	if name != "" {
 		span.SetName(name)
 	}
-	storage.Append(traceID, rss)
+	_ = storage.Append(traceID, td)
 }
 
 func TestAppendThenTake(t *testing.T) {
@@ -58,8 +58,8 @@ func TestAppendThenTake(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	appendTraceSpan(storage, traceID, pcommon.SpanID{}, "")
 
-	out, found := storage.Take(traceID)
-	require.True(t, found)
+	out, err := storage.Take(traceID)
+	require.NoError(t, err)
 	require.Equal(t, 1, out.SpanCount())
 }
 
@@ -76,13 +76,15 @@ func TestDeleteRemovesOnlyTargetTrace(t *testing.T) {
 
 	appendTraceSpan(storage, traceID2, pcommon.SpanID{}, "")
 
-	storage.Delete(traceID1)
+	err := storage.Delete(traceID1)
+	require.NoError(t, err)
 
-	_, found := storage.Take(traceID1)
-	require.False(t, found)
+	out, err := storage.Take(traceID1)
+	require.NoError(t, err)
+	require.Equal(t, 0, out.SpanCount())
 
-	out2, found := storage.Take(traceID2)
-	require.True(t, found)
+	out2, err := storage.Take(traceID2)
+	require.NoError(t, err)
 	require.Equal(t, 1, out2.SpanCount())
 }
 
@@ -98,16 +100,17 @@ func TestTakeRemovesOnlyTargetTrace(t *testing.T) {
 
 	appendTraceSpan(storage, traceID2, pcommon.SpanID{}, "")
 
-	out1, found := storage.Take(traceID1)
-	require.True(t, found)
+	out1, err := storage.Take(traceID1)
+	require.NoError(t, err)
 	require.Equal(t, 3, out1.SpanCount())
 
-	_, found = storage.Take(traceID1)
-	require.False(t, found)
+	out2, err := storage.Take(traceID1)
+	require.NoError(t, err)
+	require.Equal(t, 0, out2.SpanCount())
 
-	out2, found := storage.Take(traceID2)
-	require.True(t, found)
-	require.Equal(t, 1, out2.SpanCount())
+	out3, err := storage.Take(traceID2)
+	require.NoError(t, err)
+	require.Equal(t, 1, out3.SpanCount())
 }
 
 // TestStartErrorsIfDBExists guards the ErrorIfExists Pebble option set in pebble.go,
