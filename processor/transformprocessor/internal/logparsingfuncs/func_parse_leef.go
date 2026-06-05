@@ -244,11 +244,11 @@ func parseLEEFAttributes(attributes, delimiter string) map[string]string {
 func buildLEEFResult(header leefHeader, attributes map[string]string) pcommon.Map {
 	result := pcommon.NewMap()
 
-	result.PutStr("version", header.version)
-	result.PutStr("vendor", header.vendor)
-	result.PutStr("product.name", header.productName)
-	result.PutStr("product.version", header.productVersion)
-	result.PutStr("event.id", header.eventID)
+	result.PutStr("leef.version", header.version)
+	result.PutStr("leef.vendor", header.vendor)
+	result.PutStr("leef.product.name", header.productName)
+	result.PutStr("leef.product.version", header.productVersion)
+	result.PutStr("leef.event.id", header.eventID)
 
 	attrsMap := result.PutEmptyMap("attributes")
 	attrsMap.EnsureCapacity(len(attributes))

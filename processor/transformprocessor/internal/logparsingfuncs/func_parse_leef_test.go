@@ -29,11 +29,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "1.0",
-				"vendor":          "Microsoft",
-				"product.name":    "MSExchange",
-				"product.version": "4.0 SP1",
-				"event.id":        "15345",
+				"leef.version":         "1.0",
+				"leef.vendor":          "Microsoft",
+				"leef.product.name":    "MSExchange",
+				"leef.product.version": "4.0 SP1",
+				"leef.event.id":        "15345",
 				"attributes": map[string]any{
 					"src": "10.50.1.1",
 					"dst": "2.10.20.20",
@@ -49,11 +49,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "1.0",
-				"vendor":          "QRadar",
-				"product.name":    "QRM",
-				"product.version": "1.0",
-				"event.id":        "NEW_PORT_DISCOVERED",
+				"leef.version":         "1.0",
+				"leef.vendor":          "QRadar",
+				"leef.product.name":    "QRM",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "NEW_PORT_DISCOVERED",
 				"attributes": map[string]any{
 					"src":     "7.5.6.6",
 					"dst":     "172.50.123.1",
@@ -73,12 +73,12 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "1.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "EventID",
-				"attributes":      map[string]any{},
+				"leef.version":         "1.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "EventID",
+				"attributes":           map[string]any{},
 			},
 		},
 		{
@@ -89,12 +89,12 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "1.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "EventID",
-				"attributes":      map[string]any{},
+				"leef.version":         "1.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "EventID",
+				"attributes":           map[string]any{},
 			},
 		},
 		{
@@ -105,11 +105,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "2.0",
-				"vendor":          "Lancope",
-				"product.name":    "StealthWatch",
-				"product.version": "1.0",
-				"event.id":        "41",
+				"leef.version":         "2.0",
+				"leef.vendor":          "Lancope",
+				"leef.product.name":    "StealthWatch",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "41",
 				"attributes": map[string]any{
 					"src": "10.0.1.8",
 					"dst": "10.0.0.5",
@@ -125,11 +125,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "2.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "100",
+				"leef.version":         "2.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "100",
 				"attributes": map[string]any{
 					"key1": "val1",
 					"key2": "val2",
@@ -144,11 +144,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "2.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "100",
+				"leef.version":         "2.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "100",
 				"attributes": map[string]any{
 					"key1": "val1",
 					"key2": "val2",
@@ -163,11 +163,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "2.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "100",
+				"leef.version":         "2.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "100",
 				"attributes": map[string]any{
 					"key1": "val1",
 					"key2": "val2",
@@ -182,12 +182,12 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "2.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "EventID",
-				"attributes":      map[string]any{},
+				"leef.version":         "2.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "EventID",
+				"attributes":           map[string]any{},
 			},
 		},
 		{
@@ -198,12 +198,12 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "2.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "EventID",
-				"attributes":      map[string]any{},
+				"leef.version":         "2.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "EventID",
+				"attributes":           map[string]any{},
 			},
 		},
 		{
@@ -214,12 +214,12 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "2.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "EventID",
-				"attributes":      map[string]any{},
+				"leef.version":         "2.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "EventID",
+				"attributes":           map[string]any{},
 			},
 		},
 		{
@@ -230,12 +230,12 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "2.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "EventID",
-				"attributes":      map[string]any{},
+				"leef.version":         "2.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "EventID",
+				"attributes":           map[string]any{},
 			},
 		},
 		{
@@ -246,11 +246,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "1.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "Event",
+				"leef.version":         "1.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "Event",
 				"attributes": map[string]any{
 					"msg": "hello world ",
 					"src": "1.2.3.4",
@@ -265,11 +265,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "1.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "Event",
+				"leef.version":         "1.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "Event",
 				"attributes": map[string]any{
 					"msg": "This is a message with spaces",
 					"src": "1.2.3.4",
@@ -284,11 +284,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "1.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "Event",
+				"leef.version":         "1.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "Event",
 				"attributes": map[string]any{
 					"url": "http://example.com?foo=bar",
 					"src": "1.2.3.4",
@@ -303,11 +303,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "1.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "Event",
+				"leef.version":         "1.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "Event",
 				"attributes": map[string]any{
 					"key1": "",
 					"key2": "value2",
@@ -322,11 +322,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "2.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "100",
+				"leef.version":         "2.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "100",
 				"attributes": map[string]any{
 					"key1": "val1",
 					"key2": "val2",
@@ -341,11 +341,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "1.0",
-				"vendor":          "Vendor-Name_123",
-				"product.name":    "Product.Name",
-				"product.version": "1.0-beta",
-				"event.id":        "Event_ID_123",
+				"leef.version":         "1.0",
+				"leef.vendor":          "Vendor-Name_123",
+				"leef.product.name":    "Product.Name",
+				"leef.product.version": "1.0-beta",
+				"leef.event.id":        "Event_ID_123",
 				"attributes": map[string]any{
 					"key": "value",
 				},
@@ -359,11 +359,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "2.0",
-				"vendor":          "IBM",
-				"product.name":    "QRadar",
-				"product.version": "7.3.2",
-				"event.id":        "Authentication",
+				"leef.version":         "2.0",
+				"leef.vendor":          "IBM",
+				"leef.product.name":    "QRadar",
+				"leef.product.version": "7.3.2",
+				"leef.event.id":        "Authentication",
 				"attributes": map[string]any{
 					"src":           "192.168.1.100",
 					"dst":           "10.0.0.1",
@@ -383,11 +383,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "1.0",
-				"vendor":          "Cisco",
-				"product.name":    "ASA",
-				"product.version": "9.8",
-				"event.id":        "FirewallDeny",
+				"leef.version":         "1.0",
+				"leef.vendor":          "Cisco",
+				"leef.product.name":    "ASA",
+				"leef.product.version": "9.8",
+				"leef.event.id":        "FirewallDeny",
 				"attributes": map[string]any{
 					"src":     "10.1.1.1",
 					"dst":     "192.168.1.1",
@@ -406,11 +406,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "2.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "Event",
+				"leef.version":         "2.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "Event",
 				"attributes": map[string]any{
 					"key1": "val1",
 					"key2": "val2",
@@ -425,11 +425,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "1.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "Event",
+				"leef.version":         "1.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "Event",
 				"attributes": map[string]any{
 					"key1": "val1",
 					"key2": "val2",
@@ -444,11 +444,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "1.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "Event",
+				"leef.version":         "1.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "Event",
 				"attributes": map[string]any{
 					"key1": "val1",
 					"key2": "val2",
@@ -467,11 +467,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "1.0",
-				"vendor":          "IBM",
-				"product.name":    "Guardium",
-				"product.version": "8.0",
-				"event.id":        "Login failures",
+				"leef.version":         "1.0",
+				"leef.vendor":          "IBM",
+				"leef.product.name":    "Guardium",
+				"leef.product.version": "8.0",
+				"leef.event.id":        "Login failures",
 				"attributes": map[string]any{
 					"ruleID":            "20026",
 					"ruleDesc":          "Login failures",
@@ -509,11 +509,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "1.0",
-				"vendor":          "IBM",
-				"product.name":    "Guardium",
-				"product.version": "8.0",
-				"event.id":        "Unauthorized Users on Cardholder Objects - Alert",
+				"leef.version":         "1.0",
+				"leef.vendor":          "IBM",
+				"leef.product.name":    "Guardium",
+				"leef.product.version": "8.0",
+				"leef.event.id":        "Unauthorized Users on Cardholder Objects - Alert",
 				"attributes": map[string]any{
 					"ruleID":            "159",
 					"ruleDesc":          "Unauthorized Users on Cardholder Objects - Alert",
@@ -548,11 +548,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "2.0",
-				"vendor":          "Lancope",
-				"product.name":    "StealthWatch",
-				"product.version": "1.0",
-				"event.id":        "41",
+				"leef.version":         "2.0",
+				"leef.vendor":          "Lancope",
+				"leef.product.name":    "StealthWatch",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "41",
 				"attributes": map[string]any{
 					"src": "10.0.1.8",
 					"dst": "10.0.0.5",
@@ -568,11 +568,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "1.0",
-				"vendor":          "Microsoft",
-				"product.name":    "MSExchange",
-				"product.version": "4.0 SP1",
-				"event.id":        "15345",
+				"leef.version":         "1.0",
+				"leef.vendor":          "Microsoft",
+				"leef.product.name":    "MSExchange",
+				"leef.product.version": "4.0 SP1",
+				"leef.event.id":        "15345",
 				"attributes": map[string]any{
 					"src": "192.0.2.0",
 					"dst": "172.50.123.1",
@@ -587,11 +587,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "2.0",
-				"vendor":          "Microsoft",
-				"product.name":    "MSExchange",
-				"product.version": "2016",
-				"event.id":        "15345",
+				"leef.version":         "2.0",
+				"leef.vendor":          "Microsoft",
+				"leef.product.name":    "MSExchange",
+				"leef.product.version": "2016",
+				"leef.event.id":        "15345",
 				"attributes": map[string]any{
 					"src": "10.50.1.1",
 					"dst": "2.10.20.20",
@@ -607,11 +607,11 @@ func Test_parseLEEF(t *testing.T) {
 				},
 			},
 			expected: map[string]any{
-				"version":         "2.0",
-				"vendor":          "Vendor",
-				"product.name":    "Product",
-				"product.version": "1.0",
-				"event.id":        "EventID",
+				"leef.version":         "2.0",
+				"leef.vendor":          "Vendor",
+				"leef.product.name":    "Product",
+				"leef.product.version": "1.0",
+				"leef.event.id":        "EventID",
 				"attributes": map[string]any{
 					"key1": "a|b",
 					"key2": "val2",
@@ -630,11 +630,11 @@ func Test_parseLEEF(t *testing.T) {
 			require.True(t, ok, "result should be pcommon.Map")
 
 			// Check top-level fields
-			assertMapValue(t, resultMap, "version", tt.expected["version"])
-			assertMapValue(t, resultMap, "vendor", tt.expected["vendor"])
-			assertMapValue(t, resultMap, "product.name", tt.expected["product.name"])
-			assertMapValue(t, resultMap, "product.version", tt.expected["product.version"])
-			assertMapValue(t, resultMap, "event.id", tt.expected["event.id"])
+			assertMapValue(t, resultMap, "leef.version", tt.expected["leef.version"])
+			assertMapValue(t, resultMap, "leef.vendor", tt.expected["leef.vendor"])
+			assertMapValue(t, resultMap, "leef.product.name", tt.expected["leef.product.name"])
+			assertMapValue(t, resultMap, "leef.product.version", tt.expected["leef.product.version"])
+			assertMapValue(t, resultMap, "leef.event.id", tt.expected["leef.event.id"])
 
 			// Check attributes
 			expectedAttrs := tt.expected["attributes"].(map[string]any)
