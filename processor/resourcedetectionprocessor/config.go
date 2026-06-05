@@ -55,9 +55,8 @@ type Config struct {
 	// If > 0, periodically re-run detection for all configured detectors.
 	// When 0 (default), no periodic refresh occurs.
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
-	// Retry controls optional retry/backoff applied to every detection attempt
-	// (including periodic refreshes when RefreshInterval > 0). Set Retry.Enabled
-	// to false to perform a single attempt per detector with no retries.
+	// Retry controls retry/backoff for each detection attempt. Set Enabled=false
+	// to perform a single attempt per detector with no retries.
 	Retry configretry.BackOffConfig `mapstructure:"retry"`
 }
 

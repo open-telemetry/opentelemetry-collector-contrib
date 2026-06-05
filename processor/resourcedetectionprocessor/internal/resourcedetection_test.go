@@ -24,8 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
-// fastRetryConfig is a retry config with very small intervals for use in tests.
-// MaxElapsedTime: 0 means retry indefinitely (bounded by test context).
+// fastRetryConfig: small intervals, no budget cap (bounded by test ctx).
 var fastRetryConfig = configretry.BackOffConfig{
 	Enabled:             true,
 	InitialInterval:     1 * time.Millisecond,
@@ -522,8 +521,6 @@ func TestStartRefreshing_CalledMultipleTimes(t *testing.T) {
 	}
 }
 
-// TestDetectWithRetry verifies that when retry is enabled a detector that
-// fails several times then succeeds returns a correct result.
 func TestDetectWithRetry(t *testing.T) {
 	md := &mockDetector{}
 	res := pcommon.NewResource()
@@ -552,8 +549,6 @@ func TestDetectWithRetry(t *testing.T) {
 	md.AssertNumberOfCalls(t, "Detect", 3)
 }
 
-// TestDetectRetryBudgetExhausted verifies that when MaxElapsedTime is set and
-// the detector never succeeds, Refresh returns an error.
 func TestDetectRetryBudgetExhausted(t *testing.T) {
 	md := &mockDetector{}
 	md.On("Detect").Return(pcommon.NewResource(), "", errors.New("still unavailable"))
@@ -571,8 +566,6 @@ func TestDetectRetryBudgetExhausted(t *testing.T) {
 	assert.Contains(t, err.Error(), "still unavailable")
 }
 
-// TestDetectRetryDisabled verifies that when Retry.Enabled is false, a failing
-// detector is attempted exactly once and the original error is returned.
 func TestDetectRetryDisabled(t *testing.T) {
 	md := &mockDetector{}
 	md.On("Detect").Return(pcommon.NewResource(), "", errors.New("boom")).Once()
@@ -586,9 +579,6 @@ func TestDetectRetryDisabled(t *testing.T) {
 	md.AssertNumberOfCalls(t, "Detect", 1)
 }
 
-// TestDetectResource_JoinedErrors verifies that when multiple detectors fail
-// without context cancellation, all per-detector errors are surfaced in the
-// aggregated error returned by Refresh.
 func TestDetectResource_JoinedErrors(t *testing.T) {
 	md1 := &mockDetector{}
 	md1.On("Detect").Return(pcommon.NewResource(), "", errors.New("err1")).Once()
@@ -605,8 +595,6 @@ func TestDetectResource_JoinedErrors(t *testing.T) {
 	assert.Contains(t, err.Error(), "err2")
 }
 
-// TestDetectRetryContextCancellation verifies that context cancellation during
-// retry causes a clean exit without a panic or goroutine leak.
 func TestDetectRetryContextCancellation(t *testing.T) {
 	md := &mockDetector{}
 	md.On("Detect").Return(pcommon.NewResource(), "", errors.New("not ready"))

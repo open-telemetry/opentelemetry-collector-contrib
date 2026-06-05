@@ -118,9 +118,8 @@ func (p *ResourceProvider) Get(_ context.Context, _ *http.Client) (pcommon.Resou
 
 // Refresh recomputes the resource, replacing any previous result.
 func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) error {
-	// When no explicit retry budget is configured (MaxElapsedTime == 0), bound the
-	// entire detection session to client.Timeout so startup never blocks indefinitely.
-	// When MaxElapsedTime > 0 the caller controls the total retry window instead.
+	// With no explicit retry budget, client.Timeout bounds the whole session so
+	// startup can't hang. With MaxElapsedTime > 0 the retry budget bounds it.
 	if p.backoffConfig.MaxElapsedTime == 0 && client.Timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, client.Timeout)
@@ -199,8 +198,6 @@ func (p *ResourceProvider) detectResource(ctx context.Context, client *http.Clie
 	return res, mergedSchemaURL, returnErr
 }
 
-// attemptContext returns a per-attempt context bounded by timeout, or the parent
-// ctx unchanged if timeout <= 0.
 func attemptContext(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
 	if timeout > 0 {
 		return context.WithTimeout(ctx, timeout)
@@ -208,11 +205,9 @@ func attemptContext(ctx context.Context, timeout time.Duration) (context.Context
 	return ctx, func() {}
 }
 
-// detectWithRetry runs a single detector. When backoffConfig.Enabled is false,
-// it makes a single attempt and returns. Otherwise it applies the configured
-// exponential backoff. Each attempt gets its own context.WithTimeout(ctx, client.Timeout)
-// so per-attempt latency is bounded while the total retry budget is controlled
-// by backoffConfig.MaxElapsedTime.
+// detectWithRetry runs a detector with backoff. With Enabled=false it makes one
+// attempt. With MaxElapsedTime > 0 each attempt is capped at client.Timeout so
+// one hanging attempt can't eat the whole retry budget.
 func (p *ResourceProvider) detectWithRetry(ctx context.Context, client *http.Client, detector Detector, ch chan resourceResult) {
 	if !p.backoffConfig.Enabled {
 		attemptCtx, cancel := attemptContext(ctx, client.Timeout)
@@ -245,8 +240,13 @@ func (p *ResourceProvider) detectWithRetry(ctx context.Context, client *http.Cli
 		schemaURL string
 	}
 
+	perAttemptTimeout := time.Duration(0)
+	if p.backoffConfig.MaxElapsedTime > 0 {
+		perAttemptTimeout = client.Timeout
+	}
+
 	result, err := backoff.Retry(ctx, func() (detectResult, error) {
-		attemptCtx, cancel := attemptContext(ctx, client.Timeout)
+		attemptCtx, cancel := attemptContext(ctx, perAttemptTimeout)
 		defer cancel()
 
 		r, schemaURL, detErr := detector.Detect(attemptCtx)
