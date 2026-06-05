@@ -103,7 +103,7 @@ properties:
     type: string
     format: duration
   retry:
-    description: Retry controls optional retry/backoff for all detectors on startup.
+    description: Retry controls optional retry/backoff applied to every detection attempt (including periodic refreshes).
     $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
 allOf:
   - $ref: detector_config

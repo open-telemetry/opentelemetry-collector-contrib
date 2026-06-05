@@ -199,10 +199,34 @@ func (p *ResourceProvider) detectResource(ctx context.Context, client *http.Clie
 	return res, mergedSchemaURL, returnErr
 }
 
-// detectWithRetry runs a single detector using the configurable backoff.
-// Each attempt gets its own context.WithTimeout(ctx, client.Timeout) so per-attempt
-// latency is bounded while the total retry budget is controlled by backoffConfig.MaxElapsedTime.
+// attemptContext returns a per-attempt context bounded by timeout, or the parent
+// ctx unchanged if timeout <= 0.
+func attemptContext(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	if timeout > 0 {
+		return context.WithTimeout(ctx, timeout)
+	}
+	return ctx, func() {}
+}
+
+// detectWithRetry runs a single detector. When backoffConfig.Enabled is false,
+// it makes a single attempt and returns. Otherwise it applies the configured
+// exponential backoff. Each attempt gets its own context.WithTimeout(ctx, client.Timeout)
+// so per-attempt latency is bounded while the total retry budget is controlled
+// by backoffConfig.MaxElapsedTime.
 func (p *ResourceProvider) detectWithRetry(ctx context.Context, client *http.Client, detector Detector, ch chan resourceResult) {
+	if !p.backoffConfig.Enabled {
+		attemptCtx, cancel := attemptContext(ctx, client.Timeout)
+		defer cancel()
+		r, schemaURL, err := detector.Detect(attemptCtx)
+		if err != nil {
+			p.logger.Warn("failed to detect resource", zap.Error(err))
+			ch <- resourceResult{err: err}
+			return
+		}
+		ch <- resourceResult{resource: r, schemaURL: schemaURL}
+		return
+	}
+
 	sleep := &backoff.ExponentialBackOff{
 		InitialInterval:     p.backoffConfig.InitialInterval,
 		RandomizationFactor: p.backoffConfig.RandomizationFactor,
@@ -222,14 +246,7 @@ func (p *ResourceProvider) detectWithRetry(ctx context.Context, client *http.Cli
 	}
 
 	result, err := backoff.Retry(ctx, func() (detectResult, error) {
-		var attemptCtx context.Context
-		var cancel context.CancelFunc
-		if client.Timeout > 0 {
-			attemptCtx, cancel = context.WithTimeout(ctx, client.Timeout)
-		} else {
-			attemptCtx = ctx
-			cancel = func() {}
-		}
+		attemptCtx, cancel := attemptContext(ctx, client.Timeout)
 		defer cancel()
 
 		r, schemaURL, detErr := detector.Detect(attemptCtx)

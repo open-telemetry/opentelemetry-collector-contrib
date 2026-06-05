@@ -571,6 +571,40 @@ func TestDetectRetryBudgetExhausted(t *testing.T) {
 	assert.Contains(t, err.Error(), "still unavailable")
 }
 
+// TestDetectRetryDisabled verifies that when Retry.Enabled is false, a failing
+// detector is attempted exactly once and the original error is returned.
+func TestDetectRetryDisabled(t *testing.T) {
+	md := &mockDetector{}
+	md.On("Detect").Return(pcommon.NewResource(), "", errors.New("boom")).Once()
+
+	disabledRetry := configretry.BackOffConfig{Enabled: false}
+	p := NewResourceProvider(zap.NewNop(), disabledRetry, md)
+
+	err := p.Refresh(t.Context(), &http.Client{Timeout: 5 * time.Second})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "boom")
+	md.AssertNumberOfCalls(t, "Detect", 1)
+}
+
+// TestDetectResource_JoinedErrors verifies that when multiple detectors fail
+// without context cancellation, all per-detector errors are surfaced in the
+// aggregated error returned by Refresh.
+func TestDetectResource_JoinedErrors(t *testing.T) {
+	md1 := &mockDetector{}
+	md1.On("Detect").Return(pcommon.NewResource(), "", errors.New("err1")).Once()
+
+	md2 := &mockDetector{}
+	md2.On("Detect").Return(pcommon.NewResource(), "", errors.New("err2")).Once()
+
+	disabledRetry := configretry.BackOffConfig{Enabled: false}
+	p := NewResourceProvider(zap.NewNop(), disabledRetry, md1, md2)
+
+	err := p.Refresh(t.Context(), &http.Client{Timeout: 5 * time.Second})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "err1")
+	assert.Contains(t, err.Error(), "err2")
+}
+
 // TestDetectRetryContextCancellation verifies that context cancellation during
 // retry causes a clean exit without a panic or goroutine leak.
 func TestDetectRetryContextCancellation(t *testing.T) {
