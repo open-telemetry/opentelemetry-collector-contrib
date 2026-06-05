@@ -107,6 +107,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					KafkaClusterAlias: ResourceAttributeConfig{Enabled: true},
+					KafkaClusterID:    ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -195,6 +196,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					KafkaClusterAlias: ResourceAttributeConfig{Enabled: false},
+					KafkaClusterID:    ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -231,12 +233,14 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "all_set",
 			want: ResourceAttributesConfig{
 				KafkaClusterAlias: ResourceAttributeConfig{Enabled: true},
+				KafkaClusterID:    ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
 				KafkaClusterAlias: ResourceAttributeConfig{Enabled: false},
+				KafkaClusterID:    ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

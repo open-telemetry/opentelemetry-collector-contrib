@@ -197,6 +197,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			rb := mb.NewResourceBuilder()
 			rb.SetKafkaClusterAlias("kafka.cluster.alias-val")
+			rb.SetKafkaClusterID("kafka.cluster.id-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {

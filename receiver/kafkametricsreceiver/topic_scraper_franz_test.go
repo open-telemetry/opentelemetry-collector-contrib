@@ -105,6 +105,7 @@ func TestTopicScraperFranz_ScrapeMetricValues(t *testing.T) {
 		TopicMatch:           ".*",
 	}
 	cfg.ResourceAttributes.KafkaClusterAlias.Enabled = true
+	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
 	cfg.Metrics.KafkaTopicLogRetentionPeriod.Enabled = true
 	cfg.Metrics.KafkaTopicLogRetentionSize.Enabled = true
 	cfg.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
@@ -123,6 +124,11 @@ func TestTopicScraperFranz_ScrapeMetricValues(t *testing.T) {
 	val, ok := rm.Resource().Attributes().Get("kafka.cluster.alias")
 	require.True(t, ok)
 	require.Equal(t, "franz-topics", val.Str())
+
+	// cluster id (opt-in, enabled above) is discovered from cluster metadata ("kfake" by default)
+	idVal, ok := rm.Resource().Attributes().Get("kafka.cluster.id")
+	require.True(t, ok)
+	require.Equal(t, "kfake", idVal.Str())
 
 	// kfake topic config defaults
 	const (
