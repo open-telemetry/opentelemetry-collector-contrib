@@ -88,7 +88,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			d.rb.SetFromCallable(d.rb.SetK8sClusterName, d.detector.GKEClusterName),
 			d.rb.SetFromCallable(d.rb.SetHostID, d.detector.GKEHostID),
 		)
-		// GCEHostname is fallible on GKE, since it's not available when using workload identity.
+		// GCEHostName is fetched on a best-effort basis; it may not be available in all GKE configurations.
 		if v, err := d.detector.GCEHostName(); err == nil {
 			d.rb.SetHostName(v)
 		} else {
