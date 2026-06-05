@@ -79,10 +79,11 @@ var queryResponses = map[string][]metricRow{
 		{"RESOURCE_NAME": "processes", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "100", "LIMIT_VALUE": "100"},
 		{"RESOURCE_NAME": "locks", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "-1", "LIMIT_VALUE": "-1"},
 	},
-	tablespaceUsageSQL:  {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
-	dataDictHitRatioSQL: {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
-	recycleBinSizeSQL:   {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
-	storageUsageSQL:     {{"USED_DB_SIZE": "5368709120", "ALLOCATED_DB_SIZE": "10737418240"}},
+	tablespaceUsageSQL:        {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192", "STATUS": "ONLINE"}},
+	tablespaceUsageWithMaxSQL: {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192", "STATUS": "ONLINE", "MAX_BYTES": "1073741824"}},
+	dataDictHitRatioSQL:       {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
+	recycleBinSizeSQL:         {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
+	storageUsageSQL:           {{"USED_DB_SIZE": "5368709120", "ALLOCATED_DB_SIZE": "10737418240"}},
 }
 
 var cacheValue = map[string]int64{
@@ -310,6 +311,93 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 				assert.InDelta(t, 13107200.0, metricMap["oracledb.recycle_bin.limit"], floatDelta)
 				assert.InDelta(t, 5368709120.0, metricMap["oracledb.storage.usage"], floatDelta)
 				assert.InDelta(t, 0.5, metricMap["oracledb.storage.utilization"], floatDelta)
+			}
+		})
+	}
+}
+
+func TestScraper_ScrapeTablespaceHealthMetrics(t *testing.T) {
+	const floatDelta = 0.0001
+
+	tests := []struct {
+		name       string
+		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted  string
+	}{
+		{
+			name: "valid tablespace health metrics",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{
+					Responses: [][]metricRow{
+						queryResponses[s],
+					},
+				}
+			},
+		},
+		{
+			name: "bad max_bytes value",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == tablespaceUsageWithMaxSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{
+							{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192", "STATUS": "ONLINE", "MAX_BYTES": "bad"},
+						},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{
+					queryResponses[s],
+				}}
+			},
+			errWanted: `failed to parse int64 for OracledbTablespaceLimit, value was bad`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
+			cfg.Metrics.OracledbTablespaceUtilization.Enabled = true
+			cfg.Metrics.OracledbTablespaceStatus.Enabled = true
+			cfg.Metrics.OracledbTablespaceLimit.Enabled = true
+
+			scrpr := oracleScraper{
+				logger: zap.NewNop(),
+				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc:   test.dbclientFn,
+				id:                   component.ID{},
+				metricsBuilderConfig: cfg,
+			}
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(t.Context()))
+			}()
+			require.NoError(t, err)
+			m, err := scrpr.scrape(t.Context())
+			if test.errWanted != "" {
+				require.True(t, scrapererror.IsPartialScrapeError(err))
+				require.Contains(t, err.Error(), test.errWanted)
+			} else {
+				require.NoError(t, err)
+				metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+
+				doubleMetricMap := make(map[string]float64)
+				intMetricMap := make(map[string]int64)
+				for i := 0; i < metrics.Len(); i++ {
+					metric := metrics.At(i)
+					if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
+						dp := metric.Gauge().DataPoints().At(0)
+						if dp.ValueType() == pmetric.NumberDataPointValueTypeDouble {
+							doubleMetricMap[metric.Name()] = dp.DoubleValue()
+						} else {
+							intMetricMap[metric.Name()] = dp.IntValue()
+						}
+					}
+				}
+				// utilization = 111288 / 3518587 ≈ 0.031629
+				assert.InDelta(t, 0.031629, doubleMetricMap["oracledb.tablespace.utilization"], floatDelta)
+				assert.Equal(t, int64(1), intMetricMap["oracledb.tablespace.status"])
+				assert.Equal(t, int64(1073741824), intMetricMap["oracledb.tablespace.limit"])
 			}
 		})
 	}

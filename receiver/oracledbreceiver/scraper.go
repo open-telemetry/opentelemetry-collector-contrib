@@ -82,10 +82,19 @@ const (
 
 	sessionCountSQL         = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
 	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
-	tablespaceUsageSQL      = `
-		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE
-		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
-		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
+	// tablespaceUsageSQL is the base query; includes ts.STATUS for oracledb.tablespace.status.
+	tablespaceUsageSQL = `
+		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE, ts.STATUS
+		FROM DBA_TABLESPACE_USAGE_METRICS um
+		INNER JOIN DBA_TABLESPACES ts ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
+	// tablespaceUsageWithMaxSQL extends the base query with a LEFT JOIN on DBA_DATA_FILES for autoextend max size.
+	tablespaceUsageWithMaxSQL = `
+		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE, ts.STATUS,
+		       NVL(mxb.MAX_BYTES, 0) as MAX_BYTES
+		FROM DBA_TABLESPACE_USAGE_METRICS um
+		INNER JOIN DBA_TABLESPACES ts ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME
+		LEFT JOIN (SELECT TABLESPACE_NAME, SUM(NVL(MAXBYTES, 0)) as MAX_BYTES FROM DBA_DATA_FILES GROUP BY TABLESPACE_NAME) mxb
+		    ON um.TABLESPACE_NAME = mxb.TABLESPACE_NAME`
 	dataDictHitRatioSQL = "SELECT (1-(SUM(getmisses)/SUM(gets))) * 100 as DATA_DICTIONARY_HIT_RATIO FROM v$rowcache WHERE getmisses + gets <> 0"
 	recycleBinSizeSQL   = "SELECT nvl(SUM(SPACE*(SELECT value FROM v$parameter WHERE name = 'db_block_size')),0) as RECYCLE_BIN_SIZE_BYTES FROM dba_recyclebin"
 	storageUsageSQL     = "WITH total_bytes AS (SELECT SUM(bytes) AS total FROM dba_data_files) SELECT (total - (SELECT SUM(bytes) FROM dba_free_space)) AS USED_DB_SIZE, total AS ALLOCATED_DB_SIZE FROM total_bytes"
@@ -217,6 +226,14 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
 
+// buildTablespaceSQL returns the tablespace query, omitting the DBA_DATA_FILES join when oracledb.tablespace.limit is disabled.
+func (s *oracleScraper) buildTablespaceSQL() string {
+	if s.metricsBuilderConfig.Metrics.OracledbTablespaceLimit.Enabled {
+		return tablespaceUsageWithMaxSQL
+	}
+	return tablespaceUsageSQL
+}
+
 func (s *oracleScraper) start(context.Context, component.Host) error {
 	s.startTime = pcommon.NewTimestampFromTime(time.Now())
 	var err error
@@ -227,7 +244,7 @@ func (s *oracleScraper) start(context.Context, component.Host) error {
 	s.statsClient = s.clientProviderFunc(s.db, statsSQL, s.logger)
 	s.sessionCountClient = s.clientProviderFunc(s.db, sessionCountSQL, s.logger)
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
-	s.tablespaceUsageClient = s.clientProviderFunc(s.db, tablespaceUsageSQL, s.logger)
+	s.tablespaceUsageClient = s.clientProviderFunc(s.db, s.buildTablespaceSQL(), s.logger)
 	s.samplesQueryClient = s.clientProviderFunc(s.db, samplesQuery, s.logger)
 	s.sessionEventClient = s.clientProviderFunc(s.db, sessionEventQuery, s.logger)
 	s.dataDictHitRatioClient = s.clientProviderFunc(s.db, dataDictHitRatioSQL, s.logger)
@@ -566,10 +583,13 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	if s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeUsage.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeLimit.Enabled {
+		s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeLimit.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTablespaceUtilization.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTablespaceStatus.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTablespaceLimit.Enabled {
 		rows, err := s.tablespaceUsageClient.metricRows(ctx)
 		if err != nil {
-			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", tablespaceUsageSQL, err))
+			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing tablespace usage query: %w", err))
 		} else {
 			now := pcommon.NewTimestampFromTime(time.Now())
 			for _, row := range rows {
@@ -606,6 +626,29 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					s.mb.RecordOracledbTablespaceSizeLimitDataPoint(now, -1, tablespaceName)
 				} else {
 					s.mb.RecordOracledbTablespaceSizeLimitDataPoint(now, tablespaceSizeBlockCount*blockSize, tablespaceName)
+				}
+
+				if s.metricsBuilderConfig.Metrics.OracledbTablespaceUtilization.Enabled &&
+					tablespaceSizeBlockCount > 0 {
+					utilization := float64(usedSpaceBlockCount) / float64(tablespaceSizeBlockCount)
+					s.mb.RecordOracledbTablespaceUtilizationDataPoint(now, utilization, tablespaceName)
+				}
+
+				if s.metricsBuilderConfig.Metrics.OracledbTablespaceStatus.Enabled {
+					tablespaceStatus := strings.ToLower(row["STATUS"])
+					if tablespaceStatus == "" {
+						tablespaceStatus = "unknown"
+					}
+					s.mb.RecordOracledbTablespaceStatusDataPoint(now, 1, tablespaceName, tablespaceStatus)
+				}
+
+				if s.metricsBuilderConfig.Metrics.OracledbTablespaceLimit.Enabled {
+					maxBytes, err := strconv.ParseInt(row["MAX_BYTES"], 10, 64)
+					if err != nil {
+						scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbTablespaceLimit, value was %s: %w", row["MAX_BYTES"], err))
+						continue
+					}
+					s.mb.RecordOracledbTablespaceLimitDataPoint(now, maxBytes, tablespaceName)
 				}
 			}
 		}

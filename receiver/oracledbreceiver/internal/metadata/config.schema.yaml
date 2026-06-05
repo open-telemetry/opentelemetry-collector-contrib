@@ -384,6 +384,77 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.tablespace.limit:
+        description: "OracledbTablespaceLimitMetricConfig provides config for the oracledb.tablespace.limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "tablespace_name"
+            default:
+              - "tablespace_name"
+      oracledb.tablespace.status:
+        description: "OracledbTablespaceStatusMetricConfig provides config for the oracledb.tablespace.status metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "tablespace_name"
+                - "oracledb.tablespace.state"
+            default:
+              - "tablespace_name"
+              - "oracledb.tablespace.state"
+      oracledb.tablespace.utilization:
+        description: "OracledbTablespaceUtilizationMetricConfig provides config for the oracledb.tablespace.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "tablespace_name"
+            default:
+              - "tablespace_name"
       oracledb.tablespace_size.limit:
         description: "OracledbTablespaceSizeLimitMetricConfig provides config for the oracledb.tablespace_size.limit metric."
         type: object

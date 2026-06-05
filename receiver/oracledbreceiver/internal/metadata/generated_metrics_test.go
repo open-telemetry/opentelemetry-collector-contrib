@@ -71,6 +71,9 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["oracledb.physical_io.transferred"] = mb.metricOracledbPhysicalIoTransferred.config.AggregationStrategy
 			aggMap["oracledb.sessions.usage"] = mb.metricOracledbSessionsUsage.config.AggregationStrategy
 			aggMap["oracledb.sqlnet.io.transferred"] = mb.metricOracledbSqlnetIoTransferred.config.AggregationStrategy
+			aggMap["oracledb.tablespace.limit"] = mb.metricOracledbTablespaceLimit.config.AggregationStrategy
+			aggMap["oracledb.tablespace.status"] = mb.metricOracledbTablespaceStatus.config.AggregationStrategy
+			aggMap["oracledb.tablespace.utilization"] = mb.metricOracledbTablespaceUtilization.config.AggregationStrategy
 			aggMap["oracledb.tablespace_size.limit"] = mb.metricOracledbTablespaceSizeLimit.config.AggregationStrategy
 			aggMap["oracledb.tablespace_size.usage"] = mb.metricOracledbTablespaceSizeUsage.config.AggregationStrategy
 
@@ -245,6 +248,24 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOracledbStorageUtilizationDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordOracledbTablespaceLimitDataPoint(ts, 1, "tablespace_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbTablespaceLimitDataPoint(ts, 3, "tablespace_name-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordOracledbTablespaceStatusDataPoint(ts, 1, "tablespace_name-val", "oracledb.tablespace.state-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbTablespaceStatusDataPoint(ts, 3, "tablespace_name-val-2", "oracledb.tablespace.state-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordOracledbTablespaceUtilizationDataPoint(ts, 1, "tablespace_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOracledbTablespaceUtilizationDataPoint(ts, 3, "tablespace_name-val-2")
+			}
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 1, "tablespace_name-val")
@@ -286,6 +307,9 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricOracledbPhysicalIoTransferred.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbSessionsUsage.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbSqlnetIoTransferred.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbTablespaceLimit.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbTablespaceStatus.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbTablespaceUtilization.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbTablespaceSizeLimit.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbTablespaceSizeUsage.aggDataPoints)
 			}
@@ -1041,6 +1065,131 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "oracledb.tablespace.limit":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.tablespace.limit"], "Found a duplicate in the metrics slice: oracledb.tablespace.limit")
+						validatedMetrics["oracledb.tablespace.limit"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Maximum autoextend size of tablespace in bytes. Returns 0 for temporary tablespaces and tablespaces without autoextend enabled.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						tablespaceNameAttrVal, ok := dp.Attributes().Get("tablespace_name")
+						assert.True(t, ok)
+						assert.Equal(t, "tablespace_name-val", tablespaceNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.tablespace.limit"], "Found a duplicate in the metrics slice: oracledb.tablespace.limit")
+						validatedMetrics["oracledb.tablespace.limit"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Maximum autoextend size of tablespace in bytes. Returns 0 for temporary tablespaces and tablespaces without autoextend enabled.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.tablespace.limit"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("tablespace_name")
+						assert.False(t, ok)
+					}
+				case "oracledb.tablespace.status":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.tablespace.status"], "Found a duplicate in the metrics slice: oracledb.tablespace.status")
+						validatedMetrics["oracledb.tablespace.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Current status of tablespaces, broken down by state.", mi.Description())
+						assert.Equal(t, "{tablespace}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						tablespaceNameAttrVal, ok := dp.Attributes().Get("tablespace_name")
+						assert.True(t, ok)
+						assert.Equal(t, "tablespace_name-val", tablespaceNameAttrVal.Str())
+						oracledbTablespaceStateAttrVal, ok := dp.Attributes().Get("oracledb.tablespace.state")
+						assert.True(t, ok)
+						assert.Equal(t, "oracledb.tablespace.state-val", oracledbTablespaceStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.tablespace.status"], "Found a duplicate in the metrics slice: oracledb.tablespace.status")
+						validatedMetrics["oracledb.tablespace.status"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Current status of tablespaces, broken down by state.", mi.Description())
+						assert.Equal(t, "{tablespace}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["oracledb.tablespace.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("tablespace_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("oracledb.tablespace.state")
+						assert.False(t, ok)
+					}
+				case "oracledb.tablespace.utilization":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["oracledb.tablespace.utilization"], "Found a duplicate in the metrics slice: oracledb.tablespace.utilization")
+						validatedMetrics["oracledb.tablespace.utilization"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Fraction of tablespace currently in use, expressed as a value between 0 and 1.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						tablespaceNameAttrVal, ok := dp.Attributes().Get("tablespace_name")
+						assert.True(t, ok)
+						assert.Equal(t, "tablespace_name-val", tablespaceNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["oracledb.tablespace.utilization"], "Found a duplicate in the metrics slice: oracledb.tablespace.utilization")
+						validatedMetrics["oracledb.tablespace.utilization"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Fraction of tablespace currently in use, expressed as a value between 0 and 1.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["oracledb.tablespace.utilization"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("tablespace_name")
+						assert.False(t, ok)
+					}
 				case "oracledb.tablespace_size.limit":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["oracledb.tablespace_size.limit"], "Found a duplicate in the metrics slice: oracledb.tablespace_size.limit")

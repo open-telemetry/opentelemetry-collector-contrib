@@ -462,6 +462,49 @@ Fraction of allocated database storage that is used.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
+### oracledb.tablespace.limit
+
+Maximum autoextend size of tablespace in bytes. Returns 0 for temporary tablespaces and tablespaces without autoextend enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| tablespace_name | Tablespace name | Any Str | Recommended | - |
+
+### oracledb.tablespace.status
+
+Current status of tablespaces, broken down by state.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {tablespace} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| tablespace_name | Tablespace name | Any Str | Recommended | - |
+| oracledb.tablespace.state | Tablespace state as reported by Oracle (e.g. online, offline, read only) | Any Str | Recommended | - |
+
+### oracledb.tablespace.utilization
+
+Fraction of tablespace currently in use, expressed as a value between 0 and 1.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| tablespace_name | Tablespace name | Any Str | Recommended | - |
+
 ## Default Events
 
 The following events are emitted by default. Each of them can be disabled by applying the following configuration:
