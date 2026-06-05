@@ -151,13 +151,10 @@ func splitByCount(records []*kgo.Record, maxCount int) []xexporterhelper.Request
 	if maxCount <= 0 {
 		return []xexporterhelper.Request{New(records)}
 	}
-	var out []xexporterhelper.Request
+	out := make([]xexporterhelper.Request, 0, (len(records)+maxCount-1)/maxCount)
 	for i := 0; i < len(records); i += maxCount {
 		end := min(i+maxCount, len(records))
 		out = append(out, New(records[i:end]))
-	}
-	if len(out) == 0 {
-		out = []xexporterhelper.Request{New(nil)}
 	}
 	return out
 }
