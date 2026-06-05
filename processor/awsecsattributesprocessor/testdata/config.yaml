@@ -1,0 +1,12 @@
+awsecsattributes:
+  # check for the container ID in the following resource attributes,
+  # the first non-empty value is used
+  container_id:
+    sources:
+      - "container.id"
+      - "log.file.name"
+  # regex patterns matching the attribute keys to collect
+  attributes:
+    - '^aws.ecs.*'
+    - '^docker.*'
+  cache_ttl: 300

@@ -185,6 +185,7 @@ components:
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
+    - processor/awsecsattributes
     - processor/azuredetector
     - processor/cardinality_guardian
     - processor/coralogix
