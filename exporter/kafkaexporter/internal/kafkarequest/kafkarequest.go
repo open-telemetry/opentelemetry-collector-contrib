@@ -101,11 +101,8 @@ func recordSize(rec *kgo.Record) int {
 // splitByBytes places records into bins of at most maxSize bytes. Records
 // that individually exceed maxSize are emitted as their own single-record
 // Requests; the broker surfaces MessageTooLarge as a permanent failure.
-//
-// The interface contract requires the last Request to be the smallest.
-// Strategy: bin-pack normal records first (last bin is partial, smallest),
-// then sort oversized records descending and prepend them — so the partial
-// bin remains at the tail and the bins ordering is non-increasing in size.
+// Output is sorted by size descending so the last Request is the smallest,
+// per the interface contract.
 func splitByBytes(records []*kgo.Record, maxSize int) []xexporterhelper.Request {
 	var normal, oversized []*kgo.Record
 	for _, rec := range records {
@@ -117,10 +114,6 @@ func splitByBytes(records []*kgo.Record, maxSize int) []xexporterhelper.Request 
 	}
 
 	bins := binPack(normal, maxSize)
-
-	sort.SliceStable(oversized, func(i, j int) bool {
-		return recordSize(oversized[i]) > recordSize(oversized[j])
-	})
 	out := make([]xexporterhelper.Request, 0, len(oversized)+len(bins))
 	for _, rec := range oversized {
 		out = append(out, New([]*kgo.Record{rec}))
@@ -128,9 +121,9 @@ func splitByBytes(records []*kgo.Record, maxSize int) []xexporterhelper.Request 
 	for _, bin := range bins {
 		out = append(out, New(bin))
 	}
-	if len(out) == 0 {
-		out = []xexporterhelper.Request{New(nil)}
-	}
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].(*Request).BytesSize() > out[j].(*Request).BytesSize()
+	})
 	return out
 }
 
