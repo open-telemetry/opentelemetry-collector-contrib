@@ -1903,11 +1903,11 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"$value"},
+								Params: []localIdentifierDecl{"value"},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
-											LocalIdentifier: &localIdentifier{Name: "$value"},
+											Path: &path{Fields: []field{{Name: "value"}}},
 										},
 									},
 								},
@@ -1937,20 +1937,22 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"$value"},
+								Params: []localIdentifierDecl{"value"},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
-											LocalIdentifier: &localIdentifier{
-												Name: "$value",
-												Keys: []key{
-													{
-														Int: ottltest.Intp(1),
+											Path: &path{
+												Fields: []field{{
+													Name: "value",
+													Keys: []key{
+														{
+															Int: ottltest.Intp(1),
+														},
+														{
+															Int: ottltest.Intp(0),
+														},
 													},
-													{
-														Int: ottltest.Intp(0),
-													},
-												},
+												}},
 											},
 										},
 									},
@@ -1996,20 +1998,22 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"$value"},
+								Params: []localIdentifierDecl{"value"},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
-											LocalIdentifier: &localIdentifier{
-												Name: "$value",
-												Keys: []key{
-													{
-														String: ottltest.Strp("one"),
+											Path: &path{
+												Fields: []field{{
+													Name: "value",
+													Keys: []key{
+														{
+															String: ottltest.Strp("one"),
+														},
+														{
+															String: ottltest.Strp("two"),
+														},
 													},
-													{
-														String: ottltest.Strp("two"),
-													},
-												},
+												}},
 											},
 										},
 									},
@@ -2060,11 +2064,11 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"$value", "$value"},
+								Params: []localIdentifierDecl{"value", "value"},
 								Body: lambdaBody{
 									Value: &value{
 										Literal: &mathExprLiteral{
-											LocalIdentifier: &localIdentifier{Name: "$value"},
+											Path: &path{Fields: []field{{Name: "value"}}},
 										},
 									},
 								},
@@ -2084,7 +2088,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
-			wantError: "duplicate local identifier $value",
+			wantError: `duplicate local identifier "value"`,
 		},
 		{
 			name: "lambda arg with duplicate blank formals",
@@ -2129,7 +2133,7 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Lambda: &lambdaExpr{
-								Params: []localIdentifierDecl{"$a", "$b"},
+								Params: []localIdentifierDecl{"a", "b"},
 								Body: lambdaBody{
 									Expr: &booleanExpression{
 										Left: &term{
@@ -2137,13 +2141,13 @@ func Test_NewFunctionCall(t *testing.T) {
 												Comparison: &comparison{
 													Left: value{
 														Literal: &mathExprLiteral{
-															LocalIdentifier: &localIdentifier{Name: "$a"},
+															Path: &path{Fields: []field{{Name: "a"}}},
 														},
 													},
 													Op: eq,
 													Right: value{
 														Literal: &mathExprLiteral{
-															LocalIdentifier: &localIdentifier{Name: "$b"},
+															Path: &path{Fields: []field{{Name: "b"}}},
 														},
 													},
 												},
@@ -2535,15 +2539,21 @@ type evalLambdaArguments[K any] struct {
 //nolint:unparam // returning (ExprFunc[K], error) is required by this local test framework
 func evalLambdaFunction[K any](expr LambdaExpression[any], args []Getter[K]) (ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		params := make([]any, 0, len(args))
-		for _, getter := range args {
+		lambda, err := expr.Activate(ctx, len(args))
+		if err != nil {
+			return nil, err
+		}
+		defer lambda.Close()
+		for i, getter := range args {
 			val, err := getter.Get(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
-			params = append(params, val)
+			if err := lambda.SetArg(i, val); err != nil {
+				return nil, err
+			}
 		}
-		return expr.Eval(ctx, tCtx, params)
+		return lambda.Eval(tCtx)
 	}, nil
 }
 
@@ -3356,11 +3366,11 @@ func Test_OttlFunctionsEnableLambdaFeatureGate(t *testing.T) {
 			{
 				Value: value{
 					Lambda: &lambdaExpr{
-						Params: []localIdentifierDecl{"$value"},
+						Params: []localIdentifierDecl{"value"},
 						Body: lambdaBody{
 							Value: &value{
 								Literal: &mathExprLiteral{
-									LocalIdentifier: &localIdentifier{Name: "$value"},
+									Path: &path{Fields: []field{{Name: "value"}}},
 								},
 							},
 						},

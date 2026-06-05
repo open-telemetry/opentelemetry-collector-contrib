@@ -118,8 +118,8 @@ func Test_newGetter(t *testing.T) {
 		val         value
 		ctx         any
 		want        any
-		deepEqual   bool
 		wantLiteral bool
+		assertValue func(t *testing.T, a any) bool
 	}{
 		{
 			name: "string literal",
@@ -713,28 +713,32 @@ func Test_newGetter(t *testing.T) {
 			name: "lambda",
 			val: value{
 				Lambda: &lambdaExpr{
-					Params: []localIdentifierDecl{"$value"},
+					Params: []localIdentifierDecl{"value"},
 					Arrow:  "=>",
 					Body: lambdaBody{
 						Value: &value{
 							Literal: &mathExprLiteral{
-								LocalIdentifier: &localIdentifier{
-									Name: "$value",
-								},
+								Path: &path{Fields: []field{{Name: "value"}}},
 							},
 						},
 					},
 				},
 			},
 			wantLiteral: true,
-			deepEqual:   true,
-			want: &LambdaExpression[any]{
-				paramNames: makeLocalIdentifiers("$value"),
-				body: &localBindingGetter[any]{
-					identifierPath: &localIdentifier{
-						Name: "$value",
-					},
-				},
+			assertValue: func(t *testing.T, a any) bool {
+				expected := newLambdaExpression[any](
+					makeLocalIdentifiers("value"),
+					&localIdentifierGetter[any]{identifier: &basePath[any]{name: "value", localIdentifier: true, fetched: true, originalText: "value"}},
+					nil,
+				)
+				assert.NotNil(t, expected.activationPool)
+				expected.activationPool = nil
+				if v, ok := a.(*LambdaExpression[any]); ok {
+					assert.NotNil(t, v.activationPool)
+					v.activationPool = nil
+					return assert.Equal(t, expected, v)
+				}
+				return assert.Fail(t, "expected LambdaExpression")
 			},
 		},
 	}
@@ -783,8 +787,8 @@ func Test_newGetter(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			if tt.deepEqual {
-				assert.Equal(t, tt.want, val)
+			if tt.assertValue != nil {
+				tt.assertValue(t, val)
 			} else {
 				assert.Truef(t, valueComparator.Equal(tt.want, val), "expected: %v, got: %v", tt.want, val)
 			}
@@ -913,7 +917,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: errors.New("type, string, does not support int indexing"),
+			err: errors.New("type string does not support int indexing"),
 		},
 		{
 			name: "invalid string indexing type",
@@ -929,7 +933,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: errors.New("type, string, does not support string indexing"),
+			err: errors.New("type string does not support string indexing"),
 		},
 	}
 

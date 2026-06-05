@@ -223,7 +223,7 @@ func (c *converter) accept(v grammarVisitor) {
 }
 
 type lambdaExpr struct {
-	Params []localIdentifierDecl `parser:"'(' ( @LocalIdentifier ( ',' @LocalIdentifier )* )? ')'"`
+	Params []localIdentifierDecl `parser:"'(' ( (@Lowercase | @Underscore) ( ',' (@Lowercase | @Underscore ) )* )? ')'"`
 	Arrow  string                `parser:"@LambdaArrow"`
 	Body   lambdaBody            `parser:"@@"`
 }
@@ -245,16 +245,7 @@ func (lb *lambdaBody) accept(vis grammarVisitor) {
 
 type localIdentifierDecl string
 
-var _ LocalIdentifier = (*localIdentifierDecl)(nil)
-
-func (n *localIdentifierDecl) Capture(values []string) error {
-	s := values[0]
-	if s != "_" && (len(s) < 2 || s[0] != '$') {
-		return fmt.Errorf("invalid local identifier %q: must be '_' or start with '$' and include at least one character after it", s)
-	}
-	*n = localIdentifierDecl(s)
-	return nil
-}
+var _ LocalIdentifierDecl = (*localIdentifierDecl)(nil)
 
 func (n *localIdentifierDecl) Name() string {
 	return string(*n)
@@ -262,23 +253,6 @@ func (n *localIdentifierDecl) Name() string {
 
 func (n *localIdentifierDecl) IsBlank() bool {
 	return n.Name() == "_"
-}
-
-type localIdentifier struct {
-	Name localIdentifierDecl `parser:"@LocalIdentifier"`
-	Keys []key               `parser:"( @@ )*"`
-}
-
-func (lb *localIdentifier) isBlank() bool {
-	return lb.Name.IsBlank()
-}
-
-func (lb *localIdentifier) accept(vis grammarVisitor) {
-	if lb.Keys != nil {
-		for _, k := range lb.Keys {
-			k.accept(vis)
-		}
-	}
 }
 
 type argument struct {
@@ -315,6 +289,10 @@ func (v *value) checkForCustomError() error {
 func (v *value) accept(vis grammarVisitor) {
 	vis.visitValue(v)
 	if v.Lambda != nil {
+		if scopeVisitor, ok := vis.(localIdentifierScopeVisitor); ok {
+			scopeVisitor.pushLocalIdentifiers(v.Lambda.Params)
+			defer scopeVisitor.popLocalIdentifiers()
+		}
 		v.Lambda.Body.accept(vis)
 	}
 	if v.Literal != nil {
@@ -338,6 +316,27 @@ type path struct {
 	Pos     lexer.Position
 	Context string  `parser:"(@Lowercase '.')?"`
 	Fields  []field `parser:"@@ ( '.' @@ )*"`
+}
+
+func (p *path) dottedSegments() []field {
+	var segments []field
+	if p.Context != "" {
+		segments = append(segments, field{Name: p.Context})
+	}
+	if len(p.Fields) > 0 {
+		return append(segments, p.Fields...)
+	}
+	return segments
+}
+
+func (p *path) inScope(stack localScopeStack) bool {
+	if p.Context != "" {
+		return stack.inScope(p.Context)
+	}
+	if len(p.Fields) == 0 {
+		return false
+	}
+	return stack.inScope(p.Fields[0].Name)
 }
 
 func (p *path) accept(v grammarVisitor) {
@@ -427,12 +426,11 @@ func (n *isNil) Capture(_ []string) error {
 
 type mathExprLiteral struct {
 	// If editor is matched then error
-	Editor          *editor          `parser:"( @@"`
-	Converter       *converter       `parser:"| @@"`
-	Float           *float64         `parser:"| @Float"`
-	Int             *int64           `parser:"| @Int"`
-	Path            *path            `parser:"| @@"`
-	LocalIdentifier *localIdentifier `parser:"| @@ )"`
+	Editor    *editor    `parser:"( @@"`
+	Converter *converter `parser:"| @@"`
+	Float     *float64   `parser:"| @Float"`
+	Int       *int64     `parser:"| @Int"`
+	Path      *path      `parser:"| @@ )"`
 }
 
 func (m *mathExprLiteral) accept(v grammarVisitor) {
@@ -445,9 +443,6 @@ func (m *mathExprLiteral) accept(v grammarVisitor) {
 	}
 	if m.Converter != nil {
 		m.Converter.accept(v)
-	}
-	if m.LocalIdentifier != nil {
-		m.LocalIdentifier.accept(v)
 	}
 }
 
@@ -579,7 +574,6 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `OpAnd`, Pattern: `\b(and)\b`},
 		{Name: `OpComparison`, Pattern: `==|!=|>=|<=|>|<`},
 		{Name: `LambdaArrow`, Pattern: `=>`},
-		{Name: `LocalIdentifier`, Pattern: `\$[a-z][a-z0-9_]*|\b(_)\b`},
 		{Name: `OpAddSub`, Pattern: `\+|\-`},
 		{Name: `OpMultDiv`, Pattern: `\/|\*`},
 		{Name: `Boolean`, Pattern: `\b(true|false)\b`},
@@ -593,6 +587,7 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `Uppercase`, Pattern: `[A-Z][A-Z0-9_]*`},
 		{Name: `Lowercase`, Pattern: `[a-z][a-z0-9_]*`},
 		{Name: "whitespace", Pattern: `\s+`},
+		{Name: "Underscore", Pattern: `\b(_)\b`},
 	})
 }
 
@@ -622,6 +617,13 @@ func (e *grammarCustomError) Error() string {
 
 func (e *grammarCustomError) Unwrap() []error {
 	return e.errs
+}
+
+// localIdentifierScopeVisitor is a mixin for grammar visitors that need access
+// to the local identifier stack.
+type localIdentifierScopeVisitor interface {
+	pushLocalIdentifiers([]localIdentifierDecl)
+	popLocalIdentifiers()
 }
 
 // grammarVisitor allows accessing the grammar AST nodes using the visitor pattern.
@@ -665,9 +667,6 @@ func (g *grammarCustomErrorsVisitor) visitEditor(v *editor) {
 func (g *grammarCustomErrorsVisitor) visitMathExprLiteral(v *mathExprLiteral) {
 	if v.Editor != nil {
 		g.add(fmt.Errorf("converter names must start with an uppercase letter but got '%v'", v.Editor.Function))
-	}
-	if v.LocalIdentifier != nil && v.LocalIdentifier.isBlank() {
-		g.add(errors.New("blank identifier '_' cannot be used in expressions"))
 	}
 }
 

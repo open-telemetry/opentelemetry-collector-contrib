@@ -231,46 +231,46 @@ func Test_lexer(t *testing.T) {
 			{"Int", "4"},
 		}},
 		{"blank local identifier", "_", false, []result{
-			{"LocalIdentifier", "_"},
+			{"Underscore", "_"},
 		}},
-		{"named local identifier", "$value", false, []result{
-			{"LocalIdentifier", "$value"},
+		{"named local identifier", "value", false, []result{
+			{"Lowercase", "value"},
 		}},
-		{"local identifier with underscores", "$foo_bar", false, []result{
-			{"LocalIdentifier", "$foo_bar"},
+		{"local identifier with underscores", "foo_bar", false, []result{
+			{"Lowercase", "foo_bar"},
 		}},
-		{"local identifier in math expression", "$a + $b", false, []result{
-			{"LocalIdentifier", "$a"},
+		{"local identifier in math expression", "a + b", false, []result{
+			{"Lowercase", "a"},
 			{"OpAddSub", "+"},
-			{"LocalIdentifier", "$b"},
+			{"Lowercase", "b"},
 		}},
-		{"local identifier with indexing", "$value[0]", false, []result{
-			{"LocalIdentifier", "$value"},
+		{"local identifier with indexing", "value[0]", false, []result{
+			{"Lowercase", "value"},
 			{"Punct", "["},
 			{"Int", "0"},
 			{"Punct", "]"},
 		}},
-		{"local identifier in comparison", "$a == $b", false, []result{
-			{"LocalIdentifier", "$a"},
+		{"local identifier in comparison", "a == b", false, []result{
+			{"Lowercase", "a"},
 			{"OpComparison", "=="},
-			{"LocalIdentifier", "$b"},
+			{"Lowercase", "b"},
 		}},
 		{"lambda arrow", "=>", false, []result{
 			{"LambdaArrow", "=>"},
 		}},
-		{"lambda params with blank and named", "(_, $v)", false, []result{
+		{"lambda params with blank and named", "(_, v)", false, []result{
 			{"LParen", "("},
-			{"LocalIdentifier", "_"},
+			{"Underscore", "_"},
 			{"Punct", ","},
-			{"LocalIdentifier", "$v"},
+			{"Lowercase", "v"},
 			{"RParen", ")"},
 		}},
-		{"lambda expression", "($value) => $value", false, []result{
+		{"lambda expression", "(value) => value", false, []result{
 			{"LParen", "("},
-			{"LocalIdentifier", "$value"},
+			{"Lowercase", "value"},
 			{"RParen", ")"},
 			{"LambdaArrow", "=>"},
-			{"LocalIdentifier", "$value"},
+			{"Lowercase", "value"},
 		}},
 	}
 

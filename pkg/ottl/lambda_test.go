@@ -26,30 +26,30 @@ func (stubBoolExpr[K]) unexported() {}
 
 func TestLambdaExpression_Formals(t *testing.T) {
 	tests := []struct {
-		name       string
-		paramNames []LocalIdentifier
-		want       []LocalIdentifier
+		name    string
+		formals []LocalIdentifierDecl
+		want    []LocalIdentifierDecl
 	}{
 		{
-			name:       "named params",
-			paramNames: makeLocalIdentifiers("$a", "$b"),
-			want:       makeLocalIdentifiers("$a", "$b"),
+			name:    "named params",
+			formals: makeLocalIdentifiers("a", "b"),
+			want:    makeLocalIdentifiers("a", "b"),
 		},
 		{
-			name:       "blank and named params",
-			paramNames: makeLocalIdentifiers("_", "$a"),
-			want:       makeLocalIdentifiers("_", "$a"),
+			name:    "blank and named params",
+			formals: makeLocalIdentifiers("_", "a"),
+			want:    makeLocalIdentifiers("_", "a"),
 		},
 		{
-			name:       "all blank params",
-			paramNames: makeLocalIdentifiers("_", "_", "_"),
-			want:       makeLocalIdentifiers("_", "_", "_"),
+			name:    "all blank params",
+			formals: makeLocalIdentifiers("_", "_", "_"),
+			want:    makeLocalIdentifiers("_", "_", "_"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			expr := &LambdaExpression[any]{paramNames: tt.paramNames}
+			expr := &LambdaExpression[any]{formals: tt.formals}
 			assert.Equal(t, tt.want, expr.Formals())
 		})
 	}
@@ -60,105 +60,120 @@ func TestLambdaExpression_Eval(t *testing.T) {
 		name    string
 		expr    *LambdaExpression[any]
 		ctx     context.Context
+		arity   int
 		params  []any
 		want    any
 		wantErr string
 	}{
 		{
-			name: "not enough args",
-			expr: &LambdaExpression[any]{paramNames: makeLocalIdentifiers("$a", "$b")},
-			params: []any{
-				1,
-			},
+			name:    "arity mismatch",
+			expr:    newLambdaExpression[any](makeLocalIdentifiers("a", "b"), nil, nil),
+			arity:   1,
 			wantErr: "lambda expects exactly 1 argument(s), got 2",
 		},
 		{
 			name: "literal body evaluate as-is",
-			expr: &LambdaExpression[any]{
-				paramNames: makeLocalIdentifiers("$a"),
-				body:       newLiteral[any, any]("literal"),
-			},
+			expr: newLambdaExpression[any](
+				makeLocalIdentifiers("a"),
+				newLiteral[any, any]("literal"),
+				nil,
+			),
+			arity:  1,
 			params: []any{"a value"},
 			want:   "literal",
 		},
 		{
 			name: "body expression",
-			expr: &LambdaExpression[any]{
-				paramNames: makeLocalIdentifiers("$a"),
-				bodyExpr: stubBoolExpr[any]{
+			expr: newLambdaExpression[any](
+				makeLocalIdentifiers("a"),
+				nil,
+				stubBoolExpr[any]{
 					eval: func(ctx context.Context, _ any) (bool, error) {
-						bindings, ok := ctx.Value(localBindingsKey{}).(map[string]any)
+						activation, ok := ctx.Value(localActivationKey{}).(*localActivation)
 						if !ok {
 							return false, errors.New("missing bindings")
 						}
-						return bindings["$a"] == "bound", nil
+						v, ok := activation.resolve("a")
+						return ok && v == "bound", nil
 					},
 				},
-			},
+			),
+			arity:  1,
 			params: []any{"bound"},
 			want:   true,
 		},
 		{
 			name: "body expression error",
-			expr: &LambdaExpression[any]{
-				paramNames: makeLocalIdentifiers("$a"),
-				bodyExpr: stubBoolExpr[any]{
+			expr: newLambdaExpression[any](
+				makeLocalIdentifiers("a"),
+				nil,
+				stubBoolExpr[any]{
 					eval: func(context.Context, any) (bool, error) {
 						return false, errors.New("failed to evaluate")
 					},
 				},
-			},
+			),
+			arity:   1,
 			params:  []any{"bound"},
 			wantErr: "failed to evaluate",
 		},
 		{
 			name: "body getter reads parameter",
-			expr: &LambdaExpression[any]{
-				paramNames: makeLocalIdentifiers("$a"),
-				body: &localBindingGetter[any]{
-					identifierPath: &localIdentifier{Name: localIdentifierDecl("$a")},
+			expr: newLambdaExpression[any](
+				makeLocalIdentifiers("a"),
+				&localIdentifierGetter[any]{
+					identifier: &basePath[any]{name: "a"},
 				},
-			},
+				nil,
+			),
+			arity:  1,
 			params: []any{42},
 			want:   42,
 		},
 		{
 			name: "parent binding is available",
-			expr: &LambdaExpression[any]{
-				body: &localBindingGetter[any]{
-					identifierPath: &localIdentifier{Name: localIdentifierDecl("$parent")},
+			expr: newLambdaExpression[any](
+				nil,
+				&localIdentifierGetter[any]{
+					identifier: &basePath[any]{name: "parent"},
 				},
-			},
-			ctx:    context.WithValue(t.Context(), localBindingsKey{}, map[string]any{"$parent": "value"}),
+				nil,
+			),
+			ctx:    context.WithValue(t.Context(), localActivationKey{}, &localActivation{bindings: map[string]any{"parent": "value"}}),
+			arity:  0,
 			params: []any{},
 			want:   "value",
 		},
 		{
 			name: "formal overrides parent binding",
-			expr: &LambdaExpression[any]{
-				paramNames: makeLocalIdentifiers("$a"),
-				body: &localBindingGetter[any]{
-					identifierPath: &localIdentifier{Name: localIdentifierDecl("$a")},
+			expr: newLambdaExpression[any](
+				makeLocalIdentifiers("a"),
+				&localIdentifierGetter[any]{
+					identifier: &basePath[any]{name: "a"},
 				},
-			},
-			ctx:    context.WithValue(t.Context(), localBindingsKey{}, map[string]any{"$a": "old"}),
+				nil,
+			),
+			ctx:    context.WithValue(t.Context(), localActivationKey{}, &localActivation{bindings: map[string]any{"a": "old"}}),
+			arity:  1,
 			params: []any{"new"},
 			want:   "new",
 		},
 		{
 			name: "parameter indexing",
-			expr: &LambdaExpression[any]{
-				paramNames: makeLocalIdentifiers("$a"),
-				body: &localBindingGetter[any]{
-					identifierPath: &localIdentifier{
-						Name: localIdentifierDecl("$a"),
-						Keys: []key{
-							{String: ottltest.Strp("name")},
-							{Int: ottltest.Intp(1)},
+			expr: newLambdaExpression[any](
+				makeLocalIdentifiers("a"),
+				&localIdentifierGetter[any]{
+					identifier: &basePath[any]{
+						name: "a",
+						keys: []Key[any]{
+							&baseKey[any]{s: ottltest.Strp("name")},
+							&baseKey[any]{i: ottltest.Intp(1)},
 						},
 					},
 				},
-			},
+				nil,
+			),
+			arity: 1,
 			params: []any{
 				map[string]any{"name": []any{"zero", "one"}},
 			},
@@ -166,36 +181,41 @@ func TestLambdaExpression_Eval(t *testing.T) {
 		},
 		{
 			name:    "invalid lambda without body",
-			expr:    &LambdaExpression[any]{},
+			expr:    newLambdaExpression[any](nil, nil, nil),
+			arity:   0,
 			params:  []any{},
 			wantErr: "invalid lambda: no body",
 		},
 		{
 			name: "blank parameter is not bound",
-			expr: &LambdaExpression[any]{
-				paramNames: makeLocalIdentifiers("_", "$a"),
-				body: &localBindingGetter[any]{
-					identifierPath: &localIdentifier{Name: localIdentifierDecl("$a")},
+			expr: newLambdaExpression[any](
+				makeLocalIdentifiers("_", "a"),
+				&localIdentifierGetter[any]{
+					identifier: &basePath[any]{name: "a"},
 				},
-			},
+				nil,
+			),
+			arity:  2,
 			params: []any{"skip", "bound"},
 			want:   "bound",
 		},
 		{
 			name: "blank parameter is omitted from bindings",
-			expr: &LambdaExpression[any]{
-				paramNames: makeLocalIdentifiers("_"),
-				bodyExpr: stubBoolExpr[any]{
+			expr: newLambdaExpression[any](
+				makeLocalIdentifiers("_"),
+				nil,
+				stubBoolExpr[any]{
 					eval: func(ctx context.Context, _ any) (bool, error) {
-						bindings, ok := ctx.Value(localBindingsKey{}).(map[string]any)
+						activation, ok := ctx.Value(localActivationKey{}).(*localActivation)
 						if !ok {
 							return false, errors.New("missing bindings")
 						}
-						_, hasBlank := bindings["_"]
-						return !hasBlank && len(bindings) == 0, nil
+						_, hasBlank := activation.bindings["_"]
+						return !hasBlank && len(activation.bindings) == 0, nil
 					},
 				},
-			},
+			),
+			arity:  1,
 			params: []any{"skip"},
 			want:   true,
 		},
@@ -208,7 +228,20 @@ func TestLambdaExpression_Eval(t *testing.T) {
 				ctx = t.Context()
 			}
 
-			got, err := tt.expr.Eval(ctx, nil, tt.params)
+			lb, err := tt.expr.Activate(ctx, tt.arity)
+			if tt.wantErr != "" && lb == nil {
+				require.Error(t, err)
+				assert.EqualError(t, err, tt.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+			defer lb.Close()
+			for i, param := range tt.params {
+				require.NoError(t, lb.SetArg(i, param))
+			}
+
+			got, err := lb.Eval(nil)
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				assert.EqualError(t, err, tt.wantErr)
@@ -218,4 +251,149 @@ func TestLambdaExpression_Eval(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestLambdaExpression_Activate(t *testing.T) {
+	expr := newLambdaExpression[any](
+		makeLocalIdentifiers("a"),
+		&localIdentifierGetter[any]{
+			identifier: &basePath[any]{name: "a"},
+		},
+		nil,
+	)
+
+	lb, err := expr.Activate(t.Context(), 1)
+	require.NoError(t, err)
+
+	require.NoError(t, lb.SetArg(0, 1))
+	got, err := lb.Eval(nil)
+	require.NoError(t, err)
+	assert.Equal(t, 1, got)
+
+	require.NoError(t, lb.SetArg(0, 2))
+	got, err = lb.Eval(nil)
+	require.NoError(t, err)
+	assert.Equal(t, 2, got)
+
+	// Each Activate yields independent state, so overlapping activations of the same expression do not
+	// interfere with one another.
+	lb1, err := expr.Activate(t.Context(), 1)
+	require.NoError(t, err)
+	lb2, err := expr.Activate(t.Context(), 1)
+	require.NoError(t, err)
+
+	require.NoError(t, lb1.SetArg(0, "one"))
+	require.NoError(t, lb2.SetArg(0, "two"))
+
+	got1, err := lb1.Eval(nil)
+	require.NoError(t, err)
+	assert.Equal(t, "one", got1)
+
+	got2, err := lb2.Eval(nil)
+	require.NoError(t, err)
+	assert.Equal(t, "two", got2)
+}
+
+func TestLambdaActivation_SetArg(t *testing.T) {
+	expr := newLambdaExpression[any](
+		makeLocalIdentifiers("a"),
+		nil,
+		nil,
+	)
+
+	lb, err := expr.Activate(t.Context(), 1)
+	require.NoError(t, err)
+
+	err = lb.SetArg(-1, "x")
+	require.EqualError(t, err, "argument index -1 out of range (len=1)")
+
+	err = lb.SetArg(1, "x")
+	require.EqualError(t, err, "argument index 1 out of range (len=1)")
+}
+
+func TestLambdaActivation_StaleArg(t *testing.T) {
+	expr := newLambdaExpression[any](
+		makeLocalIdentifiers("a", "b"),
+		&localIdentifierGetter[any]{
+			identifier: &basePath[any]{name: "b"},
+		},
+		nil,
+	)
+
+	lb, err := expr.Activate(t.Context(), 2)
+	require.NoError(t, err)
+
+	require.NoError(t, lb.SetArg(0, "first-a"))
+	require.NoError(t, lb.SetArg(1, "first-b"))
+	got, err := lb.Eval(nil)
+	require.NoError(t, err)
+	assert.Equal(t, "first-b", got)
+
+	require.NoError(t, lb.SetArg(0, "second-a"))
+	got, err = lb.Eval(nil)
+	require.NoError(t, err)
+	assert.Equal(t, "first-b", got)
+
+	require.NoError(t, lb.SetArg(1, "second-b"))
+	got, err = lb.Eval(nil)
+	require.NoError(t, err)
+	assert.Equal(t, "second-b", got)
+}
+
+func TestLambdaActivation_ParentChain(t *testing.T) {
+	outerExpr := newLambdaExpression[any](
+		makeLocalIdentifiers("outer"),
+		nil,
+		stubBoolExpr[any]{
+			eval: func(context.Context, any) (bool, error) {
+				return true, nil
+			},
+		},
+	)
+	innerExpr := newLambdaExpression[any](
+		makeLocalIdentifiers("inner"),
+		&localIdentifierGetter[any]{
+			identifier: &basePath[any]{name: "outer"},
+		},
+		nil,
+	)
+
+	outerLb, err := outerExpr.Activate(t.Context(), 1)
+	require.NoError(t, err)
+	require.NoError(t, outerLb.SetArg(0, "from-outer"))
+	_, err = outerLb.Eval(nil)
+	require.NoError(t, err)
+
+	innerLb, err := innerExpr.Activate(outerLb.ctx, 1)
+	require.NoError(t, err)
+	require.NoError(t, innerLb.SetArg(0, "inner-val"))
+
+	got, err := innerLb.Eval(nil)
+	require.NoError(t, err)
+	assert.Equal(t, "from-outer", got)
+}
+
+func TestLambdaActivation_Close(t *testing.T) {
+	expr := newLambdaExpression[any](
+		makeLocalIdentifiers("a", "b"),
+		&localIdentifierGetter[any]{
+			identifier: &basePath[any]{name: "a"},
+		},
+		nil,
+	)
+
+	lb, err := expr.Activate(t.Context(), 2)
+	require.NoError(t, err)
+	require.NoError(t, lb.SetArg(0, 1))
+	eval, err := lb.Eval(nil)
+	require.NoError(t, err)
+	assert.Equal(t, 1, eval)
+	lb.Close()
+
+	lb2, err := expr.Activate(t.Context(), 2)
+	require.NoError(t, err)
+	require.NotNil(t, lb2.activation)
+	assert.Nil(t, lb2.activation.parent)
+	assert.Empty(t, lb2.activation.bindings)
+	assert.Equal(t, []any{nil, nil}, lb2.argValues)
 }

@@ -148,6 +148,16 @@ func Test_NewPriorityContextInferrer_InferStatements(t *testing.T) {
 			statements: []string{"set(span.foo, Lambda(() => spanevent.bar))"},
 			expected:   "spanevent",
 		},
+		{
+			name:     "local identifiers are not candidates",
+			priority: []string{"spanevent", "span"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"spanevent": defaultDummyPriorityContextInferrerCandidate,
+				"span":      defaultDummyPriorityContextInferrerCandidate,
+			},
+			statements: []string{"set(span.foo, Lambda((spanevent) => spanevent.bar))"},
+			expected:   "span",
+		},
 	}
 
 	for _, tt := range tests {

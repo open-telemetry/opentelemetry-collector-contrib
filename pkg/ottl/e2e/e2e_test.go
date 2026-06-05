@@ -2097,7 +2097,7 @@ func Test_e2e_lambda_expression(t *testing.T) {
 	}{
 		{
 			name:       "returns parameter as-is",
-			expression: `Eval(($value) => $value, ["hello lambda"])`,
+			expression: `Eval((value) => value, ["hello lambda"])`,
 			want:       wantValue("hello lambda"),
 		},
 		{
@@ -2117,123 +2117,123 @@ func Test_e2e_lambda_expression(t *testing.T) {
 		},
 		{
 			name:       "indexes nested slice parameter",
-			expression: `Eval(($value) => $value[1][1], [["first", ["second", "third"]]])`,
+			expression: `Eval((value) => value[1][1], [["first", ["second", "third"]]])`,
 			want:       wantValue("third"),
 		},
 		{
 			name:       "indexes nested map parameter",
-			expression: `Eval(($value) => $value["one"]["two"], [{"one":{"two":2}}])`,
+			expression: `Eval((value) => value["one"]["two"], [{"one":{"two":2}}])`,
 			want:       wantValue(int64(2)),
 		},
 		{
 			name:       "indexes nested mixed nested parameter",
-			expression: `Eval(($value) => $value["one"]["two"][0], [{"one":{"two":[2]}}])`,
+			expression: `Eval((value) => value["one"]["two"][0], [{"one":{"two":[2]}}])`,
 			want:       wantValue(int64(2)),
 		},
 		{
 			name:       "indexed lambda param in comparison",
-			expression: `Eval(($a) => $a["key"] == "expected", [{"key":"expected"}])`,
+			expression: `Eval((a) => a["key"] == "expected", [{"key":"expected"}])`,
 			want:       wantValue(true),
 		},
 		{
 			name:       "boolean expression body",
-			expression: `Eval(($a, $b) => $a == $b, ["same value", "same value"])`,
+			expression: `Eval((a, b) => a == b, ["same value", "same value"])`,
 			want:       wantValue(true),
 		},
 		{
 			name:       "boolean expression body starting with converter",
-			expression: `Eval(($a, $b) => IsString($a) and $a == $b, ["value", "value"])`,
+			expression: `Eval((a, b) => IsString(a) and a == b, ["value", "value"])`,
 			want:       wantValue(true),
 		},
 		{
 			name:       "boolean expression body with OR operation",
-			expression: `Eval(($a) => $a != $a or IsString($a), ["value"])`,
+			expression: `Eval((a) => a != a or IsString(a), ["value"])`,
 			want:       wantValue(true),
 		},
 		{
 			name:       "value body with negation operator",
-			expression: `Eval(($a, $b) => -Len($a) + -$b, ["value", 2])`,
+			expression: `Eval((a, b) => -Len(a) + -b, ["value", 2])`,
 			want:       wantValue(int64(-7)),
 		},
 		{
 			name:       "converter with Add operation",
-			expression: `Eval(($a) => Len($a) + 1, ["value"])`,
+			expression: `Eval((a) => Len(a) + 1, ["value"])`,
 			want:       wantValue(int64(6)),
 		},
 		{
 			name:       "converter with Sub operation",
-			expression: `Eval(($a) => Len($a) - 1, ["value"])`,
+			expression: `Eval((a) => Len(a) - 1, ["value"])`,
 			want:       wantValue(int64(4)),
 		},
 		{
 			name:       "converter with Div operation",
-			expression: `Eval(($a) => Len($a) / 2.0, ["value"])`,
+			expression: `Eval((a) => Len(a) / 2.0, ["value"])`,
 			want:       wantValue(2.5),
 		},
 		{
 			name:       "converter with Mult operation",
-			expression: `Eval(($a) => Len($a) * 2, ["value"])`,
+			expression: `Eval((a) => Len(a) * 2, ["value"])`,
 			want:       wantValue(int64(10)),
 		},
 		{
 			name:       "math between converter in sub-expression",
-			expression: `Eval(($a) => (Len($a) + 1) * 2, ["value"])`,
+			expression: `Eval((a) => (Len(a) + 1) * 2, ["value"])`,
 			want:       wantValue(int64(12)),
 		},
 		{
 			name:       "math between two lambda params",
-			expression: `Eval(($a, $b) => $a + $b, [1, 2])`,
+			expression: `Eval((a, b) => a + b, [1, 2])`,
 			want:       wantValue(int64(3)),
 		},
 		{
 			name:       "converter with Comparison operation",
-			expression: `Eval(($a) => Len($a) == 5, ["value"])`,
+			expression: `Eval((a) => Len(a) == 5, ["value"])`,
 			want:       wantValue(true),
 		},
 		{
 			name:       "math expression inside a comparison inside a lambda",
-			expression: `Eval(($a) => Len($a) + 1 == 6, ["value"])`,
+			expression: `Eval((a) => Len(a) + 1 == 6, ["value"])`,
 			want:       wantValue(true),
 		},
 		{
 			name:       "converter with Not operation",
-			expression: `Eval(($a) => not IsInt($a), ["value"])`,
+			expression: `Eval((a) => not IsInt(a), ["value"])`,
 			want:       wantValue(true),
 		},
 		{
 			name:       "negated parenthesized sub-expression",
-			expression: `Eval(($a, $b) => not ($a == $b), ["a", "b"])`,
+			expression: `Eval((a, b) => not (a == b), ["a", "b"])`,
 			want:       wantValue(true),
 		},
 		{
 			name:       "parenthesized boolean sub-expressions with and",
-			expression: `Eval(($a) => ($a == "x") and ($a != "y"), ["x"])`,
+			expression: `Eval((a) => (a == "x") and (a != "y"), ["x"])`,
 			want:       wantValue(true),
 		},
 		{
 			name:       "standalone converter body",
-			expression: `Eval(($a) => Len($a), ["value"])`,
+			expression: `Eval((a) => Len(a), ["value"])`,
 			want:       wantValue(int64(5)),
 		},
 		{
 			name:       "standalone boolean converter body",
-			expression: `Eval(($a) => IsString($a), ["value"])`,
+			expression: `Eval((a) => IsString(a), ["value"])`,
 			want:       wantValue(true),
 		},
 		{
 			name:       "nested lambdas sees outer bindings",
-			expression: `Eval(($a, $b, $c) => Eval(($d) => Concat([$a, $b, $c, $d], "-"), ["d"]), ["a", "b", "c"])`,
+			expression: `Eval((a, b, c) => Eval((d) => Concat([a, b, c, d], "-"), ["d"]), ["a", "b", "c"])`,
 			want:       wantValue("a-b-c-d"),
 		},
 		{
 			name:       "math in comparison with logical operations",
-			expression: `Eval(($a) => Len($a) + 1 > 3 and IsString($a), ["d"])`,
+			expression: `Eval((a) => Len(a) + 1 > 3 and IsString(a), ["d"])`,
 			want:       wantValue(false),
 		},
 		{
 			name:         "duplicate formals are rejected",
-			expression:   `Eval(($value, $value) => $value, ["hello lambda"])`,
-			wantParseErr: "duplicate local identifier $value",
+			expression:   `Eval((value, value) => value, ["hello lambda"])`,
+			wantParseErr: `duplicate local identifier "value"`,
 		},
 		{
 			name:       "no parameters",
@@ -2242,42 +2242,42 @@ func Test_e2e_lambda_expression(t *testing.T) {
 		},
 		{
 			name:       "not enough arguments (0 args)",
-			expression: `Eval(($a, $b) => $a, [])`,
+			expression: `Eval((a, b) => a, [])`,
 			wantErr:    "lambda expects exactly 0 argument(s), got 2",
 		},
 		{
 			name:       "not enough arguments (1 arg)",
-			expression: `Eval(($a, $b) => $a, [1])`,
+			expression: `Eval((a, b) => a, [1])`,
 			wantErr:    "lambda expects exactly 1 argument(s), got 2",
 		},
 		{
 			name:       "not enough arguments in nested lambda",
-			expression: `Eval(($a) => Eval(($b, $c, $d) => $a + $b + $c + $d, [2, 3]), [1])`,
+			expression: `Eval((a) => Eval((b, c, d) => a + b + c + d, [2, 3]), [1])`,
 			wantErr:    "lambda expects exactly 2 argument(s), got 3",
 		},
 		{
 			name:         "lambdas can't return another lambda",
-			expression:   `Eval(($a) => () => $a, [])`,
+			expression:   `Eval((a) => () => a, [])`,
 			wantParseErr: "lambda body cannot result into another lambda expression",
 		},
 		{
 			name:         "lambdas can't be used as indexing keys",
-			expression:   `attributes[($v) => $v]`,
+			expression:   `attributes[(v) => v]`,
 			wantParseErr: "expression has invalid syntax",
 		},
 		{
 			name:       "argument shadowed",
-			expression: `Eval(($a, $b) => $a == 1 and Eval(($a) => $a == 3, [3]), [1, 1])`,
+			expression: `Eval((a, b) => a == 1 and Eval((a) => a == 3, [3]), [1, 1])`,
 			want:       wantValue(true),
 		},
 		{
 			name:      "lambda in conditions",
-			condition: `Eval(($a, $b) => $a == $b, [1, 1]) == true`,
+			condition: `Eval((a, b) => a == b, [1, 1]) == true`,
 			want:      wantValue(true),
 		},
 		{
 			name:      "lambda in editor parameter",
-			statement: `set(resource.attributes["test"], Eval(($value) => ToUpperCase($value), ["pass"]))`,
+			statement: `set(resource.attributes["test"], Eval((value) => ToUpperCase(value), ["pass"]))`,
 			want: func(tCtx *ottllog.TransformContext) any {
 				tCtx.GetResource().Attributes().PutStr("test", "PASS")
 				return tCtx
@@ -2285,7 +2285,7 @@ func Test_e2e_lambda_expression(t *testing.T) {
 		},
 		{
 			name:      "lambda in statement where condition",
-			statement: `set(resource.attributes["test"], "pass") where Eval(($value) => ToUpperCase($value), ["pass"]) == "PASS"`,
+			statement: `set(resource.attributes["test"], "pass") where Eval((value) => ToUpperCase(value), ["pass"]) == "PASS"`,
 			want: func(tCtx *ottllog.TransformContext) any {
 				tCtx.GetResource().Attributes().PutStr("test", "pass")
 				return tCtx
@@ -2293,12 +2293,12 @@ func Test_e2e_lambda_expression(t *testing.T) {
 		},
 		{
 			name:       "lambda with left blank identifier",
-			expression: `Eval((_, $value) => $value, ["skip", "pass"])`,
+			expression: `Eval((_, value) => value, ["skip", "pass"])`,
 			want:       wantValue("pass"),
 		},
 		{
 			name:       "lambda with multiple blank identifiers",
-			expression: `Eval((_, _, $value) => $value, ["skip", "skip too", "pass"])`,
+			expression: `Eval((_, _, value) => value, ["skip", "skip too", "pass"])`,
 			want:       wantValue("pass"),
 		},
 		{
@@ -2308,13 +2308,18 @@ func Test_e2e_lambda_expression(t *testing.T) {
 		},
 		{
 			name:       "lambda with right blank identifiers",
-			expression: `Eval((_,_,$v) => $v, ["skip", "ignore", "next"])`,
+			expression: `Eval((_,_,v) => v, ["skip", "ignore", "next"])`,
+			want:       wantValue("next"),
+		},
+		{
+			name:       "lambda with right blank identifiers",
+			expression: `Eval((_,_,attributes) => attributes, ["skip", "ignore", "next"])`,
 			want:       wantValue("next"),
 		},
 		{
 			name:         "lambda can't use blank identifiers in the body",
 			expression:   `Eval((_) => _, ["blank"])`,
-			wantParseErr: "blank identifier '_' cannot be used in expressions",
+			wantParseErr: "expression has invalid syntax",
 		},
 	}
 
@@ -2792,22 +2797,25 @@ func newLambdaEvalFactory[K any]() ottl.Factory[K] {
 func createLambdaEvalFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
 	args, ok := oArgs.(*lambdaEvalArguments[K])
 	if !ok {
-		return nil, errors.New("EvalArguments args must be of type *EvalArguments[K]")
+		return nil, errors.New("lambdaEvalArguments args must be of type *lambdaEvalArguments[K]")
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
-		in := make([]any, 0, len(args.Params))
-		for _, param := range args.Params {
+		lambda, err := args.Expr.Activate(ctx, len(args.Params))
+		if err != nil {
+			return nil, err
+		}
+		defer lambda.Close()
+		for i, param := range args.Params {
 			val, err := param.Get(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
-			in = append(in, val)
+			err = lambda.SetArg(i, val)
+			if err != nil {
+				return nil, err
+			}
 		}
-		eval, err := args.Expr.Eval(ctx, tCtx, in)
-		if err != nil {
-			return nil, err
-		}
-		return eval, err
+		return lambda.Eval(tCtx)
 	}, nil
 }

@@ -14,7 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
-func TestLocalBindingScopeStack(t *testing.T) {
+func TestLocalScopeStack(t *testing.T) {
 	var scopes localScopeStack
 	assert.True(t, scopes.empty())
 	assert.False(t, scopes.inScope("value"))
@@ -36,30 +36,36 @@ func TestLocalBindingScopeStack(t *testing.T) {
 	assert.True(t, scopes.empty())
 }
 
-func Test_newLocalBindingGetter(t *testing.T) {
+func Test_newLocalIdentifierGetter(t *testing.T) {
 	tests := []struct {
 		name             string
-		identifierPath   *localIdentifier
+		identifierPath   *basePath[any]
 		localScopeFrames []localScopeFrame
 		want             Getter[any]
 		wantErr          string
 	}{
 		{
 			name:             "valid",
-			identifierPath:   &localIdentifier{Name: "$value"},
-			localScopeFrames: []localScopeFrame{{"$value": {}}},
-			want:             &localBindingGetter[any]{identifierPath: &localIdentifier{Name: "$value"}},
+			identifierPath:   &basePath[any]{name: "value", localIdentifier: true},
+			localScopeFrames: []localScopeFrame{{"value": {}}},
+			want:             &localIdentifierGetter[any]{identifier: &basePath[any]{name: "value", localIdentifier: true}},
+		},
+		{
+			name:             "invalid",
+			identifierPath:   &basePath[any]{name: "value", originalText: "value", localIdentifier: false},
+			localScopeFrames: []localScopeFrame{{"value": {}}},
+			wantErr:          `"value" is not a valid local identifier`,
 		},
 		{
 			name:           "local identifier outside scoped body",
-			identifierPath: &localIdentifier{Name: "$value"},
-			wantErr:        "local identifier $value is only valid inside a scoped body",
+			identifierPath: &basePath[any]{name: "value", localIdentifier: true},
+			wantErr:        `local identifier "value" is only valid inside a scoped context`,
 		},
 		{
 			name:             "unknown local identifier",
-			identifierPath:   &localIdentifier{Name: "$foo"},
-			localScopeFrames: []localScopeFrame{{"$bar": {}}},
-			wantErr:          "local identifier $foo is not in scope",
+			identifierPath:   &basePath[any]{name: "foo", localIdentifier: true},
+			localScopeFrames: []localScopeFrame{{"bar": {}}},
+			wantErr:          `local identifier "foo" is not defined in the local scope`,
 		},
 	}
 
@@ -89,59 +95,61 @@ func Test_newLocalBindingGetter(t *testing.T) {
 	}
 }
 
-func TestLocalBindingGetter_Get(t *testing.T) {
+func Test_localIdentifierGetter_Get(t *testing.T) {
 	tests := []struct {
 		name    string
-		getter  *localBindingGetter[any]
+		getter  *localIdentifierGetter[any]
 		ctx     context.Context
 		want    any
 		wantErr string
 	}{
 		{
-			name: "outside binding scope",
-			getter: &localBindingGetter[any]{
-				identifierPath: &localIdentifier{Name: localIdentifierDecl("$missing")},
+			name: "outside active local scope",
+			getter: &localIdentifierGetter[any]{
+				identifier: &basePath[any]{name: "missing"},
 			},
 			ctx:     t.Context(),
-			wantErr: "local identifier $missing evaluated outside of a local binding scope",
+			wantErr: `local identifier "missing" evaluated outside of an active local scope`,
 		},
 		{
 			name: "missing binding",
-			getter: &localBindingGetter[any]{
-				identifierPath: &localIdentifier{Name: localIdentifierDecl("$missing")},
+			getter: &localIdentifierGetter[any]{
+				identifier: &basePath[any]{name: "missing"},
 			},
-			ctx:     context.WithValue(t.Context(), localBindingsKey{}, map[string]any{"other": 1}),
-			wantErr: "missing value for local identifier $missing",
+			ctx:     context.WithValue(t.Context(), localActivationKey{}, &localActivation{bindings: map[string]any{"other": 1}}),
+			wantErr: `missing value for local identifier "missing"`,
 		},
 		{
 			name: "returns direct binding",
-			getter: &localBindingGetter[any]{
-				identifierPath: &localIdentifier{Name: localIdentifierDecl("$value")},
+			getter: &localIdentifierGetter[any]{
+				identifier: &basePath[any]{name: "value"},
 			},
-			ctx:  context.WithValue(t.Context(), localBindingsKey{}, map[string]any{"$value": "ok"}),
+			ctx:  context.WithValue(t.Context(), localActivationKey{}, &localActivation{bindings: map[string]any{"value": "ok"}}),
 			want: "ok",
 		},
 		{
 			name: "returns indexed binding",
-			getter: &localBindingGetter[any]{
-				identifierPath: &localIdentifier{
-					Name: localIdentifierDecl("$value"),
-					Keys: []key{{String: ottltest.Strp("field")}},
+			getter: &localIdentifierGetter[any]{
+				identifier: &basePath[any]{
+					name: "value",
+					keys: []Key[any]{
+						&baseKey[any]{s: ottltest.Strp("field")},
+					},
 				},
 			},
-			ctx:  context.WithValue(t.Context(), localBindingsKey{}, map[string]any{"$value": map[string]any{"field": "ok"}}),
+			ctx:  context.WithValue(t.Context(), localActivationKey{}, &localActivation{bindings: map[string]any{"value": map[string]any{"field": "ok"}}}),
 			want: "ok",
 		},
 		{
 			name: "indexing error is wrapped",
-			getter: &localBindingGetter[any]{
-				identifierPath: &localIdentifier{
-					Name: localIdentifierDecl("$value"),
-					Keys: []key{{Int: ottltest.Intp(2)}},
+			getter: &localIdentifierGetter[any]{
+				identifier: &basePath[any]{
+					name: "value",
+					keys: []Key[any]{&baseKey[any]{i: ottltest.Intp(2)}},
 				},
 			},
-			ctx:     context.WithValue(t.Context(), localBindingsKey{}, map[string]any{"$value": []any{"only"}}),
-			wantErr: "cannot index local identifier $value: index 2 out of bounds",
+			ctx:     context.WithValue(t.Context(), localActivationKey{}, &localActivation{bindings: map[string]any{"value": []any{"only"}}}),
+			wantErr: `cannot index local identifier "value": index 2 out of bounds`,
 		},
 	}
 
@@ -159,8 +167,8 @@ func TestLocalBindingGetter_Get(t *testing.T) {
 	}
 }
 
-func makeLocalIdentifiers(args ...string) []LocalIdentifier {
-	res := make([]LocalIdentifier, len(args))
+func makeLocalIdentifiers(args ...string) []LocalIdentifierDecl {
+	res := make([]LocalIdentifierDecl, len(args))
 	for i, v := range args {
 		lid := localIdentifierDecl(v)
 		res[i] = &lid
