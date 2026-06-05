@@ -752,7 +752,8 @@ func TestGetContributors(t *testing.T) {
 			server := httptest.NewServer(tc.server)
 			defer func() { server.Close() }()
 
-			client := github.NewClient(nil)
+			client, err := github.NewClient(nil)
+			assert.NoError(t, err)
 			url, _ := url.Parse(server.URL + "/api-v3" + "/")
 			client.BaseURL = url
 			client.UploadURL = url

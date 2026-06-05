@@ -60,7 +60,10 @@ func newTracesReceiver(
 		return nil, err
 	}
 
-	client := github.NewClient(nil)
+	client, err := github.NewClient(nil)
+	if err != nil {
+		return nil, err
+	}
 
 	gtr := &githubTracesReceiver{
 		traceConsumer: traceConsumer,
