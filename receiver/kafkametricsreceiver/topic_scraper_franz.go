@@ -209,6 +209,16 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	rb := s.mb.NewResourceBuilder()
 	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
+	// Cluster ID is carried in the broker metadata response (topics excluded).
+	// Only issue the extra request when the attribute is enabled. Failure here
+	// should not fail the whole scrape; record it as partial.
+	if s.config.ResourceAttributes.KafkaClusterID.Enabled {
+		if meta, merr := s.adm.BrokerMetadata(ctx); merr != nil {
+			scrapeErrs.AddPartial(1, fmt.Errorf("franz-go: BrokerMetadata failed: %w", merr))
+		} else {
+			rb.SetKafkaClusterID(meta.Cluster)
+		}
+	}
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrs.Combine()
 }
 

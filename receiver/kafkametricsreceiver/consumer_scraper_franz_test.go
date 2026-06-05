@@ -143,6 +143,7 @@ func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
 		GroupMatch:           ".*",
 	}
 	cfg.ResourceAttributes.KafkaClusterAlias.Enabled = true
+	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
 
 	s, err := createConsumerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
@@ -157,6 +158,11 @@ func TestConsumerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	val, ok := rm.Resource().Attributes().Get("kafka.cluster.alias")
 	require.True(t, ok)
 	require.Equal(t, "test-cluster", val.Str())
+
+	// cluster id (opt-in, enabled above) is discovered from cluster metadata ("kfake" by default)
+	idVal, ok := rm.Resource().Attributes().Get("kafka.cluster.id")
+	require.True(t, ok)
+	require.Equal(t, "kfake", idVal.Str())
 
 	// We produced 1 record at partition 0, and committed offset = 0. End offset is 1 (record offset 0 + 1),
 	// so lag = 1 - 0 = 1.
