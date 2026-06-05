@@ -197,6 +197,7 @@ body:
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/drain
+      - processor/dynamic_sampling
       - processor/filter
       - processor/genainormalizer
       - processor/geoip
