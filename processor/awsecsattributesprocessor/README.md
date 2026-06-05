@@ -26,6 +26,38 @@ relevant attributes to the corresponding telemetry. This complements the
 `resourcedetection` processor, which is designed for a single collector enriching
 its own telemetry rather than centrally enriching telemetry from many containers.
 
+## How it works
+
+When a new container is created in ECS on EC2, the ECS Agent assigns it a metadata
+endpoint that is exposed to the container through the `ECS_CONTAINER_METADATA_URI_V4`
+or `ECS_CONTAINER_METADATA_URI` environment variables. The processor uses the Docker
+API to list the running containers and read those endpoints, calls each endpoint to
+collect the container and task metadata, and caches the result keyed by container ID.
+As telemetry is received, it reads the container ID from the configured resource
+attribute(s) and associates the cached metadata with the corresponding telemetry.
+
+```mermaid
+sequenceDiagram
+    box rgba(33, 150, 243, 0.12) ec2-ecs
+        participant docker as docker api
+        participant mAPI as ecs metadata api
+    end
+    participant otel as otel (awsecsattributes processor)
+    activate otel
+    rect rgba(76, 175, 80, 0.12)
+        otel->>docker: get a list of all running containers and metadata endpoints from the env
+        otel->>mAPI: collect metadata for all running containers on the host
+        otel->>otel: store the metadata in a cache
+    end
+    loop metrics / logs / traces
+        rect rgba(255, 152, 0, 0.12)
+            otel->>otel: extract container ID from resource.attributes and use it to identify the relevant metadata from cache
+            otel->>otel: associate the attributes with the relevant telemetry data
+        end
+    end
+    deactivate otel
+```
+
 ## Pre-requisites
 
 - Privileged mode must be enabled for the container running the collector.
