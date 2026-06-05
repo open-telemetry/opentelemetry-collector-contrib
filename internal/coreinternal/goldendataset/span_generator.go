@@ -197,7 +197,12 @@ func fillStatus(statusStr PICTInputStatus, spanStatus ptrace.Status) {
 }
 
 func appendDatabaseSQLAttributes(attrMap pcommon.Map) {
-	attrMap.PutStr(string(conventionsv128.DBSystemKey), "mysql")
+	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0DatabaseConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventionsv128.DBSystemKey), "mysql")
+	}
+	if metadata.InternalCoreinternalGoldendatasetEmitV1DatabaseConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.DBSystemNameKey), "mysql")
+	}
 	attrMap.PutStr(string(conventionsv125.DBConnectionStringKey), "Server=shopdb.example.com;Database=ShopDb;Uid=billing_user;TableCache=true;UseCompression=True;MinimumPoolSize=10;MaximumPoolSize=50;")
 	attrMap.PutStr(string(conventionsv125.DBUserKey), "billing_user")
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
@@ -222,7 +227,12 @@ func appendDatabaseSQLAttributes(attrMap pcommon.Map) {
 }
 
 func appendDatabaseNoSQLAttributes(attrMap pcommon.Map) {
-	attrMap.PutStr(string(conventionsv128.DBSystemKey), "mongodb")
+	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0DatabaseConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventionsv128.DBSystemKey), "mongodb")
+	}
+	if metadata.InternalCoreinternalGoldendatasetEmitV1DatabaseConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.DBSystemNameKey), "mongodb")
+	}
 	attrMap.PutStr(string(conventionsv125.DBUserKey), "the_user")
 	attrMap.PutStr(string(conventionsv125.NetPeerNameKey), "mongodb0.example.com")
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
@@ -338,7 +348,12 @@ func appendHTTPServerAttributes(includeStatus bool, attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventionsv118.HTTPUserAgentKey),
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36")
 	attrMap.PutStr(string(conventions.HTTPRouteKey), "/blog/posts")
-	attrMap.PutStr(string(conventionsv120.HTTPClientIPKey), "2001:506:71f0:16e::1")
+	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventionsv120.HTTPClientIPKey), "2001:506:71f0:16e::1")
+	}
+	if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.ClientAddressKey), "2001:506:71f0:16e::1")
+	}
 	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
 }
 
@@ -450,7 +465,12 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventionsv118.HTTPUserAgentKey),
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36")
 	attrMap.PutStr(string(conventions.HTTPRouteKey), "/blog/posts")
-	attrMap.PutStr(string(conventionsv120.HTTPClientIPKey), "2600:1700:1f00:11c0:1ced:afa5:fd77:9d01")
+	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventionsv120.HTTPClientIPKey), "2600:1700:1f00:11c0:1ced:afa5:fd77:9d01")
+	}
+	if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+		attrMap.PutStr(string(conventions.ClientAddressKey), "2600:1700:1f00:11c0:1ced:afa5:fd77:9d01")
+	}
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventionsv138.PeerServiceKey), "IdentifyImageService")
 	}

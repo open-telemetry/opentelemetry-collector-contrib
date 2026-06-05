@@ -6,7 +6,6 @@ attributes. It also masks attribute values that match a blocked value
 list. Attributes that aren't on the allowed list are removed before any
 value checks are done.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs, metrics   |

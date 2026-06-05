@@ -197,6 +197,7 @@ pkg/winperfcounters/                                             @open-telemetry
 pkg/xk8stest/                                                    @open-telemetry/collector-contrib-approvers @crobert-1
 pkg/xstreamencoding/                                             @open-telemetry/collector-contrib-approvers @Kavindu-Dodan @axw
 processor/attributesprocessor/                                   @open-telemetry/collector-contrib-approvers @boostchicken
+processor/awsecsattributesprocessor/                             @open-telemetry/collector-contrib-approvers @povilasv @iblancasa @dmitryax
 processor/cardinalityguardianprocessor/                          @open-telemetry/collector-contrib-approvers @atoulme @YElayyat @jmacd
 processor/coralogixprocessor/                                    @open-telemetry/collector-contrib-approvers @crobert-1 @povilasv @iblancasa
 processor/cumulativetodeltaprocessor/                            @open-telemetry/collector-contrib-approvers @TylerHelmuth
@@ -204,7 +205,7 @@ processor/deltatocumulativeprocessor/                            @open-telemetry
 processor/deltatorateprocessor/                                  @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/drainprocessor/                                        @open-telemetry/collector-contrib-approvers @MikeGoldsmith @atoulme @martinjt
 processor/filterprocessor/                                       @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
-processor/genainormalizerprocessor/                              @open-telemetry/collector-contrib-approvers @TylerHelmuth
+processor/genainormalizerprocessor/                              @open-telemetry/collector-contrib-approvers @TylerHelmuth @kylehounslow
 processor/geoipprocessor/                                        @open-telemetry/collector-contrib-approvers @andrzej-stencel @michalpristas @rogercoll
 processor/groupbyattrsprocessor/                                 @open-telemetry/collector-contrib-approvers @rnishtala-sumo @amdprophet
 processor/groupbytraceprocessor/                                 @open-telemetry/collector-contrib-approvers @iblancasa
