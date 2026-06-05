@@ -6,6 +6,7 @@ package healthcheckextension // import "github.com/open-telemetry/opentelemetry-
 import (
 	"errors"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck"
 )
 
@@ -16,7 +17,7 @@ type Config struct {
 
 // Validate checks if the extension configuration is valid, including feature gate checks.
 func (c *Config) Validate() error {
-	if !useComponentStatusGate.IsEnabled() && (c.HTTPConfig != nil || c.GRPCConfig != nil) {
+	if !metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.IsEnabled() && (c.HTTPConfig != nil || c.GRPCConfig != nil) {
 		return errors.New(
 			"v2 healthcheck configuration (http/grpc fields) detected but feature gate is disabled. " +
 				"Either remove the v2 config fields or enable the feature gate with: " +

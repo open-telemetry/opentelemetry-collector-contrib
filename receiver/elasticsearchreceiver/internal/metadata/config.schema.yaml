@@ -11,6 +11,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "name"
+            default:
+              - "name"
       elasticsearch.breaker.memory.limit:
         description: "ElasticsearchBreakerMemoryLimitMetricConfig provides config for the elasticsearch.breaker.memory.limit metric."
         type: object
@@ -18,6 +34,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "name"
+            default:
+              - "name"
       elasticsearch.breaker.tripped:
         description: "ElasticsearchBreakerTrippedMetricConfig provides config for the elasticsearch.breaker.tripped metric."
         type: object
@@ -25,6 +57,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "name"
+            default:
+              - "name"
       elasticsearch.cluster.data_nodes:
         description: "ElasticsearchClusterDataNodesMetricConfig provides config for the elasticsearch.cluster.data_nodes metric."
         type: object
@@ -39,6 +87,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "status"
+            default:
+              - "status"
       elasticsearch.cluster.in_flight_fetch:
         description: "ElasticsearchClusterInFlightFetchMetricConfig provides config for the elasticsearch.cluster.in_flight_fetch metric."
         type: object
@@ -53,6 +117,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cache_name"
+            default:
+              - "cache_name"
       elasticsearch.cluster.nodes:
         description: "ElasticsearchClusterNodesMetricConfig provides config for the elasticsearch.cluster.nodes metric."
         type: object
@@ -74,6 +154,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "state"
+            default:
+              - "state"
       elasticsearch.cluster.published_states.full:
         description: "ElasticsearchClusterPublishedStatesFullMetricConfig provides config for the elasticsearch.cluster.published_states.full metric."
         type: object
@@ -88,6 +184,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "state"
+            default:
+              - "state"
       elasticsearch.cluster.state_queue:
         description: "ElasticsearchClusterStateQueueMetricConfig provides config for the elasticsearch.cluster.state_queue metric."
         type: object
@@ -95,6 +207,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "state"
+            default:
+              - "state"
       elasticsearch.cluster.state_update.count:
         description: "ElasticsearchClusterStateUpdateCountMetricConfig provides config for the elasticsearch.cluster.state_update.count metric."
         type: object
@@ -102,6 +230,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "state"
+            default:
+              - "state"
       elasticsearch.cluster.state_update.time:
         description: "ElasticsearchClusterStateUpdateTimeMetricConfig provides config for the elasticsearch.cluster.state_update.time metric."
         type: object
@@ -109,6 +253,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "state"
+                - "type"
+            default:
+              - "state"
+              - "type"
       elasticsearch.index.cache.evictions:
         description: "ElasticsearchIndexCacheEvictionsMetricConfig provides config for the elasticsearch.index.cache.evictions metric."
         type: object
@@ -116,6 +278,24 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cache_name"
+                - "aggregation"
+            default:
+              - "cache_name"
+              - "aggregation"
       elasticsearch.index.cache.memory.usage:
         description: "ElasticsearchIndexCacheMemoryUsageMetricConfig provides config for the elasticsearch.index.cache.memory.usage metric."
         type: object
@@ -123,6 +303,24 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cache_name"
+                - "aggregation"
+            default:
+              - "cache_name"
+              - "aggregation"
       elasticsearch.index.cache.size:
         description: "ElasticsearchIndexCacheSizeMetricConfig provides config for the elasticsearch.index.cache.size metric."
         type: object
@@ -130,6 +328,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "aggregation"
+            default:
+              - "aggregation"
       elasticsearch.index.documents:
         description: "ElasticsearchIndexDocumentsMetricConfig provides config for the elasticsearch.index.documents metric."
         type: object
@@ -137,6 +351,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "state"
+                - "aggregation"
+            default:
+              - "state"
+              - "aggregation"
       elasticsearch.index.operations.completed:
         description: "ElasticsearchIndexOperationsCompletedMetricConfig provides config for the elasticsearch.index.operations.completed metric."
         type: object
@@ -144,6 +376,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+                - "aggregation"
+            default:
+              - "operation"
+              - "aggregation"
       elasticsearch.index.operations.merge.current:
         description: "ElasticsearchIndexOperationsMergeCurrentMetricConfig provides config for the elasticsearch.index.operations.merge.current metric."
         type: object
@@ -151,6 +401,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "aggregation"
+            default:
+              - "aggregation"
       elasticsearch.index.operations.merge.docs_count:
         description: "ElasticsearchIndexOperationsMergeDocsCountMetricConfig provides config for the elasticsearch.index.operations.merge.docs_count metric."
         type: object
@@ -158,6 +424,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "aggregation"
+            default:
+              - "aggregation"
       elasticsearch.index.operations.merge.size:
         description: "ElasticsearchIndexOperationsMergeSizeMetricConfig provides config for the elasticsearch.index.operations.merge.size metric."
         type: object
@@ -165,6 +447,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "aggregation"
+            default:
+              - "aggregation"
       elasticsearch.index.operations.time:
         description: "ElasticsearchIndexOperationsTimeMetricConfig provides config for the elasticsearch.index.operations.time metric."
         type: object
@@ -172,6 +470,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+                - "aggregation"
+            default:
+              - "operation"
+              - "aggregation"
       elasticsearch.index.segments.count:
         description: "ElasticsearchIndexSegmentsCountMetricConfig provides config for the elasticsearch.index.segments.count metric."
         type: object
@@ -179,6 +495,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "aggregation"
+            default:
+              - "aggregation"
       elasticsearch.index.segments.memory:
         description: "ElasticsearchIndexSegmentsMemoryMetricConfig provides config for the elasticsearch.index.segments.memory metric."
         type: object
@@ -186,6 +518,24 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "aggregation"
+                - "object"
+            default:
+              - "aggregation"
+              - "object"
       elasticsearch.index.segments.size:
         description: "ElasticsearchIndexSegmentsSizeMetricConfig provides config for the elasticsearch.index.segments.size metric."
         type: object
@@ -193,6 +543,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "aggregation"
+            default:
+              - "aggregation"
       elasticsearch.index.shards.size:
         description: "ElasticsearchIndexShardsSizeMetricConfig provides config for the elasticsearch.index.shards.size metric."
         type: object
@@ -200,6 +566,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "aggregation"
+            default:
+              - "aggregation"
       elasticsearch.index.translog.operations:
         description: "ElasticsearchIndexTranslogOperationsMetricConfig provides config for the elasticsearch.index.translog.operations metric."
         type: object
@@ -207,6 +589,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "aggregation"
+            default:
+              - "aggregation"
       elasticsearch.index.translog.size:
         description: "ElasticsearchIndexTranslogSizeMetricConfig provides config for the elasticsearch.index.translog.size metric."
         type: object
@@ -214,6 +612,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "aggregation"
+            default:
+              - "aggregation"
       elasticsearch.indexing_pressure.memory.limit:
         description: "ElasticsearchIndexingPressureMemoryLimitMetricConfig provides config for the elasticsearch.indexing_pressure.memory.limit metric."
         type: object
@@ -242,6 +656,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "stage"
+            default:
+              - "stage"
       elasticsearch.node.cache.count:
         description: "ElasticsearchNodeCacheCountMetricConfig provides config for the elasticsearch.node.cache.count metric."
         type: object
@@ -249,6 +679,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       elasticsearch.node.cache.evictions:
         description: "ElasticsearchNodeCacheEvictionsMetricConfig provides config for the elasticsearch.node.cache.evictions metric."
         type: object
@@ -256,6 +702,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cache_name"
+            default:
+              - "cache_name"
       elasticsearch.node.cache.memory.usage:
         description: "ElasticsearchNodeCacheMemoryUsageMetricConfig provides config for the elasticsearch.node.cache.memory.usage metric."
         type: object
@@ -263,6 +725,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cache_name"
+            default:
+              - "cache_name"
       elasticsearch.node.cache.size:
         description: "ElasticsearchNodeCacheSizeMetricConfig provides config for the elasticsearch.node.cache.size metric."
         type: object
@@ -284,6 +762,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       elasticsearch.node.disk.io.read:
         description: "ElasticsearchNodeDiskIoReadMetricConfig provides config for the elasticsearch.node.disk.io.read metric."
         type: object
@@ -305,6 +799,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "state"
+            default:
+              - "state"
       elasticsearch.node.fs.disk.available:
         description: "ElasticsearchNodeFsDiskAvailableMetricConfig provides config for the elasticsearch.node.fs.disk.available metric."
         type: object
@@ -368,6 +878,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
       elasticsearch.node.operations.current:
         description: "ElasticsearchNodeOperationsCurrentMetricConfig provides config for the elasticsearch.node.operations.current metric."
         type: object
@@ -375,6 +901,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
       elasticsearch.node.operations.get.completed:
         description: "ElasticsearchNodeOperationsGetCompletedMetricConfig provides config for the elasticsearch.node.operations.get.completed metric."
         type: object
@@ -382,6 +924,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "result"
+            default:
+              - "result"
       elasticsearch.node.operations.get.time:
         description: "ElasticsearchNodeOperationsGetTimeMetricConfig provides config for the elasticsearch.node.operations.get.time metric."
         type: object
@@ -389,6 +947,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "result"
+            default:
+              - "result"
       elasticsearch.node.operations.time:
         description: "ElasticsearchNodeOperationsTimeMetricConfig provides config for the elasticsearch.node.operations.time metric."
         type: object
@@ -396,6 +970,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
       elasticsearch.node.pipeline.ingest.documents.current:
         description: "ElasticsearchNodePipelineIngestDocumentsCurrentMetricConfig provides config for the elasticsearch.node.pipeline.ingest.documents.current metric."
         type: object
@@ -403,6 +993,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "name"
+            default:
+              - "name"
       elasticsearch.node.pipeline.ingest.documents.preprocessed:
         description: "ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricConfig provides config for the elasticsearch.node.pipeline.ingest.documents.preprocessed metric."
         type: object
@@ -410,6 +1016,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "name"
+            default:
+              - "name"
       elasticsearch.node.pipeline.ingest.operations.failed:
         description: "ElasticsearchNodePipelineIngestOperationsFailedMetricConfig provides config for the elasticsearch.node.pipeline.ingest.operations.failed metric."
         type: object
@@ -417,6 +1039,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "name"
+            default:
+              - "name"
       elasticsearch.node.script.cache_evictions:
         description: "ElasticsearchNodeScriptCacheEvictionsMetricConfig provides config for the elasticsearch.node.script.cache_evictions metric."
         type: object
@@ -445,6 +1083,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "object"
+            default:
+              - "object"
       elasticsearch.node.shards.data_set.size:
         description: "ElasticsearchNodeShardsDataSetSizeMetricConfig provides config for the elasticsearch.node.shards.data_set.size metric."
         type: object
@@ -473,6 +1127,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "thread_pool_name"
+                - "state"
+            default:
+              - "thread_pool_name"
+              - "state"
       elasticsearch.node.thread_pool.tasks.queued:
         description: "ElasticsearchNodeThreadPoolTasksQueuedMetricConfig provides config for the elasticsearch.node.thread_pool.tasks.queued metric."
         type: object
@@ -480,6 +1152,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "thread_pool_name"
+            default:
+              - "thread_pool_name"
       elasticsearch.node.thread_pool.threads:
         description: "ElasticsearchNodeThreadPoolThreadsMetricConfig provides config for the elasticsearch.node.thread_pool.threads metric."
         type: object
@@ -487,6 +1175,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "thread_pool_name"
+                - "state"
+            default:
+              - "thread_pool_name"
+              - "state"
       elasticsearch.node.translog.operations:
         description: "ElasticsearchNodeTranslogOperationsMetricConfig provides config for the elasticsearch.node.translog.operations metric."
         type: object
@@ -543,6 +1249,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "state"
+            default:
+              - "state"
       elasticsearch.process.cpu.time:
         description: "ElasticsearchProcessCPUTimeMetricConfig provides config for the elasticsearch.process.cpu.time metric."
         type: object
@@ -578,6 +1300,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "name"
+            default:
+              - "name"
       jvm.gc.collections.elapsed:
         description: "JvmGcCollectionsElapsedMetricConfig provides config for the jvm.gc.collections.elapsed metric."
         type: object
@@ -585,6 +1323,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "name"
+            default:
+              - "name"
       jvm.memory.heap.committed:
         description: "JvmMemoryHeapCommittedMetricConfig provides config for the jvm.memory.heap.committed metric."
         type: object
@@ -634,6 +1388,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "name"
+            default:
+              - "name"
       jvm.memory.pool.used:
         description: "JvmMemoryPoolUsedMetricConfig provides config for the jvm.memory.pool.used metric."
         type: object
@@ -641,6 +1411,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "name"
+            default:
+              - "name"
       jvm.threads.count:
         description: "JvmThreadsCountMetricConfig provides config for the jvm.threads.count metric."
         type: object

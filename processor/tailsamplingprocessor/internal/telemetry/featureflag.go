@@ -3,24 +3,14 @@
 
 package telemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
 
-import "go.opentelemetry.io/collector/featuregate"
-
-var metricStatCountSpansSampledFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.tailsamplingprocessor.metricstatcountspanssampled",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, a new metric stat_count_spans_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of spans sampled or not per sampling policy, where the original counts traces."),
+import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 )
 
 func IsMetricStatCountSpansSampledEnabled() bool {
-	return metricStatCountSpansSampledFeatureGate.IsEnabled()
+	return metadata.ProcessorTailsamplingprocessorMetricstatcountspanssampledFeatureGate.IsEnabled()
 }
 
-var recordPolicyFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.tailsamplingprocessor.recordpolicy",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, attaches the name of the policy (and if applicable, composite policy) responsible for sampling a trace in the 'tailsampling.policy', 'tailsampling.composite_policy', and `tailsampling.cached_decision` attributes."),
-)
-
 func IsRecordPolicyEnabled() bool {
-	return recordPolicyFeatureGate.IsEnabled()
+	return metadata.ProcessorTailsamplingprocessorRecordpolicyFeatureGate.IsEnabled()
 }

@@ -3,17 +3,29 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// NsxtNodeCPUUtilizationMetricAttributeKey specifies the key of an attribute for the nsxt.node.cpu.utilization metric.
+type NsxtNodeCPUUtilizationMetricAttributeKey string
+
+const (
+	NsxtNodeCPUUtilizationMetricAttributeKeyClass NsxtNodeCPUUtilizationMetricAttributeKey = "class"
+)
+
+// NsxtNodeCPUUtilizationMetricConfig provides config for the nsxt.node.cpu.utilization metric.
+type NsxtNodeCPUUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NsxtNodeCPUUtilizationMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NsxtNodeCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -27,39 +39,270 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+func (ms *NsxtNodeCPUUtilizationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case NsxtNodeCPUUtilizationMetricAttributeKeyClass:
+		default:
+			return fmt.Errorf("metric nsxt.node.cpu.utilization doesn't have an attribute %v, valid attributes: [class]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// NsxtNodeFilesystemUsageMetricAttributeKey specifies the key of an attribute for the nsxt.node.filesystem.usage metric.
+type NsxtNodeFilesystemUsageMetricAttributeKey string
+
+const (
+	NsxtNodeFilesystemUsageMetricAttributeKeyDiskState NsxtNodeFilesystemUsageMetricAttributeKey = "state"
+)
+
+// NsxtNodeFilesystemUsageMetricConfig provides config for the nsxt.node.filesystem.usage metric.
+type NsxtNodeFilesystemUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NsxtNodeFilesystemUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *NsxtNodeFilesystemUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *NsxtNodeFilesystemUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case NsxtNodeFilesystemUsageMetricAttributeKeyDiskState:
+		default:
+			return fmt.Errorf("metric nsxt.node.filesystem.usage doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// NsxtNodeFilesystemUtilizationMetricConfig provides config for the nsxt.node.filesystem.utilization metric.
+type NsxtNodeFilesystemUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *NsxtNodeFilesystemUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// NsxtNodeMemoryCacheUsageMetricConfig provides config for the nsxt.node.memory.cache.usage metric.
+type NsxtNodeMemoryCacheUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *NsxtNodeMemoryCacheUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// NsxtNodeMemoryUsageMetricConfig provides config for the nsxt.node.memory.usage metric.
+type NsxtNodeMemoryUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *NsxtNodeMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// NsxtNodeNetworkIoMetricAttributeKey specifies the key of an attribute for the nsxt.node.network.io metric.
+type NsxtNodeNetworkIoMetricAttributeKey string
+
+const (
+	NsxtNodeNetworkIoMetricAttributeKeyDirection NsxtNodeNetworkIoMetricAttributeKey = "direction"
+)
+
+// NsxtNodeNetworkIoMetricConfig provides config for the nsxt.node.network.io metric.
+type NsxtNodeNetworkIoMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NsxtNodeNetworkIoMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *NsxtNodeNetworkIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *NsxtNodeNetworkIoMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case NsxtNodeNetworkIoMetricAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric nsxt.node.network.io doesn't have an attribute %v, valid attributes: [direction]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// NsxtNodeNetworkPacketCountMetricAttributeKey specifies the key of an attribute for the nsxt.node.network.packet.count metric.
+type NsxtNodeNetworkPacketCountMetricAttributeKey string
+
+const (
+	NsxtNodeNetworkPacketCountMetricAttributeKeyDirection  NsxtNodeNetworkPacketCountMetricAttributeKey = "direction"
+	NsxtNodeNetworkPacketCountMetricAttributeKeyPacketType NsxtNodeNetworkPacketCountMetricAttributeKey = "type"
+)
+
+// NsxtNodeNetworkPacketCountMetricConfig provides config for the nsxt.node.network.packet.count metric.
+type NsxtNodeNetworkPacketCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NsxtNodeNetworkPacketCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *NsxtNodeNetworkPacketCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *NsxtNodeNetworkPacketCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case NsxtNodeNetworkPacketCountMetricAttributeKeyDirection, NsxtNodeNetworkPacketCountMetricAttributeKeyPacketType:
+		default:
+			return fmt.Errorf("metric nsxt.node.network.packet.count doesn't have an attribute %v, valid attributes: [direction, type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for nsxt metrics.
 type MetricsConfig struct {
-	NsxtNodeCPUUtilization        MetricConfig `mapstructure:"nsxt.node.cpu.utilization"`
-	NsxtNodeFilesystemUsage       MetricConfig `mapstructure:"nsxt.node.filesystem.usage"`
-	NsxtNodeFilesystemUtilization MetricConfig `mapstructure:"nsxt.node.filesystem.utilization"`
-	NsxtNodeMemoryCacheUsage      MetricConfig `mapstructure:"nsxt.node.memory.cache.usage"`
-	NsxtNodeMemoryUsage           MetricConfig `mapstructure:"nsxt.node.memory.usage"`
-	NsxtNodeNetworkIo             MetricConfig `mapstructure:"nsxt.node.network.io"`
-	NsxtNodeNetworkPacketCount    MetricConfig `mapstructure:"nsxt.node.network.packet.count"`
+	NsxtNodeCPUUtilization        NsxtNodeCPUUtilizationMetricConfig        `mapstructure:"nsxt.node.cpu.utilization"`
+	NsxtNodeFilesystemUsage       NsxtNodeFilesystemUsageMetricConfig       `mapstructure:"nsxt.node.filesystem.usage"`
+	NsxtNodeFilesystemUtilization NsxtNodeFilesystemUtilizationMetricConfig `mapstructure:"nsxt.node.filesystem.utilization"`
+	NsxtNodeMemoryCacheUsage      NsxtNodeMemoryCacheUsageMetricConfig      `mapstructure:"nsxt.node.memory.cache.usage"`
+	NsxtNodeMemoryUsage           NsxtNodeMemoryUsageMetricConfig           `mapstructure:"nsxt.node.memory.usage"`
+	NsxtNodeNetworkIo             NsxtNodeNetworkIoMetricConfig             `mapstructure:"nsxt.node.network.io"`
+	NsxtNodeNetworkPacketCount    NsxtNodeNetworkPacketCountMetricConfig    `mapstructure:"nsxt.node.network.packet.count"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		NsxtNodeCPUUtilization: MetricConfig{
+		NsxtNodeCPUUtilization: NsxtNodeCPUUtilizationMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []NsxtNodeCPUUtilizationMetricAttributeKey{NsxtNodeCPUUtilizationMetricAttributeKeyClass},
+		},
+		NsxtNodeFilesystemUsage: NsxtNodeFilesystemUsageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []NsxtNodeFilesystemUsageMetricAttributeKey{NsxtNodeFilesystemUsageMetricAttributeKeyDiskState},
+		},
+		NsxtNodeFilesystemUtilization: NsxtNodeFilesystemUtilizationMetricConfig{
 			Enabled: true,
 		},
-		NsxtNodeFilesystemUsage: MetricConfig{
+		NsxtNodeMemoryCacheUsage: NsxtNodeMemoryCacheUsageMetricConfig{
 			Enabled: true,
 		},
-		NsxtNodeFilesystemUtilization: MetricConfig{
+		NsxtNodeMemoryUsage: NsxtNodeMemoryUsageMetricConfig{
 			Enabled: true,
 		},
-		NsxtNodeMemoryCacheUsage: MetricConfig{
-			Enabled: true,
+		NsxtNodeNetworkIo: NsxtNodeNetworkIoMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []NsxtNodeNetworkIoMetricAttributeKey{NsxtNodeNetworkIoMetricAttributeKeyDirection},
 		},
-		NsxtNodeMemoryUsage: MetricConfig{
-			Enabled: true,
-		},
-		NsxtNodeNetworkIo: MetricConfig{
-			Enabled: true,
-		},
-		NsxtNodeNetworkPacketCount: MetricConfig{
-			Enabled: true,
+		NsxtNodeNetworkPacketCount: NsxtNodeNetworkPacketCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []NsxtNodeNetworkPacketCountMetricAttributeKey{NsxtNodeNetworkPacketCountMetricAttributeKeyDirection, NsxtNodeNetworkPacketCountMetricAttributeKeyPacketType},
 		},
 	}
 }
@@ -121,9 +364,14 @@ type MetricsBuilderConfig struct {
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }

@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -37,6 +38,11 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
 		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
+		},
+		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
 			resAttrsSet: testDataSetNone,
@@ -51,9 +57,17 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["memcached.commands"] = mb.metricMemcachedCommands.config.AggregationStrategy
+			aggMap["memcached.cpu.usage"] = mb.metricMemcachedCPUUsage.config.AggregationStrategy
+			aggMap["memcached.network"] = mb.metricMemcachedNetwork.config.AggregationStrategy
+			aggMap["memcached.operation_hit_ratio"] = mb.metricMemcachedOperationHitRatio.config.AggregationStrategy
+			aggMap["memcached.operations"] = mb.metricMemcachedOperations.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -65,6 +79,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedCommandsDataPoint(ts, 1, AttributeCommandGet)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMemcachedCommandsDataPoint(ts, 3, AttributeCommandSet)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -77,6 +94,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedCPUUsageDataPoint(ts, 1, AttributeStateSystem)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMemcachedCPUUsageDataPoint(ts, 3, AttributeStateUser)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -89,14 +109,23 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedNetworkDataPoint(ts, 1, AttributeDirectionSent)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMemcachedNetworkDataPoint(ts, 3, AttributeDirectionReceived)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedOperationHitRatioDataPoint(ts, 1, AttributeOperationIncrement)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMemcachedOperationHitRatioDataPoint(ts, 3, AttributeOperationDecrement)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedOperationsDataPoint(ts, 1, AttributeTypeHit, AttributeOperationIncrement)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMemcachedOperationsDataPoint(ts, 3, AttributeTypeMiss, AttributeOperationDecrement)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -104,6 +133,13 @@ func TestMetricsBuilder(t *testing.T) {
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricMemcachedCommands.aggDataPoints)
+				assert.Empty(t, mb.metricMemcachedCPUUsage.aggDataPoints)
+				assert.Empty(t, mb.metricMemcachedNetwork.aggDataPoints)
+				assert.Empty(t, mb.metricMemcachedOperationHitRatio.aggDataPoints)
+				assert.Empty(t, mb.metricMemcachedOperations.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -143,22 +179,49 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "memcached.commands":
-					assert.False(t, validatedMetrics["memcached.commands"], "Found a duplicate in the metrics slice: memcached.commands")
-					validatedMetrics["memcached.commands"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Commands executed.", mi.Description())
-					assert.Equal(t, "{commands}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					commandAttrVal, ok := dp.Attributes().Get("command")
-					assert.True(t, ok)
-					assert.Equal(t, "get", commandAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["memcached.commands"], "Found a duplicate in the metrics slice: memcached.commands")
+						validatedMetrics["memcached.commands"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Commands executed.", mi.Description())
+						assert.Equal(t, "{commands}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						commandAttrVal, ok := dp.Attributes().Get("command")
+						assert.True(t, ok)
+						assert.Equal(t, "get", commandAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["memcached.commands"], "Found a duplicate in the metrics slice: memcached.commands")
+						validatedMetrics["memcached.commands"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Commands executed.", mi.Description())
+						assert.Equal(t, "{commands}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["memcached.commands"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("command")
+						assert.False(t, ok)
+					}
 				case "memcached.connections.current":
 					assert.False(t, validatedMetrics["memcached.connections.current"], "Found a duplicate in the metrics slice: memcached.connections.current")
 					validatedMetrics["memcached.connections.current"] = true
@@ -188,22 +251,49 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "memcached.cpu.usage":
-					assert.False(t, validatedMetrics["memcached.cpu.usage"], "Found a duplicate in the metrics slice: memcached.cpu.usage")
-					validatedMetrics["memcached.cpu.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Accumulated user and system time.", mi.Description())
-					assert.Equal(t, "s", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					stateAttrVal, ok := dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "system", stateAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["memcached.cpu.usage"], "Found a duplicate in the metrics slice: memcached.cpu.usage")
+						validatedMetrics["memcached.cpu.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Accumulated user and system time.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						stateAttrVal, ok := dp.Attributes().Get("state")
+						assert.True(t, ok)
+						assert.Equal(t, "system", stateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["memcached.cpu.usage"], "Found a duplicate in the metrics slice: memcached.cpu.usage")
+						validatedMetrics["memcached.cpu.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Accumulated user and system time.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["memcached.cpu.usage"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("state")
+						assert.False(t, ok)
+					}
 				case "memcached.current_items":
 					assert.False(t, validatedMetrics["memcached.current_items"], "Found a duplicate in the metrics slice: memcached.current_items")
 					validatedMetrics["memcached.current_items"] = true
@@ -233,57 +323,138 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "memcached.network":
-					assert.False(t, validatedMetrics["memcached.network"], "Found a duplicate in the metrics slice: memcached.network")
-					validatedMetrics["memcached.network"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes transferred over the network.", mi.Description())
-					assert.Equal(t, "by", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					directionAttrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "sent", directionAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["memcached.network"], "Found a duplicate in the metrics slice: memcached.network")
+						validatedMetrics["memcached.network"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes transferred over the network.", mi.Description())
+						assert.Equal(t, "by", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "sent", directionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["memcached.network"], "Found a duplicate in the metrics slice: memcached.network")
+						validatedMetrics["memcached.network"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Bytes transferred over the network.", mi.Description())
+						assert.Equal(t, "by", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["memcached.network"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "memcached.operation_hit_ratio":
-					assert.False(t, validatedMetrics["memcached.operation_hit_ratio"], "Found a duplicate in the metrics slice: memcached.operation_hit_ratio")
-					validatedMetrics["memcached.operation_hit_ratio"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.", mi.Description())
-					assert.Equal(t, "%", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					operationAttrVal, ok := dp.Attributes().Get("operation")
-					assert.True(t, ok)
-					assert.Equal(t, "increment", operationAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["memcached.operation_hit_ratio"], "Found a duplicate in the metrics slice: memcached.operation_hit_ratio")
+						validatedMetrics["memcached.operation_hit_ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						operationAttrVal, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+						assert.Equal(t, "increment", operationAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["memcached.operation_hit_ratio"], "Found a duplicate in the metrics slice: memcached.operation_hit_ratio")
+						validatedMetrics["memcached.operation_hit_ratio"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["memcached.operation_hit_ratio"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("operation")
+						assert.False(t, ok)
+					}
 				case "memcached.operations":
-					assert.False(t, validatedMetrics["memcached.operations"], "Found a duplicate in the metrics slice: memcached.operations")
-					validatedMetrics["memcached.operations"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Operation counts.", mi.Description())
-					assert.Equal(t, "{operations}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					typeAttrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "hit", typeAttrVal.Str())
-					operationAttrVal, ok := dp.Attributes().Get("operation")
-					assert.True(t, ok)
-					assert.Equal(t, "increment", operationAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["memcached.operations"], "Found a duplicate in the metrics slice: memcached.operations")
+						validatedMetrics["memcached.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Operation counts.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						typeAttrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "hit", typeAttrVal.Str())
+						operationAttrVal, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+						assert.Equal(t, "increment", operationAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["memcached.operations"], "Found a duplicate in the metrics slice: memcached.operations")
+						validatedMetrics["memcached.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Operation counts.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["memcached.operations"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("operation")
+						assert.False(t, ok)
+					}
 				case "memcached.threads":
 					assert.False(t, validatedMetrics["memcached.threads"], "Found a duplicate in the metrics slice: memcached.threads")
 					validatedMetrics["memcached.threads"] = true

@@ -154,6 +154,49 @@ func TestPathGetSetter(t *testing.T) {
 	}
 }
 
+// TestPathGetSetter_RelaxedNames verifies that the OTTL `metric.name` path
+// getter/setter accepts arbitrary UTF-8 strings, including names that are
+// disallowed by the current OpenTelemetry instrument-name syntax (e.g. names
+// containing `:`, `\`, spaces, or starting with non-alphabetic characters).
+//
+// This test exists to demonstrate that relaxing the instrument-name
+// restrictions in the OpenTelemetry specification does not require any change
+// to OTTL itself: the path is an opaque string passthrough.
+//
+// See https://github.com/open-telemetry/opentelemetry-specification/issues/4371
+// and https://github.com/open-telemetry/opentelemetry-specification/issues/4736.
+func TestPathGetSetter_RelaxedNames(t *testing.T) {
+	relaxedNames := []string{
+		"with:colon",
+		"with space",
+		"with/slash",
+		`with\backslash`,
+		"-leadingDash",
+		".leadingDot",
+		"with🦀utf8",
+		"",
+	}
+
+	path := &pathtest.Path[*testContext]{N: "name"}
+	accessor, err := ctxmetric.PathGetSetter(path)
+	require.NoError(t, err)
+
+	for _, name := range relaxedNames {
+		t.Run(name, func(t *testing.T) {
+			metric := pmetric.NewMetric()
+			metric.SetName("original")
+
+			err := accessor.Set(t.Context(), newTestContext(metric), name)
+			require.NoError(t, err)
+
+			got, err := accessor.Get(t.Context(), newTestContext(metric))
+			require.NoError(t, err)
+			assert.Equal(t, name, got)
+			assert.Equal(t, name, metric.Name())
+		})
+	}
+}
+
 func createTelemetry() pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName("name")

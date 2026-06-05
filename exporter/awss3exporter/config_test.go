@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.uber.org/multierr"
@@ -37,6 +38,8 @@ func TestLoadConfig(t *testing.T) {
 	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
+	backoffConfig := configretry.NewDefaultBackOffConfig()
+
 	assert.Equal(t, &Config{
 		QueueSettings:         queueCfg,
 		TimeoutSettings:       timeoutCfg,
@@ -52,6 +55,7 @@ func TestLoadConfig(t *testing.T) {
 			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_json",
+		BackOffConfig: backoffConfig,
 	}, e,
 	)
 }
@@ -97,6 +101,14 @@ func TestConfig(t *testing.T) {
 			RetryMaxBackoff:     DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_json",
+		BackOffConfig: configretry.BackOffConfig{
+			Enabled:             true,
+			InitialInterval:     5 * time.Second,
+			RandomizationFactor: 0.3,
+			Multiplier:          1.5,
+			MaxInterval:         30 * time.Second,
+			MaxElapsedTime:      5 * time.Minute,
+		},
 	}, e,
 	)
 }
@@ -133,6 +145,7 @@ func TestConfigS3StorageClass(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		MarshalerName:   "otlp_json",
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 	}, e,
 	)
 }
@@ -170,6 +183,7 @@ func TestConfigS3ACL(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		MarshalerName:   "otlp_json",
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 	}, e,
 	)
 }
@@ -207,6 +221,7 @@ func TestConfigS3ACLDefined(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		MarshalerName:   "otlp_json",
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 	}, e,
 	)
 }
@@ -245,6 +260,7 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_json",
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}, e,
 	)
 }
@@ -320,6 +336,50 @@ func TestConfig_Validate(t *testing.T) {
 			}(),
 			errExpected: errors.New("region is required"),
 		},
+		{
+			name: "valid storage class GLACIER_IR",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Region = "us-east-1"
+				c.S3Uploader.S3Bucket = "mybucket"
+				c.S3Uploader.StorageClass = "GLACIER_IR"
+				return c
+			}(),
+			errExpected: nil,
+		},
+		{
+			name: "valid storage class REDUCED_REDUNDANCY",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Region = "us-east-1"
+				c.S3Uploader.S3Bucket = "mybucket"
+				c.S3Uploader.StorageClass = "REDUCED_REDUNDANCY"
+				return c
+			}(),
+			errExpected: nil,
+		},
+		{
+			name: "valid storage class EXPRESS_ONEZONE",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Region = "us-east-1"
+				c.S3Uploader.S3Bucket = "mybucket"
+				c.S3Uploader.StorageClass = "EXPRESS_ONEZONE"
+				return c
+			}(),
+			errExpected: nil,
+		},
+		{
+			name: "invalid storage class FAKE_CLASS",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Region = "us-east-1"
+				c.S3Uploader.S3Bucket = "mybucket"
+				c.S3Uploader.StorageClass = "FAKE_CLASS"
+				return c
+			}(),
+			errExpected: errors.New("invalid StorageClass"),
+		},
 	}
 
 	for _, tt := range tests {
@@ -360,6 +420,7 @@ func TestMarshallerName(t *testing.T) {
 			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "sumo_ic",
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}, e,
 	)
 
@@ -378,6 +439,7 @@ func TestMarshallerName(t *testing.T) {
 			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_proto",
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}, e,
 	)
 }
@@ -413,6 +475,7 @@ func TestCompressionName(t *testing.T) {
 			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_json",
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}, e,
 	)
 
@@ -432,6 +495,7 @@ func TestCompressionName(t *testing.T) {
 			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_proto",
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}, e,
 	)
 
@@ -451,6 +515,7 @@ func TestCompressionName(t *testing.T) {
 			RetryMaxBackoff:   DefaultRetryMaxBackoff,
 		},
 		MarshalerName: "otlp_json",
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}, e,
 	)
 }
@@ -491,6 +556,7 @@ func TestResourceAttrsToS3(t *testing.T) {
 			S3Bucket: "com.awss3.bucket",
 			S3Prefix: "com.awss3.prefix",
 		},
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}, e,
 	)
 }
@@ -527,6 +593,7 @@ func TestRetry(t *testing.T) {
 			RetryMaxBackoff:   30 * time.Second,
 		},
 		MarshalerName: "otlp_json",
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}, e,
 	)
 }
@@ -564,6 +631,7 @@ func TestConfigS3UniqueKeyFunc(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		MarshalerName:   "otlp_json",
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 	}, e,
 	)
 }
@@ -602,6 +670,7 @@ func TestConfigS3BasePrefix(t *testing.T) {
 		QueueSettings:   queueCfg,
 		TimeoutSettings: timeoutCfg,
 		MarshalerName:   "otlp_json",
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 	}, e,
 	)
 }
@@ -643,6 +712,7 @@ func TestConfigS3BasePrefixWithResourceAttrs(t *testing.T) {
 		ResourceAttrsToS3: ResourceAttrsToS3{
 			S3Prefix: "com.awss3.prefix",
 		},
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}, e,
 	)
 }

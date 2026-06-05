@@ -7,7 +7,10 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
 )
 
 // PolicyType indicates the type of sampling policy.
@@ -109,6 +112,9 @@ type CompositeSubPolicyCfg struct {
 // AndSubPolicyCfg holds the common configuration to all policies under and policy.
 type AndSubPolicyCfg struct {
 	sharedPolicyCfg `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	// Configs for defining not policy under and policy.
+	NotCfg NotCfg `mapstructure:"not"`
 }
 
 // NotSubPolicyCfg holds the common configuration to the policy under the not policy.
@@ -247,6 +253,10 @@ type StringAttributeCfg struct {
 type RateLimitingCfg struct {
 	// SpansPerSecond sets the limit on the maximum number of spans that can be processed each second.
 	SpansPerSecond int64 `mapstructure:"spans_per_second"`
+	// BurstCapacity sets the maximum burst capacity in spans. If not specified, defaults to 2x SpansPerSecond.
+	// This allows for short bursts of traffic above the sustained rate. It also acts as a
+	// limit for individual trace span counts, a single trace with more spans than the burst size will not pass.
+	BurstCapacity int64 `mapstructure:"burst_capacity"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -335,6 +345,10 @@ type Config struct {
 	PolicyCfgs []PolicyCfg `mapstructure:"policies"`
 	// DecisionCache holds configuration for the decision cache(s)
 	DecisionCache DecisionCacheConfig `mapstructure:"decision_cache"`
+	// TailStorageID specifies an optional tail storage extension to use for buffering spans.
+	// If not set, in-memory tail storage is used.
+	// It is behind feature gate `processor.tailsamplingprocessor.tailstorageextension`.
+	TailStorageID *component.ID `mapstructure:"tail_storage"`
 	// Options allows for additional configuration of the tail-based sampling processor in code.
 	Options []Option `mapstructure:"-"`
 	// Make decision as soon as a policy matches
@@ -356,7 +370,7 @@ type Config struct {
 func (cfg *Config) Validate() error {
 	switch cfg.SamplingStrategy {
 	case samplingStrategyTraceComplete, samplingStrategySpanIngest:
-		return nil
+		// valid sampling strategies
 	default:
 		return fmt.Errorf(
 			"invalid sampling_strategy %q, expected one of %q or %q",
@@ -365,4 +379,14 @@ func (cfg *Config) Validate() error {
 			samplingStrategySpanIngest,
 		)
 	}
+
+	if cfg.TailStorageID != nil && !tailstorageextension.IsFeatureGateEnabled() {
+		return fmt.Errorf(
+			"'tail_storage' requires the %q feature gate to be enabled, use --feature-gates=+%s",
+			tailstorageextension.FeatureGateID,
+			tailstorageextension.FeatureGateID,
+		)
+	}
+
+	return nil
 }

@@ -84,21 +84,23 @@ func TestReceiverTLSIntegration(t *testing.T) {
 			payload, err := os.ReadFile(filepath.Join("testdata", "sample-payloads", fmt.Sprintf("%s.txt", payloadName)))
 			require.NoError(t, err)
 
-			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://localhost:%s", testPort), bytes.NewBuffer(payload))
+			unauthorizedReq, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://localhost:%s", testPort), bytes.NewBuffer(payload))
 			require.NoError(t, err)
 
 			client, err := clientWithCert(filepath.Join("testdata", "cert", "ca.crt"))
 			require.NoError(t, err)
 
 			// try first without secret to see failure
-			resp, err := client.Do(req)
+			resp, err := client.Do(unauthorizedReq)
 			require.NoError(t, err)
 			require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 			resp.Body.Close()
 
 			// add header to see success
-			req.Header.Add(secretHeaderName, testSecret)
-			resp, err = client.Do(req)
+			authorizedReq, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://localhost:%s", testPort), bytes.NewBuffer(payload))
+			require.NoError(t, err)
+			authorizedReq.Header.Add(secretHeaderName, testSecret)
+			resp, err = client.Do(authorizedReq)
 			require.NoError(t, err)
 			resp.Body.Close()
 

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -38,6 +39,7 @@ type logsReceiver struct {
 	id            component.ID
 	storageClient storage.Client
 	obsrecv       *receiverhelper.ObsReport
+	host          component.Host
 }
 
 func newLogsReceiver(
@@ -88,6 +90,7 @@ func (receiver *logsReceiver) Start(ctx context.Context, host component.Host) er
 	}
 	receiver.settings.Logger.Debug("starting...")
 	receiver.isStarted = true
+	receiver.host = host
 
 	var err error
 	receiver.storageClient, err = adapter.GetStorageClient(ctx, host, receiver.config.StorageID, receiver.settings.ID)
@@ -162,21 +165,39 @@ func (receiver *logsReceiver) startCollecting() {
 }
 
 func (receiver *logsReceiver) collect() {
-	logsChannel := make(chan plog.Logs)
+	type collectResult struct {
+		logs plog.Logs
+		err  error
+	}
+	resultsChannel := make(chan collectResult, len(receiver.queryReceivers))
 	for _, queryReceiver := range receiver.queryReceivers {
 		go func(queryReceiver *logsQueryReceiver) {
 			logs, err := queryReceiver.collect(context.Background())
 			if err != nil {
 				receiver.settings.Logger.Error("error collecting logs", zap.Error(err), zap.String("query", queryReceiver.ID()))
 			}
-			logsChannel <- logs
+			resultsChannel <- collectResult{logs: logs, err: err}
 		}(queryReceiver)
 	}
 
 	allLogs := plog.NewLogs()
+	var collectErr error
 	for range receiver.queryReceivers {
-		logs := <-logsChannel
-		logs.ResourceLogs().MoveAndAppendTo(allLogs.ResourceLogs())
+		select {
+		case result := <-resultsChannel:
+			result.logs.ResourceLogs().MoveAndAppendTo(allLogs.ResourceLogs())
+			if result.err != nil {
+				collectErr = errors.Join(collectErr, result.err)
+			}
+		case <-receiver.shutdownRequested:
+			return
+		}
+	}
+
+	if collectErr != nil {
+		componentstatus.ReportStatus(receiver.host, componentstatus.NewRecoverableErrorEvent(collectErr))
+	} else {
+		componentstatus.ReportStatus(receiver.host, componentstatus.NewEvent(componentstatus.StatusOK))
 	}
 
 	logRecordCount := allLogs.LogRecordCount()
@@ -304,7 +325,9 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return logs, fmt.Errorf("scraper: %w", err)
 		}
-		queryReceiver.logger.Warn("problems encountered getting log rows", zap.Error(err))
+		if !queryReceiver.query.IgnoreNullValues {
+			queryReceiver.logger.Warn("problems encountered getting log rows", zap.Error(err))
+		}
 	}
 
 	var errs []error

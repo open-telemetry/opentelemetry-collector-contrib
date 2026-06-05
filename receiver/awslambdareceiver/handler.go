@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
@@ -86,18 +86,34 @@ type s3Handler struct {
 	decodeF func(ctx context.Context, reader io.Reader, event events.S3EventRecord) error
 }
 
+// newS3LogsHandler builds an S3 logs handler. The getDecoder function is called
+// per-event with the S3 object key and must return the LogsDecoderFactory to use
+// for that object, along with its encoding name for logging purposes.
+//
+// For single-encoding configs, getDecoder is a closure that returns the same factory
+// regardless of the object key. For multi-encoding configs it is the router's GetDecoder.
 func newS3LogsHandler(
 	service internal.S3Service,
 	baseLogger *zap.Logger,
-	logsDecoder encoding.LogsDecoderFactory,
+	getDecoder func(objectKey string) (encoding.LogsDecoderFactory, string, error),
 	consumer consumer.Logs,
 ) *s3Handler {
+	logger := baseLogger.Named("s3")
 	logDecodeF := func(ctx context.Context, reader io.Reader, event events.S3EventRecord) error {
+		factory, encodingName, err := getDecoder(event.S3.Object.URLDecodedKey)
+		if err != nil {
+			return fmt.Errorf("failed to route S3 object: %w", err)
+		}
+		logger.Debug("Matched encoding for S3 object",
+			zap.String("File", event.S3.Object.URLDecodedKey),
+			zap.String("Encoding", encodingName),
+		)
+
 		var decoder encoding.LogsDecoder
 		// Bytes based batching and disable flush on items
-		decoder, err := logsDecoder.NewLogsDecoder(reader, encoding.WithFlushBytes(s3StreamBatchSize), encoding.WithFlushItems(0))
+		decoder, err = factory.NewLogsDecoder(reader, encoding.WithFlushBytes(s3StreamBatchSize), encoding.WithFlushItems(0))
 		if err != nil {
-			return fmt.Errorf("failed to derive the extension for S3 logs: %w", err)
+			return fmt.Errorf("failed to derive the extension for S3 logs (encoding %q): %w", encodingName, err)
 		}
 
 		for {
@@ -108,7 +124,7 @@ func newS3LogsHandler(
 					break
 				}
 
-				return fmt.Errorf("failed to decode S3 logs: %w", err)
+				return fmt.Errorf("failed to decode S3 logs (encoding %q): %w", encodingName, err)
 			}
 
 			enrichS3Logs(logs, event)
@@ -122,7 +138,7 @@ func newS3LogsHandler(
 
 	return &s3Handler{
 		s3Service: service,
-		logger:    baseLogger.Named("s3"),
+		logger:    logger,
 		decodeF:   logDecodeF,
 	}
 }
@@ -173,7 +189,7 @@ func (*s3Handler) handlerType() eventType {
 
 func (s *s3Handler) handle(ctx context.Context, event json.RawMessage) error {
 	var err error
-	parsedEvent, err := s.parseEvent(event)
+	parsedEvent, err := parseS3Event(event)
 	if err != nil {
 		return fmt.Errorf("failed to parse the event: %w", err)
 	}
@@ -194,18 +210,17 @@ func (s *s3Handler) handle(ctx context.Context, event json.RawMessage) error {
 		return err
 	}
 
-	wrappedReader, err := gunzipIfNeeded(reader)
-	if err != nil {
-		return fmt.Errorf("failed to derive reader with wrapper: %w", err)
+	var decodeReader io.Reader = bufio.NewReaderSize(reader, readerBufferSize)
+	if strings.HasSuffix(parsedEvent.S3.Object.URLDecodedKey, ".gz") {
+		gr, grErr := gzip.NewReader(decodeReader)
+		if grErr != nil {
+			return fmt.Errorf("failed to decompress gzip stream: %w", grErr)
+		}
+		defer gr.Close()
+		decodeReader = gr
 	}
 
-	defer func() {
-		if gzReader, ok := wrappedReader.(*gzip.Reader); ok {
-			_ = gzReader.Close()
-		}
-	}()
-
-	err = s.decodeF(ctx, wrappedReader, parsedEvent)
+	err = s.decodeF(ctx, decodeReader, parsedEvent)
 	if err != nil {
 		return err
 	}
@@ -213,13 +228,15 @@ func (s *s3Handler) handle(ctx context.Context, event json.RawMessage) error {
 	return nil
 }
 
-func (*s3Handler) parseEvent(raw json.RawMessage) (event events.S3EventRecord, err error) {
+// parseS3Event parses a raw JSON S3 event notification and returns the single S3 event record.
+// S3 event notifications always contain exactly one record.
+func parseS3Event(raw json.RawMessage) (events.S3EventRecord, error) {
 	var message events.S3Event
 	if err := gojson.Unmarshal(raw, &message); err != nil {
 		return events.S3EventRecord{}, fmt.Errorf("failed to unmarshal S3 event notification: %w", err)
 	}
 
-	// Records cannot be more than 1 in case of s3 event notifications
+	// This receiver processes one S3 object per invocation; reject events with != 1 record.
 	if len(message.Records) > 1 || len(message.Records) == 0 {
 		return events.S3EventRecord{}, fmt.Errorf("s3 event notification should contain one record instead of %d", len(message.Records))
 	}
@@ -266,7 +283,18 @@ func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMe
 
 	defer reader.Close()
 
-	decoder, err := c.logsDecoder.NewLogsDecoder(reader, encoding.WithFlushBytes(s3StreamBatchSize))
+	// Use T reader to extract metadata but rebuffer for downstream consumption
+	// CloudWatch subscription events are small in size compared to S3.
+	// Hence, parsing here has low impact for overall performance.
+	var buf bytes.Buffer
+	tReader := io.TeeReader(reader, &buf)
+
+	var mData cwMetadataEnvelope
+	if err = gojson.NewDecoder(tReader).Decode(&mData); err != nil {
+		return fmt.Errorf("failed to decode cloudwatch logs envelope: %w", err)
+	}
+
+	decoder, err := c.logsDecoder.NewLogsDecoder(&buf, encoding.WithFlushBytes(s3StreamBatchSize))
 	if err != nil {
 		return err
 	}
@@ -279,32 +307,16 @@ func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMe
 				break
 			}
 
-			return fmt.Errorf("failed to decode S3 logs: %w", err)
+			return fmt.Errorf("failed to decode CloudWatch logs: %w", err)
 		}
-		if err = c.consumer.ConsumeLogs(ctx, logs); err != nil {
+
+		getEnrichedCWLog(logs, mData)
+		if err = c.consumer.ConsumeLogs(getEnrichedCtxForCWLogs(ctx, mData), logs); err != nil {
 			return checkConsumerErrorAndWrap(err)
 		}
 	}
 
 	return nil
-}
-
-// gunzipIfNeeded checks if the provided reader is a gzipped stream and returns a reader with gunzip wrapping if needed.
-func gunzipIfNeeded(r io.Reader) (io.Reader, error) {
-	buf := bufio.NewReaderSize(r, readerBufferSize)
-	header, err := buf.Peek(2)
-	if err != nil {
-		return nil, err
-	}
-	// gzip magic number: 0x1f 0x8b
-	if header[0] == 0x1f && header[1] == 0x8b {
-		gr, err := gzip.NewReader(buf)
-		if err != nil {
-			return nil, err
-		}
-		return gr, nil
-	}
-	return buf, nil
 }
 
 func enrichS3Logs(logs plog.Logs, event events.S3EventRecord) {
@@ -333,6 +345,45 @@ func getEnrichedContext(ctx context.Context, event events.S3EventRecord) context
 	metadata["aws.s3.bucket.name"] = []string{event.S3.Bucket.Name}
 	metadata["aws.s3.bucket.arn"] = []string{event.S3.Bucket.Arn}
 	metadata[string(conventions.AWSS3KeyKey)] = []string{event.S3.Object.Key}
+
+	info := client.Info{}
+	info.Metadata = client.NewMetadata(metadata)
+	return client.NewContext(ctx, info)
+}
+
+// cwMetadataEnvelope defines the structure to unmarshal the CloudWatch logs event envelope for metadata extraction.
+type cwMetadataEnvelope struct {
+	Owner     string `json:"owner"`
+	LogGroup  string `json:"logGroup"`
+	LogStream string `json:"logStream"`
+}
+
+// getEnrichedCWLog add extra metadata to resource attributes iff metadata is not already present.
+// This makes sure overrides do not happen if configured extensions already populate these attributes.
+func getEnrichedCWLog(logs plog.Logs, cwM cwMetadataEnvelope) {
+	for _, resourceLogs := range logs.ResourceLogs().All() {
+		resourceAttrs := resourceLogs.Resource().Attributes()
+
+		if _, ok := resourceAttrs.Get(string(conventions.CloudProviderKey)); !ok {
+			resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+		}
+		if _, ok := resourceAttrs.Get(string(conventions.CloudAccountIDKey)); !ok {
+			resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), cwM.Owner)
+		}
+		if _, ok := resourceAttrs.Get(string(conventions.AWSLogGroupNamesKey)); !ok {
+			resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwM.LogGroup)
+		}
+		if _, ok := resourceAttrs.Get(string(conventions.AWSLogStreamNamesKey)); !ok {
+			resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwM.LogStream)
+		}
+	}
+}
+
+func getEnrichedCtxForCWLogs(ctx context.Context, cwM cwMetadataEnvelope) context.Context {
+	metadata := map[string][]string{}
+	metadata[string(conventions.CloudAccountIDKey)] = []string{cwM.Owner}
+	metadata[string(conventions.AWSLogGroupNamesKey)] = []string{cwM.LogGroup}
+	metadata[string(conventions.AWSLogStreamNamesKey)] = []string{cwM.LogStream}
 
 	info := client.Info{}
 	info.Metadata = client.NewMetadata(metadata)

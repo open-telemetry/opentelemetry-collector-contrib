@@ -1,6 +1,10 @@
 description: Config defines configuration for kubernetes events receiver.
 type: object
 properties:
+  dedup_interval:
+    description: 'DedupInterval controls throttling of MODIFIED watch events per event UID. positive: emit MODIFIED only after interval has elapsed since the last emit for that UID 0 (default): no throttling — current behavior, backward compatible negative: drop all MODIFIED events'
+    type: string
+    format: duration
   k8s_leader_elector:
     x-pointer: true
     type: string
@@ -10,5 +14,10 @@ properties:
     type: array
     items:
       type: string
+  storage:
+    description: Storage is the ID of the storage extension to use for resource version persistence. When set, the receiver will persist the latest resource version and resume from it on restart, preventing duplicate events. Only valid for watch mode (which is the only mode this receiver uses).
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
 allOf:
   - $ref: /internal/k8sconfig.api_config

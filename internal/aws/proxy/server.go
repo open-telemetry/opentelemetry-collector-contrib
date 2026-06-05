@@ -7,7 +7,8 @@ package proxy // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"bytes"
 	"context"
-	"errors"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net"
@@ -16,19 +17,13 @@ import (
 	"net/url"
 	"time"
 
-	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
-	"github.com/aws/aws-sdk-go/aws"
-	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
-	"github.com/aws/aws-sdk-go/aws/endpoints"
-	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
-	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
-)
-
-const (
-	connHeader = "Connection"
 )
 
 // Server represents HTTP server.
@@ -37,28 +32,54 @@ type Server interface {
 	Shutdown(ctx context.Context) error
 }
 
+var _ Server = (*server)(nil)
+
+type server struct {
+	server       *http.Server
+	serverConfig *confighttp.ServerConfig
+}
+
+func (s *server) ListenAndServe() error {
+	listener, err := s.serverConfig.ToListener(context.Background())
+	if err != nil {
+		return err
+	}
+
+	return s.server.Serve(listener)
+}
+
+func (s *server) Shutdown(ctx context.Context) error {
+	return s.server.Shutdown(ctx)
+}
+
 // NewServer returns a local TCP server that proxies requests to AWS
 // backend using the given credentials.
-func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
+func NewServer(cfg *Config, host component.Host, settings component.TelemetrySettings) (Server, error) {
 	_, err := net.ResolveTCPAddr("tcp", cfg.Endpoint)
 	if err != nil {
 		return nil, err
 	}
 	if cfg.ProxyAddress != "" {
-		logger.Debug("Using remote proxy", zap.String("address", cfg.ProxyAddress))
+		settings.Logger.Debug("Using remote proxy", zap.String("address", cfg.ProxyAddress))
 	}
 	if cfg.ServiceName == "" {
 		cfg.ServiceName = "xray"
 	}
 
-	awsCfg, sess, err := getAWSConfigSession(cfg, logger)
+	ctx := context.Background()
+	awsCfg, err := getAWSConfigSession(ctx, cfg, settings.Logger)
 	if err != nil {
 		return nil, err
 	}
 
-	awsEndPoint, err := getServiceEndpoint(awsCfg, cfg.ServiceName)
-	if err != nil {
-		return nil, err
+	var awsEndPoint string
+	if cfg.AWSEndpoint != "" {
+		awsEndPoint = cfg.AWSEndpoint
+	} else {
+		awsEndPoint, err = getServiceEndpoint(awsCfg.Region, cfg.ServiceName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Parse url from endpoint
@@ -67,98 +88,100 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 		return nil, fmt.Errorf("unable to parse AWS service endpoint: %w", err)
 	}
 
-	signer := &v4.Signer{
-		Credentials: sess.Config.Credentials,
-	}
+	signer := v4.NewSigner()
+	credentials := awsCfg.Credentials
 
 	transport, err := proxyServerTransport(cfg)
 	if err != nil {
 		return nil, err
 	}
 
+	region := awsCfg.Region
+	serviceName := cfg.ServiceName
+
 	// Reverse proxy handler
 	handler := &httputil.ReverseProxy{
 		Transport: transport,
 
-		// Handler for modifying and forwarding requests
-		Director: func(req *http.Request) {
-			if req != nil && req.URL != nil {
-				logger.Debug("Received request on X-Ray receiver TCP proxy server", zap.String("URL", sanitize.URL(req.URL)))
+		Rewrite: func(r *httputil.ProxyRequest) {
+			if r.In.URL != nil {
+				settings.Logger.Debug("Received request on X-Ray receiver TCP proxy server", zap.String("URL", sanitize.URL(r.In.URL)))
 			}
 
-			// Remove connection header before signing request, otherwise the
-			// reverse-proxy will remove the header before forwarding to X-Ray
-			// resulting in a signed header being missing from the request.
-			req.Header.Del(connHeader)
+			// Set outbound request URL to the AWS endpoint
+			r.Out.URL.Scheme = awsURL.Scheme
+			r.Out.URL.Host = awsURL.Host
+			r.Out.Host = awsURL.Host
 
-			// Set req url to xray endpoint
-			req.URL.Scheme = awsURL.Scheme
-			req.URL.Host = awsURL.Host
-			req.Host = awsURL.Host
-
-			// Consume body and convert to io.ReadSeeker for signer to consume
-			body, err := consume(req.Body)
-			if err != nil {
-				logger.Error("Unable to consume request body", zap.Error(err))
-
-				// Forward unsigned request
+			// Consume body and calculate payload hash for signing
+			body, payloadHash, bodyErr := consumeBody(r.In.Body)
+			if bodyErr != nil {
+				settings.Logger.Error("Unable to consume request body", zap.Error(bodyErr))
 				return
 			}
 
-			// Sign request. signer.Sign() also repopulates the request body.
-			_, err = signer.Sign(req, body, cfg.ServiceName, *awsCfg.Region, time.Now())
-			if err != nil {
-				logger.Error("Unable to sign request", zap.Error(err))
+			// Restore body for the request
+			if body != nil {
+				r.Out.Body = io.NopCloser(bytes.NewReader(body))
+			}
+
+			// Retrieve credentials for signing
+			creds, credsErr := credentials.Retrieve(r.Out.Context())
+			if credsErr != nil {
+				settings.Logger.Error("Unable to retrieve credentials", zap.Error(credsErr))
+				return
+			}
+
+			// Sign request using v4 signer
+			signErr := signer.SignHTTP(r.Out.Context(), creds, r.Out, payloadHash, serviceName, region, time.Now())
+			if signErr != nil {
+				settings.Logger.Error("Unable to sign request", zap.Error(signErr))
 			}
 		},
 	}
 
-	return &http.Server{
-		Addr:              cfg.Endpoint,
-		Handler:           handler,
+	serverConfig := confighttp.ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  cfg.Endpoint,
+			Transport: "tcp",
+		},
 		ReadHeaderTimeout: 20 * time.Second,
+	}
+
+	httpServer, err := serverConfig.ToServer(
+		ctx,
+		host.GetExtensions(),
+		settings,
+		handler,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &server{
+		server:       httpServer,
+		serverConfig: &serverConfig,
 	}, nil
 }
 
-// getServiceEndpoint returns X-Ray service endpoint.
-// It is guaranteed that awsCfg config instance is non-nil and the region value is non nil or non empty in awsCfg object.
-// Currently, the caller takes care of it.
-func getServiceEndpoint(awsCfg *aws.Config, serviceName string) (string, error) {
-	if isEmpty(awsCfg.Endpoint) {
-		if isEmpty(awsCfg.Region) {
-			return "", errors.New("unable to generate endpoint from region with nil value")
-		}
-		resolved, err := endpoints.DefaultResolver().EndpointFor(serviceName, *awsCfg.Region, setResolverConfig())
-		return resolved.URL, err
-	}
-	return *awsCfg.Endpoint, nil
-}
-
-func isEmpty(val *string) bool {
-	return val == nil || *val == ""
-}
-
-// consume readsAll() the body and creates a new io.ReadSeeker from the content. v4.Signer
-// requires an io.ReadSeeker to be able to sign requests. May return a nil io.ReadSeeker.
-func consume(body io.ReadCloser) (io.ReadSeeker, error) {
-	var buf []byte
-
-	// Return nil ReadSeeker if body is nil
+// consumeBody reads the body, calculates SHA-256 hash, and returns the body bytes and hash.
+// v4.Signer requires a payload hash for signing.
+func consumeBody(body io.ReadCloser) ([]byte, string, error) {
+	// Return empty hash if body is nil
 	if body == nil {
-		return nil, nil
+		// SHA-256 of empty string
+		return nil, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", nil
 	}
 
 	// Consume body
 	buf, err := io.ReadAll(body)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return bytes.NewReader(buf), nil
-}
+	// Calculate SHA-256 hash
+	h := sha256.Sum256(buf)
+	payloadHash := hex.EncodeToString(h[:])
 
-func setResolverConfig() func(*endpoints.Options) {
-	return func(p *endpoints.Options) {
-		p.ResolveUnknownService = true
-	}
+	return buf, payloadHash, nil
 }

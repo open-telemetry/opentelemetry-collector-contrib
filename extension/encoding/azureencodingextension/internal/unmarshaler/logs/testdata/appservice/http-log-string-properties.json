@@ -1,0 +1,16 @@
+{
+  "records": [
+    {
+      "time": "2026-04-07T16:06:21.6250810Z",
+      "EventTime": "2026-04-07T16:06:21.6250810Z",
+      "resourceId": "/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/AZURE-RESOURCE-GROUP-NAME/PROVIDERS/MICROSOFT.WEB/SITES/AZURE-APP-SERVICE-NAME1",
+      "properties": "{\"CsHost\":\"host.domain.com\",\"CIp\":\"000.00.00.000\",\"SPort\":\"80\",\"CsUriStem\":\"\\/connect\\/token\",\"CsUriQuery\":\"\",\"CsMethod\":\"POST\",\"TimeTaken\":5,\"ScStatus\":\"200\",\"Result\":\"Success\",\"CsBytes\":\"1839\",\"ScBytes\":\"1330\",\"UserAgent\":\"\",\"Cookie\":\"<REDACTED>\",\"CsUsername\":\"\",\"Referer\":\"\",\"ComputerName\":\"hostname\",\"Protocol\":\"HTTP\\/1.1\"}",
+      "category": "AppServiceHTTPLogs",
+      "EventStampType": "Stamp",
+      "EventPrimaryStampName": "waws-prod-bn0-000",
+      "EventStampName": "waws-prod-bn0-000",
+      "Host": "hostname",
+      "EventIpAddress": "00.00.00.000"
+    }
+  ]
+}

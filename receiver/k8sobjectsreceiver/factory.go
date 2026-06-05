@@ -9,26 +9,30 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(
+		xreceiver.WithLogs(
 			createLogsReceiver,
 			metadata.LogsStability,
 		),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
 		APIConfig: k8sconfig.APIConfig{
-			AuthType: k8sconfig.AuthTypeServiceAccount,
+			AuthType:     k8sconfig.AuthTypeServiceAccount,
+			KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
+			KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 		},
 		ErrorMode: PropagateError,
 	}

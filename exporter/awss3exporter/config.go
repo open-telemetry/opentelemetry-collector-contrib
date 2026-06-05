@@ -7,9 +7,11 @@ import (
 	"errors"
 	"time"
 
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
 )
@@ -91,6 +93,8 @@ type ResourceAttrsToS3 struct {
 
 // Config contains the main configuration options for the s3 exporter
 type Config struct {
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+
 	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	S3Uploader      S3UploaderConfig                                         `mapstructure:"s3uploader"`
@@ -104,23 +108,15 @@ type Config struct {
 
 func (c *Config) Validate() error {
 	var errs error
-	validStorageClasses := map[string]bool{
-		"STANDARD":            true,
-		"STANDARD_IA":         true,
-		"ONEZONE_IA":          true,
-		"INTELLIGENT_TIERING": true,
-		"GLACIER":             true,
-		"DEEP_ARCHIVE":        true,
+
+	validStorageClasses := make(map[s3types.StorageClass]bool)
+	for _, sc := range s3types.StorageClassStandard.Values() {
+		validStorageClasses[sc] = true
 	}
 
-	validACLs := map[string]bool{
-		"private":                   true,
-		"public-read":               true,
-		"public-read-write":         true,
-		"authenticated-read":        true,
-		"aws-exec-read":             true,
-		"bucket-owner-read":         true,
-		"bucket-owner-full-control": true,
+	validACLs := make(map[s3types.ObjectCannedACL]bool)
+	for _, acl := range s3types.ObjectCannedACLPrivate.Values() {
+		validACLs[acl] = true
 	}
 
 	validUniqueKeyFuncs := map[string]bool{
@@ -134,11 +130,11 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, errors.New("bucket or endpoint is required"))
 	}
 
-	if !validStorageClasses[c.S3Uploader.StorageClass] {
+	if !validStorageClasses[s3types.StorageClass(c.S3Uploader.StorageClass)] {
 		errs = multierr.Append(errs, errors.New("invalid StorageClass"))
 	}
 
-	if c.S3Uploader.ACL != "" && !validACLs[c.S3Uploader.ACL] {
+	if c.S3Uploader.ACL != "" && !validACLs[s3types.ObjectCannedACL(c.S3Uploader.ACL)] {
 		errs = multierr.Append(errs, errors.New("invalid ACL"))
 	}
 

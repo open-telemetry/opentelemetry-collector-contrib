@@ -49,7 +49,7 @@ type hecSpan struct {
 
 func SpanToSplunkEvent(resource pcommon.Resource, span ptrace.Span, mapping HecToOtelAttrs, source, sourceType, index string) *Event {
 	host := unknownHostName
-	commonFields := map[string]any{}
+	commonFields := make(map[string]any, span.Attributes().Len()+resource.Attributes().Len())
 	for k, v := range resource.Attributes().All() {
 		switch k {
 		case mapping.Host:

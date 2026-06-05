@@ -185,8 +185,8 @@ The amount of time remaining before license expiration.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| system | The SAP HANA system. | Any Str | Recommended | - |
-| product | The SAP HANA product. | Any Str | Recommended | - |
+| system | The SAP HANA system. | Any Str | Required | - |
+| product | The SAP HANA product. | Any Str | Required | - |
 
 ### saphana.license.limit
 
@@ -200,8 +200,8 @@ The allowed product usage as specified by the license (for example, main memory)
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| system | The SAP HANA system. | Any Str | Recommended | - |
-| product | The SAP HANA product. | Any Str | Recommended | - |
+| system | The SAP HANA system. | Any Str | Required | - |
+| product | The SAP HANA product. | Any Str | Required | - |
 
 ### saphana.license.peak
 
@@ -215,8 +215,8 @@ The peak product usage value during last 13 months, measured periodically.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| system | The SAP HANA system. | Any Str | Recommended | - |
-| product | The SAP HANA product. | Any Str | Recommended | - |
+| system | The SAP HANA system. | Any Str | Required | - |
+| product | The SAP HANA product. | Any Str | Required | - |
 
 ### saphana.network.request.average_time
 
@@ -519,7 +519,7 @@ The used memory from the operating system perspective.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | service | The SAP HANA service. | Any Str | Recommended | - |
-| type | The type of service memory. | Str: ``logical``, ``physical`` | Recommended | - |
+| type | The type of service memory. | Str: ``logical``, ``physical`` | Required | - |
 
 ### saphana.service.stack_size
 
@@ -583,8 +583,8 @@ The uptime of the database.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| system | The SAP HANA system. | Any Str | Recommended | - |
-| database | The SAP HANA database. | Any Str | Recommended | - |
+| system | The SAP HANA system. | Any Str | Required | - |
+| database | The SAP HANA database. | Any Str | Required | - |
 
 ### saphana.volume.operation.count
 

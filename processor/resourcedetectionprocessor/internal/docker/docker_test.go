@@ -7,7 +7,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -42,10 +42,8 @@ func TestDetect(t *testing.T) {
 	md.On("Hostname").Return("hostname", nil)
 	md.On("OSType").Return("darwin", nil)
 	md.On("ContainerInfo").Return(container.InspectResponse{
-		ContainerJSONBase: &container.ContainerJSONBase{
-			Name:  "foo",
-			Image: "bar:1.0",
-		},
+		Name:  "foo",
+		Image: "bar:1.0",
 	}, nil)
 
 	cfg := CreateDefaultConfig()

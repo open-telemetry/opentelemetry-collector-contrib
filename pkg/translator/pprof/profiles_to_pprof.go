@@ -14,13 +14,13 @@ import (
 	"github.com/google/pprof/profile"
 	"github.com/zeebo/xxh3"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	semconv "go.opentelemetry.io/otel/semconv/v1.39.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 // errNotFound is returned if something requested is not available
 var errNotFound = errors.New("not found")
 
-func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
+func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	dst := &profile.Profile{}
 
 	rp := src.ResourceProfiles()

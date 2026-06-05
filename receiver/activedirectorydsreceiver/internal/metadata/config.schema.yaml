@@ -11,6 +11,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       active_directory.ds.ldap.bind.last_successful.time:
         description: "ActiveDirectoryDsLdapBindLastSuccessfulTimeMetricConfig provides config for the active_directory.ds.ldap.bind.last_successful.time metric."
         type: object
@@ -60,6 +76,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       active_directory.ds.replication.network.io:
         description: "ActiveDirectoryDsReplicationNetworkIoMetricConfig provides config for the active_directory.ds.replication.network.io metric."
         type: object
@@ -67,6 +99,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "type"
+            default:
+              - "direction"
+              - "type"
       active_directory.ds.replication.object.rate:
         description: "ActiveDirectoryDsReplicationObjectRateMetricConfig provides config for the active_directory.ds.replication.object.rate metric."
         type: object
@@ -74,6 +124,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       active_directory.ds.replication.operation.pending:
         description: "ActiveDirectoryDsReplicationOperationPendingMetricConfig provides config for the active_directory.ds.replication.operation.pending metric."
         type: object
@@ -88,6 +154,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       active_directory.ds.replication.sync.object.pending:
         description: "ActiveDirectoryDsReplicationSyncObjectPendingMetricConfig provides config for the active_directory.ds.replication.sync.object.pending metric."
         type: object
@@ -102,6 +184,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "result"
+            default:
+              - "result"
       active_directory.ds.replication.value.rate:
         description: "ActiveDirectoryDsReplicationValueRateMetricConfig provides config for the active_directory.ds.replication.value.rate metric."
         type: object
@@ -109,6 +207,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "type"
+            default:
+              - "direction"
+              - "type"
       active_directory.ds.security_descriptor_propagations_event.queued:
         description: "ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedMetricConfig provides config for the active_directory.ds.security_descriptor_propagations_event.queued metric."
         type: object
@@ -123,6 +239,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       active_directory.ds.thread.count:
         description: "ActiveDirectoryDsThreadCountMetricConfig provides config for the active_directory.ds.thread.count metric."
         type: object

@@ -83,7 +83,7 @@ func extractCountMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.Expr
 	}, nil
 }
 
-func addCountDataPoint(dataPoint SumCountDataPoint, destination pmetric.NumberDataPointSlice) {
+func addCountDataPoint(dataPoint sumCountDataPoint, destination pmetric.NumberDataPointSlice) {
 	newDp := destination.AppendEmpty()
 	dataPoint.Attributes().CopyTo(newDp.Attributes())
 	newDp.SetIntValue(int64(dataPoint.Count()))

@@ -267,10 +267,9 @@ func TestPrometheusConverterV2_addSumNumberDataPoints(t *testing.T) {
 							Type:    writev2.Metadata_METRIC_TYPE_GAUGE,
 							HelpRef: 0,
 						},
-						// TODO add exemplars
-						/*Exemplars: []writev2.Exemplar{
+						Exemplars: []writev2.Exemplar{
 							{Value: 2},
-						},*/
+						},
 					},
 				}
 			},

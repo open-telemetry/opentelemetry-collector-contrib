@@ -15,7 +15,7 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 var (
@@ -89,6 +89,13 @@ func (gtr *gitlabTracesReceiver) processStageSpans(r ptrace.ResourceSpans, pipel
 	}
 
 	for _, stage := range stages {
+		// Skip stages that have not started yet (empty StartedAt).  This
+		// happens for early-failed pipelines where a stage was queued but
+		// never executed.  Attempting to create a span for such a stage
+		// returns "invalid startedAt timestamp: time is empty".
+		if stage.StartedAt == "" {
+			continue
+		}
 		err = gtr.createSpan(r, stage, traceID, parentSpanID)
 		if err != nil {
 			return nil, err

@@ -88,6 +88,7 @@ type Query struct {
 	Logs               []LogsCfg   `mapstructure:"logs"`
 	TrackingColumn     string      `mapstructure:"tracking_column"`
 	TrackingStartValue string      `mapstructure:"tracking_start_value"`
+	IgnoreNullValues   bool        `mapstructure:"ignore_null_values"`
 }
 
 func (q Query) Validate() error {

@@ -29,6 +29,7 @@ func createExtension(_ context.Context, settings extension.Settings, cfg compone
 
 	return &azureExtension{
 		config: config,
+		logger: settings.Logger,
 		logUnmarshaler: logs.NewAzureResourceLogsUnmarshaler(
 			settings.BuildInfo,
 			settings.Logger,

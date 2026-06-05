@@ -21,11 +21,14 @@ By default, the TLS Check Receiver will emit a single metric, `tlscheck.time_lef
 
 ## Example Configuration
 
+> **Note:** This receiver was renamed from `tlscheck` to `tls_check` to match the snake_case naming convention.
+> The deprecated component type `tlscheck` is still accepted as an alias and will log a deprecation warning.
+
 Targets are configured as a remote endpoint accessed via TCP, a PEM-encoded certificate file stored locally on disk, or a Java-format keystore file (JKS or PKCS#12).
 
 ```yaml
 receivers:
-  tlscheck:
+  tls_check:
     targets:
       # Monitor a local PEM file (default when no file_format is set)
       - file_path: /etc/istio/certs/cert-chain.pem

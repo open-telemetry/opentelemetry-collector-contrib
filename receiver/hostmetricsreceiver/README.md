@@ -28,7 +28,7 @@ The collection interval, root path, the categories of metrics, and individual
 metrics to be scraped can be configured:
 
 ```yaml
-hostmetrics:
+host_metrics:
   collection_interval: <duration> # default = 1m
   initial_delay: <duration> # default = 1s
   root_path: <string>
@@ -155,18 +155,18 @@ it is recommended you use this receiver with the
 ### Different Frequencies
 
 If you would like to scrape some metrics at a different frequency than others,
-you can configure multiple `hostmetrics` receivers with different
+you can configure multiple `host_metrics` receivers with different
 `collection_interval` values. For example:
 
 ```yaml
 receivers:
-  hostmetrics:
+  host_metrics:
     collection_interval: 30s
     scrapers:
       cpu:
       memory:
 
-  hostmetrics/disk:
+  host_metrics/disk:
     collection_interval: 1m
     scrapers:
       disk:
@@ -175,7 +175,7 @@ receivers:
 service:
   pipelines:
     metrics:
-      receivers: [hostmetrics, hostmetrics/disk]
+      receivers: [host_metrics, host_metrics/disk]
 ```
 
 ### Collecting host metrics from inside a container (Linux only)
@@ -194,24 +194,37 @@ exactly what you'll need. e.g. `docker run -v /proc:/hostfs/proc`.
 
 #### 2. Configure `root_path`
 
-Configure `root_path` so the hostmetrics receiver knows where the root filesystem is.
+Configure `root_path` so the host_metrics receiver knows where the root filesystem is.
 Note: if running multiple instances of the host metrics receiver, they must all have
 the same `root_path`.
 
 Example:
 ```yaml
 receivers:
-  hostmetrics:
+  host_metrics:
     root_path: /hostfs
 ```
 
 ## Resource attributes
 
-Currently, the hostmetrics receiver does not set any Resource attributes on the exported metrics. However, if you want to set Resource attributes, you can provide them via environment variables via the [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#environment-variable) processor. For example, you can add the following resource attributes to adhere to [Resource Semantic Conventions](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/):
+Currently, the host_metrics receiver does not set any Resource attributes on the exported metrics. However, if you want to set Resource attributes, you can provide them via environment variables via the [resource_detection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#environment-variable) processor. For example, you can add the following resource attributes to adhere to [Resource Semantic Conventions](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/):
 
 ```
 export OTEL_RESOURCE_ATTRIBUTES="service.name=<the name of your service>,service.namespace=<the namespace of your service>,service.instance.id=<uuid of the instance>"
 ```
+
 ## Entity Events
 
-**Entity Events as logs are experimental** and might eventually be replaced by the result of [the OTEP](https://github.com/open-telemetry/oteps/blob/main/text/entities/0256-entities-data-model.md#entity-events). For now, the hostmetrics receiver can send the host entity event as a log records. By default, the hostmetrics receiver sends periodic EntityState events every 5 minutes. You can change that by setting `metadata_collection_interval`. Entity Events as logs are experimental. The result of the OTEP might eventually replace that.
+**Entity Events as logs are experimental** and might eventually be replaced by the result of [the OTEP](https://github.com/open-telemetry/oteps/blob/main/text/entities/0256-entities-data-model.md#entity-events). For now, the host_metrics receiver can send the host entity event as a log records. By default, the host_metrics receiver sends periodic EntityState events every 5 minutes. You can change that by setting `metadata_collection_interval`. Entity Events as logs are experimental. The result of the OTEP might eventually replace that.
+
+## Using a Collector not linked to glibc (Linux-specific)
+
+This is a living section for known adverse behaviours within the `host_metrics` receiver when using a Collector on Linux that is not linked to `glibc` (which is always the case when using `CGO_ENABLED=0` and can be the case when using `CGO_ENABLED=1` under specific circumstances).
+
+### Unable to resolve usernames when the system relies on NSS for user and group lookups
+
+When a Collector is not linked to glibc, it can only resolve usernames and group names by directly parsing `/etc/passwd` and `/etc/group`. It has no awareness of the Name Service Switch (NSS) subsystem, which libc uses to delegate user and group lookups to pluggable backends including `nss-systemd`, `nss-ldap`, `sssd`, `winbind`, and more. As a result, any user or group whose record is provided exclusively by an NSS module rather than being present in `/etc/passwd` or `/etc/group` will fail to resolve, and the receiver will be unable to determine the username/owner of the given process.
+
+This manifests most often as a failure to set the `process.owner` resource attribute in the `process` scraper. One concrete example is if a process is run as a systemd service using the `DynamicUser` feature. A Collector not linked to glibc will be incapable of resolving the username for the owner of that process because the `DynamicUser` feature leverages NSS (Name Service Switch) to resolve the username dynamically at user lookup time; a Go binary that uses the pure-Go `netgo` implementation is not NSS-aware and subsequently fails the user lookup.  
+See more in the [demo repo](https://github.com/braydonk/poc-systemd-dynamic-user-netgo) created by `host_metrics` codeowner [@braydonk](https://github.com/braydonk).
+

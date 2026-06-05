@@ -14,7 +14,7 @@ import (
 
 // Parser is something that can map input StatsD strings to OTLP Metric representations.
 type Parser interface {
-	Initialize(enableMetricType, enableSimpleTags, isMonotonicCounter, enableIPOnlyAggregation bool, sendTimerHistogram []protocol.TimerHistogramMapping, counterType protocol.CounterType) error
+	Initialize(enableMetricType, enableSimpleTags, isMonotonicCounter, enableIPOnlyAggregation, ignoreHost bool, sendTimerHistogram []protocol.TimerHistogramMapping, counterType protocol.CounterType) error
 	GetMetrics() []BatchMetrics
 	Aggregate(line string, addr net.Addr) error
 }

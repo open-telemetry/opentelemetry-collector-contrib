@@ -106,6 +106,10 @@ $defs:
       parse_from:
         x-pointer: true
         $ref: /pkg/stanza/entry.field
+      time_zone_locations:
+        type: object
+        additionalProperties:
+          type: string
   trace_flags_config:
     type: object
     properties:

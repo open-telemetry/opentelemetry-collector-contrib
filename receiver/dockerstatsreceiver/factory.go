@@ -34,7 +34,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     scs,
 		Config:               config,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 }
 

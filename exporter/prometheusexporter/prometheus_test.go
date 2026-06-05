@@ -676,9 +676,9 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set feature gate state for this test
-			originalState := disableAddMetricSuffixesFeatureGate.IsEnabled()
-			testutil.SetFeatureGateForTest(t, disableAddMetricSuffixesFeatureGate, tt.featureGateEnabled)
-			defer testutil.SetFeatureGateForTest(t, disableAddMetricSuffixesFeatureGate, originalState)
+			originalState := metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate.IsEnabled()
+			testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, tt.featureGateEnabled)
+			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, originalState)
 
 			// Configure the exporter
 			addr := testutil.GetAvailableLocalAddress(t)

@@ -42,6 +42,10 @@ func (w *fileWatcher) Value() string {
 }
 
 func (w *fileWatcher) Start(ctx context.Context) error {
+	if w.shutdownCH != nil {
+		return errors.New("file watcher already started")
+	}
+
 	if err := w.reload(); err != nil {
 		return fmt.Errorf("failed to read credentials file %q: %w", w.path, err)
 	}

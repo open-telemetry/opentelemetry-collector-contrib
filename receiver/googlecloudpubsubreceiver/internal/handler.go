@@ -42,8 +42,9 @@ type StreamHandler struct {
 	handlerWaitGroup sync.WaitGroup
 	settings         receiver.Settings
 	telemetryBuilder *metadata.TelemetryBuilder
-	// time that acknowledge loop waits before acknowledging messages
-	ackBatchWait time.Duration
+
+	// flow control settings, like max durations, counts and triggers
+	flowControlConfig *FlowControlConfig
 
 	isRunning    atomic.Bool
 	retryAttempt int
@@ -63,16 +64,20 @@ func NewHandler(
 	client SubscriberClient,
 	clientID string,
 	subscription string,
+	config *FlowControlConfig,
 	callback func(ctx context.Context, message *pubsubpb.ReceivedMessage) error,
 ) (*StreamHandler, error) {
+	if config == nil {
+		config = NewDefaultFlowControlConfig()
+	}
 	handler := StreamHandler{
-		settings:         settings,
-		telemetryBuilder: telemetryBuilder,
-		client:           client,
-		clientID:         clientID,
-		subscription:     subscription,
-		pushMessage:      callback,
-		ackBatchWait:     10 * time.Second,
+		settings:          settings,
+		telemetryBuilder:  telemetryBuilder,
+		client:            client,
+		clientID:          clientID,
+		subscription:      subscription,
+		pushMessage:       callback,
+		flowControlConfig: config,
 	}
 	return &handler, handler.initStream(ctx)
 }
@@ -89,8 +94,10 @@ func (handler *StreamHandler) initStream(ctx context.Context) error {
 
 	request := pubsubpb.StreamingPullRequest{
 		Subscription:             handler.subscription,
-		StreamAckDeadlineSeconds: 60,
+		StreamAckDeadlineSeconds: int32(handler.flowControlConfig.StreamAckDeadline.Seconds()),
 		ClientId:                 handler.clientID,
+		MaxOutstandingMessages:   handler.flowControlConfig.MaxOutstandingMessages,
+		MaxOutstandingBytes:      handler.flowControlConfig.MaxOutstandingBytes,
 		AckIds:                   handler.acks,
 	}
 	if err := handler.stream.Send(&request); err != nil {
@@ -183,7 +190,7 @@ func (handler *StreamHandler) acknowledgeMessages() error {
 // a stream got restarted, the messages that still needed to be acknowledged are acknowledged at the start
 // of the new stream, so we don't need to start with an acknowledgeMessages.
 func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.CancelFunc) {
-	timer := time.NewTimer(handler.ackBatchWait)
+	timer := time.NewTimer(handler.flowControlConfig.TriggerAckBatchDuration)
 	for {
 		select {
 		case <-ctx.Done():
@@ -203,7 +210,7 @@ func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.
 		if errors.Is(ctx.Err(), context.Canceled) {
 			break
 		}
-		timer.Reset(handler.ackBatchWait)
+		timer.Reset(handler.flowControlConfig.TriggerAckBatchDuration)
 	}
 	timer.Stop()
 	cancel()

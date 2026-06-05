@@ -54,7 +54,7 @@ func sanitizeFloat(value float64) any {
 
 func MetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, logger *zap.Logger, mapping HecToOtelAttrs, source, sourceType, index string) []*Event {
 	host := unknownHostName
-	commonFields := map[string]any{}
+	commonFields := make(map[string]any, res.Attributes().Len())
 
 	for k, v := range res.Attributes().All() {
 		switch k {

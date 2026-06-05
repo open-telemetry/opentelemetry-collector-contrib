@@ -144,3 +144,6 @@ elasticsearch/backward_compat_for_deprecated_cfgs/fallback_to_old_cfg:
     sizer: requests
     batch:
       sizer: bytes
+elasticsearch/suppress_conflict_errors:
+  endpoint: https://elastic.example.com:9200
+  suppress_conflict_errors: true

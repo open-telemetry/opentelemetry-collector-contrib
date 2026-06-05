@@ -21,6 +21,9 @@ mappings:
   k8s.io/apimachinery/pkg/watch:
     EventType:
       schemaType: string
+  go.opentelemetry.io/collector/exporter/exporterhelper/internal/request:
+    SizerType:
+      schemaType: string
 allowedRefs:
   - go.opentelemetry.io/collector
   - github.com/open-telemetry/opentelemetry-collector-contrib
@@ -37,7 +40,22 @@ componentOverrides:
     configName: 'TCPLogConfig'
   receiver/udp_log:
     configName: 'UDPLogConfig'
-  receiver/windowseventlog:
+  receiver/windows_event_log:
     configName: 'WindowsLogConfig'
   connector/signaltometrics:
     configName: 'config.Config'
+  receiver/host_metrics:
+    factoryMaps:
+      - property: scrapers
+        factoriesVar: scraperFactories
+        description: Map of scrapers to be run, keyed by scraper type.
+  receiver/cisco_os:
+    factoryMaps:
+      - property: scrapers
+        factoriesVar: scraperFactories
+        description: Map of scrapers to be run, keyed by scraper type.
+  processor/geoip:
+    factoryMaps:
+      - property: providers
+        factoriesVar: providerFactories
+        description: Map of GeoIP provider configurations, keyed by provider type.

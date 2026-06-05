@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/versions"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
+	"github.com/moby/moby/client/pkg/versions"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"

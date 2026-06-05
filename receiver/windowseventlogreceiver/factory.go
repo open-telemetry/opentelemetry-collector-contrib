@@ -5,9 +5,17 @@ package windowseventlogreceiver // import "github.com/open-telemetry/opentelemet
 
 import (
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/metadata"
 )
 
-// NewFactory creates a factory for windowseventlog receiver
+// NewFactory creates a factory for the Windows Event Log receiver.
 func NewFactory() receiver.Factory {
-	return newFactoryAdapter()
+	return xreceiver.NewFactory(
+		metadata.Type,
+		createDefaultConfig,
+		xreceiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
