@@ -677,7 +677,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 			continue
 		}
 
-		// In span-ingest mode, tick is a cleanup path only. Finalize any
+		// In span-ingest mode, tick is a terminal cleanup path. Finalize any
 		// still-pending trace as implicit not sampled without policy evaluation.
 		if tsp.cfg.SamplingStrategy == samplingStrategySpanIngest {
 			trace.decisionTime = time.Now()
@@ -685,7 +685,14 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 			globalTracesSampledByDecision[samplingpolicy.NotSampled]++
 			metrics.decisionNotSampled++
 			tsp.releaseNotSampledTrace(id, trace)
-			trace.ReceivedBatches = ptrace.NewTraces()
+			// releaseNotSampledTrace only evicts the trace from memory and
+			// storage (via dropTrace) on a decision cache hit; with NopCache
+			// that never happens, leaking idToTrace, deleteTraceQueue and the
+			// tailStorage entry. Since the tick is terminal for the trace, drop
+			// it unconditionally. dropTrace is idempotent, so the eviction
+			// already performed by releaseNotSampledTrace when a cache is
+			// configured is harmless.
+			tsp.dropTrace(id, trace.decisionTime)
 			continue
 		}
 
