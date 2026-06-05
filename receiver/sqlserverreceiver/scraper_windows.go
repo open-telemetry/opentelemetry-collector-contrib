@@ -30,13 +30,20 @@ type sqlServerPCScraper struct {
 
 // watcherRecorder is a struct containing perf counter watcher along with corresponding value recorder.
 type watcherRecorder struct {
-	watcher  winperfcounters.PerfCounterWatcher
-	recorder recordFunc
+	watcher     winperfcounters.PerfCounterWatcher
+	recorder    recordFunc
+	counterName string
 }
 
 // curriedRecorder is a recorder function that already has value to be recorded,
 // it needs metadata.MetricsBuilder and timestamp as arguments.
 type curriedRecorder func(*metadata.MetricsBuilder, pcommon.Timestamp)
+
+// SQL Server perf counter names used to derive sqlserver.recompilation.ratio.
+const (
+	sqlCompilationsCounter   = "SQL Compilations/sec"
+	sqlReCompilationsCounter = "SQL Re-Compilations/sec"
+)
 
 // newSQLServerPCScraper returns a new sqlServerPCScraper.
 func newSQLServerPCScraper(params receiver.Settings, cfg *Config) *sqlServerPCScraper {
@@ -64,7 +71,7 @@ func (s *sqlServerPCScraper) start(context.Context, component.Host) error {
 				s.logger.Warn(err.Error())
 				continue
 			}
-			s.watcherRecorders = append(s.watcherRecorders, watcherRecorder{w, recorder})
+			s.watcherRecorders = append(s.watcherRecorders, watcherRecorder{w, recorder, perfCounterName})
 		}
 	}
 
@@ -73,10 +80,10 @@ func (s *sqlServerPCScraper) start(context.Context, component.Host) error {
 
 // scrape collects windows performance counter data from all watchers and then records/emits it using the metricBuilder
 func (s *sqlServerPCScraper) scrape(context.Context) (pmetric.Metrics, error) {
-	recordersByDatabase, errs := recordersPerDatabase(s.watcherRecorders)
+	recordersByDatabase, compByDB, recompByDB, errs := recordersPerDatabase(s.watcherRecorders)
 
 	for dbName, recorders := range recordersByDatabase {
-		s.emitMetricGroup(recorders, dbName)
+		s.emitMetricGroup(recorders, dbName, compByDB, recompByDB)
 	}
 
 	return s.mb.Emit(), errs
@@ -84,10 +91,14 @@ func (s *sqlServerPCScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 // recordersPerDatabase scrapes perf counter values using provided []watcherRecorder and returns
 // a map of database name to curriedRecorder that includes the recorded value in its closure.
-func recordersPerDatabase(watcherRecorders []watcherRecorder) (map[string][]curriedRecorder, error) {
+// It also returns per-database SQL Compilations/sec and SQL Re-Compilations/sec values so that
+// the derived sqlserver.recompilation.ratio metric can be computed at emit time.
+func recordersPerDatabase(watcherRecorders []watcherRecorder) (map[string][]curriedRecorder, map[string]float64, map[string]float64, error) {
 	var errs error
 
 	dbToRecorders := make(map[string][]curriedRecorder)
+	compByDB := make(map[string]float64)
+	recompByDB := make(map[string]float64)
 	for _, wr := range watcherRecorders {
 		counterValues, err := wr.watcher.ScrapeData()
 		if err != nil {
@@ -102,6 +113,13 @@ func recordersPerDatabase(watcherRecorders []watcherRecorder) (map[string][]curr
 			val := counterValue.Value
 			recorder := wr.recorder
 
+			switch wr.counterName {
+			case sqlCompilationsCounter:
+				compByDB[dbName] = val
+			case sqlReCompilationsCounter:
+				recompByDB[dbName] = val
+			}
+
 			if _, ok := dbToRecorders[dbName]; !ok {
 				dbToRecorders[dbName] = []curriedRecorder{}
 			}
@@ -111,14 +129,23 @@ func recordersPerDatabase(watcherRecorders []watcherRecorder) (map[string][]curr
 		}
 	}
 
-	return dbToRecorders, errs
+	return dbToRecorders, compByDB, recompByDB, errs
 }
 
-func (s *sqlServerPCScraper) emitMetricGroup(recorders []curriedRecorder, databaseName string) {
+func (s *sqlServerPCScraper) emitMetricGroup(recorders []curriedRecorder, databaseName string, compByDB, recompByDB map[string]float64) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	for _, recorder := range recorders {
 		recorder(s.mb, now)
+	}
+
+	// Derive sqlserver.recompilation.ratio (recomp / comp * 100) when both
+	// SQL Compilations/sec and SQL Re-Compilations/sec were observed for this
+	// database/instance. Skip when comp is 0 to avoid division by zero.
+	if comp, ok := compByDB[databaseName]; ok && comp > 0 {
+		if recomp, ok := recompByDB[databaseName]; ok {
+			s.mb.RecordSqlserverRecompilationRatioDataPoint(now, recomp/comp*100)
+		}
 	}
 
 	rb := s.mb.NewResourceBuilder()

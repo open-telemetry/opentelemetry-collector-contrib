@@ -80,6 +80,10 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverResourcePoolDiskOperations.Enabled = enabled
 	cfg.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled = enabled
 	cfg.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = enabled
+	cfg.Metrics.SqlserverAttentionRate.Enabled = enabled
+	cfg.Metrics.SqlserverParameterizationRate.Enabled = enabled
+	cfg.Metrics.SqlserverPlanExecutionRate.Enabled = enabled
+	cfg.Metrics.SqlserverRecompilationRatio.Enabled = enabled
 	cfg.Metrics.SqlserverTableCount.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionDelay.Enabled = enabled
 	cfg.Metrics.SqlserverTransactionLogFlushDataRate.Enabled = enabled

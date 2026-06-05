@@ -184,10 +184,20 @@ attributes:
     description: Number of transactions currently open in the session.
     type: int
     requirement_level: recommended
+  sqlserver.parameterization.result:
+    description: The result of an auto-parameterization attempt by the SQL Server query optimizer.
+    type: string
+    requirement_level: recommended
+    enum: [auto_attempted, safe, unsafe, failed, forced]
   sqlserver.percent_complete:
     description: Percentage of work completed.
     type: double
     requirement_level: recommended
+  sqlserver.plan.guidance.result:
+    description: Whether a SQL plan execution successfully used a matching plan guide (guided) or did not (misguided).
+    type: string
+    requirement_level: recommended
+    enum: [guided, misguided]
   # Stored Procedures
   sqlserver.procedure_execution_count:
     description: Number of times that the procedure has been executed since it was last compiled, reported in delta value.
@@ -407,6 +417,14 @@ events:
       - sqlserver.query.last_started
 
 metrics:
+  sqlserver.attention.rate:
+    enabled: false
+    description: Number of SQL attentions (client cancellation interrupts) received per second.
+    stability: development
+    unit: "{attentions}/s"
+    gauge:
+      value_type: double
+    attributes: []
   sqlserver.batch.request.rate:
     enabled: true
     description: Number of batch requests received by SQL Server.
@@ -765,6 +783,22 @@ metrics:
     gauge:
       value_type: double
     extended_documentation: This metric is only available when running on Windows.
+  sqlserver.parameterization.rate:
+    enabled: false
+    description: Rate of auto-parameterization activity, broken down by result.
+    stability: development
+    unit: "{params}/s"
+    gauge:
+      value_type: double
+    attributes: [sqlserver.parameterization.result]
+  sqlserver.plan.execution.rate:
+    enabled: false
+    description: Rate of plan executions, classified by plan guide result.
+    stability: development
+    unit: "{executions}/s"
+    gauge:
+      value_type: double
+    attributes: [sqlserver.plan.guidance.result]
   sqlserver.processes.blocked:
     enabled: false
     description: The number of processes that are currently blocked
@@ -775,6 +809,14 @@ metrics:
       input_type: string
     attributes: []
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.recompilation.ratio:
+    enabled: false
+    description: Ratio of SQL recompilations to compilations, expressed as a percentage.
+    stability: development
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
   sqlserver.replica.data.rate:
     enabled: false
     description: Throughput rate of replica data.
