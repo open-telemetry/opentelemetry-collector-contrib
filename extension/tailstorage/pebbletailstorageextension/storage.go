@@ -6,6 +6,7 @@ package pebbletailstorageextension // import "github.com/open-telemetry/opentele
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"path/filepath"
 	"sync/atomic"
 
@@ -83,44 +84,41 @@ func (s *storage) Close() error {
 	return s.db.Close()
 }
 
-func (s *storage) Append(traceID pcommon.TraceID, rss ptrace.ResourceSpans) {
-	td := ptrace.NewTraces()
-	rs := td.ResourceSpans().AppendEmpty()
-	rss.MoveTo(rs)
-
+func (s *storage) Append(traceID pcommon.TraceID, td ptrace.Traces) error {
 	data, err := s.marshaler.MarshalTraces(td)
 	if err != nil {
-		s.logger.Warn("failed to marshal trace payload for tail storage", zap.Error(err))
-		return
+		return fmt.Errorf("failed to marshal trace payload: %w", err)
 	}
 
 	key := traceEntryKey(traceID, s.nextSeq.Add(1))
 	if err := s.db.Set(key[:], data, pebble.NoSync); err != nil {
-		s.logger.Warn("failed to append trace payload to tail storage", zap.Error(err))
+		return fmt.Errorf("pebble Set error: %w", err)
 	}
+	return nil
 }
 
-func (s *storage) Take(traceID pcommon.TraceID) (ptrace.Traces, bool) {
+func (s *storage) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 	prefix := tracePrefix(traceID)
 	out := s.readByTracePrefix(prefix[:])
 	if out.ResourceSpans().Len() == 0 {
-		return ptrace.NewTraces(), false
+		return out, nil
 	}
 	end := tracePrefixUpperBound(prefix)
 	if err := s.db.DeleteRange(prefix[:], end[:], pebble.NoSync); err != nil {
-		s.logger.Warn("failed to delete taken trace payload range from tail storage", zap.Error(err))
+		return ptrace.NewTraces(), fmt.Errorf("pebble DeleteRange error: %w", err)
 	}
-	return out, true
+	return out, nil
 }
 
-func (s *storage) Delete(traceID pcommon.TraceID) {
+func (s *storage) Delete(traceID pcommon.TraceID) error {
 	prefix := tracePrefix(traceID)
 	// Delete all entries for the trace in one range operation instead of
 	// iterating keys and deleting one-by-one.
 	end := tracePrefixUpperBound(prefix)
 	if err := s.db.DeleteRange(prefix[:], end[:], pebble.NoSync); err != nil {
-		s.logger.Warn("failed to delete trace payload range from tail storage", zap.Error(err))
+		return fmt.Errorf("pebble DeleteRange error: %w", err)
 	}
+	return nil
 }
 
 func (s *storage) readByTracePrefix(prefix []byte) ptrace.Traces {
