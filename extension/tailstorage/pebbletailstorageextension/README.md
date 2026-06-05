@@ -54,6 +54,14 @@ extensions:
   pebble_tail_storage:
     directory: /var/lib/otelcol/pebble-tail-storage
 
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+exporters:
+  debug:
+
 processors:
   tail_sampling:
     sampling_strategy: span-ingest
@@ -69,10 +77,6 @@ processors:
         type: status_code
         status_code:
           status_codes: [ERROR]
-      - name: slow
-        type: latency
-        latency:
-          threshold_ms: 1000
 
 service:
   extensions: [pebble_tail_storage]
@@ -80,7 +84,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [tail_sampling]
-      exporters: [otlp]
+      exporters: [debug]
 ```
 
 ## Feature Gate
