@@ -16,6 +16,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.IsType(t, &Config{}, cfg)
+
+	networkCfg := cfg.(*Config)
+	assert.True(t, networkCfg.Connections.ExcludeLocalhost)
+	assert.True(t, networkCfg.Connections.ExcludeListenPorts)
 }
 
 func TestCreateMetrics(t *testing.T) {
@@ -29,10 +33,29 @@ func TestCreateMetrics(t *testing.T) {
 }
 
 func TestCreateMetrics_Error(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *Config
+	}{
+		{
+			name: "invalid interface include filter",
+			cfg:  &Config{Include: MatchConfig{Interfaces: []string{""}}},
+		},
+		{
+			name: "invalid process include filter",
+			cfg:  &Config{Connections: ConnectionConfig{IncludeProcesses: ProcessMatchConfig{Names: []string{""}}}},
+		},
+		{
+			name: "invalid process exclude filter",
+			cfg:  &Config{Connections: ConnectionConfig{ExcludeProcesses: ProcessMatchConfig{Names: []string{""}}}},
+		},
+	}
+
 	factory := NewFactory()
-	cfg := &Config{Include: MatchConfig{Interfaces: []string{""}}}
-
-	_, err := factory.CreateMetrics(t.Context(), scrapertest.NewNopSettings(metadata.Type), cfg)
-
-	assert.Error(t, err)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := factory.CreateMetrics(t.Context(), scrapertest.NewNopSettings(metadata.Type), test.cfg)
+			assert.Error(t, err)
+		})
+	}
 }

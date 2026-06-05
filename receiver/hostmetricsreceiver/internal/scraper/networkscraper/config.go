@@ -15,10 +15,33 @@ type Config struct {
 	Include MatchConfig `mapstructure:"include"`
 	// Exclude specifies a filter on the network interfaces that should be excluded from the generated metrics.
 	Exclude MatchConfig `mapstructure:"exclude"`
+	// Connections specifies detailed network connection metric settings.
+	Connections ConnectionConfig `mapstructure:"connections"`
 }
 
 type MatchConfig struct {
 	filterset.Config `mapstructure:",squash"`
 
 	Interfaces []string `mapstructure:"interfaces"`
+}
+
+type ConnectionConfig struct {
+	// IncludeProcesses specifies a filter on process names that should be included from detailed connection metrics.
+	IncludeProcesses ProcessMatchConfig `mapstructure:"include_processes"`
+	// ExcludeProcesses specifies a filter on process names that should be excluded from detailed connection metrics.
+	ExcludeProcesses ProcessMatchConfig `mapstructure:"exclude_processes"`
+	// IncludePorts specifies remote ports that should be included in detailed connection metrics.
+	IncludePorts []uint32 `mapstructure:"include_ports"`
+	// ExcludePorts specifies remote ports that should be excluded from detailed connection metrics.
+	ExcludePorts []uint32 `mapstructure:"exclude_ports"`
+	// ExcludeLocalhost specifies whether to exclude local and loopback remote addresses from detailed connection metrics.
+	ExcludeLocalhost bool `mapstructure:"exclude_localhost"`
+	// ExcludeListenPorts specifies whether to exclude connections from local listening ports from detailed connection metrics.
+	ExcludeListenPorts bool `mapstructure:"exclude_listen_ports"`
+}
+
+type ProcessMatchConfig struct {
+	filterset.Config `mapstructure:",squash"`
+
+	Names []string `mapstructure:"names"`
 }

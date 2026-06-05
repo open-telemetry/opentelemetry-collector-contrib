@@ -4,6 +4,33 @@ $defs:
     description: MetricsConfig provides config for network metrics.
     type: object
     properties:
+      system.network.connection.count:
+        description: "SystemNetworkConnectionCountMetricConfig provides config for the system.network.connection.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "process.name"
+                - "server.address"
+                - "server.port"
+            default:
+              - "process.name"
+              - "server.address"
+              - "server.port"
       system.network.connections:
         description: "SystemNetworkConnectionsMetricConfig provides config for the system.network.connections metric."
         type: object

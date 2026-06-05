@@ -97,6 +97,22 @@ metrics:
     enabled: true
 ```
 
+### system.network.connection.count
+
+The number of network connections, grouped by process and remote endpoint.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {connections} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| process.name | The name of the process associated with the local end of the connection. | Any Str | Recommended | - |
+| server.address | The remote address of the network connection. | Any Str | Recommended | - |
+| server.port | The remote port of the network connection. | Any Int | Recommended | - |
+
 ### system.network.conntrack.count
 
 The count of entries in conntrack table.

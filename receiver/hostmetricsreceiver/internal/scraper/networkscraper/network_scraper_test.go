@@ -6,6 +6,7 @@ package networkscraper
 import (
 	"context"
 	"errors"
+	stdnet "net"
 	"testing"
 
 	"github.com/shirou/gopsutil/v4/net"
@@ -114,7 +115,7 @@ func TestScrape(t *testing.T) {
 			config:           &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()},
 			connectionsFunc:  func(context.Context, string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") },
 			expectedErr:      "failed to read TCP connections: err3",
-			expectedErrCount: connectionsMetricsLen,
+			expectedErrCount: 1,
 		},
 		{
 			name: "Conntrack error ignored if metric disabled",
@@ -130,6 +131,7 @@ func TestScrape(t *testing.T) {
 			config: func() *Config {
 				cfg := Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 				cfg.Metrics.SystemNetworkConnections.Enabled = false
+				cfg.Metrics.SystemNetworkConnectionCount.Enabled = false
 				return &cfg
 			}(),
 			connectionsFunc: func(context.Context, string) ([]net.ConnectionStat, error) {
@@ -164,6 +166,8 @@ func TestScrape(t *testing.T) {
 			if test.conntrackFunc != nil {
 				scraper.conntrack = test.conntrackFunc
 			}
+			scraper.processName = func(context.Context, int32) (string, error) { return "processname", nil }
+			scraper.interfaceAddrs = func() ([]stdnet.Addr, error) { return nil, nil }
 
 			err = scraper.start(t.Context(), componenttest.NewNopHost())
 			if test.initializationErr != "" {
@@ -234,4 +238,126 @@ func assertNetworkConnectionsMetricValid(t *testing.T, metric pmetric.Metric) {
 	// Flaky test gives 12 or 13, so bound it
 	assert.LessOrEqual(t, 12, metric.Sum().DataPoints().Len())
 	assert.GreaterOrEqual(t, 13, metric.Sum().DataPoints().Len())
+}
+
+func TestScrapeNetworkConnectionCountMetric(t *testing.T) {
+	cfg := Config{
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		Connections: ConnectionConfig{
+			IncludeProcesses:   ProcessMatchConfig{Config: filterset.Config{MatchType: "strict"}, Names: []string{"app"}},
+			ExcludeProcesses:   ProcessMatchConfig{Config: filterset.Config{MatchType: "strict"}, Names: []string{"skip"}},
+			IncludePorts:       []uint32{443, 8443},
+			ExcludePorts:       []uint32{8443},
+			ExcludeLocalhost:   true,
+			ExcludeListenPorts: true,
+		},
+	}
+	cfg.Metrics.SystemNetworkConnections.Enabled = false
+	cfg.Metrics.SystemNetworkConnectionCount.Enabled = true
+
+	md, processNameCalls := scrapeConnectionCountMetric(t, &cfg, []net.ConnectionStat{
+		{Status: "ESTABLISHED", Pid: 1, Laddr: net.Addr{IP: "10.0.0.1", Port: 50001}, Raddr: net.Addr{IP: "203.0.113.10", Port: 443}},
+		{Status: "ESTABLISHED", Pid: 1, Laddr: net.Addr{IP: "10.0.0.1", Port: 50002}, Raddr: net.Addr{IP: "203.0.113.10", Port: 443}},
+		{Status: "SYN_SENT", Pid: 1, Laddr: net.Addr{IP: "10.0.0.1", Port: 50003}, Raddr: net.Addr{IP: "203.0.113.10", Port: 443}},
+		{Status: "ESTABLISHED", Pid: 1, Laddr: net.Addr{IP: "10.0.0.1", Port: 50004}, Raddr: net.Addr{}},
+		{Status: "ESTABLISHED", Pid: 1, Laddr: net.Addr{IP: "10.0.0.1", Port: 50005}, Raddr: net.Addr{IP: "203.0.113.10"}},
+		{Status: "ESTABLISHED", Pid: 99, Laddr: net.Addr{IP: "10.0.0.1", Port: 50006}, Raddr: net.Addr{IP: "203.0.113.10", Port: 443}},
+		{Status: "ESTABLISHED", Pid: 1, Laddr: net.Addr{IP: "10.0.0.1", Port: 50007}, Raddr: net.Addr{IP: "127.0.0.1", Port: 443}},
+		{Status: "ESTABLISHED", Pid: 1, Laddr: net.Addr{IP: "10.0.0.1", Port: 50008}, Raddr: net.Addr{IP: "10.0.0.2", Port: 443}},
+		{Status: "ESTABLISHED", Pid: 3, Laddr: net.Addr{IP: "10.0.0.1", Port: 50009}, Raddr: net.Addr{IP: "203.0.113.10", Port: 443}},
+		{Status: "ESTABLISHED", Pid: 1, Laddr: net.Addr{IP: "10.0.0.1", Port: 50010}, Raddr: net.Addr{IP: "203.0.113.10", Port: 8443}},
+		{Status: "LISTEN", Laddr: net.Addr{IP: "10.0.0.1", Port: 60000}},
+		{Status: "ESTABLISHED", Pid: 1, Laddr: net.Addr{IP: "10.0.0.1", Port: 60000}, Raddr: net.Addr{IP: "203.0.113.10", Port: 443}},
+	})
+
+	require.Equal(t, 1, md.MetricCount())
+	metric := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, "system.network.connection.count", metric.Name())
+	dps := metric.Gauge().DataPoints()
+	require.Equal(t, 1, dps.Len())
+	dp := dps.At(0)
+	assert.Equal(t, int64(2), dp.IntValue())
+	assertAttributeValue(t, dp.Attributes(), "process.name", "app")
+	assertAttributeValue(t, dp.Attributes(), "server.address", "203.0.113.10")
+	serverPort, ok := dp.Attributes().Get("server.port")
+	require.True(t, ok)
+	assert.Equal(t, int64(443), serverPort.Int())
+	assert.Equal(t, 1, processNameCalls[1])
+}
+
+func TestScrapeNetworkConnectionCountDisabledSkipsDetailLookups(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.SystemNetworkConnectionCount.Enabled = false
+
+	scraper, err := newNetworkScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: cfg})
+	require.NoError(t, err)
+	scraper.bootTime = func(context.Context) (uint64, error) { return 100, nil }
+	scraper.ioCounters = func(context.Context, bool) ([]net.IOCountersStat, error) { return nil, nil }
+	scraper.conntrack = func(context.Context) ([]net.FilterStat, error) { return nil, nil }
+	scraper.connections = func(context.Context, string) ([]net.ConnectionStat, error) {
+		return []net.ConnectionStat{{Status: "ESTABLISHED", Pid: 1, Raddr: net.Addr{IP: "203.0.113.10", Port: 443}}}, nil
+	}
+	scraper.processName = func(context.Context, int32) (string, error) { panic("processName should not be called") }
+	scraper.interfaceAddrs = func() ([]stdnet.Addr, error) { panic("interfaceAddrs should not be called") }
+
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+	md, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, md.MetricCount())
+	assert.Equal(t, "system.network.connections", md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
+}
+
+func TestScrapeNetworkConnectionsErrorCountsEnabledMetrics(t *testing.T) {
+	cfg := Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
+	cfg.Metrics.SystemNetworkConnectionCount.Enabled = true
+
+	scraper, err := newNetworkScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &cfg)
+	require.NoError(t, err)
+	scraper.bootTime = func(context.Context) (uint64, error) { return 100, nil }
+	scraper.ioCounters = func(context.Context, bool) ([]net.IOCountersStat, error) { return nil, nil }
+	scraper.conntrack = func(context.Context) ([]net.FilterStat, error) { return nil, nil }
+	scraper.connections = func(context.Context, string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") }
+
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+	_, err = scraper.scrape(t.Context())
+	require.EqualError(t, err, "failed to read TCP connections: err3")
+	var scraperErr scrapererror.PartialScrapeError
+	require.ErrorAs(t, err, &scraperErr)
+	assert.Equal(t, 2, scraperErr.Failed)
+}
+
+func scrapeConnectionCountMetric(t *testing.T, cfg *Config, connections []net.ConnectionStat) (pmetric.Metrics, map[int32]int) {
+	scraper, err := newNetworkScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+
+	processNameCalls := map[int32]int{}
+	scraper.bootTime = func(context.Context) (uint64, error) { return 100, nil }
+	scraper.ioCounters = func(context.Context, bool) ([]net.IOCountersStat, error) { return nil, nil }
+	scraper.conntrack = func(context.Context) ([]net.FilterStat, error) { return nil, nil }
+	scraper.connections = func(context.Context, string) ([]net.ConnectionStat, error) { return connections, nil }
+	scraper.processName = func(_ context.Context, pid int32) (string, error) {
+		processNameCalls[pid]++
+		switch pid {
+		case 1:
+			return "app", nil
+		case 3:
+			return "skip", nil
+		default:
+			return "", errors.New("process not found")
+		}
+	}
+	scraper.interfaceAddrs = func() ([]stdnet.Addr, error) {
+		return []stdnet.Addr{&stdnet.IPNet{IP: stdnet.ParseIP("10.0.0.2")}}, nil
+	}
+
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+	md, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	return md, processNameCalls
+}
+
+func assertAttributeValue(t *testing.T, attrs pcommon.Map, name string, expected string) {
+	value, ok := attrs.Get(name)
+	require.True(t, ok)
+	assert.Equal(t, expected, value.Str())
 }

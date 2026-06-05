@@ -21,6 +21,10 @@ func NewFactory() scraper.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		Connections: ConnectionConfig{
+			ExcludeLocalhost:   true,
+			ExcludeListenPorts: true,
+		},
 	}
 }
 
