@@ -752,11 +752,10 @@ func TestGetContributors(t *testing.T) {
 			server := httptest.NewServer(tc.server)
 			defer func() { server.Close() }()
 
-			client, err := github.NewClient(nil)
-			assert.NoError(t, err)
 			url, _ := url.Parse(server.URL + "/api-v3" + "/")
-			client.BaseURL = url
-			client.UploadURL = url
+			urlString := url.String()
+			client, err := github.NewClient(github.WithURLs(&urlString, &urlString))
+			assert.NoError(t, err)
 
 			contribs, err := ghs.getContributorCount(t.Context(), client, tc.repo)
 			assert.NoError(t, err)
