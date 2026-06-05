@@ -203,6 +203,11 @@ The list of the populated resource attributes can be found at [GCP Detector Reso
     * host.id (instance id)
     * host.name (instance name)
 
+Support for the instance name in the metadata server when GKE workload identity is enabled depends on the version of GKE being used. On older GKE versions, the GCE metadata endpoints won't be available, thus the GKE resource detector won't be
+able to determine `host.name`. In that case, users are encouraged to set `host.name` from either:
+- `node.name` through the downward API with the `env` detector
+- obtaining the Kubernetes node name from the Kubernetes API (with `k8s.io/client-go`)
+
 #### Google Cloud Run Services Metadata
 
     * cloud.provider ("gcp")
