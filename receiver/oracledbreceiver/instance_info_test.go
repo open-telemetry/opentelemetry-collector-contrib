@@ -80,30 +80,26 @@ func emptyClient() dbClient {
 	return &fakeDbClient{Responses: [][]metricRow{{}}}
 }
 
-// -- oracleVersionGTE unit tests ----------------------------------------------
+// -- majorVersion unit tests --------------------------------------------------
 
-func TestOracleVersionGTE(t *testing.T) {
+func TestMajorVersion(t *testing.T) {
 	tests := []struct {
 		name     string
 		version  string
-		minMajor int
-		expected bool
+		expected int
 	}{
-		{name: "empty version returns false", version: "", minMajor: 12, expected: false},
-		{name: "19 >= 12", version: "19.0.0.0.0", minMajor: 12, expected: true},
-		{name: "12 >= 12", version: "12.2.0.1.0", minMajor: 12, expected: true},
-		{name: "11 not >= 12", version: "11.2.0.4.0", minMajor: 12, expected: false},
-		{name: "19 >= 18", version: "19.0.0.0.0", minMajor: 18, expected: true},
-		{name: "18 >= 18", version: "18.0.0.0.0", minMajor: 18, expected: true},
-		{name: "12 not >= 18", version: "12.2.0.1.0", minMajor: 18, expected: false},
-		{name: "21 >= 12", version: "21.0.0.0.0", minMajor: 12, expected: true},
-		{name: "major-only version string", version: "19", minMajor: 12, expected: true},
-		{name: "malformed version returns false", version: "not-a-version", minMajor: 12, expected: false},
-		{name: "version with only dot returns false", version: ".", minMajor: 12, expected: false},
+		{name: "empty version returns -1", version: "", expected: -1},
+		{name: "19.0.0.0.0", version: "19.0.0.0.0", expected: 19},
+		{name: "12.2.0.1.0", version: "12.2.0.1.0", expected: 12},
+		{name: "11.2.0.4.0", version: "11.2.0.4.0", expected: 11},
+		{name: "21.0.0.0.0", version: "21.0.0.0.0", expected: 21},
+		{name: "major-only version string", version: "19", expected: 19},
+		{name: "malformed version returns -1", version: "not-a-version", expected: -1},
+		{name: "version with only dot returns -1", version: ".", expected: -1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, oracleVersionGTE(tt.version, tt.minMajor))
+			assert.Equal(t, tt.expected, majorVersion(tt.version))
 		})
 	}
 }
