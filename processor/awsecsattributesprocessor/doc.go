@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // Package awsecsattributesprocessor enriches logs, metrics, traces and profiles
 // with AWS ECS metadata for daemonset-style (one collector per host) ECS on EC2
