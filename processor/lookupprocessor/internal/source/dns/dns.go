@@ -182,7 +182,7 @@ func (s *dnsSource) lookupForward(ctx context.Context, hostname string) (any, bo
 		if s.recordType == RecordTypeA && addr.IP.To4() != nil {
 			// IPv4 address for A record
 			ips = append(ips, addr.IP.String())
-		} else if s.recordType == RecordTypeAAAA && addr.IP.To4() == nil {
+		} else if s.recordType == RecordTypeAAAA && addr.IP.To4() == nil && addr.IP.To16() != nil {
 			// IPv6 address for AAAA record
 			ips = append(ips, addr.IP.String())
 		}
