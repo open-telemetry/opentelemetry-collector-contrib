@@ -112,6 +112,10 @@ type RemoteWriteQueue struct {
 	// the collector to fan out remote write requests.
 	NumConsumers int `mapstructure:"num_consumers"`
 
+	// IncludeMetadataKeys is a list of client metadata keys whose values are
+	// forwarded as HTTP request headers on every remote write call.
+	IncludeMetadataKeys []string `mapstructure:"include_metadata_keys"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
