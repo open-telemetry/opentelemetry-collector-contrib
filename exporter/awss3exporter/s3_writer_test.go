@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/notify"
 )
 
 func TestNewUploadManager(t *testing.T) {
@@ -68,6 +70,7 @@ func TestNewUploadManager(t *testing.T) {
 				"metrics",
 				"otlp",
 				false,
+				notify.NewNoop(),
 			)
 
 			if tc.errVal != "" {

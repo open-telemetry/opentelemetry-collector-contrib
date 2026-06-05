@@ -1,0 +1,29 @@
+receivers:
+  nop:
+
+exporters:
+  awss3:
+    s3uploader:
+      region: us-east-1
+      s3_bucket: foo
+      notifications:
+        endpoint: https://example.com/webhook
+        timeout: 7s
+        headers:
+          Authorization: Bearer abc
+        queue_size: 1234
+        workers: 2
+        max_records_per_post: 50
+        max_attempts: 5
+        initial_backoff: 2s
+        max_backoff: 40s
+
+processors:
+  nop:
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [awss3]
