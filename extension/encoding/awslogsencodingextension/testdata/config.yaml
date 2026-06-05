@@ -32,3 +32,54 @@ aws_logs_encoding/elbaccess:
 
 aws_logs_encoding/networkfirewall:
   format: networkfirewall
+
+aws_logs_encoding/cw_routing:
+  format: cloudwatch
+  cloudwatch:
+    streams:
+      - name: vpcflow
+        encoding: aws_logs_encoding/vpcflow_inner
+      - name: payment-lambda
+        log_group_pattern: "/aws/lambda/payment-*"
+        encoding: aws_logs_encoding/lambda_inner
+      - name: catchall
+        log_group_pattern: "*"
+        encoding: aws_logs_encoding/raw
+
+aws_logs_encoding/cw_routing_invalid_format:
+  format: vpcflow
+  cloudwatch:
+    streams:
+      - name: foo
+        log_group_pattern: "/aws/lambda/*"
+        encoding: aws_logs_encoding/inner
+
+aws_logs_encoding/cw_routing_missing_name:
+  format: cloudwatch
+  cloudwatch:
+    streams:
+      - log_group_pattern: "/aws/lambda/*"
+        encoding: aws_logs_encoding/inner
+
+aws_logs_encoding/cw_routing_missing_encoding:
+  format: cloudwatch
+  cloudwatch:
+    streams:
+      - name: foo
+        log_group_pattern: "/aws/lambda/*"
+
+aws_logs_encoding/cw_routing_unknown_name:
+  format: cloudwatch
+  cloudwatch:
+    streams:
+      - name: not-a-known-service
+        encoding: aws_logs_encoding/inner
+
+aws_logs_encoding/cw_routing_duplicate_name:
+  format: cloudwatch
+  cloudwatch:
+    streams:
+      - name: vpcflow
+        encoding: aws_logs_encoding/a
+      - name: vpcflow
+        encoding: aws_logs_encoding/b
