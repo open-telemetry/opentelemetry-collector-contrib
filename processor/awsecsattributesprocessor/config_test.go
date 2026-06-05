@@ -104,4 +104,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg, ok := NewFactory().CreateDefaultConfig().(*Config)
 	require.True(t, ok)
 	require.NoError(t, cfg.Validate())
+
+	// By default no attribute patterns are configured, so all available ECS
+	// metadata attributes are collected.
+	require.Empty(t, cfg.Attributes)
 }
