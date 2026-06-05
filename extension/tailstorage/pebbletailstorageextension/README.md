@@ -29,11 +29,9 @@ This extension is in development and may change.
 ## Limitations
 
 Persistence across collector restarts is **not yet supported**. The extension
-refuses to start if its `directory` already contains a Pebble database, and
-data buffered for tail sampling is lost on shutdown. This is a temporary
+drops all data in the Pebble database in `directory` on startup. This is a temporary
 measure while the on-disk schema is under heavy development; operators should
-treat the directory as ephemeral and remove it (or point at a fresh path)
-before restarting the collector.
+treat the directory as ephemeral.
 
 ## Configuration
 
