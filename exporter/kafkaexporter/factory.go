@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkarequest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
@@ -90,6 +91,24 @@ func createTracesExporter(
 ) (exporter.Traces, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
 	exp := newTracesExporter(oCfg, set)
+
+	if useRequestTypeFeatureGate.IsEnabled() {
+		qbs := xexporterhelper.QueueBatchSettings{
+			Encoding: kafkarequest.NewEncoding(),
+		}
+		return xexporterhelper.NewTracesRequest(
+			ctx,
+			set,
+			newTracesRequestConverter(exp),
+			newTracesRequestPusher(exp),
+			exporterhelperOptions(
+				oCfg,
+				qbs,
+				exp.Start, exp.Close,
+			)...,
+		)
+	}
+
 	return exporterhelper.NewTraces(
 		ctx,
 		set,
