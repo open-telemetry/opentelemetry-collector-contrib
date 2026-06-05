@@ -3,7 +3,6 @@
 
 The Kubernetes Attributes Processor allows adding k8s metadata to resource attributes for spans, metrics and logs.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: profiles   |

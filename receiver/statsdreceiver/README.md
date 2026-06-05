@@ -5,7 +5,6 @@ StatsD receiver for ingesting StatsD messages(https://github.com/statsd/statsd/b
 the OpenTelemetry Collector. Note: This receiver does not support horizontally scaled collector deployments. It is
 intended to run in agent mode, where a single collector instance receives StatsD input.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |

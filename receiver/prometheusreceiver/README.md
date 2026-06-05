@@ -3,7 +3,6 @@
 
 The Prometheus Receiver receives metric data in [Prometheus](https://prometheus.io/) format.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |

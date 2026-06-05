@@ -3,7 +3,6 @@
 
 This receiver tails and parses logs from files.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: logs   |

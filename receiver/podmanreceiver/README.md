@@ -5,7 +5,6 @@ The Podman Stats Receiver queries the Podman service API to fetch stats for all 
 on a configured interval.  These stats are for container resource usage of cpu, memory, network, and
 the [blkio controller](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |

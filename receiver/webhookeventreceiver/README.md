@@ -6,7 +6,6 @@ for any webhook style data source. It is designed to work alongside other pipeli
 [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor)
 to allow the ingestion of generic events as logs into the opentelemetry collector.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: logs   |

@@ -4,7 +4,6 @@
 The AWS Kinesis Data Firehose Receiver is for ingesting delivery stream messages and parsing the records received
 based on the configured record type.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics, logs   |

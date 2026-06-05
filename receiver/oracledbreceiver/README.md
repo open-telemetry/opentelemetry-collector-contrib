@@ -3,7 +3,6 @@
 
 This receiver periodically queries an Oracle Database host to collect metrics.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs   |

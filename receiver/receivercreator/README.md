@@ -3,7 +3,6 @@
 
 This receiver can instantiate other receivers at runtime based on whether observed endpoints match a configured rule.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs, traces, profiles   |
