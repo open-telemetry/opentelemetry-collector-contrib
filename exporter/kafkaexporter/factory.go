@@ -92,7 +92,7 @@ func createTracesExporter(
 	oCfg := *(cfg.(*Config)) // Clone the config
 	exp := newTracesExporter(oCfg, set)
 
-	if useRequestTypeFeatureGate.IsEnabled() {
+	if metadata.ExporterKafkaUseRequestTypeFeatureGate.IsEnabled() {
 		qbs := xexporterhelper.QueueBatchSettings{
 			Encoding: kafkarequest.NewEncoding(),
 		}
