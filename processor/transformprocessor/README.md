@@ -722,6 +722,8 @@ The `ParseCLF` function returns a `pcommon.Map` that is the result of parsing th
   remotehost rfc931 authuser [date] "request" status bytes "referer" "user-agent"
   ```
 
+Quoted fields (`request`, `referer`, `user-agent`) may contain backslash escape sequences as produced by Apache (`\"`, `\\`, `\xhh`, and C-style control escapes such as `\n` and `\t` — see the [mod_log_config format notes](https://httpd.apache.org/docs/current/mod/mod_log_config.html#format-notes)) and nginx (`\xhh`). These sequences are unescaped in the returned values.
+
 The returned map has the following fields:
 
 - `remote_host` — the client's DNS name or IP address.

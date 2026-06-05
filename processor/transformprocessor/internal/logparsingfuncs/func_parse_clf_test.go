@@ -199,6 +199,92 @@ func Test_parseCLF(t *testing.T) {
 			},
 		},
 		{
+			name:  "escaped quote in request line",
+			input: `127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET /search?q=\"foo\" HTTP/1.1" 200 42`,
+			expected: map[string]any{
+				"remote_host": "127.0.0.1",
+				"rfc931":      "-",
+				"authuser":    "-",
+				"timestamp":   "10/Oct/2000:13:55:36 -0700",
+				"request":     `GET /search?q="foo" HTTP/1.1`,
+				"method":      "GET",
+				"request_uri": `/search?q="foo"`,
+				"protocol":    "HTTP/1.1",
+				"status":      int64(200),
+				"bytes":       int64(42),
+			},
+		},
+		{
+			name:  "escaped backslash and hex escapes in request line",
+			input: `127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET /path\\to\x22file\x22 HTTP/1.1" 200 7`,
+			expected: map[string]any{
+				"remote_host": "127.0.0.1",
+				"rfc931":      "-",
+				"authuser":    "-",
+				"timestamp":   "10/Oct/2000:13:55:36 -0700",
+				"request":     `GET /path\to"file" HTTP/1.1`,
+				"method":      "GET",
+				"request_uri": `/path\to"file"`,
+				"protocol":    "HTTP/1.1",
+				"status":      int64(200),
+				"bytes":       int64(7),
+			},
+		},
+		{
+			name:   "combined format injection attempt with escaped quotes",
+			input:  `203.0.113.7 - - [12/Jun/2026:09:15:02 +0000] "GET /products?id=1\" OR \"1\"=\"1 HTTP/1.1" 500 412 "-" "sqlmap/1.7"`,
+			format: clfFormatCombined,
+			expected: map[string]any{
+				"remote_host": "203.0.113.7",
+				"rfc931":      "-",
+				"authuser":    "-",
+				"timestamp":   "12/Jun/2026:09:15:02 +0000",
+				"request":     `GET /products?id=1" OR "1"="1 HTTP/1.1`,
+				"method":      "GET",
+				"request_uri": `/products?id=1"`,
+				"protocol":    `OR "1"="1 HTTP/1.1`,
+				"status":      int64(500),
+				"bytes":       int64(412),
+				"referer":     "-",
+				"user_agent":  "sqlmap/1.7",
+			},
+		},
+		{
+			name:   "combined format with escapes in referer and user-agent",
+			input:  `127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET / HTTP/1.1" 200 42 "http://example.com/a\\b" "Mozilla/5.0 \"compatible\"\tagent"`,
+			format: clfFormatCombined,
+			expected: map[string]any{
+				"remote_host": "127.0.0.1",
+				"rfc931":      "-",
+				"authuser":    "-",
+				"timestamp":   "10/Oct/2000:13:55:36 -0700",
+				"request":     "GET / HTTP/1.1",
+				"method":      "GET",
+				"request_uri": "/",
+				"protocol":    "HTTP/1.1",
+				"status":      int64(200),
+				"bytes":       int64(42),
+				"referer":     `http://example.com/a\b`,
+				"user_agent":  "Mozilla/5.0 \"compatible\"\tagent",
+			},
+		},
+		{
+			name:  "unrecognized escape sequences preserved as-is",
+			input: `127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET /a\q/b\xZZ HTTP/1.1" 200 5`,
+			expected: map[string]any{
+				"remote_host": "127.0.0.1",
+				"rfc931":      "-",
+				"authuser":    "-",
+				"timestamp":   "10/Oct/2000:13:55:36 -0700",
+				"request":     `GET /a\q/b\xZZ HTTP/1.1`,
+				"method":      "GET",
+				"request_uri": `/a\q/b\xZZ`,
+				"protocol":    "HTTP/1.1",
+				"status":      int64(200),
+				"bytes":       int64(5),
+			},
+		},
+		{
 			name:   "combined format with dash referer and empty user-agent",
 			input:  `192.168.1.1 - - [10/Oct/2000:13:55:36 -0700] "GET / HTTP/1.1" 304 - "-" ""`,
 			format: clfFormatCombined,
@@ -311,6 +397,31 @@ func Test_parseCLF_errors(t *testing.T) {
 			_, err := exprFunc(t.Context(), nil)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectedError)
+		})
+	}
+}
+
+func Test_unescapeCLF(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{name: "no escapes fast path", input: "GET / HTTP/1.1", expected: "GET / HTTP/1.1"},
+		{name: "escaped quote", input: `a\"b`, expected: `a"b`},
+		{name: "escaped backslash", input: `a\\b`, expected: `a\b`},
+		{name: "hex escape", input: `a\x22b`, expected: `a"b`},
+		{name: "control escapes", input: `a\tb\nc\rd\be\ff\vg`, expected: "a\tb\nc\rd\be\ff\vg"},
+		{name: "unrecognized escape preserved", input: `a\qb`, expected: `a\qb`},
+		{name: "invalid hex escape preserved", input: `a\xZZb`, expected: `a\xZZb`},
+		{name: "truncated hex escape preserved", input: `a\x2`, expected: `a\x2`},
+		{name: "trailing backslash preserved", input: `a\`, expected: `a\`},
+		{name: "consecutive escapes", input: `\\\"\x41`, expected: `\"A`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, unescapeCLF(tt.input))
 		})
 	}
 }
