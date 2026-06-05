@@ -208,7 +208,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
         with:
-          go-version: oldstable
+          go-version: 1.25.11 # TODO: revert to oldstable when actions/setup-go reliably resolves oldstable to 1.25.11
       - name: Run `govulncheck`
         run: make gogovulncheck GROUP=${{ matrix.group }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
@@ -469,49 +469,86 @@ jobs:
         run: make build-examples
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
-  cross-compile:
-    runs-on: ubuntu-24.04
+  cross-compile-pr:
+    if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+    runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - darwin
-          - linux
-          - windows
-        arch:
-          - 386
-          - amd64
-          - arm
-          - arm64
-          - ppc64le
-          - riscv64
-          - s390x
         include:
+          - os: linux
+            arch: amd64
+            runner: cncf-ubuntu-8-32-x86
+          - os: linux
+            arch: arm64
+            runner: cncf-ubuntu-8-32-arm
+    # CNCF self-hosted runners on fork PRs cannot fall back to base-branch
+    # caches, so this job skips actions/setup-go's cache (which would only
+    # write a parallel PR-scoped entry and pressure the 10 GB pool) and
+    # builds cold on the larger CNCF hardware.
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version: oldstable
+          cache: false
+      - name: Download Go modules
+        run: make -j8 gomoddownload
+      - name: Generate collector files
+        run: make genotelcontribcol
+      - name: Build Collector ${{ matrix.os }} ${{ matrix.arch }}
+        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} otelcontribcollite
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  cross-compile:
+    if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci:full')) }}
+    runs-on: ${{ matrix.runner }}
+    needs: [setup-environment]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: darwin
+            arch: amd64
+            runner: ubuntu-24.04
+          - os: darwin
+            arch: arm64
+            runner: ubuntu-24.04
+          - os: linux
+            arch: "386"
+            runner: ubuntu-24.04
+          - os: linux
+            arch: amd64
+            runner: ubuntu-24.04
           - os: linux
             arch: arm
             arm: 7
+            runner: ubuntu-24.04
+          - os: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+          - os: linux
+            arch: ppc64le
+            runner: ubuntu-24.04
+          - os: linux
+            arch: riscv64
+            runner: ubuntu-24.04
+          - os: linux
+            arch: s390x
+            runner: ubuntu-24.04
+          - os: windows
+            arch: "386"
+            runner: ubuntu-24.04
+          - os: windows
+            arch: amd64
+            runner: ubuntu-24.04
+          - os: windows
+            arch: arm64
+            runner: ubuntu-24.04
           - os: aix
             arch: ppc64
-        exclude:
-          - os: darwin
-            arch: 386
-          - os: darwin
-            arch: arm
-          - os: darwin
-            arch: ppc64le
-          - os: darwin
-            arch: riscv64
-          - os: darwin
-            arch: s390x
-          - os: windows
-            arch: arm
-          - os: windows
-            arch: ppc64le
-          - os: windows
-            arch: riscv64
-          - os: windows
-            arch: s390x
+            runner: ubuntu-24.04
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
@@ -520,7 +557,7 @@ jobs:
       - name: Generate collector files
         run: make genotelcontribcol
       - name: Build Collector ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.arm }}
-        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
+        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcollite
       - name: Upload Collector Binaries
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -529,6 +566,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   publish-check:
+    if: ${{ github.actor != 'dependabot[bot]' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci:full')) }}
     runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests, cross-compile]
     steps:
