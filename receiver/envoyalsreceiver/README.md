@@ -4,7 +4,6 @@
 This is a receiver for the [Envoy gRPC ALS](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/access_loggers/grpc/v3/als.proto#envoy-v3-api-msg-extensions-access-loggers-grpc-v3-httpgrpcaccesslogconfig)
 sink.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |

@@ -4,7 +4,6 @@
 This receiver fetches stats from a CouchDB server using the `/_node/{node-name}/_stats/couchdb`
 [endpoint](https://docs.couchdb.org/en/latest/api/server/common.html#node-node-name-stats).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
