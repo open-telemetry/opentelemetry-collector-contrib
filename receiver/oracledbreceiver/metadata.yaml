@@ -20,6 +20,26 @@ resource_attributes:
     description: The host name of Oracle Server
     enabled: true
     type: string
+  oracle.db.hosting_type:
+    description: The hosting environment of the Oracle instance. One of "self-managed", "rds", or "oci".
+    enabled: true
+    type: string
+  oracle.db.open_mode:
+    description: The open mode of the Oracle database (e.g. "READ WRITE", "READ ONLY", "MOUNTED").
+    enabled: true
+    type: string
+  oracle.db.pdb:
+    description: The pluggable database (PDB) name associated with the connection.
+    enabled: true
+    type: string
+  oracle.db.role:
+    description: The database role of the Oracle instance (e.g. "PRIMARY", "PHYSICAL STANDBY").
+    enabled: true
+    type: string
+  oracle.db.version:
+    description: The Oracle Database version string.
+    enabled: true
+    type: string
   oracledb.instance.name:
     description: The name of the instance that data is coming from.
     enabled: true
