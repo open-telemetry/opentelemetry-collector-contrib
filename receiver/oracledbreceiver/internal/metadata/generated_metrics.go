@@ -3316,6 +3316,36 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.HostName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.OracleDbHostingType.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["oracle.db.hosting_type"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbHostingType.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.OracleDbHostingType.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["oracle.db.hosting_type"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbHostingType.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.OracleDbOpenMode.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["oracle.db.open_mode"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbOpenMode.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.OracleDbOpenMode.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["oracle.db.open_mode"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbOpenMode.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.OracleDbPdb.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["oracle.db.pdb"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbPdb.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.OracleDbPdb.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["oracle.db.pdb"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbPdb.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.OracleDbRole.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["oracle.db.role"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbRole.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.OracleDbRole.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["oracle.db.role"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbRole.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.OracleDbVersion.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["oracle.db.version"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbVersion.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.OracleDbVersion.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["oracle.db.version"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbVersion.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.OracledbInstanceName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["oracledb.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.OracledbInstanceName.MetricsInclude)
 	}
