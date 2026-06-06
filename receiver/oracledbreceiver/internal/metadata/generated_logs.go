@@ -231,6 +231,36 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	if lbc.ResourceAttributes.HostName.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsExclude)
 	}
+	if lbc.ResourceAttributes.OracleDbHostingType.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["oracle.db.hosting_type"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbHostingType.EventsInclude)
+	}
+	if lbc.ResourceAttributes.OracleDbHostingType.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["oracle.db.hosting_type"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbHostingType.EventsExclude)
+	}
+	if lbc.ResourceAttributes.OracleDbOpenMode.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["oracle.db.open_mode"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbOpenMode.EventsInclude)
+	}
+	if lbc.ResourceAttributes.OracleDbOpenMode.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["oracle.db.open_mode"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbOpenMode.EventsExclude)
+	}
+	if lbc.ResourceAttributes.OracleDbPdb.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["oracle.db.pdb"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbPdb.EventsInclude)
+	}
+	if lbc.ResourceAttributes.OracleDbPdb.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["oracle.db.pdb"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbPdb.EventsExclude)
+	}
+	if lbc.ResourceAttributes.OracleDbRole.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["oracle.db.role"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbRole.EventsInclude)
+	}
+	if lbc.ResourceAttributes.OracleDbRole.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["oracle.db.role"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbRole.EventsExclude)
+	}
+	if lbc.ResourceAttributes.OracleDbVersion.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["oracle.db.version"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbVersion.EventsInclude)
+	}
+	if lbc.ResourceAttributes.OracleDbVersion.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["oracle.db.version"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbVersion.EventsExclude)
+	}
 	if lbc.ResourceAttributes.OracledbInstanceName.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["oracledb.instance.name"] = filter.CreateFilter(lbc.ResourceAttributes.OracledbInstanceName.EventsInclude)
 	}

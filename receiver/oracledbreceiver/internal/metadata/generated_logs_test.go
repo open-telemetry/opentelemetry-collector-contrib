@@ -32,6 +32,11 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 
 	rb := lb.NewResourceBuilder()
 	rb.SetHostName("host.name-val")
+	rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
+	rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
+	rb.SetOracleDbPdb("oracle.db.pdb-val")
+	rb.SetOracleDbRole("oracle.db.role-val")
+	rb.SetOracleDbVersion("oracle.db.version-val")
 	rb.SetOracledbInstanceName("oracledb.instance.name-val")
 	rb.SetServiceInstanceID("service.instance.id-val")
 	res := rb.Emit()
@@ -141,6 +146,11 @@ func TestLogsBuilder(t *testing.T) {
 
 			rb := lb.NewResourceBuilder()
 			rb.SetHostName("host.name-val")
+			rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
+			rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
+			rb.SetOracleDbPdb("oracle.db.pdb-val")
+			rb.SetOracleDbRole("oracle.db.role-val")
+			rb.SetOracleDbVersion("oracle.db.version-val")
 			rb.SetOracledbInstanceName("oracledb.instance.name-val")
 			rb.SetServiceInstanceID("service.instance.id-val")
 			res := rb.Emit()
