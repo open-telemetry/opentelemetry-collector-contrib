@@ -2162,7 +2162,7 @@ resourceMetrics:
           - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
             gauge:
               dataPoints:
-                - asInt: "0"
+                - asInt: "225"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: vcenter.vm.cpu.readiness
@@ -2993,7 +2993,7 @@ resourceMetrics:
           - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
             gauge:
               dataPoints:
-                - asInt: "0"
+                - asInt: "225"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: vcenter.vm.cpu.readiness
@@ -3923,7 +3923,7 @@ resourceMetrics:
           - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
             gauge:
               dataPoints:
-                - asInt: "0"
+                - asInt: "225"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: vcenter.vm.cpu.readiness
