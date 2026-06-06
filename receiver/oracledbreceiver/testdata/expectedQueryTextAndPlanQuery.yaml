@@ -100,6 +100,12 @@ resourceLogs:
               - key: query.comments
                 value:
                   stringValue: ""
+              - key: oracledb.plan_hash_value
+                value:
+                  stringValue: "33313233343536373839"
+              - key: oracledb.plan.last_load
+                value:
+                  stringValue: "2026-01-01/12:00:00"
             body: {}
             eventName: db.server.top_query
             timeUnixNano: "1759142512777891000"

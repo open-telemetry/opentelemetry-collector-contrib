@@ -5,7 +5,6 @@ The Host Metrics receiver generates metrics about the host system scraped
 from various sources and host entity event as log. This is intended to be
 used when the collector is deployed as an agent.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs   |

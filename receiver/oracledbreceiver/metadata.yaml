@@ -48,6 +48,26 @@ attributes:
   db.system.name:
     description: The database management system (DBMS) product as identified by the client instrumentation.
     type: string
+  destination.type:
+    description: Type of the SQL*Net destination endpoint (client application or remote database link).
+    type: string
+    enum: [client, dblink]
+  disk.io.block_size:
+    description: Multi-block vs single-block (all) I/O request grouping.
+    type: string
+    enum: [all, multi]
+  disk.io.direction:
+    description: Direction of the storage I/O operation.
+    type: string
+    enum: [read, write]
+  disk.io.type:
+    description: Whether the I/O bytes are buffered (cache-mediated) or total (raw transfer count).
+    type: string
+    enum: [buffered, total]
+  network.io.direction:
+    description: Direction of the SQL*Net network transfer.
+    type: string
+    enum: [receive, transmit]
   network.peer.address:
     description: IP address of the peer client.
     type: string
@@ -145,6 +165,9 @@ attributes:
   oracledb.physical_write_requests:
     description: The number of times a query requested to write data to disk (reporting delta).
     type: int
+  oracledb.plan.last_load:
+    description: "Plan load time in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS"
+    type: string
   oracledb.plan_hash_value:
     description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
     type: string
@@ -204,6 +227,12 @@ attributes:
     type: string
   oracledb.user_io_wait_time:
     description: The total time (in seconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta).
+    type: double
+  oracledb.wait.count:
+    description: Total number of waits for the wait event across all sessions.
+    type: int
+  oracledb.wait.duration:
+    description: Total time waited in seconds for the wait event.
     type: double
   oracledb.wait_class:
     description: The category of wait events a query or session is currently experiencing in Oracle Database.
@@ -275,6 +304,16 @@ events:
       - oracledb.blocking.lock.type
       - oracledb.blocking.object.owner
       - oracledb.blocking.object.name
+  db.server.session.wait_sample:
+    enabled: false
+    description: Per-session wait event statistics from v$session_event.
+    attributes:
+      - oracledb.sid
+      - oracledb.serial
+      - oracledb.event
+      - oracledb.wait_class
+      - oracledb.wait.count
+      - oracledb.wait.duration
   db.server.top_query:
     enabled: false
     description: Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).
@@ -308,6 +347,8 @@ events:
       - oracledb.procedure_name
       - oracledb.procedure_type
       - query.comments
+      - oracledb.plan_hash_value
+      - oracledb.plan.last_load
 metrics:
   oracledb.consistent_gets:
     description: Number of times a consistent read was requested for a block from the buffer cache.
@@ -555,6 +596,38 @@ metrics:
       value_type: int
       input_type: string
     unit: By
+  oracledb.physical_io.cache_writes:
+    description: Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$sysstat name physical writes from cache.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{writes}"
+  oracledb.physical_io.requests:
+    description: Number of physical I/O requests issued to storage. Sourced from v$sysstat names physical read/write total IO requests (disk.io.block_size=all) and physical read/write total multi block requests (disk.io.block_size=multi).
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{requests}"
+    attributes: [disk.io.direction, disk.io.block_size]
+  oracledb.physical_io.transferred:
+    description: Total physical I/O bytes transferred between Oracle and storage. Sums across all data files. Sourced from v$sysstat names physical read/write bytes (disk.io.type=buffered) and physical read/write total bytes (disk.io.type=total).
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: By
+    attributes: [disk.io.direction, disk.io.type]
   oracledb.physical_read_io_requests:
     description: Number of read requests for application activity
     enabled: false
@@ -667,6 +740,17 @@ metrics:
       value_type: int
       input_type: string
     unit: "{sessions}"
+  oracledb.sqlnet.io.transferred:
+    description: Bytes transferred via SQL*Net between Oracle and clients/dblinks. Sourced from v$sysstat names bytes received/sent via SQL*Net from/to client/dblink.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: By
+    attributes: [network.io.direction, destination.type]
   oracledb.storage.usage:
     description: Used database storage size from dba_data_files and dba_free_space.
     enabled: false
