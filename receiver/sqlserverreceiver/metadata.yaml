@@ -148,6 +148,10 @@ attributes:
     description: Session ID that is blocking the current session. 0 if none.
     type: int
     requirement_level: recommended
+  sqlserver.client.app.name:
+    description: Name of the client application that initiated the session.
+    type: string
+    requirement_level: recommended
   sqlserver.command:
     description: SQL command type being executed.
     type: string
@@ -242,6 +246,14 @@ attributes:
   sqlserver.row_count:
     description: Number of rows affected or returned by the query.
     type: int
+    requirement_level: recommended
+  sqlserver.session.duration:
+    description: Total elapsed time in seconds the session has been actively executing requests.
+    type: double
+    requirement_level: recommended
+  sqlserver.session.start_time:
+    description: Timestamp when the session was established (ISO 8601 format).
+    type: string
     requirement_level: recommended
   sqlserver.session_id:
     description: ID of the SQL Server session.
@@ -361,6 +373,7 @@ events:
       - network.peer.port
       - sqlserver.blocking_session_id
       - sqlserver.blocking.start_time
+      - sqlserver.client.app.name
       - sqlserver.context_info
       - sqlserver.command
       - sqlserver.cpu_time
@@ -378,6 +391,9 @@ events:
       - sqlserver.wait.resource.id
       - sqlserver.wait.resource.type
       - sqlserver.row_count
+      - sqlserver.session.duration
+
+      - sqlserver.session.start_time
       - sqlserver.session_id
       - sqlserver.session_status
       - sqlserver.total_elapsed_time
