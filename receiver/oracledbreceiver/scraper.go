@@ -177,6 +177,10 @@ type oracleScraper struct {
 	sessionWaitEventCfg        SessionWaitEvent
 	serviceInstanceID          string
 	lastExecutionTimestamp     time.Time
+	// instanceInfo holds Oracle deployment metadata detected once at start().
+	// All fields are best-effort: detection failures are logged and leave the
+	// field at its zero value; they never prevent the receiver from starting.
+	instanceInfo oracleInstanceInfo
 }
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
@@ -217,12 +221,25 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
 
-func (s *oracleScraper) start(context.Context, component.Host) error {
+func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	s.startTime = pcommon.NewTimestampFromTime(time.Now())
 	var err error
 	s.db, err = s.dbProviderFunc()
 	if err != nil {
 		return fmt.Errorf("failed to open db connection: %w", err)
+	}
+	if s.db != nil {
+		s.instanceInfo = detectInstanceInfo(
+			ctx,
+			s.clientProviderFunc(s.db, instanceVersionSQL, s.logger),
+			s.clientProviderFunc(s.db, instanceCDBSQL, s.logger),
+			s.clientProviderFunc(s.db, instanceConTypeSQL, s.logger),
+			s.clientProviderFunc(s.db, instanceConNameSQL, s.logger),
+			s.clientProviderFunc(s.db, instanceRDSSQL, s.logger),
+			s.clientProviderFunc(s.db, instanceOCISQL, s.logger),
+			s.clientProviderFunc(s.db, instanceOCICDBServicesSQL, s.logger),
+			s.logger,
+		)
 	}
 	s.statsClient = s.clientProviderFunc(s.db, statsSQL, s.logger)
 	s.sessionCountClient = s.clientProviderFunc(s.db, sessionCountSQL, s.logger)
@@ -1135,6 +1152,21 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	rb.SetOracledbInstanceName(s.instanceName)
 	rb.SetHostName(s.hostName)
 	rb.SetServiceInstanceID(s.serviceInstanceID)
+	if s.instanceInfo.dbVersion != "" {
+		rb.SetOracleDbVersion(s.instanceInfo.dbVersion)
+	}
+	if s.instanceInfo.databaseRole != "" {
+		rb.SetOracleDbRole(s.instanceInfo.databaseRole)
+	}
+	if s.instanceInfo.openMode != "" {
+		rb.SetOracleDbOpenMode(s.instanceInfo.openMode)
+	}
+	if s.instanceInfo.hostingType != "" {
+		rb.SetOracleDbHostingType(s.instanceInfo.hostingType)
+	}
+	if s.instanceInfo.connectedToPDB && s.instanceInfo.pdbName != "" {
+		rb.SetOracleDbPdb(s.instanceInfo.pdbName)
+	}
 	return rb
 }
 
