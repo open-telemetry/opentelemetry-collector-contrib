@@ -174,6 +174,8 @@ These defaults can be overridden using `traces_index` and `logs_index` configura
 
 The `manage_index_template` option controls whether the exporter automatically creates composable index templates on startup. This ensures correct field mappings (e.g., `date_nanos` timestamps, dynamic attribute typing) are in place before documents are indexed.
 
+Template creation is best-effort: if the cluster is temporarily unreachable or rejects the request, the exporter logs a warning and continues — the failure is not propagated through `Start()`. The affected index will then fall back to OpenSearch's dynamic mapping (timestamp fields inferred as `date` rather than `date_nanos`) until the template is installed. If templates with the same names already exist (for example, user-customized variants), they are left in place rather than overwritten.
+
 | Signal    | `otel-v1`           |
 | --------- | ------------------- |
 | Logs      | :white_check_mark:  |

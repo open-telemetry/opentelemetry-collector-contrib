@@ -9,94 +9,13 @@ import (
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/templates"
 )
 
 const (
 	otelV1SpanTemplateName = "otel-v1-apm-span-index-template"
 	otelV1LogsTemplateName = "otel-v1-logs-index-template"
-
-	otelV1SpanTemplateBody = `{
-  "index_patterns": ["otel-v1-apm-span*"],
-  "template": {
-    "mappings": {
-      "date_detection": false,
-      "_source": { "enabled": true },
-      "dynamic_templates": [
-        { "long_resource_attributes": { "mapping": { "type": "long" }, "path_match": "resource.attributes.*", "match_mapping_type": "long" } },
-        { "double_resource_attributes": { "mapping": { "type": "double" }, "path_match": "resource.attributes.*", "match_mapping_type": "double" } },
-        { "string_resource_attributes": { "mapping": { "type": "keyword", "ignore_above": 256 }, "path_match": "resource.attributes.*", "match_mapping_type": "string" } },
-        { "long_scope_attributes": { "mapping": { "type": "long" }, "path_match": "instrumentationScope.attributes.*", "match_mapping_type": "long" } },
-        { "double_scope_attributes": { "mapping": { "type": "double" }, "path_match": "instrumentationScope.attributes.*", "match_mapping_type": "double" } },
-        { "string_scope_attributes": { "mapping": { "type": "keyword", "ignore_above": 256 }, "path_match": "instrumentationScope.attributes.*", "match_mapping_type": "string" } },
-        { "long_attributes": { "mapping": { "type": "long" }, "path_match": "attributes.*", "match_mapping_type": "long" } },
-        { "double_attributes": { "mapping": { "type": "double" }, "path_match": "attributes.*", "match_mapping_type": "double" } },
-        { "string_attributes": { "mapping": { "type": "keyword", "ignore_above": 256 }, "path_match": "attributes.*", "match_mapping_type": "string" } }
-      ],
-      "properties": {
-        "droppedAttributesCount": { "type": "integer" },
-        "instrumentationScope": { "properties": { "droppedAttributesCount": { "type": "integer" }, "schemaUrl": { "type": "keyword", "ignore_above": 256 }, "name": { "type": "keyword", "ignore_above": 128 }, "version": { "type": "keyword", "ignore_above": 64 } } },
-        "resource": { "properties": { "droppedAttributesCount": { "type": "integer" }, "schemaUrl": { "type": "keyword", "ignore_above": 256 } } },
-        "traceId": { "type": "keyword", "ignore_above": 32 },
-        "spanId": { "type": "keyword", "ignore_above": 16 },
-        "parentSpanId": { "type": "keyword", "ignore_above": 16 },
-        "name": { "ignore_above": 1024, "type": "keyword" },
-        "traceState": { "ignore_above": 1024, "type": "keyword" },
-        "traceGroup": { "ignore_above": 1024, "type": "keyword" },
-        "traceGroupFields": { "properties": { "endTime": { "type": "date_nanos" }, "durationInNanos": { "type": "long" }, "statusCode": { "type": "integer" } } },
-        "kind": { "type": "keyword", "ignore_above": 32 },
-        "serviceName": { "type": "keyword", "ignore_above": 256 },
-        "startTime": { "type": "date_nanos" },
-        "endTime": { "type": "date_nanos" },
-        "@timestamp": { "type": "date_nanos" },
-        "time": { "type": "date_nanos" },
-        "status": { "properties": { "code": { "type": "integer" }, "message": { "type": "keyword", "ignore_above": 2048 } } },
-        "durationInNanos": { "type": "long" },
-        "events": { "type": "nested", "properties": { "name": { "type": "keyword", "ignore_above": 256 }, "attributes": { "type": "object" }, "droppedAttributesCount": { "type": "integer" }, "time": { "type": "date_nanos" } } },
-        "droppedEventsCount": { "type": "integer" },
-        "links": { "type": "nested", "properties": { "traceId": { "type": "keyword", "ignore_above": 32 }, "spanId": { "type": "keyword", "ignore_above": 16 }, "traceState": { "ignore_above": 1024, "type": "keyword" }, "attributes": { "type": "object" }, "droppedAttributesCount": { "type": "integer" } } },
-        "droppedLinksCount": { "type": "integer" }
-      }
-    }
-  },
-  "version": 1,
-  "priority": 100
-}`
-
-	otelV1LogsTemplateBody = `{
-  "index_patterns": ["otel-v1-logs*"],
-  "template": {
-    "mappings": {
-      "date_detection": false,
-      "_source": { "enabled": true },
-      "dynamic_templates": [
-        { "long_resource_attributes": { "mapping": { "type": "long" }, "path_match": "resource.attributes.*", "match_mapping_type": "long" } },
-        { "double_resource_attributes": { "mapping": { "type": "double" }, "path_match": "resource.attributes.*", "match_mapping_type": "double" } },
-        { "string_resource_attributes": { "mapping": { "type": "keyword", "ignore_above": 256 }, "path_match": "resource.attributes.*", "match_mapping_type": "string" } },
-        { "long_scope_attributes": { "mapping": { "type": "long" }, "path_match": "instrumentationScope.attributes.*", "match_mapping_type": "long" } },
-        { "double_scope_attributes": { "mapping": { "type": "double" }, "path_match": "instrumentationScope.attributes.*", "match_mapping_type": "double" } },
-        { "string_scope_attributes": { "mapping": { "type": "keyword", "ignore_above": 256 }, "path_match": "instrumentationScope.attributes.*", "match_mapping_type": "string" } },
-        { "long_attributes": { "mapping": { "type": "long" }, "path_match": "attributes.*", "match_mapping_type": "long" } },
-        { "double_attributes": { "mapping": { "type": "double" }, "path_match": "attributes.*", "match_mapping_type": "double" } },
-        { "string_attributes": { "mapping": { "type": "keyword", "ignore_above": 256 }, "path_match": "attributes.*", "match_mapping_type": "string" } }
-      ],
-      "properties": {
-        "droppedAttributesCount": { "type": "integer" },
-        "instrumentationScope": { "properties": { "droppedAttributesCount": { "type": "integer" }, "schemaUrl": { "type": "keyword", "ignore_above": 256 }, "name": { "type": "keyword", "ignore_above": 128 }, "version": { "type": "keyword", "ignore_above": 64 } } },
-        "resource": { "properties": { "droppedAttributesCount": { "type": "integer" }, "schemaUrl": { "type": "keyword", "ignore_above": 256 } } },
-        "severity": { "properties": { "number": { "type": "integer" }, "text": { "type": "keyword", "ignore_above": 32 } } },
-        "body": { "type": "text" },
-        "@timestamp": { "type": "date_nanos" },
-        "time": { "type": "date_nanos" },
-        "observedTime": { "type": "date_nanos" },
-        "traceId": { "type": "keyword", "ignore_above": 32 },
-        "spanId": { "type": "keyword", "ignore_above": 16 },
-        "flags": { "type": "long" }
-      }
-    }
-  },
-  "version": 1,
-  "priority": 100
-}`
 )
 
 type templateManager struct {
@@ -108,9 +27,16 @@ func newTemplateManager(client *opensearchapi.Client, logger *zap.Logger) *templ
 	return &templateManager{client: client, logger: logger}
 }
 
+// ensureTemplates is best-effort: it logs and returns on transient cluster
+// errors rather than failing the exporter Start(). A failure means OpenSearch's
+// dynamic mapping will pick up types from the first indexed document
+// (date instead of date_nanos for timestamps); existing documents are
+// unaffected. This matches the Data Prepper sink's posture for the same
+// operation, which logs and retries on IOException rather than blocking
+// pipeline initialization.
 func (tm *templateManager) ensureTemplates(ctx context.Context) {
-	tm.ensureTemplate(ctx, otelV1SpanTemplateName, otelV1SpanTemplateBody)
-	tm.ensureTemplate(ctx, otelV1LogsTemplateName, otelV1LogsTemplateBody)
+	tm.ensureTemplate(ctx, otelV1SpanTemplateName, templates.OtelV1APMSpan)
+	tm.ensureTemplate(ctx, otelV1LogsTemplateName, templates.OtelV1Logs)
 }
 
 func (tm *templateManager) ensureTemplate(ctx context.Context, name, body string) {
@@ -130,7 +56,9 @@ func (tm *templateManager) ensureTemplate(ctx context.Context, name, body string
 	}
 	_, createErr := tm.client.IndexTemplate.Create(ctx, createReq)
 	if createErr != nil {
-		tm.logger.Warn("Failed to create index template", zap.String("template", name), zap.Error(createErr))
+		tm.logger.Warn("Failed to create index template; falling back to dynamic mapping for this index. "+
+			"Timestamp fields may be inferred as `date` (millisecond) instead of `date_nanos` until the template is installed.",
+			zap.String("template", name), zap.Error(createErr))
 		return
 	}
 	tm.logger.Info("Created index template", zap.String("template", name))
