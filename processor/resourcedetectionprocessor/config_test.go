@@ -315,6 +315,6 @@ func TestDefaultConfig_RetryDefaults(t *testing.T) {
 	assert.Equal(t, 1*time.Second, cfg.Retry.InitialInterval)
 	assert.InDelta(t, 0.5, cfg.Retry.RandomizationFactor, 1e-9)
 	assert.InDelta(t, 2.0, cfg.Retry.Multiplier, 1e-9)
-	assert.Equal(t, time.Duration(0), cfg.Retry.MaxInterval, "no max interval cap by default")
+	assert.Equal(t, 30*time.Second, cfg.Retry.MaxInterval)
 	assert.Equal(t, time.Duration(0), cfg.Retry.MaxElapsedTime, "retry forever by default")
 }

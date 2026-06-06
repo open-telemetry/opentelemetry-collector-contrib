@@ -137,7 +137,7 @@ func defaultRetryConfig() configretry.BackOffConfig {
 		InitialInterval:     1 * time.Second,
 		RandomizationFactor: 0.5,
 		Multiplier:          2,
-		MaxInterval:         0,
+		MaxInterval:         30 * time.Second,
 		MaxElapsedTime:      0,
 	}
 }
