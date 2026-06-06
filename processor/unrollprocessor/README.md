@@ -4,7 +4,6 @@
 The Unroll Processor takes log records with slice bodies and expands each element of the slice into its own log
 record. This allows for better processing and analysis of structured log data that contains arrays or lists.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |
