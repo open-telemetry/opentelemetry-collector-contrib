@@ -916,6 +916,74 @@ func (ms *OracledbSessionsUsageMetricConfig) Validate() error {
 	return nil
 }
 
+// OracledbSgaLimitMetricConfig provides config for the oracledb.sga.limit metric.
+type OracledbSgaLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbSgaLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbSgaUsageMetricAttributeKey specifies the key of an attribute for the oracledb.sga.usage metric.
+type OracledbSgaUsageMetricAttributeKey string
+
+const (
+	OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName OracledbSgaUsageMetricAttributeKey = "oracledb.sga.component.name"
+)
+
+// OracledbSgaUsageMetricConfig provides config for the oracledb.sga.usage metric.
+type OracledbSgaUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbSgaUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *OracledbSgaUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *OracledbSgaUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName:
+		default:
+			return fmt.Errorf("metric oracledb.sga.usage doesn't have an attribute %v, valid attributes: [oracledb.sga.component.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // OracledbSqlnetIoTransferredMetricAttributeKey specifies the key of an attribute for the oracledb.sqlnet.io.transferred metric.
 type OracledbSqlnetIoTransferredMetricAttributeKey string
 
@@ -1224,6 +1292,8 @@ type MetricsConfig struct {
 	OracledbRecycleBinLimit                       OracledbRecycleBinLimitMetricConfig                       `mapstructure:"oracledb.recycle_bin.limit"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
+	OracledbSgaLimit                              OracledbSgaLimitMetricConfig                              `mapstructure:"oracledb.sga.limit"`
+	OracledbSgaUsage                              OracledbSgaUsageMetricConfig                              `mapstructure:"oracledb.sga.usage"`
 	OracledbSqlnetIoTransferred                   OracledbSqlnetIoTransferredMetricConfig                   `mapstructure:"oracledb.sqlnet.io.transferred"`
 	OracledbStorageUsage                          OracledbStorageUsageMetricConfig                          `mapstructure:"oracledb.storage.usage"`
 	OracledbStorageUtilization                    OracledbStorageUtilizationMetricConfig                    `mapstructure:"oracledb.storage.utilization"`
@@ -1365,6 +1435,14 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []OracledbSessionsUsageMetricAttributeKey{OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus},
+		},
+		OracledbSgaLimit: OracledbSgaLimitMetricConfig{
+			Enabled: false,
+		},
+		OracledbSgaUsage: OracledbSgaUsageMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []OracledbSgaUsageMetricAttributeKey{OracledbSgaUsageMetricAttributeKeyOracledbSgaComponentName},
 		},
 		OracledbSqlnetIoTransferred: OracledbSqlnetIoTransferredMetricConfig{
 			Enabled:             false,
