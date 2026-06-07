@@ -126,6 +126,15 @@ following keywords: `Resolves`, `Fixes`, or `Closes`. More information on this f
 [here](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
 This will automatically close the issue once your PR has been merged.
 
+### AI-assisted contributions
+
+If you use an AI tool to help author a pull request, you (the human) are still responsible for
+writing the PR description and any comments posted on the issue or PR. AI agents must prompt you
+for the content of each section in the PR template and use your answers verbatim rather than
+generating description content on their own. The PR template includes an authorship checkbox that
+you must check yourself before the PR is ready for review. See [AGENTS.md](./AGENTS.md) for the
+full set of rules that apply to AI-assisted contributions.
+
 ## Issue Triaging
 
 See [issue-triaging.md](./issue-triaging.md) for more information on the issue triaging process.
@@ -184,17 +193,15 @@ Example approve comment:
 /workflow-approve
 ```
 
-### Experimental CI Workflow
+### CI Scope Detection
 
-`.github/workflows/build-and-test-experimental.yml` runs on every pull request alongside the required `build-and-test` workflow. It is **not required** for merging and exists to gather data on proposed CI optimizations (scoped lint/test/integration/cross-compile paths, parallelized `checks`, etc.) before promoting them to the required workflow.
-
-Scope detection is handled by `.github/workflows/scripts/compute-ci-scope.sh`, which inspects the PR's `git diff` and emits a `matrix` JSON array of either named test groups (for full runs) or bucketed module paths (for scoped runs). The script can be run locally to preview the scope a PR would produce:
+Scope detection for the `build-and-test` workflow is handled by `.github/workflows/scripts/compute-ci-scope.sh`, which inspects the PR's `git diff` and emits a `matrix` JSON array of either named test groups (for full runs) or bucketed module paths (for scoped runs). The script can be run locally to preview the scope a PR would produce:
 
 ```
 bash .github/workflows/scripts/compute-ci-scope.sh
 ```
 
-The experimental workflow honors a `ci:full` label on the pull request. Adding this label forces the full CI matrices regardless of what files changed; toggling it on or off on an open PR retriggers the workflow with the new scope. This is useful when a maintainer wants the full validation on a refactor that the file-graph traversal would otherwise mark as scoped.
+The workflow honors a `ci:full` label on the pull request. Adding this label forces the full CI matrices regardless of what files changed; toggling it on or off on an open PR retriggers the workflow with the new scope.
 
 ## Portable Code
 
