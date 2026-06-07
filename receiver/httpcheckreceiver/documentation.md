@@ -170,24 +170,9 @@ Time spent performing TLS handshake with the endpoint.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | http.url | Full HTTP request URL. | Any Str | Recommended | - |
 
-### httpcheck.validation.failed
+### httpcheck.validation.outcome
 
-Number of response validations that failed.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {validation} | Sum | Int | Cumulative | false | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| http.url | Full HTTP request URL. | Any Str | Recommended | - |
-| validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | Recommended | - |
-
-### httpcheck.validation.passed
-
-Number of response validations that passed.
+Result of a response validation (1 for each validation, with outcome attribute).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -198,4 +183,6 @@ Number of response validations that passed.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | http.url | Full HTTP request URL. | Any Str | Recommended | - |
-| validation.type | Type of validation performed (contains, json_path, size, regex) | Any Str | Recommended | - |
+| httpcheck.validation.type | Type of validation performed (json_path, contains, regex, size, not_contains) | Any Str | Recommended | - |
+| httpcheck.validation.target | The validation expression being evaluated (JSONPath, contains string, regex pattern, size constraint) - statically configured | Any Str | Recommended | - |
+| httpcheck.validation.outcome | The result of the validation (passed or failed) | Any Str | Recommended | - |

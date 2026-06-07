@@ -50,11 +50,8 @@ var MetricsInfo = metricsInfo{
 	HttpcheckTLSHandshakeDuration: metricInfo{
 		Name: "httpcheck.tls.handshake.duration",
 	},
-	HttpcheckValidationFailed: metricInfo{
-		Name: "httpcheck.validation.failed",
-	},
-	HttpcheckValidationPassed: metricInfo{
-		Name: "httpcheck.validation.passed",
+	HttpcheckValidationOutcome: metricInfo{
+		Name: "httpcheck.validation.outcome",
 	},
 }
 
@@ -69,8 +66,7 @@ type metricsInfo struct {
 	HttpcheckStatus                   metricInfo
 	HttpcheckTLSCertRemaining         metricInfo
 	HttpcheckTLSHandshakeDuration     metricInfo
-	HttpcheckValidationFailed         metricInfo
-	HttpcheckValidationPassed         metricInfo
+	HttpcheckValidationOutcome        metricInfo
 }
 
 type metricInfo struct {
@@ -995,17 +991,17 @@ func newMetricHttpcheckTLSHandshakeDuration(cfg HttpcheckTLSHandshakeDurationMet
 	return m
 }
 
-type metricHttpcheckValidationFailed struct {
-	data          pmetric.Metric                        // data buffer for generated metric.
-	config        HttpcheckValidationFailedMetricConfig // metric config provided by user.
-	capacity      int                                   // max observed number of data points added to the metric.
-	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
+type metricHttpcheckValidationOutcome struct {
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        HttpcheckValidationOutcomeMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
 }
 
-// init fills httpcheck.validation.failed metric with initial data.
-func (m *metricHttpcheckValidationFailed) init() {
-	m.data.SetName("httpcheck.validation.failed")
-	m.data.SetDescription("Number of response validations that failed.")
+// init fills httpcheck.validation.outcome metric with initial data.
+func (m *metricHttpcheckValidationOutcome) init() {
+	m.data.SetName("httpcheck.validation.outcome")
+	m.data.SetDescription("Result of a response validation (1 for each validation, with outcome attribute).")
 	m.data.SetUnit("{validation}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1014,7 +1010,7 @@ func (m *metricHttpcheckValidationFailed) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricHttpcheckValidationFailed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, validationTypeAttributeValue string) {
+func (m *metricHttpcheckValidationOutcome) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, httpcheckValidationTypeAttributeValue string, httpcheckValidationTargetAttributeValue string, httpcheckValidationOutcomeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1022,11 +1018,17 @@ func (m *metricHttpcheckValidationFailed) recordDataPoint(start pcommon.Timestam
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationFailedMetricAttributeKeyHTTPURL) {
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationOutcomeMetricAttributeKeyHTTPURL) {
 		dp.Attributes().PutStr("http.url", httpURLAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationFailedMetricAttributeKeyValidationType) {
-		dp.Attributes().PutStr("validation.type", validationTypeAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationType) {
+		dp.Attributes().PutStr("httpcheck.validation.type", httpcheckValidationTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationTarget) {
+		dp.Attributes().PutStr("httpcheck.validation.target", httpcheckValidationTargetAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationOutcomeMetricAttributeKeyHttpcheckValidationOutcome) {
+		dp.Attributes().PutStr("httpcheck.validation.outcome", httpcheckValidationOutcomeAttributeValue)
 	}
 
 	var s string
@@ -1059,14 +1061,14 @@ func (m *metricHttpcheckValidationFailed) recordDataPoint(start pcommon.Timestam
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricHttpcheckValidationFailed) updateCapacity() {
+func (m *metricHttpcheckValidationOutcome) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricHttpcheckValidationFailed) emit(metrics pmetric.MetricSlice) {
+func (m *metricHttpcheckValidationOutcome) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
@@ -1079,102 +1081,8 @@ func (m *metricHttpcheckValidationFailed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHttpcheckValidationFailed(cfg HttpcheckValidationFailedMetricConfig) metricHttpcheckValidationFailed {
-	m := metricHttpcheckValidationFailed{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricHttpcheckValidationPassed struct {
-	data          pmetric.Metric                        // data buffer for generated metric.
-	config        HttpcheckValidationPassedMetricConfig // metric config provided by user.
-	capacity      int                                   // max observed number of data points added to the metric.
-	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
-}
-
-// init fills httpcheck.validation.passed metric with initial data.
-func (m *metricHttpcheckValidationPassed) init() {
-	m.data.SetName("httpcheck.validation.passed")
-	m.data.SetDescription("Number of response validations that passed.")
-	m.data.SetUnit("{validation}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
-}
-
-func (m *metricHttpcheckValidationPassed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, validationTypeAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-
-	dp := pmetric.NewNumberDataPoint()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationPassedMetricAttributeKeyHTTPURL) {
-		dp.Attributes().PutStr("http.url", httpURLAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationPassedMetricAttributeKeyValidationType) {
-		dp.Attributes().PutStr("validation.type", validationTypeAttributeValue)
-	}
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
-	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricHttpcheckValidationPassed) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricHttpcheckValidationPassed) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricHttpcheckValidationPassed(cfg HttpcheckValidationPassedMetricConfig) metricHttpcheckValidationPassed {
-	m := metricHttpcheckValidationPassed{config: cfg}
+func newMetricHttpcheckValidationOutcome(cfg HttpcheckValidationOutcomeMetricConfig) metricHttpcheckValidationOutcome {
+	m := metricHttpcheckValidationOutcome{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -1201,8 +1109,7 @@ type MetricsBuilder struct {
 	metricHttpcheckStatus                   metricHttpcheckStatus
 	metricHttpcheckTLSCertRemaining         metricHttpcheckTLSCertRemaining
 	metricHttpcheckTLSHandshakeDuration     metricHttpcheckTLSHandshakeDuration
-	metricHttpcheckValidationFailed         metricHttpcheckValidationFailed
-	metricHttpcheckValidationPassed         metricHttpcheckValidationPassed
+	metricHttpcheckValidationOutcome        metricHttpcheckValidationOutcome
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -1238,8 +1145,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricHttpcheckStatus:                   newMetricHttpcheckStatus(mbc.Metrics.HttpcheckStatus),
 		metricHttpcheckTLSCertRemaining:         newMetricHttpcheckTLSCertRemaining(mbc.Metrics.HttpcheckTLSCertRemaining),
 		metricHttpcheckTLSHandshakeDuration:     newMetricHttpcheckTLSHandshakeDuration(mbc.Metrics.HttpcheckTLSHandshakeDuration),
-		metricHttpcheckValidationFailed:         newMetricHttpcheckValidationFailed(mbc.Metrics.HttpcheckValidationFailed),
-		metricHttpcheckValidationPassed:         newMetricHttpcheckValidationPassed(mbc.Metrics.HttpcheckValidationPassed),
+		metricHttpcheckValidationOutcome:        newMetricHttpcheckValidationOutcome(mbc.Metrics.HttpcheckValidationOutcome),
 	}
 
 	for _, op := range options {
@@ -1315,8 +1221,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricHttpcheckStatus.emit(ils.Metrics())
 	mb.metricHttpcheckTLSCertRemaining.emit(ils.Metrics())
 	mb.metricHttpcheckTLSHandshakeDuration.emit(ils.Metrics())
-	mb.metricHttpcheckValidationFailed.emit(ils.Metrics())
-	mb.metricHttpcheckValidationPassed.emit(ils.Metrics())
+	mb.metricHttpcheckValidationOutcome.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -1388,14 +1293,9 @@ func (mb *MetricsBuilder) RecordHttpcheckTLSHandshakeDurationDataPoint(ts pcommo
 	mb.metricHttpcheckTLSHandshakeDuration.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue)
 }
 
-// RecordHttpcheckValidationFailedDataPoint adds a data point to httpcheck.validation.failed metric.
-func (mb *MetricsBuilder) RecordHttpcheckValidationFailedDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string, validationTypeAttributeValue string) {
-	mb.metricHttpcheckValidationFailed.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue, validationTypeAttributeValue)
-}
-
-// RecordHttpcheckValidationPassedDataPoint adds a data point to httpcheck.validation.passed metric.
-func (mb *MetricsBuilder) RecordHttpcheckValidationPassedDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string, validationTypeAttributeValue string) {
-	mb.metricHttpcheckValidationPassed.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue, validationTypeAttributeValue)
+// RecordHttpcheckValidationOutcomeDataPoint adds a data point to httpcheck.validation.outcome metric.
+func (mb *MetricsBuilder) RecordHttpcheckValidationOutcomeDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string, httpcheckValidationTypeAttributeValue string, httpcheckValidationTargetAttributeValue string, httpcheckValidationOutcomeAttributeValue string) {
+	mb.metricHttpcheckValidationOutcome.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue, httpcheckValidationTypeAttributeValue, httpcheckValidationTargetAttributeValue, httpcheckValidationOutcomeAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

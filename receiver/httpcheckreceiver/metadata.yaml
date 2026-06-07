@@ -53,12 +53,20 @@ attributes:
     description: Full HTTP request URL.
     type: string
     requirement_level: recommended
-  network.transport:
-    description: OSI transport layer or inter-process communication method.
+  httpcheck.validation.outcome:
+    description: The result of the validation (passed or failed)
     type: string
     requirement_level: recommended
-  validation.type:
-    description: Type of validation performed (contains, json_path, size, regex)
+  httpcheck.validation.target:
+    description: The validation expression being evaluated (JSONPath, contains string, regex pattern, size constraint) - statically configured
+    type: string
+    requirement_level: recommended
+  httpcheck.validation.type:
+    description: Type of validation performed (json_path, contains, regex, size, not_contains)
+    type: string
+    requirement_level: recommended
+  network.transport:
+    description: OSI transport layer or inter-process communication method.
     type: string
     requirement_level: recommended
 
@@ -147,8 +155,8 @@ metrics:
       value_type: int
     unit: ns
     attributes: [http.url]
-  httpcheck.validation.failed:
-    description: Number of response validations that failed.
+  httpcheck.validation.outcome:
+    description: Result of a response validation (1 for each validation, with outcome attribute).
     enabled: false
     stability: development
     sum:
@@ -156,14 +164,4 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
     unit: "{validation}"
-    attributes: [http.url, validation.type]
-  httpcheck.validation.passed:
-    description: Number of response validations that passed.
-    enabled: false
-    stability: development
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-    unit: "{validation}"
-    attributes: [http.url, validation.type]
+    attributes: [http.url, httpcheck.validation.type, httpcheck.validation.target, httpcheck.validation.outcome]

@@ -31,12 +31,9 @@ all_set:
     httpcheck.tls.handshake.duration:
       enabled: true
       attributes: ["http.url"]
-    httpcheck.validation.failed:
+    httpcheck.validation.outcome:
       enabled: true
-      attributes: ["http.url","validation.type"]
-    httpcheck.validation.passed:
-      enabled: true
-      attributes: ["http.url","validation.type"]
+      attributes: ["http.url","httpcheck.validation.type","httpcheck.validation.target","httpcheck.validation.outcome"]
 reaggregate_set:
   metrics:
     httpcheck.client.connection.duration:
@@ -69,10 +66,7 @@ reaggregate_set:
     httpcheck.tls.handshake.duration:
       enabled: true
       attributes: []
-    httpcheck.validation.failed:
-      enabled: true
-      attributes: []
-    httpcheck.validation.passed:
+    httpcheck.validation.outcome:
       enabled: true
       attributes: []
 none_set:
@@ -107,9 +101,6 @@ none_set:
     httpcheck.tls.handshake.duration:
       enabled: false
       attributes: ["http.url"]
-    httpcheck.validation.failed:
+    httpcheck.validation.outcome:
       enabled: false
-      attributes: ["http.url","validation.type"]
-    httpcheck.validation.passed:
-      enabled: false
-      attributes: ["http.url","validation.type"]
+      attributes: ["http.url","httpcheck.validation.type","httpcheck.validation.target","httpcheck.validation.outcome"]
