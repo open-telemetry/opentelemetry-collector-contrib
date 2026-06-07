@@ -39,8 +39,6 @@ func newObfuscator() *obfuscator {
 }
 
 func (o *obfuscator) obfuscateSQLString(sql string) (string, error) {
-	// Comments cannot be obfuscated in place, so collect them first and replace
-	// each occurrence with a ? placeholder before obfuscating the remaining literals.
 	collectResult, err := (*obfuscate.Obfuscator)(o).ObfuscateSQLStringWithOptions(sql, &collectCommentsConfig, "")
 	if err != nil {
 		return "", err
