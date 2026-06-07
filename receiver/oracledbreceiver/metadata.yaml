@@ -20,6 +20,26 @@ resource_attributes:
     description: The host name of Oracle Server
     enabled: true
     type: string
+  oracle.db.hosting_type:
+    description: The hosting environment of the Oracle instance. One of "self-managed", "rds", or "oci".
+    enabled: true
+    type: string
+  oracle.db.open_mode:
+    description: The open mode of the Oracle database (e.g. "READ WRITE", "READ ONLY", "MOUNTED").
+    enabled: true
+    type: string
+  oracle.db.pdb:
+    description: The pluggable database (PDB) name associated with the connection.
+    enabled: true
+    type: string
+  oracle.db.role:
+    description: The database role of the Oracle instance (e.g. "PRIMARY", "PHYSICAL STANDBY").
+    enabled: true
+    type: string
+  oracle.db.version:
+    description: The Oracle Database version string.
+    enabled: true
+    type: string
   oracledb.instance.name:
     description: The name of the instance that data is coming from.
     enabled: true
@@ -165,6 +185,9 @@ attributes:
   oracledb.physical_write_requests:
     description: The number of times a query requested to write data to disk (reporting delta).
     type: int
+  oracledb.plan.last_load:
+    description: "Plan load time in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS"
+    type: string
   oracledb.plan_hash_value:
     description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
     type: string
@@ -339,6 +362,8 @@ events:
       - oracledb.procedure_id
       - oracledb.procedure_name
       - oracledb.procedure_type
+      - oracledb.plan_hash_value
+      - oracledb.plan.last_load
 metrics:
   oracledb.consistent_gets:
     description: Number of times a consistent read was requested for a block from the buffer cache.

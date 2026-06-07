@@ -56,6 +56,7 @@ You can also go to specific component folder and run `make schemagen` directly.
 | `-c` | `Config` in component mode                                             | Explicitly set the struct that should become the root schema. |
 | `-o` | Given directory (or `outputFolder` from `.schemagen.yaml` if provided) | Folder that will receive the generated `*.schema.<ext>` file. |
 | `-t` | `yaml`                                                                 | Output format. Accepts `yaml`, `yml`, or `json`.              |
+| `-r` | `false`                                                                | Resolve `$ref` entries inline (see [Ref resolution](#ref-resolution)). |
 
 The schema `$id` is derived from the Go package import path and the `$title` is the package name with the current
 run mode (`component`/`package`) appended.
@@ -97,6 +98,36 @@ componentOverrides:
 - `componentOverrides` allow per-component configuration of the root struct
   name. This is useful when a component does not use the conventional
   `Config` struct name.
+
+## Ref resolution
+
+By default schemagen emits `$ref` pointers for types defined outside the current
+package. When the `-r` flag is set, it instead walks every `$ref` in the output
+and replaces it with the actual type definition, producing a fully self-contained
+schema with no remaining references.
+
+```bash
+make schemagen SRC=receiver/icmpcheckreceiver FLAGS="-r -t=json"
+```
+
+Resolution supports three ref formats produced by the parser:
+
+| Form | Example | Resolved as |
+|------|---------|-------------|
+| Bare local name | `inner_type` | Looked up in the schema's own `$defs` |
+| Absolute-local path | `/receiver/fooreceiver.Config` | Prefixed with `namespace` from `.schemagen.yaml` |
+| Fully-qualified path | `github.com/some/pkg.Type` | Parsed from the referenced Go package |
+
+Each package is loaded at most once; subsequent refs to the same package reuse
+the cached result. References that cannot be resolved (missing type, unlisted
+package) are dropped from the output with a log warning rather than aborting.
+
+In `component` mode the `$defs` section is removed after resolution because all
+types have been inlined.
+
+> **Note:** Ref resolution runs `packages.Load` with full syntax and module
+> information for every distinct external package. For components with many
+> cross-package refs this can be slow.
 
 ## Generated schema highlights
 
