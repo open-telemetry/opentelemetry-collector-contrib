@@ -674,25 +674,34 @@ func TestSamplesQuery(t *testing.T) {
 }
 
 func TestScraperWithQueryComments(t *testing.T) {
-	t.Run("query samples with allowed comments", func(t *testing.T) {
-		// Create a mock scraper with allowed comment keys configured
-		cfg := createDefaultConfig().(*Config)
-		cfg.QuerySample.AllowedCommentKeys = []string{"nr_service_guid", "app_id"}
+	sql := "/* application=test-123 */ SELECT * FROM test_table"
 
-		// This test verifies that when AllowedCommentKeys is configured,
-		// the comment extraction happens and is passed through the pipeline.
-		// The actual generated_logs code will handle adding the attribute.
+	tests := []struct {
+		name        string
+		allowedKeys []string
+		want        string
+	}{
+		{
+			name:        "configured allowed keys are extracted",
+			allowedKeys: []string{"application"},
+			want:        "application=test-123",
+		},
+		{
+			name:        "empty allowlist extracts nothing",
+			allowedKeys: []string{},
+			want:        "",
+		},
+	}
 
-		// We can verify that extractAndFilterComments is called correctly
-		sqlWithComment := "/* nr_service_guid=test-123,app_id=myapp */ SELECT * FROM test_table"
-		result := sqlcomments.ExtractAndFilterComments(sqlWithComment, cfg.QuerySample.AllowedCommentKeys)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.QuerySample.AllowedCommentKeys = tt.allowedKeys
 
-		expected := "nr_service_guid=test-123,app_id=myapp"
-		if result != expected {
-			t.Errorf("Expected %q but got %q", expected, result)
-		}
-	})
-
+			got := sqlcomments.ExtractAndFilterComments(sql, cfg.QuerySample.AllowedCommentKeys)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 	t.Run("query samples without allowed comments", func(t *testing.T) {
 		// Create a mock scraper with empty allowed comment keys
 		cfg := createDefaultConfig().(*Config)
