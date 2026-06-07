@@ -16,12 +16,7 @@ issues: [48508]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Improved SQL query obfuscation with a two-step approach:
-  - SQL comments (/* */ and --) are now collected and replaced with `?` placeholders to protect sensitive information
-  - Literal values (strings, numbers) continue to be replaced with `?` for data privacy
-  - Query structure, formatting, and whitespace are preserved for better readability
-  - SQL aliases (AS), special values (NULL, TRUE, FALSE), and quoted identifiers remain intact
-  This enhancement ensures that query telemetry does not expose sensitive information in SQL comments while maintaining query structure for performance analysis.
+  - Query structure, formatting, and whitespace are now preserved during obfuscation for improved readability.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

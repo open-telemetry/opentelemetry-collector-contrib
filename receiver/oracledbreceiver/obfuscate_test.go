@@ -10,7 +10,6 @@ import (
 )
 
 func TestObfuscateSQL(t *testing.T) {
-	// With the two-step approach:
 	expected := `SELECT e.employee_id, e.first_name, e.last_name, e.department_id, s.salary, d.department_name
                  FROM employees e
                  INNER JOIN
@@ -102,13 +101,6 @@ SELECT col FROM table WHERE id = 123`,
 SELECT col FROM table WHERE id = ?`, // Nested comments: only first /* is collected
 		},
 		{
-			name: "comment with special characters",
-			input: `SELECT * FROM logs -- Filter: status='active' AND user_id=123
-WHERE message LIKE '%error%'`,
-			expected: `SELECT * FROM logs ?
-WHERE message LIKE ?`,
-		},
-		{
 			name: "multiple inline comments",
 			input: `SELECT
     col1, -- first column
@@ -126,15 +118,6 @@ FROM users WHERE age > ?`,
 			input:    `SELECT /*+ INDEX(emp emp_idx) */ * FROM employees WHERE dept_id = 10`,
 			expected: `SELECT ? * FROM employees WHERE dept_id = ?`,
 		},
-		{
-			name: "multiline comment with SQL inside",
-			input: `/* This is a test query
-   Original: SELECT * FROM users WHERE id = 100
-   Modified below */
-SELECT * FROM users WHERE status = 'active'`,
-			expected: `?
-SELECT * FROM users WHERE status = ?`,
-		},
 	}
 
 	obf := newObfuscator()
@@ -142,7 +125,6 @@ SELECT * FROM users WHERE status = ?`,
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := obf.obfuscateSQLString(tt.input)
 			assert.NoError(t, err)
-			t.Logf("\n=== Input ===\n%s\n=== Output ===\n%s\n=== Expected ===\n%s", tt.input, result, tt.expected)
 			assert.Equal(t, tt.expected, result, "Comments should be replaced with ? during obfuscation")
 		})
 	}
@@ -155,19 +137,9 @@ func TestObfuscateSQLWithAliases(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "simple AS alias",
-			input:    `SELECT COUNT(*) AS total FROM users WHERE age > 25`,
-			expected: `SELECT COUNT(*) AS total FROM users WHERE age > ?`,
-		},
-		{
-			name:     "multiple aliases",
-			input:    `SELECT u.name AS user_name, u.email AS user_email FROM users u WHERE u.id = 100`,
-			expected: `SELECT u.name AS user_name, u.email AS user_email FROM users u WHERE u.id = ?`,
-		},
-		{
-			name:     "table alias",
-			input:    `SELECT e.* FROM employees AS e WHERE e.salary > 50000`,
-			expected: `SELECT e.* FROM employees AS e WHERE e.salary > ?`, // obfuscate_only preserves original formatting
+			name:     "column and table aliases",
+			input:    `SELECT u.name AS user_name, u.email AS user_email FROM users AS u WHERE u.id = 100`,
+			expected: `SELECT u.name AS user_name, u.email AS user_email FROM users AS u WHERE u.id = ?`,
 		},
 		{
 			name:     "subquery with alias",
@@ -193,19 +165,14 @@ func TestObfuscateSQLWithQuotedIdentifiers(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "double quoted table name",
-			input:    `SELECT * FROM "Employee" WHERE "EmployeeID" = 123`,
-			expected: `SELECT * FROM "Employee" WHERE "EmployeeID" = ?`, // obfuscate_only preserves quoted identifiers
-		},
-		{
 			name:     "mixed quoted and unquoted",
 			input:    `SELECT name, "Address", age FROM users WHERE id = 456`,
-			expected: `SELECT name, "Address", age FROM users WHERE id = ?`, // obfuscate_only preserves quoted identifiers
+			expected: `SELECT name, "Address", age FROM users WHERE id = ?`,
 		},
 		{
 			name:     "schema qualified quoted identifiers",
 			input:    `SELECT * FROM ADMIN."Employee" WHERE ADMIN."Department"."DeptID" = 10`,
-			expected: `SELECT * FROM ADMIN."Employee" WHERE ADMIN."Department"."DeptID" = ?`, // Quoted identifiers are preserved
+			expected: `SELECT * FROM ADMIN."Employee" WHERE ADMIN."Department"."DeptID" = ?`,
 		},
 	}
 
@@ -226,24 +193,9 @@ func TestObfuscateSQLWithSpecialValues(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "NULL values preserved",
-			input:    `SELECT * FROM users WHERE deleted_at IS NULL AND status = 'active'`,
-			expected: `SELECT * FROM users WHERE deleted_at IS NULL AND status = ?`,
-		},
-		{
-			name:     "boolean TRUE preserved",
-			input:    `SELECT * FROM settings WHERE enabled = TRUE AND value = 'test'`,
-			expected: `SELECT * FROM settings WHERE enabled = TRUE AND value = ?`,
-		},
-		{
-			name:     "boolean FALSE preserved",
-			input:    `SELECT * FROM flags WHERE active = FALSE AND priority = 1`,
-			expected: `SELECT * FROM flags WHERE active = FALSE AND priority = ?`,
-		},
-		{
-			name:     "mixed special values",
-			input:    `SELECT * FROM records WHERE flag = TRUE AND notes IS NULL AND count = 100`,
-			expected: `SELECT * FROM records WHERE flag = TRUE AND notes IS NULL AND count = ?`,
+			name:     "NULL, TRUE, and FALSE preserved while literals are obfuscated",
+			input:    `SELECT * FROM records WHERE enabled = TRUE AND active = FALSE AND notes IS NULL AND count = 100`,
+			expected: `SELECT * FROM records WHERE enabled = TRUE AND active = FALSE AND notes IS NULL AND count = ?`,
 		},
 	}
 
