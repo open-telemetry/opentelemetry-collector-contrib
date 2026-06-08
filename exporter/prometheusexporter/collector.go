@@ -320,7 +320,7 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 		upsertLabel(&keys, &values, labelIndex, labelName, v.AsString())
 	}
 
-	if c.resourceLabelsConfigured() {
+	if c.resourceLabels != nil {
 		for k, v := range resourceAttrs.All() {
 			if !c.shouldAddResourceLabel(k) {
 				continue
@@ -362,10 +362,6 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 		return nil, nil, multiErrs
 	}
 	return prometheus.NewDesc(name, help, keys, c.constLabels), values, nil
-}
-
-func (c *collector) resourceLabelsConfigured() bool {
-	return c.resourceLabels != nil
 }
 
 func (c *collector) shouldAddResourceLabel(key string) bool {

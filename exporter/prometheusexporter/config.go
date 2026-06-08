@@ -93,21 +93,17 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf("invalid translation_strategy: %s", cfg.TranslationStrategy)
 		}
 	}
-	if cfg.resourceConstantLabelsConfigured() && cfg.resourceToTelemetryConfigured() {
+	if cfg.ResourceConstantLabels.HasValue() && cfg.resourceToTelemetryConfigured() {
 		return fmt.Errorf("resource_constant_labels and resource_to_telemetry_conversion cannot be configured at the same time")
 	}
 	if metadata.ExporterPrometheusexporterResourceConstantLabelsFeatureGate.IsEnabled() {
 		if cfg.resourceToTelemetryConfigured() {
 			return fmt.Errorf("resource_to_telemetry_conversion is disabled by feature gate %q; use resource_constant_labels instead", "exporter.prometheusexporter.ResourceConstantLabels")
 		}
-	} else if cfg.resourceConstantLabelsConfigured() {
+	} else if cfg.ResourceConstantLabels.HasValue() {
 		return fmt.Errorf("resource_constant_labels requires feature gate %q", "exporter.prometheusexporter.ResourceConstantLabels")
 	}
 	return nil
-}
-
-func (cfg *Config) resourceConstantLabelsConfigured() bool {
-	return cfg.ResourceConstantLabels.HasValue()
 }
 
 func (cfg *Config) resourceToTelemetryConfigured() bool {
