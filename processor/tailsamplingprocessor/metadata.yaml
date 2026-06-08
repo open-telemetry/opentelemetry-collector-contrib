@@ -48,6 +48,13 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/47331
     skip_strict_validation: true
 
+  - id: "processor.tailsamplingprocessor.usetracestate"
+    description: "When enabled, sampling policies consult OpenTelemetry probability sampling information carried in W3C tracestate (the 'rv' and 'th' fields of the 'ot' section). The 'probabilistic' policy uses tracestate randomness for its sampling decision (falling back to the legacy FNV trace ID hash when no tracestate sampling info is present), and the processor rewrites the outgoing 'th' on sampled traces to the effective threshold across all matched policies."
+    stage: alpha
+    from_version: v0.154.0
+    reference_url: https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/
+    skip_strict_validation: true
+
 tests:
   config:
 

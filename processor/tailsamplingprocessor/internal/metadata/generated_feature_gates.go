@@ -46,3 +46,11 @@ var ProcessorTailsamplingprocessorTailstorageextensionFeatureGate = featuregate.
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/47331"),
 	featuregate.WithRegisterFromVersion("v0.150.0"),
 )
+
+var ProcessorTailsamplingprocessorUsetracestateFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.tailsamplingprocessor.usetracestate",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, sampling policies consult OpenTelemetry probability sampling information carried in W3C tracestate (the 'rv' and 'th' fields of the 'ot' section). The 'probabilistic' policy uses tracestate randomness for its sampling decision (falling back to the legacy FNV trace ID hash when no tracestate sampling info is present), and the processor rewrites the outgoing 'th' on sampled traces to the effective threshold across all matched policies."),
+	featuregate.WithRegisterReferenceURL("https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/"),
+	featuregate.WithRegisterFromVersion("v0.154.0"),
+)
