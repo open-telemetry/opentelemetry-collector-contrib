@@ -131,6 +131,11 @@ func TestConfigValidate(t *testing.T) {
 			cfg:     Config{Jitter: -1 * time.Second},
 			wantErr: "jitter must be non-negative",
 		},
+		{
+			name:    "jitter exceeds 24h",
+			cfg:     Config{Jitter: 25 * time.Hour},
+			wantErr: "jitter must not exceed 24h",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

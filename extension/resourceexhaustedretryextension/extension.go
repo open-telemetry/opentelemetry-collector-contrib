@@ -5,9 +5,9 @@ package resourceexhaustedretryextension
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -58,10 +58,13 @@ func (e *resourceExhaustedRetryExtension) wrapGRPCError(err error) error {
 			return err
 		}
 	}
-	st, _ = st.WithDetails(&errdetails.RetryInfo{
+	newSt, err := st.WithDetails(&errdetails.RetryInfo{
 		RetryDelay: durationpb.New(e.effectiveDelay()),
 	})
-	return st.Err()
+	if err != nil {
+		return st.Err()
+	}
+	return newSt.Err()
 }
 
 // GetGRPCServerOptions implements extensionmiddleware.GRPCServer.
@@ -98,16 +101,19 @@ type retryResponseWriter struct {
 }
 
 func (rw *retryResponseWriter) WriteHeader(code int) {
-	if code == http.StatusTooManyRequests && !rw.wroteHeader {
+	if rw.wroteHeader {
+		return
+	}
+	rw.wroteHeader = true
+	if code == http.StatusTooManyRequests {
 		seconds := int(rw.delay.Seconds())
 		if float64(seconds) < rw.delay.Seconds() {
-			seconds++ // ceil
+			seconds++
 		}
 		if seconds < 1 {
 			seconds = 1
 		}
-		rw.Header().Set("Retry-After", fmt.Sprintf("%d", seconds))
+		rw.Header().Set("Retry-After", strconv.Itoa(seconds))
 	}
-	rw.wroteHeader = true
 	rw.ResponseWriter.WriteHeader(code)
 }

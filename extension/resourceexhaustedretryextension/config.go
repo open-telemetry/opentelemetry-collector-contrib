@@ -20,12 +20,17 @@ type Config struct {
 	Jitter time.Duration `mapstructure:"jitter"`
 }
 
+const maxJitter = 24 * time.Hour
+
 func (c *Config) Validate() error {
 	if c.RetryDelay < 0 {
 		return errors.New("retry_delay must be non-negative")
 	}
 	if c.Jitter < 0 {
 		return errors.New("jitter must be non-negative")
+	}
+	if c.Jitter > maxJitter {
+		return errors.New("jitter must not exceed 24h")
 	}
 	return nil
 }
