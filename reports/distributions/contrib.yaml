@@ -49,7 +49,7 @@ components:
         - opensearch
         - otelarrow
         - prometheus
-        - prometheusremotewrite
+        - prometheus_remote_write
         - pulsar
         - rabbitmq
         - sentry
@@ -93,6 +93,7 @@ components:
         - oidc
         - opamp
         - otlp_encoding
+        - pebble_tail_storage
         - pprof
         - redis_storage
         - sigv4auth
@@ -106,6 +107,7 @@ components:
         - deltatorate
         - drain
         - filter
+        - gen_ai_normalizer
         - geoip
         - groupbyattrs
         - groupbytrace
@@ -158,7 +160,7 @@ components:
         - datadog
         - docker_stats
         - elasticsearch
-        - envoyals
+        - envoy_als
         - expvar
         - faro
         - file_log
@@ -198,7 +200,7 @@ components:
         - ntp
         - oracledb
         - otelarrow
-        - otlpjsonfile
+        - otlp_json_file
         - podman_stats
         - postgresql
         - pprof
@@ -233,10 +235,10 @@ components:
         - udp_log
         - vcenter
         - wavefront
-        - webhookevent
+        - webhook_event
         - windows_event_log
+        - windows_service
         - windowsperfcounters
-        - windowsservice
         - yang_grpc
         - zipkin
         - zookeeper

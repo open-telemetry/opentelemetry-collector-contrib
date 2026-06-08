@@ -22,6 +22,7 @@ import (
 
 func TestScrape(t *testing.T) {
 	ctx := t.Context()
+	setResourcePoolMemoryUsageAttrFeatureGate(t, false)
 	mockServer := mock.MockServer(t, false)
 	defer mockServer.Close()
 
@@ -46,7 +47,6 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	optConfigs.Metrics.VcenterVMNetworkBroadcastPacketRate.Enabled = true
 	optConfigs.Metrics.VcenterVMNetworkMulticastPacketRate.Enabled = true
 	optConfigs.Metrics.VcenterVMCPUTime.Enabled = true
-	setResourcePoolMemoryUsageAttrFeatureGate(t, true)
 
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,
@@ -62,6 +62,8 @@ func TestScrape_TLS(t *testing.T) {
 	ctx := t.Context()
 	mockServer := mock.MockServer(t, true)
 	defer mockServer.Close()
+
+	setResourcePoolMemoryUsageAttrFeatureGate(t, false)
 
 	cfg := &Config{
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
