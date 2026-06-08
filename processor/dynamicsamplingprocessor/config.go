@@ -27,15 +27,41 @@ const (
 
 // Config holds the top-level configuration for the dynamic sampling processor.
 type Config struct {
-	// DecisionWait controls how long a trace is accumulated before a sampling
-	// decision is made.
-	DecisionWait time.Duration `mapstructure:"decision_wait"`
+	// TraceTimeout is the maximum time a trace can sit in the accumulation buffer
+	// before its decision is forced. Acts as a safety net for traces that never
+	// receive a root span. Triggered by a timeout, the decision is made after
+	// DecisionDelay has elapsed.
+	TraceTimeout time.Duration `mapstructure:"trace_timeout"`
+	// DecisionDelay is the pause between a triggering event (root span arrival or
+	// trace timeout) and the actual decision evaluation. Allows in-flight
+	// straggler spans to land before the trace is decided.
+	DecisionDelay time.Duration `mapstructure:"decision_delay"`
 	// NumTraces is the maximum number of traces held in the in-memory buffer at
 	// any time. Older traces are evicted when this limit is exceeded.
 	NumTraces int `mapstructure:"num_traces"`
+	// DecisionCache configures the LRU caches that record decisions for already
+	// decided traces, so late-arriving spans receive the same treatment as the
+	// original trace.
+	DecisionCache DecisionCacheConfig `mapstructure:"decision_cache"`
 	// Rules are evaluated in order, first match wins. The matched rule's sampler
 	// produces the sample rate for the trace.
 	Rules []RuleConfig `mapstructure:"rules"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// DecisionCacheConfig sizes the LRU caches that record sampling decisions.
+// When a span arrives for a traceID that already has a recorded decision, the
+// processor short-circuits the accumulation path: sampled traces are forwarded
+// with the original rule and ot=th annotations; not-sampled traces are dropped.
+// A size of 0 disables that cache.
+type DecisionCacheConfig struct {
+	// SampledCacheSize is the maximum number of sampled traces tracked for
+	// late-span attribution. 0 disables the sampled cache.
+	SampledCacheSize int `mapstructure:"sampled_cache_size"`
+	// NonSampledCacheSize is the maximum number of not-sampled traces tracked.
+	// 0 disables the not-sampled cache.
+	NonSampledCacheSize int `mapstructure:"non_sampled_cache_size"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -145,11 +171,20 @@ type EMADynamicConfig struct {
 
 // Validate checks the processor configuration for obvious errors.
 func (c *Config) Validate() error {
-	if c.DecisionWait <= 0 {
-		return errors.New("decision_wait must be greater than zero")
+	if c.TraceTimeout <= 0 {
+		return errors.New("trace_timeout must be greater than zero")
+	}
+	if c.DecisionDelay <= 0 {
+		return errors.New("decision_delay must be greater than zero")
 	}
 	if c.NumTraces <= 0 {
 		return errors.New("num_traces must be greater than zero")
+	}
+	if c.DecisionCache.SampledCacheSize < 0 {
+		return errors.New("decision_cache.sampled_cache_size must be non-negative")
+	}
+	if c.DecisionCache.NonSampledCacheSize < 0 {
+		return errors.New("decision_cache.non_sampled_cache_size must be non-negative")
 	}
 	if len(c.Rules) == 0 {
 		return errors.New("at least one rule is required")

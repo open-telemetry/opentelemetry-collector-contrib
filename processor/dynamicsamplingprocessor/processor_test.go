@@ -4,8 +4,6 @@
 package dynamicsamplingprocessor
 
 import (
-	"context"
-	"strings"
 	"testing"
 	"time"
 
@@ -23,40 +21,45 @@ func newTestProcessor(t *testing.T, cfg *Config, sink *consumertest.TracesSink) 
 	t.Helper()
 	p, err := newProcessor(processortest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err)
-	require.NoError(t, p.Start(context.Background(), nil))
+	require.NoError(t, p.Start(t.Context(), nil))
 	t.Cleanup(func() {
-		require.NoError(t, p.Shutdown(context.Background()))
+		require.NoError(t, p.Shutdown(t.Context()))
 	})
 	return p
 }
 
-func newTrace(traceID pcommon.TraceID, statusCode ptrace.StatusCode, attrs map[string]string) ptrace.Traces {
+// newTrace builds a single-span ptrace.Traces with a non-empty ParentSpanID so
+// the span is treated as a child (not a root). Use newRootTrace when the test
+// needs to exercise root-span trigger behavior.
+func newTrace(traceID pcommon.TraceID, statusCode ptrace.StatusCode) ptrace.Traces {
+	return buildTrace(traceID, statusCode, false)
+}
+
+func newRootTrace(traceID pcommon.TraceID) ptrace.Traces {
+	return buildTrace(traceID, ptrace.StatusCodeUnset, true)
+}
+
+func buildTrace(traceID pcommon.TraceID, statusCode ptrace.StatusCode, root bool) ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	for k, v := range attrs {
-		if rest, ok := strings.CutPrefix(k, "resource."); ok {
-			rs.Resource().Attributes().PutStr(rest, v)
-		}
-	}
 	ss := rs.ScopeSpans().AppendEmpty()
 	span := ss.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	if !root {
+		span.SetParentSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9})
+	}
 	span.SetName("op")
 	span.Status().SetCode(statusCode)
-	for k, v := range attrs {
-		if !strings.HasPrefix(k, "resource.") {
-			span.Attributes().PutStr(k, v)
-		}
-	}
 	return td
 }
 
 func TestProcessor_AlwaysSample_ForwardsAllTraces(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	cfg := &Config{
-		DecisionWait: 50 * time.Millisecond,
-		NumTraces:    100,
+		TraceTimeout:  50 * time.Millisecond,
+		DecisionDelay: 50 * time.Millisecond,
+		NumTraces:     100,
 		Rules: []RuleConfig{
 			{Name: "keep-all", Sampler: SamplerConfig{Type: AlwaysSample}},
 		},
@@ -64,7 +67,7 @@ func TestProcessor_AlwaysSample_ForwardsAllTraces(t *testing.T) {
 	p := newTestProcessor(t, cfg, sink)
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
-	require.NoError(t, p.ConsumeTraces(context.Background(), newTrace(traceID, ptrace.StatusCodeUnset, nil)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(traceID, ptrace.StatusCodeUnset)))
 
 	assert.Eventually(t, func() bool {
 		return sink.SpanCount() == 1
@@ -74,8 +77,9 @@ func TestProcessor_AlwaysSample_ForwardsAllTraces(t *testing.T) {
 func TestProcessor_FirstMatchRouting(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	cfg := &Config{
-		DecisionWait: 50 * time.Millisecond,
-		NumTraces:    100,
+		TraceTimeout:  50 * time.Millisecond,
+		DecisionDelay: 50 * time.Millisecond,
+		NumTraces:     100,
 		Rules: []RuleConfig{
 			{
 				Name:       "keep-errors",
@@ -95,8 +99,8 @@ func TestProcessor_FirstMatchRouting(t *testing.T) {
 
 	errTrace := pcommon.TraceID([16]byte{1})
 	okTrace := pcommon.TraceID([16]byte{2})
-	require.NoError(t, p.ConsumeTraces(context.Background(), newTrace(errTrace, ptrace.StatusCodeError, nil)))
-	require.NoError(t, p.ConsumeTraces(context.Background(), newTrace(okTrace, ptrace.StatusCodeOk, nil)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(errTrace, ptrace.StatusCodeError)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(okTrace, ptrace.StatusCodeOk)))
 
 	assert.Eventually(t, func() bool {
 		return sink.SpanCount() == 2
@@ -122,8 +126,9 @@ func TestProcessor_FirstMatchRouting(t *testing.T) {
 func TestProcessor_StampsRuleAndTraceState(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	cfg := &Config{
-		DecisionWait: 50 * time.Millisecond,
-		NumTraces:    100,
+		TraceTimeout:  50 * time.Millisecond,
+		DecisionDelay: 50 * time.Millisecond,
+		NumTraces:     100,
 		Rules: []RuleConfig{
 			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
 		},
@@ -131,7 +136,7 @@ func TestProcessor_StampsRuleAndTraceState(t *testing.T) {
 	p := newTestProcessor(t, cfg, sink)
 
 	traceID := pcommon.TraceID([16]byte{9})
-	require.NoError(t, p.ConsumeTraces(context.Background(), newTrace(traceID, ptrace.StatusCodeUnset, nil)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(traceID, ptrace.StatusCodeUnset)))
 
 	assert.Eventually(t, func() bool {
 		return sink.SpanCount() == 1
@@ -151,8 +156,9 @@ func TestProcessor_StampsRuleAndTraceState(t *testing.T) {
 func TestProcessor_DeterministicDropsAtRate(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	cfg := &Config{
-		DecisionWait: 50 * time.Millisecond,
-		NumTraces:    100,
+		TraceTimeout:  50 * time.Millisecond,
+		DecisionDelay: 50 * time.Millisecond,
+		NumTraces:     100,
 		Rules: []RuleConfig{
 			{
 				Name: "fixed",
@@ -168,15 +174,11 @@ func TestProcessor_DeterministicDropsAtRate(t *testing.T) {
 	const n = 500
 	for i := range n {
 		// Vary the last 7 bytes; W3C consistent sampling uses these as randomness.
-		var id [16]byte
-		id[9] = byte(i)
-		id[10] = byte(i >> 8)
-		id[11] = byte(i * 31)
-		id[12] = byte(i * 7)
-		id[13] = byte(i + 13)
-		id[14] = byte(i * 17)
-		id[15] = byte(i*11 + 5)
-		require.NoError(t, p.ConsumeTraces(context.Background(), newTrace(pcommon.TraceID(id), ptrace.StatusCodeUnset, nil)))
+		id := [16]byte{
+			0, 0, 0, 0, 0, 0, 0, 0, 0,
+			byte(i), byte(i >> 8), byte(i * 31), byte(i * 7), byte(i + 13), byte(i * 17), byte(i*11 + 5),
+		}
+		require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(pcommon.TraceID(id), ptrace.StatusCodeUnset)))
 	}
 
 	// Wait for decisions to drain.
@@ -195,8 +197,9 @@ func TestProcessor_DeterministicDropsAtRate(t *testing.T) {
 func TestProcessor_Eviction(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	cfg := &Config{
-		DecisionWait: time.Hour, // long enough we never decide before eviction
-		NumTraces:    2,
+		TraceTimeout:  time.Hour, // long enough we never decide before eviction
+		DecisionDelay: time.Hour,
+		NumTraces:     2,
 		Rules: []RuleConfig{
 			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
 		},
@@ -205,10 +208,175 @@ func TestProcessor_Eviction(t *testing.T) {
 
 	for i := range byte(5) {
 		id := pcommon.TraceID([16]byte{i})
-		require.NoError(t, p.ConsumeTraces(context.Background(), newTrace(id, ptrace.StatusCodeUnset, nil)))
+		require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(id, ptrace.StatusCodeUnset)))
 	}
 
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	assert.LessOrEqual(t, len(p.traces), 2, "buffer should be capped at NumTraces")
+}
+
+func TestProcessor_RootSpanTriggersEarlyDecision(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour, // never fires
+		DecisionDelay: 50 * time.Millisecond,
+		NumTraces:     10,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	traceID := pcommon.TraceID([16]byte{0xAA})
+	require.NoError(t, p.ConsumeTraces(t.Context(), newRootTrace(traceID)))
+
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 1
+	}, time.Second, 10*time.Millisecond, "root span should trigger decision before trace_timeout")
+}
+
+func TestProcessor_RootSpanTriggerIsIdempotent(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: 50 * time.Millisecond,
+		NumTraces:     10,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	traceID := pcommon.TraceID([16]byte{0xBB})
+	require.NoError(t, p.ConsumeTraces(t.Context(), newRootTrace(traceID)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), newRootTrace(traceID)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), newRootTrace(traceID)))
+
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 3
+	}, time.Second, 10*time.Millisecond)
+	// Only one decision should have fired: total traces forwarded is one batch
+	// for the trace, containing all three spans accumulated.
+	assert.Len(t, sink.AllTraces(), 1)
+}
+
+func TestProcessor_TraceTimeoutFiresWithoutRootSpan(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  50 * time.Millisecond,
+		DecisionDelay: 50 * time.Millisecond,
+		NumTraces:     10,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	traceID := pcommon.TraceID([16]byte{0xCC})
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(traceID, ptrace.StatusCodeUnset)))
+
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 1
+	}, time.Second, 10*time.Millisecond, "trace_timeout should fire even without a root span")
+}
+
+func TestProcessor_LateSpansForSampledTraceForwarded(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  50 * time.Millisecond,
+		DecisionDelay: 50 * time.Millisecond,
+		NumTraces:     10,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 100, NonSampledCacheSize: 100},
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	traceID := pcommon.TraceID([16]byte{0xDD})
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(traceID, ptrace.StatusCodeUnset)))
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 1
+	}, time.Second, 10*time.Millisecond)
+
+	// Late span: same traceID, decision already cached as sampled.
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(traceID, ptrace.StatusCodeUnset)))
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 2
+	}, time.Second, 10*time.Millisecond, "late span on sampled trace should be forwarded immediately")
+
+	late := sink.AllTraces()[1]
+	span := late.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	rule, ok := span.Attributes().Get(ruleAttributeKey)
+	require.True(t, ok)
+	assert.Equal(t, "default", rule.AsString())
+	assert.Contains(t, span.TraceState().AsRaw(), "ot=")
+}
+
+func TestProcessor_LateSpansForDroppedTraceDropped(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  50 * time.Millisecond,
+		DecisionDelay: 50 * time.Millisecond,
+		NumTraces:     10,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 100, NonSampledCacheSize: 100},
+		Rules: []RuleConfig{
+			// A rule that doesn't match anything, so all traces fall through
+			// and end up dropped as unmatched.
+			{
+				Name:       "never",
+				Conditions: []string{"status.code == 99"},
+				Sampler:    SamplerConfig{Type: AlwaysSample},
+			},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	traceID := pcommon.TraceID([16]byte{0xEE})
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(traceID, ptrace.StatusCodeUnset)))
+
+	// Wait for the original decision to drain (trace removed from pending map).
+	assert.Eventually(t, func() bool {
+		p.mu.Lock()
+		defer p.mu.Unlock()
+		return len(p.traces) == 0
+	}, time.Second, 10*time.Millisecond)
+	require.Equal(t, 0, sink.SpanCount())
+
+	// Late span: should be dropped via the non-sampled cache.
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(traceID, ptrace.StatusCodeUnset)))
+	// Verify nothing arrives and no new pending trace is created.
+	time.Sleep(150 * time.Millisecond)
+	assert.Equal(t, 0, sink.SpanCount())
+	p.mu.Lock()
+	assert.Empty(t, p.traces)
+	p.mu.Unlock()
+}
+
+func TestProcessor_DecisionCacheDisabled(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  50 * time.Millisecond,
+		DecisionDelay: 50 * time.Millisecond,
+		NumTraces:     10,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 0, NonSampledCacheSize: 0},
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	traceID := pcommon.TraceID([16]byte{0xFF})
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(traceID, ptrace.StatusCodeUnset)))
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 1
+	}, time.Second, 10*time.Millisecond)
+
+	// Late span should fall through to the pending-trace path (no cache hit),
+	// producing a fresh decision and a second forwarded span.
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(traceID, ptrace.StatusCodeUnset)))
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 2
+	}, time.Second, 10*time.Millisecond)
 }

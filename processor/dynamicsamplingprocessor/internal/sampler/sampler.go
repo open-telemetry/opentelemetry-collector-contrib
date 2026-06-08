@@ -21,7 +21,7 @@ type Sampler interface {
 	// number of spans that triggered the lookup, used by adaptive samplers to
 	// weight their observations.
 	GetSampleRate(key string, spanCount int) int
-	// Start initialises any background state. Safe to call multiple times.
+	// Start initializes any background state. Safe to call multiple times.
 	Start() error
 	// Stop releases any resources. Safe to call multiple times.
 	Stop() error

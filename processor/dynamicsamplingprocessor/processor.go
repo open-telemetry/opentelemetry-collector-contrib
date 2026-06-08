@@ -30,14 +30,25 @@ import (
 // permanent semantic convention may replace it in the future.
 const ruleAttributeKey = "otelcol.processor.dynamic_sampling.rule"
 
+// triggerSource identifies which event caused a pending trace to transition
+// from the buffering phase to the decision-delay phase. Reported on the
+// decision-trigger counter.
+type triggerSource string
+
+const (
+	triggerRootSpan     triggerSource = "root_span"
+	triggerTraceTimeout triggerSource = "trace_timeout"
+)
+
 // pendingTrace holds spans accumulated for a single trace plus its arrival
 // metadata. Access is guarded by dynamicSamplingProcessor.mu.
 type pendingTrace struct {
-	traceID    pcommon.TraceID
-	spans      []ptrace.ResourceSpans
-	spanCount  int
-	firstSeen  time.Time
-	decisionAt time.Time
+	traceID     pcommon.TraceID
+	spans       []ptrace.ResourceSpans
+	spanCount   int
+	firstSeen   time.Time
+	hasRootSpan bool
+	triggered   bool
 }
 
 // dynamicSamplingProcessor implements processor.Traces. It accumulates spans by
@@ -49,11 +60,12 @@ type dynamicSamplingProcessor struct {
 	cfg       *Config
 	next      consumer.Traces
 
-	mu       sync.Mutex
-	traces   map[pcommon.TraceID]*pendingTrace
-	timers   map[pcommon.TraceID]*time.Timer
-	rules    []*rule
-	stopped  bool
+	mu      sync.Mutex
+	traces  map[pcommon.TraceID]*pendingTrace
+	timers  map[pcommon.TraceID]*time.Timer
+	rules   []*rule
+	stopped bool
+	cache   *decisionCache
 
 	wg sync.WaitGroup
 }
@@ -73,6 +85,11 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*d
 		return nil, err
 	}
 
+	cache, err := newDecisionCache(cfg.DecisionCache)
+	if err != nil {
+		return nil, err
+	}
+
 	return &dynamicSamplingProcessor{
 		logger:    set.Logger,
 		telemetry: tb,
@@ -81,12 +98,14 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*d
 		traces:    make(map[pcommon.TraceID]*pendingTrace),
 		timers:    make(map[pcommon.TraceID]*time.Timer),
 		rules:     rules,
+		cache:     cache,
 	}, nil
 }
 
 func buildRules(cfg *Config) ([]*rule, error) {
 	rules := make([]*rule, 0, len(cfg.Rules))
-	for _, rc := range cfg.Rules {
+	for i := range cfg.Rules {
+		rc := &cfg.Rules[i]
 		s, keyFields, err := newSamplerForRule(rc)
 		if err != nil {
 			return nil, fmt.Errorf("rule %q: %w", rc.Name, err)
@@ -100,7 +119,7 @@ func buildRules(cfg *Config) ([]*rule, error) {
 	return rules, nil
 }
 
-func newSamplerForRule(rc RuleConfig) (sampler.Sampler, []string, error) {
+func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []string, error) {
 	switch rc.Sampler.Type {
 	case AlwaysSample:
 		return sampler.NewAlwaysSample(), nil, nil
@@ -146,7 +165,7 @@ func (*dynamicSamplingProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-// Start initialises the embedded samplers.
+// Start initializes the embedded samplers.
 func (p *dynamicSamplingProcessor) Start(context.Context, component.Host) error {
 	for _, r := range p.rules {
 		if err := r.sampler.Start(); err != nil {
@@ -183,26 +202,62 @@ func (p *dynamicSamplingProcessor) Shutdown(context.Context) error {
 	return errs
 }
 
-// ConsumeTraces splits the incoming batch by traceID, appends spans to the
-// accumulation buffer, and schedules a decision after decision_wait.
+// ConsumeTraces splits the incoming batch by traceID. Spans whose traceID
+// already has a recorded decision in the cache short-circuit the accumulation
+// path: sampled traces are forwarded with the original annotations, dropped
+// traces are silently discarded. Spans for unknown traces are accumulated and
+// the trace's pendingTrace is created on first appearance.
 func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	now := time.Now()
-	type pendingDecision struct {
+
+	// Bucket spans by (traceID, ResourceSpans) so each span can be routed into
+	// either the cache fast path (sampled-forward, dropped-discard) or the
+	// pending buffer. We collect deferred work outside the lock.
+	type lateSampled struct {
 		traceID pcommon.TraceID
-		fireAt  time.Time
+		md      cachedDecision
+		td      ptrace.Traces
 	}
-	var newDecisions []pendingDecision
+	var lateForwards []lateSampled
+	var newTraces []pcommon.TraceID
+	triggered := make(map[pcommon.TraceID]struct{})
 
 	p.mu.Lock()
 	for _, rs := range td.ResourceSpans().All() {
+		// Split the batch by traceID and by decision-cache status so we can
+		// stamp sampled-cache hits with the original rule annotations once per
+		// batch.
+		pendingBuckets := make(map[pcommon.TraceID]ptrace.ResourceSpans)
+		lateBuckets := make(map[pcommon.TraceID]struct {
+			rs ptrace.ResourceSpans
+			md cachedDecision
+		})
 		for _, ss := range rs.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
 				id := span.TraceID()
+				md, sampled, found := p.cache.lookup(id)
+				if found {
+					if !sampled {
+						continue
+					}
+					b, ok := lateBuckets[id]
+					if !ok {
+						rsCopy := ptrace.NewResourceSpans()
+						rs.Resource().CopyTo(rsCopy.Resource())
+						rsCopy.SetSchemaUrl(rs.SchemaUrl())
+						b = struct {
+							rs ptrace.ResourceSpans
+							md cachedDecision
+						}{rs: rsCopy, md: md}
+						lateBuckets[id] = b
+					}
+					dstSS := findOrAppendScopeSpans(b.rs, ss)
+					span.CopyTo(dstSS.Spans().AppendEmpty())
+					continue
+				}
 				pt, exists := p.traces[id]
 				if !exists {
 					if len(p.traces) >= p.cfg.NumTraces {
-						// Evict an arbitrary trace to make room. A future
-						// enhancement could LRU-evict the oldest.
 						for evictID := range p.traces {
 							delete(p.traces, evictID)
 							p.telemetry.ProcessorDynamicSamplingTracesEvicted.Add(ctx, 1)
@@ -210,59 +265,63 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 						}
 					}
 					pt = &pendingTrace{
-						traceID:    id,
-						firstSeen:  now,
-						decisionAt: now.Add(p.cfg.DecisionWait),
+						traceID:   id,
+						firstSeen: now,
 					}
 					p.traces[id] = pt
-					newDecisions = append(newDecisions, pendingDecision{traceID: id, fireAt: pt.decisionAt})
+					newTraces = append(newTraces, id)
 				}
 				pt.spanCount++
-			}
-		}
-	}
-	// Copy the ResourceSpans payload once per incoming batch so we can release
-	// the lock without holding the upstream batch reference. We re-scan in a
-	// second pass to bucket the spans onto their pending entries.
-	for _, rs := range td.ResourceSpans().All() {
-		// Bucket spans by traceID for fast attach.
-		buckets := make(map[pcommon.TraceID]ptrace.ResourceSpans)
-		for _, ss := range rs.ScopeSpans().All() {
-			for _, span := range ss.Spans().All() {
-				id := span.TraceID()
-				if _, ok := buckets[id]; !ok {
+				if span.ParentSpanID().IsEmpty() {
+					pt.hasRootSpan = true
+				}
+				if _, ok := pendingBuckets[id]; !ok {
 					rsCopy := ptrace.NewResourceSpans()
 					rs.Resource().CopyTo(rsCopy.Resource())
 					rsCopy.SetSchemaUrl(rs.SchemaUrl())
-					buckets[id] = rsCopy
+					pendingBuckets[id] = rsCopy
 				}
-				dstSS := findOrAppendScopeSpans(buckets[id], ss)
+				dstSS := findOrAppendScopeSpans(pendingBuckets[id], ss)
 				span.CopyTo(dstSS.Spans().AppendEmpty())
 			}
 		}
-		for id, copied := range buckets {
+		for id, copied := range pendingBuckets {
 			if pt, ok := p.traces[id]; ok {
 				pt.spans = append(pt.spans, copied)
+				if pt.hasRootSpan && !pt.triggered {
+					if p.trigger(id, triggerRootSpan) {
+						triggered[id] = struct{}{}
+					}
+				}
 			}
 		}
+		for id, b := range lateBuckets {
+			out := ptrace.NewTraces()
+			b.rs.MoveTo(out.ResourceSpans().AppendEmpty())
+			lateForwards = append(lateForwards, lateSampled{traceID: id, md: b.md, td: out})
+		}
 	}
+
 	active := len(p.traces)
+	stopped := p.stopped
 	p.mu.Unlock()
 	p.telemetry.ProcessorDynamicSamplingTracesActive.Record(ctx, int64(active))
 
-	// Schedule any newly-tracked traces for decision. We use time.AfterFunc so
-	// the goroutine count stays proportional to active traces, not span volume.
-	for _, d := range newDecisions {
-		id := d.traceID
-		delay := max(time.Until(d.fireAt), 0)
+	// Schedule the initial trace_timeout timer for brand-new traces that did
+	// not get triggered by a root span in this same batch.
+	for _, id := range newTraces {
+		if _, alreadyTriggered := triggered[id]; alreadyTriggered {
+			continue
+		}
+		traceID := id
 		p.wg.Add(1)
-		timer := time.AfterFunc(delay, func() {
+		timer := time.AfterFunc(p.cfg.TraceTimeout, func() {
 			defer p.wg.Done()
-			p.decide(id)
+			p.mu.Lock()
+			p.trigger(traceID, triggerTraceTimeout)
+			p.mu.Unlock()
 		})
 		p.mu.Lock()
-		// Bail if shutdown raced us between scheduling and registering. Stop
-		// the timer and release the waitgroup slot here.
 		if p.stopped {
 			if timer.Stop() {
 				p.wg.Done()
@@ -270,10 +329,66 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 			p.mu.Unlock()
 			continue
 		}
-		p.timers[id] = timer
+		p.timers[traceID] = timer
 		p.mu.Unlock()
 	}
+
+	if stopped {
+		// Drop late forwards if we're shutting down rather than push into the
+		// downstream consumer.
+		return nil
+	}
+
+	for _, lf := range lateForwards {
+		stampLateBatch(lf.td, lf.md)
+		if err := p.next.ConsumeTraces(ctx, lf.td); err != nil {
+			p.logger.Error("forwarding late span failed", zap.Error(err), zap.Stringer("traceID", lf.traceID))
+		}
+	}
 	return nil
+}
+
+// trigger transitions a pending trace from the buffering phase to the
+// decision-delay phase. The caller must hold p.mu. Returns true if a decision
+// timer was actually armed (false if the trace was already triggered, missing,
+// or the processor has stopped).
+func (p *dynamicSamplingProcessor) trigger(id pcommon.TraceID, source triggerSource) bool {
+	if p.stopped {
+		return false
+	}
+	pt, ok := p.traces[id]
+	if !ok || pt.triggered {
+		return false
+	}
+	pt.triggered = true
+	p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(context.Background(), 1,
+		metric.WithAttributes(attribute.String("trigger", string(source))))
+	// Cancel the existing timer (trace_timeout). If Stop returns false, the
+	// timer's callback is already running or queued; that callback will re-enter
+	// trigger under the mutex, see triggered=true, and bail without harm.
+	if old, ok := p.timers[id]; ok && old.Stop() {
+		p.wg.Done()
+	}
+	p.wg.Add(1)
+	traceID := id
+	p.timers[id] = time.AfterFunc(p.cfg.DecisionDelay, func() {
+		defer p.wg.Done()
+		p.decide(traceID)
+	})
+	return true
+}
+
+// stampLateBatch stamps every span in a late batch with the original rule
+// attribution and ot=th TraceState.
+func stampLateBatch(td ptrace.Traces, md cachedDecision) {
+	for _, rs := range td.ResourceSpans().All() {
+		for _, ss := range rs.ScopeSpans().All() {
+			for _, span := range ss.Spans().All() {
+				span.Attributes().PutStr(ruleAttributeKey, md.ruleName)
+				updateTraceState(span, md.threshold)
+			}
+		}
+	}
 }
 
 // findOrAppendScopeSpans returns the ScopeSpans slot in dst that matches src,
@@ -311,18 +426,22 @@ func (p *dynamicSamplingProcessor) decide(id pcommon.TraceID) {
 		// No matching rule and no catch-all: drop the trace.
 		p.telemetry.ProcessorDynamicSamplingTracesDropped.Add(ctx, 1,
 			metric.WithAttributes(attribute.String("rule", "unmatched")))
+		p.cache.recordNotSampled(id)
 		return
 	}
 
 	ruleAttr := metric.WithAttributes(attribute.String("rule", matchedRule.name))
 	p.telemetry.ProcessorDynamicSamplingDecisionSampleRate.Record(ctx, int64(rate), ruleAttr)
 
+	threshold, _ := sampling.ProbabilityToThreshold(1.0 / float64(rate))
 	if !shouldSample(id, rate) {
 		p.telemetry.ProcessorDynamicSamplingTracesDropped.Add(ctx, 1, ruleAttr)
+		p.cache.recordNotSampled(id)
 		return
 	}
 
-	annotated := assembleTrace(pt.spans, matchedRule.name, rate)
+	p.cache.recordSampled(id, cachedDecision{ruleName: matchedRule.name, threshold: threshold})
+	annotated := assembleTrace(pt.spans, matchedRule.name, threshold)
 	p.telemetry.ProcessorDynamicSamplingTracesSampled.Add(ctx, 1, ruleAttr)
 	if err := p.next.ConsumeTraces(ctx, annotated); err != nil {
 		p.logger.Error("forwarding sampled trace failed", zap.Error(err), zap.Stringer("traceID", id))
@@ -362,9 +481,8 @@ func shouldSample(id pcommon.TraceID, rate int) bool {
 
 // assembleTrace combines accumulated ResourceSpans into a single ptrace.Traces
 // and stamps every span with the rule attribute and `ot=th` TraceState.
-func assembleTrace(spans []ptrace.ResourceSpans, ruleName string, rate int) ptrace.Traces {
+func assembleTrace(spans []ptrace.ResourceSpans, ruleName string, threshold sampling.Threshold) ptrace.Traces {
 	out := ptrace.NewTraces()
-	threshold, _ := sampling.ProbabilityToThreshold(1.0 / float64(rate))
 	for _, rs := range spans {
 		dst := out.ResourceSpans().AppendEmpty()
 		rs.CopyTo(dst)
@@ -379,7 +497,7 @@ func assembleTrace(spans []ptrace.ResourceSpans, ruleName string, rate int) ptra
 }
 
 // updateTraceState parses the existing TraceState, updates the OTel T-value to
-// reflect the sampling threshold, and serialises the result back onto the
+// reflect the sampling threshold, and serializes the result back onto the
 // span. Failures fall through silently so we never block a sampled trace on a
 // malformed upstream TraceState.
 func updateTraceState(span ptrace.Span, threshold sampling.Threshold) {

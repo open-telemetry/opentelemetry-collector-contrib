@@ -5,6 +5,7 @@ go 1.25.0
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
 
 require (
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/honeycombio/dynsampler-go v0.6.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.11.1

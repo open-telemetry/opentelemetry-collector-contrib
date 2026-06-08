@@ -9,7 +9,7 @@ status:
   class: processor
   stability:
     development: [traces]
-  distributions: [contrib]
+  distributions: []
   codeowners:
     active: [MikeGoldsmith, VinozzZ]
     seeking_new: true
@@ -25,6 +25,14 @@ telemetry:
       unit: "{rate}"
       histogram:
         value_type: int
+      stability: development
+    processor_dynamic_sampling_decision_triggers:
+      enabled: true
+      description: Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout).
+      unit: "{decisions}"
+      sum:
+        value_type: int
+        monotonic: true
       stability: development
     processor_dynamic_sampling_traces_active:
       enabled: true

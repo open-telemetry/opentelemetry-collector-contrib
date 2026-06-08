@@ -6,10 +6,9 @@ import (
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -27,6 +26,7 @@ type TelemetryBuilder struct {
 	mu                                         sync.Mutex
 	registrations                              []metric.Registration
 	ProcessorDynamicSamplingDecisionSampleRate metric.Int64Histogram
+	ProcessorDynamicSamplingDecisionTriggers   metric.Int64Counter
 	ProcessorDynamicSamplingTracesActive       metric.Int64Gauge
 	ProcessorDynamicSamplingTracesDropped      metric.Int64Counter
 	ProcessorDynamicSamplingTracesEvicted      metric.Int64Counter
@@ -66,6 +66,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_dynamic_sampling_decision_sample_rate",
 		metric.WithDescription("Distribution of effective sample rates produced per rule. Useful for detecting adaptive samplers settling at unexpected rates. [Development]"),
 		metric.WithUnit("{rate}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorDynamicSamplingDecisionTriggers, err = builder.meter.Int64Counter(
+		"otelcol_processor_dynamic_sampling_decision_triggers",
+		metric.WithDescription("Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout). [Development]"),
+		metric.WithUnit("{decisions}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorDynamicSamplingTracesActive, err = builder.meter.Int64Gauge(

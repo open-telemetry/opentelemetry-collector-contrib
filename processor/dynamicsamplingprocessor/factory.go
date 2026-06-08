@@ -25,8 +25,13 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		DecisionWait: 30 * time.Second,
-		NumTraces:    50_000,
+		TraceTimeout:  30 * time.Second,
+		DecisionDelay: 2 * time.Second,
+		NumTraces:     50_000,
+		DecisionCache: DecisionCacheConfig{
+			SampledCacheSize:    10_000,
+			NonSampledCacheSize: 10_000,
+		},
 	}
 }
 

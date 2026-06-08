@@ -19,8 +19,9 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "valid_always_sample",
 			cfg: Config{
-				DecisionWait: 30 * time.Second,
-				NumTraces:    100,
+				TraceTimeout:  30 * time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
 				Rules: []RuleConfig{
 					{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
 				},
@@ -29,8 +30,9 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "valid_deterministic",
 			cfg: Config{
-				DecisionWait: 30 * time.Second,
-				NumTraces:    100,
+				TraceTimeout:  30 * time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
 				Rules: []RuleConfig{
 					{
 						Name: "rule1",
@@ -45,8 +47,9 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "valid_ema_dynamic",
 			cfg: Config{
-				DecisionWait: 30 * time.Second,
-				NumTraces:    100,
+				TraceTimeout:  30 * time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
 				Rules: []RuleConfig{
 					{
 						Name: "rule1",
@@ -63,34 +66,73 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
-			name:    "missing_decision_wait",
-			cfg:     Config{NumTraces: 100, Rules: []RuleConfig{{Name: "r"}}},
-			wantErr: "decision_wait",
+			name:    "missing_trace_timeout",
+			cfg:     Config{DecisionDelay: time.Second, NumTraces: 100, Rules: []RuleConfig{{Name: "r"}}},
+			wantErr: "trace_timeout",
+		},
+		{
+			name:    "missing_decision_delay",
+			cfg:     Config{TraceTimeout: time.Second, NumTraces: 100, Rules: []RuleConfig{{Name: "r"}}},
+			wantErr: "decision_delay",
 		},
 		{
 			name:    "missing_num_traces",
-			cfg:     Config{DecisionWait: time.Second, Rules: []RuleConfig{{Name: "r"}}},
+			cfg:     Config{TraceTimeout: time.Second, DecisionDelay: time.Second, Rules: []RuleConfig{{Name: "r"}}},
 			wantErr: "num_traces",
 		},
 		{
 			name:    "no_rules",
-			cfg:     Config{DecisionWait: time.Second, NumTraces: 100},
+			cfg:     Config{TraceTimeout: time.Second, DecisionDelay: time.Second, NumTraces: 100},
 			wantErr: "at least one rule",
+		},
+		{
+			name: "negative_sampled_cache_size",
+			cfg: Config{
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
+				DecisionCache: DecisionCacheConfig{SampledCacheSize: -1},
+				Rules:         []RuleConfig{{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}}},
+			},
+			wantErr: "sampled_cache_size",
+		},
+		{
+			name: "negative_non_sampled_cache_size",
+			cfg: Config{
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
+				DecisionCache: DecisionCacheConfig{NonSampledCacheSize: -1},
+				Rules:         []RuleConfig{{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}}},
+			},
+			wantErr: "non_sampled_cache_size",
+		},
+		{
+			name: "zero_cache_sizes_allowed",
+			cfg: Config{
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
+				DecisionCache: DecisionCacheConfig{SampledCacheSize: 0, NonSampledCacheSize: 0},
+				Rules:         []RuleConfig{{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}}},
+			},
 		},
 		{
 			name: "rule_missing_name",
 			cfg: Config{
-				DecisionWait: time.Second,
-				NumTraces:    100,
-				Rules:        []RuleConfig{{Sampler: SamplerConfig{Type: AlwaysSample}}},
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
+				Rules:         []RuleConfig{{Sampler: SamplerConfig{Type: AlwaysSample}}},
 			},
 			wantErr: "name is required",
 		},
 		{
 			name: "duplicate_rule_name",
 			cfg: Config{
-				DecisionWait: time.Second,
-				NumTraces:    100,
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
 				Rules: []RuleConfig{
 					{Name: "a", Sampler: SamplerConfig{Type: AlwaysSample}},
 					{Name: "a", Sampler: SamplerConfig{Type: AlwaysSample}},
@@ -101,17 +143,19 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "missing_sampler_type",
 			cfg: Config{
-				DecisionWait: time.Second,
-				NumTraces:    100,
-				Rules:        []RuleConfig{{Name: "r"}},
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
+				Rules:         []RuleConfig{{Name: "r"}},
 			},
 			wantErr: "sampler.type is required",
 		},
 		{
 			name: "unknown_sampler_type",
 			cfg: Config{
-				DecisionWait: time.Second,
-				NumTraces:    100,
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
 				Rules: []RuleConfig{
 					{Name: "r", Sampler: SamplerConfig{Type: "magic"}},
 				},
@@ -121,8 +165,9 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "deterministic_zero_rate",
 			cfg: Config{
-				DecisionWait: time.Second,
-				NumTraces:    100,
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
 				Rules: []RuleConfig{
 					{Name: "r", Sampler: SamplerConfig{Type: Deterministic}},
 				},
@@ -132,8 +177,9 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "deterministic_too_high",
 			cfg: Config{
-				DecisionWait: time.Second,
-				NumTraces:    100,
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
 				Rules: []RuleConfig{
 					{Name: "r", Sampler: SamplerConfig{Type: Deterministic, Deterministic: DeterministicConfig{SamplingPercentage: 150}}},
 				},
@@ -143,8 +189,9 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "ema_missing_key_fields",
 			cfg: Config{
-				DecisionWait: time.Second,
-				NumTraces:    100,
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
 				Rules: []RuleConfig{
 					{Name: "r", Sampler: SamplerConfig{Type: EMADynamic, EMADynamic: EMADynamicConfig{GoalSamplingPercentage: 10}}},
 				},
@@ -154,8 +201,9 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "ema_invalid_weight",
 			cfg: Config{
-				DecisionWait: time.Second,
-				NumTraces:    100,
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
 				Rules: []RuleConfig{
 					{Name: "r", Sampler: SamplerConfig{
 						Type: EMADynamic,
@@ -172,8 +220,9 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "valid_ema_throughput",
 			cfg: Config{
-				DecisionWait: 30 * time.Second,
-				NumTraces:    100,
+				TraceTimeout:  30 * time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
 				Rules: []RuleConfig{
 					{
 						Name: "r",
@@ -192,8 +241,9 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "ema_throughput_missing_goal",
 			cfg: Config{
-				DecisionWait: time.Second,
-				NumTraces:    100,
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
 				Rules: []RuleConfig{
 					{Name: "r", Sampler: SamplerConfig{
 						Type:          EMAThroughput,
@@ -206,8 +256,9 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "ema_throughput_missing_key_fields",
 			cfg: Config{
-				DecisionWait: time.Second,
-				NumTraces:    100,
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
 				Rules: []RuleConfig{
 					{Name: "r", Sampler: SamplerConfig{
 						Type:          EMAThroughput,
@@ -220,8 +271,9 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "valid_windowed_throughput",
 			cfg: Config{
-				DecisionWait: 30 * time.Second,
-				NumTraces:    100,
+				TraceTimeout:  30 * time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
 				Rules: []RuleConfig{
 					{
 						Name: "r",
@@ -241,8 +293,9 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "windowed_throughput_missing_goal",
 			cfg: Config{
-				DecisionWait: time.Second,
-				NumTraces:    100,
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
 				Rules: []RuleConfig{
 					{Name: "r", Sampler: SamplerConfig{
 						Type:               WindowedThroughput,
@@ -255,8 +308,9 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			name: "windowed_throughput_missing_key_fields",
 			cfg: Config{
-				DecisionWait: time.Second,
-				NumTraces:    100,
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
 				Rules: []RuleConfig{
 					{Name: "r", Sampler: SamplerConfig{
 						Type:               WindowedThroughput,

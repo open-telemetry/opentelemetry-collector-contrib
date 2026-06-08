@@ -4,6 +4,7 @@
 package dynamicsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/dynamicsamplingprocessor"
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -96,7 +97,7 @@ func (c attributeEqualsCondition) matches(spans []ptrace.ResourceSpans) bool {
 func parseCondition(expr string) (condition, error) {
 	expr = strings.TrimSpace(expr)
 	if expr == "" {
-		return nil, fmt.Errorf("empty condition")
+		return nil, errors.New("empty condition")
 	}
 
 	negated := false
@@ -114,7 +115,7 @@ func parseCondition(expr string) (condition, error) {
 
 	parts := strings.SplitN(expr, "\x00", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return nil, fmt.Errorf("condition: malformed expression")
+		return nil, errors.New("condition: malformed expression")
 	}
 	field := parts[0]
 	raw := strings.Trim(parts[1], `"' `)
@@ -133,7 +134,7 @@ func parseCondition(expr string) (condition, error) {
 // compileRule turns a config rule into a runtime rule. The sampler must be
 // supplied by the caller because constructing it depends on processor-wide
 // resources.
-func compileRule(cfg RuleConfig, s sampler.Sampler, keyFields []string) (*rule, error) {
+func compileRule(cfg *RuleConfig, s sampler.Sampler, keyFields []string) (*rule, error) {
 	r := &rule{name: cfg.Name, sampler: s, keyFields: keyFields}
 	for i, expr := range cfg.Conditions {
 		c, err := parseCondition(expr)

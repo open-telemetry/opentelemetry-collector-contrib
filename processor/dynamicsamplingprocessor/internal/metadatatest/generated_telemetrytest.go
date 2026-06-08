@@ -36,6 +36,22 @@ func AssertEqualProcessorDynamicSamplingDecisionSampleRate(t *testing.T, tt *com
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualProcessorDynamicSamplingDecisionTriggers(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_dynamic_sampling_decision_triggers",
+		Description: "Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout). [Development]",
+		Unit:        "{decisions}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_dynamic_sampling_decision_triggers")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualProcessorDynamicSamplingTracesActive(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_dynamic_sampling_traces_active",

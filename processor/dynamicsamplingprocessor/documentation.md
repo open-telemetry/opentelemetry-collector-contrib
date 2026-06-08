@@ -14,6 +14,14 @@ Distribution of effective sample rates produced per rule. Useful for detecting a
 | ---- | ----------- | ---------- | --------- |
 | {rate} | Histogram | Int | Development |
 
+### otelcol_processor_dynamic_sampling_decision_triggers
+
+Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout).
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {decisions} | Sum | Int | true | Development |
+
 ### otelcol_processor_dynamic_sampling_traces_active
 
 Number of traces currently in the accumulation buffer awaiting a decision.

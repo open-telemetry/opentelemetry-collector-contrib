@@ -4,7 +4,6 @@
 package dynamicsamplingprocessor
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -23,8 +22,11 @@ func TestFactory_Type(t *testing.T) {
 
 func TestFactory_DefaultConfig(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
-	assert.Equal(t, 30*time.Second, cfg.DecisionWait)
+	assert.Equal(t, 30*time.Second, cfg.TraceTimeout)
+	assert.Equal(t, 2*time.Second, cfg.DecisionDelay)
 	assert.Equal(t, 50_000, cfg.NumTraces)
+	assert.Equal(t, 10_000, cfg.DecisionCache.SampledCacheSize)
+	assert.Equal(t, 10_000, cfg.DecisionCache.NonSampledCacheSize)
 	assert.Empty(t, cfg.Rules)
 }
 
@@ -35,7 +37,7 @@ func TestFactory_CreateTracesProcessor(t *testing.T) {
 		{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
 	}
 
-	proc, err := f.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	proc, err := f.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, proc)
 	assert.True(t, proc.Capabilities().MutatesData)
