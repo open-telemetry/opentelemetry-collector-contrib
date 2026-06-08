@@ -53,37 +53,12 @@ var (
 
 type basicAuthServer struct {
 	htpasswd    *HtpasswdSettings
-	logger      *zap.Logger
 	matchFunc   atomic.Pointer[func(string, string) bool]
 	awsResolver *awssecretsmanager.Resolver
+	logger      *zap.Logger
 }
 
 func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
-	var rs []io.Reader
-
-	if ba.htpasswd.File != "" {
-		f, err := os.Open(ba.htpasswd.File)
-		if err != nil {
-			return fmt.Errorf("open htpasswd file: %w", err)
-		}
-		defer f.Close()
-
-		rs = append(rs, f, strings.NewReader("\n"))
-	}
-
-	// Ensure that the inline content is read the last.
-	// This way the inline content will override the content from file.
-	rs = append(rs, strings.NewReader(ba.htpasswd.Inline))
-	mr := io.MultiReader(rs...)
-
-	htp, err := htpasswd.NewFromReader(mr, htpasswd.DefaultSystems, nil)
-	if err != nil {
-		return fmt.Errorf("read htpasswd content: %w", err)
-	}
-
-	matchFn := htp.Match
-	ba.matchFunc.Store(&matchFn)
-
 	if ba.htpasswd.AWSSecret != nil {
 		cfg := ba.htpasswd.AWSSecret
 		resolver := awssecretsmanager.NewResolver(
@@ -114,8 +89,31 @@ func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
 		}
 		fn := htp.Match
 		ba.matchFunc.Store(&fn)
+		return nil
 	}
 
+	var rs []io.Reader
+
+	if ba.htpasswd.File != "" {
+		f, err := os.Open(ba.htpasswd.File)
+		if err != nil {
+			return fmt.Errorf("open htpasswd file: %w", err)
+		}
+		defer f.Close()
+
+		rs = append(rs, f, strings.NewReader("\n"))
+	}
+
+	// Inline content is appended last so it overrides file entries.
+	rs = append(rs, strings.NewReader(ba.htpasswd.Inline))
+
+	htp, err := htpasswd.NewFromReader(io.MultiReader(rs...), htpasswd.DefaultSystems, nil)
+	if err != nil {
+		return fmt.Errorf("read htpasswd content: %w", err)
+	}
+
+	matchFn := htp.Match
+	ba.matchFunc.Store(&matchFn)
 	return nil
 }
 

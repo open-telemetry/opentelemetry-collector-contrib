@@ -20,7 +20,6 @@ var (
 	errAWSSecretNegativeInterval = errors.New("`aws_secret.refresh_interval` must not be negative")
 )
 
-const defaultRefreshInterval = 5 * time.Minute
 
 // AWSSecretClientConfig configures AWS Secrets Manager as a credential source for client auth.
 // The secret must be a JSON object containing fields for username and password.
@@ -111,7 +110,7 @@ func (c *ClientAuthSettings) validate() error {
 		if c.Username != "" || c.UsernameFile != "" || string(c.Password) != "" || c.PasswordFile != "" {
 			return errAWSSecretAndOtherSource
 		}
-		return c.AWSSecret.validate(true)
+		return c.AWSSecret.validate()
 	}
 	return nil
 }
@@ -126,14 +125,14 @@ func (h *HtpasswdSettings) validate() error {
 	return nil
 }
 
-func (c *AWSSecretClientConfig) validate(requireKeys bool) error {
+func (c *AWSSecretClientConfig) validate() error {
 	if c.SecretARN == "" {
 		return errAWSSecretMissingARN
 	}
 	if c.Region == "" {
 		return errAWSSecretMissingRegion
 	}
-	if requireKeys && (c.UsernameKey == "" || c.PasswordKey == "") {
+	if c.UsernameKey == "" || c.PasswordKey == "" {
 		return errAWSSecretMissingKeys
 	}
 	if c.RefreshInterval < 0 {
