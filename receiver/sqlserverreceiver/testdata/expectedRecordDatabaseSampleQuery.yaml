@@ -49,6 +49,9 @@ resourceLogs:
               - key: sqlserver.blocking.start_time
                 value:
                   stringValue: "2025-02-12T16:37:52.393+08:00"
+              - key: sqlserver.client.app.name
+                value:
+                  stringValue: SSMS
               - key: sqlserver.context_info
                 value:
                   stringValue: ""
@@ -100,9 +103,15 @@ resourceLogs:
               - key: sqlserver.row_count
                 value:
                   intValue: "1"
+              - key: sqlserver.session.duration
+                value:
+                  doubleValue: 720.456
               - key: sqlserver.session_id
                 value:
                   intValue: "60"
+              - key: sqlserver.session.start_time
+                value:
+                  stringValue: "2025-02-12T15:00:00.000+08:00"
               - key: sqlserver.session_status
                 value:
                   stringValue: running

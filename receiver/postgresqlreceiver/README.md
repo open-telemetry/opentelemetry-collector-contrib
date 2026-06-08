@@ -3,7 +3,6 @@
 
 This receiver queries the PostgreSQL [statistics collector](https://www.postgresql.org/docs/13/monitoring-stats.html).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs   |

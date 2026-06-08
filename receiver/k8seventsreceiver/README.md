@@ -4,7 +4,6 @@
 The Kubernetes Events Receiver collects events from the Kubernetes
 API server. It collects all the new or updated events that come in.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |

@@ -6,7 +6,6 @@ AWS API, applying authentication and signing. This allows applications to avoid 
 a service, instead configuring the AWS exporter and/or proxy in the OpenTelemetry collector and only providing the
 collector with credentials.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]  |

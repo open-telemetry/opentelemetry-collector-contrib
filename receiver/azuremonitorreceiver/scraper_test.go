@@ -195,7 +195,7 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 		id2 := "/subscription/" + fakeSubID + "/resourceGroups/resource-group/providers/" + metricNamespace2 + "/" + name
 		location := "location-name"
 		timeGrain := "PT1M"
-		var unit armmonitor.Unit = "u"
+		var unit armmonitor.MetricUnit = "u"
 		var valueCount float64 = 11
 		valueMaximum := 123.45
 		valueMinimum := 0.1
@@ -625,7 +625,7 @@ func getMetricsDefinitionsMockData() map[string][]armmonitor.MetricDefinitionsCl
 func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientListResponse {
 	name1, name2, name3, name4, name5, name6, name7, dimension1, dimension2, dimensionValue := "metric1", "metric2",
 		"metric3", "metric4", "metric5", "metric6", "metric7", "dimension1", "dimension2", "dimension value"
-	var unit1 armmonitor.Unit = "unit1"
+	var unit1 armmonitor.MetricUnit = "unit1"
 	var value1 float64 = 1
 
 	return newMetricsClientListResponseMockData(map[string]map[string][]metricsClientListResponseMockInput{

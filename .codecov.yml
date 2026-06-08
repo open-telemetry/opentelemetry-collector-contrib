@@ -449,6 +449,10 @@ component_management:
     name: processor_attributes
     paths:
     - processor/attributesprocessor/**
+  - component_id: processor_awsecsattributes
+    name: processor_awsecsattributes
+    paths:
+    - processor/awsecsattributesprocessor/**
   - component_id: processor_cardinalityguardian
     name: processor_cardinalityguardian
     paths:

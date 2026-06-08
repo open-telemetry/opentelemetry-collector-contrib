@@ -5,7 +5,6 @@ This receiver fetches stats from an SNMP enabled host using a [golang
 snmp client](https://github.com/gosnmp/gosnmp). Metrics are collected
 based upon different configurations in the config file.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |

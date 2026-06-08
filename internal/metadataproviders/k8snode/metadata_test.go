@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -77,6 +78,32 @@ func TestNodeUID(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestClusterUID(t *testing.T) {
+	client := fake.NewClientset()
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "kube-system",
+			UID:  types.UID("test-cluster-uid-123"),
+		},
+	}
+	_, err := client.CoreV1().Namespaces().Create(t.Context(), ns, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	p := &k8snodeProvider{k8snodeClient: client, nodeName: "node1"}
+
+	uid, err := p.ClusterUID(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, "test-cluster-uid-123", uid)
+}
+
+func TestClusterUIDNamespaceNotFound(t *testing.T) {
+	client := fake.NewClientset()
+	p := &k8snodeProvider{k8snodeClient: client, nodeName: "node1"}
+
+	_, err := p.ClusterUID(t.Context())
+	assert.ErrorContains(t, err, "kube-system")
 }
 
 func setupNodes(client *fake.Clientset) error {

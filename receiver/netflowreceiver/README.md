@@ -6,7 +6,6 @@ The Netflow Receiver can listen for [netflow](https://en.wikipedia.org/wiki/NetF
 data and convert it to OpenTelemetry logs. The receiver is based on the
 [goflow2](https://github.com/netsampler/goflow2) project.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |

@@ -3,7 +3,6 @@
 
 This receiver collects metrics from a Snowflake account by connecting to and querying a Snowflake deployment.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |

@@ -4,7 +4,6 @@
 The macOS Unified Logging Receiver collects logs from macOS systems using the native `log` command. This receiver
 supports both live system logs and archived log files (`.logarchive`).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |

@@ -5,7 +5,6 @@ The ICMP Check Receiver can be used for synthetic checks against network endpoin
 Requests (pings) to the specified `targets`. It provides device availability monitoring and interface statistics with
 native OpenTelemetry OTLP metrics generation.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: metrics   |

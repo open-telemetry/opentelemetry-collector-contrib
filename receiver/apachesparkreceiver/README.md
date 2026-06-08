@@ -5,7 +5,6 @@ The Apache Spark Receiver fetches metrics for an Apache Spark cluster through th
 the `/metrics/json`, `/api/v1/applications/[app-id]/stages`, `/api/v1/applications/[app-id]/executors`, and
 `/api/v1/applications/[app-id]/jobs` endpoints.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |

@@ -5,7 +5,6 @@ The Kubernetes Cluster receiver collects cluster-level metrics and entity events
 API server. It uses the K8s API to listen for updates. A single instance of this
 receiver should be used to monitor a cluster.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs   |

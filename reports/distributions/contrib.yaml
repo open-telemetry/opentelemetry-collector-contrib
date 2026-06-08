@@ -93,6 +93,7 @@ components:
         - oidc
         - opamp
         - otlp_encoding
+        - pebble_tail_storage
         - pprof
         - redis_storage
         - sigv4auth

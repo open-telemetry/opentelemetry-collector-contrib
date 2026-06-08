@@ -6,7 +6,6 @@ command](https://github.com/memcached/memcached/wiki/Commands#statistics). A
 detailed description of all the stats available is at
 https://github.com/memcached/memcached/blob/master/doc/protocol.txt#L1159.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |

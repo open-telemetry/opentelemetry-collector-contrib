@@ -5,7 +5,6 @@ The Cisco OS Receiver is a modular receiver that collects metrics from Cisco net
 supports multiple scrapers for comprehensive network monitoring and provides native OpenTelemetry OTLP metrics
 generation.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |

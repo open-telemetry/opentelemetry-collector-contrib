@@ -4,7 +4,6 @@
 The Pure Storage FlashBlade receiver, receives metrics from Pure Storage FlashBlade via the
 [Pure Storage FlashBlade OpenMetrics Exporter](https://github.com/PureStorage-OpenConnect/pure-fb-openmetrics-exporter)
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |

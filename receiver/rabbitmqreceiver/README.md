@@ -3,7 +3,6 @@
 
 This receiver fetches stats from a RabbitMQ node using the [RabbitMQ Management Plugin](https://www.rabbitmq.com/management.html).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
