@@ -21,6 +21,22 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 	return set
 }
 
+func AssertEqualProcessorTailSamplingCountBytesSampled(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_tail_sampling_count_bytes_sampled",
+		Description: "Count of bytes that were sampled or not per sampling policy [Development]",
+		Unit:        "By",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_tail_sampling_count_bytes_sampled")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualProcessorTailSamplingCountSpansSampled(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_count_spans_sampled",
