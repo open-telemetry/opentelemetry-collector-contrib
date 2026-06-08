@@ -1774,6 +1774,33 @@ func Test_e2e_ottl_features(t *testing.T) {
 			},
 		},
 		{
+			name:      "split inside a slice result nested []string",
+			statement: `set(attributes["values"], [Split("A|B|C", "|"), "D"])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("values")
+				nestedSlice := s.AppendEmpty().SetEmptySlice()
+				nestedSlice.AppendEmpty().SetStr("A")
+				nestedSlice.AppendEmpty().SetStr("B")
+				nestedSlice.AppendEmpty().SetStr("C")
+				s.AppendEmpty().SetStr("D")
+			},
+		},
+		{
+			name:      "mixed values inside slice",
+			statement: `set(attributes["mixedValues"], [Split("A|B|C", "|"), 1, 3.14, true, "some string"])`,
+			want: func(tCtx *ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("mixedValues")
+				nestedSlice := s.AppendEmpty().SetEmptySlice()
+				nestedSlice.AppendEmpty().SetStr("A")
+				nestedSlice.AppendEmpty().SetStr("B")
+				nestedSlice.AppendEmpty().SetStr("C")
+				s.AppendEmpty().SetInt(1)
+				s.AppendEmpty().SetDouble(3.14)
+				s.AppendEmpty().SetBool(true)
+				s.AppendEmpty().SetStr("some string")
+			},
+		},
+		{
 			name:      "map value with nil",
 			statement: `set(body, {"value": nil})`,
 			want: func(tCtx *ottllog.TransformContext) {
@@ -2068,6 +2095,52 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 					map[string]any{"name": "bar"},
 				})
 				return s
+			},
+		},
+		{
+			name:      "map literal",
+			statement: `{"map":1}`,
+			want: func() any {
+				m := pcommon.NewMap()
+				m.PutInt("map", 1)
+				return m
+			},
+		},
+		{
+			name:      "map literal with nested map and slice values",
+			statement: `{"map":{"val": 1, "inner-slice":[{"inner":2}]}, "slice": [1, {"inner-map":2}]}`,
+			want: func() any {
+				res := pcommon.NewMap()
+				m := res.PutEmptyMap("map")
+				m.PutInt("val", 1)
+				m.PutEmptySlice("inner-slice").AppendEmpty().SetEmptyMap().PutInt("inner", 2)
+				s := res.PutEmptySlice("slice")
+				s.AppendEmpty().SetInt(1)
+				s.AppendEmpty().SetEmptyMap().PutInt("inner-map", 2)
+				return res
+			},
+		},
+		{
+			name:      "slice literal",
+			statement: `[1]`,
+			want: func() any {
+				s := pcommon.NewSlice()
+				s.AppendEmpty().SetInt(1)
+				return s
+			},
+		},
+		{
+			name:      "slice literal with nested slice and map values",
+			statement: `[{"val": 1, "inner-map":{"inner":2}}, [1, {"inner-slice":[2]}]]`,
+			want: func() any {
+				res := pcommon.NewSlice()
+				m := res.AppendEmpty().SetEmptyMap()
+				m.PutInt("val", 1)
+				m.PutEmptyMap("inner-map").PutInt("inner", 2)
+				s := res.AppendEmpty().SetEmptySlice()
+				s.AppendEmpty().SetInt(1)
+				s.AppendEmpty().SetEmptyMap().PutEmptySlice("inner-slice").AppendEmpty().SetInt(2)
+				return res
 			},
 		},
 	}
