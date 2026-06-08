@@ -7,6 +7,7 @@ The Prometheus Receiver receives metric data in [Prometheus](https://prometheus.
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
 | Distributions | [core], [contrib], [k8s] |
+| Warnings      | [Statefulness](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fprometheus%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fprometheus) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fprometheus%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fprometheus) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_prometheus)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_prometheus&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole), [@ArthurSens](https://www.github.com/ArthurSens), [@krajorama](https://www.github.com/krajorama) |
@@ -314,3 +315,7 @@ Current Prometheus receiver benchmark results are published on the [Collector Be
 | Baseline, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-baseline-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-baseline-10k-ram-mib) |
 | Native histograms, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-nativehistogram-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-nativehistogram-10k-ram-mib) |
 | `target_info` enabled, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-withtargetinfo-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusreceiver-withtargetinfo-10k-ram-mib) |
+
+## Warnings
+
+- [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The Prometheus receiver works best when a single collector instance is scraping each target. When running multiple replicas of the collector with the same configuration, each target will be scraped multiple times, resulting in duplicated metrics. Users must configure each replica with different scraping configurations if they want to manually shard scraping across instances.

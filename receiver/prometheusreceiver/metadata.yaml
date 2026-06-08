@@ -9,6 +9,7 @@ status:
   stability:
     beta: [metrics]
   distributions: [core, contrib, k8s]
+  warnings: [Statefulness]
   codeowners:
     active: [Aneurysm9, dashpole, ArthurSens, krajorama]
 tests:
