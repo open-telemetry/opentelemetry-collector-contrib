@@ -81,8 +81,13 @@ var queryResponses = map[string][]metricRow{
 	},
 	tablespaceUsageSQL:  {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
 	dataDictHitRatioSQL: {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
-	recycleBinSizeSQL:   {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
-	storageUsageSQL:     {{"USED_DB_SIZE": "5368709120", "ALLOCATED_DB_SIZE": "10737418240"}},
+	osStatSQL: {
+		{"STAT_NAME": "NUM_CPUS", "VALUE": "8"},
+		{"STAT_NAME": "LOAD", "VALUE": "1.5"},
+		{"STAT_NAME": "PHYSICAL_MEMORY_BYTES", "VALUE": "17179869184"},
+	},
+	recycleBinSizeSQL: {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
+	storageUsageSQL:   {{"USED_DB_SIZE": "5368709120", "ALLOCATED_DB_SIZE": "10737418240"}},
 }
 
 var cacheValue = map[string]int64{
@@ -310,6 +315,112 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 				assert.InDelta(t, 13107200.0, metricMap["oracledb.recycle_bin.limit"], floatDelta)
 				assert.InDelta(t, 5368709120.0, metricMap["oracledb.storage.usage"], floatDelta)
 				assert.InDelta(t, 0.5, metricMap["oracledb.storage.utilization"], floatDelta)
+			}
+		})
+	}
+}
+
+func TestScraper_ScrapeOSStat(t *testing.T) {
+	const floatDelta = 0.01
+
+	tests := []struct {
+		name       string
+		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted  string
+	}{
+		{
+			name: "valid os stat metrics",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{
+					Responses: [][]metricRow{
+						queryResponses[s],
+					},
+				}
+			},
+		},
+		{
+			name: "bad NUM_CPUS value",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == osStatSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{{"STAT_NAME": "NUM_CPUS", "VALUE": "bad"}},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			},
+			errWanted: `failed to parse int64 for SystemCPUPhysicalCount, value was bad`,
+		},
+		{
+			name: "bad LOAD value",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == osStatSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{{"STAT_NAME": "LOAD", "VALUE": "bad"}},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			},
+			errWanted: `failed to parse float64 for OracledbSystemCPULoad, value was bad`,
+		},
+		{
+			name: "bad PHYSICAL_MEMORY_BYTES value",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == osStatSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{{"STAT_NAME": "PHYSICAL_MEMORY_BYTES", "VALUE": "bad"}},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+			},
+			errWanted: `failed to parse int64 for SystemMemoryLimit, value was bad`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
+			cfg.Metrics.SystemCPUPhysicalCount.Enabled = true
+			cfg.Metrics.OracledbSystemCPULoad.Enabled = true
+			cfg.Metrics.SystemMemoryLimit.Enabled = true
+
+			scrpr := oracleScraper{
+				logger: zap.NewNop(),
+				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc:   test.dbclientFn,
+				id:                   component.ID{},
+				metricsBuilderConfig: cfg,
+			}
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(t.Context()))
+			}()
+			require.NoError(t, err)
+			m, err := scrpr.scrape(t.Context())
+			if test.errWanted != "" {
+				require.True(t, scrapererror.IsPartialScrapeError(err))
+				require.Contains(t, err.Error(), test.errWanted)
+			} else {
+				require.NoError(t, err)
+				metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+
+				intMetricMap := make(map[string]int64)
+				doubleMetricMap := make(map[string]float64)
+				for i := 0; i < metrics.Len(); i++ {
+					metric := metrics.At(i)
+					if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
+						dp := metric.Gauge().DataPoints().At(0)
+						if dp.ValueType() == pmetric.NumberDataPointValueTypeDouble {
+							doubleMetricMap[metric.Name()] = dp.DoubleValue()
+						} else {
+							intMetricMap[metric.Name()] = dp.IntValue()
+						}
+					}
+				}
+				assert.Equal(t, int64(8), intMetricMap["system.cpu.physical.count"])
+				assert.InDelta(t, 1.5, doubleMetricMap["oracledb.system.cpu.load"], floatDelta)
+				assert.Equal(t, int64(17179869184), intMetricMap["system.memory.limit"])
 			}
 		})
 	}

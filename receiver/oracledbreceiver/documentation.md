@@ -462,6 +462,30 @@ Fraction of allocated database storage that is used.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
+### oracledb.system.cpu.load
+
+Current OS load average as reported by the operating system.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+### system.cpu.physical.count
+
+Number of physical CPUs available to the Oracle server as reported by the operating system.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cpu} | Gauge | Int | Development |
+
+### system.memory.limit
+
+Total physical memory available to the Oracle server in bytes.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
 ## Default Events
 
 The following events are emitted by default. Each of them can be disabled by applying the following configuration:
