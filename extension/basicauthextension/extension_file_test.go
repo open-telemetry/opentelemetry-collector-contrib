@@ -31,8 +31,7 @@ func TestBasicAuth_ClientFromFiles(t *testing.T) {
 			UsernameFile: userFile,
 			PasswordFile: passFile,
 		},
-	})
-	ext.logger = zaptest.NewLogger(t)
+	}, zaptest.NewLogger(t))
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() { require.NoError(t, ext.Shutdown(t.Context())) }()
 
@@ -64,8 +63,7 @@ func TestBasicAuth_FilePreferredOverInline(t *testing.T) {
 			Password:     "frominline",
 			PasswordFile: passFile,
 		},
-	})
-	ext.logger = zaptest.NewLogger(t)
+	}, zaptest.NewLogger(t))
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() { require.NoError(t, ext.Shutdown(t.Context())) }()
 
@@ -90,8 +88,7 @@ func TestBasicAuth_FileChangesPickedUp(t *testing.T) {
 			Username:     "user",
 			PasswordFile: passFile,
 		},
-	})
-	ext.logger = zaptest.NewLogger(t)
+	}, zaptest.NewLogger(t))
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() { require.NoError(t, ext.Shutdown(t.Context())) }()
 
@@ -125,7 +122,6 @@ func TestBasicAuth_StartFailsMissingFile(t *testing.T) {
 			Username:     "user",
 			PasswordFile: "/nonexistent/path",
 		},
-	})
-	ext.logger = zaptest.NewLogger(t)
+	}, zaptest.NewLogger(t))
 	require.Error(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 }

@@ -32,17 +32,18 @@ var (
 	errInvalidFormat       = basicauth.ErrInvalidFormat
 )
 
-func newClientAuthExtension(cfg *Config) *basicAuthClient {
-	return &basicAuthClient{clientAuth: cfg.ClientAuth}
+func newClientAuthExtension(cfg *Config, logger *zap.Logger) *basicAuthClient {
+	return &basicAuthClient{clientAuth: cfg.ClientAuth, logger: logger}
 }
 
-func newServerAuthExtension(cfg *Config) (*basicAuthServer, error) {
+func newServerAuthExtension(cfg *Config, logger *zap.Logger) (*basicAuthServer, error) {
 	if cfg.Htpasswd == nil || (cfg.Htpasswd.File == "" && cfg.Htpasswd.Inline == "" && cfg.Htpasswd.AWSSecret == nil) {
 		return nil, errNoCredentialSource
 	}
 
 	return &basicAuthServer{
 		htpasswd: cfg.Htpasswd,
+		logger:   logger,
 	}, nil
 }
 
@@ -104,7 +105,8 @@ func (ba *basicAuthServer) Start(ctx context.Context, _ component.Host) error {
 		rs = append(rs, f, strings.NewReader("\n"))
 	}
 
-	// Inline content is appended last so it overrides file entries.
+	// Ensure that the inline content is read the last.
+	// This way the inline content will override the content from file.
 	rs = append(rs, strings.NewReader(ba.htpasswd.Inline))
 
 	htp, err := htpasswd.NewFromReader(io.MultiReader(rs...), htpasswd.DefaultSystems, nil)
