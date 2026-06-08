@@ -4,6 +4,7 @@
 package k8sobjectsreceiver
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -15,7 +16,10 @@ import (
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"k8s.io/apimachinery/pkg/runtime"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/dynamic/fake"
+	k8s_testing "k8s.io/client-go/testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
@@ -179,6 +183,102 @@ func TestPullObject(t *testing.T) {
 	assert.Len(t, consumer.Logs(), 1)
 	assert.Equal(t, 2, consumer.Count())
 	assert.NoError(t, r.Shutdown(t.Context()))
+}
+
+func TestPullObjectInitialDelay(t *testing.T) {
+	t.Parallel()
+
+	mockClient := newMockDynamicClient()
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{
+			"environment": "production",
+		}, "1"),
+	)
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+	rCfg.Objects = []*K8sObjectsConfig{
+		{
+			Name:         "pods",
+			Mode:         k8sinventory.PullMode,
+			Interval:     time.Second,
+			InitialDelay: 200 * time.Millisecond,
+		},
+	}
+
+	consumer := newMockLogConsumer()
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumer,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, 0, consumer.Count())
+
+	require.Eventually(t, func() bool {
+		return consumer.Count() == 1
+	}, time.Second, 10*time.Millisecond)
+
+	assert.NoError(t, r.Shutdown(t.Context()))
+}
+
+func TestPullObjectShutdownDuringInitialDelay(t *testing.T) {
+	t.Parallel()
+
+	mockClient := newMockDynamicClient()
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{
+			"environment": "production",
+		}, "1"),
+	)
+
+	var (
+		listCalls int
+		mu        sync.Mutex
+	)
+	mockClient.client.(*fake.FakeDynamicClient).PrependReactor("list", "pods", func(_ k8s_testing.Action) (bool, runtime.Object, error) {
+		mu.Lock()
+		listCalls++
+		mu.Unlock()
+		return false, nil, nil
+	})
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+	rCfg.Objects = []*K8sObjectsConfig{
+		{
+			Name:         "pods",
+			Mode:         k8sinventory.PullMode,
+			Interval:     time.Second,
+			InitialDelay: 200 * time.Millisecond,
+		},
+	}
+
+	consumer := newMockLogConsumer()
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumer,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+
+	assert.NoError(t, r.Shutdown(t.Context()))
+	time.Sleep(300 * time.Millisecond)
+
+	assert.Equal(t, 0, consumer.Count())
+	mu.Lock()
+	assert.Equal(t, 0, listCalls)
+	mu.Unlock()
 }
 
 func TestWatchObject(t *testing.T) {
