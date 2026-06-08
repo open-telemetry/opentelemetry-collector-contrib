@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: receiver/oracledb
+note: Fix negative duration values in query sample metrics by clamping DURATION_SEC and SESSION_DURATION_SEC to zero minimum.
+issues: [48901]
+change_logs: [user]
