@@ -185,6 +185,7 @@ components:
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
+    - processor/awsecsattributes
     - processor/azuredetector
     - processor/cardinality_guardian
     - processor/coralogix
@@ -342,8 +343,8 @@ components:
     - receiver/wavefront
     - receiver/webhook_event
     - receiver/windows_event_log
+    - receiver/windows_service
     - receiver/windowsperfcounters
-    - receiver/windowsservice
     - receiver/yang_grpc
     - receiver/zipkin
     - receiver/zookeeper
